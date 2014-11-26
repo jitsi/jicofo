@@ -11,6 +11,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
@@ -208,6 +209,80 @@ public class OperationSetColibriConferenceImpl
         if (conferenceRequest != null)
         {
             connection.sendPacket(conferenceRequest);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateSsrcGroupsInfo(MediaSSRCGroupMap ssrcGroups,
+                                     ColibriConferenceIQ localChannelsInfo)
+    {
+        // FIXME: move to ColibriBuilder
+        ColibriConferenceIQ updateIq = new ColibriConferenceIQ();
+
+        updateIq.setID(conferenceState.getID());
+        updateIq.setType(IQ.Type.SET);
+        updateIq.setTo(jitsiVideobridge);
+
+        boolean updateNeeded = false;
+
+        for (ColibriConferenceIQ.Content content
+            : localChannelsInfo.getContents())
+        {
+            String contentName = content.getName();
+            if ("video".compareToIgnoreCase(contentName) != 0)
+            {
+                // Simulcast currently used for video only
+                continue;
+            }
+
+            ColibriConferenceIQ.Content reqContent
+                = new ColibriConferenceIQ.Content(content.getName());
+
+            boolean hasChannels = false;
+            for (ColibriConferenceIQ.Channel channel : content.getChannels())
+            {
+                ColibriConferenceIQ.Channel reqChannel
+                    = new ColibriConferenceIQ.Channel();
+
+                reqChannel.setID(channel.getID());
+
+                List<SSRCGroup> groups
+                    = ssrcGroups.getSSRCGroupsForMedia(content.getName());
+                for (SSRCGroup group : groups)
+                {
+                    try
+                    {
+                        reqChannel.addSourceGroup(group.getExtensionCopy());
+                        hasChannels = true;
+                        updateNeeded = true;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Error copying extension", e);
+                    }
+                }
+                if (groups.isEmpty())
+                {
+                    // Put empty source group to turn off simulcast layers
+                    reqChannel.addSourceGroup(
+                        SourceGroupPacketExtension.createSimulcastGroup());
+                    hasChannels = true;
+                    updateNeeded = true;
+                }
+                reqContent.addChannel(reqChannel);
+            }
+            if (hasChannels)
+            {
+                updateIq.addContent(reqContent);
+            }
+        }
+
+        if (updateNeeded)
+        {
+            connection.sendPacketAndGetReply(updateIq);
         }
     }
 

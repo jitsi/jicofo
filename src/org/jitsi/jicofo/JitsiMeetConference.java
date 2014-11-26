@@ -196,6 +196,7 @@ public class JitsiMeetConference
      * @param listener the listener that will be notified about this instance
      *        events.
      */
+    // FIXME: why is not used now ? remove eventually
     public JitsiMeetConference(String roomName,
                                String serverAddress,
                                ConferenceListener listener)
@@ -718,6 +719,7 @@ public class JitsiMeetConference
                         new RtcpmuxPacketExtension());
                 }
 
+                // Include all peers SSRCs
                 List<SourcePacketExtension> mediaSources
                     = getAllSSRCs(cpe.getName());
 
@@ -733,6 +735,15 @@ public class JitsiMeetConference
                         logger.error("Copy SSRC error", e);
                     }
                 }
+
+                // Include SSRC groups
+                List<SourceGroupPacketExtension> sourceGroups
+                    = getAllSSRCGroups(cpe.getName());
+                for(SourceGroupPacketExtension ssrcGroup : sourceGroups)
+                {
+                    rtpDescPe.addChildExtension(ssrcGroup);
+                }
+
                 // Copy SSRC sent from the bridge(only the first one)
                 for (ColibriConferenceIQ.Channel channel
                         : colibriContent.getChannels())
@@ -747,6 +758,7 @@ public class JitsiMeetConference
                             String contentName = colibriContent.getName();
                             SourcePacketExtension ssrcCopy = ssrcPe.copy();
 
+                            // FIXME: not all parameters are used currently
                             ssrcCopy.addParameter(
                                 new ParameterPacketExtension(
                                     "cname","mixed"));
@@ -931,7 +943,9 @@ public class JitsiMeetConference
                 logger.info(
                     "Hanging up member " + chatRoomMember.getContactAddress());
 
-                removeSSRCs(peerJingleSession, leftPeer.getSSRCsCopy());
+                removeSSRCs(peerJingleSession,
+                            leftPeer.getSSRCsCopy(),
+                            leftPeer.getSSRCGroupsCopy());
 
                 ColibriConferenceIQ peerChannels
                     = leftPeer.getColibriChannelsInfo();
@@ -1051,7 +1065,7 @@ public class JitsiMeetConference
         return null;
     }
 
-    private Participant findParticipantForRoomJid(String roomJid)
+    Participant findParticipantForRoomJid(String roomJid)
     {
         for (Participant participant : participants)
         {
@@ -1116,6 +1130,13 @@ public class JitsiMeetConference
 
         participant.addSSRCsFromContent(answer);
 
+        participant.addSSRCGroupsFromContent(answer);
+
+        // Update SSRC groups
+        colibri.updateSsrcGroupsInfo(
+            participant.getSSRCGroupsCopy(),
+            participant.getColibriChannelsInfo());
+
         logger.info("Got SSRCs from " + peerJingleSession.getAddress());
 
         for (Participant peerToNotify : participants)
@@ -1129,6 +1150,10 @@ public class JitsiMeetConference
                         + peerToNotify.getChatMember().getContactAddress());
 
                 peerToNotify.scheduleSSRCsToAdd(participant.getSSRCS());
+
+                peerToNotify.scheduleSSRCGroupsToAdd(
+                    participant.getSSRCGroups());
+
                 continue;
             }
 
@@ -1137,21 +1162,27 @@ public class JitsiMeetConference
                 continue;
 
             jingle.sendAddSourceIQ(
-                participant.getSSRCS(), jingleSessionToNotify);
+                participant.getSSRCS(),
+                participant.getSSRCGroups(),
+                jingleSessionToNotify);
         }
 
         // Notify the peer itself since it is now stable
         if (participant.hasSsrcsToAdd())
         {
             jingle.sendAddSourceIQ(
-                    participant.getSsrcsToAdd(), peerJingleSession);
+                    participant.getSsrcsToAdd(),
+                    participant.getSSRCGroupsToAdd(),
+                    peerJingleSession);
 
             participant.clearSsrcsToAdd();
         }
         if (participant.hasSsrcsToRemove())
         {
             jingle.sendRemoveSourceIQ(
-                    participant.getSsrcsToRemove(), peerJingleSession);
+                    participant.getSsrcsToRemove(),
+                    participant.getSsrcGroupsToRemove(),
+                    peerJingleSession);
 
             participant.clearSsrcsToRemove();
         }
@@ -1258,8 +1289,18 @@ public class JitsiMeetConference
 
         participant.addSSRCsFromContent(contents);
 
+        participant.addSSRCGroupsFromContent(contents);
+
         MediaSSRCMap ssrcsToAdd
             = MediaSSRCMap.getSSRCsFromContent(contents);
+
+        MediaSSRCGroupMap ssrcGroupsToAdd
+            = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
+
+        // Updates SSRC Groups on the bridge
+        colibri.updateSsrcGroupsInfo(
+            participant.getSSRCGroupsCopy(),
+            participant.getColibriChannelsInfo());
 
         for (Participant peerToNotify : participants)
         {
@@ -1275,10 +1316,13 @@ public class JitsiMeetConference
 
                 peerToNotify.scheduleSSRCsToAdd(ssrcsToAdd);
 
+                peerToNotify.scheduleSSRCGroupsToAdd(ssrcGroupsToAdd);
+
                 continue;
             }
 
-            jingle.sendAddSourceIQ(ssrcsToAdd, peerJingleSession);
+            jingle.sendAddSourceIQ(
+                ssrcsToAdd, ssrcGroupsToAdd, peerJingleSession);
         }
     }
 
@@ -1297,7 +1341,10 @@ public class JitsiMeetConference
         MediaSSRCMap ssrcsToRemove
             = MediaSSRCMap.getSSRCsFromContent(contents);
 
-        removeSSRCs(sourceJingleSession, ssrcsToRemove);
+        MediaSSRCGroupMap ssrcGroupsToRemove
+            = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
+
+        removeSSRCs(sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove);
     }
 
     /**
@@ -1309,7 +1356,8 @@ public class JitsiMeetConference
      *                      the conference.
      */
     private void removeSSRCs(JingleSession sourceJingleSession,
-                             MediaSSRCMap ssrcsToRemove)
+                             MediaSSRCMap ssrcsToRemove,
+                             MediaSSRCGroupMap ssrcGroupsToRemove)
     {
         Participant sourcePeer
             = findParticipantForJingleSession(sourceJingleSession);
@@ -1321,6 +1369,15 @@ public class JitsiMeetConference
         }
 
         sourcePeer.removeSSRCs(ssrcsToRemove);
+
+        sourcePeer.removeSSRCGroups(ssrcGroupsToRemove);
+
+        // Updates SSRC Groups on the bridge
+        colibri.updateSsrcGroupsInfo(
+            ssrcGroupsToRemove,
+            sourcePeer.getColibriChannelsInfo());
+
+        logger.info("Remove SSRC " + sourceJingleSession.getAddress());
 
         for (Participant peer : participants)
         {
@@ -1336,11 +1393,13 @@ public class JitsiMeetConference
 
                 peer.scheduleSSRCsToRemove(ssrcsToRemove);
 
+                peer.scheduleSSRCGroupsToRemove(ssrcGroupsToRemove);
+
                 continue;
             }
 
             jingle.sendRemoveSourceIQ(
-                    ssrcsToRemove, jingleSessionToNotify);
+                    ssrcsToRemove, ssrcGroupsToRemove, jingleSessionToNotify);
         }
     }
 
@@ -1368,6 +1427,41 @@ public class JitsiMeetConference
         }
 
         return mediaSSRCs;
+    }
+
+    /**
+     * Gathers the list of all SSRC groups of given media type that exist in
+     * current conference state.
+     *
+     * @param media the media type of SSRC groups that are being returned.
+     *
+     * @return the list of all SSRC groups of given media type that exist in
+     *         current conference state.
+     */
+    private List<SourceGroupPacketExtension> getAllSSRCGroups(String media)
+    {
+        List<SourceGroupPacketExtension> ssrcGroups
+            = new ArrayList<SourceGroupPacketExtension>();
+
+        for (Participant peer : participants)
+        {
+            List<SSRCGroup> peerSSRCGroups
+                = peer.getSSRCGroupsForMedia(media);
+
+            for (SSRCGroup ssrcGroup : peerSSRCGroups)
+            {
+                try
+                {
+                    ssrcGroups.add(ssrcGroup.getExtensionCopy());
+                }
+                catch (Exception e)
+                {
+                    logger.error("Error copying source group extension");
+                }
+            }
+        }
+
+        return ssrcGroups;
     }
 
     /**

@@ -4,8 +4,11 @@ import mock.xmpp.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.videobridge.*;
+import org.jitsi.videobridge.simulcast.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
+
+import java.util.*;
 
 /**
  *
@@ -80,7 +83,7 @@ public class MockVideobridge
             Packet p = connection.readNextPacket(bridgeJid, 500);
             if (p instanceof ColibriConferenceIQ)
             {
-                logger.info("JVB rcv: " + p.toXML());
+                logger.debug("JVB rcv: " + p.toXML());
 
                 IQ response
                     = bridge.handleColibriConferenceIQ(
@@ -97,7 +100,7 @@ public class MockVideobridge
                     }
                     connection.sendPacket(response);
 
-                    logger.info("JVB sent: " + response.toXML());
+                    logger.debug("JVB sent: " + response.toXML());
                 }
                 else
                 {
@@ -110,6 +113,16 @@ public class MockVideobridge
                 logger.error("Discarded " + p.toXML());
             }
         }
+    }
+
+    public SortedSet<SimulcastLayer> getSimulcastLayers(
+        String confId, String channelId)
+    {
+        Conference conference = bridge.getConference(confId, null);
+        Content videoContent = conference.getOrCreateContent("video");
+        VideoChannel videoChannel
+            = (VideoChannel) videoContent.getChannel(channelId);
+        return videoChannel.getSimulcastManager().getSimulcastLayers();
     }
 
     public int getChannelsCount()

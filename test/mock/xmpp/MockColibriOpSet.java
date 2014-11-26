@@ -11,6 +11,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
 import java.util.*;
@@ -71,6 +72,13 @@ public class MockColibriOpSet
         ColibriConferenceIQ localChannelsInfo)
     {
         colibriImpl.updateTransportInfo(initiator, map, localChannelsInfo);
+    }
+
+    @Override
+    public void updateSsrcGroupsInfo(MediaSSRCGroupMap ssrcGroups,
+                                     ColibriConferenceIQ localChannelsInfo)
+    {
+        colibriImpl.updateSsrcGroupsInfo(ssrcGroups, localChannelsInfo);
     }
 
     @Override

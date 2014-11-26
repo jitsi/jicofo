@@ -1,3 +1,9 @@
+/*
+ * Jicofo, the Jitsi Conference Focus.
+ *
+ * Distributable under LGPL license.
+ * See terms of license at gnu.org.
+ */
 package mock.util;
 
 import mock.*;
@@ -8,6 +14,9 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.videobridge.simulcast.*;
+
+import java.util.*;
 
 /**
  *
@@ -83,5 +92,28 @@ public class TestConference
     public void addParticipant(MockParticipant user)
     {
         user.join(chat);
+    }
+
+    public ConferenceUtility getConferenceUtility()
+    {
+        return new ConferenceUtility(conference);
+    }
+
+    public long[] getSimulcastLayersSSRCs(String peerJid)
+    {
+        ConferenceUtility confUtility = getConferenceUtility();
+        String conferenceId = confUtility.getJvbConferenceId();
+        String videoChannelId
+            = confUtility.getParticipantVideoChannelId(peerJid);
+        SortedSet<SimulcastLayer> layers
+            = mockBridge.getSimulcastLayers(conferenceId, videoChannelId);
+
+        long[] ssrcs = new long[layers.size()];
+        int idx = 0;
+        for (SimulcastLayer layer : layers)
+        {
+            ssrcs[idx++] = layer.getPrimarySSRC();
+        }
+        return ssrcs;
     }
 }

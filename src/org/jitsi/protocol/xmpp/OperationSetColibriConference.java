@@ -10,6 +10,8 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.jicofo.*;
+
 import java.util.*;
 
 /**
@@ -79,6 +81,19 @@ public interface OperationSetColibriConference
             boolean initiator,
             Map<String, IceUdpTransportPacketExtension> map,
             ColibriConferenceIQ localChannelsInfo);
+
+    /**
+     * Updates simulcast layers on the bridge.
+     * @param ssrcGroups the map of media SSRC groups that will be updated on
+     *                   the bridge.
+     * @param localChannelsInfo <<tt>ColibriConferenceIQ</tt> that contains
+     *                          the description of the channel for which
+     *                          SSRC groups information will be updated
+     *                          on the bridge.</tt>
+     */
+    void updateSsrcGroupsInfo(
+        MediaSSRCGroupMap ssrcGroups,
+        ColibriConferenceIQ localChannelsInfo);
 
     /**
      * Updates channel bundle transport information for channels described by

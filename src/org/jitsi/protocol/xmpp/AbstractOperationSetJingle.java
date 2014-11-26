@@ -11,6 +11,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -34,7 +35,7 @@ public abstract class AbstractOperationSetJingle
     /**
      * The list of active Jingle session.
      */
-    private Map<String, JingleSession> sessions
+    protected Map<String, JingleSession> sessions
         = new HashMap<String, JingleSession>();
 
     protected JingleRequestHandler requestHandler;
@@ -179,10 +180,14 @@ public abstract class AbstractOperationSetJingle
      *
      * @param ssrcs the map of media SSRCs that will be included in
      *              the notification.
+     * @param ssrcGroupMap the map of media SSRC groups that will be included in
+     *                     the notification.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendAddSourceIQ(MediaSSRCMap ssrcs, JingleSession session)
+    public void sendAddSourceIQ(MediaSSRCMap ssrcs,
+                                MediaSSRCGroupMap ssrcGroupMap,
+                                JingleSession session)
     {
         JingleIQ addSourceIq = new JingleIQ();
 
@@ -220,6 +225,50 @@ public abstract class AbstractOperationSetJingle
             addSourceIq.addContent(content);
         }
 
+        if (ssrcGroupMap != null)
+        {
+            for (String media : ssrcGroupMap.getMediaTypes())
+            {
+                ContentPacketExtension content
+                    = addSourceIq.getContentByName(media);
+                RtpDescriptionPacketExtension rtpDesc;
+
+                if (content == null)
+                {
+                    // It means content was not created when adding SSRCs...
+                    logger.warn(
+                        "No SSRCs to be added when group exists for media: "
+                            + media);
+
+                    content = new ContentPacketExtension();
+                    content.setName(media);
+                    addSourceIq.addContent(content);
+
+                    rtpDesc = new RtpDescriptionPacketExtension();
+                    rtpDesc.setMedia(media);
+                    content.addChildExtension(rtpDesc);
+                }
+                else
+                {
+                    rtpDesc = content.getFirstChildOfType(
+                        RtpDescriptionPacketExtension.class);
+                }
+
+                for (SSRCGroup ssrcGroup
+                    : ssrcGroupMap.getSSRCGroupsForMedia(media))
+                {
+                    try
+                    {
+                        rtpDesc.addChildExtension(ssrcGroup.getExtensionCopy());
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Copy SSRC GROUP error", e);
+                    }
+                }
+            }
+        }
+
         String peerSid = session.getSessionID();
 
         addSourceIq.setTo(session.getAddress());
@@ -237,10 +286,14 @@ public abstract class AbstractOperationSetJingle
      *
      * @param ssrcs the map of media SSRCs that will be included in
      *              the notification.
+     * @param ssrcGroupMap the map of media SSRC groups that will be included in
+     *                     the notification.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendRemoveSourceIQ(MediaSSRCMap ssrcs, JingleSession session)
+    public void sendRemoveSourceIQ(MediaSSRCMap ssrcs,
+                                   MediaSSRCGroupMap ssrcGroupMap,
+                                   JingleSession session)
     {
         JingleIQ removeSourceIq = new JingleIQ();
 
@@ -275,6 +328,50 @@ public abstract class AbstractOperationSetJingle
             }
 
             removeSourceIq.addContent(content);
+        }
+
+        if (ssrcGroupMap != null)
+        {
+            for (String media : ssrcGroupMap.getMediaTypes())
+            {
+                ContentPacketExtension content
+                    = removeSourceIq.getContentByName(media);
+                RtpDescriptionPacketExtension rtpDesc;
+
+                if (content == null)
+                {
+                    // It means content was not created when adding SSRCs...
+                    logger.warn(
+                        "No SSRCs to be removed when group exists for media: "
+                            + media);
+
+                    content = new ContentPacketExtension();
+                    content.setName(media);
+                    removeSourceIq.addContent(content);
+
+                    rtpDesc = new RtpDescriptionPacketExtension();
+                    rtpDesc.setMedia(media);
+                    content.addChildExtension(rtpDesc);
+                }
+                else
+                {
+                    rtpDesc = content.getFirstChildOfType(
+                        RtpDescriptionPacketExtension.class);
+                }
+
+                for (SSRCGroup ssrcGroup
+                    : ssrcGroupMap.getSSRCGroupsForMedia(media))
+                {
+                    try
+                    {
+                        rtpDesc.addChildExtension(ssrcGroup.getExtensionCopy());
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Copy SSRC GROUP error", e);
+                    }
+                }
+            }
         }
 
         String peerSid = session.getSessionID();

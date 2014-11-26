@@ -9,6 +9,7 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import java.util.*;
@@ -45,9 +46,13 @@ public interface OperationSetJingle
      *
      * @param ssrcMap the media SSRCs map which will be included in
      *                the notification.
+     * @param ssrcGroupMap the map of media SSRC groups that will be included in
+     *                     the notification.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendAddSourceIQ(MediaSSRCMap ssrcMap, JingleSession session);
+    void sendAddSourceIQ(MediaSSRCMap ssrcMap,
+                         MediaSSRCGroupMap ssrcGroupMap,
+                         JingleSession session);
 
     /**
      * Sends 'source-remove' notification to the peer of given
@@ -55,9 +60,13 @@ public interface OperationSetJingle
      *
      * @param ssrcMap the map of media SSRCs that will be included in
      *                the notification.
+     * @param ssrcGroupMap the map of media SSRC groups that will be included in
+     *                     the notification.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendRemoveSourceIQ(MediaSSRCMap ssrcMap, JingleSession session);
+    void sendRemoveSourceIQ(MediaSSRCMap ssrcMap,
+                            MediaSSRCGroupMap ssrcGroupMap,
+                            JingleSession session);
 
     /**
      * Sets the {@link JingleRequestHandler} that will receive jingle
