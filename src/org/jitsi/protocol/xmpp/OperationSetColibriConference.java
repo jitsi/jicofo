@@ -11,6 +11,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.protocol.*;
 
 import java.util.*;
 
@@ -37,6 +38,14 @@ public interface OperationSetColibriConference
      * if the isn't any.
      */
     String getJitsiVideobridge();
+
+    /**
+     * Sets conference configuration instance that will be used to adjust
+     * Colibri channels properties.
+     * @param config an instance of <tt>JitsiMeetConfig</tt> to be used by this
+     *               Colibri operation set.
+     */
+    void setJitsiMeetConfig(JitsiMeetConfig config);
 
     /**
      * Returns the identifier assigned for our conference by the videobridge.

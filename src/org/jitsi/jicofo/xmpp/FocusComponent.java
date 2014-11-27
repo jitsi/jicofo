@@ -226,7 +226,9 @@ public class FocusComponent
                     return IQUtils.convert(smackReply);
                 }
 
-                boolean ready = focusManager.conferenceRequest(room);
+                boolean ready
+                    = focusManager.conferenceRequest(
+                            room, query.getPropertiesMap());
 
                 if (xmppLoginPassword != null)
                 {

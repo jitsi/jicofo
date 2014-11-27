@@ -11,6 +11,7 @@ import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
+import org.jitsi.protocol.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.log.*;
 import org.jivesoftware.smack.provider.*;
@@ -129,10 +130,12 @@ public class FocusManager
      * Allocates new focus for given MUC room.
      * @param room the name of MUC room for which new conference has to be
      *             allocated.
+     * @param properties configuration properties map included in the request.
      * @return <tt>true</tt> if conference focus is in the room and ready to
      *         handle session participants.
      */
-    public synchronized boolean conferenceRequest(String room)
+    public synchronized boolean conferenceRequest(
+            String room, Map<String, String> properties)
     {
         if (StringUtils.isNullOrEmpty(room))
             return false;
@@ -140,7 +143,10 @@ public class FocusManager
         if (shutdownInProgress && !conferences.containsKey(room))
             return false;
 
-        ensureConferenceAllocated(room);
+        if (!conferences.containsKey(room))
+        {
+            createConference(room, properties);
+        }
 
         JitsiMeetConference conference = conferences.get(room);
 
@@ -150,23 +156,34 @@ public class FocusManager
     /**
      * Makes sure that conference is allocated for given <tt>room</tt>.
      * @param room name of the MUC room of Jitsi Meet conference.
+     * @param properties configuration properties, see {@link JitsiMeetConfig}
+     *                   for the list of valid properties.
      */
-    private void ensureConferenceAllocated(String room)
+    private void createConference(String room, Map<String, String> properties)
     {
-        if (conferences.containsKey(room))
-        {
-            return;
-        }
+        JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
         JitsiMeetConference conference
             = new JitsiMeetConference(
-                    room, serverAddress, xmppDomain, xmppLoginPassword, this);
+                    room, serverAddress, xmppDomain, xmppLoginPassword,
+                    this, config);
         try
         {
             conferences.put(room, conference);
 
+            StringBuilder options = new StringBuilder();
+            for (Map.Entry<String, String> option : properties.entrySet())
+            {
+                options.append("\n    ")
+                    .append(option.getKey())
+                    .append(": ")
+                    .append(option.getValue());
+
+            }
+
             logger.info("Created new focus for " + room + "@" + xmppDomain
-                            + " conferences count: " + conferences.size());
+                            + " conferences count: " + conferences.size()
+                            + " options:" + options.toString());
 
             LoggingService loggingService
                     = FocusBundleActivator.getLoggingService();

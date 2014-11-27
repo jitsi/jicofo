@@ -12,6 +12,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 
 import java.util.*;
@@ -46,6 +47,12 @@ public class MockColibriOpSet
     public String getJitsiVideobridge()
     {
         return colibriImpl.getJitsiVideobridge();
+    }
+
+    @Override
+    public void setJitsiMeetConfig(JitsiMeetConfig config)
+    {
+        colibriImpl.setJitsiMeetConfig(config);
     }
 
     @Override

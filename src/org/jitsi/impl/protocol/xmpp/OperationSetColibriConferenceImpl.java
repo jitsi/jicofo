@@ -12,6 +12,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
@@ -99,6 +100,17 @@ public class OperationSetColibriConferenceImpl
     public String getJitsiVideobridge()
     {
         return this.jitsiVideobridge;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setJitsiMeetConfig(JitsiMeetConfig config)
+    {
+        colibriBuilder.setChannelLastN(config.getChannelLastN());
+        colibriBuilder.setAdaptiveLastN(config.isAdaptiveLastNEnabled());
+        colibriBuilder.setAdaptiveSimulcast(config.isAdaptiveSimulcastEnabled());
     }
 
     /**

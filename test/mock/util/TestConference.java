@@ -58,7 +58,7 @@ public class TestConference
 
         meetServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
 
-        focusManager.conferenceRequest(roomName);
+        focusManager.conferenceRequest(roomName, new HashMap<String, String>());
 
         this.conference = focusManager.getConference(roomName);
 

@@ -77,6 +77,8 @@ public class ConferenceIqProvider
             return null;
         }
 
+        ConferenceIq.Property property = null;
+
         boolean done = false;
 
         while (!done)
@@ -91,7 +93,45 @@ public class ConferenceIqProvider
                     {
                         done = true;
                     }
+                    else if (ConferenceIq.Property.ELEMENT_NAME.equals(name))
+                    {
+                        if (property != null)
+                        {
+                            iq.addProperty(property);
+                            property = null;
+                        }
+                    }
                     break;
+                }
+
+                case XmlPullParser.START_TAG:
+                {
+                    String name = parser.getName();
+
+                    if (ConferenceIq.Property.ELEMENT_NAME.equals(name))
+                    {
+                        property = new ConferenceIq.Property();
+
+                        // Name
+                        String propName
+                            = parser.getAttributeValue(
+                                    "",
+                                    ConferenceIq.Property.NAME_ATTR_NAME);
+                        if (!StringUtils.isNullOrEmpty(propName))
+                        {
+                            property.setName(propName);
+                        }
+
+                        // Value
+                        String propValue
+                            = parser.getAttributeValue(
+                                    "",
+                                    ConferenceIq.Property.VALUE_ATTR_NAME);
+                        if (!StringUtils.isNullOrEmpty(propValue))
+                        {
+                            property.setValue(propValue);
+                        }
+                    }
                 }
             }
         }

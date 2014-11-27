@@ -17,6 +17,7 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
@@ -84,6 +85,11 @@ public class JitsiMeetConference
      * {@link ConferenceListener} that will be notified about conference events.
      */
     private final ConferenceListener listener;
+
+    /**
+     * The instance of conference configuration.
+     */
+    private final JitsiMeetConfig config;
 
     /**
      * XMPP protocol provider handler used by the focus.
@@ -174,18 +180,21 @@ public class JitsiMeetConference
      *        (if <tt>null</tt> then focus user will connect anonymously).
      * @param listener the listener that will be notified about this instance
      *        events.
+     * @param config the conference configuration instance.
      */
     public JitsiMeetConference(String roomName,
                                String serverAddress,
                                String xmppDomain,
                                String xmppLoginPassword,
-                               ConferenceListener listener)
+                               ConferenceListener listener,
+                               JitsiMeetConfig config)
     {
         this.roomName = roomName;
         this.serverAddress = serverAddress;
         this.xmppDomain = xmppDomain != null ? xmppDomain : serverAddress;
         this.xmppLoginPassword = xmppLoginPassword;
         this.listener = listener;
+        this.config = config;
     }
 
     /**
@@ -201,7 +210,8 @@ public class JitsiMeetConference
                                String serverAddress,
                                ConferenceListener listener)
     {
-        this(roomName, serverAddress, null, null, listener);
+        this(roomName, serverAddress, null, null, listener,
+             new JitsiMeetConfig(new HashMap<String, String>()));
     }
 
     /**
@@ -222,6 +232,8 @@ public class JitsiMeetConference
         colibri
             = protocolProviderHandler.getOperationSet(
                     OperationSetColibriConference.class);
+
+        colibri.setJitsiMeetConfig(config);
 
         jingle
             = protocolProviderHandler.getOperationSet(

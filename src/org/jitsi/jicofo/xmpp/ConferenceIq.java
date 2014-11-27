@@ -6,6 +6,7 @@
  */
 package org.jitsi.jicofo.xmpp;
 
+import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -55,6 +56,11 @@ public class ConferenceIq
     private Boolean ready;
 
     /**
+     * The list of configuration properties that are contained in this IQ.
+     */
+    private List<Property> properties = new ArrayList<Property>();
+
+    /**
      * Prints attributes in XML format to given <tt>StringBuilder</tt>.
      * @param out the <tt>StringBuilder</tt> instance used to construct XML
      *            representation of this element.
@@ -87,12 +93,16 @@ public class ConferenceIq
         printAttributes(xml);
 
         Collection<PacketExtension> extensions =  getExtensions();
-        if (extensions.size() > 0)
+        if (extensions.size() > 0 || properties.size() > 0)
         {
             xml.append(">");
             for (PacketExtension extension : extensions)
             {
                 xml.append(extension.toXML());
+            }
+            for (Property property : properties)
+            {
+                xml.append(property.toXML());
             }
             xml.append("</").append(ELEMENT_NAME).append(">");
         }
@@ -137,5 +147,116 @@ public class ConferenceIq
     public void setRoom(String room)
     {
         this.room = room;
+    }
+
+    /**
+     * Adds property packet extension to this IQ.
+     * @param property the instance <tt>Property</tt> to be added to this IQ.
+     */
+    public void addProperty(Property property)
+    {
+        properties.add(property);
+    }
+
+    /**
+     * Returns the list of properties contained in this IQ.
+     * @return list of <tt>Property</tt> contained in this IQ.
+     */
+    public List<Property> getProperties()
+    {
+        return properties;
+    }
+
+    /**
+     * Converts list of properties contained in this IQ into the name to value
+     * mapping.
+     * @return the map of property names to values as strings.
+     */
+    public Map<String, String> getPropertiesMap()
+    {
+        Map<String, String> properties= new HashMap<String, String>();
+        for (Property property : this.properties)
+        {
+            properties.put(property.getName(), property.getValue());
+        }
+        return properties;
+    }
+
+    /**
+     * Packet extension for configuration properties.
+     */
+    public static class Property extends AbstractPacketExtension
+    {
+        /**
+         * The name of property XML element.
+         */
+        public static final String ELEMENT_NAME = "property";
+
+        /**
+         * The name of 'name' property attribute.
+         */
+        public static final String NAME_ATTR_NAME = "name";
+
+        /**
+         * The name of 'value' property attribute.
+         */
+        public static final String VALUE_ATTR_NAME = "value";
+
+        /**
+         * Creates new empty <tt>Property</tt> instance.
+         */
+        public Property()
+        {
+            super(null, ELEMENT_NAME);
+        }
+
+        /**
+         * Creates new <tt>Property</tt> instance initialized with given
+         * <tt>name</tt> and <tt>value</tt> values.
+         *
+         * @param name a string that will be the name of new property.
+         * @param value a string value for new property.
+         */
+        public Property(String name, String value)
+        {
+            this();
+
+            setName(name);
+            setValue(value);
+        }
+
+        /**
+         * Sets the name of this property.
+         * @param name a string that will be the name of this property.
+         */
+        public void setName(String name)
+        {
+            setAttribute(NAME_ATTR_NAME, name);
+        }
+
+        /**
+         * Returns the name of this property.
+         */
+        public String getName()
+        {
+            return getAttributeAsString(NAME_ATTR_NAME);
+        }
+
+        /**
+         * Sets the value of this property.
+         * @param value a string value for new property.
+         */
+        public void setValue(String value)
+        {
+            setAttribute(VALUE_ATTR_NAME, value);
+        }
+
+        /**
+         * Returns the value of this property.
+         */
+        public String getValue()
+        {
+            return getAttributeAsString(VALUE_ATTR_NAME);
+        }
     }
 }
