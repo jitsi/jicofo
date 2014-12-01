@@ -42,6 +42,12 @@ public class Main
     private static final Object exitSynRoot = new Object();
 
     /**
+     * The name of the command-line argument which specifies the name of XMPP
+     * domain used by focus user to login.
+     */
+    private static final String LOGIN_DOMAIN_ARG_NAME = "--userdomain=";
+
+    /**
      * The name of the command-line argument which specifies the password
      * used by focus XMPP user to login. If not provided then focus will use
      * anonymous authentication method.
@@ -99,6 +105,7 @@ public class Main
     {
         // XMPP host
         String host = HOST_ARG_VALUE;
+        String componentDomain = null;
         // Focus user
         String focusDomain = null;
         String focusPassword = null;
@@ -111,11 +118,15 @@ public class Main
         {
             if (arg.startsWith(DOMAIN_ARG_NAME))
             {
-                focusDomain = arg.substring(DOMAIN_ARG_NAME.length());
+                componentDomain = arg.substring(DOMAIN_ARG_NAME.length());
             }
             else if (arg.startsWith(HOST_ARG_NAME))
             {
                 host = arg.substring(HOST_ARG_NAME.length());
+            }
+            else if (arg.startsWith(LOGIN_DOMAIN_ARG_NAME))
+            {
+                focusDomain = arg.substring(LOGIN_DOMAIN_ARG_NAME.length());
             }
             else if (arg.startsWith(LOGIN_PASSWORD_ARG_NAME))
             {
@@ -136,7 +147,7 @@ public class Main
         }
 
         if (host == null)
-            host = (focusDomain == null) ? HOST_ARG_VALUE : focusDomain;
+            host = (componentDomain == null) ? HOST_ARG_VALUE : componentDomain;
 
         if (secret == null)
         {
@@ -193,7 +204,7 @@ public class Main
 
         componentManager.setSecretKey(componentSubDomain, secret);
 
-        componentManager.setServerName(host);
+        componentManager.setServerName(componentDomain);
 
         FocusComponent component
             = new FocusComponent(host, focusDomain, focusPassword);
