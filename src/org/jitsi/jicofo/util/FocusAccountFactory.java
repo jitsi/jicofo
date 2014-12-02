@@ -27,20 +27,20 @@ public class FocusAccountFactory
      *
      * @param serverAddress XMPP server address.
      * @param domain name of the XMPP domain on which the focus will register.
-     * @param nickName the nickname used by the focus in MUC room.
+     * @param userName user name used by the focus user.
      *
      * @return the map of new focus account properties for given domain.
      */
     public static Map<String, String> createFocusAccountProperties(
             String serverAddress,
             String domain,
-            String nickName)
+            String userName)
     {
         HashMap<String, String> properties = new HashMap<String, String>();
 
-        String resource = "focus" + System.nanoTime();
+        String resource = userName + System.nanoTime();
 
-        String userID = nickName + "@" + domain + "/" + resource;
+        String userID = userName + "@" + domain + "/" + resource;
 
         properties.put(ProtocolProviderFactory.USER_ID, userID);
         properties.put(ProtocolProviderFactory.SERVER_ADDRESS, serverAddress);
@@ -49,7 +49,7 @@ public class FocusAccountFactory
         // This is used as the multi user chat nick when joining the room
         properties.put(
             ProtocolProviderFactory.ACCOUNT_DISPLAY_NAME,
-            nickName);
+            userName);
 
         properties.put(ProtocolProviderFactory.RESOURCE,
                        resource);
@@ -110,7 +110,7 @@ public class FocusAccountFactory
      *
      * @param serverAddress XMPP server address.
      * @param domain name of the XMPP domain on which the focus will register.
-     * @param nickName the nickname used by the focus in MUC room
+     * @param userName the nickname used by the focus in MUC room
      *                 (also used as login name).
      * @param password focus user admin password.
      *
@@ -119,14 +119,14 @@ public class FocusAccountFactory
     public static Map<String, String> createFocusAccountProperties(
             String serverAddress,
             String domain,
-            String nickName,
+            String userName,
             String password)
     {
         Map<String, String> properties
             = createFocusAccountProperties(
-                    serverAddress, domain, nickName);
+                    serverAddress, domain, userName);
 
-        properties.put(ProtocolProviderFactory.AUTHORIZATION_NAME, nickName);
+        properties.put(ProtocolProviderFactory.AUTHORIZATION_NAME, userName);
 
         /*String pass = new String(Base64.encode(password.getBytes()));
         properties.put(ProtocolProviderFactory.PASSWORD,

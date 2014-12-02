@@ -402,7 +402,7 @@ public class XmppProtocolProvider
         DiscoverItems itemsDisco = discoInfoManager.discoverItems(node);
 
         //FIXME: fix logging levels
-        logger.info("HAVE Discovered items for: pawel.jitsi.net");
+        logger.info("HAVE Discovered items for: " + node);
 
         ArrayList<String> result = new ArrayList<String>();
 

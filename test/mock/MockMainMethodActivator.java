@@ -18,12 +18,6 @@ import org.osgi.framework.*;
 public class MockMainMethodActivator
     implements BundleActivator
 {
-    public static final String xmppServerAddress = "";
-
-    public static final String xmppDomain = "";
-
-    public static final String xmppLoginPassword = "";
-
     private static boolean started;
 
     private static FocusComponent focusComponent;
@@ -32,9 +26,7 @@ public class MockMainMethodActivator
     public void start(BundleContext context)
         throws Exception
     {
-        focusComponent
-            = new FocusComponent(
-                    xmppServerAddress, xmppDomain, xmppLoginPassword);
+        focusComponent = new FocusComponent(true);
 
         focusComponent.init();
 

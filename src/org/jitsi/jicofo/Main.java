@@ -7,11 +7,12 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.shutdown.*;
-import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.service.configuration.*;
+import org.jitsi.util.*;
 
 import org.jivesoftware.whack.*;
 
@@ -45,14 +46,25 @@ public class Main
      * The name of the command-line argument which specifies the name of XMPP
      * domain used by focus user to login.
      */
-    private static final String LOGIN_DOMAIN_ARG_NAME = "--userdomain=";
+    private static final String USER_DOMAIN_ARG_NAME = "--user_domain=";
+
+    /**
+     * The name of the command-line argument which specifies the name of XMPP
+     * user name to be used by the focus user('focus' by default).
+     */
+    private static final String USER_NAME_ARG_NAME = "--user_name=";
+
+    /**
+     * Default value for {@link #USER_NAME_ARG_NAME}.
+     */
+    private static final String USER_NAME_ARG_VALUE = "focus";
 
     /**
      * The name of the command-line argument which specifies the password
      * used by focus XMPP user to login. If not provided then focus will use
      * anonymous authentication method.
      */
-    private static final String LOGIN_PASSWORD_ARG_NAME = "--password=";
+    private static final String USER_PASSWORD_ARG_NAME = "--user_password=";
 
     /**
      * The name of the command-line argument which specifies the IP address or
@@ -108,6 +120,7 @@ public class Main
         String componentDomain = null;
         // Focus user
         String focusDomain = null;
+        String focusUserName = null;
         String focusPassword = null;
         // Focus XMPP component
         String componentSubDomain = SUBDOMAIN_ARG_VALUE;
@@ -124,13 +137,17 @@ public class Main
             {
                 host = arg.substring(HOST_ARG_NAME.length());
             }
-            else if (arg.startsWith(LOGIN_DOMAIN_ARG_NAME))
+            else if (arg.startsWith(USER_DOMAIN_ARG_NAME))
             {
-                focusDomain = arg.substring(LOGIN_DOMAIN_ARG_NAME.length());
+                focusDomain = arg.substring(USER_DOMAIN_ARG_NAME.length());
             }
-            else if (arg.startsWith(LOGIN_PASSWORD_ARG_NAME))
+            else if (arg.startsWith(USER_NAME_ARG_NAME))
             {
-                focusPassword = arg.substring(LOGIN_PASSWORD_ARG_NAME.length());
+                focusUserName = arg.substring(USER_NAME_ARG_NAME.length());
+            }
+            else if (arg.startsWith(USER_PASSWORD_ARG_NAME))
+            {
+                focusPassword = arg.substring(USER_PASSWORD_ARG_NAME.length());
             }
             else if (arg.startsWith(PORT_ARG_NAME))
             {
@@ -146,8 +163,26 @@ public class Main
             }
         }
 
-        if (host == null)
+        // Host name
+        if (StringUtils.isNullOrEmpty(host))
+        {
             host = (componentDomain == null) ? HOST_ARG_VALUE : componentDomain;
+        }
+        // Component domain
+        if (StringUtils.isNullOrEmpty(componentDomain))
+        {
+            componentDomain = host;
+        }
+        // Focus user domain
+        if (StringUtils.isNullOrEmpty(focusDomain))
+        {
+            focusDomain = componentDomain;
+        }
+        // Focus user name
+        if (StringUtils.isNullOrEmpty(focusUserName))
+        {
+            focusUserName = USER_NAME_ARG_VALUE;
+        }
 
         if (secret == null)
         {
@@ -172,6 +207,14 @@ public class Main
         System.setProperty(
             "net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED",
             "true");
+
+        // Focus specific config properties
+        System.setProperty(FocusManager.HOSTNAME_PNAME, host);
+        System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
+        System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
+        System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
+        System.setProperty(
+            FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
 
         /*
          * Start OSGi. It will invoke the application programming interfaces
@@ -206,8 +249,9 @@ public class Main
 
         componentManager.setServerName(componentDomain);
 
-        FocusComponent component
-            = new FocusComponent(host, focusDomain, focusPassword);
+        boolean focusAnonymous = StringUtils.isNullOrEmpty(focusPassword);
+
+        FocusComponent component = new FocusComponent(focusAnonymous);
 
         boolean stop = false;
 

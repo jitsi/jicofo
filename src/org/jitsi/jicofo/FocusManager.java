@@ -12,12 +12,12 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.log.*;
 import org.jivesoftware.smack.provider.*;
 
 import java.util.*;
-
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -46,19 +46,54 @@ public class FocusManager
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
+     * The name of configuration property that specifies server hostname to
+     * which the focus user will connect to.
+     */
+    public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
+
+    /**
+     * The name of configuration property that specifies XMPP domain that hosts
+     * the conference and will be used in components auto-discovery. This is the
+     * domain on which the jitsi-videobridge runs.
+     */
+    public static final String XMPP_DOMAIN_PNAME
+        = "org.jitsi.jicofo.XMPP_DOMAIN";
+
+    /**
+     * The name of configuration property that specifies XMPP domain of
+     * the focus user.
+     */
+    public static final String FOCUS_USER_DOMAIN_PNAME
+        = "org.jitsi.jicofo.FOCUS_USER_DOMAIN";
+
+    /**
+     * The name of configuration property that specifies the user name used by
+     * the focus to login to XMPP server.
+     */
+    public static final String FOCUS_USER_NAME_PNAME
+        = "org.jitsi.jicofo.FOCUS_USER_NAME";
+
+    /**
+     * The name of configuration property that specifies login password of the
+     * focus user. If not provided then anonymous login method is used.
+     */
+    public static final String FOCUS_USER_PASSWORD_PNAME
+        = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
+
+    /**
      * The address of XMPP server to which the focus user will connect to.
      */
-    private String serverAddress;
+    private String hostName;
 
     /**
      * The XMPP domain used by the focus user to register to.
      */
-    private String xmppDomain;
+    private String focusUserDomain;
 
     /**
      * Optional focus user password(if null then will login anonymously).
      */
-    private String xmppLoginPassword;
+    private String focusUserPassword;
 
     /**
      * The thread that expires {@link JitsiMeetConference}s.
@@ -84,27 +119,28 @@ public class FocusManager
     private boolean shutdownInProgress;
 
     /**
-     * Starts this manager for given <tt>serverAddress</tt>.
-     * @param serverAddress the address of XMPP server to which the focus will
-     *                      connect to.
-     * @param xmppDomain optional name of XMPP domain used by focus to login to,
-     *        if <tt>null</tt> then <tt>serverAddress</tt> will be used.
-     * @param password optional password used to login, if <tt>null</tt> is
-     *                 passed then anonymous login wil be used.
+     * Starts this manager for given <tt>hostName</tt>.
      */
-    public void start(String serverAddress, String xmppDomain, String password)
+    public void start()
     {
-        this.serverAddress = serverAddress;
-
-        this.xmppDomain = xmppDomain;
-
-        this.xmppLoginPassword = password;
-
         expireThread.start();
+
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+
+        hostName = config.getString(HOSTNAME_PNAME);
+
+        String xmppDomain = config.getString(XMPP_DOMAIN_PNAME);
+
+        focusUserDomain = config.getString(FOCUS_USER_DOMAIN_PNAME);
+
+        String focusUserName = config.getString(FOCUS_USER_NAME_PNAME);
+
+        focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
 
         jitsiMeetServices = new JitsiMeetServices();
 
-        jitsiMeetServices.start(serverAddress, xmppDomain, xmppLoginPassword);
+        jitsiMeetServices.start(hostName, xmppDomain,
+            focusUserDomain, focusUserName, focusUserPassword);
 
         ProviderManager
             .getInstance()
@@ -165,7 +201,7 @@ public class FocusManager
 
         JitsiMeetConference conference
             = new JitsiMeetConference(
-                    room, serverAddress, xmppDomain, xmppLoginPassword,
+                    room, hostName, focusUserDomain, focusUserPassword,
                     this, config);
         try
         {
@@ -181,7 +217,7 @@ public class FocusManager
 
             }
 
-            logger.info("Created new focus for " + room + "@" + xmppDomain
+            logger.info("Created new focus for " + room + "@" + focusUserDomain
                             + " conferences count: " + conferences.size()
                             + " options:" + options.toString());
 
@@ -190,7 +226,7 @@ public class FocusManager
             if (loggingService != null)
             {
                 loggingService.logEvent(
-                    LogEventFactory.focusCreated(room + "@" + xmppDomain));
+                    LogEventFactory.focusCreated(room + "@" + focusUserDomain));
             }
 
             conference.start();

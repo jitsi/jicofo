@@ -78,9 +78,9 @@ public class JitsiMeetServices
     private OperationSetSimpleCaps capsOpSet;
 
     /**
-     * XMPP domain for which we're discovering service info.
+     * XMPP xmppDomain for which we're discovering service info.
      */
-    private String domain;
+    private String xmppDomain;
 
     /**
      * Videobridge component XMPP address.
@@ -105,16 +105,18 @@ public class JitsiMeetServices
     /**
      * Starts this instance.
      *
-     * @param serverAddress server address/main service XMPP domain that hosts
+     * @param xmppDomain server address/main service XMPP xmppDomain that hosts
      *                      the conference system.
-     * @param xmppAuthDomain the domain used for XMPP authentication
-     *                       ('focus' login is used).
+     * @param xmppAuthDomain the xmppDomain used for XMPP authentication.
+     * @param xmppUserName the user name used to login.
      * @param xmppLoginPassword the password used for authentication.
      *
      * @throws java.lang.IllegalStateException if started already.
      */
     public void start(String serverAddress,
+                      String xmppDomain,
                       String xmppAuthDomain,
+                      String xmppUserName,
                       String xmppLoginPassword)
     {
         if (protocolProviderHandler != null)
@@ -122,15 +124,14 @@ public class JitsiMeetServices
             throw new IllegalStateException("Already started");
         }
 
-        this.domain = serverAddress;
+        this.xmppDomain = xmppDomain;
 
         this.protocolProviderHandler
             = new ProtocolProviderHandler();
 
         protocolProviderHandler.start(
             serverAddress, xmppAuthDomain, xmppLoginPassword,
-            //FIXME: we might want to use another user here
-            "focus", this);
+            xmppUserName, this);
 
         this.capsOpSet
             = protocolProviderHandler.getOperationSet(
@@ -170,7 +171,7 @@ public class JitsiMeetServices
      */
     public void init()
     {
-        List<String> items = capsOpSet.getItems(domain);
+        List<String> items = capsOpSet.getItems(xmppDomain);
         for (String item : items)
         {
             if (capsOpSet.hasFeatureSupport(item, VIDEOBRIDGE_FEATURES))
@@ -248,7 +249,7 @@ public class JitsiMeetServices
 
     /**
      * Returns {@link BridgeSelector} bound to this instance that can be used to
-     * select the videobridge on the domain handled by this instance.
+     * select the videobridge on the xmppDomain handled by this instance.
      */
     public BridgeSelector getBridgeSelector()
     {

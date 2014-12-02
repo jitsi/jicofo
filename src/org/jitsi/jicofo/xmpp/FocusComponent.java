@@ -44,15 +44,9 @@ public class FocusComponent
     private final String shutdownAllowedJid;
 
     /**
-     * XMPP server address to which the focus will connect to.
+     * Indicates if the focus is anonymous user or authenticated system admin.
      */
-    private final String serverAddress;
-
-    /**
-     * Name of XMPP domain used by the focus to login
-     * (if null then the server address will be used).
-     */
-    private final String xmppDomain;
+    private final boolean isFocusAnonymous;
 
     /**
      * Optional password for focus user authentication. If authenticated login
@@ -62,7 +56,6 @@ public class FocusComponent
      * the focus to create the room. If focus is authenticated and is not
      * an admin then will refuse to join MUC room.
      */
-    private final String xmppLoginPassword;
 
     /**
      * The manager object that creates and expires
@@ -72,20 +65,11 @@ public class FocusComponent
 
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
-     * @param serverAddress the address of XMPP server to which the focus user
-     *        will connect to.
-     * @param xmppDomain optional name of XMPP domain used to register focus
-     *        user. If <tt>null</tt> then <tt>serverAddress</tt> is used instead.
-     * @param password optional password used to login. If <tt>null</tt> is
-     *        passed then anonymous login is used.
+     * @param anonymousFocus indicates if the focus user is anonymous.
      */
-    public FocusComponent(String serverAddress,
-                          String xmppDomain,
-                          String password)
+    public FocusComponent(boolean anonymousFocus)
     {
-        this.serverAddress = serverAddress;
-        this.xmppDomain = xmppDomain;
-        this.xmppLoginPassword = password;
+        this.isFocusAnonymous = anonymousFocus;
         this.shutdownAllowedJid
             = FocusBundleActivator.getConfigService()
                     .getString(SHUTDOWN_ALLOWED_JID_PNAME);
@@ -102,7 +86,7 @@ public class FocusComponent
         this.focusManager = ServiceUtils.getService(
             FocusBundleActivator.bundleContext, FocusManager.class);
 
-        focusManager.start(serverAddress, xmppDomain, xmppLoginPassword);
+        focusManager.start();
     }
 
     /**
@@ -230,10 +214,10 @@ public class FocusComponent
                     = focusManager.conferenceRequest(
                             room, query.getPropertiesMap());
 
-                if (xmppLoginPassword != null)
+                if (!isFocusAnonymous)
                 {
                     // Focus is authenticated system admin, so we let
-                    // them in immediately
+                    // them in immediately. Focus will get OWNER anyway.
                     ready = true;
                 }
 
