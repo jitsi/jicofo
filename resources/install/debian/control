@@ -1,0 +1,17 @@
+Source: jicofo
+Section: net
+Priority: extra
+Maintainer: Jitsi Team <dev@jitsi.org>
+Uploaders: Emil Ivov <emcho@jitsi.org>, Damian Minkov <damencho@jitsi.org>, Pawel Domas <pawel.domas@jitsi.org>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Homepage: https://jitsi.org/videobridge
+
+Package: jicofo
+Architecture: any
+Pre-Depends: adduser, jitsi-videobridge, prosody
+Depends: ${shlibs:Depends}, ${misc:Depends}, default-jre-headless
+Description: WebRTC compatible Selective Forwarding Unit (SFU)
+ Jitsi Videobridge is a WebRTC compatible Selective Forwarding Unit
+ (SFU) for multiuser video communication. It is an essential part
+ of Jitsi Meet

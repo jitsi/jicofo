@@ -14,7 +14,7 @@
     <property name="java.doc" value="${doc}/api"/>
     <property name="junit.reports" value="junit-reports"/>
 
-    <condition property="label" value="build.SVN">
+    <condition property="label" value="1">
         <not>
             <isset property="label"/>
         </not>
@@ -52,6 +52,9 @@
         <path refid="test.classpath" />
         <pathelement location="${output.test}" />
     </path>
+
+    <!-- Import debian build xml -->
+    <import file="resources/install/build-debian.xml"/>
 
     <target name="clean">
         <delete failonerror="false" includeemptydirs="true">

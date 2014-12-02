@@ -1,0 +1,27 @@
+#!/bin/sh
+# prerm script for jicofo
+
+set -e
+
+case "$1" in
+    remove|purge)
+        if [ -x "/etc/init.d/jicofo" ] && [ "$(pidof java)" ]; then
+            invoke-rc.d jicofo stop || true
+        fi
+    ;;
+
+    upgrade|deconfigure)
+    ;;
+
+    failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

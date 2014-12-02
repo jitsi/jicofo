@@ -1,0 +1,5 @@
+jicofo for Debian
+---------------------
+
+If you want a WebRTC videoconferencing solution you have to install jitsi-meet
+and jitsi-videobridge packages which uses Jitsi Videobridge as a SFU (Selective Forwarding Unit)
