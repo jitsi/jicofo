@@ -29,8 +29,8 @@ case "$1" in
         fi
 
         # clear logs
-        if [ -d "/var/log/jicofo" ]; then
-            rm -rf "/var/log/jicofo"
+        if [ -d "/var/log/jitsi/jicofo" ]; then
+            rm -rf "/var/log/jitsi/jicofo"
         fi
 
         rm -f /etc/jitsi/jicofo/config

@@ -35,6 +35,7 @@ case "$1" in
             JICOFO_SECRET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
             JICOFO_PORT=5347
             JICOFO_AUTH_DOMAIN="auth.$JICOFO_HOSTNAME"
+            JICOFO_AUTH_USER="focus"
             JICOFO_AUTH_PASSWORD=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
             
             # storing default
@@ -43,6 +44,7 @@ case "$1" in
             echo "JICOFO_SECRET=$JICOFO_SECRET" >> $CONFIG
             echo "JICOFO_PORT=$JICOFO_PORT" >> $CONFIG
             echo "JICOFO_AUTH_DOMAIN=$JICOFO_AUTH_DOMAIN" >> $CONFIG
+            echo "JICOFO_AUTH_USER=$JICOFO_AUTH_USER" >> $CONFIG
             echo "JICOFO_AUTH_PASSWORD=$JICOFO_AUTH_PASSWORD" >> $CONFIG
             echo "JICOFO_OPTS=\"\"" >> $CONFIG
 
