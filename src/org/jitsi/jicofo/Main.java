@@ -190,18 +190,6 @@ public class Main
             return;
         }
 
-
-        // FIXME: properties used for debug purposes
-        // jigasi-home will be create in current directory (from where the
-        // process is launched). It must contain sip-communicator.properties
-        // with one XMPP and one SIP account configured.
-        System.setProperty(
-            ConfigurationService.PNAME_SC_HOME_DIR_LOCATION,
-            System.getProperty("user.dir"));
-        System.setProperty(
-            ConfigurationService.PNAME_SC_HOME_DIR_NAME,
-            "focus-home");
-
         // FIXME: Always trust mode - prevent failures because there's no GUI
         // to ask the user, but do we always want to trust ?
         System.setProperty(
