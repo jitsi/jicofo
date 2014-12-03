@@ -13,7 +13,7 @@ case "$1" in
         if [ -f $CONFIG ]; then
             . $CONFIG
             if [ -n "$JICOFO_HOSTNAME" ] && [ -n "$JICOFO_PORT" ] && [ -n "$JICOFO_SECRET" ] \
-                && [ -n "$JICOFO_AUTH_DOMAIN" ] && [ -n "$JICOFO_AUTH_PASSWORD" ]; then
+                && [ -n "$JICOFO_AUTH_DOMAIN" ] && [ -n "$JICOFO_AUTH_USER" ] && [ -n "$JICOFO_AUTH_PASSWORD" ]; then
                 OLDCONFIG="true"
             fi
         fi
@@ -23,12 +23,6 @@ case "$1" in
 
             # try to get host from jitsi-videobridge
             . /etc/jitsi/videobridge/config
-
-            # debconf hostname question
-            . /usr/share/debconf/confmodule
-
-	        # the default vars
-            db_set jicofo/jicofo-hostname $JVB_HOSTNAME
 
             JICOFO_HOSTNAME="$JVB_HOSTNAME"
             # 8-chars random secret, alternative to pwgen 8
@@ -48,8 +42,6 @@ case "$1" in
             echo "JICOFO_AUTH_PASSWORD=$JICOFO_AUTH_PASSWORD" >> $CONFIG
             echo "JICOFO_OPTS=\"\"" >> $CONFIG
 
-            # and we're done with debconf
-            db_stop
         fi
 
         # we don't want to start the daemon as root

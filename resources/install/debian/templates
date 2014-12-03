@@ -1,5 +1,0 @@
-Template: jicofo/jicofo-hostname
-Type: string
-Default: localhost
-Description: Hostname:
- The jicofo package needs the DNS hostname of your instance.
