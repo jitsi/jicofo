@@ -21,7 +21,7 @@ Build-Depends: debhelper (>= 9),
                libjcip-annotations-java,
                libhyperic-sigar-java
 Standards-Version: 3.9.5
-Homepage: https://jitsi.org/videobridge
+Homepage: https://jitsi.org/meet
 
 Package: jicofo
 Architecture: any
@@ -41,7 +41,5 @@ Depends: ${misc:Depends},
          libslf4j-java,
          libjcip-annotations-java,
          libhyperic-sigar-java
-Description: WebRTC compatible Selective Forwarding Unit (SFU)
- Jitsi Videobridge is a WebRTC compatible Selective Forwarding Unit
- (SFU) for multiuser video communication. It is an essential part
- of Jitsi Meet
+Description: JItsi Meet COnference FOcus
+ Jicofo is a conference focus for Jitsi Meet application.

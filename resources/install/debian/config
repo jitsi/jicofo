@@ -1,8 +1,0 @@
-#!/bin/sh -e
-
-# Source debconf library.
-. /usr/share/debconf/confmodule
-
-# server hostname
-db_input critical jicofo/jicofo-hostname || true
-db_go
