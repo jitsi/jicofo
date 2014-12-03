@@ -61,7 +61,9 @@
             <fileset dir="${output}" />
             <fileset dir="${output.test}" />
             <fileset dir="${dist}" />
-            <fileset dir="${doc}" />
+            <fileset dir="${doc}">
+                <exclude name="logging.md" />
+            </fileset>
             <fileset dir="${junit.reports}" />
         </delete>
     </target>
