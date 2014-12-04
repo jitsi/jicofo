@@ -1,7 +1,7 @@
 #! /bin/sh
 #
 # INIT script for Jitsi Conference Focus
-# Version: 1.0  28-Nov-2014  yasen@bluejimp.com
+# Version: 1.0  4-Dec-2014  pawel.domas@jitsi.org
 #
 ### BEGIN INIT INFO
 # Provides:          jicofo
@@ -35,9 +35,9 @@ test -x $DAEMON || exit 0
 set -e
 
 killParentPid() {
-    PPID=$(ps -o pid --no-headers --ppid $1 || true)
-    if [ $PPID ]; then
-        kill $PPID
+    PARENT_PPID=$(ps -o pid --no-headers --ppid $1 || true)
+    if [ $PARENT_PPID ]; then
+        kill $PARENT_PPID
     fi
 }
 

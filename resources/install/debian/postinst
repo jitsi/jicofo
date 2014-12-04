@@ -46,19 +46,12 @@ case "$1" in
 
         # we don't want to start the daemon as root
         if ! getent passwd jicofo > /dev/null ; then
-            adduser --system --group --shell /bin/bash --disabled-password \
-                --home /usr/share/jicofo jicofo
+            useradd -r --user-group --shell /bin/bash --create-home -d /usr/share/jicofo jicofo
         fi
 
         # we create home folder only if it doesn't exist
         if [ ! -d /usr/share/jicofo ]; then
             mkdir -p /usr/share/jicofo
-
-            # ensure we don't overwrite previously existing .properties
-            if [ ! -d /usr/share/jicofo/.sip-communicator ]; then
-                mkdir /usr/share/jicofo/.sip-communicator
-                cp /usr/share/doc/jicofo/sip-communicator.properties /usr/share/jicofo/.sip-communicator/
-            fi
         fi
 
         # we claim the home folder of jicofo in case it is owned by someone else

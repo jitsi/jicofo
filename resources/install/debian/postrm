@@ -13,11 +13,6 @@ case "$1" in
         # Clear the debconf variable
         db_purge
 
-        # stop the jicofo
-        if [ -x /etc/init.d/jicofo ]; then
-            invoke-rc.d jicofo stop
-        fi
-
         # clear user and group
         # ensure nothing is running as jicofo user
         if ps -u jicofo h; then
@@ -33,12 +28,12 @@ case "$1" in
             rm -rf "/var/log/jitsi/jicofo"
         fi
 
+        rm -rf /usr/share/jicofo/
         rm -f /etc/jitsi/jicofo/config
+        rm -f /etc/jitsi/jicofo/sip-communicator.properties
     ;;
 
     remove)
-        rm -rf /usr/share/jicofo/.java
-        rm -rf /usr/share/jicofo/.sip-communicator
      ;;
 
     upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
