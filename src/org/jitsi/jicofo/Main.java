@@ -201,8 +201,11 @@ public class Main
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
-        System.setProperty(
-            FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
+        if (!StringUtils.isNullOrEmpty(focusPassword))
+        {
+            System.setProperty(
+                    FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
+        }
 
         /*
          * Start OSGi. It will invoke the application programming interfaces
