@@ -26,7 +26,7 @@ public class MockMainMethodActivator
     public void start(BundleContext context)
         throws Exception
     {
-        focusComponent = new FocusComponent(true);
+        focusComponent = new FocusComponent(true, "focus@testserver");
 
         focusComponent.init();
 

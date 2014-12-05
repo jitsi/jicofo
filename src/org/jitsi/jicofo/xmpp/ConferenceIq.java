@@ -7,6 +7,7 @@
 package org.jitsi.jicofo.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
+import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -45,6 +46,12 @@ public class ConferenceIq
     public static final String READY_ATTR_NAME = "ready";
 
     /**
+     * The name of the attribute that tells to the user what is
+     * the jid of the focus user.
+     */
+    public static final String FOCUS_JID_ATTR_NAME = "focusjid";
+
+    /**
      * MUC room name hosting Jitsi Meet conference.
      */
     private String room;
@@ -54,6 +61,11 @@ public class ConferenceIq
      * to be joined.
      */
     private Boolean ready;
+
+    /**
+     * The JID of authenticated focus user.
+     */
+    private String focusJid;
 
     /**
      * The list of configuration properties that are contained in this IQ.
@@ -76,6 +88,13 @@ public class ConferenceIq
             out.append(READY_ATTR_NAME)
                 .append("=")
                 .append("'").append(ready).append("' ");
+        }
+
+        if (!StringUtils.isNullOrEmpty(focusJid))
+        {
+            out.append(FOCUS_JID_ATTR_NAME)
+                .append("=")
+                .append("'").append(focusJid).append("' ");
         }
     }
 
@@ -147,6 +166,23 @@ public class ConferenceIq
     public void setRoom(String room)
     {
         this.room = room;
+    }
+
+    /**
+     * Returns the value of {@link #FOCUS_JID_ATTR_NAME} held by this IQ.
+     */
+    public String getFocusJid()
+    {
+        return focusJid;
+    }
+
+    /**
+     * Sets the value for the focus JID attribute.
+     * @param focusJid a string with the JID of focus user('username@domain').
+     */
+    public void setFocusJid(String focusJid)
+    {
+        this.focusJid = focusJid;
     }
 
     /**

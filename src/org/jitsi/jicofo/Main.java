@@ -242,7 +242,9 @@ public class Main
 
         boolean focusAnonymous = StringUtils.isNullOrEmpty(focusPassword);
 
-        FocusComponent component = new FocusComponent(focusAnonymous);
+        FocusComponent component
+            = new FocusComponent(focusAnonymous,
+                                 focusUserName + "@" + focusDomain);
 
         boolean stop = false;
 

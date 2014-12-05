@@ -49,6 +49,12 @@ public class FocusComponent
     private final boolean isFocusAnonymous;
 
     /**
+     * The JID of focus user that will enter the MUC room. Can be user to
+     * recognize real focus of the conference.
+     */
+    private final String focusAuthJid;
+
+    /**
      * Optional password for focus user authentication. If authenticated login
      * is used we expect focus user to have admin privileges, so that it has
      * explicit moderator rights. Also in this case focus component will always
@@ -66,10 +72,13 @@ public class FocusComponent
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
      * @param anonymousFocus indicates if the focus user is anonymous.
+     * @param focusAuthJid the JID of authenticated focus user which will be
+     *                     advertised to conference participants.
      */
-    public FocusComponent(boolean anonymousFocus)
+    public FocusComponent(boolean anonymousFocus, String focusAuthJid)
     {
         this.isFocusAnonymous = anonymousFocus;
+        this.focusAuthJid = focusAuthJid;
         this.shutdownAllowedJid
             = FocusBundleActivator.getConfigService()
                     .getString(SHUTDOWN_ALLOWED_JID_PNAME);
@@ -227,6 +236,7 @@ public class FocusComponent
                 response.setTo(query.getFrom());
                 response.setRoom(query.getRoom());
                 response.setReady(ready);
+                response.setFocusJid(focusAuthJid);
 
                 return IQUtils.convert(response);
             }

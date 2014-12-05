@@ -71,6 +71,13 @@ public class ConferenceIqProvider
             {
                 iq.setReady(Boolean.valueOf(ready));
             }
+            String focusJid
+                = parser.getAttributeValue(
+                        "", ConferenceIq.FOCUS_JID_ATTR_NAME);
+            if (!StringUtils.isNullOrEmpty(focusJid))
+            {
+                iq.setFocusJid(focusJid);
+            }
         }
         else
         {
