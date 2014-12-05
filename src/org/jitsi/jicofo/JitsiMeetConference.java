@@ -593,8 +593,9 @@ public class JitsiMeetConference
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        boolean enableFirefoxHacks = config.enableFirefoxHacks() == null
-                ? false : config.enableFirefoxHacks();
+        boolean enableFirefoxHacks
+                = config == null || config.enableFirefoxHacks() == null
+                    ? false : config.enableFirefoxHacks();
 
         contents.add(
             JingleOfferFactory.createContentForMedia(MediaType.AUDIO,
@@ -604,7 +605,10 @@ public class JitsiMeetConference
             JingleOfferFactory.createContentForMedia(MediaType.VIDEO,
                     enableFirefoxHacks));
 
-        if (config.openSctp())
+        boolean openSctp = config == null || config.openSctp() == null
+                ? true : config.openSctp();
+
+        if (openSctp)
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(MediaType.DATA,
