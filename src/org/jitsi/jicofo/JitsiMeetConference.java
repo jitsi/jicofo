@@ -593,14 +593,23 @@ public class JitsiMeetConference
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.AUDIO));
+        boolean enableFirefoxHacks = config.enableFirefoxHacks() == null
+                ? false : config.enableFirefoxHacks();
 
         contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.VIDEO));
+            JingleOfferFactory.createContentForMedia(MediaType.AUDIO,
+                    enableFirefoxHacks));
 
         contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.DATA));
+            JingleOfferFactory.createContentForMedia(MediaType.VIDEO,
+                    enableFirefoxHacks));
+
+        if (config.openSctp())
+        {
+            contents.add(
+                    JingleOfferFactory.createContentForMedia(MediaType.DATA,
+                            enableFirefoxHacks));
+        }
 
         boolean useBundle = peer.hasBundleSupport();
 

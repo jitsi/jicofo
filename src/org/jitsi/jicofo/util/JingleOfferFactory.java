@@ -33,7 +33,7 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType)
+            MediaType mediaType, boolean enableFirefoxHacks)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -170,10 +170,13 @@ public class JingleOfferFactory
             RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
             nack.setFeedbackType("nack");
             vp8.addRtcpFeedbackType(nack);
-            // a=rtcp-fb:100 goog-remb
-            RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
-            remb.setFeedbackType("goog-remb");
-            vp8.addRtcpFeedbackType(remb);
+            if (!enableFirefoxHacks)
+            {
+                // a=rtcp-fb:100 goog-remb
+                RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
+                remb.setFeedbackType("goog-remb");
+                vp8.addRtcpFeedbackType(remb);
+            }
             // a=rtpmap:116 red/90000
             PayloadTypePacketExtension red
                 = new PayloadTypePacketExtension();
