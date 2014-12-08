@@ -19,6 +19,7 @@ import org.jitsi.jicofo.recording.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
@@ -124,6 +125,12 @@ public class JitsiMeetConference
      * Colibri operation set used to manage videobridge channels allocations.
      */
     private OperationSetColibriConference colibri;
+
+    /**
+     * Jitsi Meet tool used for specific operations like adding presence
+     * extensions.
+     */
+    private OperationSetJitsiMeetTools meetTools;
 
     /**
      * The list of active conference participants.
@@ -256,6 +263,10 @@ public class JitsiMeetConference
         disco
             = protocolProviderHandler.getOperationSet(
                     OperationSetSimpleCaps.class);
+
+        meetTools
+            = protocolProviderHandler.getOperationSet(
+                    OperationSetJitsiMeetTools.class);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -482,8 +493,12 @@ public class JitsiMeetConference
 
             participants.remove(newParticipant);
 
-            // FIXME: Send notice to the user
-            //if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
+            // Notify users about bridge is down event
+            if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
+            {
+                meetTools.sendPresenceExtension(
+                    chatRoom, new BridgeIsDownPacketExt());
+            }
         }
     }
 

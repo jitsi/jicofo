@@ -12,6 +12,7 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.*;
@@ -81,6 +82,11 @@ public class ChatRoomImpl
     private ChatRoomMemberRole role;
 
     /**
+     * Stores our last MUC presence packet for future update.
+     */
+    private Presence lastPresenceSent;
+
+    /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param parentChatOperationSet parent multi user chat operation set.
@@ -132,6 +138,18 @@ public class ChatRoomImpl
     {
         try
         {
+            muc.addPresenceInterceptor(new PacketInterceptor()
+            {
+                @Override
+                public void interceptPacket(Packet packet)
+                {
+                    if (packet instanceof Presence)
+                    {
+                        lastPresenceSent = (Presence) packet;
+                    }
+                }
+            });
+
             muc.create(nickname);
             //muc.join(nickname);
             this.myNickName = nickname;
@@ -631,6 +649,39 @@ public class ChatRoomImpl
                 "x", "http://jabber.org/protocol/muc#user");
         }
         return null;
+    }
+
+    public void sendPresenceExtension(PacketExtension extension)
+    {
+        if (lastPresenceSent == null)
+        {
+            logger.error("No presence packet obtained yet");
+            return;
+        }
+
+        XmppProtocolProvider xmppProtocolProvider
+            = (XmppProtocolProvider) getParentProvider();
+
+        // Remove old
+        PacketExtension old
+            = lastPresenceSent.getExtension(
+                    extension.getElementName(), extension.getNamespace());
+        if (old != null)
+        {
+            lastPresenceSent.removeExtension(old);
+        }
+
+        // Add new
+        lastPresenceSent.addExtension(extension);
+
+        XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
+        if (connection == null)
+        {
+            logger.error("Failed to send presence extension - no connection");
+            return;
+        }
+
+        connection.sendPacket(lastPresenceSent);
     }
 
     class MemberListener
