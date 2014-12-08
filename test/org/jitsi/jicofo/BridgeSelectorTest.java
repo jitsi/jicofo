@@ -37,6 +37,7 @@ public class BridgeSelectorTest
 {
     static OSGiHandler osgi = new OSGiHandler();
 
+    private static String jvbPreConfigured = "config.jvb.test.domain.net";
     private static String jvb1Jid = "jvb1.test.domain.net";
     private static String jvb2Jid = "jvb2.test.domain.net";
     private static String jvb3Jid = "jvb3.test.domain.net";
@@ -109,6 +110,9 @@ public class BridgeSelectorTest
         createMockJvbNodes(meetServices);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
+
+        // Set pre-configured bridge
+        selector.setPreConfiguredBridge(jvbPreConfigured);
 
         // Check pub-sub nodes mapping
         assertEquals(jvb1Jid,
@@ -184,6 +188,17 @@ public class BridgeSelectorTest
 
         assertEquals(jvb2Jid, selector.selectVideobridge());
         assertEquals(jvb2Jid, selector.getPrioritizedBridgesList().get(0));
+
+        // TEST pre-configured bridge
+        selector.updateBridgeOperationalStatus(jvb2Jid, false);
+        selector.updateBridgeOperationalStatus(jvb3Jid, false);
+        // Use pre-configured bridge if all others are down
+        assertEquals(jvbPreConfigured,
+                     selector.getPrioritizedBridgesList().get(0));
+        // Pre-configured bridge is never removed from the list
+        selector.updateBridgeOperationalStatus(jvbPreConfigured, false);
+        assertEquals(jvbPreConfigured,
+                     selector.getPrioritizedBridgesList().get(0));
     }
 
     PacketExtension createJvbStats(int conferenceCount)

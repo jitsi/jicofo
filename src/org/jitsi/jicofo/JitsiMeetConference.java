@@ -56,9 +56,17 @@ public class JitsiMeetConference
         = Logger.getLogger(JitsiMeetConference.class);
 
     /**
+     * FIXME: remove and replace with focusUserName which is already available
      * The constant describes focus MUC nickname
      */
     private final static String FOCUS_NICK = "focus";
+
+    /**
+     * Error code used in {@link OperationFailedException} when there are no
+     * working videobridge bridges.
+     * FIXME: consider moving to OperationFailedException ?
+     */
+    private final static int BRIDGE_FAILURE_ERR_CODE = 20;
 
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -255,6 +263,10 @@ public class JitsiMeetConference
             = ServiceUtils.getService(
                     FocusBundleActivator.bundleContext,
                     JitsiMeetServices.class);
+
+        // Set pre-configured videobridge
+        services.getBridgeSelector()
+            .setPreConfiguredBridge(config.getPreConfiguredVideobridge());
 
         if (!protocolProviderHandler.isRegistered())
         {
@@ -469,6 +481,9 @@ public class JitsiMeetConference
                 "Failed to invite " + chatRoomMember.getContactAddress(), e);
 
             participants.remove(newParticipant);
+
+            // FIXME: Send notice to the user
+            //if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
         }
     }
 
@@ -566,7 +581,7 @@ public class JitsiMeetConference
                     // No more bridges to try
                     throw new OperationFailedException(
                         "Failed to allocate channels - all bridges are faulty",
-                        OperationFailedException.GENERAL_ERROR);
+                        BRIDGE_FAILURE_ERR_CODE);
                 }
                 else
                 {
