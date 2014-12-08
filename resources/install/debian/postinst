@@ -65,10 +65,7 @@ case "$1" in
         fi
 
         # die logz
-        if [ ! -d /var/log/jitsi/jicofo ]; then
-            mkdir -p /var/log/jitsi/jicofo
-        fi
-        chown -R jicofo:jicofo /var/log/jitsi/jicofo
+        chmod o+w /var/log/jitsi/
 
         # ensure focus is not running - it will be started at the end
         if [ "$(pidof java)" ]; then

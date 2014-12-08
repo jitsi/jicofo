@@ -24,8 +24,8 @@ case "$1" in
         fi
 
         # clear logs
-        if [ -d "/var/log/jitsi/jicofo" ]; then
-            rm -rf "/var/log/jitsi/jicofo"
+        if [ -f "/var/log/jitsi/jicofo.log" ]; then
+            rm -f "/var/log/jitsi/jicofo.log"
         fi
 
         rm -rf /usr/share/jicofo/
