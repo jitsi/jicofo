@@ -34,6 +34,7 @@ case "$1" in
             
             # storing default
             echo '# Jitsi Conference Focus settings' > $CONFIG
+            echo "JICOFO_HOST=localhost" >> $CONFIG
             echo "JICOFO_HOSTNAME=$JICOFO_HOSTNAME" >> $CONFIG
             echo "JICOFO_SECRET=$JICOFO_SECRET" >> $CONFIG
             echo "JICOFO_PORT=$JICOFO_PORT" >> $CONFIG

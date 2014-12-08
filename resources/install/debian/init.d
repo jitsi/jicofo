@@ -19,6 +19,10 @@
 if [ -f /etc/jitsi/jicofo/config ]; then
     . /etc/jitsi/jicofo/config
 fi
+# Assign default host if not configured
+if [ -n "$JICOFO_HOST" ]; then
+    JICOFO_HOST=localhost
+fi
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/share/jicofo/jicofo.sh
@@ -28,7 +32,7 @@ USER=jicofo
 PIDFILE=/var/run/jicofo.pid
 LOGFILE=/var/log/jitsi/jicofo/jicofo.log
 DESC=jicofo
-DAEMON_OPTS=" --host=localhost --domain=$JICOFO_HOSTNAME --port=$JICOFO_PORT --secret=$JICOFO_SECRET --user_domain=$JICOFO_AUTH_DOMAIN --user_password=$JICOFO_AUTH_PASSWORD $JICOFO_OPTS"
+DAEMON_OPTS=" --host=$JICOFO_HOST --domain=$JICOFO_HOSTNAME --port=$JICOFO_PORT --secret=$JICOFO_SECRET --user_domain=$JICOFO_AUTH_DOMAIN --user_password=$JICOFO_AUTH_PASSWORD $JICOFO_OPTS"
 
 test -x $DAEMON || exit 0
 
