@@ -10,6 +10,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
@@ -17,7 +18,7 @@ import org.xmpp.component.*;
 import org.xmpp.packet.IQ;
 
 /**
- * XMPP component that listens for {@link org.jitsi.jicofo.xmpp.ConferenceIq}
+ * XMPP component that listens for {@link ConferenceIq}
  * and allocates {@link org.jitsi.jicofo.JitsiMeetConference}s appropriately.
  *
  * @author Pawel Domas

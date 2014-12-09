@@ -4,7 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
-package org.jitsi.jicofo.xmpp;
+package org.jitsi.impl.protocol.xmpp.extensions;
 
 
 import org.jitsi.util.*;
@@ -15,7 +15,7 @@ import org.jivesoftware.smack.provider.*;
 import org.xmlpull.v1.*;
 
 /**
- * Provider handles parsing of {@link org.jitsi.jicofo.xmpp.ConferenceIq} stanzas
+ * Provider handles parsing of {@link ConferenceIq} stanzas
  * and converting objects back to their XML representation.
  *
  * @author Pawel Domas

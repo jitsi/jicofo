@@ -6,6 +6,7 @@
  */
 package org.jitsi.jicofo.xmpp;
 
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.junit.*;
 
 import java.util.*;
@@ -13,7 +14,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link org.jitsi.jicofo.xmpp.ConferenceIqProvider}.
+ * Tests for {@link ConferenceIqProvider}.
  *
  * @author Pawel Domas
  */

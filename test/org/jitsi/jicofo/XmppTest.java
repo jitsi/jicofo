@@ -1,6 +1,7 @@
 package org.jitsi.jicofo;
 
 import mock.*;
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.junit.*;

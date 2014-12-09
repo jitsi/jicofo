@@ -15,8 +15,8 @@ import java.util.*;
 /**
  * Class encapsulates configuration properties for Jitsi Meet conference that
  * are attached to create conference request
- * {@link org.jitsi.jicofo.xmpp.ConferenceIq}. Options are configured in
- * 'config.js' file of Jitsi Meet Java Script application.
+ * {@link org.jitsi.impl.protocol.xmpp.extensions.ConferenceIq}. Options are
+ * configured in 'config.js' file of Jitsi Meet Java Script application.
  *
  * @author Pawel Domas
  */
