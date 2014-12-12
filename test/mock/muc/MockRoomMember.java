@@ -115,10 +115,4 @@ public class MockRoomMember
     {
         return null;
     }
-
-    @Override
-    public String getUserAgent()
-    {
-        return null;
-    }
 }
