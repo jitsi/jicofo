@@ -13,7 +13,6 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -69,6 +68,25 @@ public class ChatRoomImpl
     private CopyOnWriteArrayList<ChatRoomLocalUserRoleListener>
         localUserRoleListeners
             = new CopyOnWriteArrayList<ChatRoomLocalUserRoleListener>();
+
+    /**
+     * HACK:
+     * We need to have participant presence received, before firing
+     * participant "joined" event to know MUC participant real JID from the
+     * start. However Smack seems to be unpredictable(or XMPP server - not
+     * sure) on the order of "member joined" and "presence packet" events.
+     * So if "member joined" is fired before presence then we cache
+     * participant in {@link #earlyParticipant}. If opposite order takes
+     * place that is presence is received before "member joined" event
+     * we cache Presence in {@link #onJoinPresence}. {@link
+     * ChatRoomMemberPresenceChangeEvent#MEMBER_JOINED} is fired when we have
+     * first Presence packet and Smack "member joined" event has been fired.
+     */
+    private final Map<String, Presence> onJoinPresence
+        = new HashMap<String,Presence>();
+
+    private final List<String> earlyParticipant
+        = new ArrayList<String>();
 
     /**
      * Nickname to member impl class map.
@@ -164,9 +182,35 @@ public class ChatRoomImpl
                 logger.info("FORM: " + field.toXML());
             }*/
             Form answer = config.createAnswerForm();
+            // Room non-anonymous
             FormField whois = new FormField("muc#roomconfig_whois");
             whois.addValue("anyone");
             answer.addField(whois);
+            // Room moderated
+            //FormField roomModerated
+            //    = new FormField("muc#roomconfig_moderatedroom");
+            //roomModerated.addValue("true");
+            //answer.addField(roomModerated);
+            // Only participants can send private messages
+            //FormField onlyParticipantsPm
+            //        = new FormField("muc#roomconfig_allowpm");
+            //onlyParticipantsPm.addValue("participants");
+            //answer.addField(onlyParticipantsPm);
+            // Presence broadcast
+            //FormField presenceBroadcast
+            //        = new FormField("muc#roomconfig_presencebroadcast");
+            //presenceBroadcast.addValue("participant");
+            //answer.addField(presenceBroadcast);
+            // Get member list
+            //FormField getMemberList
+            //        = new FormField("muc#roomconfig_getmemberlist");
+            //getMemberList.addValue("participant");
+            //answer.addField(getMemberList);
+            // Public logging
+            //FormField publicLogging
+            //        = new FormField("muc#roomconfig_enablelogging");
+            //publicLogging.addValue("false");
+            //answer.addField(publicLogging);
 
             muc.sendConfigurationForm(answer);
         }
@@ -684,24 +728,11 @@ public class ChatRoomImpl
         connection.sendPacket(lastPresenceSent);
     }
 
-    class MemberListener
-        implements ParticipantStatusListener
+    private ChatMemberImpl addMember(String participant)
     {
-        @Override
-        public void joined(String participant)
-        {
-            ChatMemberImpl member;
+        ChatMemberImpl newMember;
 
-            synchronized (members)
-            {
-                member = addMember(participant);
-            }
-
-            if (member != null)
-                notifyParticipantJoined(member);
-        }
-
-        private ChatMemberImpl addMember(String participant)
+        synchronized (members)
         {
             if (members.containsKey(participant))
             {
@@ -709,12 +740,37 @@ public class ChatRoomImpl
                 return null;
             }
 
-            ChatMemberImpl newMember
-                = new ChatMemberImpl(participant, ChatRoomImpl.this);
+            newMember = new ChatMemberImpl(participant, ChatRoomImpl.this);
 
             members.put(participant, newMember);
+        }
 
-            return newMember;
+        return newMember;
+    }
+
+    class MemberListener
+        implements ParticipantStatusListener
+    {
+        @Override
+        public void joined(String participant)
+        {
+            //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
+
+            Presence peerPresence = onJoinPresence.get(participant);
+            if (peerPresence == null)
+            {
+                earlyParticipant.add(participant);
+                return;
+            }
+
+            onJoinPresence.remove(participant);
+
+            ChatMemberImpl member = addMember(participant);
+            if (member != null)
+            {
+                member.processPresence(peerPresence);
+                notifyParticipantJoined(member);
+            }
         }
 
         private ChatMemberImpl removeMember(String participant)
@@ -935,9 +991,7 @@ public class ChatRoomImpl
          */
         private void processOtherPresence(Presence presence)
         {
-            MUCUser mucUser
-                = (MUCUser) presence.getExtension(
-                    "x", "http://jabber.org/protocol/muc#user");
+            String participant = presence.getFrom();
 
             ChatMemberImpl member = members.get(presence.getFrom());
             if (member == null)
@@ -945,24 +999,25 @@ public class ChatRoomImpl
                 logger.warn(
                     "Received presence for non-existing member: "
                         + presence.toXML());
+                if (earlyParticipant.contains(participant))
+                {
+                    earlyParticipant.remove(participant);
+
+                    member = addMember(participant);
+                    if (member != null)
+                    {
+                        member.processPresence(presence);
+                        notifyParticipantJoined(member);
+                    }
+                }
+                else
+                {
+                    onJoinPresence.put(presence.getFrom(), presence);
+                }
                 return;
             }
 
-            String jid = mucUser.getItem().getJid();
-
-            if (StringUtils.isNullOrEmpty(member.getJabberID()))
-            {
-                logger.info(
-                    "JID: " + jid + " received for: "
-                        + member.getContactAddress());
-
-                member.setJabberID(mucUser.getItem().getJid());
-            }
-            else if(!jid.equals(member.getJabberID()))
-            {
-                logger.warn(
-                    "New jid received in presence: " + presence.toXML());
-            }
+            member.processPresence(presence);
         }
     }
 }

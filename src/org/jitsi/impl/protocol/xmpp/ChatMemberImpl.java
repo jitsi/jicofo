@@ -10,8 +10,10 @@ import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.*;
-
+import org.jitsi.util.*;
+import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
+import org.jivesoftware.smackx.packet.*;
 
 /**
  * Stripped Smack implementation of {@link ChatRoomMember}.
@@ -21,6 +23,11 @@ import org.jivesoftware.smackx.muc.*;
 public class ChatMemberImpl
     implements XmppChatMember
 {
+    /**
+     * The logger.
+     */
+    private final static Logger logger = Logger.getLogger(ChatMemberImpl.class);
+
     /**
      * The MUC nickname used by this member.
      */
@@ -112,6 +119,28 @@ public class ChatMemberImpl
         return this.role;
     }
 
+    void processPresence(Presence presence)
+    {
+        MUCUser mucUser
+            = (MUCUser) presence.getExtension(
+                    "x", "http://jabber.org/protocol/muc#user");
+
+        String jid = mucUser.getItem().getJid();
+
+        if (StringUtils.isNullOrEmpty(jabberId))
+        {
+            logger.info(Thread.currentThread()+
+                "JID: " + jid + " received for: " + getContactAddress());
+
+            jabberId = mucUser.getItem().getJid();
+        }
+        else if(!jid.equals(jabberId))
+        {
+            logger.warn(
+                "Different jid received in presence: " + presence.toXML());
+        }
+    }
+
     @Override
     public void setRole(ChatRoomMemberRole role)
     {
@@ -122,10 +151,5 @@ public class ChatMemberImpl
     public String getJabberID()
     {
         return jabberId;
-    }
-
-    void setJabberID(String jabberId)
-    {
-        this.jabberId = jabberId;
     }
 }
