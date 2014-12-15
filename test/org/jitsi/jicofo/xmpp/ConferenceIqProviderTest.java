@@ -7,11 +7,13 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Tests for {@link ConferenceIqProvider}.
@@ -24,6 +26,7 @@ public class ConferenceIqProviderTest
     public void testParseIq()
         throws Exception
     {
+        // ConferenceIq
         String iqXml =
             "<iq to='t' from='f'>" +
                 "<conference xmlns='http://jitsi.org/protocol/focus'" +
@@ -51,6 +54,22 @@ public class ConferenceIqProviderTest
         ConferenceIq.Property property2 = properties.get(1);
         assertEquals("name2", property2.getName());
         assertEquals("value2", property2.getValue());
+
+        // AuthUrlIq
+        String authUrlIqXml = "<iq to='to1' from='from3' type='result'>" +
+                "<auth-url xmlns='http://jitsi.org/protocol/focus'" +
+                " url='somesdf23454$%12!://' room='someroom1234' />" +
+                "</iq>";
+
+        AuthUrlIQ authUrlIq
+                = (AuthUrlIQ) IQUtils.parse(authUrlIqXml, provider);
+
+        assertNotNull(authUrlIq);
+        assertEquals("to1", authUrlIq.getTo());
+        assertEquals("from3", authUrlIq.getFrom());
+        assertEquals(IQ.Type.RESULT, authUrlIq.getType());
+        assertEquals("somesdf23454$%12!://", authUrlIq.getUrl());
+        assertEquals("someroom1234", authUrlIq.getRoom());
     }
 
     @Test
@@ -80,5 +99,25 @@ public class ConferenceIqProviderTest
                          "</conference>" +
                          "</iq>",
                      conferenceIq.toXML());
+
+        AuthUrlIQ authUrlIQ = new AuthUrlIQ();
+
+        authUrlIQ.setPacketID("1df:234sadf");
+        authUrlIQ.setTo("to657");
+        authUrlIQ.setFrom("23from2134#@1");
+        authUrlIQ.setType(IQ.Type.RESULT);
+
+        authUrlIQ.setUrl("url://dsf78645!!@3fsd&");
+        authUrlIQ.setRoom("room@sdaf.dsf.dsf");
+
+        assertEquals("<iq id=\"1df:234sadf\" to=\"to657\" " +
+                "from=\"23from2134#@1\" " +
+                        "type=\"result\">" +
+                        "<auth-url " +
+                        "xmlns='http://jitsi.org/protocol/focus' " +
+                        "url='url://dsf78645!!@3fsd&' " +
+                        "room='room@sdaf.dsf.dsf' " +
+                        "/>" +
+                        "</iq>", authUrlIQ.toXML());
     }
 }

@@ -15,8 +15,8 @@ import org.jivesoftware.smack.provider.*;
 import org.xmlpull.v1.*;
 
 /**
- * Provider handles parsing of {@link ConferenceIq} stanzas
- * and converting objects back to their XML representation.
+ * Provider handles parsing of {@link ConferenceIq} and {@link AuthUrlIQ}
+ * stanzas and converting objects back to their XML representation.
  *
  * @author Pawel Domas
  */
@@ -33,9 +33,11 @@ public class ConferenceIqProvider
 
         // <conference>
         providerManager.addIQProvider(
-            ConferenceIq.ELEMENT_NAME,
-            ConferenceIq.NAMESPACE,
-            this);
+            ConferenceIq.ELEMENT_NAME, ConferenceIq.NAMESPACE, this);
+
+        // <auth-url>
+        providerManager.addIQProvider(
+            AuthUrlIQ.ELEMENT_NAME, AuthUrlIQ.NAMESPACE, this);
     }
 
     /**
@@ -55,7 +57,8 @@ public class ConferenceIqProvider
 
         String rootElement = parser.getName();
 
-        ConferenceIq iq;
+        ConferenceIq iq = null;
+        AuthUrlIQ authUrlIQ = null;
 
         if (ConferenceIq.ELEMENT_NAME.equals(rootElement))
         {
@@ -77,6 +80,23 @@ public class ConferenceIqProvider
             if (!StringUtils.isNullOrEmpty(focusJid))
             {
                 iq.setFocusJid(focusJid);
+            }
+        }
+        else if (AuthUrlIQ.ELEMENT_NAME.equals(rootElement))
+        {
+            authUrlIQ = new AuthUrlIQ();
+
+            String url = parser.getAttributeValue(
+                    "", AuthUrlIQ.URL_ATTRIBUTE_NAME);
+            if (!StringUtils.isNullOrEmpty(url))
+            {
+                authUrlIQ.setUrl(url);
+            }
+            String room = parser.getAttributeValue(
+                    "", AuthUrlIQ.ROOM_NAME_ATTR_NAME);
+            if (!StringUtils.isNullOrEmpty(room))
+            {
+                authUrlIQ.setRoom(room);
             }
         }
         else
@@ -102,7 +122,7 @@ public class ConferenceIqProvider
                     }
                     else if (ConferenceIq.Property.ELEMENT_NAME.equals(name))
                     {
-                        if (property != null)
+                        if (iq != null && property != null)
                         {
                             iq.addProperty(property);
                             property = null;
@@ -143,6 +163,6 @@ public class ConferenceIqProvider
             }
         }
 
-        return iq;
+        return iq != null ? iq : authUrlIQ;
     }
 }
