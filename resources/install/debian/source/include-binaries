@@ -20,6 +20,7 @@ debian/usr/share/jicofo/lib/protocol-jabber.jar
 debian/usr/share/jicofo/lib/protocol-media.jar
 debian/usr/share/jicofo/lib/reconnectplugin.jar
 debian/usr/share/jicofo/lib/slf4j-api.jar
+debian/usr/share/jicofo/lib/slf4j-jdk14-1.7.7.jar
 debian/usr/share/jicofo/lib/smack.jar
 debian/usr/share/jicofo/lib/smackx.jar
 debian/usr/share/jicofo/lib/sysactivitynotifications.jar
