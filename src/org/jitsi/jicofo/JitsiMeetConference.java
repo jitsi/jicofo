@@ -1817,7 +1817,7 @@ public class JitsiMeetConference
         private String getContent(LogPacketExtension log)
         {
             String messageBase64 = log.getMessage();
-            byte[] messageBytes = Base64.decode(messageBase64);
+            byte[] messageBytes = net.java.sip.communicator.util.Base64.decode(messageBase64);
 
             if (Boolean.parseBoolean(log.getTagValue("deflated")))
             {
