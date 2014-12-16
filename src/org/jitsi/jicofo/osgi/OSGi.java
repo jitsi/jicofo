@@ -122,7 +122,8 @@ public class OSGi
             // Shall we use mock protocol providers ?
             useMockProtocols ? mockProtocols : protocols,
             {
-                "org/jitsi/jicofo/FocusBundleActivator"
+                "org/jitsi/jicofo/FocusBundleActivator",
+                "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
                 "org/jitsi/videobridge/log/LoggingBundleActivator"

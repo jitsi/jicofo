@@ -9,6 +9,10 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.util.Logger;
+import org.jitsi.jicofo.auth.*;
+import org.jitsi.protocol.xmpp.*;
+import org.jitsi.util.*;
 
 /**
  * Class handled MUC roles and presence for the focus in particular:
@@ -21,7 +25,8 @@ import net.java.sip.communicator.util.*;
 public class ChatRoomRoleAndPresence
     implements ChatRoomMemberPresenceListener,
                ChatRoomMemberRoleListener,
-               ChatRoomLocalUserRoleListener
+               ChatRoomLocalUserRoleListener,
+               AuthenticationListener
 {
     /**
      * The logger
@@ -39,6 +44,11 @@ public class ChatRoomRoleAndPresence
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
      */
     private final ChatRoom chatRoom;
+
+    /**
+     * Authentication authority used to verify users.
+     */
+    private AuthAuthority authAuthority;
 
     /**
      * The {@link ChatRoomMemberRole} of conference focus.
@@ -62,6 +72,14 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
+        authAuthority = ServiceUtils.getService(
+                FocusBundleActivator.bundleContext, AuthAuthority.class);
+
+        if (authAuthority != null)
+        {
+            authAuthority.addAuthenticationListener(this);
+        }
+
         chatRoom.addLocalUserRoleListener(this);
         chatRoom.addMemberPresenceListener(this);
         chatRoom.addMemberRoleListener(this);
@@ -76,6 +94,12 @@ public class ChatRoomRoleAndPresence
         chatRoom.removelocalUserRoleListener(this);
         chatRoom.removeMemberPresenceListener(this);
         chatRoom.removeMemberRoleListener(this);
+
+        if (authAuthority != null)
+        {
+            authAuthority.removeAuthenticationListener(this);
+            authAuthority = null;
+        }
     }
 
     /**
@@ -99,6 +123,10 @@ public class ChatRoomRoleAndPresence
             {
                 electNewModerator();
             }
+            if (authAuthority != null)
+            {
+                checkGrantModeratorToAuthUser(sourceMember);
+            }
             conference.onMemberJoined(sourceMember);
         }
         else if (ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
@@ -107,7 +135,7 @@ public class ChatRoomRoleAndPresence
         {
             if (moderator == sourceMember)
             {
-                logger.info("Moderator has left hte room !");
+                logger.info("Moderator has left the room !");
                 moderator = null;
                 electNewModerator();
             }
@@ -129,12 +157,19 @@ public class ChatRoomRoleAndPresence
 
     /**
      * Elects new moderator if the previous one has left the conference.
+     * (Only if we do not work with external authentication).
      */
     private void electNewModerator()
     {
         if (focusRole == null)
         {
             // We don't know if we have permissions yet
+            return;
+        }
+        if (authAuthority != null)
+        {
+            // If we have authentication authority we do not grant moderator
+            // role based on who enters first, but who is an authenticated user
             return;
         }
 
@@ -214,7 +249,74 @@ public class ChatRoomRoleAndPresence
 
         if (evt.isInitial() && moderator == null)
         {
-            electNewModerator();
+            if (authAuthority != null)
+            {
+                grantModeratorToAuthUsers();
+            }
+            else
+            {
+                electNewModerator();
+            }
         }
+    }
+
+    private void grantModeratorToAuthUsers()
+    {
+        for (ChatRoomMember member : chatRoom.getMembers())
+        {
+            checkGrantModeratorToAuthUser(member);
+        }
+    }
+
+    private void checkGrantModeratorToAuthUser(ChatRoomMember member)
+    {
+        XmppChatMember xmppMember = (XmppChatMember) member;
+        String jabberId = xmppMember.getJabberID();
+        if (StringUtils.isNullOrEmpty(jabberId))
+        {
+            return;
+        }
+
+        if (ChatRoomMemberRole.MODERATOR.compareTo(member.getRole())
+                < 0)
+        {
+            if (authAuthority.isUserAuthenticated(jabberId, chatRoom.getName()))
+            {
+                chatRoom.grantModerator(member.getName());
+            }
+        }
+    }
+
+    @Override
+    public void jidAuthenticated(String realJid, String identity)
+    {
+        // FIXME: consider changing to debug log level once tested
+        logger.info("Authenticate request for: " + realJid + " as " + identity);
+
+        Participant participant
+            = conference.findParticipantForJabberId(realJid);
+        if (participant == null)
+        {
+            logger.error("Auth request - no member found for JID: " + realJid);
+            return;
+        }
+
+        ChatRoomMember chatMember = participant.getChatMember();
+        if (chatMember == null)
+        {
+            logger.error("No chat member for JID: " + realJid);
+            return;
+        }
+
+        if (participant.getAuthenticatedIdentity() != null)
+        {
+            logger.error(realJid + " already authenticated");
+            return;
+        }
+
+        // Sets authenticated ID
+        participant.setAuthenticatedIdentity(identity);
+        // Grants moderator rights
+        chatRoom.grantModerator(chatMember.getName());
     }
 }

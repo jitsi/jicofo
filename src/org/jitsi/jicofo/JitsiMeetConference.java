@@ -163,7 +163,7 @@ public class JitsiMeetConference
     /**
      * Chat room roles and presence handler.
      */
-    private ChatRoomRoleAndPresence presenceHandler;
+    private ChatRoomRoleAndPresence rolesAndPresence;
 
     /**
      * Indicates if this instance has been started(initialized).
@@ -325,8 +325,8 @@ public class JitsiMeetConference
         {
             chatRoom = chatOpSet.findRoom(roomName);
 
-            presenceHandler = new ChatRoomRoleAndPresence(this, chatRoom);
-            presenceHandler.init();
+            rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
+            rolesAndPresence.init();
 
             chatRoom.join();
 
@@ -393,10 +393,10 @@ public class JitsiMeetConference
             return;
         }
 
-        if (presenceHandler != null)
+        if (rolesAndPresence != null)
         {
-            presenceHandler.dispose();
-            presenceHandler = null;
+            rolesAndPresence.dispose();
+            rolesAndPresence = null;
         }
 
         chatRoom.leave();
@@ -405,7 +405,7 @@ public class JitsiMeetConference
     }
 
     /**
-     * Method called by {@link #presenceHandler} when new member joins
+     * Method called by {@link #rolesAndPresence} when new member joins
      * the conference room.
      *
      * @param chatRoomMember the new member that has just joined the room.
@@ -951,7 +951,7 @@ public class JitsiMeetConference
     }
 
     /**
-     * Method called by {@link #presenceHandler} when one of the members has
+     * Method called by {@link #rolesAndPresence} when one of the members has
      * been kicked out of the conference room.
      *
      * @param chatRoomMember kicked chat room member.
@@ -979,7 +979,7 @@ public class JitsiMeetConference
     }
 
     /**
-     * Method called by {@link #presenceHandler} when someone leave conference
+     * Method called by {@link #rolesAndPresence} when someone leave conference
      * chat room.
      *
      * @param chatRoomMember the member that has left the room.
@@ -1107,7 +1107,7 @@ public class JitsiMeetConference
         return null;
     }
 
-    private Participant findParticipantForJabberId(String jid)
+    Participant findParticipantForJabberId(String jid)
     {
         for (Participant participant : participants)
         {
@@ -1672,46 +1672,6 @@ public class JitsiMeetConference
         }
 
         return succeeded;
-    }
-
-    /**
-     * Called by {@link FocusManager} when the user identified by given
-     * <tt>realJid</tt> gets confirmed <tt>identity</tt> by authentication
-     * component.
-     *
-     * @param realJid the real user JID(not MUC JID which can be faked).
-     * @param identity the identity of the user confirmed by authetication
-     *                 component.
-     */
-    void userAuthenticated(String realJid, String identity)
-    {
-        // FIXME: consider changing to debug log level once tested
-        logger.info("Authenticate request for: " + realJid + " as " + identity);
-
-        Participant participant = findParticipantForJabberId(realJid);
-        if (participant == null)
-        {
-            logger.error("Auth request - no member found for JID: " + realJid);
-            return;
-        }
-
-        ChatRoomMember chatMember = participant.getChatMember();
-        if (chatMember == null)
-        {
-            logger.error("No chat member for JID: " + realJid);
-            return;
-        }
-
-        if (participant.getAuthenticatedIdentity() != null)
-        {
-            logger.error(realJid + " already authenticated");
-            return;
-        }
-
-        // Sets authenticated ID
-        participant.setAuthenticatedIdentity(identity);
-        // Grants moderator rights
-        chatRoom.grantModerator(chatMember.getName());
     }
 
     /**

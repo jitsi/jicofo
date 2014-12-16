@@ -106,6 +106,12 @@ public class FocusManager
     private Map<String, JitsiMeetConference> conferences
         = new HashMap<String, JitsiMeetConference>();
 
+    // Convert to list when needed
+    /**
+     * The list of {@link FocusAllocationListener}.
+     */
+    private FocusAllocationListener focusAllocListener;
+
     /**
      * <tt>JitsiMeetServices</tt> instance that recognizes currently available
      * conferencing services like Jitsi videobridge or SIP gateway.
@@ -251,6 +257,11 @@ public class FocusManager
             "Disposed conference for room: " + roomName
             + " conference count: " + conferences.size());
 
+        if (focusAllocListener != null)
+        {
+            focusAllocListener.onFocusDestroyed(roomName);
+        }
+
         maybeDoShutdown();
     }
 
@@ -313,27 +324,28 @@ public class FocusManager
     }
 
     /**
-     * Method should be called by authentication component when user identified
-     * by given <tt>realJid</tt> has been authenticated for given
-     * <tt>identity</tt>.
-     *
-     * @param roomName the name of the conference room for which authentication
-     *                 has occurred.
-     * @param realJid the real JID of authenticated user
-     *                (not MUC jid which can be faked).
-     * @param identity confirmed identity of the user.
+     * Sets the listener that will be notified about conference focus
+     * allocation/disposal.
+     * @param l the listener instance to be registered.
      */
-    public void userAuthenticated(String roomName,
-                                  String realJid, String identity)
+    public void setFocusAllocationListener(FocusAllocationListener l)
     {
-        JitsiMeetConference conference = conferences.get(roomName);
-        if (conference == null)
-        {
-            logger.error(
-                "Auth request - no active conference for room: " + roomName);
-            return;
-        }
-        conference.userAuthenticated(realJid, identity);
+        this.focusAllocListener = l;
+    }
+
+    /**
+     * Interface used to listen for focus lifecycle events.
+     */
+    public interface FocusAllocationListener
+    {
+        /**
+         * Method fired when focus is destroyed.
+         * @param roomName the name of the conference room for which focus
+         *                 has been destroyed.
+         */
+        void onFocusDestroyed(String roomName);
+
+        // Add focus allocated method if needed
     }
 
     /**

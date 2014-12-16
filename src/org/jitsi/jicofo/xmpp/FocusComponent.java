@@ -12,6 +12,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.auth.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.xmpp.component.*;
@@ -71,6 +72,11 @@ public class FocusComponent
     private FocusManager focusManager;
 
     /**
+     * (Optional)Authentication authority used to verify user requests.
+     */
+    private AuthAuthority authAuthority;
+
+    /**
      * Creates new instance of <tt>FocusComponent</tt>.
      * @param anonymousFocus indicates if the focus user is anonymous.
      * @param focusAuthJid the JID of authenticated focus user which will be
@@ -95,6 +101,9 @@ public class FocusComponent
     {
         this.focusManager = ServiceUtils.getService(
             FocusBundleActivator.bundleContext, FocusManager.class);
+
+        this.authAuthority = ServiceUtils.getService(
+            FocusBundleActivator.bundleContext, AuthAuthority.class);
 
         focusManager.start();
     }
@@ -141,10 +150,6 @@ public class FocusComponent
             org.jivesoftware.smack.packet.IQ smackIq = IQUtils.convert(iq);
             if (smackIq instanceof ColibriStatsIQ)
             {
-                // Supports only empty colibri queries
-                ColibriStatsIQ colibriStatsQuery
-                    = (ColibriStatsIQ) smackIq;
-
                 // Reply with stats
                 ColibriStatsIQ statsReply = new ColibriStatsIQ();
 
@@ -167,6 +172,12 @@ public class FocusComponent
                                 ? "true" : "false"));
 
                 return IQUtils.convert(statsReply);
+            }
+            else if (smackIq instanceof AuthUrlIQ)
+            {
+                org.jivesoftware.smack.packet.IQ result
+                    = handleAuthUrlIq((AuthUrlIQ) smackIq);
+                return IQUtils.convert(result);
             }
             else
             {
@@ -205,6 +216,7 @@ public class FocusComponent
             {
                 ConferenceIq query = (ConferenceIq) smackIq;
                 ConferenceIq response = new ConferenceIq();
+                String peerJid = query.getFrom();
                 String room = query.getRoom();
 
                 logger.info("Focus request for room: " + room);
@@ -220,11 +232,36 @@ public class FocusComponent
                     return IQUtils.convert(smackReply);
                 }
 
+                // Security checks
+                if (authAuthority != null)
+                {
+                    if (focusManager.getConference(room) == null &&
+                            !authAuthority.isAllowedToCreateRoom(peerJid, room))
+                    {
+                        // Error not authorized
+                        final XMPPError error
+                            = new XMPPError(XMPPError.Condition.not_authorized);
+
+                        org.jivesoftware.smack.packet.IQ errorResponse
+                            = org.jivesoftware.smack.packet.IQ
+                                .createErrorResponse(query, error);
+
+                        errorResponse.setType(
+                                org.jivesoftware.smack.packet.IQ.Type.ERROR);
+                        errorResponse.setPacketID(smackIq.getPacketID());
+                        errorResponse.setFrom(smackIq.getTo());
+                        errorResponse.setTo(smackIq.getFrom());
+                        errorResponse.setError(error);
+
+                        return IQUtils.convert(errorResponse);
+                    }
+                }
+
                 boolean ready
                     = focusManager.conferenceRequest(
                             room, query.getPropertiesMap());
 
-                if (!isFocusAnonymous)
+                if (!isFocusAnonymous && authAuthority == null)
                 {
                     // Focus is authenticated system admin, so we let
                     // them in immediately. Focus will get OWNER anyway.
@@ -237,7 +274,14 @@ public class FocusComponent
                 response.setTo(query.getFrom());
                 response.setRoom(query.getRoom());
                 response.setReady(ready);
+
+                // Config
                 response.setFocusJid(focusAuthJid);
+                if (authAuthority != null)
+                {
+                    response.addProperty(
+                        new ConferenceIq.Property("externalAuth", "true"));
+                }
 
                 return IQUtils.convert(response);
             }
@@ -278,5 +322,39 @@ public class FocusComponent
             logger.error(e, e);
             throw e;
         }
+    }
+
+    private org.jivesoftware.smack.packet.IQ handleAuthUrlIq(
+            AuthUrlIQ authUrlIq)
+    {
+        String peerFullJid = authUrlIq.getFrom();
+        String roomName = authUrlIq.getRoom();
+        if (StringUtils.isNullOrEmpty(roomName))
+        {
+            XMPPError error = new XMPPError(XMPPError.Condition.no_acceptable);
+            return org.jivesoftware.smack.packet.IQ
+                    .createErrorResponse(authUrlIq, error);
+        }
+        else if (authAuthority == null)
+        {
+            XMPPError error
+                = new XMPPError(XMPPError.Condition.service_unavailable);
+            return org.jivesoftware.smack.packet.IQ
+                    .createErrorResponse(authUrlIq, error);
+        }
+
+        AuthUrlIQ result = new AuthUrlIQ();
+        result.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
+        result.setPacketID(authUrlIq.getPacketID());
+        result.setTo(authUrlIq.getFrom());
+
+        String authUrl
+            = authAuthority.createAuthenticationUrl(peerFullJid, roomName);
+
+        result.setUrl(authUrl);
+
+        logger.info("Sending url: " + result.toXML());
+
+        return result;
     }
 }
