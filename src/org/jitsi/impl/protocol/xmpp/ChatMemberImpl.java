@@ -119,6 +119,15 @@ public class ChatMemberImpl
         return this.role;
     }
 
+    /**
+     * Reset cached user role so that it will be refreshed when {@link
+     * #getRole()} is called.
+     */
+    void resetCachedRole()
+    {
+        this.role = null;
+    }
+
     void processPresence(Presence presence)
     {
         MUCUser mucUser

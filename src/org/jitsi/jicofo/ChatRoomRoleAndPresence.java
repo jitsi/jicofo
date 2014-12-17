@@ -164,6 +164,7 @@ public class ChatRoomRoleAndPresence
         if (focusRole == null)
         {
             // We don't know if we have permissions yet
+            logger.warn("Focus role unknown");
             return;
         }
         if (authAuthority != null)

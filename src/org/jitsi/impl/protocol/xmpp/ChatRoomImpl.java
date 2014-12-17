@@ -278,11 +278,47 @@ public class ChatRoomImpl
         return this.role;
     }
 
+    /**
+     * Resets cached role instance so that it will be refreshed when {@link
+     * #getUserRole()} is called.
+     */
+    private void resetCachedUserRole()
+    {
+        role = null;
+    }
+
+    /**
+     * Resets cached role instance for given participant.
+     * @param participant full mucJID of the participant for whom we want to
+     *                    reset cached role instance.
+     */
+    private void resetRoleForParticipant(String participant)
+    {
+        if (participant.endsWith("/" + myNickName))
+        {
+            resetCachedUserRole();
+        }
+        else
+        {
+            ChatMemberImpl member = members.get(participant);
+            if (member != null)
+            {
+                member.resetCachedRole();
+            }
+            else
+            {
+                logger.error(
+                    "Role reset for: " + participant + " who does not exist");
+            }
+        }
+    }
+
     @Override
     public void setLocalUserRole(ChatRoomMemberRole role)
         throws OperationFailedException
     {
-
+        // Method not used but log error just in case to spare debugging
+        logger.error("setLocalUserRole not implemented");
     }
 
     /**
@@ -310,7 +346,7 @@ public class ChatRoomImpl
     }
 
     /**
-     * Sets the new rolefor the local user in the context of this chatroom.
+     * Sets the new role for the local user in the context of this chat room.
      *
      * @param role the new role to be set for the local user
      * @param isInitial if <tt>true</tt> this is initial role set.
@@ -821,6 +857,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Voice granted: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -828,6 +867,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Voice revoked: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -835,6 +877,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Banned: " + s + ", " + s2 + ", " + s3);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -842,6 +887,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Membership granted: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -849,6 +897,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Membership revoked: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -856,6 +907,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Moderator granted: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -863,6 +917,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Moderator revoked: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -870,6 +927,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Ownership granted: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -877,6 +937,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Ownership revoked: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -884,6 +947,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Admin granted: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
@@ -891,6 +957,9 @@ public class ChatRoomImpl
         {
             if (logger.isTraceEnabled())
                 logger.trace("Admin revoked: " + s);
+
+            // We do not fire events - not required for now
+            resetRoleForParticipant(s);
         }
 
         @Override
