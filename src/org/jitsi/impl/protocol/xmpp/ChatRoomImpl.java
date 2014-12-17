@@ -78,7 +78,7 @@ public class ChatRoomImpl
      * So if "member joined" is fired before presence then we cache
      * participant in {@link #earlyParticipant}. If opposite order takes
      * place that is presence is received before "member joined" event
-     * we cache Presence in {@link #onJoinPresence}. {@link
+     * we cache Presence in <tt>onJoinPresence</tt>. {@link
      * ChatRoomMemberPresenceChangeEvent#MEMBER_JOINED} is fired when we have
      * first Presence packet and Smack "member joined" event has been fired.
      */
@@ -575,13 +575,30 @@ public class ChatRoomImpl
     @Override
     public void grantOwnership(String address)
     {
-        try
+        // Have to construct the IQ manually as Smack version used here seems
+        // to be using wrong namespace(muc#owner instead of muc#admin)
+        // which does not work with the Prosody.
+        MUCAdmin admin = new MUCAdmin();
+        admin.setType(IQ.Type.SET);
+        admin.setTo(roomName);
+
+        MUCAdmin.Item item = new MUCAdmin.Item("owner", null);
+        item.setJid(address);
+        admin.addItem(item);
+
+        XmppProtocolProvider provider
+                = (XmppProtocolProvider) getParentProvider();
+        XmppConnection connection
+                = provider.getConnectionAdapter();
+
+        IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
+        if (reply.getType() != IQ.Type.RESULT)
         {
-            muc.grantOwnership(address);
-        }
-        catch (XMPPException e)
-        {
-            throw new RuntimeException(e);
+            // FIXME: we should have checked exceptions for all operations in
+            // ChatRoom interface which are expected to fail.
+            // OperationFailedException maybe ?
+            throw new RuntimeException(
+                    "Failed to grant owner: " + reply.getError());
         }
     }
 

@@ -16,8 +16,8 @@ import org.jitsi.util.*;
 
 /**
  * Class handled MUC roles and presence for the focus in particular:
- * - ensures that focus has moderator role after MUC room is joined
- * - elects moderator and makes sure that there is one during the conference
+ * - ensures that focus has owner role after MUC room is joined
+ * - elects owner and makes sure that there is one during the conference
  * - simplifies chat room events to 'member left', 'member joined'
  *
  * @author Pawel Domas
@@ -56,9 +56,9 @@ public class ChatRoomRoleAndPresence
     private ChatRoomMemberRole focusRole;
 
     /**
-     * Current moderator(other than the focus itself) of Jitsi Meet conference.
+     * Current owner(other than the focus itself) of Jitsi Meet conference.
      */
-    private ChatRoomMember moderator;
+    private ChatRoomMember owner;
 
     public ChatRoomRoleAndPresence(JitsiMeetConference conference,
                                    ChatRoom chatRoom)
@@ -119,13 +119,13 @@ public class ChatRoomRoleAndPresence
         String eventType = evt.getEventType();
         if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
         {
-            if (moderator == null)
+            if (owner == null)
             {
-                electNewModerator();
+                electNewOwner();
             }
             if (authAuthority != null)
             {
-                checkGrantModeratorToAuthUser(sourceMember);
+                checkGrantOwnerToAuthUser(sourceMember);
             }
             conference.onMemberJoined(sourceMember);
         }
@@ -133,11 +133,11 @@ public class ChatRoomRoleAndPresence
             || ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType)
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
         {
-            if (moderator == sourceMember)
+            if (owner == sourceMember)
             {
-                logger.info("Moderator has left the room !");
-                moderator = null;
-                electNewModerator();
+                logger.info("Owner has left the room !");
+                owner = null;
+                electNewOwner();
             }
             if (ChatRoomMemberPresenceChangeEvent
                         .MEMBER_KICKED.equals(eventType))
@@ -156,10 +156,10 @@ public class ChatRoomRoleAndPresence
     }
 
     /**
-     * Elects new moderator if the previous one has left the conference.
+     * Elects new owner if the previous one has left the conference.
      * (Only if we do not work with external authentication).
      */
-    private void electNewModerator()
+    private void electNewOwner()
     {
         if (focusRole == null)
         {
@@ -169,7 +169,7 @@ public class ChatRoomRoleAndPresence
         }
         if (authAuthority != null)
         {
-            // If we have authentication authority we do not grant moderator
+            // If we have authentication authority we do not grant owner
             // role based on who enters first, but who is an authenticated user
             return;
         }
@@ -181,33 +181,33 @@ public class ChatRoomRoleAndPresence
             {
                 continue;
             }
-            else if (ChatRoomMemberRole.MODERATOR
-                        .compareTo(member.getRole()) >=0)
+            else if (ChatRoomMemberRole.OWNER.compareTo(member.getRole()) >=0)
             {
-                // Select existing moderator
-                moderator = member;
+                // Select existing owner
+                owner = member;
                 logger.info(
-                    "Moderator already in the room: " + member.getName());
+                    "Owner already in the room: " + member.getName());
                 break;
             }
             else
             {
-                // Elect new moderator
+                // Elect new owner
                 try
                 {
-                    chatRoom.grantModerator(member.getName());
+                    chatRoom.grantOwnership(
+                            ((XmppChatMember)member).getJabberID());
 
                     logger.info(
-                        "Granted moderator to " + member.getContactAddress());
+                            "Granted owner to " + member.getContactAddress());
 
-                    moderator = member;
+                    owner = member;
                     break;
                 }
                 catch (RuntimeException e)
                 {
                     logger.error(
-                        "Failed to grant moderator status to "
-                                + member.getName(), e);
+                        "Failed to grant owner status to " + member.getName()
+                            , e);
                 }
                 //break; FIXME: should cancel event if exception occurs ?
             }
@@ -218,7 +218,7 @@ public class ChatRoomRoleAndPresence
     public void memberRoleChanged(ChatRoomMemberRoleChangeEvent evt)
     {
         logger.info("Role update event " + evt);
-        // FIXME: focus or moderator might loose it's privileges
+        // FIXME: focus or owner might loose it's privileges
         // very unlikely(no such use case in client or anywhere in the app)
         // but lets throw an exception or log fatal error at least to spare
         // the time spent on debugging in future.
@@ -231,8 +231,8 @@ public class ChatRoomRoleAndPresence
     }
 
     /**
-     * Waits for initial focus role and refuses to join if moderator is
-     * not granted. Elects the first moderator of the conference.
+     * Waits for initial focus role and refuses to join if owner is
+     * not granted. Elects the first owner of the conference.
      */
     @Override
     public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
@@ -241,35 +241,35 @@ public class ChatRoomRoleAndPresence
             "Focus role: " + evt.getNewRole() + " init: " + evt.isInitial());
 
         focusRole = evt.getNewRole();
-        if (ChatRoomMemberRole.MODERATOR.compareTo(focusRole) < 0)
+        if (ChatRoomMemberRole.OWNER.compareTo(focusRole) < 0)
         {
-            logger.error("Focus must be a moderator!");
+            logger.error("Focus must be an owner!");
             conference.stop();
             return;
         }
 
-        if (evt.isInitial() && moderator == null)
+        if (evt.isInitial() && owner == null)
         {
             if (authAuthority != null)
             {
-                grantModeratorToAuthUsers();
+                grantOwnersToAuthUsers();
             }
             else
             {
-                electNewModerator();
+                electNewOwner();
             }
         }
     }
 
-    private void grantModeratorToAuthUsers()
+    private void grantOwnersToAuthUsers()
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            checkGrantModeratorToAuthUser(member);
+            checkGrantOwnerToAuthUser(member);
         }
     }
 
-    private void checkGrantModeratorToAuthUser(ChatRoomMember member)
+    private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
         XmppChatMember xmppMember = (XmppChatMember) member;
         String jabberId = xmppMember.getJabberID();
@@ -278,12 +278,12 @@ public class ChatRoomRoleAndPresence
             return;
         }
 
-        if (ChatRoomMemberRole.MODERATOR.compareTo(member.getRole())
+        if (ChatRoomMemberRole.OWNER.compareTo(member.getRole())
                 < 0)
         {
             if (authAuthority.isUserAuthenticated(jabberId, chatRoom.getName()))
             {
-                chatRoom.grantModerator(member.getName());
+                chatRoom.grantOwnership(member.getName());
             }
         }
     }
@@ -317,7 +317,7 @@ public class ChatRoomRoleAndPresence
 
         // Sets authenticated ID
         participant.setAuthenticatedIdentity(identity);
-        // Grants moderator rights
-        chatRoom.grantModerator(chatMember.getName());
+        // Grants owner rights
+        chatRoom.grantOwnership(chatMember.getName());
     }
 }
