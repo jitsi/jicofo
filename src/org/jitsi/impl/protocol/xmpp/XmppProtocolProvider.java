@@ -137,6 +137,11 @@ public class XmppProtocolProvider
 
         try
         {
+            if (logger.isDebugEnabled())
+            {
+                enableDebugPacketsLogging();
+            }
+
             connection.connect();
 
             if (jabberAccountID.isAnonymousAuthUsed())
@@ -176,6 +181,18 @@ public class XmppProtocolProvider
 
         logger.info("XMPP provider " + jabberAccountID + " connected (JID: "
                         + connection.getUser() + ")");
+    }
+
+    private void enableDebugPacketsLogging()
+    {
+        // FIXME: consider using packet logging service
+        DebugLogger outLogger = new DebugLogger("--> ");
+
+        connection.addPacketSendingListener(outLogger, outLogger);
+
+        DebugLogger inLogger = new DebugLogger("<-- ");
+
+        connection.addPacketListener(inLogger, inLogger);
     }
 
     /**
@@ -463,6 +480,29 @@ public class XmppProtocolProvider
             packetCollector.cancel();
 
             return response;
+        }
+    }
+
+    class DebugLogger
+        implements PacketFilter, PacketListener
+    {
+        private String prefix;
+
+        DebugLogger(String prefix)
+        {
+            this.prefix = prefix;
+        }
+
+        @Override
+        public boolean accept(Packet packet)
+        {
+            return true;
+        }
+
+        @Override
+        public void processPacket(Packet packet)
+        {
+            logger.debug(prefix + packet.toXML());
         }
     }
 }
