@@ -20,7 +20,7 @@ if [ -f /etc/jitsi/jicofo/config ]; then
     . /etc/jitsi/jicofo/config
 fi
 # Assign default host if not configured
-if [ -n "$JICOFO_HOST" ]; then
+if [ ! $JICOFO_HOST ]; then
     JICOFO_HOST=localhost
 fi
 
