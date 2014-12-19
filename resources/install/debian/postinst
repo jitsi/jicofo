@@ -71,8 +71,8 @@ case "$1" in
         fi
 
         # die logz
-        chown -R $OWNER:$GROUP /var/log/jitsi/jicofo*
-        chmod -R 640 /var/log/jitsi/jicofo*
+        chown -f -R $OWNER:$GROUP /var/log/jitsi/jicofo*
+        chmod -f -R 640 /var/log/jitsi/jicofo*
 
         # ensure focus is not running - it will be started at the end
         if [ "$(pidof java)" ]; then
