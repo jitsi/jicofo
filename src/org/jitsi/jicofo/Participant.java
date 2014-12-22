@@ -90,11 +90,6 @@ public class Participant
     private boolean mutedStatus;
 
     /**
-     * Participant's identity confirmed by authentication component.
-     */
-    private String authenticatedIdentity;
-
-    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link XmppChatMember} that represent this
@@ -325,26 +320,6 @@ public class Participant
     public boolean isMuted()
     {
         return mutedStatus;
-    }
-
-    /**
-     * Sets the identity confirmed by authentication component of this
-     * participant.
-     *
-     * @param authenticatedIdentity the authenticated identity string to set.
-     */
-    public void setAuthenticatedIdentity(String authenticatedIdentity)
-    {
-        this.authenticatedIdentity = authenticatedIdentity;
-    }
-
-    /**
-     * Returns a string with the identity of this participant which has been
-     * confirmed by trusted authentication component.
-     */
-    public String getAuthenticatedIdentity()
-    {
-        return authenticatedIdentity;
     }
 
     /**

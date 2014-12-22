@@ -1107,19 +1107,6 @@ public class JitsiMeetConference
         return null;
     }
 
-    Participant findParticipantForJabberId(String jid)
-    {
-        for (Participant participant : participants)
-        {
-            String peerJid = participant.getChatMember().getJabberID();
-            if (peerJid != null && peerJid.equals(jid))
-            {
-                return participant;
-            }
-        }
-        return null;
-    }
-
     Participant findParticipantForRoomJid(String roomJid)
     {
         for (Participant participant : participants)

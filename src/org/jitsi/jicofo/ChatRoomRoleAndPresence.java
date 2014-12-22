@@ -283,7 +283,7 @@ public class ChatRoomRoleAndPresence
         {
             if (authAuthority.isUserAuthenticated(jabberId, chatRoom.getName()))
             {
-                chatRoom.grantOwnership(member.getName());
+                chatRoom.grantOwnership(jabberId);
             }
         }
     }
@@ -294,30 +294,13 @@ public class ChatRoomRoleAndPresence
         // FIXME: consider changing to debug log level once tested
         logger.info("Authenticate request for: " + realJid + " as " + identity);
 
-        Participant participant
-            = conference.findParticipantForJabberId(realJid);
-        if (participant == null)
+        for (ChatRoomMember member : chatRoom.getMembers())
         {
-            logger.error("Auth request - no member found for JID: " + realJid);
-            return;
+            XmppChatMember xmppMember = (XmppChatMember) member;
+            if (realJid.equals(xmppMember.getJabberID()))
+            {
+                checkGrantOwnerToAuthUser(member);
+            }
         }
-
-        ChatRoomMember chatMember = participant.getChatMember();
-        if (chatMember == null)
-        {
-            logger.error("No chat member for JID: " + realJid);
-            return;
-        }
-
-        if (participant.getAuthenticatedIdentity() != null)
-        {
-            logger.error(realJid + " already authenticated");
-            return;
-        }
-
-        // Sets authenticated ID
-        participant.setAuthenticatedIdentity(identity);
-        // Grants owner rights
-        chatRoom.grantOwnership(chatMember.getName());
     }
 }

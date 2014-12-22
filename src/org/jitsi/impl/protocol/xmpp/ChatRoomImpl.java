@@ -575,6 +575,8 @@ public class ChatRoomImpl
     @Override
     public void grantOwnership(String address)
     {
+        logger.info("Grant owner to " + address);
+
         // Have to construct the IQ manually as Smack version used here seems
         // to be using wrong namespace(muc#owner instead of muc#admin)
         // which does not work with the Prosody.
