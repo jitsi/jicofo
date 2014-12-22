@@ -4,7 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
-package org.jitsi.impl.protocol.xmpp;
+package org.jitsi.impl.protocol.xmpp.colibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
@@ -14,32 +14,32 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.provider.*;
 
 import java.util.*;
 
 /**
- * Default implementation of {@link OperationSetColibriConference} that uses
- * Smack for handling XMPP connection. Handles conference state, allocates and
- * expires channels.
+ * Default implementation of {@link ColibriConference} that uses Smack for
+ * handling XMPP connection. Handles conference state, allocates and expires
+ * channels per single conference ID. Conference ID is stored after first
+ * allocate channels request.
  *
  * @author Pawel Domas
  */
-public class OperationSetColibriConferenceImpl
-    implements OperationSetColibriConference
+public class ColibriConferenceImpl
+    implements ColibriConference
 {
     private final static net.java.sip.communicator.util.Logger logger
-        = Logger.getLogger(OperationSetColibriConferenceImpl.class);
+            = Logger.getLogger(ColibriConferenceImpl.class);
 
     /**
      * The instance of XMPP connection.
      */
-    private XmppConnection connection;
-
+    private final XmppConnection connection;
     /**
      * XMPP address of videobridge component.
      */
@@ -53,30 +53,17 @@ public class OperationSetColibriConferenceImpl
     /**
      * Utility used for building Colibri queries.
      */
-    private ColibriBuilder colibriBuilder
+    private final ColibriBuilder colibriBuilder
         = new ColibriBuilder(conferenceState);
 
     /**
-     * Initializes this operation set.
-     *
-     * @param connection Smack XMPP connection impl that will be used to send
-     *                   and receive XMPP packets.
+     * Creates new instance of <tt>ColibriConferenceImpl</tt>.
+     * @param connection XMPP connection object that wil be used by new
+     *                   instance.
      */
-    public void initialize(XmppConnection connection)
+    public ColibriConferenceImpl(XmppConnection connection)
     {
         this.connection = connection;
-
-        // FIXME: Register Colibri
-        ProviderManager.getInstance().addIQProvider(
-            ColibriConferenceIQ.ELEMENT_NAME,
-            ColibriConferenceIQ.NAMESPACE,
-            new ColibriIQProvider());
-
-        // FIXME: register Jingle
-        ProviderManager.getInstance().addIQProvider(
-            JingleIQ.ELEMENT_NAME,
-            JingleIQ.NAMESPACE,
-            new JingleIQProvider());
     }
 
     /**
@@ -106,17 +93,6 @@ public class OperationSetColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void setJitsiMeetConfig(JitsiMeetConfig config)
-    {
-        colibriBuilder.setChannelLastN(config.getChannelLastN());
-        colibriBuilder.setAdaptiveLastN(config.isAdaptiveLastNEnabled());
-        colibriBuilder.setAdaptiveSimulcast(config.isAdaptiveSimulcastEnabled());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public String getConferenceId()
     {
         return conferenceState.getID();
@@ -126,11 +102,23 @@ public class OperationSetColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    public void setConfig(JitsiMeetConfig config)
+    {
+        colibriBuilder.setChannelLastN(config.getChannelLastN());
+        colibriBuilder.setAdaptiveLastN(config.isAdaptiveLastNEnabled());
+        colibriBuilder.setAdaptiveSimulcast(
+                config.isAdaptiveSimulcastEnabled());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public synchronized ColibriConferenceIQ createColibriChannels(
-            boolean useBundle,
-            String endpointName,
-            boolean peerIsInitiator,
-            List<ContentPacketExtension> contents)
+        boolean useBundle,
+        String endpointName,
+        boolean peerIsInitiator,
+        List<ContentPacketExtension> contents)
         throws OperationFailedException
     {
         colibriBuilder.reset();
@@ -148,7 +136,7 @@ public class OperationSetColibriConferenceImpl
         {
             throw new OperationFailedException(
                 "Failed to allocate colibri channels: response is null."
-                + " Maybe the response timed out.",
+                    + " Maybe the response timed out.",
                 OperationFailedException.NETWORK_FAILURE);
         }
         else if (response.getError() != null)
@@ -170,6 +158,7 @@ public class OperationSetColibriConferenceImpl
          * Update the complete ColibriConferenceIQ representation maintained by
          * this instance with the information given by the (current) response.
          */
+        // FIXME: allocations!!! should be static method
         ColibriAnalyser analyser = new ColibriAnalyser(conferenceState);
 
         analyser.processChannelAllocResp((ColibriConferenceIQ) response);
@@ -181,7 +170,7 @@ public class OperationSetColibriConferenceImpl
          * caller and their respective local channels.
          */
         return ColibriAnalyser.getResponseContents(
-                    (ColibriConferenceIQ) response, contents);
+            (ColibriConferenceIQ) response, contents);
     }
 
     /**
@@ -206,9 +195,9 @@ public class OperationSetColibriConferenceImpl
      */
     @Override
     public void updateTransportInfo(
-            boolean initiator,
-            Map<String, IceUdpTransportPacketExtension> map,
-            ColibriConferenceIQ localChannelsInfo)
+        boolean initiator,
+        Map<String, IceUdpTransportPacketExtension> map,
+        ColibriConferenceIQ localChannelsInfo)
     {
         colibriBuilder.reset();
 
@@ -303,9 +292,9 @@ public class OperationSetColibriConferenceImpl
      */
     @Override
     public void updateBundleTransportInfo(
-            boolean                        initiator,
-            IceUdpTransportPacketExtension transport,
-            ColibriConferenceIQ            localChannelsInfo)
+        boolean                        initiator,
+        IceUdpTransportPacketExtension transport,
+        ColibriConferenceIQ            localChannelsInfo)
     {
         colibriBuilder.reset();
 
@@ -350,8 +339,12 @@ public class OperationSetColibriConferenceImpl
         conferenceState = new ColibriConferenceIQ();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute)
+    public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
+                                   boolean mute)
     {
         ColibriConferenceIQ request = new ColibriConferenceIQ();
         request.setID(conferenceState.getID());

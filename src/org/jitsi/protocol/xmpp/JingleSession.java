@@ -24,15 +24,29 @@ public class JingleSession
     private final String address;
 
     /**
+     * <tt>JingleRequestHandler</tt> that is processing requests for this
+     * session.
+     */
+    private final JingleRequestHandler requestHandler;
+
+    /**
      * Creates new instance of <tt>JingleSession</tt> for given parameters.
      *
      * @param sid Jingle session identifier of new instance.
      * @param address remote peer XMPP address.
+     * @param requestHandler request handler that will be associated with
+     *                       newly created instance.
      */
-    public JingleSession(String sid, String address)
+    public JingleSession(String sid, String address,
+                         JingleRequestHandler requestHandler)
     {
+        if (requestHandler == null)
+        {
+            throw new NullPointerException("requestHandler");
+        }
         this.sid = sid;
         this.address = address;
+        this.requestHandler = requestHandler;
     }
 
     /**
@@ -49,5 +63,14 @@ public class JingleSession
     public String getAddress()
     {
         return address;
+    }
+
+    /**
+     * Returns <tt>JingleRequestHandler</tt> that is responsible for handling
+     * request for this Jingle session.
+     */
+    public JingleRequestHandler getRequestHandler()
+    {
+        return requestHandler;
     }
 }

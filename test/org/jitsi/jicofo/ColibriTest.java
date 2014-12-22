@@ -16,8 +16,9 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.protocol.xmpp.*;
 
+import org.jitsi.protocol.*;
+import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.service.neomedia.*;
 
 import org.junit.*;
@@ -66,6 +67,8 @@ public class ColibriTest
     {
         String roomName = "testroom@conference.pawel.jitsi.net";
         String serverName = "test-server";
+        JitsiMeetConfig config
+            = new JitsiMeetConfig(new HashMap<String,String>());
 
         TestConference testConference = new TestConference();
 
@@ -77,7 +80,11 @@ public class ColibriTest
         OperationSetColibriConference colibriTool
             = pps.getOperationSet(OperationSetColibriConference.class);
 
-        colibriTool.setJitsiVideobridge(
+        ColibriConference colibriConf = colibriTool.createNewConference();
+
+        colibriConf.setConfig(config);
+
+        colibriConf.setJitsiVideobridge(
             testConference.getMockVideoBridge().getBridgeJid());
 
         List<ContentPacketExtension> contents
@@ -102,13 +109,13 @@ public class ColibriTest
         String peer2 = "endpoint2";
 
         ColibriConferenceIQ peer1Channels
-            = colibriTool.createColibriChannels(
+            = colibriConf.createColibriChannels(
                 peer1UseBundle, peer1, true, contents);
 
         assertEquals(3 , mockBridge.getChannelsCount());
 
         ColibriConferenceIQ peer2Channels
-            = colibriTool.createColibriChannels(
+            = colibriConf.createColibriChannels(
                 peer2UseBundle, peer2, true, contents);
 
         assertEquals(6 , mockBridge.getChannelsCount());
@@ -123,14 +130,14 @@ public class ColibriTest
         assertEquals("Peer 2 should have single bundle allocated !",
                      1, peer2Channels.getChannelBundles().size());
 
-        colibriTool.expireChannels(peer2Channels);
+        colibriConf.expireChannels(peer2Channels);
 
         //FIXME: fix unreliable sleep call
         Thread.sleep(1000);
 
         assertEquals(3, mockBridge.getChannelsCount());
 
-        colibriTool.expireChannels(peer1Channels);
+        colibriConf.expireChannels(peer1Channels);
 
         //FIXME: fix unreliable sleep call
         Thread.sleep(1000);

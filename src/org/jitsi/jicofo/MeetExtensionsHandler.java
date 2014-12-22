@@ -35,9 +35,10 @@ public class MeetExtensionsHandler
         = Logger.getLogger(MeetExtensionsHandler.class);
 
     /**
-     * Parent conference.
+     * <tt>FocusManager</tt> instance for accessing info about all active
+     * conferences.
      */
-    private final JitsiMeetConference conference;
+    private final FocusManager focusManager;
 
     /**
      * Operation set that provider XMPP connection.
@@ -46,12 +47,13 @@ public class MeetExtensionsHandler
 
     /**
      * Creates new instance of {@link MeetExtensionsHandler}.
-     * @param conference parent conference for which newly created instance
-     *                   will be listening for service extensions packets.
+     * @param focusManager <tt>FocusManager</tt> that will be used by new
+     *                     instance to access active conferences and focus
+     *                     XMPP connection.
      */
-    public MeetExtensionsHandler(JitsiMeetConference conference)
+    public MeetExtensionsHandler(FocusManager focusManager)
     {
-        this.conference = conference;
+        this.focusManager = focusManager;
 
         MuteIqProvider muteIqProvider = new MuteIqProvider();
         muteIqProvider.registerMuteIqProvider(
@@ -64,7 +66,7 @@ public class MeetExtensionsHandler
     public void init()
     {
         this.smackXmpp
-            = conference.getXmppProvider().getOperationSet(
+            = focusManager.getOperationSet(
                     OperationSetDirectSmackXmpp.class);
 
         smackXmpp.addPacketHandler(this, this);
@@ -113,10 +115,7 @@ public class MeetExtensionsHandler
 
     private boolean acceptColibriIQ(Packet packet)
     {
-        String bridgeJid = conference.getServices().getVideobridge();
         return packet instanceof ColibriConferenceIQ
-            // We're interested in packets from outside the world and not the JVB
-            && (bridgeJid == null || !bridgeJid.equals(packet.getFrom()))
             // And with recording element
             && ((ColibriConferenceIQ)packet).getRecording() != null;
     }
@@ -124,6 +123,14 @@ public class MeetExtensionsHandler
     private void handleColibriIq(ColibriConferenceIQ colibriIQ)
     {
         ColibriConferenceIQ.Recording recording = colibriIQ.getRecording();
+        String from = colibriIQ.getFrom();
+        JitsiMeetConference conference
+            = getConferenceForMucJid(colibriIQ.getFrom());
+        if (conference == null)
+        {
+            logger.debug("Room not found for JID: " + from);
+            return;
+        }
 
         boolean recordingState =
             conference.modifyRecordingState(
@@ -150,6 +157,26 @@ public class MeetExtensionsHandler
         return packet instanceof MuteIq;
     }
 
+    private String getRoomNameFromMucJid(String mucJid)
+    {
+        int atIndex = mucJid.indexOf("@");
+        int slashIndex = mucJid.indexOf("/");
+        if (atIndex == -1 || slashIndex == -1)
+            return null;
+
+        return mucJid.substring(0, slashIndex);
+    }
+
+    private JitsiMeetConference getConferenceForMucJid(String mucJid)
+    {
+        String roomName = getRoomNameFromMucJid(mucJid);
+        if (roomName == null)
+        {
+            return null;
+        }
+        return focusManager.getConference(roomName);
+    }
+
     private void handleMuteIq(MuteIq muteIq)
     {
         Boolean doMute = muteIq.getMute();
@@ -157,6 +184,14 @@ public class MeetExtensionsHandler
 
         if (doMute == null || StringUtils.isNullOrEmpty(jid))
             return;
+
+        String from = muteIq.getFrom();
+        JitsiMeetConference conference = getConferenceForMucJid(from);
+        if (conference == null)
+        {
+            logger.debug("Mute error: room not found for JID: " + from);
+            return;
+        }
 
         IQ result;
 

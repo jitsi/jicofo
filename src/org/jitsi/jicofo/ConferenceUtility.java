@@ -7,9 +7,8 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.colibri.*;
 
 /**
  * Class adds utility methods that require use of package protected methods of
@@ -39,10 +38,8 @@ public class ConferenceUtility
      */
     public String getJvbConferenceId()
     {
-        ProtocolProviderService pps = conference.getXmppProvider();
-        OperationSetColibriConference colibri
-            = pps.getOperationSet(OperationSetColibriConference.class);
-        return colibri.getConferenceId();
+        ColibriConference colibriConference = conference.getColibriConference();
+        return colibriConference.getConferenceId();
     }
 
     /**

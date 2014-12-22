@@ -11,7 +11,9 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
 
+import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.*;

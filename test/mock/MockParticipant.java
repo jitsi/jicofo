@@ -204,7 +204,8 @@ public class MockParticipant
         this.myJid = user1Accept.getFrom();
         this.remoteJid = user1Accept.getTo();
         // FIXME: move accept to Jingle operation set
-        this.jingleSession = new JingleSession(user1Accept.getSID(), remoteJid);
+        // FIXME: broken after single added XMPP conection
+        //this.jingleSession = new JingleSession(user1Accept.getSID(), remoteJid);
         this.jingle = new UtilityJingleOpSet(myJid, mockConnection);
         this.jingle.addSession(jingleSession);
 

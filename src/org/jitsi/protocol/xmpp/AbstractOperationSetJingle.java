@@ -38,8 +38,6 @@ public abstract class AbstractOperationSetJingle
     protected Map<String, JingleSession> sessions
         = new HashMap<String, JingleSession>();
 
-    protected JingleRequestHandler requestHandler;
-
     /**
      * Implementing classes should return our JID here.
      */
@@ -64,19 +62,6 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Sets the {@link JingleRequestHandler} that will be associated with this
-     * instance.
-     *
-     * @param jingleHandler {@link JingleRequestHandler} object that will be
-     *                      receiving notifications from this instance.
-     */
-    @Override
-    public void setRequestHandler(JingleRequestHandler jingleHandler)
-    {
-        this.requestHandler = jingleHandler;
-    }
-
-    /**
      * Sends 'session-initiate' to the peer identified by given <tt>address</tt>
      *
      * @param useBundle <tt>true</tt> if invite IQ should include
@@ -84,17 +69,21 @@ public abstract class AbstractOperationSetJingle
      * @param address the XMPP address where 'session-initiate' will be sent.
      * @param contents the list of <tt>ContentPacketExtension</tt> describing
      *                 media offer.
+     * @param requestHandler <tt>JingleRequestHandler</tt> that will be used
+     *                       to process request related to newly created
+     *                       JingleSession.
      */
     @Override
     public void initiateSession(boolean useBundle,
                                 String address,
-                                List<ContentPacketExtension> contents)
+                                List<ContentPacketExtension> contents,
+                                JingleRequestHandler requestHandler)
     {
         logger.info("INVITE PEER: " + address);
 
         String sid = JingleIQ.generateSID();
 
-        JingleSession session = new JingleSession(sid, address);
+        JingleSession session = new JingleSession(sid, address, requestHandler);
 
         sessions.put(sid, session);
 
@@ -142,14 +131,11 @@ public abstract class AbstractOperationSetJingle
             return;
         }
 
-        if (requestHandler == null)
-        {
-            logger.error("No request handler set.");
-            return;
-        }
+        JingleRequestHandler requestHandler = session.getRequestHandler();
 
         if (JingleAction.SESSION_ACCEPT.equals(action))
         {
+            logger.info(session.getAddress() + " real jid: " + iq.getFrom());
             requestHandler.onSessionAccept(
                 session, iq.getContentList());
         }
@@ -388,6 +374,23 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void terminateHandlersSessions(JingleRequestHandler requestHandler)
+    {
+        List<JingleSession> sessions
+            = new ArrayList<JingleSession>(this.sessions.values());
+        for (JingleSession session : sessions)
+        {
+            if (session.getRequestHandler() == requestHandler)
+            {
+                terminateSession(session, Reason.GONE);
+            }
+        }
+    }
+
+    /**
      * Terminates given Jingle session by sending 'session-terminate' with some
      * {@link Reason} if provided.
      *
@@ -400,6 +403,9 @@ public abstract class AbstractOperationSetJingle
     {
         logger.info("Terminate session: " + session.getAddress());
 
+        /*
+        we do not send session-terminate as muc addresses are invalid at this point
+        FIXME: but there is also connection address available */
         JingleIQ terminate
             = JinglePacketFactory.createSessionTerminate(
                     getOurJID(),

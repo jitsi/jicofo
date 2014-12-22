@@ -13,6 +13,9 @@ import org.jitsi.jicofo.util.*;
 
 import org.osgi.framework.*;
 
+import java.util.*;
+import java.util.concurrent.*;
+
 /**
  * Class takes care of creating and removing temporary XMPP account while
  * exposing protocol provider service to end user.
@@ -39,10 +42,11 @@ public class ProtocolProviderHandler
     private ProtocolProviderService protocolService;
 
     /**
-     * Registration listener notified about encapsulated protocol service
+     * Registration listeners notified about encapsulated protocol service
      * instance registration state changes.
      */
-    private RegistrationStateChangeListener regListener;
+    private final List<RegistrationStateChangeListener> regListeners
+        = new CopyOnWriteArrayList<RegistrationStateChangeListener>();
 
     /**
      * Start this instance by created XMPP account using igven parameters.
@@ -50,17 +54,13 @@ public class ProtocolProviderHandler
      * @param xmppDomain XMPP authentication domain.
      * @param xmppLoginPassword XMPP login(optional).
      * @param nickName authentication login.
-     * @param listener the listener that will be notified about created protocol
-     *                 provider's registration state changes.
+     *
      */
     public void start(String serverAddress,
                       String xmppDomain,
                       String xmppLoginPassword,
-                      String nickName,
-                      RegistrationStateChangeListener listener)
+                      String nickName)
     {
-        this.regListener = listener;
-
         xmppProviderFactory
             = ProtocolProviderFactory.getProtocolProviderFactory(
                     FocusBundleActivator.bundleContext,
@@ -111,17 +111,36 @@ public class ProtocolProviderHandler
 
     /**
      * Passes registration state changes of encapsulated protocol provider to
-     * registered {@lnik #regListener}.
+     * registered {@lnik #regListeners}.
      *
      * {@inheritDoc}
      */
     @Override
     public void registrationStateChanged(RegistrationStateChangeEvent evt)
     {
-        if (regListener != null)
+        for(RegistrationStateChangeListener l : regListeners)
         {
-            regListener.registrationStateChanged(evt);
+            l.registrationStateChanged(evt);
         }
+    }
+
+    /**
+     * Adds given listener to the list of registration state change listeners
+     * notified about underlying protocol provider registration state changes.
+     * @param l the listener that will be notified about created protocol
+     *           provider's registration state changes.
+     */
+    public void addRegistrationListener(RegistrationStateChangeListener l)
+    {
+        regListeners.add(l);
+    }
+
+    /**
+     * Removes given <tt>RegistrationStateChangeListener</tt>.
+     */
+    public void removeRegistrationListener(RegistrationStateChangeListener l)
+    {
+        regListeners.remove(l);
     }
 
     /**

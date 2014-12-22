@@ -107,31 +107,24 @@ public class JitsiMeetServices
      *
      * @param xmppDomain server address/main service XMPP xmppDomain that hosts
      *                      the conference system.
-     * @param xmppAuthDomain the xmppDomain used for XMPP authentication.
-     * @param xmppUserName the user name used to login.
-     * @param xmppLoginPassword the password used for authentication.
-     *
+     * @param protocolProviderHandler protocol provider handler that provides
+     *                                XMPP connection
      * @throws java.lang.IllegalStateException if started already.
      */
-    public void start(String serverAddress,
-                      String xmppDomain,
-                      String xmppAuthDomain,
-                      String xmppUserName,
-                      String xmppLoginPassword)
+    public void start(String                  xmppDomain,
+                      ProtocolProviderHandler protocolProviderHandler)
     {
-        if (protocolProviderHandler != null)
+        if (this.protocolProviderHandler != null)
         {
             throw new IllegalStateException("Already started");
         }
+        else if (protocolProviderHandler == null)
+        {
+            throw new NullPointerException("protocolProviderHandler");
+        }
 
         this.xmppDomain = xmppDomain;
-
-        this.protocolProviderHandler
-            = new ProtocolProviderHandler();
-
-        protocolProviderHandler.start(
-            serverAddress, xmppAuthDomain, xmppLoginPassword,
-            xmppUserName, this);
+        this.protocolProviderHandler = protocolProviderHandler;
 
         this.capsOpSet
             = protocolProviderHandler.getOperationSet(
@@ -149,7 +142,8 @@ public class JitsiMeetServices
         }
         else
         {
-            protocolProviderHandler.register();
+            // Wait until provider is registered
+            protocolProviderHandler.addRegistrationListener(this);
         }
     }
 
@@ -160,9 +154,7 @@ public class JitsiMeetServices
     {
         if (protocolProviderHandler != null)
         {
-            protocolProviderHandler.stop();
-
-            protocolProviderHandler = null;
+            protocolProviderHandler.removeRegistrationListener(this);
         }
     }
 
@@ -263,6 +255,7 @@ public class JitsiMeetServices
         if (RegistrationState.REGISTERED.equals(evt.getNewState()))
         {
             init();
+            protocolProviderHandler.removeRegistrationListener(this);
         }
     }
 

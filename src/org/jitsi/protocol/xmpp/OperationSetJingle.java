@@ -17,9 +17,7 @@ import java.util.*;
 /**
  * Operation set allows to establish and control Jingle sessions. Exposed
  * functionality is limited to the minimum required by Jitsi Meet conference.
- * {@link org.jitsi.protocol.xmpp.JingleRequestHandler} set using
- * {@link #setRequestHandler(JingleRequestHandler)} will receive notifications
- * about various Jingle packets received.
+ * {@link org.jitsi.protocol.xmpp.JingleRequestHandler}.
  *
  * @author Pawel Domas
  */
@@ -35,11 +33,14 @@ public interface OperationSetJingle
      * @param address the XMPP address that will be remote destination of new
      *                Jingle session.
      * @param contents media contents description of our offer.
+     * @param requestHandler <tt>JingleRequestHandler</tt> that will be bound
+     *                       to new Jingle session instance.
      */
     void initiateSession(
             boolean useBundle,
             String address,
-            List<ContentPacketExtension> contents);
+            List<ContentPacketExtension> contents,
+            JingleRequestHandler requestHandler);
 
     /**
      * Sends 'source-add' proprietary notification.
@@ -69,15 +70,6 @@ public interface OperationSetJingle
                             JingleSession session);
 
     /**
-     * Sets the {@link JingleRequestHandler} that will receive jingle
-     * notifications.
-     *
-     * @param jingleRequestHandler {@link JingleRequestHandler} object that will
-     *        be receiving jingle notifications from this operation set.
-     */
-    void setRequestHandler(JingleRequestHandler jingleRequestHandler);
-
-    /**
      * Terminates given session by sending 'session-terminate' IQ which will
      * optionally include the <tt>Reason</tt> supplied.
      *
@@ -87,4 +79,11 @@ public interface OperationSetJingle
      */
     void terminateSession(JingleSession session, Reason reason);
 
+    /**
+     * Terminates all active Jingle Sessions associated with given
+     * <tt>JingleRequestHandler</tt>.
+     * @param requestHandler <tt>JingleRequestHandler</tt> instance for which
+     *                       all active JingleSessions shall be terminated.
+     */
+    void terminateHandlersSessions(JingleRequestHandler requestHandler);
 }

@@ -4,7 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
-package org.jitsi.protocol.xmpp;
+package org.jitsi.protocol.xmpp.colibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
@@ -16,14 +16,13 @@ import org.jitsi.protocol.*;
 import java.util.*;
 
 /**
- * Operation set exposes an interface for direct Colibri protocol communication
- * with the videobridge. Allows to allocate new channels, update transport info
- * and finally expire colibri channels.
+ * This is Colibri conference allocated on the videobridge. It exposes
+ * operations like allocating/expiring channels, updating channel transport
+ * and so on.
  *
  * @author Pawel Domas
  */
-public interface OperationSetColibriConference
-    extends OperationSet
+public interface ColibriConference
 {
     /**
      * Sets Jitsi videobridge XMPP address to be used to allocate
@@ -34,24 +33,25 @@ public interface OperationSetColibriConference
     void setJitsiVideobridge(String videobridgeJid);
 
     /**
-     * Returns XMPP address of curently used videobridge or <tt>null</tt>
+     * Returns XMPP address of currently used videobridge or <tt>null</tt>
      * if the isn't any.
      */
     String getJitsiVideobridge();
 
     /**
-     * Sets conference configuration instance that will be used to adjust
-     * Colibri channels properties.
-     * @param config an instance of <tt>JitsiMeetConfig</tt> to be used by this
-     *               Colibri operation set.
-     */
-    void setJitsiMeetConfig(JitsiMeetConfig config);
-
-    /**
      * Returns the identifier assigned for our conference by the videobridge.
-     * Will returns <tt>null</tt> if no conference has been allocated yet.
+     * Will returns <tt>null</tt> if no conference has been allocated yet for
+     * this instance.
      */
     String getConferenceId();
+
+    /**
+     * Sets Jitsi Meet config that provides Colibri channels configurable
+     * properties.
+     * @param config <tt>JitsiMeetConfig</tt> to be used for allocating
+     *               Colibri channels in this conference.
+     */
+    public void setConfig(JitsiMeetConfig config);
 
     /**
      * Creates channels on the videobridge for given parameters.
@@ -62,18 +62,17 @@ public interface OperationSetColibriConference
      * @param peerIsInitiator <tt>true</tt> if peer is ICE an initiator
      *                        of ICE session.
      * @param contents content list that describes peer media.
-     *
      * @return <tt>ColibriConferenceIQ</tt> that describes allocated channels.
      *
      * @throws OperationFailedException if channel allocation failed due to
      *                                  network or bridge failure.
      */
     ColibriConferenceIQ createColibriChannels(
-            boolean useBundle,
-            String endpointName,
-            boolean peerIsInitiator,
-            List<ContentPacketExtension> contents)
-            throws OperationFailedException;
+        boolean useBundle,
+        String endpointName,
+        boolean peerIsInitiator,
+        List<ContentPacketExtension> contents)
+        throws OperationFailedException;
 
     /**
      * Updates transport information for active channels
@@ -87,9 +86,9 @@ public interface OperationSetColibriConference
      *                          on the bridge.
      */
     void updateTransportInfo(
-            boolean initiator,
-            Map<String, IceUdpTransportPacketExtension> map,
-            ColibriConferenceIQ localChannelsInfo);
+        boolean initiator,
+        Map<String, IceUdpTransportPacketExtension> map,
+        ColibriConferenceIQ localChannelsInfo);
 
     /**
      * Updates simulcast layers on the bridge.
@@ -118,9 +117,9 @@ public interface OperationSetColibriConference
      *                          bundle group.
      */
     void updateBundleTransportInfo(
-            boolean initiator,
-            IceUdpTransportPacketExtension transport,
-            ColibriConferenceIQ localChannelsInfo);
+        boolean initiator,
+        IceUdpTransportPacketExtension transport,
+        ColibriConferenceIQ localChannelsInfo);
 
     /**
      * Expires the channels described by given <tt>ColibriConferenceIQ</tt>.
