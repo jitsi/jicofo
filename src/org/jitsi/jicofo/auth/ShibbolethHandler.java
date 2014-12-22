@@ -123,10 +123,22 @@ class ShibbolethHandler
         PrintWriter responseWriter = response.getWriter();
 
         String displayName = (String) request.getAttribute("displayName");
+        if (displayName == null)
+        {
+            displayName = email;
+        }
+        responseWriter.println("<html><head><head/><body>");
         responseWriter.println("<h1>Hello " + displayName);
         responseWriter.println(
             " !<h1/><h2><a href=\"#\" onclick=\"self.close();\">Close</a>" +
                     " this window to start the conference.<h2/>");
+
+        // Auto close script
+        responseWriter.println(
+                "<script>" +
+                "(function() { window.close(); })();" +
+                "</script>"
+        );
 
         if (logger.isDebugEnabled())
         {
@@ -142,6 +154,7 @@ class ShibbolethHandler
 
             responseWriter.println("<br/>token: " + token);
         }
+        responseWriter.println("</body></html>");
 
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
