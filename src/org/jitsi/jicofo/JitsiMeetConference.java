@@ -57,12 +57,6 @@ public class JitsiMeetConference
         = Logger.getLogger(JitsiMeetConference.class);
 
     /**
-     * FIXME: remove and replace with focusUserName which is already available
-     * The constant describes focus MUC nickname
-     */
-    private final static String FOCUS_NICK = "focus";
-
-    /**
      * Error code used in {@link OperationFailedException} when there are no
      * working videobridge bridges.
      * FIXME: consider moving to OperationFailedException ?
@@ -83,6 +77,11 @@ public class JitsiMeetConference
      * The name of XMPP domain used by the focus user to login.
      */
     private final String xmppDomain;
+
+    /**
+     * The name of XMPP user used by the focus to login.
+     */
+    private final String xmppUsername;
 
     /**
      * The password user by the focus to login
@@ -200,6 +199,7 @@ public class JitsiMeetConference
     public JitsiMeetConference(String roomName,
                                String serverAddress,
                                String xmppDomain,
+                               String xmppUsername,
                                String xmppLoginPassword,
                                ConferenceListener listener,
                                JitsiMeetConfig config)
@@ -207,26 +207,10 @@ public class JitsiMeetConference
         this.roomName = roomName;
         this.serverAddress = serverAddress;
         this.xmppDomain = xmppDomain != null ? xmppDomain : serverAddress;
+        this.xmppUsername = xmppUsername;
         this.xmppLoginPassword = xmppLoginPassword;
         this.listener = listener;
         this.config = config;
-    }
-
-    /**
-     * Creates new instance of {@link JitsiMeetConference}.
-     *
-     * @param roomName name of MUC room that is hosting the conference.
-     * @param serverAddress name of the XMPP server.
-     * @param listener the listener that will be notified about this instance
-     *        events.
-     */
-    // FIXME: why is not used now ? remove eventually
-    public JitsiMeetConference(String roomName,
-                               String serverAddress,
-                               ConferenceListener listener)
-    {
-        this(roomName, serverAddress, null, null, listener,
-             new JitsiMeetConfig(new HashMap<String, String>()));
     }
 
     /**
@@ -242,7 +226,7 @@ public class JitsiMeetConference
             return;
 
         protocolProviderHandler.start(
-            serverAddress, xmppDomain, xmppLoginPassword, FOCUS_NICK, this);
+            serverAddress, xmppDomain, xmppLoginPassword, xmppUsername, this);
 
         colibri
             = protocolProviderHandler.getOperationSet(
@@ -914,9 +898,9 @@ public class JitsiMeetConference
      * @return <tt>true</tt> if given {@link ChatRoomMember} is a focus
      *         participant.
      */
-    static boolean isFocusMember(ChatRoomMember member)
+    boolean isFocusMember(ChatRoomMember member)
     {
-        return member.getName().equals("focus");
+        return member.getName().equals(xmppUsername);
     }
 
     /**
@@ -1596,7 +1580,7 @@ public class JitsiMeetConference
     public String getFocusJid()
     {
         return chatRoom != null
-            ? chatRoom.getName() + "/" + FOCUS_NICK
+            ? chatRoom.getName() + "/" + xmppUsername
             : null;
     }
 

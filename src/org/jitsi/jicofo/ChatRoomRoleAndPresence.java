@@ -176,7 +176,7 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (JitsiMeetConference.isFocusMember(member)
+            if (conference.isFocusMember(member)
                 || conference.isSipGateway(member))
             {
                 continue;

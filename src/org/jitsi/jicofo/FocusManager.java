@@ -91,6 +91,11 @@ public class FocusManager
     private String focusUserDomain;
 
     /**
+     * The username used by the focus to login.
+     */
+    private String focusUserName;
+
+    /**
      * Optional focus user password(if null then will login anonymously).
      */
     private String focusUserPassword;
@@ -139,7 +144,7 @@ public class FocusManager
 
         focusUserDomain = config.getString(FOCUS_USER_DOMAIN_PNAME);
 
-        String focusUserName = config.getString(FOCUS_USER_NAME_PNAME);
+        focusUserName = config.getString(FOCUS_USER_NAME_PNAME);
 
         focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
 
@@ -207,8 +212,8 @@ public class FocusManager
 
         JitsiMeetConference conference
             = new JitsiMeetConference(
-                    room, hostName, focusUserDomain, focusUserPassword,
-                    this, config);
+                    room, hostName, focusUserDomain,
+                    focusUserName, focusUserPassword, this, config);
         try
         {
             conferences.put(room, conference);
