@@ -7,6 +7,8 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.rayo.*;
+import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
@@ -56,6 +58,10 @@ public class MeetExtensionsHandler
         MuteIqProvider muteIqProvider = new MuteIqProvider();
         muteIqProvider.registerMuteIqProvider(
             ProviderManager.getInstance());
+
+        RayoIqProvider rayoIqProvider = new RayoIqProvider();
+        rayoIqProvider.registerRayoIQs(
+                ProviderManager.getInstance());
     }
 
     /**
@@ -85,7 +91,8 @@ public class MeetExtensionsHandler
     @Override
     public boolean accept(Packet packet)
     {
-        return acceptMuteIq(packet) || acceptColibriIQ(packet);
+        return acceptMuteIq(packet) || acceptColibriIQ(packet)
+                || acceptRayoIq(packet);
     }
 
     @Override
@@ -104,6 +111,10 @@ public class MeetExtensionsHandler
         else if (packet instanceof MuteIq)
         {
             handleMuteIq((MuteIq) packet);
+        }
+        else if (packet instanceof RayoIqProvider.DialIq)
+        {
+            handleRayoIQ((RayoIqProvider.DialIq) packet);
         }
         else
         {
@@ -183,5 +194,99 @@ public class MeetExtensionsHandler
         }
 
         smackXmpp.getXmppConnection().sendPacket(result);
+    }
+
+    private boolean acceptRayoIq(Packet p)
+    {
+        return p instanceof RayoIqProvider.DialIq;
+    }
+
+    private void handleRayoIQ(RayoIqProvider.DialIq dialIq)
+    {
+        String initiatorJid = dialIq.getFrom();
+
+        ChatRoomMemberRole role = conference.getRoleForMucJid(initiatorJid);
+
+        if (role == null)
+        {
+            // Only room members are allowed to send requests
+            IQ error = createErrorResponse(
+                dialIq, new XMPPError(XMPPError.Condition.forbidden));
+
+            smackXmpp.getXmppConnection().sendPacket(error);
+
+            return;
+        }
+
+        if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
+        {
+            // Moderator permission is required
+            IQ error = createErrorResponse(
+                dialIq, new XMPPError(XMPPError.Condition.not_allowed));
+
+            smackXmpp.getXmppConnection().sendPacket(error);
+
+            return;
+        }
+
+        // Check if Jigasi is available
+        String jigasiJid = conference.getServices().getSipGateway();
+
+        if (StringUtils.isNullOrEmpty(jigasiJid))
+        {
+            // Not available
+            IQ error = createErrorResponse(
+                dialIq, new XMPPError(XMPPError.Condition.service_unavailable));
+
+            smackXmpp.getXmppConnection().sendPacket(error);
+
+            return;
+        }
+
+        // Redirect original request to Jigasi component
+        String originalPacketId = dialIq.getPacketID();
+
+        dialIq.setFrom(null);
+        dialIq.setTo(jigasiJid);
+        dialIq.setPacketID(IQ.nextID());
+
+        IQ reply
+            = (IQ) smackXmpp.getXmppConnection().sendPacketAndGetReply(dialIq);
+
+        // Send Jigasi response back to the client
+        reply.setFrom(null);
+        reply.setTo(initiatorJid);
+        reply.setPacketID(originalPacketId);
+
+        smackXmpp.getXmppConnection().sendPacket(reply);
+    }
+
+    /**
+     * FIXME: replace with IQ.createErrorResponse
+     * Prosody does not allow to include request body in error
+     * response. Replace this method with IQ.createErrorResponse once fixed.
+     */
+    private IQ createErrorResponse(IQ request, XMPPError error)
+    {
+        if (!(request.getType() == IQ.Type.GET
+                || request.getType() == IQ.Type.SET))
+        {
+            throw new IllegalArgumentException(
+                "IQ must be of type 'set' or 'get'. Original IQ: "
+                        + request.toXML());
+        }
+        final IQ result = new IQ()
+        {
+            public String getChildElementXML()
+            {
+                return "";
+            }
+        };
+        result.setType(IQ.Type.ERROR);
+        result.setPacketID(request.getPacketID());
+        result.setFrom(request.getTo());
+        result.setTo(request.getFrom());
+        result.setError(error);
+        return result;
     }
 }

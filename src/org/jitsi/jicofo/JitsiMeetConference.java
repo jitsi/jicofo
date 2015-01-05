@@ -263,6 +263,12 @@ public class JitsiMeetConference
         services.getBridgeSelector()
             .setPreConfiguredBridge(config.getPreConfiguredVideobridge());
 
+        // Set pre-configured SIP gateway
+        if (config.getPreConfiguredSipGateway() != null)
+        {
+            services.setSipGateway(config.getPreConfiguredSipGateway());
+        }
+
         if (!protocolProviderHandler.isRegistered())
         {
             protocolProviderHandler.register();
@@ -1112,6 +1118,18 @@ public class JitsiMeetConference
                     .getContactAddress().equals(mucAddress))
             {
                 return participant;
+            }
+        }
+        return null;
+    }
+
+    ChatRoomMemberRole getRoleForMucJid(String mucJid)
+    {
+        for (ChatRoomMember member : chatRoom.getMembers())
+        {
+            if (member.getContactAddress().equals(mucJid))
+            {
+                return member.getRole();
             }
         }
         return null;

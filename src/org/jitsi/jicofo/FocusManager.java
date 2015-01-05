@@ -339,6 +339,14 @@ public class FocusManager
     }
 
     /**
+     * Returns instance of <tt>JitsiMeetServices</tt> used in conferences.
+     */
+    public JitsiMeetServices getJitsiMeetServices()
+    {
+        return jitsiMeetServices;
+    }
+
+    /**
      * Interface used to listen for focus lifecycle events.
      */
     public interface FocusAllocationListener

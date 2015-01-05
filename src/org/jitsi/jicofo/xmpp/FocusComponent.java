@@ -282,6 +282,11 @@ public class FocusComponent
                     response.addProperty(
                         new ConferenceIq.Property("externalAuth", "true"));
                 }
+                if (focusManager.getJitsiMeetServices().getSipGateway() != null)
+                {
+                    response.addProperty(
+                        new ConferenceIq.Property("sipGatewayEnabled", "true"));
+                }
 
                 return IQUtils.convert(response);
             }
