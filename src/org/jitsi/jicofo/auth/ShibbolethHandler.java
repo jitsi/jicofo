@@ -79,8 +79,8 @@ class ShibbolethHandler
         {
             logger.error(e, e);
 
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            baseRequest.setHandled(true);
+            response.sendError(
+                HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -96,8 +96,9 @@ class ShibbolethHandler
         String token = request.getParameter("token");
         if (StringUtils.isNullOrEmpty(token))
         {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            baseRequest.setHandled(true);
+            response.sendError(
+                HttpServletResponse.SC_BAD_REQUEST,
+                "Missing mandatory parameter 'token'");
             return;
         }
 
@@ -105,8 +106,9 @@ class ShibbolethHandler
         String email = (String) request.getAttribute("mail");
         if (StringUtils.isNullOrEmpty(email))
         {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            baseRequest.setHandled(true);
+            response.sendError(
+                HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                "Attribute 'mail' not provided - check server configuration");
             return;
         }
 
@@ -115,8 +117,9 @@ class ShibbolethHandler
             = ServiceUtils.getService(bundleContext, AuthAuthority.class);
         if (!authAuthority.authenticateUser(token, email))
         {
-            response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
-            baseRequest.setHandled(true);
+            response.sendError(
+                HttpServletResponse.SC_NOT_ACCEPTABLE,
+                "Token verification failed - try again");
             return;
         }
 
