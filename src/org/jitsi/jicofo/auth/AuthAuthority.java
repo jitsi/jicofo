@@ -34,9 +34,9 @@ import java.util.concurrent.*;
  * </li></ol>
  * <br/>
  * Authentication tokens once generated and not used will expire after
- * {@link #TOKEN_LIFETIME}. If user authenticates before conference has
+ * {@link #tokenLifetime}. If user authenticates before conference has
  * started for the purpose of creation of the room and will not create it,
- * then authentication will expire after {@link #PRE_AUTHENTICATION_LIFETIME}.
+ * then authentication will expire after {@link #preAuthenticationLifetime}.
  *
  * @author Pawel Domas
  */
@@ -49,6 +49,28 @@ public class AuthAuthority
     private final static Logger logger = Logger.getLogger(AuthAuthority.class);
 
     /**
+     * Name of configuration property that control lifetime of authentication
+     * token. If token is not used for this amount of time then it gets
+     * expired and can no longer be used to authenticate(1 minute by default).
+     */
+    private final static String TOKEN_LIFETIME_PNAME
+        = "org.jitsi.jicofo.auth.TOKEN_LIFETIME";
+
+    private final static long DEFAULT_TOKEN_LIFETIME = 60 * 1000;
+
+    /**
+     * Name of configuration property that controls "pre authentication"
+     * lifetime. That is how long do we keep authentication state valid
+     * before the room gets created. In other words this is how much time do
+     * we have to create the conference for which we have authenticated(30
+     * seconds by default).
+     */
+    private final static String PRE_AUTHENTICATION_LIFETIME_PNAME
+        = "org.jitsi.jicofo.auth.PRE_AUTH_LIFETIME";
+
+    private final static long DEFAULT_PRE_AUTHENTICATION_LIFETIME = 30 * 1000;
+
+    /**
      * Interval at which we check for token/authentication states expiration.
      */
     private final static long EXPIRE_POLLING_INTERVAL = 10000L;
@@ -58,12 +80,12 @@ public class AuthAuthority
      * keep authentication state valid before the room gets created. After
      * that authentication is valid for the time of the conference.
      */
-    private final static long PRE_AUTHENTICATION_LIFETIME = 30000L;
+    private final long preAuthenticationLifetime;
 
     /**
      * Authentication token lifetime in milliseconds.
      */
-    private final static long TOKEN_LIFETIME = 30000L;
+    private final long tokenLifetime;
 
     /**
      * The name of configuration property that lists "reserved" rooms.
@@ -142,6 +164,17 @@ public class AuthAuthority
                 (RESERVED_ROOMS_PNAME, "");
 
         reservedRooms = reservedRoomsStr.split(",");
+
+        tokenLifetime = FocusBundleActivator.getConfigService()
+            .getLong(TOKEN_LIFETIME_PNAME, DEFAULT_TOKEN_LIFETIME);
+
+        preAuthenticationLifetime = FocusBundleActivator.getConfigService()
+            .getLong(PRE_AUTHENTICATION_LIFETIME_PNAME,
+                     DEFAULT_PRE_AUTHENTICATION_LIFETIME);
+
+        logger.info(
+            "Token lifetime: " + tokenLifetime +
+            ", pre-auth lifetime: " + preAuthenticationLifetime);
     }
 
     /**
@@ -403,7 +436,7 @@ public class AuthAuthority
             for (AuthenticationToken token : tokens)
             {
                 if (System.currentTimeMillis() - token.getCreationTimestamp()
-                        > TOKEN_LIFETIME)
+                        > tokenLifetime)
                 {
                     expireToken(token);
                 }
@@ -425,7 +458,7 @@ public class AuthAuthority
                     continue;
                 }
                 if (System.currentTimeMillis() - authState.getAuthTimestamp()
-                        > PRE_AUTHENTICATION_LIFETIME)
+                        > preAuthenticationLifetime)
                 {
                     removeAuthentication(authState);
                 }
