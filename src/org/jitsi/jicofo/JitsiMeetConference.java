@@ -617,22 +617,32 @@ public class JitsiMeetConference
                 = config == null || config.enableFirefoxHacks() == null
                     ? false : config.enableFirefoxHacks();
 
+        boolean isSipGateway = peer.isSipGateway();
+
+        boolean disableIce = isSipGateway;
+
         contents.add(
             JingleOfferFactory.createContentForMedia(MediaType.AUDIO,
-                    enableFirefoxHacks));
+                    enableFirefoxHacks, disableIce));
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.VIDEO,
-                    enableFirefoxHacks));
+        // There is no VIDEO content in SIP gateway session(at least for now)
+        if (!isSipGateway)
+        {
+            contents.add(
+                    JingleOfferFactory.createContentForMedia(MediaType.VIDEO,
+                            enableFirefoxHacks, disableIce));
+        }
 
+        // Is SCTP enabled ?
         boolean openSctp = config == null || config.openSctp() == null
                 ? true : config.openSctp();
 
-        if (openSctp)
+        // There is no DATA connection in SIP gateway session
+        if (openSctp && !isSipGateway)
         {
             contents.add(
-                    JingleOfferFactory.createContentForMedia(MediaType.DATA,
-                            enableFirefoxHacks));
+                JingleOfferFactory.createContentForMedia(MediaType.DATA,
+                        enableFirefoxHacks, disableIce));
         }
 
         boolean useBundle = peer.hasBundleSupport();

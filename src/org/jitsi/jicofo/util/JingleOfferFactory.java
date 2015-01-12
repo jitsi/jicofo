@@ -28,12 +28,16 @@ public class JingleOfferFactory
      *
      * @param mediaType the media type for which new offer content will
      *                  be created.
+     * @param enableFirefoxHacks pass <tt>true</tt> if created offer should be
+     *                           compatible with Firefox client.
+     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     *                   should be indicated in the offer.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType, boolean enableFirefoxHacks)
+            MediaType mediaType, boolean enableFirefoxHacks, boolean disableIce)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -214,7 +218,14 @@ public class JingleOfferFactory
         // DTLS-SRTP
         //setDtlsEncryptionOnContent(mediaType, content, null);
 
-        content.addChildExtension(new IceUdpTransportPacketExtension());
+        if (!disableIce)
+        {
+            content.addChildExtension(new IceUdpTransportPacketExtension());
+        }
+        else
+        {
+            content.addChildExtension(new RawUdpTransportPacketExtension());
+        }
 
         return content;
     }
