@@ -7,7 +7,7 @@
 package org.jitsi.jicofo.auth;
 
 /**
- * Class used by {@link AuthAuthority} to track authentication state of
+ * Class used by {@link ShibbolethAuthAuthority} to track authentication state of
  * conference participants. It contains user JID, name of the conference room
  * for which authentication is valid, authentication identity assigned by
  * external authentication system and creation timestamp use to expire

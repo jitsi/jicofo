@@ -8,15 +8,15 @@ package org.jitsi.jicofo.auth;
 
 /**
  * Interface used to listen to authentication notification fired by
- * {@link AuthAuthority}.
+ * {@link AuthenticationAuthority}.
  *
  * @author Pawel Domas
  */
 public interface AuthenticationListener
 {
     /**
-     * Called by {@link AuthAuthority} when the user identified by given
-     * <tt>userJid</tt> gets confirmed identity by external authentication
+     * Called by {@link AuthenticationAuthority} when the user identified by
+     * given <tt>userJid</tt> gets confirmed identity by external authentication
      * component.
      *
      * @param userJid the real user JID(not MUC JID which can be faked).

@@ -13,7 +13,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Class responsible for keeping track of users authentication with external
@@ -38,15 +37,19 @@ import java.util.concurrent.*;
  * started for the purpose of creation of the room and will not create it,
  * then authentication will expire after {@link #preAuthenticationLifetime}.
  *
+ * FIXME move to Shibboleth 'impl' package
+ *
  * @author Pawel Domas
  */
-public class AuthAuthority
-    implements FocusManager.FocusAllocationListener
+public class ShibbolethAuthAuthority
+    extends AbstractAuthAuthority
+    implements FocusManager.FocusAllocationListener, AuthenticationAuthority
 {
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(AuthAuthority.class);
+    private final static Logger logger
+        = Logger.getLogger(ShibbolethAuthAuthority.class);
 
     /**
      * Name of configuration property that control lifetime of authentication
@@ -129,12 +132,6 @@ public class AuthAuthority
     private FocusManager focusManager;
 
     /**
-     * The list of registered {@link AuthenticationListener}s.
-     */
-    private List<AuthenticationListener> authenticationListeners
-            = new CopyOnWriteArrayList<AuthenticationListener>();
-
-    /**
      * The timer used to check for the expiration of tokens and/or
      * authentication states.
      */
@@ -146,11 +143,11 @@ public class AuthAuthority
     private final String[] reservedRooms;
 
     /**
-     * Creates new instance of {@link AuthAuthority}.
+     * Creates new instance of {@link ShibbolethAuthAuthority}.
      * @param authUrlPattern the pattern used for constructing external
      *        authentication URLs. See {@link #authUrlPattern} for more info.
      */
-    public AuthAuthority(String authUrlPattern)
+    public ShibbolethAuthAuthority(String authUrlPattern)
     {
         if (StringUtils.isNullOrEmpty(authUrlPattern)) {
             throw new IllegalArgumentException(
@@ -217,6 +214,7 @@ public class AuthAuthority
      * @return <tt>true</tt> if it's OK to create the room for given name on
      *         behalf of verified user or <tt>false</tt> otherwise.
      */
+    @Override
     public boolean isAllowedToCreateRoom(String peerJid, String roomName)
     {
         if (roomName.contains("@"))
@@ -225,6 +223,15 @@ public class AuthAuthority
         }
         return isRoomReserved(roomName)
                 || authenticationStateMap.containsKey(peerJid);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isExternal()
+    {
+        return true;
     }
 
     private boolean isRoomReserved(String roomName)
@@ -268,29 +275,6 @@ public class AuthAuthority
     }
 
     /**
-     * Registers to the list of <tt>AuthenticationListener</tt>s.
-     * @param l the <tt>AuthenticationListener</tt> to be added to listeners
-     *          list.
-     */
-    public void addAuthenticationListener(AuthenticationListener l)
-    {
-        if (!authenticationListeners.contains(l))
-        {
-            authenticationListeners.add(l);
-        }
-    }
-
-    /**
-     * Unregisters from the list of <tt>AuthenticationListener</tt>s.
-     * @param l the <tt>AuthenticationListener</tt> that will be removed from
-     *          authentication listeners list.
-     */
-    public void removeAuthenticationListener(AuthenticationListener l)
-    {
-        authenticationListeners.remove(l);
-    }
-
-    /**
      * Method should be called to finish authentication process.
      * @param tokenStr a string which authentication token that identifies
      *                 user's authentication request. Based on the token we
@@ -330,15 +314,8 @@ public class AuthAuthority
 
     private void notifyJidAuthenticated(AuthenticationState authState)
     {
-        logger.info("Jid " + authState.getUserJid()
-                + " authenticated as: " + authState.getAuthenticatedIdentity());
-
-        for (AuthenticationListener l : authenticationListeners)
-        {
-            l.jidAuthenticated(
-                    authState.getUserJid(),
-                    authState.getAuthenticatedIdentity());
-        }
+        notifyUserAuthenticated(
+                authState.getUserJid(), authState.getAuthenticatedIdentity());
     }
 
     void expireToken(AuthenticationToken token)
@@ -401,6 +378,7 @@ public class AuthAuthority
      * @param roomName conference room name which is the context of
      *                 authentication.
      */
+    @Override
     public boolean isUserAuthenticated(String jabberID, String roomName)
     {
         if (StringUtils.isNullOrEmpty(jabberID))

@@ -74,7 +74,7 @@ public class FocusComponent
     /**
      * (Optional)Authentication authority used to verify user requests.
      */
-    private AuthAuthority authAuthority;
+    private AuthenticationAuthority authAuthority;
 
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
@@ -103,7 +103,7 @@ public class FocusComponent
             FocusBundleActivator.bundleContext, FocusManager.class);
 
         this.authAuthority = ServiceUtils.getService(
-            FocusBundleActivator.bundleContext, AuthAuthority.class);
+            FocusBundleActivator.bundleContext, AuthenticationAuthority.class);
 
         focusManager.start();
     }
@@ -280,7 +280,9 @@ public class FocusComponent
                 if (authAuthority != null)
                 {
                     response.addProperty(
-                        new ConferenceIq.Property("externalAuth", "true"));
+                        new ConferenceIq.Property(
+                            "externalAuth",
+                            String.valueOf(authAuthority.isExternal())));
                 }
                 if (focusManager.getJitsiMeetServices().getSipGateway() != null)
                 {

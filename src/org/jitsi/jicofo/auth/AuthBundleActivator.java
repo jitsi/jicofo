@@ -35,7 +35,8 @@ public class AuthBundleActivator
 
     /**
      * The name of configuration property that specifies the
-     * pattern of authentication URL. See {@link AuthAuthority} for more info.
+     * pattern of authentication URL. See {@link ShibbolethAuthAuthority}
+     * for more info.
      */
     private static final String AUTHENTICATION_URL_PNAME = AUTH_PNAME + ".URL";
 
@@ -92,14 +93,15 @@ public class AuthBundleActivator
     private Server server;
 
     /**
-     * Reference to service registration of {@link AuthAuthority}.
+     * Reference to service registration of {@link AuthenticationAuthority}.
      */
-    private ServiceRegistration<AuthAuthority> authAuthorityServiceRegistration;
+    private ServiceRegistration<AuthenticationAuthority>
+            authAuthorityServiceRegistration;
 
     /**
-     * The instance of {@link AuthAuthority}.
+     * The instance of {@link AuthenticationAuthority}.
      */
-    private AuthAuthority authAuthority;
+    private AuthenticationAuthority authAuthority;
 
     /**
      * {@inheritDoc}
@@ -122,13 +124,32 @@ public class AuthBundleActivator
 
         logger.info("Starting authentication service... URL: " + authUrl);
 
-        this.authAuthority = new AuthAuthority(authUrl);
+        if (authUrl.startsWith("XMPP:"))
+        {
+            this.authAuthority
+                = new XMPPDomainAuthAuthority(authUrl.substring(5));
+        }
+        else
+        {
+            this.authAuthority = new ShibbolethAuthAuthority(authUrl);
+        }
+
+        logger.info("Auth authority: " + authAuthority);
 
         authAuthorityServiceRegistration
             = bundleContext.registerService(
-                    AuthAuthority.class, authAuthority, null);
+                    AuthenticationAuthority.class, authAuthority, null);
 
         authAuthority.start();
+
+        // FIXME move Jetty related code to separate class
+        if (!(authAuthority instanceof ShibbolethAuthAuthority))
+        {
+            return;
+        }
+
+        ShibbolethAuthAuthority shibbolethAuthAuthority
+            = (ShibbolethAuthAuthority) authAuthority;
 
         // The REST API of Videobridge does not start by default.
         int port = 8888, tlsPort = 8843;
@@ -242,7 +263,8 @@ public class AuthBundleActivator
 
             server.addConnector(ajp13SocketConnector);
 
-            server.setHandler(new ShibbolethHandler(bundleContext));
+            server.setHandler(
+                    new ShibbolethHandler(shibbolethAuthAuthority));
 
             /*
              * The server will start a non-daemon background Thread which will

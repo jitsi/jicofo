@@ -48,7 +48,7 @@ public class ChatRoomRoleAndPresence
     /**
      * Authentication authority used to verify users.
      */
-    private AuthAuthority authAuthority;
+    private AuthenticationAuthority authAuthority;
 
     /**
      * The {@link ChatRoomMemberRole} of conference focus.
@@ -73,7 +73,8 @@ public class ChatRoomRoleAndPresence
     public void init()
     {
         authAuthority = ServiceUtils.getService(
-                FocusBundleActivator.bundleContext, AuthAuthority.class);
+                FocusBundleActivator.bundleContext,
+                AuthenticationAuthority.class);
 
         if (authAuthority != null)
         {

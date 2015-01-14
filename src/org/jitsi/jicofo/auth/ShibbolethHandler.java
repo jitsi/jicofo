@@ -6,15 +6,12 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 
 import org.jitsi.util.*;
-
-import org.osgi.framework.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -42,21 +39,16 @@ class ShibbolethHandler
     private static final Logger logger
             = Logger.getLogger(ShibbolethHandler.class);
 
-    /**
-     * The <tt>BundleContext</tt> within which this instance is initialized.
-     */
-    private final BundleContext bundleContext;
+    private final ShibbolethAuthAuthority shibbolethAuthAuthority;
 
     /**
-     * Initializes a new <tt>ShibbolethHandler</tt> instance within a specific
-     * <tt>BundleContext</tt>.
+     * Initializes a new <tt>ShibbolethHandler</tt> instance.
      *
-     * @param bundleContext the <tt>BundleContext</tt> within which the new
-     * instance is to be initialized
+     * @param shibbolethAuthAuthority parent Shibboleth authentication authority
      */
-    public ShibbolethHandler(BundleContext bundleContext)
+    public ShibbolethHandler(ShibbolethAuthAuthority shibbolethAuthAuthority)
     {
-        this.bundleContext = bundleContext;
+        this.shibbolethAuthAuthority = shibbolethAuthAuthority;
     }
 
     /**
@@ -113,9 +105,7 @@ class ShibbolethHandler
         }
 
         // User authenticated
-        AuthAuthority authAuthority
-            = ServiceUtils.getService(bundleContext, AuthAuthority.class);
-        if (!authAuthority.authenticateUser(token, email))
+        if (!shibbolethAuthAuthority.authenticateUser(token, email))
         {
             response.sendError(
                 HttpServletResponse.SC_NOT_ACCEPTABLE,
