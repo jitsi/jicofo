@@ -9,6 +9,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 
@@ -75,14 +76,9 @@ public class Participant
     private MediaSSRCGroupMap ssrcGroupsToRemove = new MediaSSRCGroupMap();
 
     /**
-     * Indicates whether this peer has RTP bundle and RTCP-mux support.
+     * The list of XMPP features supported by this participant. 
      */
-    private boolean hasBundleSupport;
-
-    /**
-     * Flag used to mark SIP gateway participants.
-     */
-    private boolean isSipGateway;
+    private List<String> supportedFeatures = new ArrayList<String>();
 
     /**
      * Remembers participant's muted status.
@@ -266,42 +262,74 @@ public class Participant
     }
 
     /**
-     * Sets RTP bundle support on this participant.
-     *
-     * @param hasBundleSupport <tt>true</tt> if this participant has RTP bundle
-     *                         support.
-     */
-    public void setHasBundleSupport(boolean hasBundleSupport)
-    {
-        this.hasBundleSupport = hasBundleSupport;
-    }
-
-    /**
      * Returns <tt>true</tt> if this participant supports RTP bundle and RTCP
      * mux.
      */
     public boolean hasBundleSupport()
     {
-        return hasBundleSupport;
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_RTCP_MUX)
+                && supportedFeatures.contains(DiscoveryUtil.FEATURE_RTP_BUNDLE);
     }
 
     /**
+     * FIXME: we need to remove "is SIP gateway code", but there are still 
+     * situations where we need to know whether given peer is a human or not.
+     * For example when we close browser window and only SIP gateway stays
+     * we should destroy the conference and close SIP connection.
+     *  
      * Returns <tt>true</tt> if this participant belongs to SIP gateway service.
      */
     public boolean isSipGateway()
     {
-        return isSipGateway;
+        return supportedFeatures.contains(
+                "http://jitsi.org/protocol/jigasi");
     }
 
     /**
-     * Marks this participants as SIP gateway one.
-     *
-     * @param isSipGateway <tt>true</tt> if this participants belongs to
-     *        the SIP gateway service.
+     * Returns <tt>true</tt> if RTP audio is supported by this peer.
      */
-    public void setIsSipGateway(boolean isSipGateway)
+    public boolean hasAudioSupport()
     {
-        this.isSipGateway = isSipGateway;
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_AUDIO);
+    }
+
+    /**
+     * Returns <tt>true</tt> if RTP video is supported by this peer.
+     */
+    public boolean hasVideoSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_VIDEO);
+    }
+
+    /**
+     * Returns <tt>true</tt> if this peer supports ICE transport.
+     */
+    public boolean hasIceSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_ICE);
+    }
+
+    /**
+     * Returns <tt>true</tt> if this peer supports DTLS/SCTP. 
+     */
+    public boolean hasSctpSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_SCTP);
+    }
+
+    /**
+     * Sets the list of features supported by this participant.
+     * @see DiscoveryUtil for the list of predefined feature constants. 
+     * @param supportedFeatures the list of features to set.
+     */
+    public void setSupportedFeatures(List<String> supportedFeatures)
+    {
+        if (supportedFeatures == null)
+        {
+            throw new NullPointerException("supportedFeatures");
+        }
+
+        this.supportedFeatures = supportedFeatures;
     }
 
     /**

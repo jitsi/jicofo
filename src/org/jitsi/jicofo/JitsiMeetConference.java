@@ -138,11 +138,6 @@ public class JitsiMeetConference
         = new CopyOnWriteArrayList<Participant>();
 
     /**
-     * Operation set used for service discovery.
-     */
-    private OperationSetSimpleCaps disco;
-
-    /**
      * Information about Jitsi Meet conference services like videobridge,
      * SIP gateway, Jirecon.
      */
@@ -243,10 +238,6 @@ public class JitsiMeetConference
         chatOpSet
             = protocolProviderHandler.getOperationSet(
                     OperationSetMultiUserChat.class);
-
-        disco
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetSimpleCaps.class);
 
         meetTools
             = protocolProviderHandler.getOperationSet(
@@ -448,21 +439,13 @@ public class JitsiMeetConference
 
         participants.add(newParticipant);
 
-        // Detect bundle support
-        newParticipant.setHasBundleSupport(
-            disco.hasFeatureSupport(
-                address,
-                new String[]{
-                    "urn:ietf:rfc:5761"/* rtcp-mux */,
-                    "urn:ietf:rfc:5888"/* bundle */
-                }));
-
-        // Is it SIP gateway ?
-        newParticipant.setIsSipGateway(
-            disco.hasFeatureSupport(
-                address,
-                new String[] { "http://jitsi.org/protocol/jigasi" }));
-
+        // Feature discovery
+        List<String> features 
+            = DiscoveryUtil.discoverParticipantFeatures(
+                    getXmppProvider(), address);
+        
+        newParticipant.setSupportedFeatures(features);
+        
         logger.info(
             chatRoomMember.getContactAddress()
                 + " has bundle ? "
@@ -621,32 +604,31 @@ public class JitsiMeetConference
                 = config == null || config.enableFirefoxHacks() == null
                     ? false : config.enableFirefoxHacks();
 
-        boolean isSipGateway = peer.isSipGateway();
-
-        boolean disableIce = isSipGateway;
-
-        contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.AUDIO,
-                    enableFirefoxHacks, disableIce));
-
-        // There is no VIDEO content in SIP gateway session(at least for now)
-        if (!isSipGateway)
+        boolean disableIce = !peer.hasIceSupport();
+        
+        if (peer.hasAudioSupport())
         {
             contents.add(
-                    JingleOfferFactory.createContentForMedia(MediaType.VIDEO,
-                            enableFirefoxHacks, disableIce));
+                JingleOfferFactory.createContentForMedia(
+                    MediaType.AUDIO, enableFirefoxHacks, disableIce));
+        }
+
+        if (peer.hasVideoSupport())
+        {
+            contents.add(
+                JingleOfferFactory.createContentForMedia(
+                    MediaType.VIDEO, enableFirefoxHacks, disableIce));
         }
 
         // Is SCTP enabled ?
         boolean openSctp = config == null || config.openSctp() == null
                 ? true : config.openSctp();
 
-        // There is no DATA connection in SIP gateway session
-        if (openSctp && !isSipGateway)
+        if (openSctp && peer.hasSctpSupport())
         {
             contents.add(
-                JingleOfferFactory.createContentForMedia(MediaType.DATA,
-                        enableFirefoxHacks, disableIce));
+                JingleOfferFactory.createContentForMedia(
+                    MediaType.DATA, enableFirefoxHacks, disableIce));
         }
 
         boolean useBundle = peer.hasBundleSupport();

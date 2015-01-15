@@ -84,6 +84,18 @@ public class MockSetSimpleCapsOpSet
         return true;
     }
 
+    @Override
+    public List<String> getFeatures(String node)
+    {
+        MockCapsNode capsNode = findChild(node);
+        if (capsNode == null)
+        {
+            return null;
+        }
+
+        return Arrays.asList(capsNode.getFeatures());
+    }
+
     //@Override
     public boolean hasFeatureSupport(String node, String subnode,
                                      String[] features)

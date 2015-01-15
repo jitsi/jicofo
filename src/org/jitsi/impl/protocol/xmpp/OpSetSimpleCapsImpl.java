@@ -54,6 +54,11 @@ public class OpSetSimpleCapsImpl
         return xmppProvider.checkFeatureSupport(
             node, features);
     }
+    
+    public List<String> getFeatures(String node)
+    {
+        return xmppProvider.getEntityFeatures(node);
+    }
 
     //@Override
     public boolean hasFeatureSupport(String node, String subnode,

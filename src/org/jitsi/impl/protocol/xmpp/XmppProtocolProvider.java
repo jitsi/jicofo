@@ -376,34 +376,6 @@ public class XmppProtocolProvider
     public boolean checkFeatureSupport(String node, String subnode,
                                        String[] features)
     {
-        try
-        {
-            //FIXME: fix logging levels
-            logger.info("Discovering info for: " + node + " subnode: " + subnode);
-
-            DiscoverInfo info = discoInfoManager.discoverInfo(node, subnode);
-
-            logger.info("Features");
-            Iterator<DiscoverInfo.Feature> featuresList = info.getFeatures();
-            while (featuresList.hasNext())
-            {
-                DiscoverInfo.Feature f = featuresList.next();
-                logger.info(f.toXML());
-            }
-
-            logger.info("Identities");
-            Iterator<DiscoverInfo.Identity> identities = info.getIdentities();
-            while (identities.hasNext())
-            {
-                DiscoverInfo.Identity identity = identities.next();
-                logger.info(identity.toXML());
-            }
-        }
-        catch (XMPPException e)
-        {
-            logger.error(e, e);
-        }
-
         for (String feature : features)
         {
             if (!discoInfoManager.supportsFeature(node, feature))
@@ -444,6 +416,29 @@ public class XmppProtocolProvider
         }
 
         return result;
+    }
+
+    public List<String> getEntityFeatures(String node)
+    {
+        try
+        {
+            DiscoverInfo info = discoInfoManager.discoverInfo(node);
+            
+            Iterator<DiscoverInfo.Feature> features =  info.getFeatures();
+            
+            List<String> featureList = new ArrayList<String>();
+            while (features.hasNext())
+            {
+                featureList.add(features.next().getVar());
+            }
+            
+            return featureList;
+        }
+        catch (XMPPException e)
+        {
+            logger.error(e, e);
+            return null;
+        }
     }
 
     /**
