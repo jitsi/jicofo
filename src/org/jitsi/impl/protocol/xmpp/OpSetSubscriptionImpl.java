@@ -134,6 +134,8 @@ public class OpSetSubscriptionImpl
         PubSubManager manager = getManager();
         try
         {
+            logger.info("Subscribing to " + node + " node at " + pubSubAddress);
+            
             Node pubSubNode = manager.getNode(node);
             if (!isSubscribed(getOurJid(), pubSubNode))
             {

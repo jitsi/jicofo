@@ -534,6 +534,10 @@ public class JitsiMeetConference
         {
             try
             {
+                logger.info(
+                    "Using " + colibri.getJitsiVideobridge() 
+                        + " to allocate channels in " + roomName);
+                
                 ColibriConferenceIQ peerChannels
                     = colibri.createColibriChannels(
                             peer.hasBundleSupport(),
