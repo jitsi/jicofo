@@ -33,7 +33,7 @@ Manual configuration for Prosody
 Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method(jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration(etc\prosody\prosody.cfg.lua):
 ```
 VirtualHost "auth.jitsi.example.com"
-    authentification = "internal_plain"
+    authentication = "internal_plain"
 ```
 Next step is to create admin user that will be used by Jicofo to log in:
 ```
