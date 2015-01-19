@@ -9,6 +9,7 @@ package org.jitsi.impl.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 
+import net.java.sip.communicator.service.protocol.globalstatus.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
@@ -154,6 +155,12 @@ public class ChatMemberImpl
     public void setRole(ChatRoomMemberRole role)
     {
         throw new RuntimeException("Not implemented yet.");
+    }
+
+    @Override
+    public PresenceStatus getPresenceStatus()
+    {
+        return GlobalStatusEnum.ONLINE;
     }
 
     @Override
