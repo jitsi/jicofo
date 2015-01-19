@@ -87,6 +87,11 @@ public class JingleOfferFactory
             opusMinptime.setName("minptime");
             opusMinptime.setValue("10");
             opus.addParameter(opusMinptime);
+            ParameterPacketExtension opusFec
+                    = new ParameterPacketExtension();
+            opusFec.setName("useinbandfec");
+            opusFec.setValue("1");
+            opus.addParameter(opusFec);
             // a=rtpmap:103 ISAC/16000
             PayloadTypePacketExtension isac16
                 = new PayloadTypePacketExtension();
