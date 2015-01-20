@@ -26,12 +26,6 @@ public class MockMediaStream
     }
 
     @Override
-    public void setAbsSendTimeExtensionID(int i)
-    {
-
-    }
-
-    @Override
     public void close()
     {
 

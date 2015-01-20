@@ -8,6 +8,7 @@ package mock.muc;
 
 import mock.xmpp.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.protocol.globalstatus.*;
 import org.jitsi.protocol.xmpp.*;
 
 /**
@@ -102,6 +103,12 @@ public class MockRoomMember
     public void setRole(ChatRoomMemberRole role)
     {
         this.role = role;
+    }
+
+    @Override
+    public PresenceStatus getPresenceStatus()
+    {
+        return GlobalStatusEnum.ONLINE;
     }
 
     @Override
