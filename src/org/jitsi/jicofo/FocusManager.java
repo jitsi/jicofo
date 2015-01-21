@@ -237,7 +237,7 @@ public class FocusManager
             if (loggingService != null)
             {
                 loggingService.logEvent(
-                    LogEventFactory.focusCreated(room + "@" + focusUserDomain));
+                    LogEventFactory.focusCreated(room));
             }
 
             conference.start();

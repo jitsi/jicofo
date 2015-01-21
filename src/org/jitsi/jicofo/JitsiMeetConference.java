@@ -544,7 +544,9 @@ public class JitsiMeetConference
                             loggingService.logEvent(
                                 LogEventFactory.conferenceRoom(
                                         conferenceId,
-                                        roomName));
+                                        roomName,
+                                        getFocusRealJid()));
+
                         }
                     }
                 }
@@ -1596,6 +1598,16 @@ public class JitsiMeetConference
         return chatRoom != null
             ? chatRoom.getName() + "/" + xmppUsername
             : null;
+    }
+
+    /**
+     * Gets the full real (as opposed to the room JID in a MUC) JID of the
+     * focus.
+     * @return the full real JID of the focus.
+     */
+    private String getFocusRealJid()
+    {
+        return getXmppProvider().getAccountID().getAccountAddress();
     }
 
     /**

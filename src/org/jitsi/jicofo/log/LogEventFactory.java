@@ -54,7 +54,8 @@ public class LogEventFactory
             = new String[]
             {
                     "conference_id",
-                    "room_jid"
+                    "room_jid",
+                    "focus"
             };
 
     /**
@@ -126,14 +127,16 @@ public class LogEventFactory
      */
     public static Event conferenceRoom(
             String conferenceId,
-            String roomJid)
+            String roomJid,
+            String focus)
     {
         return new Event("conference_room",
                          CONFERENCE_ROOM_COLUMNS,
                          new Object[]
                                  {
                                          conferenceId,
-                                         roomJid
+                                         roomJid,
+                                         focus
                                  });
     }
 }
