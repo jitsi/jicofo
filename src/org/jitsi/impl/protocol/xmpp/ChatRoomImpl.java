@@ -860,7 +860,13 @@ public class ChatRoomImpl
             if (logger.isTraceEnabled())
                 logger.trace("Kicked: " + participant + ", " + s2 +", " + s3);
 
-            ChatMemberImpl member = members.get(participant);
+            ChatMemberImpl member;
+
+            synchronized (members)
+            {
+                member = removeMember(participant);
+            }
+
             if (member == null)
             {
                 logger.error(
