@@ -1,13 +1,19 @@
+/*
+ * Jicofo, the Jitsi Conference Focus.
+ *
+ * Distributable under LGPL license.
+ * See terms of license at gnu.org.
+ */
 package org.jitsi.jicofo.log;
 
 import org.jitsi.service.configuration.*;
 import org.jitsi.videobridge.eventadmin.*;
 import org.jitsi.videobridge.influxdb.*;
 
-import java.util.*;
-
 /**
- * Ex
+ * Extends <tt>org.jitsi.videobridge.influxdb.LoggingHandler</tt> with
+ * jicofo-specific functionality.
+ *
  * @author Boris Grozev
  */
 public class LoggingHandler
@@ -83,7 +89,9 @@ public class LoggingHandler
         }
         else if (EventFactory.ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC.equals(topic))
         {
-            //TODO implement
+            endpointDisplayNameChanged(event.getProperty("conference_id"),
+                                       event.getProperty("endpoint_id"),
+                                       event.getProperty("display_name"));
         }
         else
         {
@@ -103,6 +111,20 @@ public class LoggingHandler
                                                conferenceId,
                                                roomJid,
                                                focus
+                                           }));
+    }
+
+    private void endpointDisplayNameChanged(Object conferenceId,
+                                            Object endpointId,
+                                            Object displayName)
+    {
+        logEvent(new InfluxDBEvent("endpoint_display_name",
+                                   ENDPOINT_DISPLAY_NAME_COLUMNS,
+                                   new Object[]
+                                           {
+                                                   conferenceId,
+                                                   endpointId,
+                                                   displayName
                                            }));
     }
 }

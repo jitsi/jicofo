@@ -53,18 +53,13 @@ public class EventFactory
             String endpointId,
             String displayName)
     {
-        return null;
-        /*
-        TODO: fixme
-        return new Event("endpoint_display_name",
-                         ENDPOINT_DISPLAY_NAME_COLUMNS,
-                         new Object[]
-                                 {
-                                         conferenceId,
-                                         endpointId,
-                                         displayName
-                                 });
-         */
+        // TODO do not use hard-coded keys
+        Dictionary properties = new Hashtable(3);
+        properties.put("conference_id", conferenceId);
+        properties.put("endpoint_id", endpointId);
+        properties.put("display_name", displayName);
+        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC,
+                         properties);
     }
 
     /**

@@ -86,6 +86,11 @@ public class Participant
     private boolean mutedStatus;
 
     /**
+     *
+     */
+    private String displayName = null;
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link XmppChatMember} that represent this
@@ -432,4 +437,23 @@ public class Participant
     {
         this.ssrcGroups.remove(ssrcGroupsToRemove);
     }
+
+    /**
+     * Returns the display name of the participant.
+     * @return the display name of the participant.
+     */
+    public String getDisplayName()
+    {
+        return displayName;
+    }
+
+    /**
+     * Sets the display name of the participant.
+     * @param displayName the display name to set.
+     */
+    public void setDisplayName(String displayName)
+    {
+        this.displayName = displayName;
+    }
+
 }

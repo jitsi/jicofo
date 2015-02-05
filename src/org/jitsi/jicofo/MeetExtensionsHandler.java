@@ -22,6 +22,7 @@ import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.Message; //disambiguation
 import org.jivesoftware.smack.provider.*;
+import org.jivesoftware.smackx.packet.*;
 
 /**
  * Class handles various Jitsi Meet extensions IQs like {@link MuteIq} and
@@ -95,8 +96,11 @@ public class MeetExtensionsHandler
     @Override
     public boolean accept(Packet packet)
     {
-        return acceptMuteIq(packet) || acceptColibriIQ(packet)
-                || acceptRayoIq(packet) || acceptMessage(packet);
+        return acceptMuteIq(packet)
+                || acceptColibriIQ(packet)
+                || acceptRayoIq(packet)
+                || acceptMessage(packet)
+                || acceptPresence(packet);
     }
 
     @Override
@@ -123,6 +127,10 @@ public class MeetExtensionsHandler
         else if (packet instanceof Message)
         {
             handleMessage((Message) packet);
+        }
+        else if (packet instanceof Presence)
+        {
+            handlePresence((Presence) packet);
         }
         else
         {
@@ -309,6 +317,7 @@ public class MeetExtensionsHandler
                         Event event =
                             EventFactory.peerConnectionStats(
                                 conference.getColibriConference().getConferenceId(),
+                                // TODO: find a better way to get the endpoint ID
                                 participant.getChatMember().getName(),
                                 content);
                         if (event != null)
@@ -327,6 +336,54 @@ public class MeetExtensionsHandler
         {
             logger.info("Ignoring log request from an unknown JID: " + jid);
         }
+    }
+
+    private boolean acceptPresence(Packet packet)
+    {
+        return packet instanceof Presence;
+    }
+
+    /**
+     * Handles presence stanzas
+     * @param presence
+     */
+    private void handlePresence(Presence presence)
+    {
+        Participant participant
+                = conference.findParticipantForRoomJid(presence.getFrom());
+        if (participant != null)
+        {
+            // Check for changes to the display name
+            String oldDisplayName = participant.getDisplayName();
+            String newDisplayName = null;
+            for (PacketExtension pe : presence.getExtensions())
+            {
+                if (pe instanceof Nick)
+                {
+                    newDisplayName = ((Nick) pe).getName();
+                    break;
+                }
+            }
+
+            if ((oldDisplayName == null && newDisplayName != null)
+                || (oldDisplayName != null
+                        && !oldDisplayName.equals(newDisplayName)))
+            {
+                participant.setDisplayName(newDisplayName);
+
+                EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+                if (eventAdmin != null)
+                {
+                    eventAdmin.sendEvent(
+                        EventFactory.endpointDisplayNameChanged(
+                            conference.getColibriConference().getConferenceId(),
+                            // TODO: find a better way to get the endpoint ID
+                            participant.getChatMember().getName(),
+                            newDisplayName));
+                }
+            }
+        }
+
     }
 
     /**
