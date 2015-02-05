@@ -1685,13 +1685,11 @@ public class JitsiMeetConference
 
     /**
      * Handles <tt>message</tt> stanzas addressed to the focus JID for this
-     * conference. Note that there are no filters, and we only depend on the
-     * fact that each <tt>JitsiMeetConference</tt> has its own
-     * <tt>XMPPConnection</tt>.
+     * conference.
      *
      * Currently we only support XEP-0337 "log" messages with a limited set of
      * IDs and predefined format. Specifically, we always expect the text in the
-     * message to be base64-encoded and, if the "delfated" tag is set,
+     * message to be base64-encoded and, if the "deflated" tag is set,
      * compressed in the RFC1951 raw DEFLATE format.
      *
      * @author Boris Grozev
@@ -1711,8 +1709,8 @@ public class JitsiMeetConference
         private boolean loggingServiceSet = false;
 
         /**
-         * The string which identifies the contents of a log message as containg
-         * PeerConnection statistics.
+         * The string which identifies the contents of a log message as
+         * containing PeerConnection statistics.
          */
         private static final String LOG_ID_PC_STATS = "PeerConnectionStats";
 
@@ -1814,7 +1812,8 @@ public class JitsiMeetConference
         private String getContent(LogPacketExtension log)
         {
             String messageBase64 = log.getMessage();
-            byte[] messageBytes = net.java.sip.communicator.util.Base64.decode(messageBase64);
+            byte[] messageBytes
+                = net.java.sip.communicator.util.Base64.decode(messageBase64);
 
             if (Boolean.parseBoolean(log.getTagValue("deflated")))
             {

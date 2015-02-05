@@ -1015,7 +1015,8 @@ public class ChatRoomImpl
                 || !(packet instanceof Presence)
                 || packet.getError() != null)
             {
-                logger.warn("Unable to handle packet: " + packet);
+                logger.warn("Unable to handle packet: " +
+                                    ((packet == null) ? "" : packet.toXML()));
                 return;
             }
 

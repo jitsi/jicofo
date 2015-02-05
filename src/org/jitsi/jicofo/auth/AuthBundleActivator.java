@@ -124,7 +124,7 @@ public class AuthBundleActivator
 
         logger.info("Starting authentication service... URL: " + authUrl);
 
-        if (authUrl.startsWith("XMPP:"))
+        if (authUrl.toUpperCase().startsWith("XMPP:"))
         {
             this.authAuthority
                 = new XMPPDomainAuthAuthority(authUrl.substring(5));
