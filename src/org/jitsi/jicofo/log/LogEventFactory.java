@@ -6,7 +6,12 @@
  */
 package org.jitsi.jicofo.log;
 
+import org.jitsi.util.*;
 import org.jitsi.videobridge.log.*;
+import org.json.simple.*;
+import org.json.simple.parser.*;
+
+import java.util.*;
 
 /**
  * A utility class with static methods which initialize <tt>Event</tt> instances
@@ -16,6 +21,12 @@ import org.jitsi.videobridge.log.*;
  */
 public class LogEventFactory
 {
+    /**
+     * The logger instance used by this class.
+     */
+    private final static Logger logger
+            = Logger.getLogger(LogEventFactory.class);
+
     /**
      * The names of the columns of a "focus created" event.
      */
@@ -42,9 +53,13 @@ public class LogEventFactory
     private static final String[] PEER_CONNECTION_STATS_COLUMNS
             = new String[]
             {
+                    "time",
                     "conference_id",
                     "endpoint_id",
-                    "stats"
+                    "group_name",
+                    "type",
+                    "stat",
+                    "value"
             };
 
     /**
@@ -100,19 +115,111 @@ public class LogEventFactory
                                  });
     }
 
+    /**
+     * Creates an Event after parsing <tt>stats</tt> as JSON in the format
+     * used in Jitsi Meet.
+     * @param conferenceId the ID of the conference.
+     * @param endpointId the ID of the endpoint.
+     * @param stats the string representation of
+     * @return
+     */
     public static Event peerConnectionStats(
             String conferenceId,
             String endpointId,
             String stats)
     {
-        return new Event("peer_connection_stats",
-                         PEER_CONNECTION_STATS_COLUMNS,
-                         new Object[]
-                                 {
-                                         conferenceId,
-                                         endpointId,
-                                         stats
-                                 });
+        Object[] values;
+
+        try
+        {
+            values = parsePeerConnectionStats(conferenceId, endpointId, stats);
+        }
+        catch (Exception e)
+        {
+            logger.warn("Failed to parse PeerConnection stats JSON: " + e);
+            return null;
+        }
+
+        Event event = new Event("peer_connection_stats",
+                                PEER_CONNECTION_STATS_COLUMNS,
+                                values);
+
+        // We specifically add a "time" column
+        event.setUseLocalTime(false);
+
+        return event;
+    }
+
+    /**
+     * Parses <tt>statsStr</tt> as JSON in the format used by Jitsi Meet, and
+     * returns an Object[][] containing the values to be used in an
+     * <tt>Event</tt> for the given JSON.
+     * @param conferenceId the value to use for the conference_id field.
+     * @param endpointId the value to use for the endpoint_id field.
+     * @param statsStr the PeerConnection JSON string.
+     * @return an Object[][] containing the values to be used in an
+     * <tt>Event</tt> for the given JSON.
+     * @throws Exception if parsing fails for any reason.
+     */
+    private static Object[] parsePeerConnectionStats(
+            String conferenceId,
+            String endpointId,
+            String statsStr)
+        throws Exception
+    {
+        // An example JSON in the format that we expect:
+        // {
+        //   "timestamps": [1, 2, 3],
+        //   "stats": {
+        //      "group1": {
+        //          "type": "some string",
+        //          "stat1": ["some", "values", ""]
+        //          "stat2": ["some", "more", "values"]
+        //      },
+        //      "bweforvideo": {
+        //          "type":"VideoBwe",
+        //          "googActualEncBitrate": ["12","34","56"],
+        //          "googAvailableSendBandwidth": ["78", "90", "12"]
+        //      }
+        //   }
+        // }
+
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject = (JSONObject) parser.parse(statsStr);
+
+        List<Object[]> values = new LinkedList<Object[]>();
+        JSONArray timestamps = (JSONArray) jsonObject.get("timestamps");
+        JSONObject stats = (JSONObject) jsonObject.get("stats");
+
+        for (Object groupName : stats.keySet())
+        {
+            JSONObject group = ((JSONObject) stats.get(groupName));
+            Object type = group.get("type");
+            for (Object statName : group.keySet())
+            {
+                if ("type".equals(statName))
+                    continue;
+
+                JSONArray statValues = (JSONArray)group.get(statName);
+                for (int i = 0; i < statValues.size(); i++)
+                {
+                    Object[] point
+                        = new Object[PEER_CONNECTION_STATS_COLUMNS.length];
+
+                    point[0] = timestamps.get(i);
+                    point[1] = conferenceId;
+                    point[2] = endpointId;
+                    point[3] = groupName;
+                    point[4] = statName;
+                    point[5] = type;
+                    point[6] = statValues.get(i);
+
+                    values.add(point);
+                }
+            }
+        }
+
+        return values.toArray();
     }
 
 

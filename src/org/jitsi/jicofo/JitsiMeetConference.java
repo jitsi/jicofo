@@ -1771,11 +1771,12 @@ public class JitsiMeetConference
                     String content = getContent(log);
                     if (content != null)
                     {
-                        loggingService.logEvent(
-                                LogEventFactory.peerConnectionStats(
+                        Event event = LogEventFactory.peerConnectionStats(
                                         colibri.getConferenceId(),
                                         participant.getChatMember().getName(),
-                                        content));
+                                        content);
+                        if (event != null)
+                            loggingService.logEvent(event);
                     }
                 }
                 else
