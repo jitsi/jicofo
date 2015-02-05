@@ -24,15 +24,9 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.log.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
-import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.Message;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.zip.*;
 
 /**
  * Class represents the focus of Jitsi Meet conference. Responsibilities:
@@ -170,13 +164,6 @@ public class JitsiMeetConference
      * Used to detect idle session and expire it if idle time limit is exceeded.
      */
     private long idleTimestamp = -1;
-
-    /**
-     * The <tt>PacketListener</tt> which we use to handle incoming
-     * <tt>message</tt> stanzas.
-     */
-    private final PacketListener messageListener
-        = new MessageListener();
 
     /**
      * Creates new instance of {@link JitsiMeetConference}.
@@ -1036,8 +1023,6 @@ public class JitsiMeetConference
         if (!started)
             return;
 
-        getDirectXmppOpSet().removePacketHandler(messageListener);
-
         disposeConference();
 
         leaveTheRoom();
@@ -1064,12 +1049,6 @@ public class JitsiMeetConference
     {
         logger.info("Reg state changed: " + evt);
 
-        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
-        {
-            getDirectXmppOpSet().addPacketHandler(
-                messageListener,
-                new MessageTypeFilter(Message.Type.normal));
-        }
         maybeJoinTheRoom();
     }
 
@@ -1672,6 +1651,15 @@ public class JitsiMeetConference
     }
 
     /**
+     * Gets the <tt>OperationSetColibriConference</tt> of this instance.
+     * @return the <tt>OperationSetColibriConference</tt> of this instance.
+     */
+    OperationSetColibriConference getColibriConference()
+    {
+        return colibri;
+    }
+
+    /**
      * The interface used to listen for conference events.
      */
     public interface ConferenceListener
@@ -1681,172 +1669,5 @@ public class JitsiMeetConference
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConference conference);
-    }
-
-    /**
-     * Handles <tt>message</tt> stanzas addressed to the focus JID for this
-     * conference.
-     *
-     * Currently we only support XEP-0337 "log" messages with a limited set of
-     * IDs and predefined format. Specifically, we always expect the text in the
-     * message to be base64-encoded and, if the "deflated" tag is set,
-     * compressed in the RFC1951 raw DEFLATE format.
-     *
-     * @author Boris Grozev
-     */
-    private class MessageListener
-        implements PacketListener
-    {
-        /**
-         * The <tt>LoggingService</tt> which will be used to log the events
-         * (usually to an InfluxDB instance).
-         */
-        private LoggingService loggingService = null;
-
-        /**
-         * Whether {@link #loggingService} has been initialized or not.
-         */
-        private boolean loggingServiceSet = false;
-
-        /**
-         * The string which identifies the contents of a log message as
-         * containing PeerConnection statistics.
-         */
-        private static final String LOG_ID_PC_STATS = "PeerConnectionStats";
-
-        /**
-         * Processes a packet. Looks for known extensions (XEP-0337 "log"
-         * extensions) and handles them.
-         * @param packet the packet to process.
-         */
-        @Override
-        public void processPacket(Packet packet)
-        {
-            if (!(packet instanceof Message))
-                return;
-
-            Message message = (Message) packet;
-
-            LogPacketExtension log = null;
-            for (PacketExtension ext : message.getExtensions())
-            {
-                if (ext instanceof LogPacketExtension)
-                {
-                    log = (LogPacketExtension) ext;
-                    break;
-                }
-            }
-
-            if (log != null)
-            {
-                Participant participant
-                     = findParticipantForRoomJid(message.getFrom());
-                if (participant != null)
-                {
-                    handleLogRequest(log, participant);
-                }
-                else
-                {
-                    logger.info("Ignoring log request from unknown JID: "
-                                            + message.getFrom());
-                }
-            }
-        }
-
-        /**
-         * Handles a <tt>LogPacketExtension</tt> which represents a request
-         * from a specific <tt>Participant</tt> to log a message.
-         * @param log the <tt>LogPacketExtension</tt> to handle.
-         * @param participant the <tt>Participant</tt> which sent the request.
-         */
-        private void handleLogRequest(
-                LogPacketExtension log,
-                Participant participant)
-        {
-            LoggingService loggingService = getLoggingService();
-            if (loggingService != null)
-            {
-                if (LOG_ID_PC_STATS.equals(log.getID()))
-                {
-                    String content = getContent(log);
-                    if (content != null)
-                    {
-                        Event event = LogEventFactory.peerConnectionStats(
-                                        colibri.getConferenceId(),
-                                        participant.getChatMember().getName(),
-                                        content);
-                        if (event != null)
-                            loggingService.logEvent(event);
-                    }
-                }
-                else
-                {
-                    if (logger.isInfoEnabled())
-                        logger.info("Ignoring log request with an unknown ID:"
-                            + log.getID());
-                }
-
-            }
-        }
-
-        /**
-         * Gets the <tt>LoggingService</tt>.
-         * @return  the <tt>LoggingService</tt>.
-         */
-        private LoggingService getLoggingService()
-        {
-            if (!loggingServiceSet)
-            {
-                loggingServiceSet = true;
-                loggingService = FocusBundleActivator.getLoggingService();
-            }
-
-            return loggingService;
-        }
-
-        /**
-         * Extracts the message to be logged from a <tt>LogPacketExtension</tt>.
-         * Takes care of base64 decoding and (optionally) decompression.
-         * @param log the <tt>LogPacketExtension</tt> to handle.
-         * @return the decoded message contained in <tt>log</tt>.
-         */
-        private String getContent(LogPacketExtension log)
-        {
-            String messageBase64 = log.getMessage();
-            byte[] messageBytes
-                = net.java.sip.communicator.util.Base64.decode(messageBase64);
-
-            if (Boolean.parseBoolean(log.getTagValue("deflated")))
-            {
-                // nowrap=true, because we expect "raw" deflate
-                Inflater inflater = new Inflater(true);
-                ByteArrayOutputStream result = new ByteArrayOutputStream();
-
-                inflater.setInput(messageBytes);
-                byte[] buf = new byte[10000];
-
-                do
-                {
-                    try
-                    {
-                        int len = inflater.inflate(buf);
-                        result.write(buf, 0, len);
-                    }
-                    catch (DataFormatException dfe)
-                    {
-                        if (logger.isInfoEnabled())
-                            logger.info(
-                                "Failed to inflate log request content:" + dfe);
-                        return null;
-                    }
-                } while (!inflater.finished());
-
-                return result.toString();
-            }
-            else
-            {
-                return new String(messageBytes);
-            }
-        }
     }
 }

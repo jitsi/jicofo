@@ -1,0 +1,77 @@
+/*
+ * Jicofo, the Jitsi Conference Focus.
+ *
+ * Distributable under LGPL license.
+ * See terms of license at gnu.org.
+ */
+package org.jitsi.jicofo.log;
+
+import org.jitsi.util.*;
+
+import java.io.*;
+import java.util.zip.*;
+
+/**
+ * Static utility methods and fields related to logging.
+ *
+ * @author Boris Grozev
+ */
+public class LogUtil
+{
+    /**
+     * The logger instance used by this class.
+     */
+    private final static Logger logger
+            = Logger.getLogger(LogUtil.class);
+
+    /**
+     * The string which identifies the contents of a log message as
+     * containing PeerConnection statistics.
+     */
+    public static final String LOG_ID_PC_STATS = "PeerConnectionStats";
+
+    /**
+     * Extracts the message to be logged from a <tt>LogPacketExtension</tt>.
+     * Takes care of base64 decoding and (optionally) decompression.
+     * @param log the <tt>LogPacketExtension</tt> to handle.
+     * @return the decoded message contained in <tt>log</tt>.
+     */
+    public static String getContent(LogPacketExtension log)
+    {
+        String messageBase64 = log.getMessage();
+        byte[] messageBytes
+                = net.java.sip.communicator.util.Base64.decode(messageBase64);
+
+        if (Boolean.parseBoolean(log.getTagValue("deflated")))
+        {
+            // nowrap=true, because we expect "raw" deflate
+            Inflater inflater = new Inflater(true);
+            ByteArrayOutputStream result = new ByteArrayOutputStream();
+
+            inflater.setInput(messageBytes);
+            byte[] buf = new byte[10000];
+
+            do
+            {
+                try
+                {
+                    int len = inflater.inflate(buf);
+                    result.write(buf, 0, len);
+                }
+                catch (DataFormatException dfe)
+                {
+                    if (logger.isInfoEnabled())
+                        logger.info(
+                                "Failed to inflate log request content:" + dfe);
+                    return null;
+                }
+            } while (!inflater.finished());
+
+            return result.toString();
+        }
+        else
+        {
+            return new String(messageBytes);
+        }
+    }
+}
