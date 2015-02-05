@@ -16,7 +16,7 @@ import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 
-import org.jitsi.videobridge.log.*;
+import org.jitsi.videobridge.eventadmin.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
@@ -298,20 +298,21 @@ public class MeetExtensionsHandler
         Participant participant = conference.findParticipantForRoomJid(jid);
         if (participant != null)
         {
-            LoggingService loggingService = null; //FIXME: this will need more refactoring anyway
-            if (loggingService != null)
+            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+            if (eventAdmin != null)
             {
                 if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
                 {
                     String content = LogUtil.getContent(log);
                     if (content != null)
                     {
-                        Event event = LogEventFactory.peerConnectionStats(
+                        Event event =
+                            EventFactory.peerConnectionStats(
                                 conference.getColibriConference().getConferenceId(),
                                 participant.getChatMember().getName(),
                                 content);
                         if (event != null)
-                            loggingService.logEvent(event);
+                            eventAdmin.sendEvent(event);
                     }
                 }
                 else

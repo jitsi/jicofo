@@ -7,7 +7,8 @@
 package org.jitsi.jicofo.log;
 
 import org.jitsi.util.*;
-import org.jitsi.videobridge.log.*;
+import org.jitsi.videobridge.eventadmin.*;
+import org.jitsi.videobridge.influxdb.*;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -19,76 +20,23 @@ import java.util.*;
  *
  * @author Boris Grozev
  */
-public class LogEventFactory
+public class EventFactory
+    extends org.jitsi.videobridge.EventFactory
 {
     /**
      * The logger instance used by this class.
      */
     private final static Logger logger
-            = Logger.getLogger(LogEventFactory.class);
+            = Logger.getLogger(EventFactory.class);
 
     /**
-     * The names of the columns of a "focus created" event.
+     * The name of the topic of a "conference room" event.
      */
-    private static final String[] FOCUS_CREATED_COLUMNS
-            = new String[]
-            {
-                    "room_jid"
-            };
+    public static final String CONFERENCE_ROOM_TOPIC
+            = "org/jitsi/jicofo/CONFERENCE_ROOM_CREATED";
 
-    /**
-     * The names of the columns of an "endpoint display name" event.
-     */
-    private static final String[] ENDPOINT_DISPLAY_NAME_COLUMNS
-            = new String[]
-            {
-                    "conference_id",
-                    "endpoint_id",
-                    "display_name"
-            };
-
-    /**
-     * The names of the columns of a "peer connection stats" event.
-     */
-    private static final String[] PEER_CONNECTION_STATS_COLUMNS
-            = new String[]
-            {
-                    "time",
-                    "conference_id",
-                    "endpoint_id",
-                    "group_name",
-                    "type",
-                    "stat",
-                    "value"
-            };
-
-    /**
-     * The names of the columns of a "conference room" event.
-     */
-    private static final String[] CONFERENCE_ROOM_COLUMNS
-            = new String[]
-            {
-                    "conference_id",
-                    "room_jid",
-                    "focus"
-            };
-
-    /**
-     * Creates a new "focus created" <tt>Event</tt>.
-     * @param roomJid the JID of the MUC for which the focus was created.
-     *
-     * @return the <tt>Event</tt> which was created.
-     */
-    public static Event focusCreated(
-            String roomJid)
-    {
-        return new Event("focus_created",
-                         FOCUS_CREATED_COLUMNS,
-                         new Object[]
-                                 {
-                                         roomJid,
-                                 });
-    }
+    public static final String PEER_CONNECTION_STATS_TOPIC
+            = "org/jitsi/jicofo/PEER_CONNECTION_STATS";
 
     /**
      * Creates a new "endpoint display name changed" <tt>Event</tt>, which
@@ -105,6 +53,9 @@ public class LogEventFactory
             String endpointId,
             String displayName)
     {
+        return null;
+        /*
+        TODO: fixme
         return new Event("endpoint_display_name",
                          ENDPOINT_DISPLAY_NAME_COLUMNS,
                          new Object[]
@@ -113,6 +64,7 @@ public class LogEventFactory
                                          endpointId,
                                          displayName
                                  });
+         */
     }
 
     /**
@@ -140,14 +92,16 @@ public class LogEventFactory
             return null;
         }
 
-        Event event = new Event("peer_connection_stats",
-                                PEER_CONNECTION_STATS_COLUMNS,
+        InfluxDBEvent influxDBEvent = new InfluxDBEvent("peer_connection_stats",
+                                LoggingHandler.PEER_CONNECTION_STATS_COLUMNS,
                                 values);
 
         // We specifically add a "time" column
-        event.setUseLocalTime(false);
+        influxDBEvent.setUseLocalTime(false);
 
-        return event;
+
+        return new Event(
+                PEER_CONNECTION_STATS_TOPIC, makeProperties(influxDBEvent));
     }
 
     /**
@@ -204,7 +158,8 @@ public class LogEventFactory
                 for (int i = 0; i < statValues.size(); i++)
                 {
                     Object[] point
-                        = new Object[PEER_CONNECTION_STATS_COLUMNS.length];
+                        = new Object[LoggingHandler
+                            .PEER_CONNECTION_STATS_COLUMNS.length];
 
                     point[0] = timestamps.get(i);
                     point[1] = conferenceId;
@@ -237,14 +192,12 @@ public class LogEventFactory
             String roomJid,
             String focus)
     {
-        return new Event("conference_room",
-                         CONFERENCE_ROOM_COLUMNS,
-                         new Object[]
-                                 {
-                                         conferenceId,
-                                         roomJid,
-                                         focus
-                                 });
+        // TODO do not use hard-coded keys
+        Dictionary properties = new Hashtable(3);
+        properties.put("conference_id", conferenceId);
+        properties.put("room_jid", roomJid);
+        properties.put("focus", focus);
+        return new Event(CONFERENCE_ROOM_TOPIC, properties);
     }
 }
 

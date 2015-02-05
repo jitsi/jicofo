@@ -23,7 +23,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.log.*;
+import org.jitsi.videobridge.eventadmin.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -524,12 +524,12 @@ public class JitsiMeetConference
                     String conferenceId = colibri.getConferenceId();
                     if (conferenceId != null)
                     {
-                        LoggingService loggingService
-                                = FocusBundleActivator.getLoggingService();
-                        if (loggingService != null)
+                        EventAdmin eventAdmin
+                                = FocusBundleActivator.getEventAdmin();
+                        if (eventAdmin != null)
                         {
-                            loggingService.logEvent(
-                                LogEventFactory.conferenceRoom(
+                            eventAdmin.sendEvent(
+                                EventFactory.conferenceRoom(
                                         conferenceId,
                                         roomName,
                                         getFocusRealJid()));

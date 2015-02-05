@@ -11,6 +11,7 @@ import org.jitsi.impl.neomedia.device.*;
 import org.jitsi.impl.neomedia.transform.csrc.*;
 import org.jitsi.impl.neomedia.transform.srtp.*;
 import org.jitsi.impl.osgi.framework.*;
+import org.jitsi.jicofo.log.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.osgi.framework.*;
@@ -56,7 +57,7 @@ public class OSGi
      * An element of the <tt>BUNDLES</tt> array is an array of <tt>String</tt>s
      * and represents an OSGi start level.
      */
-    private static String[][] getBUNDLES()
+    private static String[][] getBundles()
     {
 
         String[][] bundlesFromFile = loadBundlesFromFile(BUNDLES_FILE);
@@ -139,7 +140,10 @@ public class OSGi
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/videobridge/log/LoggingBundleActivator"
+                "org/jitsi/videobridge/eventadmin/Activator"
+            },
+            {
+                "org/jitsi/videobridge/influxdb/Activator"
             },
             useMockProtocols
                 ? new String[] { "mock/MockMainMethodActivator" }
@@ -262,6 +266,12 @@ public class OSGi
                 true_);
         defaults.put(SRTPCryptoContext.CHECK_REPLAY_PNAME, false_);
 
+        // Use the jicofo extended handler
+        defaults.put(
+                org.jitsi.videobridge.influxdb.Activator
+                        .LOGGING_HANDLER_CLASS_PNAME,
+                org.jitsi.jicofo.log.LoggingHandler.class.getCanonicalName());
+
         for (Map.Entry<String,String> e : defaults.entrySet())
         {
             String key = e.getKey();
@@ -306,7 +316,7 @@ public class OSGi
 
         if (launcher == null)
         {
-            launcher = new OSGiLauncher(getBUNDLES());
+            launcher = new OSGiLauncher(getBundles());
         }
 
         launcher.start(activator);

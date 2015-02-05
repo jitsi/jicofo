@@ -14,7 +14,6 @@ import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.log.*;
 import org.jivesoftware.smack.provider.*;
 
 import java.util.*;
@@ -231,14 +230,6 @@ public class FocusManager
             logger.info("Created new focus for " + room + "@" + focusUserDomain
                             + " conferences count: " + conferences.size()
                             + " options:" + options.toString());
-
-            LoggingService loggingService
-                    = FocusBundleActivator.getLoggingService();
-            if (loggingService != null)
-            {
-                loggingService.logEvent(
-                    LogEventFactory.focusCreated(room));
-            }
 
             conference.start();
         }

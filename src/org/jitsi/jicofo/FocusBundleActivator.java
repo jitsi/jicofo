@@ -11,7 +11,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.service.configuration.*;
 
-import org.jitsi.videobridge.log.*;
+import org.jitsi.videobridge.eventadmin.*;
 import org.jitsi.videobridge.osgi.*;
 import org.osgi.framework.*;
 
@@ -94,15 +94,15 @@ public class FocusBundleActivator
     }
 
     /**
-     * Returns the <tt>LoggingService</tt> instance, if any.
-     * @return the <tt>LoggingService</tt> instance, if any.
+     * Returns the <tt>EventAdmin</tt> instance, if any.
+     * @return the <tt>EventAdmin</tt> instance, if any.
      */
-    public static LoggingService getLoggingService()
+    public static EventAdmin getEventAdmin()
     {
         if (bundleContext != null)
         {
             return ServiceUtils2.getService(bundleContext,
-                                            LoggingService.class);
+                                            EventAdmin.class);
         }
         return null;
     }
