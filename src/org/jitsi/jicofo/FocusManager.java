@@ -112,6 +112,7 @@ public class FocusManager
 
     // Convert to list when needed
     /**
+     * FIXME: remove eventually if not used anymore
      * The list of {@link FocusAllocationListener}.
      */
     private FocusAllocationListener focusAllocListener;

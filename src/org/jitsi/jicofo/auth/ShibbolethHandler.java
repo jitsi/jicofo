@@ -85,12 +85,24 @@ class ShibbolethHandler
                ServletException
     {
 
-        String token = request.getParameter("token");
-        if (StringUtils.isNullOrEmpty(token))
+        String room = request.getParameter("room");
+        if (StringUtils.isNullOrEmpty(room))
         {
             response.sendError(
                 HttpServletResponse.SC_BAD_REQUEST,
-                "Missing mandatory parameter 'token'");
+                "Missing mandatory parameter 'room'");
+            return;
+        }
+        // Extract room name from MUC address
+        room = room.contains("@")
+            ? room.substring(0, room.indexOf("@")) : room;
+
+        String machineUID = request.getParameter("machineUID");
+        if (StringUtils.isNullOrEmpty(machineUID))
+        {
+            response.sendError(
+                HttpServletResponse.SC_BAD_REQUEST,
+                "Missing mandatory parameter 'machineUID'");
             return;
         }
 
@@ -105,11 +117,13 @@ class ShibbolethHandler
         }
 
         // User authenticated
-        if (!shibbolethAuthAuthority.authenticateUser(token, email))
+        String sessionId
+            = shibbolethAuthAuthority.authenticateUser(machineUID, email);
+        if (sessionId == null)
         {
             response.sendError(
-                HttpServletResponse.SC_NOT_ACCEPTABLE,
-                "Token verification failed - try again");
+                HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Authentication failed");
             return;
         }
 
@@ -120,18 +134,48 @@ class ShibbolethHandler
         {
             displayName = email;
         }
-        responseWriter.println("<html><head><head/><body>");
-        responseWriter.println("<h1>Hello " + displayName);
-        responseWriter.println(
-            " !<h1/><h2><a href=\"#\" onclick=\"self.close();\">Close</a>" +
-                    " this window to start the conference.<h2/>");
 
-        // Auto close script
-        responseWriter.println(
-                "<script>" +
-                "(function() { window.close(); })();" +
-                "</script>"
-        );
+        // Close this window or redirect ?
+        boolean close = "true".equalsIgnoreCase(request.getParameter("close"));
+
+        responseWriter.println("<html><head><head/><body>");
+        responseWriter.println("<h1>Hello " + displayName + "!<h1/>");
+        if (!close)
+        {
+            responseWriter.println(
+                "<h2>You should be redirected back to the conference soon..." +
+                        "<h2/>");
+        }
+
+        // Store session-id script
+        String script =
+            "<script>\n" +
+                "(function() {\n" +
+                " var sessionId = '" + sessionId + "';\n" +
+                " localStorage.setItem('sessionId', sessionId);\n" +
+                " console.info('sessionID :' + sessionId);\n";
+
+        if (close)
+        {
+            // Pass session id and close the popup
+            script += "var opener = window.opener;\n"+
+                      "if (opener) {\n"+
+                      "   var res = opener.postMessage(" +
+                      "      { sessionId: sessionId },\n" +
+                      "      window.opener.location.href);\n"+
+                      "   console.info('res: ', res);\n" +
+                      "   window.close();\n"+
+                      "} else {\n" +
+                      "   console.error('No opener !');\n"+
+                      "}\n";
+        }
+        else
+        {
+            // Redirect back to the conference room
+            script += " window.location.href='../"+room+"';\n";
+        }
+
+        responseWriter.println(script +"})();\n</script>\n");
 
         if (logger.isDebugEnabled())
         {
@@ -145,7 +189,7 @@ class ShibbolethHandler
                         String.valueOf(request.getAttribute(attributeName)));
             }
 
-            responseWriter.println("<br/>token: " + token);
+            responseWriter.println("<br/>sessionID: " + sessionId);
         }
         responseWriter.println("</body></html>");
 

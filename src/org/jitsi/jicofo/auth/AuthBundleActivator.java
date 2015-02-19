@@ -21,7 +21,7 @@ import java.lang.reflect.*;
 /**
  * Implements <tt>BundleActivator</tt> for the OSGi bundle responsible for
  * authentication with external systems. Authentication URL pattern must be
- * configured in order to active the bundle {@link #AUTHENTICATION_URL_PNAME}.
+ * configured in order to active the bundle {@link #LOGIN_URL_PNAME}.
  *
  * @author Pawel Domas
  */
@@ -38,7 +38,14 @@ public class AuthBundleActivator
      * pattern of authentication URL. See {@link ShibbolethAuthAuthority}
      * for more info.
      */
-    private static final String AUTHENTICATION_URL_PNAME = AUTH_PNAME + ".URL";
+    private static final String LOGIN_URL_PNAME = AUTH_PNAME + ".URL";
+
+    /**
+     * The name of configuration property that specifies the
+     * pattern of logout URL. See {@link ShibbolethAuthAuthority}
+     * for more info.
+     */
+    private static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
 
     /**
      * The name of the <tt>System</tt> and <tt>ConfigurationService</tt>
@@ -115,23 +122,25 @@ public class AuthBundleActivator
                         bundleContext,
                         ConfigurationService.class);
 
-        String authUrl = cfg.getString(AUTHENTICATION_URL_PNAME);
+        String loginUrl = cfg.getString(LOGIN_URL_PNAME);
+        String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
 
-        if (StringUtils.isNullOrEmpty(authUrl))
+        if (StringUtils.isNullOrEmpty(loginUrl))
         {
             return;
         }
 
-        logger.info("Starting authentication service... URL: " + authUrl);
+        logger.info("Starting authentication service... URL: " + loginUrl);
 
-        if (authUrl.toUpperCase().startsWith("XMPP:"))
+        if (loginUrl.toUpperCase().startsWith("XMPP:"))
         {
             this.authAuthority
-                = new XMPPDomainAuthAuthority(authUrl.substring(5));
+                = new XMPPDomainAuthAuthority(loginUrl.substring(5));
         }
         else
         {
-            this.authAuthority = new ShibbolethAuthAuthority(authUrl);
+            this.authAuthority
+                = new ShibbolethAuthAuthority(loginUrl, logoutUrl);
         }
 
         logger.info("Auth authority: " + authAuthority);

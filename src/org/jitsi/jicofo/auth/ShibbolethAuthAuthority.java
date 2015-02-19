@@ -6,36 +6,26 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
-
-import java.util.*;
+import org.jivesoftware.smack.packet.*;
 
 /**
- * Class responsible for keeping track of users authentication with external
- * systems.
- * <br/>
- * Authentication flow:
- * <ol><li>User asks for authentication URL that contains authentication token
- * used to identify the request. See {@link #createAuthenticationUrl(String,
- * String)}</li><li>
- * User visits authentication URL and does authenticate with an external system.
- * </li><li>
- * Once user authenticates it is redirected by external system to our handler
- * servlet({@link ShibbolethHandler}. It uses the token to identify the
- * request and bind authentication ID to user's JID. See {@link
- * #authenticateUser(String, String)}
- * </li><li>
- * Users JID is authenticated for the time of the conference.
- * </li></ol>
- * <br/>
- * Authentication tokens once generated and not used will expire after
- * {@link #tokenLifetime}. If user authenticates before conference has
- * started for the purpose of creation of the room and will not create it,
- * then authentication will expire after {@link #preAuthenticationLifetime}.
+ * Shibboleth implementation of {@link AuthenticationAuthority} interface.
+ *
+ * Authentication servlet {@link ShibbolethHandler} must be deployed under
+ * the location secured by Shibboleth(called *login location*). When user wants
+ * to login, the application retrieves login URL and redirects user to it(see
+ * {@link #createLoginUrl(String, String, String, boolean)}. When user
+ * attempts to access it will be asked for Shibboleth credentials. Once user
+ * logs-in, request attributes will be filled by Shibboleth system including
+ * 'email' which is treated as users identity. The servlet will bind
+ * identity to new session ID which will be returned to the user. After user
+ * has his session id it is stored in a cookie which can be used for
+ * authenticating future requests.
  *
  * FIXME move to Shibboleth 'impl' package
  *
@@ -43,52 +33,13 @@ import java.util.*;
  */
 public class ShibbolethAuthAuthority
     extends AbstractAuthAuthority
-    implements FocusManager.FocusAllocationListener, AuthenticationAuthority
+    implements AuthenticationAuthority
 {
     /**
      * The logger.
      */
     private final static Logger logger
         = Logger.getLogger(ShibbolethAuthAuthority.class);
-
-    /**
-     * Name of configuration property that control lifetime of authentication
-     * token. If token is not used for this amount of time then it gets
-     * expired and can no longer be used to authenticate(1 minute by default).
-     */
-    private final static String TOKEN_LIFETIME_PNAME
-        = "org.jitsi.jicofo.auth.TOKEN_LIFETIME";
-
-    private final static long DEFAULT_TOKEN_LIFETIME = 60 * 1000;
-
-    /**
-     * Name of configuration property that controls "pre authentication"
-     * lifetime. That is how long do we keep authentication state valid
-     * before the room gets created. In other words this is how much time do
-     * we have to create the conference for which we have authenticated(30
-     * seconds by default).
-     */
-    private final static String PRE_AUTHENTICATION_LIFETIME_PNAME
-        = "org.jitsi.jicofo.auth.PRE_AUTH_LIFETIME";
-
-    private final static long DEFAULT_PRE_AUTHENTICATION_LIFETIME = 30 * 1000;
-
-    /**
-     * Interval at which we check for token/authentication states expiration.
-     */
-    private final static long EXPIRE_POLLING_INTERVAL = 10000L;
-
-    /**
-     * Pre-authentication lifetime in milliseconds. That is how long do we
-     * keep authentication state valid before the room gets created. After
-     * that authentication is valid for the time of the conference.
-     */
-    private final long preAuthenticationLifetime;
-
-    /**
-     * Authentication token lifetime in milliseconds.
-     */
-    private final long tokenLifetime;
 
     /**
      * The name of configuration property that lists "reserved" rooms.
@@ -100,42 +51,42 @@ public class ShibbolethAuthAuthority
             = "org.jitsi.jicofo.auth.RESERVED_ROOMS";
 
     /**
-     * Synchronization root.
+     * Value constant which should be passed as {@link
+     * AuthBundleActivator#LOGIN_URL_PNAME} and {@link
+     * AuthBundleActivator#LOGOUT_URL_PNAME} in order to use default
+     * Shibboleth URLs for login and logout. It can not be skipped, because
+     * Shibboleth will not be enabled otherwise.
      */
-    private final Object syncRoot = new Object();
+    public static final String DEFAULT_URL_CONST = "shibboleth:default";
 
     /**
      * Authentication URL pattern which uses {@link String#format(String,
-     * Object...)} to insert token into the URL as first string argument.<br/>
-     * For example:<br/>
-     * 'https://external-authentication.server.net/auth?token=%1$s'<br/>
-     * Given that the token is '1234' the patter above will result in URL:<br/>
-     * 'https://external-authentication.server.net/auth?token=1234'
+     * Object...)} to insert string arguments into the request.<br/>
+     * Arguments exposed to the service are:<br/>
+     * %1$s - *machineUID* that is identifier of users machine which can be
+     * used by the system to distinguish between session for the same login
+     * on different machines.<br/>
+     * %2$s - *usersJID* Jabber ID of the user who has requested the URL<br/>
+     * %3$s - *roomName* full name of the conference MUC in the form of
+     * "room@muc.server.net"<br/>
+     * %4$s - *popup* indicates if this URL will be opened in a popup. In
+     * this case session-id can be immediately passed to parent window using
+     * CORS window messages.<br/>
+     * Example:<br/>
+     * 'https://external-authentication.server.net/login/?machineUID=%1$s
+     * &room=%3$s&popup=%4$s'<br/>
+     *
      */
-    private final String authUrlPattern;
+    private String loginUrlPattern
+        = "login/?machineUID=%1$s&room=%3$s&close=%4$s";
 
     /**
-     * The map of user JIDs to {@link AuthenticationState}.
+     * URL for logout location. Optionally session-id argument is
+     * available:<br/>
+     * %1$s - *session ID* authentication session identifier which will be
+     * terminated.
      */
-    private Map<String, AuthenticationState> authenticationStateMap
-            = new HashMap<String, AuthenticationState>();
-
-    /**
-     * The map of token's string representation to {@link AuthenticationToken}.
-     */
-    private Map<String, AuthenticationToken> tokensMap
-            = new HashMap<String, AuthenticationToken>();
-
-    /**
-     * Parent {@link FocusManager}.
-     */
-    private FocusManager focusManager;
-
-    /**
-     * The timer used to check for the expiration of tokens and/or
-     * authentication states.
-     */
-    private Timer expireTimer;
+    private String logoutUrlPattern = "../Shibboleth.sso/Logout";
 
     /**
      * An array containing reserved rooms. See {@link #RESERVED_ROOMS_PNAME}.
@@ -143,17 +94,33 @@ public class ShibbolethAuthAuthority
     private final String[] reservedRooms;
 
     /**
-     * Creates new instance of {@link ShibbolethAuthAuthority}.
-     * @param authUrlPattern the pattern used for constructing external
-     *        authentication URLs. See {@link #authUrlPattern} for more info.
+     * Creates new instance of <tt>ShibbolethAuthAuthority</tt> with default
+     * login and logout URL locations.
      */
-    public ShibbolethAuthAuthority(String authUrlPattern)
+    public ShibbolethAuthAuthority()
     {
-        if (StringUtils.isNullOrEmpty(authUrlPattern)) {
-            throw new IllegalArgumentException(
-                "Invalid auth url: '" + authUrlPattern + "'");
+        this(DEFAULT_URL_CONST, DEFAULT_URL_CONST);
+    }
+
+    /**
+     * Creates new instance of {@link ShibbolethAuthAuthority}.
+     * @param loginUrlPattern the pattern used for constructing external
+     *        authentication URLs. See {@link #loginUrlPattern} for more info.
+     */
+    public ShibbolethAuthAuthority(String loginUrlPattern,
+                                   String logoutUrlPattern)
+    {
+        // Override authenticate URL ?
+        if (!StringUtils.isNullOrEmpty(loginUrlPattern)
+                && !DEFAULT_URL_CONST.equals(loginUrlPattern))
+        {
+            this.loginUrlPattern = loginUrlPattern;
         }
-        this.authUrlPattern = authUrlPattern;
+        // Override or disable logout URL
+        if (!DEFAULT_URL_CONST.equals(logoutUrlPattern))
+        {
+            this.logoutUrlPattern = logoutUrlPattern;
+        }
 
         // Parse reserved rooms
         String reservedRoomsStr
@@ -161,68 +128,23 @@ public class ShibbolethAuthAuthority
                 (RESERVED_ROOMS_PNAME, "");
 
         reservedRooms = reservedRoomsStr.split(",");
-
-        tokenLifetime = FocusBundleActivator.getConfigService()
-            .getLong(TOKEN_LIFETIME_PNAME, DEFAULT_TOKEN_LIFETIME);
-
-        preAuthenticationLifetime = FocusBundleActivator.getConfigService()
-            .getLong(PRE_AUTHENTICATION_LIFETIME_PNAME,
-                     DEFAULT_PRE_AUTHENTICATION_LIFETIME);
-
-        logger.info(
-            "Token lifetime: " + tokenLifetime +
-            ", pre-auth lifetime: " + preAuthenticationLifetime);
-    }
-
-    /**
-     * Start this authentication authority instance.
-     */
-    public void start()
-    {
-        expireTimer = new Timer("AuthenticationExpireTimer", true);
-        expireTimer.scheduleAtFixedRate(
-            new ExpireTask(), EXPIRE_POLLING_INTERVAL, EXPIRE_POLLING_INTERVAL);
-
-        this.focusManager
-            = ServiceUtils.getService(
-                    FocusBundleActivator.bundleContext, FocusManager.class);
-
-        focusManager.setFocusAllocationListener(this);
-    }
-
-    /**
-     * Stops this authentication authority instance.
-     */
-    public void stop()
-    {
-        if (expireTimer != null)
-        {
-            expireTimer.cancel();
-            expireTimer = null;
-        }
-        if (focusManager != null)
-        {
-            focusManager.setFocusAllocationListener(null);
-            focusManager = null;
-        }
     }
 
     /**
      * Checks if given user is allowed to create the room.
-     * @param peerJid the Jabber ID of the user.
+     * @param sessionId authentication session identifier.
      * @param roomName the name of the conference room to be checked.
      * @return <tt>true</tt> if it's OK to create the room for given name on
      *         behalf of verified user or <tt>false</tt> otherwise.
      */
-    @Override
-    public boolean isAllowedToCreateRoom(String peerJid, String roomName)
+    boolean isAllowedToCreateRoom(String sessionId, String roomName)
     {
         if (roomName.contains("@"))
         {
             roomName = roomName.substring(0, roomName.indexOf("@"));
         }
         return isRoomReserved(roomName)
-                || authenticationStateMap.containsKey(peerJid);
+                || getSession(sessionId) != null;
     }
 
     /**
@@ -245,87 +167,54 @@ public class ShibbolethAuthAuthority
     }
 
     /**
-     * Creates an URL to be used by users to authenticate with external
-     * authentication system.
-     * @param userJid the Jabber ID of the user to be authenticated through
-     *                produced URL.
-     * @param roomName the name of the conference room for which
-     *                 authentication URL will be valid.
-     * @return an URL to be used by users to authenticate with external
-     *         authentication system.
+     * {@inheritDoc}
      */
-    public String createAuthenticationUrl(String userJid, String roomName)
+    public String createLoginUrl(String machineUID, String  userJid,
+                                 String roomName,   boolean popup)
     {
-        String token = createAuthToken(userJid, roomName);
-        return String.format(authUrlPattern, token);
-    }
-
-    private synchronized String createAuthToken(String userJid,
-                                               String roomName)
-    {
-        // FIXME: improve token generation mechanism
-        String tokenStr = String.valueOf(System.nanoTime());
-        AuthenticationToken token
-            = new AuthenticationToken(tokenStr, userJid, roomName);
-        synchronized (syncRoot)
-        {
-            tokensMap.put(tokenStr, token);
-        }
-        return tokenStr;
+        return String.format(
+                loginUrlPattern, machineUID, userJid, roomName, popup);
     }
 
     /**
-     * Method should be called to finish authentication process.
-     * @param tokenStr a string which authentication token that identifies
-     *                 user's authentication request. Based on the token we
-     *                 know user's JID and the name of conference room for
-     *                 which authentication will be valid.
+     * {@inheritDoc}
+     */
+    @Override
+    public String createLogoutUrl(String sessionId)
+    {
+        if (logoutUrlPattern == null)
+        {
+            return null;
+        }
+        // By default: "../Shibboleth.sso/Logout"
+        return String.format(logoutUrlPattern, sessionId);
+    }
+
+    /**
+     * Method called by the servlet in order to create new authentication
+     * session.
+     *
+     * @param machineUID user's machine identifier that wil be used to
+     *                   distinguish between the sessions for the same login
+     *                   name on different machines.
      * @param authIdentity the identity obtained from external authentication
      *                     system that will be bound to the user's JID.
      * @return <tt>true</tt> if user has been authenticated successfully or
      *         <tt>false</tt> if given token is invalid.
      */
-    public boolean authenticateUser(String tokenStr, String authIdentity)
+    String authenticateUser(String machineUID, String authIdentity)
     {
         synchronized (syncRoot)
         {
-            AuthenticationToken token = tokensMap.get(tokenStr);
-            if (token == null)
+            AuthenticationSession session
+                = findSessionForIdentity(machineUID, authIdentity);
+
+            if (session == null)
             {
-                logger.error("Invalid tokenStr: " + tokenStr);
-                return false;
+                session = createNewSession(machineUID, authIdentity);
             }
 
-            // Remove token
-            tokensMap.remove(tokenStr);
-
-            String userJid = token.getUserJid();
-
-            // Create authentication state for the token and user identity
-            AuthenticationState authenticationState
-                = new AuthenticationState(
-                        userJid, token.getRoomName(), authIdentity);
-            authenticationStateMap.put(userJid, authenticationState);
-
-            notifyJidAuthenticated(authenticationState);
-        }
-        return true;
-    }
-
-    private void notifyJidAuthenticated(AuthenticationState authState)
-    {
-        notifyUserAuthenticated(
-                authState.getUserJid(), authState.getAuthenticatedIdentity());
-    }
-
-    void expireToken(AuthenticationToken token)
-    {
-        synchronized (syncRoot)
-        {
-            if (tokensMap.remove(token.getToken()) != null)
-            {
-                logger.info("Expiring token: " + token.getToken());
-            }
+            return session.getSessionId();
         }
     }
 
@@ -333,114 +222,47 @@ public class ShibbolethAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public void onFocusDestroyed(String roomName)
+    public boolean isUserAuthenticated(String jabberId, String roomName)
     {
-        synchronized (syncRoot)
-        {
-            // Expire tokens for "roomName"
-            List<AuthenticationToken> tokens
-                = new ArrayList<AuthenticationToken>(tokensMap.values());
-            for (AuthenticationToken authToken : tokens)
-            {
-                if (authToken.getRoomName().equals(roomName))
-                {
-                    expireToken(authToken);
-                }
-            }
-            // Expire authentications for "roomName"
-            List<AuthenticationState> authentications
-                = new ArrayList<AuthenticationState>(
-                        authenticationStateMap.values());
-            for (AuthenticationState authState : authentications)
-            {
-                if (authState.getRoomName().equals(roomName))
-                {
-                    removeAuthentication(authState);
-                }
-            }
-        }
-    }
-
-    private void removeAuthentication(AuthenticationState authState)
-    {
-        synchronized (syncRoot)
-        {
-            if (authenticationStateMap.remove(authState.getUserJid()) != null)
-            {
-                logger.info("Authentication removed: " + authState);
-            }
-        }
+        return findSessionForJabberId(jabberId) != null;
     }
 
     /**
-     * Returns <tt>true</tt> if user is authenticated in given conference room.
-     * @param jabberID the Jabber ID of the user to be verified.
-     * @param roomName conference room name which is the context of
-     *                 authentication.
+     * {@inheritDoc}
      */
     @Override
-    public boolean isUserAuthenticated(String jabberID, String roomName)
+    protected IQ processAuthLocked(
+            ConferenceIq query, ConferenceIq response, boolean roomExists)
     {
-        if (StringUtils.isNullOrEmpty(jabberID))
+        String room = query.getRoom();
+        String peerJid = query.getFrom();
+
+        String sessionId = query.getSessionId();
+        AuthenticationSession session = getSession(sessionId);
+
+        // Check for invalid session
+        IQ error = verifySession(query);
+        if (error != null)
         {
-            logger.warn("JID is null");
+            return error;
         }
 
-        AuthenticationState authState = authenticationStateMap.get(jabberID);
-
-        return authState != null && roomName.equals(authState.getRoomName());
-    }
-
-    /**
-     * Task expires tokens and authentications.
-     */
-    private class ExpireTask extends TimerTask
-    {
-        @Override
-        public void run()
+        // Security checks for 'create room' permissions
+        if (!roomExists && !isAllowedToCreateRoom(sessionId, room))
         {
-            if (focusManager == null)
-            {
-                // Shutting down..
-                return;
-            }
-            FocusManager focusManagerConst = focusManager;
-            // Expire tokens
-            ArrayList<AuthenticationToken> tokens;
-            synchronized (syncRoot)
-            {
-                tokens = new ArrayList<AuthenticationToken>(tokensMap.values());
-            }
-            for (AuthenticationToken token : tokens)
-            {
-                if (System.currentTimeMillis() - token.getCreationTimestamp()
-                        > tokenLifetime)
-                {
-                    expireToken(token);
-                }
-            }
-            // Expire pre-authentications(authentication for which the room
-            // has not been created yet)
-            ArrayList<AuthenticationState> authentications;
-            synchronized (syncRoot)
-            {
-                authentications
-                    = new ArrayList<AuthenticationState>(
-                            authenticationStateMap.values());
-            }
-            for (AuthenticationState authState : authentications)
-            {
-                if (focusManagerConst
-                        .getConference(authState.getRoomName()) != null)
-                {
-                    continue;
-                }
-                if (System.currentTimeMillis() - authState.getAuthTimestamp()
-                        > preAuthenticationLifetime)
-                {
-                    removeAuthentication(authState);
-                }
-            }
+            logger.info(
+                    "Not allowed to create the room: "
+                            + peerJid + " " + "SID: " + sessionId);
+            // Error not authorized
+            return ErrorFactory.createNotAuthorizedError(query);
         }
+
+        // Authenticate JID with session
+        if (session != null)
+        {
+            authenticateJidWithSession(session, peerJid, response);
+        }
+
+        return null;
     }
 }

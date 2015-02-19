@@ -173,10 +173,10 @@ public class FocusComponent
 
                 return IQUtils.convert(statsReply);
             }
-            else if (smackIq instanceof AuthUrlIQ)
+            else if (smackIq instanceof LoginUrlIQ)
             {
                 org.jivesoftware.smack.packet.IQ result
-                    = handleAuthUrlIq((AuthUrlIQ) smackIq);
+                    = handleAuthUrlIq((LoginUrlIQ) smackIq);
                 return IQUtils.convert(result);
             }
             else
@@ -221,8 +221,9 @@ public class FocusComponent
 
                 logger.info("Focus request for room: " + room);
 
-                if (focusManager.isShutdownInProgress()
-                    && focusManager.getConference(room) == null)
+                boolean roomExists = focusManager.getConference(room) != null;
+
+                if (focusManager.isShutdownInProgress() && !roomExists)
                 {
                     // Service unavailable
                     org.jivesoftware.smack.packet.IQ smackReply
@@ -232,28 +233,18 @@ public class FocusComponent
                     return IQUtils.convert(smackReply);
                 }
 
-                // Security checks
+                // Authentication
                 if (authAuthority != null)
                 {
-                    if (focusManager.getConference(room) == null &&
-                            !authAuthority.isAllowedToCreateRoom(peerJid, room))
+                    org.jivesoftware.smack.packet.IQ authErrorOrResponse
+                        = authAuthority.processAuthentication(
+                                query, response, roomExists);
+
+                    // Checks if authentication module wants to cancel further
+                    // processing and eventually returns it's response
+                    if (authErrorOrResponse != null)
                     {
-                        // Error not authorized
-                        final XMPPError error
-                            = new XMPPError(XMPPError.Condition.not_authorized);
-
-                        org.jivesoftware.smack.packet.IQ errorResponse
-                            = org.jivesoftware.smack.packet.IQ
-                                .createErrorResponse(query, error);
-
-                        errorResponse.setType(
-                                org.jivesoftware.smack.packet.IQ.Type.ERROR);
-                        errorResponse.setPacketID(smackIq.getPacketID());
-                        errorResponse.setFrom(smackIq.getTo());
-                        errorResponse.setTo(smackIq.getFrom());
-                        errorResponse.setError(error);
-
-                        return IQUtils.convert(errorResponse);
+                        return IQUtils.convert(authErrorOrResponse);
                     }
                 }
 
@@ -277,6 +268,13 @@ public class FocusComponent
 
                 // Config
                 response.setFocusJid(focusAuthJid);
+
+                // Authentication module enabled ?
+                response.addProperty(
+                    new ConferenceIq.Property(
+                        "authentication",
+                        String.valueOf(authAuthority != null)));
+
                 if (authAuthority != null)
                 {
                     response.addProperty(
@@ -319,6 +317,22 @@ public class FocusComponent
                 return IQUtils.convert(
                     org.jivesoftware.smack.packet.IQ.createResultIQ(smackIq));
             }
+            else if (smackIq instanceof LogoutIq)
+            {
+                logger.info("Logout IQ received: " + iq.toXML());
+
+                if (authAuthority == null)
+                {
+                    // not-implemented
+                    return null;
+                }
+
+                org.jivesoftware.smack.packet.IQ smackResult
+                    = authAuthority.processLogoutIq((LogoutIq) smackIq);
+
+                return smackResult != null
+                        ? IQUtils.convert(smackResult) : null;
+            }
             else
             {
                 return super.handleIQSet(iq);
@@ -332,8 +346,16 @@ public class FocusComponent
     }
 
     private org.jivesoftware.smack.packet.IQ handleAuthUrlIq(
-            AuthUrlIQ authUrlIq)
+            LoginUrlIQ authUrlIq)
     {
+        if (authAuthority == null)
+        {
+            XMPPError error
+                = new XMPPError(XMPPError.Condition.service_unavailable);
+            return org.jivesoftware.smack.packet.IQ
+                    .createErrorResponse(authUrlIq, error);
+        }
+
         String peerFullJid = authUrlIq.getFrom();
         String roomName = authUrlIq.getRoom();
         if (StringUtils.isNullOrEmpty(roomName))
@@ -342,21 +364,29 @@ public class FocusComponent
             return org.jivesoftware.smack.packet.IQ
                     .createErrorResponse(authUrlIq, error);
         }
-        else if (authAuthority == null)
-        {
-            XMPPError error
-                = new XMPPError(XMPPError.Condition.service_unavailable);
-            return org.jivesoftware.smack.packet.IQ
-                    .createErrorResponse(authUrlIq, error);
-        }
 
-        AuthUrlIQ result = new AuthUrlIQ();
+        LoginUrlIQ result = new LoginUrlIQ();
         result.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
         result.setPacketID(authUrlIq.getPacketID());
         result.setTo(authUrlIq.getFrom());
 
+        boolean popup =
+            authUrlIq.getPopup() != null && authUrlIq.getPopup();
+
+        String machineUID = authUrlIq.getMachineUID();
+        if (StringUtils.isNullOrEmpty(machineUID))
+        {
+            XMPPError error
+                = new XMPPError(
+                    XMPPError.Condition.bad_request,
+                    "missing mandatory attribute 'machineUID'");
+            return org.jivesoftware.smack.packet.IQ
+                    .createErrorResponse(authUrlIq, error);
+        }
+
         String authUrl
-            = authAuthority.createAuthenticationUrl(peerFullJid, roomName);
+            = authAuthority.createLoginUrl(
+                machineUID, peerFullJid, roomName, popup);
 
         result.setUrl(authUrl);
 
