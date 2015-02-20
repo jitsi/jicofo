@@ -451,8 +451,6 @@ public class JitsiMeetConference
             logger.error(
                 "Failed to invite " + chatRoomMember.getContactAddress(), e);
 
-            participants.remove(newParticipant);
-
             // Notify users about bridge is down event
             if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
             {
