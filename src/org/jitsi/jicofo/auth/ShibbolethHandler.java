@@ -11,6 +11,7 @@ import net.java.sip.communicator.util.Logger;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 
 import javax.servlet.*;
@@ -94,8 +95,7 @@ class ShibbolethHandler
             return;
         }
         // Extract room name from MUC address
-        room = room.contains("@")
-            ? room.substring(0, room.indexOf("@")) : room;
+        room = MucUtil.extractName(room);
 
         String machineUID = request.getParameter("machineUID");
         if (StringUtils.isNullOrEmpty(machineUID))

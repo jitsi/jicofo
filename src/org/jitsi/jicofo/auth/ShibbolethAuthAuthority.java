@@ -10,6 +10,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -139,10 +140,8 @@ public class ShibbolethAuthAuthority
      */
     boolean isAllowedToCreateRoom(String sessionId, String roomName)
     {
-        if (roomName.contains("@"))
-        {
-            roomName = roomName.substring(0, roomName.indexOf("@"));
-        }
+        roomName = MucUtil.extractName(roomName);
+
         return isRoomReserved(roomName)
                 || getSession(sessionId) != null;
     }

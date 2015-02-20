@@ -7,6 +7,7 @@
 package org.jitsi.jicofo.auth;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -107,10 +108,8 @@ public class XMPPDomainAuthAuthority
     public String createLoginUrl(
             String machineUID, String peerFullJid, String roomName, boolean popup)
     {
-        if (roomName.contains("@"))
-        {
-            roomName = roomName.substring(0, roomName.indexOf("@"));
-        }
+        roomName = MucUtil.extractName(roomName);
+
         return "./" + roomName + "?login=true";
     }
 
