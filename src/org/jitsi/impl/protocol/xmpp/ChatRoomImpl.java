@@ -70,25 +70,6 @@ public class ChatRoomImpl
             = new CopyOnWriteArrayList<ChatRoomLocalUserRoleListener>();
 
     /**
-     * HACK:
-     * We need to have participant presence received, before firing
-     * participant "joined" event to know MUC participant real JID from the
-     * start. However Smack seems to be unpredictable(or XMPP server - not
-     * sure) on the order of "member joined" and "presence packet" events.
-     * So if "member joined" is fired before presence then we cache
-     * participant in {@link #earlyParticipant}. If opposite order takes
-     * place that is presence is received before "member joined" event
-     * we cache Presence in <tt>onJoinPresence</tt>. {@link
-     * ChatRoomMemberPresenceChangeEvent#MEMBER_JOINED} is fired when we have
-     * first Presence packet and Smack "member joined" event has been fired.
-     */
-    private final Map<String, Presence> onJoinPresence
-        = new HashMap<String,Presence>();
-
-    private final List<String> earlyParticipant
-        = new ArrayList<String>();
-
-    /**
      * Nickname to member impl class map.
      */
     private final Map<String, ChatMemberImpl> members
@@ -668,9 +649,9 @@ public class ChatRoomImpl
         }
         catch (XMPPException e)
         {
-            //FIXME: should not be runtime, but OperationFailed and included in
-            // interface signature(see also other methods catching XMPPException
-            // in this class)
+            //FIXME: should not be runtime, but OperationFailed is not
+            // included in interface signature(see also other methods
+            // catching XMPPException in this class)
             throw new RuntimeException(e);
         }
         return false;
@@ -803,6 +784,17 @@ public class ChatRoomImpl
         return newMember;
     }
 
+    String getMemberJid(String mucAddress)
+    {
+        Occupant occupant = muc.getOccupant(mucAddress);
+        if (occupant == null)
+        {
+            logger.error("Unable to get occupant for " + mucAddress);
+            return null;
+        }
+        return occupant.getJid();
+    }
+
     class MemberListener
         implements ParticipantStatusListener
     {
@@ -811,19 +803,9 @@ public class ChatRoomImpl
         {
             //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
 
-            Presence peerPresence = onJoinPresence.get(participant);
-            if (peerPresence == null)
-            {
-                earlyParticipant.add(participant);
-                return;
-            }
-
-            onJoinPresence.remove(participant);
-
             ChatMemberImpl member = addMember(participant);
             if (member != null)
             {
-                member.processPresence(peerPresence);
                 notifyParticipantJoined(member);
             }
         }
@@ -1086,33 +1068,8 @@ public class ChatRoomImpl
          */
         private void processOtherPresence(Presence presence)
         {
-            String participant = presence.getFrom();
-
-            ChatMemberImpl member = members.get(presence.getFrom());
-            if (member == null)
-            {
-                logger.warn(
-                    "Received presence for non-existing member: "
-                        + presence.toXML());
-                if (earlyParticipant.contains(participant))
-                {
-                    earlyParticipant.remove(participant);
-
-                    member = addMember(participant);
-                    if (member != null)
-                    {
-                        member.processPresence(presence);
-                        notifyParticipantJoined(member);
-                    }
-                }
-                else
-                {
-                    onJoinPresence.put(presence.getFrom(), presence);
-                }
-                return;
-            }
-
-            member.processPresence(presence);
+            // Not used anymore- but can implement some presence processing
+            // here if needed
         }
     }
 }
