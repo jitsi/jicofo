@@ -6,13 +6,16 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.*;
 
+import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.reservation.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 /**
  * Shibboleth implementation of {@link AuthenticationAuthority} interface.
@@ -94,6 +97,9 @@ public class ShibbolethAuthAuthority
      */
     private final String[] reservedRooms;
 
+    // FIXME: get reservation system out of here
+    private ReservationSystem reservationSystem;
+
     /**
      * Creates new instance of <tt>ShibbolethAuthAuthority</tt> with default
      * login and logout URL locations.
@@ -132,6 +138,39 @@ public class ShibbolethAuthAuthority
     }
 
     /**
+     * Start this authentication authority instance.
+     */
+    public void start()
+    {
+        BundleContext bc = FocusBundleActivator.bundleContext;
+
+        this.reservationSystem
+            = ServiceUtils.getService(bc, ReservationSystem.class);
+
+        /*
+        FIXME: handle conference ended event
+        this.focusManager = ServiceUtils.getService(bc, FocusManager.class);
+
+        focusManager.setFocusAllocationListener(this);*/
+
+        super.start();
+    }
+
+    /**
+     * Stops this authentication authority instance.
+     */
+    public void stop()
+    {
+        super.stop();
+
+        /*if (focusManager != null)
+        {
+            focusManager.setFocusAllocationListener(null);
+            focusManager = null;
+        }*/
+    }
+
+    /**
      * Checks if given user is allowed to create the room.
      * @param sessionId authentication session identifier.
      * @param roomName the name of the conference room to be checked.
@@ -141,9 +180,23 @@ public class ShibbolethAuthAuthority
     boolean isAllowedToCreateRoom(String sessionId, String roomName)
     {
         roomName = MucUtil.extractName(roomName);
+        AuthenticationSession session = getSession(sessionId);
+        // If there's no reservation system then allow based on authentication
+        if (reservationSystem == null)
+        {
+            return isRoomReserved(roomName) || session != null;
+        }
+        // No session - no reservation check
+        if (session == null)
+        {
+            return false;
+        }
 
-        return isRoomReserved(roomName)
-                || getSession(sessionId) != null;
+        int result
+            = reservationSystem.createConference(
+                        session.getUserIdentity(), roomName);
+        logger.info("Create room result: " + result);
+        return result == ReservationSystem.RESULT_OK;
     }
 
     /**
