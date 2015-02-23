@@ -47,6 +47,11 @@ public class ChatRoomImpl
     private final String roomName;
 
     /**
+     * {@link MemberListener} instance.
+     */
+    private final MemberListener memberListener;
+
+    /**
      * Smack multi user chat backend instance.
      */
     private MultiUserChat muc;
@@ -55,6 +60,11 @@ public class ChatRoomImpl
      * Our nickname.
      */
     private String myNickName;
+
+    /**
+     * Our full Multi User Chat XMPP address.
+     */
+    private String myMucAddress;
 
     /**
      * Member presence listeners.
@@ -101,7 +111,8 @@ public class ChatRoomImpl
         muc = new MultiUserChat(
                 parentChatOperationSet.getConnection(), roomName);
 
-        muc.addParticipantStatusListener(new MemberListener());
+        this.memberListener = new MemberListener();
+        muc.addParticipantStatusListener(memberListener);
         muc.addParticipantListener(new ParticipantListener());
     }
 
@@ -152,6 +163,7 @@ public class ChatRoomImpl
             muc.create(nickname);
             //muc.join(nickname);
             this.myNickName = nickname;
+            this.myMucAddress = muc.getRoom() + "/" + muc.getNickname();
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -216,10 +228,42 @@ public class ChatRoomImpl
         return muc.isJoined();
     }
 
+    private void leave(String reason, String jid)
+    {
+        logger.info("Leave, reason: " + reason + " alt-jid: " + jid);
+
+        leave();
+    }
+
     @Override
     public void leave()
     {
-        muc.leave();
+        Connection connection = opSet.getConnection();
+        if (connection != null)
+        {
+            muc.leave();
+        }
+
+        // Simulate member left events
+        HashMap<String, ChatMemberImpl> membersCopy;
+        synchronized (members)
+        {
+            membersCopy
+                = new HashMap<String, ChatMemberImpl>(members);
+        }
+
+        for (ChatMemberImpl member : membersCopy.values())
+        {
+            memberListener.left(member.getContactAddress());
+        }
+
+        /*
+        FIXME: we do not care about local user left for now
+        opSetMuc.fireLocalUserPresenceEvent(
+                this,
+                LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
+                reason,
+                alternateAddress);*/
     }
 
     @Override
@@ -834,6 +878,12 @@ public class ChatRoomImpl
             {
                 notifyParticipantLeft(member);
             }
+            else
+            {
+                logger.warn(
+                    "Member left event for non-existing participant: "
+                                + participant);
+            }
         }
 
         @Override
@@ -1003,14 +1053,12 @@ public class ChatRoomImpl
             }
 
             Presence presence = (Presence) packet;
-            String ourOccupantJid = muc.getRoom() + "/" + muc.getNickname();
-
             if (logger.isDebugEnabled())
             {
                 logger.debug("Presence received " + presence.toXML());
             }
 
-            if (ourOccupantJid.equals(presence.getFrom()))
+            if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
                 processOwnPresence(presence);
             else
                 processOtherPresence(presence);
@@ -1036,14 +1084,7 @@ public class ChatRoomImpl
                 ChatRoomMemberRole jitsiRole =
                     ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
 
-                /*if(jitsiRole == ChatRoomMemberRole.MODERATOR
-                    || jitsiRole == ChatRoomMemberRole.OWNER
-                    || jitsiRole == ChatRoomMemberRole.ADMINISTRATOR)
-                {*/
-                setLocalUserRole(jitsiRole, true);
-                //}
-
-                /*if(!presence.isAvailable()
+                if(!presence.isAvailable()
                     && "none".equalsIgnoreCase(affiliation)
                     && "none".equalsIgnoreCase(role))
                 {
@@ -1058,7 +1099,12 @@ public class ChatRoomImpl
                     {
                         leave(destroy.getReason(), destroy.getJid());
                     }
-                }*/
+                }
+                else
+                {
+                    setLocalUserRole(
+                        jitsiRole, ChatRoomImpl.this.role == null);
+                }
             }
         }
 

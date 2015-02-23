@@ -907,6 +907,23 @@ public class JitsiMeetConference
     }
 
     /**
+     * Destroys the MUC room and deletes the conference which results in all
+     * participant being removed from the XMPP chat room.
+     * @param reason the reason text that will be advertised to all
+     *               participants upon exit.
+     */
+    public void destroy(String reason)
+    {
+        if (chatRoom == null)
+        {
+            logger.error("Unable to destroy conference MUC room: " + roomName);
+            return;
+        }
+
+        chatRoom.destroy(reason, null);
+    }
+
+    /**
      * Expires the conference on the bridge and other stuff realted to it.
      */
     private void disposeConference()

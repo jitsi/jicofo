@@ -179,6 +179,7 @@ public class ShibbolethAuthAuthority
      */
     boolean isAllowedToCreateRoom(String sessionId, String roomName)
     {
+        String fullName = roomName;
         roomName = MucUtil.extractName(roomName);
         AuthenticationSession session = getSession(sessionId);
         // If there's no reservation system then allow based on authentication
@@ -194,7 +195,7 @@ public class ShibbolethAuthAuthority
 
         int result
             = reservationSystem.createConference(
-                        session.getUserIdentity(), roomName);
+                    session.getUserIdentity(), fullName);
         logger.info("Create room result: " + result);
         return result == ReservationSystem.RESULT_OK;
     }

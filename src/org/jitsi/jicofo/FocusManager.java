@@ -241,6 +241,25 @@ public class FocusManager
     }
 
     /**
+     * Destroys the conference for given room name.
+     * @param roomName full MUC room name to destroy.
+     * @param reason optional reason string that will be advertised to the
+     *               users upon exit.
+     */
+    public synchronized void destroyConference(String roomName, String reason)
+    {
+        JitsiMeetConference conference = getConference(roomName);
+        if (conference == null)
+        {
+            logger.error(
+                "Unable to destroy the conference - not found: " + roomName);
+            return;
+        }
+
+        conference.destroy(reason);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

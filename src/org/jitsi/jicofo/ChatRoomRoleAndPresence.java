@@ -113,7 +113,6 @@ public class ChatRoomRoleAndPresence
     public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
     {
         logger.info("Chat room event " + evt);
-        logger.info("Participants count: "+evt.getChatRoom().getMembersCount());
 
         ChatRoomMember sourceMember = evt.getChatRoomMember();
 
