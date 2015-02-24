@@ -77,6 +77,55 @@ class ShibbolethHandler
         }
     }
 
+    /**
+     * Method prints to the log debug information about HTTP request
+     * @param request <tt>HttpServletRequest</tt> for which debug info will
+     *                be logged.
+     */
+    private void dumpRequestInfo(HttpServletRequest request)
+    {
+        logger.debug(request.getRequestURL());
+        logger.debug("REMOTE USER: " + request.getRemoteUser());
+        logger.debug("Headers: ");
+        Enumeration<String> headers = request.getHeaderNames();
+        while (headers.hasMoreElements())
+        {
+            String headerName = headers.nextElement();
+            logger.debug(headerName + ": " + request.getHeader(headerName));
+        }
+        logger.debug("Attributes: ");
+        Enumeration<String> attributes = request.getAttributeNames();
+        while (attributes.hasMoreElements())
+        {
+            String attributeName = attributes.nextElement();
+            logger.debug(
+                attributeName + ": " + request.getAttribute(attributeName));
+        }
+    }
+
+    /**
+     * Retrieves Shibboleth attribute value for given name. In case of
+     * Apache+Shibboleth deployment attributes are retrieved with
+     * <tt>getAttribute</tt> while when nginx+Shibboleth is used then they
+     * are passed as request headers.
+     *
+     * @param request <tt>HttpServletRequest</tt> instance used to obtain
+     *                Shibboleth attributes.
+     * @param name the name of Shibboleth attribute to get.
+     *
+     * @return Shibboleth attribute value retrieved from the request or
+     *         <tt>null</tt> if there is no value for given <tt>name</tt>.
+     */
+    private String getShibAttr(HttpServletRequest request, String name)
+    {
+        String value = (String) request.getAttribute(name);
+        if (value == null)
+        {
+            value = request.getHeader(name);
+        }
+        return value;
+    }
+
     private void doHandle(
         String target,
         Request baseRequest,
@@ -85,6 +134,10 @@ class ShibbolethHandler
         throws IOException,
                ServletException
     {
+        if (logger.isDebugEnabled())
+        {
+            dumpRequestInfo(request);
+        }
 
         String room = request.getParameter("room");
         if (StringUtils.isNullOrEmpty(room))
@@ -107,7 +160,7 @@ class ShibbolethHandler
         }
 
         // Check 'mail' attribute which should be set by Shibboleth through AJP
-        String email = (String) request.getAttribute("mail");
+        String email = getShibAttr(request, "mail");
         if (StringUtils.isNullOrEmpty(email))
         {
             response.sendError(
@@ -129,7 +182,7 @@ class ShibbolethHandler
 
         PrintWriter responseWriter = response.getWriter();
 
-        String displayName = (String) request.getAttribute("displayName");
+        String displayName = getShibAttr(request, "displayName");
         if (displayName == null)
         {
             displayName = email;
@@ -177,20 +230,6 @@ class ShibbolethHandler
 
         responseWriter.println(script +"})();\n</script>\n");
 
-        if (logger.isDebugEnabled())
-        {
-            responseWriter.println("<br/>Debug:");
-            Enumeration<String> attributes = request.getAttributeNames();
-            while (attributes.hasMoreElements())
-            {
-                String attributeName = attributes.nextElement();
-                responseWriter.print("<br/>" + attributeName + ": ");
-                responseWriter.print(
-                        String.valueOf(request.getAttribute(attributeName)));
-            }
-
-            responseWriter.println("<br/>sessionID: " + sessionId);
-        }
         responseWriter.println("</body></html>");
 
         response.setStatus(HttpServletResponse.SC_OK);
