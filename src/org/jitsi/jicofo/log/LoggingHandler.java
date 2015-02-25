@@ -39,9 +39,11 @@ public class LoggingHandler
                     "time",
                     "conference_id",
                     "endpoint_id",
+                    /*
                     "group_name",
                     "type",
                     "stat",
+                    */
                     "value"
             };
 

@@ -133,6 +133,14 @@ public class EventFactory
         //   }
         // }
 
+        // time: 1
+        // conference_id: blabla
+        // endpoint_id: blabla
+        // value: [
+        //     ["group1", "some string", {"stat1": "some", "stat2": "some"}],
+        //     ["bweforvideo", "VideoBwe", {"googActualEncBitrate": "12", "googAvailableSendBandwidth": "78"}]
+        // ]
+
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = (JSONObject) parser.parse(statsStr);
 
@@ -140,33 +148,42 @@ public class EventFactory
         JSONArray timestamps = (JSONArray) jsonObject.get("timestamps");
         JSONObject stats = (JSONObject) jsonObject.get("stats");
 
-        for (Object groupName : stats.keySet())
+        for (int i = 0; i < timestamps.size(); i++)
         {
-            JSONObject group = ((JSONObject) stats.get(groupName));
-            Object type = group.get("type");
-            for (Object statName : group.keySet())
+            long timestamp = (Long) timestamps.get(i);
+
+            JSONArray value = new JSONArray();
+            for (Object groupName : stats.keySet())
             {
-                if ("type".equals(statName))
-                    continue;
+                JSONArray groupValue = new JSONArray();
+                JSONObject group = ((JSONObject) stats.get(groupName));
+                Object type = group.get("type");
 
-                JSONArray statValues = (JSONArray)group.get(statName);
-                for (int i = 0; i < statValues.size(); i++)
+                groupValue.add(groupName);
+                groupValue.add(type);
+
+                JSONObject s = new JSONObject();
+                for (Object statName : group.keySet())
                 {
-                    Object[] point
-                        = new Object[LoggingHandler
-                            .PEER_CONNECTION_STATS_COLUMNS.length];
+                    if ("type".equals(statName))
+                        continue;
 
-                    point[0] = timestamps.get(i);
-                    point[1] = conferenceId;
-                    point[2] = endpointId;
-                    point[3] = groupName;
-                    point[4] = statName;
-                    point[5] = type;
-                    point[6] = statValues.get(i);
-
-                    values.add(point);
+                    JSONArray statValues = (JSONArray) group.get(statName);
+                    s.put(statName, statValues.get(i));
                 }
+                groupValue.add(s);
+
+                value.add(groupValue);
             }
+            Object[] point
+                = new Object[LoggingHandler.PEER_CONNECTION_STATS_COLUMNS.length];
+
+            point[0] = timestamp;
+            point[1] = conferenceId;
+            point[2] = endpointId;
+            point[3] = value.toJSONString();
+
+            values.add(point);
         }
 
         return values.toArray();
