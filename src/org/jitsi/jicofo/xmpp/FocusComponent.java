@@ -296,8 +296,12 @@ public class FocusComponent
                     = (GracefulShutdownIQ) smackIq;
 
                 String from = gracefulShutdownIQ.getFrom();
+                String bareFrom
+                    = org.jivesoftware.smack.util.StringUtils
+                        .parseBareAddress(from);
+
                 if (StringUtils.isNullOrEmpty(shutdownAllowedJid)
-                    || !shutdownAllowedJid.equals(from))
+                    || !shutdownAllowedJid.equals(bareFrom))
                 {
                     // Forbidden
                     XMPPError forbiddenError
