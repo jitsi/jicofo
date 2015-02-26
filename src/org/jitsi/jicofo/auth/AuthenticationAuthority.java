@@ -49,14 +49,9 @@ public interface AuthenticationAuthority
      *                 returned to the user. Implementing classes can fill
      *                 some information in order to describe authentication
      *                 session.
-     * @param roomExists <tt>true</tt> if the conference room requested in given
-     *                   <tt>query</tt> already exists or <tt>false</tt> if it
-     *                   will be created after accepting this request.
-     *
      * @return XMPP error if <tt>query</tt> has failed authentication process.
      */
-    IQ processAuthentication(ConferenceIq query, ConferenceIq response,
-                             boolean roomExists);
+    IQ processAuthentication(ConferenceIq query, ConferenceIq response);
 
 
     /**
@@ -88,9 +83,17 @@ public interface AuthenticationAuthority
     /**
      * Returns <tt>true</tt> if user is authenticated in given conference room.
      * @param jabberId the Jabber ID of the user to be verified.
-     * @param roomName conference room name which is the context of
      */
-    boolean isUserAuthenticated(String jabberId, String roomName);
+    boolean isUserAuthenticated(String jabberId);
+
+    /**
+     * Returns user login associated with given <tt>jabberId</tt>.
+     * @param jabberId the Jabber ID of the connection for which we want to
+     *                 get user's identity.
+     * @return user login associated with given <tt>jabberId</tt> or
+     *         <tt>null</tt>
+     */
+    String getUserIdentity(String jabberId);
 
     /**
      * Returns <tt>true</tt> if this is external authentication method that

@@ -209,6 +209,17 @@ public abstract class AbstractAuthAuthority
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getUserIdentity(String jabberId)
+    {
+        AuthenticationSession session = findSessionForJabberId(jabberId);
+
+        return session != null ? session.getUserIdentity() : null;
+    }
+
+    /**
      * Destroys <tt>AuthenticationSession</tt> for given ID.
      *
      * @param sessionId unique authentication session identifier.
@@ -270,11 +281,11 @@ public abstract class AbstractAuthAuthority
      */
     @Override
     public IQ processAuthentication(
-            ConferenceIq query, ConferenceIq response, boolean roomExists)
+            ConferenceIq query, ConferenceIq response)
     {
         synchronized (syncRoot)
         {
-            return processAuthLocked(query, response, roomExists);
+            return processAuthLocked(query, response);
         }
     }
 
@@ -284,13 +295,13 @@ public abstract class AbstractAuthAuthority
      * synchronized section of authentication sessions storage lock.
      */
     protected abstract IQ processAuthLocked(
-            ConferenceIq query, ConferenceIq response, boolean roomExists);
+            ConferenceIq query, ConferenceIq response);
 
     /**
      * Utility method to by used by implementing classes in order to
      * verify authentication session's identifier during authentication
      * request handling process({@link #processAuthentication(ConferenceIq,
-     * ConferenceIq, boolean)}).
+     * ConferenceIq)}).
      *
      * @param query <tt>ConferenceIq</tt> that contains(or not) session id
      *              for the verification.

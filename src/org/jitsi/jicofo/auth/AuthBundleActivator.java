@@ -38,14 +38,14 @@ public class AuthBundleActivator
      * pattern of authentication URL. See {@link ShibbolethAuthAuthority}
      * for more info.
      */
-    private static final String LOGIN_URL_PNAME = AUTH_PNAME + ".URL";
+    public static final String LOGIN_URL_PNAME = AUTH_PNAME + ".URL";
 
     /**
      * The name of configuration property that specifies the
      * pattern of logout URL. See {@link ShibbolethAuthAuthority}
      * for more info.
      */
-    private static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
+    public static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
 
     /**
      * The name of the <tt>System</tt> and <tt>ConfigurationService</tt>

@@ -54,8 +54,7 @@ public class XMPPDomainAuthAuthority
     }
 
     @Override
-    protected IQ processAuthLocked(
-            ConferenceIq query, ConferenceIq response, boolean roomExists)
+    protected IQ processAuthLocked(ConferenceIq query, ConferenceIq response)
     {
         String peerJid = query.getFrom();
         String sessionId = query.getSessionId();
@@ -83,12 +82,6 @@ public class XMPPDomainAuthAuthority
             session = createNewSession(machineUID, bareJid);
         }
 
-        // Session is required to create new room
-        if (!roomExists && session == null)
-        {
-            return ErrorFactory.createNotAuthorizedError(query);
-        }
-
         // Authenticate JID with session(if it exists)
         if (session != null)
         {
@@ -99,7 +92,7 @@ public class XMPPDomainAuthAuthority
     }
 
     @Override
-    public boolean isUserAuthenticated(String jabberID, String roomName)
+    public boolean isUserAuthenticated(String jabberID)
     {
         return findSessionForJabberId(jabberID) != null || verifyJid(jabberID);
     }

@@ -6,10 +6,13 @@
  */
 package org.jitsi.jicofo.auth;
 
+import mock.*;
+import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.osgi.*;
 
+import org.jitsi.jicofo.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 import org.junit.runner.*;
@@ -18,6 +21,8 @@ import org.junit.runners.*;
 import static org.junit.Assert.*;
 
 /**
+ * FIXME: tests have to be run separately or there are problems with OSGi
+ *
  * Tests for authentication modules.
  *
  * @author Pawel Domas
@@ -27,7 +32,6 @@ public class AuthenticationAuthorityTest
 {
     static OSGiHandler osgi = new OSGiHandler();
 
-    @BeforeClass
     public static void setUpClass()
             throws InterruptedException
     {
@@ -36,7 +40,6 @@ public class AuthenticationAuthorityTest
         osgi.init();
     }
 
-    @AfterClass
     public static void tearDownClass()
     {
         osgi.shutdown();
@@ -46,7 +49,23 @@ public class AuthenticationAuthorityTest
     public void testShibbolethAuthenticationModule()
         throws Exception
     {
-        ShibbolethAuthAuthority shibbolethAuth = new ShibbolethAuthAuthority();
+        // Enable shibboleth authentication
+        System.setProperty(
+            AuthBundleActivator.LOGIN_URL_PNAME, "shibboleth:default");
+        System.setProperty(
+            AuthBundleActivator.LOGOUT_URL_PNAME, "shibboleth:default");
+
+        setUpClass();
+
+        FocusComponent focusComponent
+            = MockMainMethodActivator.getFocusComponent();
+
+        ShibbolethAuthAuthority shibbolethAuth
+            = (ShibbolethAuthAuthority) ServiceUtils.getService(
+                    FocusBundleActivator.bundleContext,
+                    AuthenticationAuthority.class);
+
+        assertNotNull(shibbolethAuth);
 
         String user1Jid = "user1@server.net";
         String user1MachineUid="machine1uid";
@@ -67,8 +86,8 @@ public class AuthenticationAuthorityTest
         query.setRoom(room1);
 
         // CASE 1: No session-id passed and room does not exist
-        IQ authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        IQ authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: 'not-authorized'
         assertNotNull(authError);
@@ -81,12 +100,12 @@ public class AuthenticationAuthorityTest
         // create session-id
         String user1Session
             = shibbolethAuth.authenticateUser
-                    (user1MachineUid, user1ShibbolethIdentity);
+                (user1MachineUid, user1ShibbolethIdentity);
 
         query.setSessionId(user1Session);
 
-        authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: null - no errors
         assertNull(authError);
@@ -97,8 +116,8 @@ public class AuthenticationAuthorityTest
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY with null - no errors
         assertNull(authError);
@@ -109,8 +128,8 @@ public class AuthenticationAuthorityTest
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY with session-invalid
         assertNotNull(authError);
@@ -128,8 +147,8 @@ public class AuthenticationAuthorityTest
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
         // REPLY with null - no error
         assertNull(authError);
 
@@ -138,8 +157,8 @@ public class AuthenticationAuthorityTest
         query.setFrom(user1Jid);
         query.setMachineUID(user1MachineUid);
 
-        authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -152,8 +171,8 @@ public class AuthenticationAuthorityTest
         query.setSessionId(user1ShibbolethIdentity);
         query.setMachineUID(null);
 
-        authError = shibbolethAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -178,9 +197,17 @@ public class AuthenticationAuthorityTest
         roomExists = false;
 
         authError
-            = shibbolethAuth.processAuthentication(query, response, roomExists);
+            = focusComponent.processExtensions(query, response, roomExists);
 
         assertNull(authError);
+
+        // Shutdown OSGi
+        System.setProperty(
+                AuthBundleActivator.LOGIN_URL_PNAME, "");
+        System.setProperty(
+                AuthBundleActivator.LOGOUT_URL_PNAME, "");
+
+        tearDownClass();
     }
 
     @Test
@@ -190,8 +217,21 @@ public class AuthenticationAuthorityTest
         String authDomain = "auth.server.net";
         String guestDomain = "guest.server.net";
 
+        // Enable XMPP authentication
+        System.setProperty(
+                AuthBundleActivator.LOGIN_URL_PNAME, "XMPP:" + authDomain);
+
+        setUpClass();
+
+        FocusComponent focusComponent
+            = MockMainMethodActivator.getFocusComponent();
+
         XMPPDomainAuthAuthority xmppAuth
-            = new XMPPDomainAuthAuthority(authDomain);
+            = (XMPPDomainAuthAuthority) ServiceUtils.getService(
+                FocusBundleActivator.bundleContext,
+                AuthenticationAuthority.class);
+
+        assertNotNull(xmppAuth);
 
         String user1GuestJid = "user1@" + guestDomain;
         String user1AuthJid = "user1@" + authDomain;
@@ -217,8 +257,8 @@ public class AuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
 
 
-        IQ authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        IQ authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: not-authorized
         assertNotNull(authError);
@@ -233,8 +273,8 @@ public class AuthenticationAuthorityTest
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: null - no errors, session-id set in response
         assertNull(authError);
@@ -249,8 +289,8 @@ public class AuthenticationAuthorityTest
         roomExists = true;
         query.setMachineUID(user2MachineUid);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY with null - no errors, no session-id in response
         assertNull(authError);
@@ -263,7 +303,9 @@ public class AuthenticationAuthorityTest
         roomExists = false;
         query.setMachineUID(user1MachineUid);
 
-        authError = xmppAuth.processAuthentication(query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
+
         // REPLY with null - no errors, session-id in response(repeated)
         assertNull(authError);
         assertEquals(user1SessionId, response.getSessionId());
@@ -276,8 +318,8 @@ public class AuthenticationAuthorityTest
         roomExists = true;
         query.setMachineUID(user2MachineUid);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY with session-invalid
         assertNotNull(authError);
@@ -290,8 +332,8 @@ public class AuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -304,8 +346,8 @@ public class AuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -318,8 +360,8 @@ public class AuthenticationAuthorityTest
         query.setSessionId(user1SessionId);
         query.setMachineUID(null);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -333,8 +375,8 @@ public class AuthenticationAuthorityTest
         query.setSessionId(null);
         query.setMachineUID(null);
 
-        authError = xmppAuth.processAuthentication(
-                query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -349,7 +391,8 @@ public class AuthenticationAuthorityTest
         query.setMachineUID(user3MachineUID);
         query.setSessionId(null);
 
-        authError = xmppAuth.processAuthentication(query, response, roomExists);
+        authError
+            = focusComponent.processExtensions(query, response, roomExists);
 
         assertNull(authError);
 
@@ -357,5 +400,9 @@ public class AuthenticationAuthorityTest
 
         assertNotNull(user3SessionId);
         assertNotEquals(user1SessionId, user3SessionId);
+
+        System.setProperty(AuthBundleActivator.LOGIN_URL_PNAME, "");
+
+        tearDownClass();
     }
 }

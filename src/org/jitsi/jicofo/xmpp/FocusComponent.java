@@ -13,8 +13,10 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
+import org.jitsi.jicofo.reservation.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 import org.xmpp.component.*;
 import org.xmpp.packet.IQ;
 
@@ -77,6 +79,12 @@ public class FocusComponent
     private AuthenticationAuthority authAuthority;
 
     /**
+     * (Optional)Reservation system that manages new rooms allocation.
+     * Requires authentication system in order to verify user's identity.
+     */
+    private ReservationSystem reservationSystem;
+
+    /**
      * Creates new instance of <tt>FocusComponent</tt>.
      * @param anonymousFocus indicates if the focus user is anonymous.
      * @param focusAuthJid the JID of authenticated focus user which will be
@@ -99,11 +107,15 @@ public class FocusComponent
      */
     public void init()
     {
-        this.focusManager = ServiceUtils.getService(
-            FocusBundleActivator.bundleContext, FocusManager.class);
+        BundleContext bc = FocusBundleActivator.bundleContext;
 
-        this.authAuthority = ServiceUtils.getService(
-            FocusBundleActivator.bundleContext, AuthenticationAuthority.class);
+        this.focusManager = ServiceUtils.getService(bc, FocusManager.class);
+
+        this.authAuthority
+            = ServiceUtils.getService(bc, AuthenticationAuthority.class);
+
+        this.reservationSystem
+            = ServiceUtils.getService(bc, ReservationSystem.class);
 
         focusManager.start();
     }
@@ -114,6 +126,12 @@ public class FocusComponent
     public void dispose()
     {
         focusManager.stop();
+
+        authAuthority = null;
+
+        reservationSystem = null;
+
+        focusManager = null;
     }
 
     @Override
@@ -278,6 +296,69 @@ public class FocusComponent
         }
     }
 
+    /**
+     * Additional logic added for conference IQ processing like
+     * authentication and room reservation.
+     *
+     * @param query <tt>ConferenceIq</tt> query
+     * @param response <tt>ConferenceIq</tt> response which can be modified
+     *                 during this processing.
+     * @param roomExists <tt>true</tt> if room mentioned in the <tt>query</tt>
+     *                   already exists.
+     *
+     * @return <tt>null</tt> if everything went ok or an error/response IQ
+     *         which should be returned to the user
+     */
+    public org.jivesoftware.smack.packet.IQ processExtensions(
+            ConferenceIq query, ConferenceIq response, boolean roomExists)
+    {
+        // Authentication
+        if (authAuthority != null)
+        {
+            org.jivesoftware.smack.packet.IQ authErrorOrResponse
+                    = authAuthority.processAuthentication(query, response);
+
+            // Checks if authentication module wants to cancel further
+            // processing and eventually returns it's response
+            if (authErrorOrResponse != null)
+            {
+                return authErrorOrResponse;
+            }
+
+            // Room reservation
+            if (!roomExists)
+            {
+                // Only authenticated users can create rooms
+                String peerJid = query.getFrom();
+                String identity = authAuthority.getUserIdentity(peerJid);
+                if (identity == null)
+                {
+                    // Error not authorized
+                    return ErrorFactory.createNotAuthorizedError(query);
+                }
+                // Check room reservation
+                if (reservationSystem != null)
+                {
+                    String room = query.getRoom();
+
+                    ReservationSystem.Result result
+                        = reservationSystem.createConference(identity, room);
+
+                    logger.info(
+                        "Create room result: " + result + " for " + room);
+
+                    if (result.getCode() != ReservationSystem.RESULT_OK)
+                    {
+                        return ErrorFactory
+                                .createReservationError(query, result);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     private org.jivesoftware.smack.packet.IQ handleConferenceIq(
             ConferenceIq query)
     {
@@ -296,19 +377,12 @@ public class FocusComponent
                     .createGracefulShutdownErrorResponse(query);
         }
 
-        // Authentication
-        if (authAuthority != null)
+        // Authentication and reservations system logic
+        org.jivesoftware.smack.packet.IQ error
+            = processExtensions(query, response, roomExists);
+        if (error != null)
         {
-            org.jivesoftware.smack.packet.IQ authErrorOrResponse
-                = authAuthority.processAuthentication(
-                        query, response, roomExists);
-
-            // Checks if authentication module wants to cancel further
-            // processing and eventually returns it's response
-            if (authErrorOrResponse != null)
-            {
-                return authErrorOrResponse;
-            }
+            return error;
         }
 
         boolean ready

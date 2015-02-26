@@ -278,10 +278,9 @@ public class ChatRoomRoleAndPresence
             return;
         }
 
-        if (ChatRoomMemberRole.OWNER.compareTo(member.getRole())
-                < 0)
+        if (ChatRoomMemberRole.OWNER.compareTo(member.getRole()) < 0)
         {
-            if (authAuthority.isUserAuthenticated(jabberId, chatRoom.getName()))
+            if (authAuthority.isUserAuthenticated(jabberId))
             {
                 chatRoom.grantOwnership(jabberId);
             }

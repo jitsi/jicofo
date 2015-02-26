@@ -46,15 +46,6 @@ public class ShibbolethAuthAuthority
         = Logger.getLogger(ShibbolethAuthAuthority.class);
 
     /**
-     * The name of configuration property that lists "reserved" rooms.
-     * Reserved rooms is the room that can be created by unauthenticated users
-     * even when authentication is required to create any room. List room
-     * names separated by ",".
-     */
-    private static final String RESERVED_ROOMS_PNAME
-            = "org.jitsi.jicofo.auth.RESERVED_ROOMS";
-
-    /**
      * Value constant which should be passed as {@link
      * AuthBundleActivator#LOGIN_URL_PNAME} and {@link
      * AuthBundleActivator#LOGOUT_URL_PNAME} in order to use default
@@ -93,14 +84,6 @@ public class ShibbolethAuthAuthority
     private String logoutUrlPattern = "../Shibboleth.sso/Logout";
 
     /**
-     * An array containing reserved rooms. See {@link #RESERVED_ROOMS_PNAME}.
-     */
-    private final String[] reservedRooms;
-
-    // FIXME: get reservation system out of here
-    private ReservationSystem reservationSystem;
-
-    /**
      * Creates new instance of <tt>ShibbolethAuthAuthority</tt> with default
      * login and logout URL locations.
      */
@@ -128,76 +111,6 @@ public class ShibbolethAuthAuthority
         {
             this.logoutUrlPattern = logoutUrlPattern;
         }
-
-        // Parse reserved rooms
-        String reservedRoomsStr
-            = FocusBundleActivator.getConfigService().getString
-                (RESERVED_ROOMS_PNAME, "");
-
-        reservedRooms = reservedRoomsStr.split(",");
-    }
-
-    /**
-     * Start this authentication authority instance.
-     */
-    public void start()
-    {
-        BundleContext bc = FocusBundleActivator.bundleContext;
-
-        this.reservationSystem
-            = ServiceUtils.getService(bc, ReservationSystem.class);
-
-        /*
-        FIXME: handle conference ended event
-        this.focusManager = ServiceUtils.getService(bc, FocusManager.class);
-
-        focusManager.setFocusAllocationListener(this);*/
-
-        super.start();
-    }
-
-    /**
-     * Stops this authentication authority instance.
-     */
-    public void stop()
-    {
-        super.stop();
-
-        /*if (focusManager != null)
-        {
-            focusManager.setFocusAllocationListener(null);
-            focusManager = null;
-        }*/
-    }
-
-    /**
-     * Checks if given user is allowed to create the room.
-     * @param sessionId authentication session identifier.
-     * @param roomName the name of the conference room to be checked.
-     * @return <tt>true</tt> if it's OK to create the room for given name on
-     *         behalf of verified user or <tt>false</tt> otherwise.
-     */
-    boolean isAllowedToCreateRoom(String sessionId, String roomName)
-    {
-        String fullName = roomName;
-        roomName = MucUtil.extractName(roomName);
-        AuthenticationSession session = getSession(sessionId);
-        // If there's no reservation system then allow based on authentication
-        if (reservationSystem == null)
-        {
-            return isRoomReserved(roomName) || session != null;
-        }
-        // No session - no reservation check
-        if (session == null)
-        {
-            return false;
-        }
-
-        int result
-            = reservationSystem.createConference(
-                    session.getUserIdentity(), fullName);
-        logger.info("Create room result: " + result);
-        return result == ReservationSystem.RESULT_OK;
     }
 
     /**
@@ -207,16 +120,6 @@ public class ShibbolethAuthAuthority
     public boolean isExternal()
     {
         return true;
-    }
-
-    private boolean isRoomReserved(String roomName)
-    {
-        for (String reservedRoom : reservedRooms)
-        {
-            if (reservedRoom.equals(roomName))
-                return true;
-        }
-        return false;
     }
 
     /**
@@ -275,7 +178,7 @@ public class ShibbolethAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public boolean isUserAuthenticated(String jabberId, String roomName)
+    public boolean isUserAuthenticated(String jabberId)
     {
         return findSessionForJabberId(jabberId) != null;
     }
@@ -285,8 +188,10 @@ public class ShibbolethAuthAuthority
      */
     @Override
     protected IQ processAuthLocked(
-            ConferenceIq query, ConferenceIq response, boolean roomExists)
+            ConferenceIq query, ConferenceIq response)
     {
+        // FIXME this now looks like it could be merged with XMPP or moved to
+        // abstract
         String room = query.getRoom();
         String peerJid = query.getFrom();
 
@@ -298,16 +203,6 @@ public class ShibbolethAuthAuthority
         if (error != null)
         {
             return error;
-        }
-
-        // Security checks for 'create room' permissions
-        if (!roomExists && !isAllowedToCreateRoom(sessionId, room))
-        {
-            logger.info(
-                    "Not allowed to create the room: "
-                            + peerJid + " " + "SID: " + sessionId);
-            // Error not authorized
-            return ErrorFactory.createNotAuthorizedError(query);
         }
 
         // Authenticate JID with session

@@ -7,6 +7,7 @@
 package org.jitsi.jicofo.auth;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.reservation.*;
 import org.jivesoftware.smack.packet.*;
 
 /**
@@ -68,6 +69,35 @@ public class ErrorFactory
         // not acceptable
         final XMPPError error
             = new XMPPError(XMPPError.Condition.no_acceptable, errorMessage);
+
+        return IQ.createErrorResponse(query, error);
+    }
+
+    /**
+     * Creates XMPP error response which will describe given
+     * <tt>ReservationSystem.Result</tt>.
+     *
+     * @param query query IQ for which XMPP error response will be crated.
+     * @param result reservation system result which contains all details about
+     *               specific reservation error.
+     *
+     * @return XMPP error response which describes given
+     *         <tt>ReservationSystem.Result</tt>.
+     */
+    public static IQ createReservationError(ConferenceIq query,
+                                            ReservationSystem.Result result)
+    {
+        final XMPPError error
+            = new XMPPError(
+                    XMPPError.Condition.resource_constraint,
+                    result.getErrorMessage());
+
+        ReservationErrorPacketExt reservationErr
+            = new ReservationErrorPacketExt();
+
+        reservationErr.setErrorCode(result.getCode());
+
+        error.addExtension(reservationErr);
 
         return IQ.createErrorResponse(query, error);
     }
