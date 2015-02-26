@@ -89,7 +89,7 @@ public class ErrorFactory
     {
         final XMPPError error
             = new XMPPError(
-                    XMPPError.Condition.resource_constraint,
+                    XMPPError.Condition.service_unavailable,
                     result.getErrorMessage());
 
         ReservationErrorPacketExt reservationErr
