@@ -214,81 +214,10 @@ public class FocusComponent
 
             if (smackIq instanceof ConferenceIq)
             {
-                ConferenceIq query = (ConferenceIq) smackIq;
-                ConferenceIq response = new ConferenceIq();
-                String peerJid = query.getFrom();
-                String room = query.getRoom();
+                org.jivesoftware.smack.packet.IQ response
+                    = handleConferenceIq((ConferenceIq) smackIq);
 
-                logger.info("Focus request for room: " + room);
-
-                boolean roomExists = focusManager.getConference(room) != null;
-
-                if (focusManager.isShutdownInProgress() && !roomExists)
-                {
-                    // Service unavailable
-                    org.jivesoftware.smack.packet.IQ smackReply
-                        = ColibriConferenceIQ
-                            .createGracefulShutdownErrorResponse(query);
-                    // Fix error responses
-                    return IQUtils.convert(smackReply);
-                }
-
-                // Authentication
-                if (authAuthority != null)
-                {
-                    org.jivesoftware.smack.packet.IQ authErrorOrResponse
-                        = authAuthority.processAuthentication(
-                                query, response, roomExists);
-
-                    // Checks if authentication module wants to cancel further
-                    // processing and eventually returns it's response
-                    if (authErrorOrResponse != null)
-                    {
-                        return IQUtils.convert(authErrorOrResponse);
-                    }
-                }
-
-                boolean ready
-                    = focusManager.conferenceRequest(
-                            room, query.getPropertiesMap());
-
-                if (!isFocusAnonymous && authAuthority == null)
-                {
-                    // Focus is authenticated system admin, so we let
-                    // them in immediately. Focus will get OWNER anyway.
-                    ready = true;
-                }
-
-                response.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
-                response.setPacketID(query.getPacketID());
-                response.setFrom(query.getTo());
-                response.setTo(query.getFrom());
-                response.setRoom(query.getRoom());
-                response.setReady(ready);
-
-                // Config
-                response.setFocusJid(focusAuthJid);
-
-                // Authentication module enabled ?
-                response.addProperty(
-                    new ConferenceIq.Property(
-                        "authentication",
-                        String.valueOf(authAuthority != null)));
-
-                if (authAuthority != null)
-                {
-                    response.addProperty(
-                        new ConferenceIq.Property(
-                            "externalAuth",
-                            String.valueOf(authAuthority.isExternal())));
-                }
-                if (focusManager.getJitsiMeetServices().getSipGateway() != null)
-                {
-                    response.addProperty(
-                        new ConferenceIq.Property("sipGatewayEnabled", "true"));
-                }
-
-                return IQUtils.convert(response);
+                return response != null ? IQUtils.convert(response) : null;
             }
             else if (smackIq instanceof GracefulShutdownIQ)
             {
@@ -347,6 +276,83 @@ public class FocusComponent
             logger.error(e, e);
             throw e;
         }
+    }
+
+    private org.jivesoftware.smack.packet.IQ handleConferenceIq(
+            ConferenceIq query)
+    {
+        ConferenceIq response = new ConferenceIq();
+        String peerJid = query.getFrom();
+        String room = query.getRoom();
+
+        logger.info("Focus request for room: " + room);
+
+        boolean roomExists = focusManager.getConference(room) != null;
+
+        if (focusManager.isShutdownInProgress() && !roomExists)
+        {
+            // Service unavailable
+            return ColibriConferenceIQ
+                    .createGracefulShutdownErrorResponse(query);
+        }
+
+        // Authentication
+        if (authAuthority != null)
+        {
+            org.jivesoftware.smack.packet.IQ authErrorOrResponse
+                = authAuthority.processAuthentication(
+                        query, response, roomExists);
+
+            // Checks if authentication module wants to cancel further
+            // processing and eventually returns it's response
+            if (authErrorOrResponse != null)
+            {
+                return authErrorOrResponse;
+            }
+        }
+
+        boolean ready
+            = focusManager.conferenceRequest(
+                    room, query.getPropertiesMap());
+
+        if (!isFocusAnonymous && authAuthority == null)
+        {
+            // Focus is authenticated system admin, so we let
+            // them in immediately. Focus will get OWNER anyway.
+            ready = true;
+        }
+
+        response.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
+        response.setPacketID(query.getPacketID());
+        response.setFrom(query.getTo());
+        response.setTo(query.getFrom());
+        response.setRoom(query.getRoom());
+        response.setReady(ready);
+
+        // Config
+        response.setFocusJid(focusAuthJid);
+
+        // Authentication module enabled ?
+        response.addProperty(
+            new ConferenceIq.Property(
+                    "authentication",
+                    String.valueOf(authAuthority != null)));
+
+        if (authAuthority != null)
+        {
+            response.addProperty(
+                new ConferenceIq.Property(
+                        "externalAuth",
+                        String.valueOf(authAuthority.isExternal())));
+        }
+
+        if (focusManager.getJitsiMeetServices().getSipGateway() != null)
+        {
+            response.addProperty(
+                new ConferenceIq.Property("sipGatewayEnabled", "true"));
+        }
+
+        return response;
     }
 
     private org.jivesoftware.smack.packet.IQ handleAuthUrlIq(
