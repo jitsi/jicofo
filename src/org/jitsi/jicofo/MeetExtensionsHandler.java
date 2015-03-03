@@ -371,6 +371,13 @@ public class MeetExtensionsHandler
             {
                 participant.setDisplayName(newDisplayName);
 
+                // Prevent NPE when adding to event hashmap
+                // FIXME: not sure if we want to send the event when
+                // displayName is null
+                if (newDisplayName == null)
+                {
+                    newDisplayName = "";
+                }
                 EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
                 if (eventAdmin != null)
                 {
