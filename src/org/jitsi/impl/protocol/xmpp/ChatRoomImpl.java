@@ -845,6 +845,10 @@ public class ChatRoomImpl
         @Override
         public void joined(String participant)
         {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Joined " + participant + " room: " + roomName);
+            }
             //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
 
             ChatMemberImpl member = addMember(participant);
@@ -867,6 +871,11 @@ public class ChatRoomImpl
         @Override
         public void left(String participant)
         {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Left " + participant + " room: " + roomName);
+            }
+
             ChatMemberImpl member;
 
             synchronized (members)

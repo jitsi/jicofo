@@ -94,7 +94,7 @@ class OperationSetJingleImpl
 
                     logger.error(
                         "Received an error: code=" + error.getCode()
-                            + " message=" + errorMessage);
+                            + " message=" + errorMessage+", " + packet.toXML());
                 }
             }
 

@@ -977,7 +977,8 @@ public class JitsiMeetConference
     synchronized protected void onMemberLeft(ChatRoomMember chatRoomMember)
     {
         logger.info("Member " + chatRoomMember.getName()
-                        + " left " + chatRoom.getName());
+                        + " left " + chatRoom.getName()
+                        + " participants count: " + participants.size());
 
         Participant leftPeer = findParticipantForChatMember(chatRoomMember);
         if (leftPeer != null)
@@ -1001,6 +1002,12 @@ public class JitsiMeetConference
                 //jingle.terminateSession(session.getJingleSession());
             }
             participants.remove(leftPeer);
+        }
+        else
+        {
+            logger.error(
+                "Member not found for " + chatRoomMember.getName()
+                    +", room: " + chatRoom.getName());
         }
 
         if (!checkAtLeastOneHumanParticipants())

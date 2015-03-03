@@ -63,6 +63,14 @@ public class ChatRoomRoleAndPresence
     public ChatRoomRoleAndPresence(JitsiMeetConference conference,
                                    ChatRoom chatRoom)
     {
+        if (conference == null)
+        {
+            throw new NullPointerException("conference");
+        }
+        if (chatRoom == null)
+        {
+            throw new NullPointerException("chatRoom");
+        }
         this.conference = conference;
         this.chatRoom = chatRoom;
     }
