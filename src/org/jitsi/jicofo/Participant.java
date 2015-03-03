@@ -98,6 +98,10 @@ public class Participant
      */
     public Participant(XmppChatMember roomMember)
     {
+        if (roomMember == null)
+        {
+            throw new NullPointerException("roomMember");
+        }
         this.roomMember = roomMember;
     }
 

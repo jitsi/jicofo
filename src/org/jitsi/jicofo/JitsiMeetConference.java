@@ -1100,21 +1100,7 @@ public class JitsiMeetConference
     {
         for (Participant participant : participants)
         {
-            String peerRoomJid = participant.getJingleSession().getAddress();
-            if (peerRoomJid != null && peerRoomJid.equals(roomJid))
-            {
-                return participant;
-            }
-        }
-        return null;
-    }
-
-    private Participant findParticipantForMucAddress(String mucAddress)
-    {
-        for (Participant participant : participants)
-        {
-            if (participant.getChatMember()
-                    .getContactAddress().equals(mucAddress))
+            if (participant.getChatMember().getContactAddress().equals(roomJid))
             {
                 return participant;
             }
@@ -1632,7 +1618,7 @@ public class JitsiMeetConference
                               String toBeMutedJid,
                               boolean doMute)
     {
-        Participant principal = findParticipantForMucAddress(fromJid);
+        Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
             logger.error(
@@ -1650,7 +1636,7 @@ public class JitsiMeetConference
             return false;
         }
 
-        Participant participant = findParticipantForMucAddress(toBeMutedJid);
+        Participant participant = findParticipantForRoomJid(toBeMutedJid);
         if (participant == null)
         {
             logger.error("Participant for jid: " + toBeMutedJid + " not found");
