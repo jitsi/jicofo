@@ -349,6 +349,12 @@ public class MeetExtensionsHandler
      */
     private void handlePresence(Presence presence)
     {
+        // unavailable is sent when user leaves the room
+        if (!presence.isAvailable())
+        {
+            return;
+        }
+
         Participant participant
                 = conference.findParticipantForRoomJid(presence.getFrom());
         if (participant != null)
@@ -371,9 +377,7 @@ public class MeetExtensionsHandler
             {
                 participant.setDisplayName(newDisplayName);
 
-                // Prevent NPE when adding to event hashmap
-                // FIXME: not sure if we want to send the event when
-                // displayName is null
+                // Prevent NPE when adding to event hashtable
                 if (newDisplayName == null)
                 {
                     newDisplayName = "";
