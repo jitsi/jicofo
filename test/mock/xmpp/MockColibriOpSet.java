@@ -14,6 +14,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.util.*;
 
 import java.util.*;
 
@@ -82,10 +83,11 @@ public class MockColibriOpSet
     }
 
     @Override
-    public void updateSsrcGroupsInfo(MediaSSRCGroupMap ssrcGroups,
-                                     ColibriConferenceIQ localChannelsInfo)
+    public void updateSourcesInfo(MediaSSRCMap ssrcs,
+                                  MediaSSRCGroupMap ssrcGroups,
+                                  ColibriConferenceIQ localChannelsInfo)
     {
-        colibriImpl.updateSsrcGroupsInfo(ssrcGroups, localChannelsInfo);
+        colibriImpl.updateSourcesInfo(ssrcs, ssrcGroups, localChannelsInfo);
     }
 
     @Override

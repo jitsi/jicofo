@@ -1162,7 +1162,8 @@ public class JitsiMeetConference
         participant.addSSRCGroupsFromContent(answer);
 
         // Update SSRC groups
-        colibri.updateSsrcGroupsInfo(
+        colibri.updateSourcesInfo(
+            participant.getSSRCsCopy(),
             participant.getSSRCGroupsCopy(),
             participant.getColibriChannelsInfo());
 
@@ -1327,7 +1328,8 @@ public class JitsiMeetConference
             = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
         // Updates SSRC Groups on the bridge
-        colibri.updateSsrcGroupsInfo(
+        colibri.updateSourcesInfo(
+            participant.getSSRCsCopy(),
             participant.getSSRCGroupsCopy(),
             participant.getColibriChannelsInfo());
 
@@ -1402,8 +1404,9 @@ public class JitsiMeetConference
         sourcePeer.removeSSRCGroups(ssrcGroupsToRemove);
 
         // Updates SSRC Groups on the bridge
-        colibri.updateSsrcGroupsInfo(
-            ssrcGroupsToRemove,
+        colibri.updateSourcesInfo(
+            sourcePeer.getSSRCsCopy(),
+            sourcePeer.getSSRCGroupsCopy(),
             sourcePeer.getColibriChannelsInfo());
 
         logger.info("Remove SSRC " + sourceJingleSession.getAddress());

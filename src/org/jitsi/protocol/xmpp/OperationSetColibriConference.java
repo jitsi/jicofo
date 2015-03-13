@@ -12,6 +12,7 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.*;
+import org.jitsi.protocol.xmpp.util.*;
 
 import java.util.*;
 
@@ -100,7 +101,8 @@ public interface OperationSetColibriConference
      *                          SSRC groups information will be updated
      *                          on the bridge.</tt>
      */
-    void updateSsrcGroupsInfo(
+    void updateSourcesInfo(
+        MediaSSRCMap ssrcs,
         MediaSSRCGroupMap ssrcGroups,
         ColibriConferenceIQ localChannelsInfo);
 

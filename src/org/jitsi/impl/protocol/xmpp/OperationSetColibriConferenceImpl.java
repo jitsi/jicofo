@@ -14,6 +14,7 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
@@ -228,8 +229,9 @@ public class OperationSetColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void updateSsrcGroupsInfo(MediaSSRCGroupMap ssrcGroups,
-                                     ColibriConferenceIQ localChannelsInfo)
+    public void updateSourcesInfo(MediaSSRCMap ssrcs,
+                                  MediaSSRCGroupMap ssrcGroups,
+                                  ColibriConferenceIQ localChannelsInfo)
     {
         // FIXME: move to ColibriBuilder
         ColibriConferenceIQ updateIq = new ColibriConferenceIQ();
@@ -243,13 +245,6 @@ public class OperationSetColibriConferenceImpl
         for (ColibriConferenceIQ.Content content
             : localChannelsInfo.getContents())
         {
-            String contentName = content.getName();
-            if ("video".compareToIgnoreCase(contentName) != 0)
-            {
-                // Simulcast currently used for video only
-                continue;
-            }
-
             ColibriConferenceIQ.Content reqContent
                 = new ColibriConferenceIQ.Content(content.getName());
 
@@ -260,6 +255,21 @@ public class OperationSetColibriConferenceImpl
                     = new ColibriConferenceIQ.Channel();
 
                 reqChannel.setID(channel.getID());
+
+                if (ssrcs != null)
+                {
+                    List<SourcePacketExtension> sources
+                        = ssrcs.getSSRCsForMedia(content.getName());
+                    if (sources != null && !sources.isEmpty())
+                    {
+                        for (SourcePacketExtension source : sources)
+                        {
+                            reqChannel.addSource(source.copy());
+                            hasChannels = true;
+                            updateNeeded = true;
+                        }
+                    }
+                }
 
                 List<SSRCGroup> groups
                     = ssrcGroups.getSSRCGroupsForMedia(content.getName());
