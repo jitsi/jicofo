@@ -240,6 +240,9 @@ public class OperationSetColibriConferenceImpl
         updateIq.setType(IQ.Type.SET);
         updateIq.setTo(jitsiVideobridge);
 
+        // NOTE(gp) now that we send sources as well, I think we can scrap this
+        // flag, if its initial purpose was to determine whether or not the
+        // simulcast group has been added or removed.
         boolean updateNeeded = false;
 
         for (ColibriConferenceIQ.Content content
@@ -269,6 +272,19 @@ public class OperationSetColibriConferenceImpl
                             updateNeeded = true;
                         }
                     }
+                }
+
+                if (reqChannel.getSources() == null
+                    || reqChannel.getSources().isEmpty())
+                {
+                    // Put an empty source to remove all sources
+                    SourcePacketExtension emptySource
+                        = new SourcePacketExtension();
+                    emptySource.setSSRC(-1l);
+                    reqChannel.addSource(emptySource);
+
+                    hasChannels = true;
+                    updateNeeded = true;
                 }
 
                 List<SSRCGroup> groups
