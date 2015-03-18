@@ -257,8 +257,8 @@ location /login {
   more_clear_input_headers 'Variable-*' 'Shib-*' 'Remote-User' 'REMOTE_USER' 'Auth-
 Type' 'AUTH_TYPE';
   more_clear_input_headers 'displayName' 'mail' 'persistent-id';
-  shib-request /shibauthorizer;
-  proxy_pass http://localhost:8080;
+  shib_request /shibauthorizer;
+  proxy_pass http://127.0.0.1:8888;
 }
 ```
 
