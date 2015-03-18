@@ -233,6 +233,31 @@ public class BridgeSelectorTest
 
         assertEquals(jvb2Jid,
                 selector.getPrioritizedBridgesList().get(0));
+
+        // FAILURE RESET THRESHOLD
+        // Bridge 3 has failed, bridges config, 1 & 2 are heavily occupied
+        // Bridge 3 will recover from failure and take over new jobs
+        selector.updateBridgeOperationalStatus(jvb1Jid, true);
+        selector.updateBridgeOperationalStatus(jvb2Jid, true);
+        selector.updateBridgeOperationalStatus(jvb3Jid, true);
+
+        mockSubscriptions.fireSubscriptionNotification(
+                jvbPreConfigured, createJvbStats(100));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb1PubSubNode, createJvbStats(100));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb2PubSubNode, createJvbStats(100));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb3PubSubNode, createJvbStats(0));
+
+        selector.updateBridgeOperationalStatus(jvb3Jid, false);
+        // Jvb 3 is not working
+        assertNotEquals(jvb3Jid, selector.selectVideobridge());
+        // Now wait for recovery
+        selector.setFailureResetThreshold(100);
+        Thread.sleep(150);
+        // Jvb 3 should recover
+        assertEquals(jvb3Jid, selector.selectVideobridge());
     }
 
     PacketExtension createJvbStats(int conferenceCount)
