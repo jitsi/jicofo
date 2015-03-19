@@ -359,6 +359,17 @@ public class MeetExtensionsHandler
                 = conference.findParticipantForRoomJid(presence.getFrom());
         if (participant != null)
         {
+            // Check if this conference is valid
+            String conferenceId
+                = conference.getColibriConference().getConferenceId();
+            if (StringUtils.isNullOrEmpty(conferenceId))
+            {
+                logger.error(
+                    "Unable to send DisplayNameChanged event" +
+                            " - no conference id");
+                return;
+            }
+
             // Check for changes to the display name
             String oldDisplayName = participant.getDisplayName();
             String newDisplayName = null;
@@ -387,7 +398,7 @@ public class MeetExtensionsHandler
                 {
                     eventAdmin.sendEvent(
                         EventFactory.endpointDisplayNameChanged(
-                            conference.getColibriConference().getConferenceId(),
+                            conferenceId,
                             // TODO: find a better way to get the endpoint ID
                             participant.getChatMember().getName(),
                             newDisplayName));
