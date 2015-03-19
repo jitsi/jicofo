@@ -81,8 +81,8 @@ public class ShutdownTest
         conf1.addParticipant(conf1User1);
         conf1.addParticipant(conf1User2);
 
-        assertNotNull(conf1User1.acceptInvite(2000));
-        assertNotNull(conf1User2.acceptInvite(2000));
+        assertNotNull(conf1User1.acceptInvite(4000));
+        assertNotNull(conf1User2.acceptInvite(4000));
 
         // Try shutdown from wrong jid
         GracefulShutdownIQ gracefulShutdownIQ = new GracefulShutdownIQ();

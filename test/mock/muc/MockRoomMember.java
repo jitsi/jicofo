@@ -9,7 +9,10 @@ package mock.muc;
 import mock.xmpp.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
+
+import java.util.*;
 
 /**
  * @author Pawel Domas
@@ -32,22 +35,24 @@ public class MockRoomMember
         this.room = chatRoom;
     }
 
-    public void addBundleSupport()
+    public void setupFeatures(boolean useBundle)
     {
         OperationSetSimpleCaps caps
-            = room.getParentProvider()
+                = room.getParentProvider()
                 .getOperationSet(OperationSetSimpleCaps.class);
 
         MockSetSimpleCapsOpSet mockCaps = (MockSetSimpleCapsOpSet) caps;
 
+        List<String> features = DiscoveryUtil.getDefaultParticipantFeatureSet();
+        if (useBundle)
+        {
+            features.add("urn:ietf:rfc:5761"/* rtcp-mux */);
+            features.add("urn:ietf:rfc:5888"/* bundle */);
+        }
+
         MockCapsNode myNode
             = new MockCapsNode(
-                    address,
-                    new String[]
-                        {
-                            "urn:ietf:rfc:5761"/* rtcp-mux */,
-                            "urn:ietf:rfc:5888"/* bundle */
-                        });
+                address, features.toArray(new String[features.size()]));
 
         mockCaps.addChildNode(myNode);
     }

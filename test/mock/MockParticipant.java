@@ -90,16 +90,11 @@ public class MockParticipant
 
     public void join(MockMultiUserChat chat)
     {
-        if (useBundle)
-        {
-            user = chat.createMockRoomMember(nick);
-            user.addBundleSupport();
-            chat.mockJoin(user);
-        }
-        else
-        {
-            user = chat.mockJoin(nick);
-        }
+        user = chat.createMockRoomMember(nick);
+
+        user.setupFeatures(useBundle);
+
+        chat.mockJoin(user);
 
         initContents();
 
@@ -181,6 +176,18 @@ public class MockParticipant
         }
 
         myContents.add(video);
+    }
+
+    public void acceptInviteInBg()
+    {
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                acceptInvite(5000);
+            }
+        },"Accept invite " + nick).start();
     }
 
     public JingleIQ[] acceptInvite(long timeout)
