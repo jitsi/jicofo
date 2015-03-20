@@ -812,18 +812,15 @@ public class ChatRoomImpl
     {
         ChatMemberImpl newMember;
 
-        synchronized (members)
+        if (members.containsKey(participant))
         {
-            if (members.containsKey(participant))
-            {
-                logger.error(participant + " already in " + roomName);
-                return null;
-            }
-
-            newMember = new ChatMemberImpl(participant, ChatRoomImpl.this);
-
-            members.put(participant, newMember);
+            logger.error(participant + " already in " + roomName);
+            return null;
         }
+
+        newMember = new ChatMemberImpl(participant, ChatRoomImpl.this);
+
+        members.put(participant, newMember);
 
         return newMember;
     }
@@ -845,16 +842,19 @@ public class ChatRoomImpl
         @Override
         public void joined(String participant)
         {
-            if (logger.isDebugEnabled())
+            synchronized (members)
             {
-                logger.debug("Joined " + participant + " room: " + roomName);
-            }
-            //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug("Joined " + participant + " room: " + roomName);
+                }
+                //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
 
-            ChatMemberImpl member = addMember(participant);
-            if (member != null)
-            {
-                notifyParticipantJoined(member);
+                ChatMemberImpl member = addMember(participant);
+                if (member != null)
+                {
+                    notifyParticipantJoined(member);
+                }
             }
         }
 
@@ -871,51 +871,50 @@ public class ChatRoomImpl
         @Override
         public void left(String participant)
         {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Left " + participant + " room: " + roomName);
-            }
-
-            ChatMemberImpl member;
-
             synchronized (members)
             {
-                member = removeMember(participant);
-            }
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug("Left " + participant + " room: " + roomName);
+                }
 
-            if (member != null)
-            {
-                notifyParticipantLeft(member);
-            }
-            else
-            {
-                logger.warn(
-                    "Member left event for non-existing participant: "
-                                + participant);
+                ChatMemberImpl member = removeMember(participant);
+
+                if (member != null)
+                {
+                    notifyParticipantLeft(member);
+                }
+                else
+                {
+                    logger.warn(
+                        "Member left event for non-existing participant: "
+                                    + participant);
+                }
             }
         }
 
         @Override
         public void kicked(String participant, String s2, String s3)
         {
-            if (logger.isTraceEnabled())
-                logger.trace("Kicked: " + participant + ", " + s2 +", " + s3);
-
-            ChatMemberImpl member;
-
             synchronized (members)
             {
-                member = removeMember(participant);
-            }
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug(
+                        "Kicked: " + participant + ", " + s2 + ", " + s3);
+                }
 
-            if (member == null)
-            {
-                logger.error(
-                    "Kicked participant does not exist: " + participant);
-                return;
-            }
+                ChatMemberImpl member = removeMember(participant);
 
-            notifyParticipantKicked(member);
+                if (member == null)
+                {
+                    logger.error(
+                        "Kicked participant does not exist: " + participant);
+                    return;
+                }
+
+                notifyParticipantKicked(member);
+            }
         }
 
         @Override
