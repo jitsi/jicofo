@@ -138,6 +138,25 @@ public class MockVideobridge
         return count;
     }
 
+    public int getChannelCountByContent(String contentName)
+    {
+        int count = 0;
+        boolean any = false;
+
+        for (Conference conference : bridge.getConferences())
+        {
+            for (Content content: conference.getContents())
+            {
+                if (contentName.equals(content.getName()))
+                {
+                    any = true;
+                    count += content.getChannelCount();
+                }
+            }
+        }
+        return any ? count : -1;
+    }
+
     public String getBridgeJid()
     {
         return bridgeJid;

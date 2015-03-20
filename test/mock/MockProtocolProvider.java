@@ -219,4 +219,10 @@ public class MockProtocolProvider
         return (MockSubscriptionOpSetImpl)
             getOperationSet(OperationSetSubscription.class);
     }
+
+    public MockSetSimpleCapsOpSet getMockCapsOpSet()
+    {
+        return (MockSetSimpleCapsOpSet)
+            getOperationSet(OperationSetSimpleCaps.class);
+    }
 }

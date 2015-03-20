@@ -380,26 +380,30 @@ public class JitsiMeetConference
      */
     protected void onMemberJoined(final ChatRoomMember chatRoomMember)
     {
-        logger.info("Member " + chatRoomMember.getName()
-                        + " joined " + chatRoom.getName());
+        logger.info(
+            "Member " + chatRoomMember.getContactAddress() + " joined.");
 
         idleTimestamp = -1;
 
-        if (!initConference())
+        // Are we ready to start ?
+        if (!checkAtLeastTwoParticipants())
+        {
             return;
+        }
 
-        // Invite peer takes time because of channel allocation, so schedule
-        // this on separate thread
-        FocusBundleActivator
-            .getSharedThreadPool()
-            .submit(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        inviteChatMember(chatRoomMember);
-                    }
-                });
+        // Invite all not invited yet
+        if (participants.size() == 0)
+        {
+            for (final ChatRoomMember member : chatRoom.getMembers())
+            {
+                inviteChatMember(member);
+            }
+        }
+        // Only the one who has just joined
+        else
+        {
+            inviteChatMember(chatRoomMember);
+        }
     }
 
     /**
@@ -408,35 +412,61 @@ public class JitsiMeetConference
      *
      * @param chatRoomMember the chat member to be invited into the conference.
      */
-    private void inviteChatMember(ChatRoomMember chatRoomMember)
+    private void inviteChatMember(final ChatRoomMember chatRoomMember)
     {
         if (isFocusMember(chatRoomMember))
             return;
 
+        final String address = chatRoomMember.getContactAddress();
+
+        final Participant newParticipant;
+
+        // Peer already connected ?
         if (findParticipantForChatMember(chatRoomMember) != null)
             return;
 
-        logger.info("Inviting " + chatRoomMember.getContactAddress());
-
-        String address = chatRoomMember.getContactAddress();
-
-        Participant newParticipant
-            = new Participant(
-                    (XmppChatMember) chatRoomMember);
+        newParticipant = new Participant((XmppChatMember) chatRoomMember);
 
         participants.add(newParticipant);
 
+        logger.info("Added participant for: " + address);
+
+        // Invite peer takes time because of channel allocation, so schedule
+        // this on separate thread.
+        // FIXME:
+        // Because channel allocation is done on separate thread it is
+        // possible that participant will leave while channels are being
+        // allocated. In "on participant left" event channel ids will not yet be
+        // assigned, so we won't expire them. We are letting those channels to
+        // leek and get expired automatically on the bridge.
+        FocusBundleActivator.getSharedThreadPool().submit(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                discoverFeaturesAndInvite(newParticipant, address);
+            }
+        });
+    }
+
+    /**
+     * Methods executed on thread pool is time consuming as is doing feature
+     * discovery and channel allocation for new participants.
+     * @param newParticipant new <tt>Participant</tt> instance.
+     * @param address new participant full MUC address.
+     */
+    private void discoverFeaturesAndInvite(Participant     newParticipant,
+                                           String          address)
+    {
         // Feature discovery
-        List<String> features 
+        List<String> features
             = DiscoveryUtil.discoverParticipantFeatures(
                     getXmppProvider(), address);
-        
+
         newParticipant.setSupportedFeatures(features);
-        
+
         logger.info(
-            chatRoomMember.getContactAddress()
-                + " has bundle ? "
-                + newParticipant.hasBundleSupport());
+            address + " has bundle ? " + newParticipant.hasBundleSupport());
 
         try
         {
@@ -448,8 +478,7 @@ public class JitsiMeetConference
         catch (OperationFailedException e)
         {
             //FIXME: retry ? sometimes it's just timeout
-            logger.error(
-                "Failed to invite " + chatRoomMember.getContactAddress(), e);
+            logger.error("Failed to invite " + address, e);
 
             // Notify users about bridge is down event
             if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
@@ -504,7 +533,8 @@ public class JitsiMeetConference
             {
                 logger.info(
                     "Using " + colibri.getJitsiVideobridge() 
-                        + " to allocate channels in " + roomName);
+                        + " to allocate channels for: "
+                        + peer.getChatMember().getContactAddress());
                 
                 ColibriConferenceIQ peerChannels
                     = colibri.createColibriChannels(
@@ -818,25 +848,6 @@ public class JitsiMeetConference
     }
 
     /**
-     * Initializes the conference by inviting first participants.
-     *
-     * @return <tt>false</tt> if it's too early to start, or <tt>true</tt>
-     *         if the conference has started.
-     */
-    private boolean initConference()
-    {
-        if (!checkAtLeastTwoParticipants())
-            return false;
-
-        for (ChatRoomMember member : chatRoom.getMembers())
-        {
-            inviteChatMember(member);
-        }
-
-        return true;
-    }
-
-    /**
      * Counts the number of non-focus chat room members and returns
      * <tt>true</tt> if there are at least two of them.
      *
@@ -856,27 +867,6 @@ public class JitsiMeetConference
         }
 
         return realCount >= 2;
-    }
-
-    /**
-     * Counts human participants in the conference by excluding focus, SIP
-     * gateway and other service participants in future.
-     *
-     * // TODO: also exclude Jirecon participant
-     *
-     * @return the number of human participants in the conference excluding
-     *         service participants like the focus or SIP gateway.
-     */
-    private boolean checkAtLeastOneHumanParticipants()
-    {
-        int humanCount = 0;
-        for (Participant participant : participants)
-        {
-            if (!isFocusMember(participant.getChatMember())
-                && !participant.isSipGateway())
-                humanCount++;
-        }
-        return humanCount > 0;
     }
 
     /**
@@ -948,8 +938,8 @@ public class JitsiMeetConference
      */
     protected void onMemberKicked(ChatRoomMember chatRoomMember)
     {
-        logger.info("Member " + chatRoomMember.getName()
-                        + " kicked !!! " + chatRoom.getName());
+        logger.info(
+            "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
         /*
         FIXME: terminate will have no effect, as peer's MUC address
          will be no longer active.
@@ -974,11 +964,11 @@ public class JitsiMeetConference
      *
      * @param chatRoomMember the member that has left the room.
      */
-    synchronized protected void onMemberLeft(ChatRoomMember chatRoomMember)
+    protected void onMemberLeft(ChatRoomMember chatRoomMember)
     {
-        logger.info("Member " + chatRoomMember.getName()
-                        + " left " + chatRoom.getName()
-                        + " participants count: " + participants.size());
+        String contactAddress = chatRoomMember.getContactAddress();
+
+        logger.info("Member " + contactAddress + " is leaving");
 
         Participant leftPeer = findParticipantForChatMember(chatRoomMember);
         if (leftPeer != null)
@@ -986,48 +976,28 @@ public class JitsiMeetConference
             JingleSession peerJingleSession = leftPeer.getJingleSession();
             if (peerJingleSession != null)
             {
-                logger.info(
-                    "Hanging up member " + chatRoomMember.getContactAddress());
+                logger.info("Hanging up member " + contactAddress);
 
                 removeSSRCs(peerJingleSession,
-                            leftPeer.getSSRCsCopy(),
-                            leftPeer.getSSRCGroupsCopy());
+                        leftPeer.getSSRCsCopy(),
+                        leftPeer.getSSRCGroupsCopy());
 
                 ColibriConferenceIQ peerChannels
-                    = leftPeer.getColibriChannelsInfo();
+                        = leftPeer.getColibriChannelsInfo();
                 if (peerChannels != null)
                 {
+                    logger.info("Expiring channels for: " + contactAddress);
                     colibri.expireChannels(leftPeer.getColibriChannelsInfo());
                 }
                 //jingle.terminateSession(session.getJingleSession());
             }
-            participants.remove(leftPeer);
+            boolean removed = participants.remove(leftPeer);
+            logger.info(
+                "Removed participant: " + removed + ", " + contactAddress);
         }
         else
         {
-            logger.error(
-                "Member not found for " + chatRoomMember.getName()
-                    +", room: " + chatRoom.getName());
-        }
-
-        if (!checkAtLeastOneHumanParticipants())
-        {
-            // Terminate all other participants
-            for (Participant participant : participants)
-            {
-                try
-                {
-                    terminateParticipant(participant);
-                }
-                catch (OperationFailedException e)
-                {
-                    logger.error(e, e);
-                    // Dispose the focus on failure (we would have done this
-                    // anyway later after "member left" events are handled)
-                    stop();
-                    break;
-                }
-            }
+            logger.error("Member not found for " + contactAddress);
         }
 
         if (participants.size() == 0)
@@ -1668,6 +1638,17 @@ public class JitsiMeetConference
     OperationSetColibriConference getColibriConference()
     {
         return colibri;
+    }
+
+    /**
+     * Returns current participants count. A participant is chat member who has
+     * some videobridge and media state assigned(not just raw chat room member).
+     * For example chat member which belongs to the focus never becomes
+     * a participant.
+     */
+    public int getParticipantCount()
+    {
+        return participants.size();
     }
 
     /**
