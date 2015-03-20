@@ -156,7 +156,7 @@ public class JitsiMeetConference
     /**
      * Indicates if this instance has been started(initialized).
      */
-    private boolean started;
+    private volatile boolean started;
 
     /**
      * Idle timestamp for this focus, -1 means active, otherwise
@@ -201,11 +201,13 @@ public class JitsiMeetConference
      * @throws Exception if error occurs during initialization. Instance is
      *         considered broken in that case.
      */
-    public synchronized void start()
+    public void start()
         throws Exception
     {
         if (started)
             return;
+
+        started = true;
 
         protocolProviderHandler.start(
             serverAddress, xmppDomain, xmppLoginPassword, xmppUsername, this);
@@ -257,8 +259,6 @@ public class JitsiMeetConference
         }
 
         idleTimestamp = System.currentTimeMillis();
-
-        started = true;
     }
 
     /**
@@ -1040,10 +1040,12 @@ public class JitsiMeetConference
      * Stops the conference, disposes colibri channels and releases all
      * resources used by the focus.
      */
-    synchronized void stop()
+    void stop()
     {
         if (!started)
             return;
+
+        started = false;
 
         disposeConference();
 
@@ -1052,8 +1054,6 @@ public class JitsiMeetConference
         disposeAccount();
 
         listener.conferenceEnded(this);
-
-        started = false;
     }
 
     /**
