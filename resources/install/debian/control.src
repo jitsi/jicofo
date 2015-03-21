@@ -7,11 +7,14 @@ Build-Depends: debhelper (>= 9),
                default-jdk,
                ant,
                ant-contrib,
+               libcommons-logging-java,
                libjitsi,
                jitsi-common,
+               jitsi-videobridge,
                libservlet3.1-java,
                libdom4j-java,
                libjetty8-java,
+               libjetty8-extra-java,
                libfelix-framework-java,
                libjson-simple-java (>= 1.1.1),
                libxpp3-java,
@@ -20,7 +23,7 @@ Build-Depends: debhelper (>= 9),
                libslf4j-java,
                libjcip-annotations-java,
                libhyperic-sigar-java
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: https://jitsi.org/meet
 
 Package: jicofo
@@ -28,11 +31,14 @@ Architecture: any
 Pre-Depends: adduser
 Depends: ${misc:Depends},
          default-jre-headless,
+         libcommons-logging-java,
          libjitsi,
          jitsi-common,
+         jitsi-videobridge,
          libservlet3.1-java,
          libdom4j-java,
          libjetty8-java,
+         libjetty8-extra-java,
          libfelix-framework-java,
          libjson-simple-java (>= 1.1.1),
          libxpp3-java,
