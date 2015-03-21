@@ -75,7 +75,7 @@ case "$1" in
         ls /var/log/jitsi/jicofo* 1>/dev/null 2>&1 && chmod -f -R 640 /var/log/jitsi/jicofo*
 
         # ensure focus is not running - it will be started at the end
-        if [ "$(pidof java)" ]; then
+        if invoke-rc.d jicofo status >/dev/null 2>&1 ; then
             invoke-rc.d jicofo stop || true
         fi
 
