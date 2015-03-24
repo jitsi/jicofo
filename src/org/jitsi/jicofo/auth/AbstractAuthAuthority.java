@@ -6,8 +6,9 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.*;
 
+import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
@@ -23,7 +24,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public abstract class AbstractAuthAuthority
-    implements AuthenticationAuthority
+    implements AuthenticationAuthority, FocusManager.FocusAllocationListener
 {
     /**
      * The logger.
@@ -55,9 +56,20 @@ public abstract class AbstractAuthAuthority
     private final long authenticationLifetime;
 
     /**
+     * If set to <tt>true</tt> authentication session will be destroyed
+     * immediately after end of the conference for which it was created.
+     */
+    private final boolean disableAutoLogin;
+
+    /**
      * The timer used to check for the expiration of authentication sessions.
      */
     private Timer expireTimer;
+
+    /**
+     * The instance of <tt>FocusManager</tt> service.
+     */
+    private FocusManager focusManager;
 
     /**
      * Synchronization root.
@@ -86,6 +98,14 @@ public abstract class AbstractAuthAuthority
                         DEFAULT_AUTHENTICATION_LIFETIME);
 
         logger.info("Authentication lifetime: " + authenticationLifetime);
+
+        disableAutoLogin = FocusBundleActivator.getConfigService()
+            .getBoolean(AuthBundleActivator.DISABLE_AUTOLOGIN_PNAME, false);
+
+        if (disableAutoLogin)
+        {
+            logger.info("Auto login disabled");
+        }
     }
 
     /**
@@ -94,11 +114,13 @@ public abstract class AbstractAuthAuthority
      * @param machineUID unique machine identifier for new session.
      * @param authIdentity authenticated user's identity name that will be
      *                     used in new session.
+     * @param roomName the name of the conference for which the session will be
+     *                 created
      *
      * @return new <tt>AuthenticationSession</tt> for given parameters.
      */
     protected AuthenticationSession createNewSession(
-            String machineUID, String authIdentity)
+            String machineUID, String authIdentity, String roomName)
     {
         synchronized (syncRoot)
         {
@@ -106,7 +128,8 @@ public abstract class AbstractAuthAuthority
                 = new AuthenticationSession(
                         machineUID,
                         createNonExistingUUID().toString(),
-                        authIdentity);
+                        authIdentity,
+                        roomName);
 
             authenticationSessions.put(session.getSessionId(), session);
 
@@ -236,6 +259,35 @@ public abstract class AbstractAuthAuthority
                 if (authenticationSessions.remove(sessionId) != null)
                 {
                     logger.info("Authentication removed: " + session);
+                }
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onFocusDestroyed(String roomName)
+    {
+        if (!disableAutoLogin)
+        {
+            return;
+        }
+
+        synchronized (syncRoot)
+        {
+            Iterator<AuthenticationSession> sessionIterator
+                    = authenticationSessions.values().iterator();
+
+            while (sessionIterator.hasNext())
+            {
+                AuthenticationSession session = sessionIterator.next();
+                if (roomName.equals(session.getRoomName()))
+                {
+                    logger.info(
+                        "Removing session for ended conference, S: " + session);
+                    sessionIterator.remove();
                 }
             }
         }
@@ -419,6 +471,12 @@ public abstract class AbstractAuthAuthority
         expireTimer = new Timer("AuthenticationExpireTimer", true);
         expireTimer.scheduleAtFixedRate(
             new ExpireTask(), EXPIRE_POLLING_INTERVAL, EXPIRE_POLLING_INTERVAL);
+
+        this.focusManager
+            = ServiceUtils.getService(
+                    AuthBundleActivator.bundleContext, FocusManager.class);
+
+        focusManager.setFocusAllocationListener(this);
     }
 
     /**
@@ -426,6 +484,12 @@ public abstract class AbstractAuthAuthority
      */
     public void stop()
     {
+        if (focusManager != null)
+        {
+            focusManager.setFocusAllocationListener(null);
+            focusManager = null;
+        }
+
         if (expireTimer != null)
         {
             expireTimer.cancel();

@@ -48,6 +48,13 @@ public class AuthBundleActivator
     public static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
 
     /**
+     * The name of the property that disables auto login feature. Authentication
+     * sessions are destroyed immediately when the conference ends.
+     */
+    public static final String DISABLE_AUTOLOGIN_PNAME
+        = AUTH_PNAME + ".DISABLE_AUTOLOGIN";
+
+    /**
      * The name of the <tt>System</tt> and <tt>ConfigurationService</tt>
      * property which specifies the port on which the servlet handling
      * external authentication works. The default value is <tt>8888</tt>.
@@ -110,6 +117,8 @@ public class AuthBundleActivator
      */
     private AuthenticationAuthority authAuthority;
 
+    static BundleContext bundleContext;
+
     /**
      * {@inheritDoc}
      */
@@ -117,6 +126,8 @@ public class AuthBundleActivator
     public void start(BundleContext bundleContext)
         throws Exception
     {
+        AuthBundleActivator.bundleContext = bundleContext;
+
         ConfigurationService cfg
                 = ServiceUtils.getService(
                         bundleContext,
@@ -319,5 +330,7 @@ public class AuthBundleActivator
             server.stop();
             server = null;
         }
+
+        AuthBundleActivator.bundleContext = null;
     }
 }

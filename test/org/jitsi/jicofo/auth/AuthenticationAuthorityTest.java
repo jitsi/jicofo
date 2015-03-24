@@ -100,7 +100,7 @@ public class AuthenticationAuthorityTest
         // create session-id
         String user1Session
             = shibbolethAuth.authenticateUser
-                (user1MachineUid, user1ShibbolethIdentity);
+                (user1MachineUid, user1ShibbolethIdentity, room1);
 
         query.setSessionId(user1Session);
 
@@ -141,7 +141,7 @@ public class AuthenticationAuthorityTest
         roomExists = true;
         String user2Session
             = shibbolethAuth.authenticateUser(
-                    user2MachineUid, user2ShibbolethIdentity);
+                    user2MachineUid, user2ShibbolethIdentity, room1);
 
         query.setSessionId(user2Session);
         query.setFrom(user2Jid);
@@ -185,7 +185,8 @@ public class AuthenticationAuthorityTest
         String user3Session
             = shibbolethAuth.authenticateUser(
                     user3machineUID,
-                    user1ShibbolethIdentity);
+                    user1ShibbolethIdentity,
+                    room1);
 
         assertNotNull(user3Session);
         assertNotEquals(user1Session, user3Session);

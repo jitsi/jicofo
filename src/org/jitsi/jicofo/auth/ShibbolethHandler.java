@@ -148,6 +148,7 @@ class ShibbolethHandler
             return;
         }
         // Extract room name from MUC address
+        String fullRoom = room;
         room = MucUtil.extractName(room);
 
         String machineUID = request.getParameter("machineUID");
@@ -171,7 +172,9 @@ class ShibbolethHandler
 
         // User authenticated
         String sessionId
-            = shibbolethAuthAuthority.authenticateUser(machineUID, email);
+            = shibbolethAuthAuthority.authenticateUser(
+                    machineUID, email, fullRoom);
+
         if (sessionId == null)
         {
             response.sendError(

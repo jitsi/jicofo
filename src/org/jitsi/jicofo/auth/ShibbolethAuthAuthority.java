@@ -155,10 +155,12 @@ public class ShibbolethAuthAuthority
      *                   name on different machines.
      * @param authIdentity the identity obtained from external authentication
      *                     system that will be bound to the user's JID.
+     * @param roomName the name of the conference room.
      * @return <tt>true</tt> if user has been authenticated successfully or
      *         <tt>false</tt> if given token is invalid.
      */
-    String authenticateUser(String machineUID, String authIdentity)
+    String authenticateUser(String machineUID, String authIdentity,
+                            String roomName)
     {
         synchronized (syncRoot)
         {
@@ -167,7 +169,7 @@ public class ShibbolethAuthAuthority
 
             if (session == null)
             {
-                session = createNewSession(machineUID, authIdentity);
+                session = createNewSession(machineUID, authIdentity, roomName);
             }
 
             return session.getSessionId();

@@ -45,6 +45,11 @@ public class AuthenticationSession
     private String userJabberId;
 
     /**
+     * Optional room name to which this session ID is bound.
+     */
+    private String roomName;
+
+    /**
      * Creates new instance of <tt>AuthenticationSession</tt>.
      * @param machineUID unique machine identifier that will be used to
      *                   distinguish between session for the same user on
@@ -52,9 +57,11 @@ public class AuthenticationSession
      * @param sessionId unique session identifier.
      * @param userIdentity user's identity in the scope of authentication
      *                     system, usually login name or email address.
+     * @param roomName full name of MUC room which hosts the conference for
+     *                 which new session is to be created.
      */
     public AuthenticationSession(String machineUID, String sessionId, String
-            userIdentity)
+            userIdentity, String roomName)
     {
         if (machineUID == null)
             throw new NullPointerException("machineUID");
@@ -66,6 +73,7 @@ public class AuthenticationSession
         this.machineUID = machineUID;
         this.sessionId = sessionId;
         this.userIdentity = userIdentity;
+        this.roomName = roomName;
     }
 
     /**
@@ -130,6 +138,14 @@ public class AuthenticationSession
     }
 
     /**
+     * Returns ful name of MUC room for which this session has been created.
+     */
+    public String getRoomName()
+    {
+        return roomName;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -142,6 +158,7 @@ public class AuthenticationSession
         builder.append(", MUID=").append(machineUID);
         long lifetime = System.currentTimeMillis() - activityTimestamp;
         builder.append(", LIFE_TM_SEC=").append((lifetime/1000L));
+        builder.append(", R=").append(roomName);
         builder.append("]@").append(hashCode());
         return builder.toString();
     }
