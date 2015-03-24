@@ -186,7 +186,7 @@ public class BridgeSelector
             }
         }
 
-        return bestChoice.isOperational ? bestChoice.jid : null;
+        return bestChoice.isOperational() ? bestChoice.jid : null;
     }
 
     /**
@@ -205,7 +205,7 @@ public class BridgeSelector
         for (BridgeState bridgeState : bridgeList)
         {
             bridgeJidList.add(bridgeState.jid);
-            if (bridgeState.isOperational)
+            if (bridgeState.isOperational())
             {
                 isAnyBridgeUp = true;
             }
@@ -462,6 +462,14 @@ public class BridgeSelector
             }
         }
 
+        public boolean isOperational()
+        {
+            // Check if we should give this bridge another try
+            verifyFailureThreshold();
+
+            return isOperational;
+        }
+
         /**
          * Verifies if it has been long enough since last bridge failure to give
          * it another try(reset isOperational flag).
@@ -489,12 +497,12 @@ public class BridgeSelector
         @Override
         public int compareTo(BridgeState o)
         {
-            // Check if we should give this bridge another try
-            verifyFailureThreshold();
+            boolean meOperational = isOperational();
+            boolean otherOperational = o.isOperational();
 
-            if (this.isOperational && !o.isOperational)
+            if (meOperational && !otherOperational)
                 return -1;
-            else if (!this.isOperational && o.isOperational)
+            else if (!meOperational && otherOperational)
                 return 1;
 
             return conferenceCount - o.conferenceCount;
