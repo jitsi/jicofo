@@ -585,17 +585,27 @@ public class JitsiMeetConference
                     logger.error("Bridge failure - stopping the conference");
                     stop();
                 }
-                else if (!bridgesIterator.hasNext())
+
+                // Try next bridge
+                String nextBridge = null;
+                if (bridgesIterator.hasNext())
+                    nextBridge = bridgesIterator.next();
+
+                // Is it the same which has just failed ?
+                // (we do not always call iterator.next() at the beginning)
+                if (faultyBridge.equals(nextBridge))
+                    nextBridge = null;
+
+                if (nextBridge != null)
+                {
+                    colibri.setJitsiVideobridge(nextBridge);
+                }
+                else
                 {
                     // No more bridges to try
                     throw new OperationFailedException(
                         "Failed to allocate channels - all bridges are faulty",
                         BRIDGE_FAILURE_ERR_CODE);
-                }
-                else
-                {
-                    // Try next bridge
-                    colibri.setJitsiVideobridge(bridgesIterator.next());
                 }
             }
         }
