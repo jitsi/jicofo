@@ -2,7 +2,8 @@
 
     <!-- Debian related targets -->
 
-    <property name="debian.release" value="release/jicofo"/>
+    <property name="release.dir" value="release"/>
+    <property name="debian.release" value="${release.dir}/jicofo"/>
     <property name="debian.dir" value="${debian.release}/debian"/>
     <property name="debian.binary.dir" value="${debian.dir}/binary"/>
     <property name="dpkg-scanpackages" value="/usr/bin/dpkg-scanpackages"/>
@@ -20,6 +21,12 @@
     <condition property="dpkg.scan.present">
         <available file="${dpkg-scanpackages}"/>
     </condition>
+
+    <target name="clean-release">
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${release.dir}" />
+        </delete>
+    </target>
 
     <target name="deb" depends="deb-32,deb-64"/>
     <target name="deb-32">
@@ -137,9 +144,9 @@
     <target name="deb-src" depends="deb-copy-jicofo">
 
         <!-- pack as original sources -->
-        <tar destfile="release/jicofo_${label}.orig.tar.gz"
+        <tar destfile="${release.dir}/jicofo_${label}.orig.tar.gz"
              compression="gzip"
-             basedir="release"/>
+             basedir="${release.dir}"/>
         <delete failonerror="false" includeemptydirs="true">
             <fileset dir="${debian.release}"/>
         </delete>

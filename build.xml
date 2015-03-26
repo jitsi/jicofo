@@ -57,7 +57,7 @@
     <!-- Import debian build xml -->
     <import file="resources/install/build-debian.xml"/>
 
-    <target name="clean">
+    <target name="clean" depends="clean-release">
         <delete failonerror="false" includeemptydirs="true">
             <fileset dir="${output}" />
             <fileset dir="${output.test}" />
