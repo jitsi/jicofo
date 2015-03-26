@@ -269,6 +269,10 @@ endif
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/netaddr.jar/netaddr.jar"
                  link="lib"/>
+        <symlink resource="/usr/share/jitsi-common/netaddr.jar/ice4j.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/jitsi-common/netaddr.jar/weupnp.jar"
+                 link="lib"/>
         <symlink resource="/usr/share/java/org.apache.felix.framework.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/protocol.jar"
