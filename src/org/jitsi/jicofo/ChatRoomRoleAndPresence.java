@@ -298,9 +298,6 @@ public class ChatRoomRoleAndPresence
     @Override
     public void jidAuthenticated(String realJid, String identity)
     {
-        // FIXME: consider changing to debug log level once tested
-        logger.info("Authenticate request for: " + realJid + " as " + identity);
-
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             XmppChatMember xmppMember = (XmppChatMember) member;
