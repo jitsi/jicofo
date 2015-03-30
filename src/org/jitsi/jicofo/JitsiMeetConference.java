@@ -627,24 +627,20 @@ public class JitsiMeetConference
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        boolean enableFirefoxHacks
-                = config == null || config.enableFirefoxHacks() == null
-                    ? false : config.enableFirefoxHacks();
-
         boolean disableIce = !peer.hasIceSupport();
         
         if (peer.hasAudioSupport())
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.AUDIO, enableFirefoxHacks, disableIce));
+                    MediaType.AUDIO, disableIce));
         }
 
         if (peer.hasVideoSupport())
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.VIDEO, enableFirefoxHacks, disableIce));
+                    MediaType.VIDEO, disableIce));
         }
 
         // Is SCTP enabled ?
@@ -655,7 +651,7 @@ public class JitsiMeetConference
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.DATA, enableFirefoxHacks, disableIce));
+                    MediaType.DATA, disableIce));
         }
 
         boolean useBundle = peer.hasBundleSupport();

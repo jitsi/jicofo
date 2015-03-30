@@ -65,13 +65,6 @@ public class JitsiMeetConfig
      */
     public static final String OPEN_SCTP_PNAME = "openSctp";
 
-    /*
-     * The name of the enable firefox hacks configuration property. Pass 'true'
-     * to enable or 'false' to disable.
-     */
-    public static final String ENABLE_FIREFOX_HACKS_PNAME
-            = "enableFirefoxHacks";
-
     private final Map<String, String> properties;
 
     /**
@@ -136,15 +129,6 @@ public class JitsiMeetConfig
     public Boolean openSctp()
     {
         return getBoolean(OPEN_SCTP_PNAME);
-    }
-
-    /**
-     * Returns the value of the enable firefox hacks configuration property or
-     * <tt>null</tt> if it has not been specified.
-     */
-    public Boolean enableFirefoxHacks()
-    {
-        return getBoolean(ENABLE_FIREFOX_HACKS_PNAME);
     }
 
     private Boolean getBoolean(String name)

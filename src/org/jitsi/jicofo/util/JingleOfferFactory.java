@@ -28,8 +28,6 @@ public class JingleOfferFactory
      *
      * @param mediaType the media type for which new offer content will
      *                  be created.
-     * @param enableFirefoxHacks pass <tt>true</tt> if created offer should be
-     *                           compatible with Firefox client.
      * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
      *                   should be indicated in the offer.
      *
@@ -37,7 +35,7 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType, boolean enableFirefoxHacks, boolean disableIce)
+            MediaType mediaType, boolean disableIce)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -174,13 +172,10 @@ public class JingleOfferFactory
             RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
             nack.setFeedbackType("nack");
             vp8.addRtcpFeedbackType(nack);
-            if (!enableFirefoxHacks)
-            {
-                // a=rtcp-fb:100 goog-remb
-                RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
-                remb.setFeedbackType("goog-remb");
-                vp8.addRtcpFeedbackType(remb);
-            }
+            // a=rtcp-fb:100 goog-remb
+            RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
+            remb.setFeedbackType("goog-remb");
+            vp8.addRtcpFeedbackType(remb);
             // a=rtpmap:116 red/90000
             PayloadTypePacketExtension red
                 = new PayloadTypePacketExtension();
