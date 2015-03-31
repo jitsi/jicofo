@@ -77,6 +77,18 @@ public interface OperationSetColibriConference
             throws OperationFailedException;
 
     /**
+     * Updates the RTP description for active channels (existing on the bridge).
+     *
+     * @param map the map of content name to RTP description packet extension.
+     * @param localChannelsInfo <tt>ColibriConferenceIQ</tt> that contains
+     * the description of the channel for which the RTP description will be
+     * updated on the bridge.
+     */
+    void updateRtpDescription(
+            Map<String, RtpDescriptionPacketExtension> map,
+            ColibriConferenceIQ localChannelsInfo);
+
+    /**
      * Updates transport information for active channels
      * (existing on the bridge).
      *

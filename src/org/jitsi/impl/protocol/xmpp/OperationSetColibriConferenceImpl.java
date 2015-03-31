@@ -206,6 +206,28 @@ public class OperationSetColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    public void updateRtpDescription(
+            Map<String, RtpDescriptionPacketExtension> map,
+            ColibriConferenceIQ localChannelsInfo)
+    {
+        colibriBuilder.reset();
+
+        colibriBuilder.addRtpDescription(
+                map, localChannelsInfo);
+
+        ColibriConferenceIQ conferenceRequest
+                = colibriBuilder.getRequest(jitsiVideobridge);
+
+        if (conferenceRequest != null)
+        {
+            connection.sendPacket(conferenceRequest);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void updateTransportInfo(
             boolean initiator,
             Map<String, IceUdpTransportPacketExtension> map,

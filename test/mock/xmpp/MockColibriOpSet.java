@@ -74,6 +74,13 @@ public class MockColibriOpSet
     }
 
     @Override
+    public void updateRtpDescription(
+            Map<String, RtpDescriptionPacketExtension> map,
+            ColibriConferenceIQ localChannelsInfo) {
+        colibriImpl.updateRtpDescription(map, localChannelsInfo);
+    };
+
+    @Override
     public void updateTransportInfo(
         boolean initiator,
         Map<String, IceUdpTransportPacketExtension> map,

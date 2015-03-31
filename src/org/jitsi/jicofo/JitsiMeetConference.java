@@ -1195,6 +1195,9 @@ public class JitsiMeetConference
 
         // Notify the bridge about eventual transport included
         onTransportInfo(peerJingleSession, answer);
+
+        // Notify the bridge about eventual RTP description included.
+        onDescriptionInfo(peerJingleSession, answer);
     }
 
     /**
@@ -1352,6 +1355,52 @@ public class JitsiMeetConference
             = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
         removeSSRCs(sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove);
+    }
+
+    public void onDescriptionInfo(JingleSession session,
+                                  List<ContentPacketExtension> contents)
+    {
+        if (session == null)
+        {
+            logger.error("session is null.");
+            return;
+        }
+
+        if (contents == null || contents.isEmpty())
+        {
+            logger.error("contents is null.");
+            return;
+        }
+
+        Participant participant = findParticipantForJingleSession(session);
+        if (participant == null)
+        {
+            logger.error("no peer state for " + session.getAddress());
+            return;
+        }
+
+        Map<String, RtpDescriptionPacketExtension> rtpDescMap
+                = new HashMap<String, RtpDescriptionPacketExtension>();
+
+        for (ContentPacketExtension content : contents)
+        {
+            RtpDescriptionPacketExtension rtpDesc
+                    = content.getFirstChildOfType(
+                    RtpDescriptionPacketExtension.class);
+
+            if (rtpDesc == null)
+            {
+                continue;
+            }
+
+            rtpDescMap.put(content.getName(), rtpDesc);
+        }
+
+        if (!rtpDescMap.isEmpty())
+        {
+            colibri.updateRtpDescription(
+                    rtpDescMap, participant.getColibriChannelsInfo());
+        }
     }
 
     /**
