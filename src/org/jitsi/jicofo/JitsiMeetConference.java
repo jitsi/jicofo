@@ -539,7 +539,7 @@ public class JitsiMeetConference
                 ColibriConferenceIQ peerChannels
                     = colibri.createColibriChannels(
                             peer.hasBundleSupport(),
-                            peer.getChatMember().getName(),
+                            peer.getEndpointId(),
                             true, contents);
 
                 bridgeSelector.updateBridgeOperationalStatus(
@@ -1237,7 +1237,7 @@ public class JitsiMeetConference
             {
                 logger.error(
                     "No valid transport suppied in transport-update from "
-                        + participant.getChatMember().getName());
+                        + participant.getChatMember().getContactAddress());
                 return;
             }
 

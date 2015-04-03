@@ -317,8 +317,7 @@ public class MeetExtensionsHandler
                         Event event =
                             EventFactory.peerConnectionStats(
                                 conference.getColibriConference().getConferenceId(),
-                                // TODO: find a better way to get the endpoint ID
-                                participant.getChatMember().getName(),
+                                participant.getEndpointId(),
                                 content);
                         if (event != null)
                             eventAdmin.sendEvent(event);
@@ -399,8 +398,7 @@ public class MeetExtensionsHandler
                     eventAdmin.sendEvent(
                         EventFactory.endpointDisplayNameChanged(
                             conferenceId,
-                            // TODO: find a better way to get the endpoint ID
-                            participant.getChatMember().getName(),
+                            participant.getEndpointId(),
                             newDisplayName));
                 }
             }

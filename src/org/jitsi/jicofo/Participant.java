@@ -443,6 +443,15 @@ public class Participant
     }
 
     /**
+     * Returns the endpoint ID for this participant in the videobridge(Colibri)
+     * context.
+     */
+    public String getEndpointId()
+    {
+        return roomMember.getName(); // Nickname
+    }
+
+    /**
      * Returns the display name of the participant.
      * @return the display name of the participant.
      */
