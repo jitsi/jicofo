@@ -360,7 +360,7 @@ public class XmppProtocolProvider
         }
         catch (XMPPException e)
         {
-            logger.error("Error discovering features", e);
+            logger.error("Error discovering features: " + e.getMessage());
         }
 
         for (String feature : features)
@@ -436,7 +436,7 @@ public class XmppProtocolProvider
         }
         catch (XMPPException e)
         {
-            logger.error(e, e);
+            logger.error("Error getting feature list: " + e.getMessage());
             return null;
         }
     }

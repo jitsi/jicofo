@@ -42,7 +42,9 @@ public class OpSetSimpleCapsImpl
         }
         catch (XMPPException e)
         {
-            logger.error("Error while discovering the services of " + node, e);
+            logger.error(
+                "Error while discovering the services of " + node
+                        + " , error msg: " + e.getMessage());
 
             return null;
         }
