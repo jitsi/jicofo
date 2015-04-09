@@ -8,6 +8,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -89,6 +90,19 @@ public class Participant
      *
      */
     private String displayName = null;
+
+    /**
+     * Returns the endpoint ID for a participant in the videobridge(Colibri)
+     * context. This method can be used before <tt>Participant</tt> instance is
+     * created for the <tt>ChatRoomMember</tt>.
+     *
+     * @param chatRoomMember XMPP MUC chat room member which represent a
+     *                       <tt>Participant</tt>.
+     */
+    static public String getEndpointId(ChatRoomMember chatRoomMember)
+    {
+        return chatRoomMember.getName(); // XMPP MUC Nickname
+    }
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -448,7 +462,7 @@ public class Participant
      */
     public String getEndpointId()
     {
-        return roomMember.getName(); // Nickname
+        return getEndpointId(roomMember);
     }
 
     /**

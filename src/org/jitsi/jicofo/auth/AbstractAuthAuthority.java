@@ -11,8 +11,10 @@ import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.log.*;
 import org.jitsi.util.*;
 
+import org.jitsi.videobridge.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -62,6 +64,11 @@ public abstract class AbstractAuthAuthority
     private final boolean disableAutoLogin;
 
     /**
+     * <tt>EventAdmin</tt> instance used for firing events.
+     */
+    private EventAdmin eventAdmin;
+
+    /**
      * The timer used to check for the expiration of authentication sessions.
      */
     private Timer expireTimer;
@@ -109,6 +116,20 @@ public abstract class AbstractAuthAuthority
     }
 
     /**
+     * Returns <tt>EventAdmin</tt> service instance(if any).
+     */
+    EventAdmin getEventAdmin()
+    {
+        if (eventAdmin == null)
+        {
+            eventAdmin = ServiceUtils.getService(
+                    AuthBundleActivator.bundleContext,
+                    EventAdmin.class);
+        }
+        return eventAdmin;
+    }
+
+    /**
      * Creates new <tt>AuthenticationSession</tt> for given parameters.
      *
      * @param machineUID unique machine identifier for new session.
@@ -116,11 +137,16 @@ public abstract class AbstractAuthAuthority
      *                     used in new session.
      * @param roomName the name of the conference for which the session will be
      *                 created
+     * @param properties the list of authentication properties provided during
+     *                   authentication which will be sent in 'authentication
+     *                   session created' event. This is authentication provider
+     *                   depended and can be left empty.
      *
      * @return new <tt>AuthenticationSession</tt> for given parameters.
      */
     protected AuthenticationSession createNewSession(
-            String machineUID, String authIdentity, String roomName)
+            String machineUID, String authIdentity, String roomName,
+            Map<String, String> properties)
     {
         synchronized (syncRoot)
         {
@@ -137,7 +163,30 @@ public abstract class AbstractAuthAuthority
                 "Authentication session created for "
                         + authIdentity + " SID: " + session.getSessionId());
 
+            if (properties != null)
+            {
+                logEvent(
+                        EventFactory.authSessionCreated(
+                                session.getSessionId(),
+                                session.getUserIdentity(),
+                                session.getMachineUID(),
+                                properties));
+            }
+
             return session;
+        }
+    }
+
+    private void logEvent(Event event)
+    {
+        EventAdmin eventAdmin = getEventAdmin();
+        if (eventAdmin != null)
+        {
+            eventAdmin.sendEvent(event);
+        }
+        else
+        {
+            logger.error("Unable to log events - no EventAdmin service found");
         }
     }
 
@@ -254,12 +303,16 @@ public abstract class AbstractAuthAuthority
             AuthenticationSession session
                     = authenticationSessions.get(sessionId);
 
-            if (session != null)
+            if (session == null)
+                return;
+
+            if (authenticationSessions.remove(sessionId) != null)
             {
-                if (authenticationSessions.remove(sessionId) != null)
-                {
-                    logger.info("Authentication removed: " + session);
-                }
+                logger.info("Authentication removed: " + session);
+
+                // Generate "authentication session destroyed" event
+                logEvent(EventFactory.authSessionDestroyed(sessionId));
+
             }
         }
     }
@@ -318,13 +371,15 @@ public abstract class AbstractAuthAuthority
         authenticationListeners.remove(l);
     }
 
-    protected void notifyUserAuthenticated(String userJid, String identity)
+    protected void notifyUserAuthenticated(String userJid,
+                                           String identity,
+                                           String sessionId)
     {
         logger.info("Jid " + userJid + " authenticated as: " + identity);
 
         for (AuthenticationListener l : authenticationListeners)
         {
-            l.jidAuthenticated(userJid, identity);
+            l.jidAuthenticated(userJid, identity, sessionId);
         }
     }
 
@@ -413,7 +468,8 @@ public abstract class AbstractAuthAuthority
         logger.info(
             "Authenticated jid: " + peerJid + " with session: " + session);
 
-        notifyUserAuthenticated(peerJid, session.getUserIdentity());
+        notifyUserAuthenticated(
+            peerJid, session.getUserIdentity(), session.getSessionId());
 
         // Re-new session activity timestamp
         session.touch();

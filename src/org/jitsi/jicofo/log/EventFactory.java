@@ -19,6 +19,7 @@ import java.util.*;
  * with pre-determined fields.
  *
  * @author Boris Grozev
+ * @author Pawel Domas
  */
 public class EventFactory
     extends org.jitsi.videobridge.EventFactory
@@ -30,13 +31,92 @@ public class EventFactory
             = Logger.getLogger(EventFactory.class);
 
     /**
+     * The name of the key for additional authentication properties.
+     */
+    public static final String AUTH_PROPERTIES_KEY = "properties";
+
+    /**
+     * The name of the key for authentication session ID.
+     */
+    public static final String AUTH_SESSION_ID_KEY = "auth_session_id";
+
+    /**
+     * The name of the key for conference ID.
+     */
+    public static final String CONFERENCE_ID_KEY = "conference_id";
+
+    /**
+     * The name of the key for display name.
+     */
+    public static final String DISPLAY_NAME_KEY = "display_name";
+
+    /**
+     * The name of the key for endpoint ID.
+     */
+    public static final String ENDPOINT_ID_KEY = "endpoint_id";
+
+    /**
+     * The name of the key for focus instance ID.
+     */
+    public static final String FOCUS_ID_KEY = "focus_id";
+
+    /**
+     * The name of the key for machine unique identifier supplied during
+     * authentication.
+     */
+    public static final String MACHINE_UID_KEY = "machine_uid";
+
+    /**
+     * The name of the key for MUC room JID.
+     */
+    public static final String ROOM_JID_KEY = "room_jid";
+
+    /**
+     * The name of the key for authenticated user identity.
+     */
+    public static final String USER_IDENTITY_KEY = "user_identity";
+
+    /**
      * The name of the topic of a "conference room" event.
      */
     public static final String CONFERENCE_ROOM_TOPIC
             = "org/jitsi/jicofo/CONFERENCE_ROOM_CREATED";
 
+    /**
+     * The name of the topic of a "peer connection stats" event.
+     */
     public static final String PEER_CONNECTION_STATS_TOPIC
             = "org/jitsi/jicofo/PEER_CONNECTION_STATS";
+
+    /**
+     * The name of the topic of an "authentication session created" event.
+     */
+    public static final String AUTH_SESSION_CREATED_TOPIC
+            = "org/jitsi/jicofo/AUTH_SESSION_CREATED";
+
+    /**
+     * The name of the topic of an "authentication session destroyed" event.
+     */
+    public static final String AUTH_SESSION_DESTROYED_TOPIC
+            = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
+
+    /**
+     * The name of the topic of an "endpoint authenticated" event.
+     */
+    public static final String ENDPOINT_AUTHENTICATED_TOPIC
+            = "org/jitsi/jicofo/ENDPOINT_AUTHENTICATED";
+
+    /**
+     * The name of the topic of a "focus instance created" event.
+     */
+    public static final String FOCUS_CREATED_TOPIC
+            = "org/jitsi/jicofo/FOCUS_CREATED";
+
+    /**
+     * The name of the topic of a "focus instance destroyed" event.
+     */
+    public static final String FOCUS_DESTROYED_TOPIC
+            = "org/jitsi/jicofo/FOCUS_DESTROYED";
 
     /**
      * Creates a new "endpoint display name changed" <tt>Event</tt>, which
@@ -53,13 +133,11 @@ public class EventFactory
             String endpointId,
             String displayName)
     {
-        // TODO do not use hard-coded keys
         Dictionary properties = new Hashtable(3);
-        properties.put("conference_id", conferenceId);
-        properties.put("endpoint_id", endpointId);
-        properties.put("display_name", displayName);
-        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC,
-                         properties);
+        properties.put(CONFERENCE_ID_KEY, conferenceId);
+        properties.put(ENDPOINT_ID_KEY, endpointId);
+        properties.put(DISPLAY_NAME_KEY, displayName);
+        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC, properties);
     }
 
     /**
@@ -204,12 +282,167 @@ public class EventFactory
             String roomJid,
             String focus)
     {
-        // TODO do not use hard-coded keys
         Dictionary properties = new Hashtable(3);
-        properties.put("conference_id", conferenceId);
-        properties.put("room_jid", roomJid);
-        properties.put("focus", focus);
+        properties.put(CONFERENCE_ID_KEY, conferenceId);
+        properties.put(ROOM_JID_KEY, roomJid);
+        properties.put(FOCUS_ID_KEY, focus);
         return new Event(CONFERENCE_ROOM_TOPIC, properties);
+    }
+
+    /**
+     * Creates new "authentication session created" event.
+     *
+     * @param sessionId authentication session identifier.
+     * @param userIdentity authenticated user identity
+     * @param machineUid machine unique identifier used to distinguish session
+     *                   for the same user on different machines.
+     * @param properties the map of additional properties to be logged provided
+     *                   during authentication.
+     *
+     * @return "authentication session created" <tt>Event</tt>
+     */
+    public static Event authSessionCreated(
+            String sessionId,  String              userIdentity,
+            String machineUid, Map<String, String> properties )
+    {
+        Dictionary<String, String> eventProps
+                = new Hashtable<String, String>(4);
+
+        eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
+        eventProps.put(USER_IDENTITY_KEY, userIdentity);
+        eventProps.put(MACHINE_UID_KEY, machineUid);
+
+        String mergedProperties = mergeProperties(properties);
+
+        eventProps.put(AUTH_PROPERTIES_KEY, mergedProperties);
+
+        return new Event(AUTH_SESSION_CREATED_TOPIC, eventProps);
+    }
+
+    /**
+     * Creates new "authentication session destroyed" event.
+     *
+     * @param sessionId authentication session identifier string.
+     *
+     * @return created "authentication session destroyed" <tt>Event</tt>.
+     */
+    public static Event authSessionDestroyed(String sessionId)
+    {
+        Dictionary<String, String> eventProps
+                = new Hashtable<String, String>(1);
+
+        eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
+
+        return new Event(AUTH_SESSION_DESTROYED_TOPIC, eventProps);
+    }
+
+    /**
+     * Creates "endpoint authenticated" event.
+     *
+     * @param sessionId authentication session identifier.
+     * @param focusId focus instance id which was hosting the conference session
+     * @param endpointId the ID of authenticated Colibri endpoint(participant).
+     *
+     * @return created "endpoint authenticated" <tt>Event</tt>.
+     */
+    public static Event endpointAuthenticated(String sessionId,
+                                              String focusId,
+                                              String endpointId)
+    {
+        Dictionary<String, String> eventProps
+                = new Hashtable<String, String>(2);
+
+        eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
+        eventProps.put(FOCUS_ID_KEY, focusId);
+        eventProps.put(ENDPOINT_ID_KEY, endpointId);
+
+        return new Event(ENDPOINT_AUTHENTICATED_TOPIC, eventProps);
+    }
+
+    /**
+     * Creates new "focus created" event.
+     *
+     * @param focusId focus instance identifier.
+     * @param roomName MUC room JID for which the focus has been created.
+     *
+     * @return new "focus created" <tt>Event</tt>.
+     */
+    public static Event focusCreated(String focusId, String roomName)
+    {
+        Dictionary<String, String> eventProps
+                = new Hashtable<String, String>(2);
+
+        eventProps.put(FOCUS_ID_KEY, focusId);
+        eventProps.put(ROOM_JID_KEY, roomName);
+
+        return new Event(FOCUS_CREATED_TOPIC, eventProps);
+    }
+
+    /**
+     * Creates new "focus destroyed" event.
+     *
+     * @param focusId focus instance identifier.
+     * @param roomName MUC room JID for which the focus has been destroyed.
+     *
+     * @return new "focus destroyed" <tt>Event</tt> instance.
+     */
+    public static Event focusDestroyed(String focusId, String roomName)
+    {
+        Dictionary<String, String> eventProps
+                = new Hashtable<String, String>(2);
+
+        eventProps.put(FOCUS_ID_KEY, focusId);
+        eventProps.put(ROOM_JID_KEY, roomName);
+
+        return new Event(FOCUS_DESTROYED_TOPIC, eventProps);
+    }
+
+    /**
+     * Merges authentication properties into single String transmitted in the
+     * log event. After each key name there is colon appended and key/value
+     * pairs are separated with CRLF(\r\n).
+     *
+     * @param properties the map of authentication properties.
+     *
+     * @return authentication properties map merged into single <tt>String</tt>.
+     */
+    public static String mergeProperties(Map<String, String> properties)
+    {
+        StringBuilder output = new StringBuilder();
+        for (Map.Entry<String, String> entry : properties.entrySet())
+        {
+            output.append(entry.getKey())
+                    .append(":")
+                    .append(entry.getValue())
+                    .append("\r\n");
+        }
+        return output.toString();
+    }
+
+    /**
+     * Splits merged authentication properties <tt>String</tt> into String
+     * key/value map.
+     *
+     * @param merged a <tt>String</tt> that contains merged authentication
+     *               properties(with {@link #mergeProperties(Map) method}).
+     *
+     * @return key/value map of authentication properties.
+     */
+    public static Map<String, String> splitProperties(String merged)
+    {
+        String[] entries = merged.split("\r\n");
+        Map<String, String> map = new Hashtable<String, String>(entries.length);
+        for (String entry : entries)
+        {
+            if (StringUtils.isNullOrEmpty(entry))
+                continue;
+
+            int colonIdx = entry.indexOf(":");
+            String key = entry.substring(0, colonIdx);
+            String value = entry.substring(colonIdx + 1);
+            map.put(key, value);
+        }
+        return map;
     }
 }
 

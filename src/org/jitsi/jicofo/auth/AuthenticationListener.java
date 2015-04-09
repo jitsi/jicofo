@@ -23,5 +23,7 @@ public interface AuthenticationListener
      * @param authenticatedIdentity the identity of the user confirmed by
      *                              external authentication component.
      */
-    void jidAuthenticated(String userJid, String authenticatedIdentity);
+    void jidAuthenticated(String userJid,
+                          String authenticatedIdentity,
+                          String sessionId);
 }

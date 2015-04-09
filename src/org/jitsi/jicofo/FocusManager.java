@@ -232,6 +232,11 @@ public class FocusManager
                             + " conferences count: " + conferences.size()
                             + " options:" + options.toString());
 
+            // Send focus created event
+            FocusBundleActivator.getEventAdmin().sendEvent(
+                    EventFactory.focusCreated(
+                            conference.getId(), conference.getRoomName()));
+
             conference.start();
         }
         catch (Exception e)
@@ -277,6 +282,11 @@ public class FocusManager
         {
             focusAllocListener.onFocusDestroyed(roomName);
         }
+
+        // Send focus destroyed event
+        FocusBundleActivator.getEventAdmin().sendEvent(
+                EventFactory.focusDestroyed(
+                        conference.getId(), conference.getRoomName()));
 
         maybeDoShutdown();
     }

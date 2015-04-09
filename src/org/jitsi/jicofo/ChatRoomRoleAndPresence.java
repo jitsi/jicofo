@@ -11,8 +11,10 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.auth.*;
+import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jitsi.videobridge.eventadmin.*;
 
 /**
  * Class handled MUC roles and presence for the focus in particular:
@@ -288,15 +290,32 @@ public class ChatRoomRoleAndPresence
 
         if (ChatRoomMemberRole.OWNER.compareTo(member.getRole()) < 0)
         {
-            if (authAuthority.isUserAuthenticated(jabberId))
+            String authSessionId = authAuthority.getSessionForJid(jabberId);
+            if (authSessionId != null)
             {
                 chatRoom.grantOwnership(jabberId);
+
+                // Notify that this member has been authenticated using
+                // given session
+                EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+
+                if (eventAdmin == null)
+                    return;
+
+                eventAdmin.sendEvent(
+                    EventFactory.endpointAuthenticated(
+                            authSessionId,
+                            conference.getId(),
+                            Participant.getEndpointId(member)
+                    )
+                );
             }
         }
     }
 
     @Override
-    public void jidAuthenticated(String realJid, String identity)
+    public void jidAuthenticated(String realJid,  String identity,
+                                 String sessionId)
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
