@@ -63,6 +63,12 @@ public class MockColibriOpSet
     }
 
     @Override
+    public boolean hasJustAllocated()
+    {
+        return colibriImpl.hasJustAllocated();
+    }
+
+    @Override
     public ColibriConferenceIQ createColibriChannels(boolean useBundle,
                                                      String endpointName,
                                                      boolean peerIsInitiator,

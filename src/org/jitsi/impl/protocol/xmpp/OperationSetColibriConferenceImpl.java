@@ -58,6 +58,12 @@ public class OperationSetColibriConferenceImpl
         = new ColibriBuilder(conferenceState);
 
     /**
+     * Flag used to figure out if Colibri conference has been allocated during
+     * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
+     */
+    private boolean justAllocated = false;
+
+    /**
      * Initializes this operation set.
      *
      * @param connection Smack XMPP connection impl that will be used to send
@@ -167,6 +173,8 @@ public class OperationSetColibriConferenceImpl
                 OperationFailedException.GENERAL_ERROR);
         }
 
+        boolean conferenceExisted = getConferenceId() != null;
+
         /*
          * Update the complete ColibriConferenceIQ representation maintained by
          * this instance with the information given by the (current) response.
@@ -174,6 +182,14 @@ public class OperationSetColibriConferenceImpl
         ColibriAnalyser analyser = new ColibriAnalyser(conferenceState);
 
         analyser.processChannelAllocResp((ColibriConferenceIQ) response);
+
+        synchronized (this)
+        {
+            if (!conferenceExisted && getConferenceId() != null)
+            {
+                justAllocated = true;
+            }
+        }
 
         /*
          * Formulate the result to be returned to the caller which is a subset
@@ -183,6 +199,19 @@ public class OperationSetColibriConferenceImpl
          */
         return ColibriAnalyser.getResponseContents(
                     (ColibriConferenceIQ) response, contents);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized boolean hasJustAllocated()
+    {
+        if (this.justAllocated)
+        {
+            this.justAllocated = false;
+            return true;
+        }
+        return false;
     }
 
     /**

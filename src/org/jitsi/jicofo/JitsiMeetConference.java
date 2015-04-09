@@ -17,6 +17,7 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
+import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
@@ -25,6 +26,7 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.eventadmin.*;
 
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -56,6 +58,24 @@ public class JitsiMeetConference
      * FIXME: consider moving to OperationFailedException ?
      */
     private final static int BRIDGE_FAILURE_ERR_CODE = 20;
+
+    /**
+     * Format used to print the date into the focus identifier string.
+     * Data contained in the id should never be used for business logic.
+     */
+    private final static SimpleDateFormat ID_DATE_FORMAT
+        = new SimpleDateFormat("yyy-MM-dd_HH:mm:ss");
+
+    /**
+     * Conference focus instance identifier. For now consists of current date
+     * and the {@link #hashCode()}. Included date should not be used for any
+     * calculations/app logic - it's just to have it more meaningful than random
+     * numbers.
+     *
+     * FIXME: It would make sense to retrieve it from {@link ReservationSystem}
+     *        if available.
+     */
+    private final String id;
 
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -186,6 +206,7 @@ public class JitsiMeetConference
                                ConferenceListener listener,
                                JitsiMeetConfig config)
     {
+        this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.serverAddress = serverAddress;
         this.xmppDomain = xmppDomain != null ? xmppDomain : serverAddress;
@@ -526,7 +547,6 @@ public class JitsiMeetConference
                 bridgesIterator.next());
         }
 
-        boolean conferenceExists = colibri.getConferenceId() != null;
         while (true)
         {
             try
@@ -545,24 +565,17 @@ public class JitsiMeetConference
                 bridgeSelector.updateBridgeOperationalStatus(
                     colibri.getJitsiVideobridge(), true);
 
-                if (!conferenceExists)
+                if (colibri.hasJustAllocated())
                 {
-                    // If conferenceId is returned at this point it means that
-                    // the conference has just been created, so we log it.
-                    String conferenceId = colibri.getConferenceId();
-                    if (conferenceId != null)
+                    EventAdmin eventAdmin
+                            = FocusBundleActivator.getEventAdmin();
+                    if (eventAdmin != null)
                     {
-                        EventAdmin eventAdmin
-                                = FocusBundleActivator.getEventAdmin();
-                        if (eventAdmin != null)
-                        {
-                            eventAdmin.sendEvent(
-                                EventFactory.conferenceRoom(
-                                        conferenceId,
-                                        roomName,
-                                        getFocusRealJid()));
-
-                        }
+                        eventAdmin.sendEvent(
+                            EventFactory.conferenceRoom(
+                                    colibri.getConferenceId(),
+                                    roomName,
+                                    getId()));
                     }
                 }
                 return peerChannels;
@@ -1704,6 +1717,14 @@ public class JitsiMeetConference
     public int getParticipantCount()
     {
         return participants.size();
+    }
+
+    /**
+     * Focus instance ID
+     */
+    public String getId()
+    {
+        return id;
     }
 
     /**
