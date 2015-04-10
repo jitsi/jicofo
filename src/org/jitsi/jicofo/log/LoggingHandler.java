@@ -56,7 +56,8 @@ public class LoggingHandler
             {
                     EventFactory.CONFERENCE_ID_KEY,
                     EventFactory.ROOM_JID_KEY,
-                    EventFactory.FOCUS_ID_KEY
+                    EventFactory.FOCUS_ID_KEY,
+                    EventFactory.BRIDGE_JID_KEY
             };
 
     /**
@@ -159,7 +160,8 @@ public class LoggingHandler
         {
             conferenceRoom(event.getProperty(EventFactory.CONFERENCE_ID_KEY),
                            event.getProperty(EventFactory.ROOM_JID_KEY),
-                           event.getProperty(EventFactory.FOCUS_ID_KEY));
+                           event.getProperty(EventFactory.FOCUS_ID_KEY),
+                           event.getProperty(EventFactory.BRIDGE_JID_KEY));
 
         }
         else if (EventFactory.PEER_CONNECTION_STATS_TOPIC.equals(topic))
@@ -246,7 +248,8 @@ public class LoggingHandler
     private void conferenceRoom(
             Object conferenceId,
             Object roomJid,
-            Object focus)
+            Object focus,
+            Object bridgeJid)
     {
         logEvent(new InfluxDBEvent("conference_room",
                                    CONFERENCE_ROOM_COLUMNS,
@@ -254,7 +257,8 @@ public class LoggingHandler
                                            {
                                                conferenceId,
                                                roomJid,
-                                               focus
+                                               focus,
+                                               bridgeJid
                                            }));
     }
 

@@ -575,7 +575,8 @@ public class JitsiMeetConference
                             EventFactory.conferenceRoom(
                                     colibri.getConferenceId(),
                                     roomName,
-                                    getId()));
+                                    getId(),
+                                    colibri.getJitsiVideobridge()));
                     }
                 }
                 return peerChannels;

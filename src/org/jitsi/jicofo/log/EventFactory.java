@@ -41,6 +41,11 @@ public class EventFactory
     public static final String AUTH_SESSION_ID_KEY = "auth_session_id";
 
     /**
+     * The name of the key for videobridge JID.
+     */
+    public static final String BRIDGE_JID_KEY = "bridge_jid";
+
+    /**
      * The name of the key for conference ID.
      */
     public static final String CONFERENCE_ID_KEY = "conference_id";
@@ -280,12 +285,14 @@ public class EventFactory
     public static Event conferenceRoom(
             String conferenceId,
             String roomJid,
-            String focus)
+            String focus,
+            String bridgeJid)
     {
         Dictionary properties = new Hashtable(3);
         properties.put(CONFERENCE_ID_KEY, conferenceId);
         properties.put(ROOM_JID_KEY, roomJid);
         properties.put(FOCUS_ID_KEY, focus);
+        properties.put(BRIDGE_JID_KEY, bridgeJid);
         return new Event(CONFERENCE_ROOM_TOPIC, properties);
     }
 
