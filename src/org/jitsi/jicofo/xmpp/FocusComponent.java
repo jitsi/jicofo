@@ -312,6 +312,9 @@ public class FocusComponent
     public org.jivesoftware.smack.packet.IQ processExtensions(
             ConferenceIq query, ConferenceIq response, boolean roomExists)
     {
+        String peerJid = query.getFrom();
+        String identity = null;
+
         // Authentication
         if (authAuthority != null)
         {
@@ -324,35 +327,33 @@ public class FocusComponent
             {
                 return authErrorOrResponse;
             }
-
-            // Room reservation
+            // Only authenticated users are allowed to create new rooms
             if (!roomExists)
             {
-                // Only authenticated users can create rooms
-                String peerJid = query.getFrom();
-                String identity = authAuthority.getUserIdentity(peerJid);
+                identity = authAuthority.getUserIdentity(peerJid);
                 if (identity == null)
                 {
                     // Error not authorized
                     return ErrorFactory.createNotAuthorizedError(query);
                 }
-                // Check room reservation
-                if (reservationSystem != null)
-                {
-                    String room = query.getRoom();
+            }
+        }
 
-                    ReservationSystem.Result result
-                        = reservationSystem.createConference(identity, room);
+        // Check room reservation ?
+        if (!roomExists && reservationSystem != null)
+        {
+            String room = query.getRoom();
 
-                    logger.info(
-                        "Create room result: " + result + " for " + room);
+            ReservationSystem.Result result
+                = reservationSystem.createConference(identity, room);
 
-                    if (result.getCode() != ReservationSystem.RESULT_OK)
-                    {
-                        return ErrorFactory
-                                .createReservationError(query, result);
-                    }
-                }
+            logger.info(
+                "Create room result: " + result + " for " + room);
+
+            if (result.getCode() != ReservationSystem.RESULT_OK)
+            {
+                return ErrorFactory
+                        .createReservationError(query, result);
             }
         }
 
