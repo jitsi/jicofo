@@ -1,4 +1,4 @@
-#Support for a reservation system over REST API
+###Support for a reservation system over REST API
 
 It is possible to connect Jicofo to external conference reservation system using
 REST API. Before new Jitsi-meet conference is created reservation system will be
@@ -8,7 +8,7 @@ conference duration and if the time limit is exceeded the conference will be
 terminated. If any authentication system is enabled then user's identity will be
 included in the reservation system query.
 
-#Enable reservation system
+####Enable reservation system
 
 In order to enable reservation system URL base for REST API endpoint must be
  configured in the following property:
@@ -30,9 +30,9 @@ endpoint is supported, so all request will go to:
 http://reservation.example.com/conference
 ```
 
-#Call flow
+####Call flow
 
-## Notes
+##### Notes
 
 All API calls use following date and time format:
 
@@ -41,22 +41,22 @@ All API calls use following date and time format:
 
 [JavaDoc]: https://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html
 
-##Conference allocation
+#####Conference allocation
 
 When the first user joins MUC room(Jitsi-meet URL is opened) <tt>HTTP POST</tt>
 request is sent to <tt>'/conference'</tt> endpoint with the following parameters
 included:
 
-<tt>name (string)</tt> - short name of the conference room(not full MUC address).
-<tt>start_time (string)</tt> - conference start date and time
-<tt>mail_owner (string)</tt> - if authentication system is enabled this field will
+* <tt>name (string)</tt> - short name of the conference room(not full MUC address).
+* <tt>start_time (string)</tt> - conference start date and time
+* <tt>mail_owner (string)</tt> - if authentication system is enabled this field will
  contain user's identity. It that case it will not be possible to create new
  conference room without authenticating.
 
 Then reservation system is expected to respond with one of the following
 responses:
 
-###HTTP 200 or 201 Conference created successfully
+######HTTP 200 or 201 Conference created successfully
 
 In HTTP response JSON object is expected. It should contain conference <tt>id</tt>
 assigned by the system and <tt>duration</tt> measured in seconds. Sample response body:
@@ -71,7 +71,7 @@ assigned by the system and <tt>duration</tt> measured in seconds. Sample respons
 }
 ```
 
-###HTTP 409 - Conference already exists
+######HTTP 409 - Conference already exists
 
 This is to recover from previous Jicofo failure. If for some reason it was
 restarted and will try to create the room again this response informs Jicofo
@@ -88,7 +88,7 @@ Jicofo will use <tt>HTTP GET</tt> to fetch info about conflicting conference for
 given <tt>conflict_id</tt>. More infor about this request in "Reading conference info"
 section.
 
-###HTTP 4xx
+######HTTP 4xx
 
 Other response codes will cause conference creation failure. JSON response
 can contain <tt>message</tt> object which will be sent back to the client.
@@ -144,18 +144,18 @@ Jicofo -> Client:
 Application can use <tt>text</tt> and <tt>reservation-error</tt> elements to
 provide meaningful information to the user.
 
-##Reading conference info
+#####Reading conference info
 
 In case of <tt>409</tt> response to <tt>HTTP POST</tt> request Jicofo will try
 to read information about conflicting conference using <tt>HTTP GET</tt>
 request to '/conference/{conflict_id}' endpoint. The response should provide all
 information about the conference stored in the reservation system:
 
-- <tt>'id'</tt>: conference identifier assigned by the reservation system
-- <tt>'name'</tt>: conference room name
-- <tt>'mail_owner'</tt>: identity of the user who has created the conference
-- <tt>'start_time'</tt>: conference start date and time
-- <tt>'duration'</tt>: scheduled conference duration in seconds
+* <tt>'id'</tt>: conference identifier assigned by the reservation system
+* <tt>'name'</tt>: conference room name
+* <tt>'mail_owner'</tt>: identity of the user who has created the conference
+* <tt>'start_time'</tt>: conference start date and time
+* <tt>'duration'</tt>: scheduled conference duration in seconds
 
 Sample response JSON body(contains the same info as <tt>200 OK</tt> to
 <tt>HTTP POST</tt>):
@@ -170,7 +170,7 @@ Sample response JSON body(contains the same info as <tt>200 OK</tt> to
 }
 ```
 
-## Deleting conference
+#####Deleting conference
 
 Jicofo deletes conferences in the reservation system in two cases. First when
 all users leave XMPP Multi User Chat room. Second when conference duration limit
