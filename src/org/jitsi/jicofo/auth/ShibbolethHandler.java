@@ -183,8 +183,7 @@ class ShibbolethHandler
         }
 
         // Check 'mail' attribute which should be set by Shibboleth through AJP
-        //String email = getShibAttr(request, "mail");
-        String email = "test@test.server.com";
+        String email = getShibAttr(request, "mail");
         if (StringUtils.isNullOrEmpty(email))
         {
             response.sendError(
