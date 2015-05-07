@@ -172,6 +172,11 @@ public class JingleOfferFactory
             RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
             nack.setFeedbackType("nack");
             vp8.addRtcpFeedbackType(nack);
+            // a=rtcp-fb:100 nack pli
+            RtcpFbPacketExtension nackPli = new RtcpFbPacketExtension();
+            nackPli.setFeedbackType("nack");
+            nackPli.setFeedbackSubtype("pli");
+            vp8.addRtcpFeedbackType(nackPli);
             // a=rtcp-fb:100 goog-remb
             RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
             remb.setFeedbackType("goog-remb");
