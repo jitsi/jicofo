@@ -117,14 +117,6 @@ class OperationSetJingleImpl
     {
         IQ iq = (IQ) packet;
 
-        //first ack all "set" requests.
-        if(iq.getType() == IQ.Type.SET)
-        {
-            IQ ack = IQ.createResultIQ(iq);
-
-            getConnection().sendPacket(ack);
-        }
-
         try
         {
             if (iq instanceof JingleIQ)

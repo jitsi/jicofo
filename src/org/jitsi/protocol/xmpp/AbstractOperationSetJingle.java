@@ -134,6 +134,24 @@ public abstract class AbstractOperationSetJingle
         JingleSession session = getSession(iq.getSID());
         JingleAction action = iq.getAction();
 
+        if (action == null)
+        {
+            // bad-request
+            IQ badRequest = IQ.createErrorResponse(
+                iq, new XMPPError(XMPPError.Condition.bad_request));
+
+            getConnection().sendPacket(badRequest);
+
+            return;
+        }
+        // Ack all "set" requests.
+        if(iq.getType() == IQ.Type.SET)
+        {
+            IQ ack = IQ.createResultIQ(iq);
+
+            getConnection().sendPacket(ack);
+        }
+
         if (session == null)
         {
             logger.error(
