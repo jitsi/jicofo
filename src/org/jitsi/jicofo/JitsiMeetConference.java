@@ -404,7 +404,10 @@ public class JitsiMeetConference
         logger.info(
             "Member " + chatRoomMember.getContactAddress() + " joined.");
 
-        idleTimestamp = -1;
+        if (!isFocusMember(chatRoomMember))
+        {
+            idleTimestamp = -1;
+        }
 
         // Are we ready to start ?
         if (!checkAtLeastTwoParticipants())
