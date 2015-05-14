@@ -61,8 +61,8 @@ public class ConferenceIqProviderTest
                 " url='somesdf23454$%12!://' room='someroom1234' />" +
                 "</iq>";
 
-        AuthUrlIQ authUrlIq
-                = (AuthUrlIQ) IQUtils.parse(authUrlIqXml, provider);
+        LoginUrlIQ authUrlIq
+                = (LoginUrlIQ) IQUtils.parse(authUrlIqXml, provider);
 
         assertNotNull(authUrlIq);
         assertEquals("to1", authUrlIq.getTo());
@@ -100,7 +100,7 @@ public class ConferenceIqProviderTest
                          "</iq>",
                      conferenceIq.toXML());
 
-        AuthUrlIQ authUrlIQ = new AuthUrlIQ();
+        LoginUrlIQ authUrlIQ = new LoginUrlIQ();
 
         authUrlIQ.setPacketID("1df:234sadf");
         authUrlIQ.setTo("to657");

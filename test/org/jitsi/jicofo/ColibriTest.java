@@ -91,11 +91,14 @@ public class ColibriTest
             = new ArrayList<ContentPacketExtension>();
 
         ContentPacketExtension audio
-            = JingleOfferFactory.createContentForMedia(MediaType.AUDIO, false);
+            = JingleOfferFactory.createContentForMedia(
+                    MediaType.AUDIO, false);
         ContentPacketExtension video
-            = JingleOfferFactory.createContentForMedia(MediaType.VIDEO, false);
+            = JingleOfferFactory.createContentForMedia(
+                    MediaType.VIDEO, false);
         ContentPacketExtension data
-            = JingleOfferFactory.createContentForMedia(MediaType.DATA, false);
+            = JingleOfferFactory.createContentForMedia(
+                    MediaType.DATA, false);
 
         contents.add(audio);
         contents.add(video);

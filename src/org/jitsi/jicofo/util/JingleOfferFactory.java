@@ -28,12 +28,14 @@ public class JingleOfferFactory
      *
      * @param mediaType the media type for which new offer content will
      *                  be created.
+     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     *                   should be indicated in the offer.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType, boolean enableFirefoxHacks)
+            MediaType mediaType, boolean disableIce)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -170,13 +172,15 @@ public class JingleOfferFactory
             RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
             nack.setFeedbackType("nack");
             vp8.addRtcpFeedbackType(nack);
-            if (!enableFirefoxHacks)
-            {
-                // a=rtcp-fb:100 goog-remb
-                RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
-                remb.setFeedbackType("goog-remb");
-                vp8.addRtcpFeedbackType(remb);
-            }
+            // a=rtcp-fb:100 nack pli
+            RtcpFbPacketExtension nackPli = new RtcpFbPacketExtension();
+            nackPli.setFeedbackType("nack");
+            nackPli.setFeedbackSubtype("pli");
+            vp8.addRtcpFeedbackType(nackPli);
+            // a=rtcp-fb:100 goog-remb
+            RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
+            remb.setFeedbackType("goog-remb");
+            vp8.addRtcpFeedbackType(remb);
             // a=rtpmap:116 red/90000
             PayloadTypePacketExtension red
                 = new PayloadTypePacketExtension();
@@ -214,7 +218,14 @@ public class JingleOfferFactory
         // DTLS-SRTP
         //setDtlsEncryptionOnContent(mediaType, content, null);
 
-        content.addChildExtension(new IceUdpTransportPacketExtension());
+        if (!disableIce)
+        {
+            content.addChildExtension(new IceUdpTransportPacketExtension());
+        }
+        else
+        {
+            content.addChildExtension(new RawUdpTransportPacketExtension());
+        }
 
         return content;
     }

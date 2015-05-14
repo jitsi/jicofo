@@ -21,7 +21,7 @@ import java.lang.reflect.*;
 /**
  * Implements <tt>BundleActivator</tt> for the OSGi bundle responsible for
  * authentication with external systems. Authentication URL pattern must be
- * configured in order to active the bundle {@link #AUTHENTICATION_URL_PNAME}.
+ * configured in order to active the bundle {@link #LOGIN_URL_PNAME}.
  *
  * @author Pawel Domas
  */
@@ -35,9 +35,24 @@ public class AuthBundleActivator
 
     /**
      * The name of configuration property that specifies the
-     * pattern of authentication URL. See {@link AuthAuthority} for more info.
+     * pattern of authentication URL. See {@link ShibbolethAuthAuthority}
+     * for more info.
      */
-    private static final String AUTHENTICATION_URL_PNAME = AUTH_PNAME + ".URL";
+    public static final String LOGIN_URL_PNAME = AUTH_PNAME + ".URL";
+
+    /**
+     * The name of configuration property that specifies the
+     * pattern of logout URL. See {@link ShibbolethAuthAuthority}
+     * for more info.
+     */
+    public static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
+
+    /**
+     * The name of the property that disables auto login feature. Authentication
+     * sessions are destroyed immediately when the conference ends.
+     */
+    public static final String DISABLE_AUTOLOGIN_PNAME
+        = AUTH_PNAME + ".DISABLE_AUTOLOGIN";
 
     /**
      * The name of the <tt>System</tt> and <tt>ConfigurationService</tt>
@@ -92,14 +107,17 @@ public class AuthBundleActivator
     private Server server;
 
     /**
-     * Reference to service registration of {@link AuthAuthority}.
+     * Reference to service registration of {@link AuthenticationAuthority}.
      */
-    private ServiceRegistration<AuthAuthority> authAuthorityServiceRegistration;
+    private ServiceRegistration<AuthenticationAuthority>
+            authAuthorityServiceRegistration;
 
     /**
-     * The instance of {@link AuthAuthority}.
+     * The instance of {@link AuthenticationAuthority}.
      */
-    private AuthAuthority authAuthority;
+    private AuthenticationAuthority authAuthority;
+
+    static BundleContext bundleContext;
 
     /**
      * {@inheritDoc}
@@ -108,27 +126,50 @@ public class AuthBundleActivator
     public void start(BundleContext bundleContext)
         throws Exception
     {
+        AuthBundleActivator.bundleContext = bundleContext;
+
         ConfigurationService cfg
                 = ServiceUtils.getService(
                         bundleContext,
                         ConfigurationService.class);
 
-        String authUrl = cfg.getString(AUTHENTICATION_URL_PNAME);
+        String loginUrl = cfg.getString(LOGIN_URL_PNAME);
+        String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
 
-        if (StringUtils.isNullOrEmpty(authUrl))
+        if (StringUtils.isNullOrEmpty(loginUrl))
         {
             return;
         }
 
-        logger.info("Starting authentication service... URL: " + authUrl);
+        logger.info("Starting authentication service... URL: " + loginUrl);
 
-        this.authAuthority = new AuthAuthority(authUrl);
+        if (loginUrl.toUpperCase().startsWith("XMPP:"))
+        {
+            this.authAuthority
+                = new XMPPDomainAuthAuthority(loginUrl.substring(5));
+        }
+        else
+        {
+            this.authAuthority
+                = new ShibbolethAuthAuthority(loginUrl, logoutUrl);
+        }
+
+        logger.info("Auth authority: " + authAuthority);
 
         authAuthorityServiceRegistration
             = bundleContext.registerService(
-                    AuthAuthority.class, authAuthority, null);
+                    AuthenticationAuthority.class, authAuthority, null);
 
         authAuthority.start();
+
+        // FIXME move Jetty related code to separate class
+        if (!(authAuthority instanceof ShibbolethAuthAuthority))
+        {
+            return;
+        }
+
+        ShibbolethAuthAuthority shibbolethAuthAuthority
+            = (ShibbolethAuthAuthority) authAuthority;
 
         // The REST API of Videobridge does not start by default.
         int port = 8888, tlsPort = 8843;
@@ -242,7 +283,8 @@ public class AuthBundleActivator
 
             server.addConnector(ajp13SocketConnector);
 
-            server.setHandler(new ShibbolethHandler(bundleContext));
+            server.setHandler(
+                    new ShibbolethHandler(shibbolethAuthAuthority));
 
             /*
              * The server will start a non-daemon background Thread which will
@@ -288,5 +330,7 @@ public class AuthBundleActivator
             server.stop();
             server = null;
         }
+
+        AuthBundleActivator.bundleContext = null;
     }
 }

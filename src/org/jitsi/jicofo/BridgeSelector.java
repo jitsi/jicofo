@@ -10,6 +10,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.stats.*;
 
@@ -51,6 +52,24 @@ public class BridgeSelector
         = "org.jitsi.focus.BRIDGE_PUBSUB_MAPPING";
 
     /**
+     * Configuration property which specifies the amount of time since bridge
+     * instance failure before the selector will give it another try.
+     */
+    public static final String BRIDGE_FAILURE_RESET_THRESHOLD_PNAME
+        = "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD";
+
+    /**
+     * Five minutes.
+     */
+    public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
+
+    /**
+     * The amount of time we will wait after bridge instance failure before it
+     * will get another chance.
+     */
+    private long failureResetThreshold;
+
+    /**
      * Operation set used to subscribe to PubSub nodes notifications.
      */
     private final OperationSetSubscription subscriptionOpSet;
@@ -82,9 +101,9 @@ public class BridgeSelector
     {
         this.subscriptionOpSet = subscriptionOpSet;
 
-        String mappingPropertyValue
-            = FocusBundleActivator.getConfigService()
-                .getString(BRIDGE_TO_PUBSUB_PNAME);
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+
+        String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
 
         if (StringUtils.isNullOrEmpty(mappingPropertyValue))
         {
@@ -101,6 +120,13 @@ public class BridgeSelector
 
             logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
         }
+
+        setFailureResetThreshold(
+            config.getLong( BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
+                            DEFAULT_FAILURE_RESET_THRESHOLD));
+
+        logger.info(
+            "Bridge failure reset threshold: " + getFailureResetThreshold());
     }
 
     /**
@@ -160,7 +186,7 @@ public class BridgeSelector
             }
         }
 
-        return bestChoice.isOperational ? bestChoice.jid : null;
+        return bestChoice.isOperational() ? bestChoice.jid : null;
     }
 
     /**
@@ -179,7 +205,7 @@ public class BridgeSelector
         for (BridgeState bridgeState : bridgeList)
         {
             bridgeJidList.add(bridgeState.jid);
-            if (bridgeState.isOperational)
+            if (bridgeState.isOperational())
             {
                 isAnyBridgeUp = true;
             }
@@ -351,6 +377,28 @@ public class BridgeSelector
     }
 
     /**
+     * The time since last bridge failure we will wait before it gets another
+     * chance.
+     *
+     * @return failure reset threshold in millis.
+     */
+    public long getFailureResetThreshold()
+    {
+        return failureResetThreshold;
+    }
+
+    /**
+     * Sets the amount of time we will wait after bridge failure before it will
+     * get another chance.
+     *
+     * @param failureResetThreshold the amount of time in millis.
+     */
+    public void setFailureResetThreshold(long failureResetThreshold)
+    {
+        this.failureResetThreshold = failureResetThreshold;
+    }
+
+    /**
      * Class holds videobridge state and implements {@link java.lang.Comparable}
      * interface to find least loaded bridge.
      */
@@ -374,6 +422,11 @@ public class BridgeSelector
          * back to *operational* state.
          */
         private boolean isOperational = true /* we assume it is operational */;
+
+        /**
+         * The time when this instance has failed.
+         */
+        private long failureTimestamp;
 
         BridgeState(String bridgeJid)
         {
@@ -401,6 +454,39 @@ public class BridgeSelector
         public void setIsOperational(boolean isOperational)
         {
             this.isOperational = isOperational;
+
+            if (!isOperational)
+            {
+                // Remember when the bridge has failed
+                failureTimestamp = System.currentTimeMillis();
+            }
+        }
+
+        public boolean isOperational()
+        {
+            // Check if we should give this bridge another try
+            verifyFailureThreshold();
+
+            return isOperational;
+        }
+
+        /**
+         * Verifies if it has been long enough since last bridge failure to give
+         * it another try(reset isOperational flag).
+         */
+        private void verifyFailureThreshold()
+        {
+            if (isOperational)
+            {
+                return;
+            }
+
+            if (System.currentTimeMillis() - failureTimestamp
+                    > getFailureResetThreshold())
+            {
+                logger.info("Resetting operational status for " + jid);
+                isOperational = true;
+            }
         }
 
         /**
@@ -411,9 +497,12 @@ public class BridgeSelector
         @Override
         public int compareTo(BridgeState o)
         {
-            if (this.isOperational && !o.isOperational)
+            boolean meOperational = isOperational();
+            boolean otherOperational = o.isOperational();
+
+            if (meOperational && !otherOperational)
                 return -1;
-            else if (!this.isOperational && o.isOperational)
+            else if (!meOperational && otherOperational)
                 return 1;
 
             return conferenceCount - o.conferenceCount;

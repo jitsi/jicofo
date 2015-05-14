@@ -216,9 +216,17 @@ public class JitsiMeetServices
      * @param sipGateway the XMPP address to be set as SIP gateway component
      *                   address.
      */
-    private void setSipGateway(String sipGateway)
+    void setSipGateway(String sipGateway)
     {
         this.sipGateway = sipGateway;
+    }
+
+    /**
+     * Returns XMPP address of SIP gateway component.
+     */
+    public String getSipGateway()
+    {
+        return sipGateway;
     }
 
     /**

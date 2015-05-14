@@ -7,22 +7,29 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.rayo.*;
+import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 
+import org.jitsi.videobridge.eventadmin.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.packet.Message; //disambiguation
 import org.jivesoftware.smack.provider.*;
+import org.jivesoftware.smackx.packet.*;
 
 /**
  * Class handles various Jitsi Meet extensions IQs like {@link MuteIq} and
  * Colibri for recording.
  *
  * @author Pawel Domas
+ * @author Boris Grozev
  */
 public class MeetExtensionsHandler
     implements PacketFilter,
@@ -58,6 +65,10 @@ public class MeetExtensionsHandler
         MuteIqProvider muteIqProvider = new MuteIqProvider();
         muteIqProvider.registerMuteIqProvider(
             ProviderManager.getInstance());
+
+        RayoIqProvider rayoIqProvider = new RayoIqProvider();
+        rayoIqProvider.registerRayoIQs(
+                ProviderManager.getInstance());
     }
 
     /**
@@ -87,7 +98,11 @@ public class MeetExtensionsHandler
     @Override
     public boolean accept(Packet packet)
     {
-        return acceptMuteIq(packet) || acceptColibriIQ(packet);
+        return acceptMuteIq(packet)
+                || acceptColibriIQ(packet)
+                || acceptRayoIq(packet)
+                || acceptMessage(packet)
+                || acceptPresence(packet);
     }
 
     @Override
@@ -106,6 +121,18 @@ public class MeetExtensionsHandler
         else if (packet instanceof MuteIq)
         {
             handleMuteIq((MuteIq) packet);
+        }
+        else if (packet instanceof RayoIqProvider.DialIq)
+        {
+            handleRayoIQ((RayoIqProvider.DialIq) packet);
+        }
+        else if (packet instanceof Message)
+        {
+            handleMessage((Message) packet);
+        }
+        else if (packet instanceof Presence)
+        {
+            handlePresence((Presence) packet);
         }
         else
         {
@@ -218,5 +245,228 @@ public class MeetExtensionsHandler
         }
 
         smackXmpp.getXmppConnection().sendPacket(result);
+    }
+
+    private boolean acceptRayoIq(Packet p)
+    {
+        return p instanceof RayoIqProvider.DialIq;
+    }
+
+    private void handleRayoIQ(RayoIqProvider.DialIq dialIq)
+    {
+        String initiatorJid = dialIq.getFrom();
+
+        ChatRoomMemberRole role = conference.getRoleForMucJid(initiatorJid);
+
+        if (role == null)
+        {
+            // Only room members are allowed to send requests
+            IQ error = createErrorResponse(
+                dialIq, new XMPPError(XMPPError.Condition.forbidden));
+
+            smackXmpp.getXmppConnection().sendPacket(error);
+
+            return;
+        }
+
+        if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
+        {
+            // Moderator permission is required
+            IQ error = createErrorResponse(
+                dialIq, new XMPPError(XMPPError.Condition.not_allowed));
+
+            smackXmpp.getXmppConnection().sendPacket(error);
+
+            return;
+        }
+
+        // Check if Jigasi is available
+        String jigasiJid = conference.getServices().getSipGateway();
+
+        if (StringUtils.isNullOrEmpty(jigasiJid))
+        {
+            // Not available
+            IQ error = createErrorResponse(
+                dialIq, new XMPPError(XMPPError.Condition.service_unavailable));
+
+            smackXmpp.getXmppConnection().sendPacket(error);
+
+            return;
+        }
+
+        // Redirect original request to Jigasi component
+        String originalPacketId = dialIq.getPacketID();
+
+        dialIq.setFrom(null);
+        dialIq.setTo(jigasiJid);
+        dialIq.setPacketID(IQ.nextID());
+
+        IQ reply
+            = (IQ) smackXmpp.getXmppConnection().sendPacketAndGetReply(dialIq);
+
+        // Send Jigasi response back to the client
+        reply.setFrom(null);
+        reply.setTo(initiatorJid);
+        reply.setPacketID(originalPacketId);
+
+        smackXmpp.getXmppConnection().sendPacket(reply);
+    }
+
+    private boolean acceptMessage(Packet packet)
+    {
+        if (packet != null && packet instanceof Message)
+        {
+            for (PacketExtension pe : packet.getExtensions())
+                if (pe instanceof LogPacketExtension)
+                    return true;
+        }
+        return false;
+    }
+
+    /**
+     * Handles "message" stanzas.
+     */
+    private void handleMessage(Message message)
+    {
+        for (PacketExtension ext : message.getExtensions())
+            if (ext instanceof LogPacketExtension)
+                handleLogRequest((LogPacketExtension) ext, message.getFrom());
+    }
+
+    /**
+     * Handles XEP-0337 "log" extensions.
+     */
+    private void handleLogRequest(LogPacketExtension log, String jid)
+    {
+        Participant participant = conference.findParticipantForRoomJid(jid);
+        if (participant != null)
+        {
+            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+            if (eventAdmin != null)
+            {
+                if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
+                {
+                    String content = LogUtil.getContent(log);
+                    if (content != null)
+                    {
+                        Event event =
+                            EventFactory.peerConnectionStats(
+                                conference.getColibriConference().getConferenceId(),
+                                participant.getEndpointId(),
+                                content);
+                        if (event != null)
+                            eventAdmin.sendEvent(event);
+                    }
+                }
+                else
+                {
+                    if (logger.isInfoEnabled())
+                        logger.info("Ignoring log request with an unknown ID:"
+                                            + log.getID());
+                }
+            }
+        }
+        else
+        {
+            logger.info("Ignoring log request from an unknown JID: " + jid);
+        }
+    }
+
+    private boolean acceptPresence(Packet packet)
+    {
+        return packet instanceof Presence;
+    }
+
+    /**
+     * Handles presence stanzas
+     * @param presence
+     */
+    private void handlePresence(Presence presence)
+    {
+        // unavailable is sent when user leaves the room
+        if (!presence.isAvailable())
+        {
+            return;
+        }
+
+        Participant participant
+                = conference.findParticipantForRoomJid(presence.getFrom());
+        if (participant != null)
+        {
+            // Check if this conference is valid
+            String conferenceId
+                = conference.getColibriConference().getConferenceId();
+            if (StringUtils.isNullOrEmpty(conferenceId))
+            {
+                logger.error(
+                    "Unable to send DisplayNameChanged event" +
+                            " - no conference id");
+                return;
+            }
+
+            // Check for changes to the display name
+            String oldDisplayName = participant.getDisplayName();
+            String newDisplayName = null;
+            for (PacketExtension pe : presence.getExtensions())
+            {
+                if (pe instanceof Nick)
+                {
+                    newDisplayName = ((Nick) pe).getName();
+                    break;
+                }
+            }
+
+            if ((oldDisplayName == null && newDisplayName != null)
+                || (oldDisplayName != null
+                        && !oldDisplayName.equals(newDisplayName)))
+            {
+                participant.setDisplayName(newDisplayName);
+
+                // Prevent NPE when adding to event hashtable
+                if (newDisplayName == null)
+                {
+                    newDisplayName = "";
+                }
+                EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+                if (eventAdmin != null)
+                {
+                    eventAdmin.sendEvent(
+                        EventFactory.endpointDisplayNameChanged(
+                            conferenceId,
+                            participant.getEndpointId(),
+                            newDisplayName));
+                }
+            }
+        }
+
+    }
+
+    /**
+     * FIXME: replace with IQ.createErrorResponse
+     * Prosody does not allow to include request body in error
+     * response. Replace this method with IQ.createErrorResponse once fixed.
+     */
+    private IQ createErrorResponse(IQ request, XMPPError error)
+    {
+        if (!(request.getType() == IQ.Type.GET
+                || request.getType() == IQ.Type.SET))
+        {
+            throw new IllegalArgumentException(
+                "IQ must be of type 'set' or 'get'. Original IQ: "
+                        + request.toXML());
+        }
+        final IQ result = new IQ()
+        {
+            public String getChildElementXML()
+            {
+                return "";
+            }
+        };
+        result.setType(IQ.Type.ERROR);
+        result.setPacketID(request.getPacketID());
+        result.setFrom(request.getTo());
+        result.setTo(request.getFrom());
+        result.setError(error);
+        return result;
     }
 }

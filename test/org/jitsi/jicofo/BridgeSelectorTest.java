@@ -25,6 +25,7 @@ import org.junit.runners.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -199,6 +200,76 @@ public class BridgeSelectorTest
         selector.updateBridgeOperationalStatus(jvbPreConfigured, false);
         assertEquals(jvbPreConfigured,
                      selector.getPrioritizedBridgesList().get(0));
+
+        // Now bridges are up and select based on conference count
+        // with pre-configured bridge
+        selector.updateBridgeOperationalStatus(jvb1Jid, true);
+        selector.updateBridgeOperationalStatus(jvb2Jid, true);
+        selector.updateBridgeOperationalStatus(jvb3Jid, true);
+        selector.updateBridgeOperationalStatus(jvbPreConfigured, true);
+
+        mockSubscriptions.fireSubscriptionNotification(
+                jvbPreConfigured, createJvbStats(1));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb1PubSubNode, createJvbStats(0));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb2PubSubNode, createJvbStats(0));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb3PubSubNode, createJvbStats(0));
+
+        // Pre-configured one should not be in front
+        assertNotEquals(jvbPreConfigured,
+                selector.getPrioritizedBridgesList().get(0));
+
+        // JVB 2 least occupied
+        mockSubscriptions.fireSubscriptionNotification(
+                jvbPreConfigured, createJvbStats(1));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb1PubSubNode, createJvbStats(1));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb2PubSubNode, createJvbStats(0));
+        mockSubscriptions.fireSubscriptionNotification(
+                jvb3PubSubNode, createJvbStats(1));
+
+        assertEquals(jvb2Jid,
+                selector.getPrioritizedBridgesList().get(0));
+
+        // FAILURE RESET THRESHOLD
+        testFailureResetThreshold(selector, mockSubscriptions);
+    }
+
+    private void testFailureResetThreshold(
+        BridgeSelector selector, MockSubscriptionOpSetImpl mockSubscriptions)
+            throws InterruptedException
+    {
+        String[] nodes = new String[]{ jvb1Jid, jvb2Jid, jvb3Jid};
+
+        String[] pubSubNodes
+            = new String[] { jvb1PubSubNode, jvb2PubSubNode, jvb3PubSubNode};
+
+        // Will restore failure status after 100 ms
+        selector.setFailureResetThreshold(100);
+
+        for (int testNode = 0; testNode < nodes.length; testNode++)
+        {
+            for (int idx=0; idx < nodes.length; idx++)
+            {
+                boolean isTestNode = idx == testNode;
+
+                // Test node has 0 load...
+                mockSubscriptions.fireSubscriptionNotification(
+                    pubSubNodes[idx], createJvbStats(isTestNode ? 0 : 100));
+
+                // ... and is not operational
+                selector.updateBridgeOperationalStatus(nodes[idx], !isTestNode);
+            }
+            // Should not be selected now
+            assertNotEquals(nodes[testNode], selector.selectVideobridge());
+            // Wait for faulty status reset
+            Thread.sleep(150);
+            // Test node should recover
+            assertEquals(nodes[testNode], selector.selectVideobridge());
+        }
     }
 
     PacketExtension createJvbStats(int conferenceCount)

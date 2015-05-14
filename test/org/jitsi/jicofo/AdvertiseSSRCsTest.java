@@ -55,6 +55,8 @@ public class AdvertiseSSRCsTest
     public void testOneToOneConference()
         throws OperationFailedException, OperationNotSupportedException
     {
+        //FIXME: test when there is participant without contents
+
         String roomName = "testSSRCs@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
@@ -76,8 +78,8 @@ public class AdvertiseSSRCsTest
         user2.join(chat);
 
         // Accept invite with all users
-        assertNotNull(user1.acceptInvite(2000));
-        assertNotNull(user2.acceptInvite(2000));
+        assertNotNull(user1.acceptInvite(4000));
+        assertNotNull(user2.acceptInvite(4000));
 
         user1.waitForAddSource(2000);
 
@@ -93,7 +95,7 @@ public class AdvertiseSSRCsTest
 
         MockParticipant user3 = new MockParticipant("User3");
         user3.join(chat);
-        assertNotNull(user3.acceptInvite(2000));
+        assertNotNull(user3.acceptInvite(4000));
 
         user1.waitForAddSource(2000);
 
@@ -134,8 +136,8 @@ public class AdvertiseSSRCsTest
         user2.join(chat);
 
         // Accept invite with all users
-        assertNotNull(user1.acceptInvite(2000));
-        assertNotNull(user2.acceptInvite(2000));
+        assertNotNull(user1.acceptInvite(4000));
+        assertNotNull(user2.acceptInvite(4000));
 
         user1.waitForAddSource(2000);
 
@@ -190,7 +192,7 @@ public class AdvertiseSSRCsTest
         // This one has no groups
         MockParticipant user3 = new MockParticipant("User3");
         user3.join(chat);
-        assertNotNull(user3.acceptInvite(2000));
+        assertNotNull(user3.acceptInvite(4000));
 
         user1.waitForAddSource(2000);
 

@@ -39,5 +39,15 @@ public interface OperationSetSimpleCaps
      */
     boolean hasFeatureSupport(String node, String[] features);
 
+    /**
+     * Returns the list of features supported by given <tt>node</tt>. 
+     * @param node XMPP address of the entity for which features wil be 
+     *        discovered.
+     * @return the list of features supported by given <tt>node</tt> or
+     *         <tt>null</tt> if we have failed to obtain the list due to some
+     *         errors.
+     */
+    List<String> getFeatures(String node);
+
     //boolean hasFeatureSupport(String node, String subnode, String[] features);
 }

@@ -16,7 +16,6 @@ import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.log.*;
 import org.jivesoftware.smack.provider.*;
 
 import java.util.*;
@@ -89,6 +88,16 @@ public class FocusManager
     private String focusUserDomain;
 
     /**
+     * The username used by the focus to login.
+     */
+    private String focusUserName;
+
+    /**
+     * Optional focus user password(if null then will login anonymously).
+     */
+    private String focusUserPassword;
+
+    /**
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private FocusExpireThread expireThread = new FocusExpireThread();
@@ -101,6 +110,7 @@ public class FocusManager
 
     // Convert to list when needed
     /**
+     * FIXME: remove eventually if not used anymore
      * The list of {@link FocusAllocationListener}.
      */
     private FocusAllocationListener focusAllocListener;
@@ -124,16 +134,11 @@ public class FocusManager
     private boolean shutdownInProgress;
 
     /**
-     * The name of XMPP user used by the focus to login.
-     */
-    private String focusUserName;
-
-    /**
      * Handler that takes care of pre-processing various Jitsi Meet extensions
      * IQs sent from conference participants to the focus.
      */
     private MeetExtensionsHandler meetExtensionsHandler;
-
+    
     /**
      * Starts this manager for given <tt>hostName</tt>.
      */
@@ -151,7 +156,7 @@ public class FocusManager
 
         focusUserName = config.getString(FOCUS_USER_NAME_PNAME);
 
-        String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
+        focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
 
         protocolProviderHandler.start(
             hostName, focusUserDomain, focusUserPassword, focusUserName);
@@ -165,11 +170,11 @@ public class FocusManager
         ProviderManager
             .getInstance()
                 .addExtensionProvider(LogPacketExtension.LOG_ELEM_NAME,
-                                      LogPacketExtension.NAMESPACE,
-                                      new LogExtensionProvider());
+                    LogPacketExtension.NAMESPACE,
+                    new LogExtensionProvider());
         FocusBundleActivator
             .bundleContext.registerService(
-                    JitsiMeetServices.class, jitsiMeetServices, null);
+            JitsiMeetServices.class, jitsiMeetServices, null);
 
         protocolProviderHandler.addRegistrationListener(this);
 
@@ -248,13 +253,10 @@ public class FocusManager
                             + " conferences count: " + conferences.size()
                             + " options:" + options.toString());
 
-            LoggingService loggingService
-                    = FocusBundleActivator.getLoggingService();
-            if (loggingService != null)
-            {
-                loggingService.logEvent(
-                    LogEventFactory.focusCreated(room + "@" + focusUserDomain));
-            }
+            // Send focus created event
+            FocusBundleActivator.getEventAdmin().sendEvent(
+                    EventFactory.focusCreated(
+                            conference.getId(), conference.getRoomName()));
 
             conference.start();
         }
@@ -262,6 +264,25 @@ public class FocusManager
         {
             logger.error("Failed to start conference for room: " + room, e);
         }
+    }
+
+    /**
+     * Destroys the conference for given room name.
+     * @param roomName full MUC room name to destroy.
+     * @param reason optional reason string that will be advertised to the
+     *               users upon exit.
+     */
+    public synchronized void destroyConference(String roomName, String reason)
+    {
+        JitsiMeetConference conference = getConference(roomName);
+        if (conference == null)
+        {
+            logger.error(
+                "Unable to destroy the conference - not found: " + roomName);
+            return;
+        }
+
+        conference.destroy(reason);
     }
 
     /**
@@ -282,6 +303,11 @@ public class FocusManager
         {
             focusAllocListener.onFocusDestroyed(roomName);
         }
+
+        // Send focus destroyed event
+        FocusBundleActivator.getEventAdmin().sendEvent(
+                EventFactory.focusDestroyed(
+                        conference.getId(), conference.getRoomName()));
 
         maybeDoShutdown();
     }
@@ -352,6 +378,14 @@ public class FocusManager
     public void setFocusAllocationListener(FocusAllocationListener l)
     {
         this.focusAllocListener = l;
+    }
+
+    /**
+     * Returns instance of <tt>JitsiMeetServices</tt> used in conferences.
+     */
+    public JitsiMeetServices getJitsiMeetServices()
+    {
+        return jitsiMeetServices;
     }
 
     /**

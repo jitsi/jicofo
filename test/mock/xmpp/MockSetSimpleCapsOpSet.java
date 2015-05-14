@@ -11,9 +11,16 @@ public class MockSetSimpleCapsOpSet
     extends MockCapsNode
     implements OperationSetSimpleCaps
 {
+    private long discoveryDelay = 0;
+
     public MockSetSimpleCapsOpSet(String domain)
     {
         super(domain, new String[]{});
+    }
+
+    public void addDiscoveryDelay(long millis)
+    {
+        this.discoveryDelay = millis;
     }
 
     private MockCapsNode findFirstLevel(String name)
@@ -82,6 +89,30 @@ public class MockSetSimpleCapsOpSet
             }
         }
         return true;
+    }
+
+    @Override
+    public List<String> getFeatures(String node)
+    {
+        if (discoveryDelay > 0)
+        {
+            try
+            {
+                Thread.sleep(discoveryDelay);
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        MockCapsNode capsNode = findChild(node);
+        if (capsNode == null)
+        {
+            return null;
+        }
+
+        return Arrays.asList(capsNode.getFeatures());
     }
 
     //@Override

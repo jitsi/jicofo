@@ -116,4 +116,9 @@ public class TestConference
         }
         return ssrcs;
     }
+
+    public int getParticipantCount()
+    {
+        return conference.getParticipantCount();
+    }
 }

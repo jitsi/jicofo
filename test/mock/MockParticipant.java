@@ -54,6 +54,8 @@ public class MockParticipant
 
     private final Object addSourceLock = new Object();
 
+    private final Object joinLock = new Object();
+
     private MediaSSRCMap remoteSSRCs = new MediaSSRCMap();
 
     private MediaSSRCGroupMap remoteSSRCgroups = new MediaSSRCGroupMap();
@@ -88,18 +90,43 @@ public class MockParticipant
         return user;
     }
 
+    public void joinInNewThread(final MockMultiUserChat chat)
+    {
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                join(chat);
+            }
+        }).start();
+    }
+
+    public void waitForJoinThread(long timeout)
+            throws InterruptedException
+    {
+        synchronized (joinLock)
+        {
+            if (xmppPeer == null)
+            {
+                joinLock.wait(timeout);
+            }
+            if (xmppPeer == null)
+            {
+                throw new RuntimeException(
+                    "Failed to join the room within" +
+                            " the time limit specified: " + timeout);
+            }
+        }
+    }
+
     public void join(MockMultiUserChat chat)
     {
-        if (useBundle)
-        {
-            user = chat.createMockRoomMember(nick);
-            user.addBundleSupport();
-            chat.mockJoin(user);
-        }
-        else
-        {
-            user = chat.mockJoin(nick);
-        }
+        user = chat.createMockRoomMember(nick);
+
+        user.setupFeatures(useBundle);
+
+        chat.mockJoin(user);
 
         initContents();
 
@@ -109,10 +136,15 @@ public class MockParticipant
 
         mockConnection.addPacketHandler(this, this);
 
-        xmppPeer = new XmppPeer(
-            user.getContactAddress(), mockConnection);
+        synchronized (joinLock)
+        {
+            xmppPeer = new XmppPeer(
+                user.getContactAddress(), mockConnection);
 
-        xmppPeer.start();
+            xmppPeer.start();
+
+            joinLock.notifyAll();
+        }
     }
 
     public static long nextSSRC()
@@ -181,6 +213,18 @@ public class MockParticipant
         }
 
         myContents.add(video);
+    }
+
+    public void acceptInviteInBg()
+    {
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                acceptInvite(5000);
+            }
+        },"Accept invite " + nick).start();
     }
 
     public JingleIQ[] acceptInvite(long timeout)

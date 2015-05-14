@@ -84,7 +84,7 @@ public class BundleTest
 
         user2.join(chat);
 
-        JingleIQ user1Invite = user1.acceptInvite(2000)[0];
+        JingleIQ user1Invite = user1.acceptInvite(6000)[0];
 
         validateSessionInit(user1Invite, true);
 
@@ -96,7 +96,7 @@ public class BundleTest
         assertNotNull(user1Transport);
         //logger.info("User1 transport info: " + user1Transport.toXML());
 
-        JingleIQ user2Invite = user2.acceptInvite(2000)[0];
+        JingleIQ user2Invite = user2.acceptInvite(4000)[0];
         validateSessionInit(user2Invite, false);
 
         user1.leave();

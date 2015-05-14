@@ -2,14 +2,13 @@
 
     <!-- Debian related targets -->
 
-    <property name="debian.release" value="release/jicofo"/>
+    <property name="release.dir" value="release"/>
+    <property name="debian.release" value="${release.dir}/jicofo"/>
     <property name="debian.dir" value="${debian.release}/debian"/>
     <property name="debian.binary.dir" value="${debian.dir}/binary"/>
     <property name="dpkg-scanpackages" value="/usr/bin/dpkg-scanpackages"/>
     <property name="dpkg-buildpackage" value="/usr/bin/dpkg-buildpackage"/>
     <property name="dh_testdir" value="/usr/bin/dh_testdir"/>
-
-    <property name="tinder.folder" value="lib/src/tinder-1.2.2"/>
 
     <!-- Can we build debian packages? -->
     <condition property="dpkg.build.present">
@@ -22,6 +21,12 @@
     <condition property="dpkg.scan.present">
         <available file="${dpkg-scanpackages}"/>
     </condition>
+
+    <target name="clean-release">
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${release.dir}" />
+        </delete>
+    </target>
 
     <target name="deb" depends="deb-32,deb-64"/>
     <target name="deb-32">
@@ -138,49 +143,23 @@
 
     <target name="deb-src" depends="deb-copy-jicofo">
 
-        <unzip src="../libsrc/jitsi-android-osgi.zip"
-               dest="${debian.release}/lib/src/jitsi-android-osgi">
-            <patternset>
-                <exclude name="**/test/**"/>
-                <exclude name="**/test-lib/**"/>
-                <exclude name="**/*.iml"/>
-                <exclude name="**/*.jar"/>
-            </patternset>
-        </unzip>
-
-        <unzip src="../libsrc/tinder_src_1_2_2.zip"
-               dest="${debian.release}/lib/src/">
-            <patternset>
-                <exclude name="**/test/**"/>
-                <exclude name="**/*.jar"/>
-            </patternset>
-        </unzip>
-        <unzip src="../libsrc/whack-trunk.zip"
-               dest="${debian.release}/lib/src/">
-            <patternset>
-                <exclude name="**/test/**"/>
-                <exclude name="**/*.jar"/>
-                <exclude name="**/.cvsignore"/>
-            </patternset>
-        </unzip>
-
         <!-- pack as original sources -->
-        <tar destfile="release/jicofo_${label}.orig.tar.gz"
+        <tar destfile="${release.dir}/jicofo_${label}.orig.tar.gz"
              compression="gzip"
-             basedir="release"/>
+             basedir="${release.dir}"/>
         <delete failonerror="false" includeemptydirs="true">
             <fileset dir="${debian.release}"/>
         </delete>
     </target>
 
     <target name="deb-copy-jicofo">
-        <mkdir dir="${debian.release}/lib/src"/>
 
         <antcall target="deb-bump-version" />
 
         <copy todir="${debian.release}">
             <fileset dir=".">
                 <include name="src/**"/>
+                <include name="lib/logging.properties"/>
                 <include name="build.xml"/>
                 <include name="resources/install/build-debian.xml"/>
                 <include name="resources/install/linux-64/jicofo.sh"/>
@@ -194,7 +173,7 @@
             <replacevalue>/usr/lib/jni</replacevalue>
         </replace>
         <replace file="${debian.release}/resources/install/linux-64/jicofo.sh"
-                 token="$SCRIPT_DIR/lib/native/linux">
+                 token="$SCRIPT_DIR/lib/native/linux-64">
             <replacevalue>/usr/lib/jni</replacevalue>
         </replace>
         <copy todir="${debian.release}">
@@ -234,25 +213,34 @@ endif
     </target>
 
     <target name="deb-src-rebuild">
+        <mkdir dir="lib"/>
 
         <symlink resource="/usr/share/libjitsi/lib/bccontrib.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/bcprov.jar"
                  link="lib"/>
+        <symlink resource="/usr/share/java/bcpkix.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/java/commons-logging.jar"
+                 link="lib"/>
         <symlink resource="/usr/share/java/concurrentlinkedhashmap-lru.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/configuration.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/jitsi-common/credentialsstorage.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/dns.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/dnsservice.jar"
                  link="lib"/>
+        <symlink resource="/usr/share/java/dnsjava.jar"
+                 link="lib"/>
         <symlink resource="/usr/share/java/dom4j.jar"
                  link="lib"/>
-        <symlink resource="/usr/share/jitsi-common/fileaccess.jar"
+        <symlink resource="/usr/share/java/httpclient.jar"
                  link="lib"/>
-        <!--
-        Jetty 8
+        <symlink resource="/usr/share/java/httpcore.jar"
+                 link="lib"/>
         <symlink resource="/usr/share/java/jetty8-http.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/jetty8-io.jar"
@@ -261,33 +249,24 @@ endif
                  link="lib"/>
         <symlink resource="/usr/share/java/jetty8-util.jar"
                  link="lib"/>
-        <symlink resource="/usr/share/java/sigar.jar"
-                 link="lib"/>-->
+        <symlink resource="/usr/share/java/jetty8-ajp.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/java/jetty8-continuation.jar"
+                 link="lib"/>
 
-        <mkdir dir="lib/src/jitsi-android-osgi/classes"/>
-        <javac debug="true"
-               deprecation="true" destdir="lib/src/jitsi-android-osgi/classes"
-               nowarn="false"
-               source="1.6" target="1.6" fork="true">
-            <src path="lib/src/jitsi-android-osgi/src"/>
-            <include name="**/*.java" />
-            <classpath>
-                <fileset dir="/usr/share/java">
-                    <include name="org.apache.felix.framework.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
-        <jar compress="true" destfile="lib/jitsi-android-osgi.jar">
-            <zipfileset dir="lib/src/jitsi-android-osgi/classes"/>
-        </jar>
-
+        <symlink resource="/usr/share/jitsi-videobridge/jitsi-videobridge.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/jitsi-videobridge/lib/jitsi-android-osgi.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/jitsi-videobridge/lib/tinder.jar"
+                 link="lib"/>
+        <symlink resource="/usr/share/jitsi-videobridge/lib/whack.jar"
+                 link="lib"/>
         <symlink resource="/usr/share/java/jna.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/json-simple.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/libidn.jar"
-                 link="lib"/>
-        <symlink resource="/usr/share/java/bcpkix.jar"
                  link="lib"/>
         <symlink resource="/usr/share/libjitsi/lib/fmj.jar"
                  link="lib"/>
@@ -297,13 +276,11 @@ endif
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/netaddr.jar/netaddr.jar"
                  link="lib"/>
-        <symlink resource="/usr/share/libjitsi/lib/ice4j.jar"
+        <symlink resource="/usr/share/jitsi-common/netaddr.jar/ice4j.jar"
                  link="lib"/>
-        <symlink resource="/usr/share/java/weupnp.jar"
+        <symlink resource="/usr/share/jitsi-common/netaddr.jar/weupnp.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/org.apache.felix.framework.jar"
-                 link="lib"/>
-        <symlink resource="/usr/share/jitsi-common/packetlogging.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/protocol.jar"
                  link="lib"/>
@@ -311,74 +288,26 @@ endif
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/protocol-media.jar"
                  link="lib"/>
-        <symlink resource="/usr/share/jitsi-common/resourcemanager.jar"
+        <symlink resource="/usr/share/jitsi-common/reconnectplugin.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/servlet-api-3.1.jar"
                  link="lib"/>
         <symlink resource="/usr/share/java/slf4j-api.jar"
                  link="lib"/>
+        <symlink resource="/usr/share/java/slf4j-jdk14.jar"
+                 link="lib"/>
         <symlink resource="/usr/share/jitsi-common/smacklib.jar/smacklib.jar"
                  link="lib"/>
-
-        <mkdir dir="${tinder.folder}/classes"/>
-        <javac debug="true"
-               deprecation="true" destdir="${tinder.folder}/classes"
-               nowarn="false"
-               source="1.6" target="1.6" fork="true">
-            <src path="${tinder.folder}/src/main/java"/>
-            <include name="**/*.java" />
-            <classpath>
-                <fileset dir="/usr/share/java">
-                    <include name="dom4j.jar"/>
-                    <include name="slf4j-api.jar"/>
-                    <include name="jcip-annotations.jar"/>
-                    <include name="libidn.jar"/>
-                    <include name="concurrentlinkedhashmap-lru.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
-        <jar compress="true" destfile="lib/tinder.jar">
-            <zipfileset dir="${tinder.folder}/classes"/>
-        </jar>
-
-        <!-- tinder -->
-        <symlink resource="/usr/share/jitsi-common/ui-service.jar"
+        <symlink resource="/usr/share/jitsi-common/sysactivitynotifications.jar/sysactivitynotifications.jar"
                  link="lib"/>
-        <symlink resource="/usr/share/java/dnsjava.jar"
+
+        <symlink resource="/usr/share/jitsi-common/ui-service.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/util.jar/launchutils.jar"
                  link="lib"/>
         <symlink resource="/usr/share/jitsi-common/util.jar/util.jar"
                  link="lib"/>
 
-        <symlink resource="/usr/share/java/dom4j.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/jetty8-http.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/jetty8-server.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/jetty8-servlet.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/jetty8-util.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/jetty8-webapp.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/servlet-api-3.1.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/slf4j-api.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="/usr/share/java/xpp3.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <symlink resource="../../../../../tinder.jar"
-                 link="lib/src/whack/build/lib/merge"/>
-        <ant dir="lib/src/whack/build"
-             useNativeBasedir="true"
-             inheritAll="false"
-             target="jar">
-        </ant>
-        <copy file="lib/src/whack/target/whack.jar" todir="lib"/>
-
-        <!-- whack -->
         <symlink resource="/usr/share/java/xpp3.jar"
                  link="lib"/>
         <symlink resource="/usr/share/libjitsi/lib/zrtp4j-light.jar"
@@ -393,16 +322,10 @@ endif
     <target name="clean-debuild">
 
         <delete failonerror="false">
-            <fileset dir="lib/src/whack/build/lib/merge">
-                <include name="*.jar"/>
-            </fileset>
             <fileset dir="lib">
                 <include name="*.jar"/>
             </fileset>
         </delete>
-        <delete dir="lib/src/jitsi-android-osgi/classes" failonerror="false"/>
-        <delete dir="${tinder.folder}/classes" failonerror="false"/>
-        <delete dir="lib/src/whack/target" failonerror="false"/>
 
     </target>
 

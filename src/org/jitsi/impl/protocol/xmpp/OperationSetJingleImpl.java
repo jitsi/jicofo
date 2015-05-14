@@ -94,7 +94,7 @@ class OperationSetJingleImpl
 
                     logger.error(
                         "Received an error: code=" + error.getCode()
-                            + " message=" + errorMessage);
+                            + " message=" + errorMessage+", " + packet.toXML());
                 }
             }
 
@@ -116,14 +116,6 @@ class OperationSetJingleImpl
     public void processPacket(Packet packet)
     {
         IQ iq = (IQ) packet;
-
-        //first ack all "set" requests.
-        if(iq.getType() == IQ.Type.SET)
-        {
-            IQ ack = IQ.createResultIQ(iq);
-
-            getConnection().sendPacket(ack);
-        }
 
         try
         {

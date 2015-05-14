@@ -33,7 +33,7 @@ Manual configuration for Prosody
 Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method(jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration(etc\prosody\prosody.cfg.lua):
 ```
 VirtualHost "auth.jitsi.example.com"
-    authentification = "internal_plain"
+    authentication = "internal_plain"
 ```
 Next step is to create admin user that will be used by Jicofo to log in:
 ```
@@ -103,3 +103,47 @@ Run arguments descripton
 --user_password=PASSWORD specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
 </li>
 </ul>
+
+Secure domain
+====
+
+It is possible to allow only authenticated users for creating new conference
+rooms. Whenever new room is about to be created Jitsi Meet will prompt for
+user name and password. After room is created others will be able to join
+from anonymous domain. Here's what has to be configured:
+
+1 In Prosody:
+
+ a) Enable authentication on your main domain:<br/>
+ ```
+ VirtualHost jitsi-meet.example.com
+     authentication = "internal_plain"
+ ```
+ b) Add new virtual host with anonymous login method for quests:<br/>
+ ```
+ VirtualHost guest.jitsi-meet.example.com
+     authentication = "anonymous"
+ ```
+2 In Jitsi Meet config.js configure 'anonymousdomain':<br/>
+```
+var config = {
+    hosts: {
+            domain: 'jitsi-meet.example.com',
+            anonymousdomain: 'guest.jitsi-meet.example.com',
+            ...
+        },
+        ...
+}
+```
+3 When running Jicofo specify your main domain in additional configuration
+property. Jicofo will accept conference allocation requests only from
+authenticated domain.
+```
+-Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
+```
+
+If you have Jicofo installed from the Debian package this should go directly to
+<b>/usr/share/jicofo/.sip-communicator/sip-communicator.properties</b> file:
+```
+org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
+```

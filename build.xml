@@ -3,6 +3,7 @@
 
     <property file="local.properties" />
     <property name="jitsi.path" value="../jitsi" />
+    <property name="smack.path" value="../smack_src_3_2_2" />
     <property name="src" value="src" />
     <property name="src.test" value="test" />
     <property name="output" value="classes" />
@@ -56,14 +57,11 @@
     <!-- Import debian build xml -->
     <import file="resources/install/build-debian.xml"/>
 
-    <target name="clean">
+    <target name="clean" depends="clean-release">
         <delete failonerror="false" includeemptydirs="true">
             <fileset dir="${output}" />
             <fileset dir="${output.test}" />
             <fileset dir="${dist}" />
-            <fileset dir="${doc}">
-                <exclude name="logging.md" />
-            </fileset>
             <fileset dir="${junit.reports}" />
         </delete>
     </target>
@@ -75,6 +73,16 @@
     <target name="copy-jitsi-bundles" if="jitsi.path">
         <copy todir="lib" verbose="true" overwrite="true">
             <fileset dir="./${jitsi.path}/sc-bundles">
+                <include name="*.jar"/>
+                <not>
+                    <present present="srconly" targetdir="lib"/>
+                </not>
+            </fileset>
+        </copy>
+    </target>
+    <target name="copy-smack">
+        <copy todir="lib" verbose="true" overwrite="true">
+            <fileset dir="${smack.path}/target/">
                 <include name="*.jar"/>
                 <not>
                     <present present="srconly" targetdir="lib"/>

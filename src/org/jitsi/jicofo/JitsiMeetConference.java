@@ -17,6 +17,7 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
+import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
@@ -24,16 +25,11 @@ import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.log.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
-import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.Message;
+import org.jitsi.videobridge.eventadmin.*;
 
-import java.io.*;
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.zip.*;
 
 /**
  * Class represents the focus of Jitsi Meet conference. Responsibilities:
@@ -63,6 +59,24 @@ public class JitsiMeetConference
      * FIXME: consider moving to OperationFailedException ?
      */
     private final static int BRIDGE_FAILURE_ERR_CODE = 20;
+
+    /**
+     * Format used to print the date into the focus identifier string.
+     * Data contained in the id should never be used for business logic.
+     */
+    private final static SimpleDateFormat ID_DATE_FORMAT
+        = new SimpleDateFormat("yyy-MM-dd_HH:mm:ss");
+
+    /**
+     * Conference focus instance identifier. For now consists of current date
+     * and the {@link #hashCode()}. Included date should not be used for any
+     * calculations/app logic - it's just to have it more meaningful than random
+     * numbers.
+     *
+     * FIXME: It would make sense to retrieve it from {@link ReservationSystem}
+     *        if available.
+     */
+    private final String id;
 
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -128,11 +142,6 @@ public class JitsiMeetConference
         = new CopyOnWriteArrayList<Participant>();
 
     /**
-     * Operation set used for service discovery.
-     */
-    private OperationSetSimpleCaps disco;
-
-    /**
      * Information about Jitsi Meet conference services like videobridge,
      * SIP gateway, Jirecon.
      */
@@ -151,7 +160,7 @@ public class JitsiMeetConference
     /**
      * Indicates if this instance has been started(initialized).
      */
-    private boolean started;
+    private volatile boolean started;
 
     /**
      * Idle timestamp for this focus, -1 means active, otherwise
@@ -159,13 +168,6 @@ public class JitsiMeetConference
      * Used to detect idle session and expire it if idle time limit is exceeded.
      */
     private long idleTimestamp = -1;
-
-    /**
-     * The <tt>PacketListener</tt> which we use to handle incoming
-     * <tt>message</tt> stanzas.
-     */
-    private final PacketListener messageListener
-        = new MessageListener();
 
     /**
      * Creates new instance of {@link JitsiMeetConference}.
@@ -182,6 +184,7 @@ public class JitsiMeetConference
                                ConferenceListener listener,
                                JitsiMeetConfig config)
     {
+        this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
         this.protocolProviderHandler = protocolProviderHandler;
@@ -195,12 +198,14 @@ public class JitsiMeetConference
      * @throws Exception if error occurs during initialization. Instance is
      *         considered broken in that case.
      */
-    public synchronized void start()
+    public void start()
         throws Exception
     {
         if (started)
             return;
 
+        started = true;
+        
         colibri
             = protocolProviderHandler.getOperationSet(
                     OperationSetColibriConference.class);
@@ -212,10 +217,6 @@ public class JitsiMeetConference
         chatOpSet
             = protocolProviderHandler.getOperationSet(
                     OperationSetMultiUserChat.class);
-
-        disco
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetSimpleCaps.class);
 
         meetTools
             = protocolProviderHandler.getOperationSet(
@@ -230,6 +231,12 @@ public class JitsiMeetConference
         services.getBridgeSelector()
             .setPreConfiguredBridge(config.getPreConfiguredVideobridge());
 
+        // Set pre-configured SIP gateway
+        if (config.getPreConfiguredSipGateway() != null)
+        {
+            services.setSipGateway(config.getPreConfiguredSipGateway());
+        }
+
         if (protocolProviderHandler.isRegistered())
         {
             joinTheRoom();
@@ -241,8 +248,6 @@ public class JitsiMeetConference
         }
 
         idleTimestamp = System.currentTimeMillis();
-
-        started = true;
     }
 
     /**
@@ -349,26 +354,41 @@ public class JitsiMeetConference
      */
     protected void onMemberJoined(final ChatRoomMember chatRoomMember)
     {
-        logger.info("Member " + chatRoomMember.getName()
-                        + " joined " + chatRoom.getName());
+        logger.info(
+            "Member " + chatRoomMember.getContactAddress() + " joined.");
 
-        idleTimestamp = -1;
+        if (!isFocusMember(chatRoomMember))
+        {
+            idleTimestamp = -1;
+        }
 
-        if (!initConference())
+        // Are we ready to start ?
+        if (!checkAtLeastTwoParticipants())
+        {
             return;
+        }
 
-        // Invite peer takes time because of channel allocation, so schedule
-        // this on separate thread
-        FocusBundleActivator
-            .getSharedThreadPool()
-            .submit(new Runnable()
+        // FIXME: verify
+        if (colibriConference == null)
+        {
+            colibriConference = colibri.createNewConference();
+
+            colibriConference.setConfig(config);
+        }
+
+        // Invite all not invited yet
+        if (participants.size() == 0)
+        {
+            for (final ChatRoomMember member : chatRoom.getMembers())
             {
-                @Override
-                public void run()
-                {
-                    inviteChatMember(chatRoomMember);
-                }
-            });
+                inviteChatMember(member);
+            }
+        }
+        // Only the one who has just joined
+        else
+        {
+            inviteChatMember(chatRoomMember);
+        }
     }
 
     /**
@@ -377,43 +397,61 @@ public class JitsiMeetConference
      *
      * @param chatRoomMember the chat member to be invited into the conference.
      */
-    private void inviteChatMember(ChatRoomMember chatRoomMember)
+    private void inviteChatMember(final ChatRoomMember chatRoomMember)
     {
         if (isFocusMember(chatRoomMember))
             return;
 
+        final String address = chatRoomMember.getContactAddress();
+
+        final Participant newParticipant;
+
+        // Peer already connected ?
         if (findParticipantForChatMember(chatRoomMember) != null)
             return;
 
-        logger.info("Inviting " + chatRoomMember.getContactAddress());
-
-        String address = chatRoomMember.getContactAddress();
-
-        Participant newParticipant
-            = new Participant(
-                    (XmppChatMember) chatRoomMember);
+        newParticipant = new Participant((XmppChatMember) chatRoomMember);
 
         participants.add(newParticipant);
 
-        // Detect bundle support
-        newParticipant.setHasBundleSupport(
-            disco.hasFeatureSupport(
-                address,
-                new String[]{
-                    "urn:ietf:rfc:5761"/* rtcp-mux */,
-                    "urn:ietf:rfc:5888"/* bundle */
-                }));
+        logger.info("Added participant for: " + address);
 
-        // Is it SIP gateway ?
-        newParticipant.setIsSipGateway(
-            disco.hasFeatureSupport(
-                address,
-                new String[] { "http://jitsi.org/protocol/jigasi" }));
+        // Invite peer takes time because of channel allocation, so schedule
+        // this on separate thread.
+        // FIXME:
+        // Because channel allocation is done on separate thread it is
+        // possible that participant will leave while channels are being
+        // allocated. In "on participant left" event channel ids will not yet be
+        // assigned, so we won't expire them. We are letting those channels to
+        // leek and get expired automatically on the bridge.
+        FocusBundleActivator.getSharedThreadPool().submit(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                discoverFeaturesAndInvite(newParticipant, address);
+            }
+        });
+    }
+
+    /**
+     * Methods executed on thread pool is time consuming as is doing feature
+     * discovery and channel allocation for new participants.
+     * @param newParticipant new <tt>Participant</tt> instance.
+     * @param address new participant full MUC address.
+     */
+    private void discoverFeaturesAndInvite(Participant     newParticipant,
+                                           String          address)
+    {
+        // Feature discovery
+        List<String> features
+            = DiscoveryUtil.discoverParticipantFeatures(
+            getXmppProvider(), address);
+
+        newParticipant.setSupportedFeatures(features);
 
         logger.info(
-            chatRoomMember.getContactAddress()
-                + " has bundle ? "
-                + newParticipant.hasBundleSupport());
+            address + " has bundle ? " + newParticipant.hasBundleSupport());
 
         try
         {
@@ -425,10 +463,7 @@ public class JitsiMeetConference
         catch (OperationFailedException e)
         {
             //FIXME: retry ? sometimes it's just timeout
-            logger.error(
-                "Failed to invite " + chatRoomMember.getContactAddress(), e);
-
-            participants.remove(newParticipant);
+            logger.error("Failed to invite " + address, e);
 
             // Notify users about bridge is down event
             if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
@@ -476,36 +511,36 @@ public class JitsiMeetConference
                 bridgesIterator.next());
         }
 
-        boolean conferenceExists = colibriConference.getConferenceId() != null;
         while (true)
         {
             try
             {
+                logger.info(
+                    "Using " + colibriConference.getJitsiVideobridge() 
+                        + " to allocate channels for: "
+                        + peer.getChatMember().getContactAddress());
+                
                 ColibriConferenceIQ peerChannels
                     = colibriConference.createColibriChannels(
                             peer.hasBundleSupport(),
-                            peer.getChatMember().getName(),
+                            peer.getEndpointId(),
                             true, contents);
 
                 bridgeSelector.updateBridgeOperationalStatus(
                     colibriConference.getJitsiVideobridge(), true);
 
-                if (!conferenceExists)
+                if (colibriConference.hasJustAllocated())
                 {
-                    // If conferenceId is returned at this point it means that
-                    // the conference has just been created, so we log it.
-                    String conferenceId = colibriConference.getConferenceId();
-                    if (conferenceId != null)
+                    EventAdmin eventAdmin
+                            = FocusBundleActivator.getEventAdmin();
+                    if (eventAdmin != null)
                     {
-                        LoggingService loggingService
-                                = FocusBundleActivator.getLoggingService();
-                        if (loggingService != null)
-                        {
-                            loggingService.logEvent(
-                                LogEventFactory.conferenceRoom(
-                                        conferenceId,
-                                        roomName));
-                        }
+                        eventAdmin.sendEvent(
+                            EventFactory.conferenceRoom(
+                                    colibriConference.getConferenceId(),
+                                    roomName,
+                                    getId(),
+                                    colibriConference.getJitsiVideobridge()));
                     }
                 }
                 return peerChannels;
@@ -523,24 +558,33 @@ public class JitsiMeetConference
 
                 // Check if the conference is in progress
                 if (!StringUtils.isNullOrEmpty(
-                    colibriConference.getConferenceId()))
+                        colibriConference.getConferenceId()))
                 {
                     // Restart
                     logger.error("Bridge failure - stopping the conference");
                     stop();
                 }
-                else if (!bridgesIterator.hasNext())
+
+                // Try next bridge
+                String nextBridge = null;
+                if (bridgesIterator.hasNext())
+                    nextBridge = bridgesIterator.next();
+
+                // Is it the same which has just failed ?
+                // (we do not always call iterator.next() at the beginning)
+                if (faultyBridge.equals(nextBridge))
+                    nextBridge = null;
+
+                if (nextBridge != null)
+                {
+                    colibriConference.setJitsiVideobridge(nextBridge);
+                }
+                else
                 {
                     // No more bridges to try
                     throw new OperationFailedException(
                         "Failed to allocate channels - all bridges are faulty",
                         BRIDGE_FAILURE_ERR_CODE);
-                }
-                else
-                {
-                    // Try next bridge
-                    colibriConference
-                        .setJitsiVideobridge(bridgesIterator.next());
                 }
             }
         }
@@ -562,26 +606,31 @@ public class JitsiMeetConference
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        boolean enableFirefoxHacks
-                = config == null || config.enableFirefoxHacks() == null
-                    ? false : config.enableFirefoxHacks();
+        boolean disableIce = !peer.hasIceSupport();
+        
+        if (peer.hasAudioSupport())
+        {
+            contents.add(
+                JingleOfferFactory.createContentForMedia(
+                    MediaType.AUDIO, disableIce));
+        }
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.AUDIO,
-                    enableFirefoxHacks));
+        if (peer.hasVideoSupport())
+        {
+            contents.add(
+                JingleOfferFactory.createContentForMedia(
+                    MediaType.VIDEO, disableIce));
+        }
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(MediaType.VIDEO,
-                    enableFirefoxHacks));
-
+        // Is SCTP enabled ?
         boolean openSctp = config == null || config.openSctp() == null
                 ? true : config.openSctp();
 
-        if (openSctp)
+        if (openSctp && peer.hasSctpSupport())
         {
             contents.add(
-                    JingleOfferFactory.createContentForMedia(MediaType.DATA,
-                            enableFirefoxHacks));
+                JingleOfferFactory.createContentForMedia(
+                    MediaType.DATA, disableIce));
         }
 
         boolean useBundle = peer.hasBundleSupport();
@@ -789,17 +838,10 @@ public class JitsiMeetConference
      * @return <tt>false</tt> if it's too early to start, or <tt>true</tt>
      *         if the conference has started.
      */
-    private synchronized boolean initConference()
+    private boolean initConference()
     {
         if (!checkAtLeastTwoParticipants())
             return false;
-
-        if (colibriConference == null)
-        {
-            colibriConference = colibri.createNewConference();
-
-            colibriConference.setConfig(config);
-        }
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
@@ -832,27 +874,6 @@ public class JitsiMeetConference
     }
 
     /**
-     * Counts human participants in the conference by excluding focus, SIP
-     * gateway and other service participants in future.
-     *
-     * // TODO: also exclude Jirecon participant
-     *
-     * @return the number of human participants in the conference excluding
-     *         service participants like the focus or SIP gateway.
-     */
-    private boolean checkAtLeastOneHumanParticipants()
-    {
-        int humanCount = 0;
-        for (Participant participant : participants)
-        {
-            if (!isFocusMember(participant.getChatMember())
-                && !participant.isSipGateway())
-                humanCount++;
-        }
-        return humanCount > 0;
-    }
-
-    /**
      * Check if given chat member is a focus.
      *
      * @param member the member to check.
@@ -860,9 +881,9 @@ public class JitsiMeetConference
      * @return <tt>true</tt> if given {@link ChatRoomMember} is a focus
      *         participant.
      */
-    static boolean isFocusMember(ChatRoomMember member)
+    boolean isFocusMember(ChatRoomMember member)
     {
-        return member.getName().equals("focus");
+        return member.getName().equals(xmppUsername);
     }
 
     /**
@@ -877,6 +898,23 @@ public class JitsiMeetConference
         Participant participant = findParticipantForChatMember(member);
 
         return participant != null && participant.isSipGateway();
+    }
+
+    /**
+     * Destroys the MUC room and deletes the conference which results in all
+     * participant being removed from the XMPP chat room.
+     * @param reason the reason text that will be advertised to all
+     *               participants upon exit.
+     */
+    public void destroy(String reason)
+    {
+        if (chatRoom == null)
+        {
+            logger.error("Unable to destroy conference MUC room: " + roomName);
+            return;
+        }
+
+        chatRoom.destroy(reason, null);
     }
 
     /**
@@ -903,8 +941,8 @@ public class JitsiMeetConference
      */
     protected void onMemberKicked(ChatRoomMember chatRoomMember)
     {
-        logger.info("Member " + chatRoomMember.getName()
-                        + " kicked !!! " + chatRoom.getName());
+        logger.info(
+            "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
         /*
         FIXME: terminate will have no effect, as peer's MUC address
          will be no longer active.
@@ -929,10 +967,11 @@ public class JitsiMeetConference
      *
      * @param chatRoomMember the member that has left the room.
      */
-    synchronized protected void onMemberLeft(ChatRoomMember chatRoomMember)
+    protected void onMemberLeft(ChatRoomMember chatRoomMember)
     {
-        logger.info("Member " + chatRoomMember.getName()
-                        + " left " + chatRoom.getName());
+        String contactAddress = chatRoomMember.getContactAddress();
+
+        logger.info("Member " + contactAddress + " is leaving");
 
         Participant leftPeer = findParticipantForChatMember(chatRoomMember);
         if (leftPeer != null)
@@ -940,43 +979,29 @@ public class JitsiMeetConference
             JingleSession peerJingleSession = leftPeer.getJingleSession();
             if (peerJingleSession != null)
             {
-                logger.info(
-                    "Hanging up member " + chatRoomMember.getContactAddress());
+                logger.info("Hanging up member " + contactAddress);
 
                 removeSSRCs(peerJingleSession,
-                            leftPeer.getSSRCsCopy(),
-                            leftPeer.getSSRCGroupsCopy());
+                        leftPeer.getSSRCsCopy(),
+                        leftPeer.getSSRCGroupsCopy());
 
                 ColibriConferenceIQ peerChannels
-                    = leftPeer.getColibriChannelsInfo();
+                        = leftPeer.getColibriChannelsInfo();
                 if (peerChannels != null)
                 {
-                    colibriConference
-                        .expireChannels(leftPeer.getColibriChannelsInfo());
+                    logger.info("Expiring channels for: " + contactAddress);
+                    colibriConference.expireChannels(
+                        leftPeer.getColibriChannelsInfo());
                 }
                 //jingle.terminateSession(session.getJingleSession());
             }
-            participants.remove(leftPeer);
+            boolean removed = participants.remove(leftPeer);
+            logger.info(
+                "Removed participant: " + removed + ", " + contactAddress);
         }
-
-        if (!checkAtLeastOneHumanParticipants())
+        else
         {
-            // Terminate all other participants
-            for (Participant participant : participants)
-            {
-                try
-                {
-                    terminateParticipant(participant);
-                }
-                catch (OperationFailedException e)
-                {
-                    logger.error(e, e);
-                    // Dispose the focus on failure (we would have done this
-                    // anyway later after "member left" events are handled)
-                    stop();
-                    break;
-                }
-            }
+            logger.error("Member not found for " + contactAddress);
         }
 
         if (participants.size() == 0)
@@ -989,12 +1014,12 @@ public class JitsiMeetConference
      * Stops the conference, disposes colibri channels and releases all
      * resources used by the focus.
      */
-    synchronized void stop()
+    void stop()
     {
         if (!started)
             return;
 
-        getDirectXmppOpSet().removePacketHandler(messageListener);
+        started = false;
 
         disposeConference();
 
@@ -1003,8 +1028,6 @@ public class JitsiMeetConference
         jingle.terminateHandlersSessions(this);
 
         listener.conferenceEnded(this);
-
-        started = false;
     }
 
     @Override
@@ -1014,19 +1037,14 @@ public class JitsiMeetConference
 
         if (RegistrationState.REGISTERED.equals(evt.getNewState()))
         {
-            //FIXME: verify if it's ok
-            getDirectXmppOpSet().addPacketHandler(
-                messageListener,
-                new AndFilter(
-                    new MessageTypeFilter(Message.Type.normal),
-                    new ToContainsFilter(getFocusJid())));
+         
+            if (chatRoom == null)
+            {
+                joinTheRoom();
+            }
+            // We're not interested in event other that REGISTERED
+            protocolProviderHandler.removeRegistrationListener(this);
         }
-        if (chatRoom == null)
-        {
-            joinTheRoom();
-        }
-        // We're not interested in event other that REGISTERED
-        protocolProviderHandler.removeRegistrationListener(this);
     }
 
     private Participant findParticipantForJingleSession(
@@ -1055,8 +1073,7 @@ public class JitsiMeetConference
     {
         for (Participant participant : participants)
         {
-            String peerRoomJid = participant.getJingleSession().getAddress();
-            if (peerRoomJid != null && peerRoomJid.equals(roomJid))
+            if (participant.getChatMember().getContactAddress().equals(roomJid))
             {
                 return participant;
             }
@@ -1064,14 +1081,13 @@ public class JitsiMeetConference
         return null;
     }
 
-    private Participant findParticipantForMucAddress(String mucAddress)
+    ChatRoomMemberRole getRoleForMucJid(String mucJid)
     {
-        for (Participant participant : participants)
+        for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (participant.getChatMember()
-                    .getContactAddress().equals(mucAddress))
+            if (member.getContactAddress().equals(mucJid))
             {
-                return participant;
+                return member.getRole();
             }
         }
         return null;
@@ -1119,7 +1135,8 @@ public class JitsiMeetConference
         participant.addSSRCGroupsFromContent(answer);
 
         // Update SSRC groups
-        colibriConference.updateSsrcGroupsInfo(
+        colibriConference.updateSourcesInfo(
+            participant.getSSRCsCopy(),
             participant.getSSRCGroupsCopy(),
             participant.getColibriChannelsInfo());
 
@@ -1175,6 +1192,9 @@ public class JitsiMeetConference
 
         // Notify the bridge about eventual transport included
         onTransportInfo(peerJingleSession, answer);
+
+        // Notify the bridge about eventual RTP description included.
+        onDescriptionInfo(peerJingleSession, answer);
     }
 
     /**
@@ -1214,7 +1234,7 @@ public class JitsiMeetConference
             {
                 logger.error(
                     "No valid transport suppied in transport-update from "
-                        + participant.getChatMember().getName());
+                        + participant.getChatMember().getContactAddress());
                 return;
             }
 
@@ -1223,9 +1243,10 @@ public class JitsiMeetConference
 
             // FIXME: initiator
             boolean initiator = true;
-            colibriConference
-                .updateBundleTransportInfo(
-                    initiator, transport, participant.getColibriChannelsInfo());
+            colibriConference.updateBundleTransportInfo(
+                initiator,
+                transport,
+                participant.getColibriChannelsInfo());
         }
         else
         {
@@ -1245,10 +1266,10 @@ public class JitsiMeetConference
 
             // FIXME: initiator
             boolean initiator = true;
-            colibriConference
-                .updateTransportInfo(
-                    initiator,  transportMap,
-                    participant.getColibriChannelsInfo());
+            colibriConference.updateTransportInfo(
+                initiator,
+                transportMap,
+                participant.getColibriChannelsInfo());
         }
     }
 
@@ -1283,7 +1304,8 @@ public class JitsiMeetConference
             = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
         // Updates SSRC Groups on the bridge
-        colibriConference.updateSsrcGroupsInfo(
+        colibriConference.updateSourcesInfo(
+            participant.getSSRCsCopy(),
             participant.getSSRCGroupsCopy(),
             participant.getColibriChannelsInfo());
 
@@ -1332,6 +1354,52 @@ public class JitsiMeetConference
         removeSSRCs(sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove);
     }
 
+    public void onDescriptionInfo(JingleSession session,
+                                  List<ContentPacketExtension> contents)
+    {
+        if (session == null)
+        {
+            logger.error("session is null.");
+            return;
+        }
+
+        if (contents == null || contents.isEmpty())
+        {
+            logger.error("contents is null.");
+            return;
+        }
+
+        Participant participant = findParticipantForJingleSession(session);
+        if (participant == null)
+        {
+            logger.error("no peer state for " + session.getAddress());
+            return;
+        }
+
+        Map<String, RtpDescriptionPacketExtension> rtpDescMap
+                = new HashMap<String, RtpDescriptionPacketExtension>();
+
+        for (ContentPacketExtension content : contents)
+        {
+            RtpDescriptionPacketExtension rtpDesc
+                    = content.getFirstChildOfType(
+                    RtpDescriptionPacketExtension.class);
+
+            if (rtpDesc == null)
+            {
+                continue;
+            }
+
+            rtpDescMap.put(content.getName(), rtpDesc);
+        }
+
+        if (!rtpDescMap.isEmpty())
+        {
+            colibri.updateRtpDescription(
+                    rtpDescMap, participant.getColibriChannelsInfo());
+        }
+    }
+
     /**
      * Removes SSRCs from the conference and notifies other participants.
      *
@@ -1356,10 +1424,12 @@ public class JitsiMeetConference
         sourcePeer.removeSSRCs(ssrcsToRemove);
 
         sourcePeer.removeSSRCGroups(ssrcGroupsToRemove);
-
+        
+        //FIXME: verify if merged ok
         // Updates SSRC Groups on the bridge
-        colibriConference.updateSsrcGroupsInfo(
-            ssrcGroupsToRemove,
+        colibriConference.updateSourcesInfo(
+            sourcePeer.getSSRCsCopy(),
+            sourcePeer.getSSRCGroupsCopy(),
             sourcePeer.getColibriChannelsInfo());
 
         logger.info("Remove SSRC " + sourceJingleSession.getAddress());
@@ -1538,7 +1608,18 @@ public class JitsiMeetConference
      */
     public String getFocusJid()
     {
+        
         return roomName + "/" + focusUserName;
+    }
+
+    /**
+     * Gets the full real (as opposed to the room JID in a MUC) JID of the
+     * focus.
+     * @return the full real JID of the focus.
+     */
+    private String getFocusRealJid()
+    {
+        return getXmppProvider().getAccountID().getAccountAddress();
     }
 
     /**
@@ -1562,7 +1643,7 @@ public class JitsiMeetConference
                               String toBeMutedJid,
                               boolean doMute)
     {
-        Participant principal = findParticipantForMucAddress(fromJid);
+        Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
             logger.error(
@@ -1580,7 +1661,7 @@ public class JitsiMeetConference
             return false;
         }
 
-        Participant participant = findParticipantForMucAddress(toBeMutedJid);
+        Participant participant = findParticipantForRoomJid(toBeMutedJid);
         if (participant == null)
         {
             logger.error("Participant for jid: " + toBeMutedJid + " not found");
@@ -1613,6 +1694,25 @@ public class JitsiMeetConference
     }
 
     /**
+     * Returns current participants count. A participant is chat member who has
+     * some videobridge and media state assigned(not just raw chat room member).
+     * For example chat member which belongs to the focus never becomes
+     * a participant.
+     */
+    public int getParticipantCount()
+    {
+        return participants.size();
+    }
+
+    /**
+     * Focus instance ID
+     */
+    public String getId()
+    {
+        return id;
+    }
+
+    /**
      * The interface used to listen for conference events.
      */
     public interface ConferenceListener
@@ -1622,172 +1722,5 @@ public class JitsiMeetConference
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConference conference);
-    }
-
-    /**
-     * Handles <tt>message</tt> stanzas addressed to the focus JID for this
-     * conference. Note that there are no filters, and we only depend on the
-     * fact that each <tt>JitsiMeetConference</tt> has its own
-     * <tt>XMPPConnection</tt>.
-     *
-     * Currently we only support XEP-0337 "log" messages with a limited set of
-     * IDs and predefined format. Specifically, we always expect the text in the
-     * message to be base64-encoded and, if the "delfated" tag is set,
-     * compressed in the RFC1951 raw DEFLATE format.
-     *
-     * @author Boris Grozev
-     */
-    private class MessageListener
-        implements PacketListener
-    {
-        /**
-         * The <tt>LoggingService</tt> which will be used to log the events
-         * (usually to an InfluxDB instance).
-         */
-        private LoggingService loggingService = null;
-
-        /**
-         * Whether {@link #loggingService} has been initialized or not.
-         */
-        private boolean loggingServiceSet = false;
-
-        /**
-         * The string which identifies the contents of a log message as containg
-         * PeerConnection statistics.
-         */
-        private static final String LOG_ID_PC_STATS = "PeerConnectionStats";
-
-        /**
-         * Processes a packet. Looks for known extensions (XEP-0337 "log"
-         * extensions) and handles them.
-         * @param packet the packet to process.
-         */
-        @Override
-        public void processPacket(Packet packet)
-        {
-            if (!(packet instanceof Message))
-                return;
-
-            Message message = (Message) packet;
-
-            LogPacketExtension log = null;
-            for (PacketExtension ext : message.getExtensions())
-            {
-                if (ext instanceof LogPacketExtension)
-                {
-                    log = (LogPacketExtension) ext;
-                    break;
-                }
-            }
-
-            if (log != null)
-            {
-                Participant participant
-                     = findParticipantForRoomJid(message.getFrom());
-                if (participant != null)
-                {
-                    handleLogRequest(log, participant);
-                }
-                else
-                {
-                    logger.info("Ignoring log request from unknown JID: "
-                                            + message.getFrom());
-                }
-            }
-        }
-
-        /**
-         * Handles a <tt>LogPacketExtension</tt> which represents a request
-         * from a specific <tt>Participant</tt> to log a message.
-         * @param log the <tt>LogPacketExtension</tt> to handle.
-         * @param participant the <tt>Participant</tt> which sent the request.
-         */
-        private void handleLogRequest(
-                LogPacketExtension log,
-                Participant participant)
-        {
-            LoggingService loggingService = getLoggingService();
-            if (loggingService != null)
-            {
-                if (LOG_ID_PC_STATS.equals(log.getID()))
-                {
-                    String content = getContent(log);
-                    if (content != null)
-                    {
-                        loggingService.logEvent(
-                                LogEventFactory.peerConnectionStats(
-                                        colibriConference.getConferenceId(),
-                                        participant.getChatMember().getName(),
-                                        content));
-                    }
-                }
-                else
-                {
-                    if (logger.isInfoEnabled())
-                        logger.info("Ignoring log request with an unknown ID:"
-                            + log.getID());
-                }
-
-            }
-        }
-
-        /**
-         * Gets the <tt>LoggingService</tt>.
-         * @return  the <tt>LoggingService</tt>.
-         */
-        private LoggingService getLoggingService()
-        {
-            if (!loggingServiceSet)
-            {
-                loggingServiceSet = true;
-                loggingService = FocusBundleActivator.getLoggingService();
-            }
-
-            return loggingService;
-        }
-
-        /**
-         * Extracts the message to be logged from a <tt>LogPacketExtension</tt>.
-         * Takes care of base64 decoding and (optionally) decompression.
-         * @param log the <tt>LogPacketExtension</tt> to handle.
-         * @return the decoded message contained in <tt>log</tt>.
-         */
-        private String getContent(LogPacketExtension log)
-        {
-            String messageBase64 = log.getMessage();
-            byte[] messageBytes = net.java.sip.communicator.util.Base64.decode(messageBase64);
-
-            if (Boolean.parseBoolean(log.getTagValue("deflated")))
-            {
-                // nowrap=true, because we expect "raw" deflate
-                Inflater inflater = new Inflater(true);
-                ByteArrayOutputStream result = new ByteArrayOutputStream();
-
-                inflater.setInput(messageBytes);
-                byte[] buf = new byte[10000];
-
-                do
-                {
-                    try
-                    {
-                        int len = inflater.inflate(buf);
-                        result.write(buf, 0, len);
-                    }
-                    catch (DataFormatException dfe)
-                    {
-                        if (logger.isInfoEnabled())
-                            logger.info(
-                                "Failed to inflate log request content:" + dfe);
-                        return null;
-                    }
-                } while (!inflater.finished());
-
-                return result.toString();
-            }
-            else
-            {
-                return new String(messageBytes);
-            }
-        }
     }
 }

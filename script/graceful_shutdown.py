@@ -28,7 +28,7 @@ else:
 
 
 def get_conferences(stats_xml):
-    for stat in stats_xml.findall('stat'):
+    for stat in stats_xml.findall('{http://jitsi.org/protocol/colibri}stat'):
         name = stat.get('name')
         value = stat.get('value')
         if name == 'conferences':
@@ -94,7 +94,8 @@ class FocusShutdownUserBot(sleekxmpp.ClientXMPP):
                     stats = resp['colibri-stats']
                     conf_count = get_conferences(stats)
                     logging.info(
-                        'There are ' + conf_count + ' conferences in progress')
+                        'There are ' + str(conf_count) + ' conferences in '
+                                                      'progress')
                     if conf_count == '0':
                         break
                     else:
@@ -109,7 +110,7 @@ class FocusShutdownUserBot(sleekxmpp.ClientXMPP):
                             error.condition != 'service-unavailable':
                 global exitCode
                 exitCode = 1
-                logging.error('There was an error sending the custom action.')
+                logging.error('There was an error sending shutdown request.')
             self.disconnect(wait=True)
 
 

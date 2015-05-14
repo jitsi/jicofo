@@ -57,6 +57,12 @@ public class ColibriConferenceImpl
         = new ColibriBuilder(conferenceState);
 
     /**
+     * Flag used to figure out if Colibri conference has been allocated during
+     * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
+     */
+    private boolean justAllocated = false;
+    
+    /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by new
      *                   instance.
@@ -115,10 +121,10 @@ public class ColibriConferenceImpl
      */
     @Override
     public synchronized ColibriConferenceIQ createColibriChannels(
-        boolean useBundle,
-        String endpointName,
-        boolean peerIsInitiator,
-        List<ContentPacketExtension> contents)
+            boolean useBundle,
+            String endpointName,
+            boolean peerIsInitiator,
+            List<ContentPacketExtension> contents)
         throws OperationFailedException
     {
         colibriBuilder.reset();
@@ -136,7 +142,7 @@ public class ColibriConferenceImpl
         {
             throw new OperationFailedException(
                 "Failed to allocate colibri channels: response is null."
-                    + " Maybe the response timed out.",
+                + " Maybe the response timed out.",
                 OperationFailedException.NETWORK_FAILURE);
         }
         else if (response.getError() != null)
@@ -154,6 +160,8 @@ public class ColibriConferenceImpl
                 OperationFailedException.GENERAL_ERROR);
         }
 
+        boolean conferenceExisted = getConferenceId() != null;
+
         /*
          * Update the complete ColibriConferenceIQ representation maintained by
          * this instance with the information given by the (current) response.
@@ -163,6 +171,14 @@ public class ColibriConferenceImpl
 
         analyser.processChannelAllocResp((ColibriConferenceIQ) response);
 
+        synchronized (this)
+        {
+            if (!conferenceExisted && getConferenceId() != null)
+            {
+                justAllocated = true;
+            }
+        }
+
         /*
          * Formulate the result to be returned to the caller which is a subset
          * of the whole conference information kept by this CallJabberImpl and
@@ -170,7 +186,20 @@ public class ColibriConferenceImpl
          * caller and their respective local channels.
          */
         return ColibriAnalyser.getResponseContents(
-            (ColibriConferenceIQ) response, contents);
+                    (ColibriConferenceIQ) response, contents);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized boolean hasJustAllocated()
+    {
+        if (this.justAllocated)
+        {
+            this.justAllocated = false;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -194,10 +223,32 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    public void updateRtpDescription(
+            Map<String, RtpDescriptionPacketExtension> map,
+            ColibriConferenceIQ localChannelsInfo)
+    {
+        colibriBuilder.reset();
+
+        colibriBuilder.addRtpDescription(
+                map, localChannelsInfo);
+
+        ColibriConferenceIQ conferenceRequest
+                = colibriBuilder.getRequest(jitsiVideobridge);
+
+        if (conferenceRequest != null)
+        {
+            connection.sendPacket(conferenceRequest);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void updateTransportInfo(
-        boolean initiator,
-        Map<String, IceUdpTransportPacketExtension> map,
-        ColibriConferenceIQ localChannelsInfo)
+            boolean initiator,
+            Map<String, IceUdpTransportPacketExtension> map,
+            ColibriConferenceIQ localChannelsInfo)
     {
         colibriBuilder.reset();
 
@@ -217,8 +268,9 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void updateSsrcGroupsInfo(MediaSSRCGroupMap ssrcGroups,
-                                     ColibriConferenceIQ localChannelsInfo)
+    public void updateSourcesInfo(MediaSSRCMap ssrcs,
+                                  MediaSSRCGroupMap ssrcGroups,
+                                  ColibriConferenceIQ localChannelsInfo)
     {
         // FIXME: move to ColibriBuilder
         ColibriConferenceIQ updateIq = new ColibriConferenceIQ();
@@ -227,18 +279,14 @@ public class ColibriConferenceImpl
         updateIq.setType(IQ.Type.SET);
         updateIq.setTo(jitsiVideobridge);
 
+        // NOTE(gp) now that we send sources as well, I think we can scrap this
+        // flag, if its initial purpose was to determine whether or not the
+        // simulcast group has been added or removed.
         boolean updateNeeded = false;
 
         for (ColibriConferenceIQ.Content content
             : localChannelsInfo.getContents())
         {
-            String contentName = content.getName();
-            if ("video".compareToIgnoreCase(contentName) != 0)
-            {
-                // Simulcast currently used for video only
-                continue;
-            }
-
             ColibriConferenceIQ.Content reqContent
                 = new ColibriConferenceIQ.Content(content.getName());
 
@@ -249,6 +297,34 @@ public class ColibriConferenceImpl
                     = new ColibriConferenceIQ.Channel();
 
                 reqChannel.setID(channel.getID());
+
+                if (ssrcs != null)
+                {
+                    List<SourcePacketExtension> sources
+                        = ssrcs.getSSRCsForMedia(content.getName());
+                    if (sources != null && !sources.isEmpty())
+                    {
+                        for (SourcePacketExtension source : sources)
+                        {
+                            reqChannel.addSource(source.copy());
+                            hasChannels = true;
+                            updateNeeded = true;
+                        }
+                    }
+                }
+
+                if (reqChannel.getSources() == null
+                    || reqChannel.getSources().isEmpty())
+                {
+                    // Put an empty source to remove all sources
+                    SourcePacketExtension emptySource
+                        = new SourcePacketExtension();
+                    emptySource.setSSRC(-1l);
+                    reqChannel.addSource(emptySource);
+
+                    hasChannels = true;
+                    updateNeeded = true;
+                }
 
                 List<SSRCGroup> groups
                     = ssrcGroups.getSSRCGroupsForMedia(content.getName());
@@ -292,9 +368,9 @@ public class ColibriConferenceImpl
      */
     @Override
     public void updateBundleTransportInfo(
-        boolean                        initiator,
-        IceUdpTransportPacketExtension transport,
-        ColibriConferenceIQ            localChannelsInfo)
+            boolean                        initiator,
+            IceUdpTransportPacketExtension transport,
+            ColibriConferenceIQ            localChannelsInfo)
     {
         colibriBuilder.reset();
 

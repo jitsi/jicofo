@@ -31,9 +31,9 @@ public class MockMultiUserChat
 
     private final ProtocolProviderService protocolProvider;
 
-    private boolean isJoined;
+    private volatile boolean isJoined;
 
-    private List<ChatRoomMember> members
+    private final List<ChatRoomMember> members
         = new CopyOnWriteArrayList<ChatRoomMember>();
 
     private ChatRoomMember me;
@@ -111,13 +111,15 @@ public class MockMultiUserChat
         // FIXME: for mock purposes we are always the owner on join()
         boolean isOwner = true;//= members.size() == 0;
 
-        members.add(member);
+        synchronized (members)
+        {
+            members.add(member);
 
-        me = member;
+            me = member;
 
-        fireMemberPresenceEvent(
-            me, me,
-            ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            fireMemberPresenceEvent(
+                me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+        }
 
         ChatRoomMemberRole oldRole = me.getRole();
         if (isOwner)
@@ -154,13 +156,16 @@ public class MockMultiUserChat
 
     public MockRoomMember mockJoin(MockRoomMember member)
     {
-        members.add(member);
+        synchronized (members)
+        {
+            members.add(member);
 
-        fireMemberPresenceEvent(
-            member, member,
-            ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            fireMemberPresenceEvent(
+                    member, member,
+                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
 
-        return member;
+            return member;
+        }
     }
 
     public void mockLeave(String memberName)
@@ -176,14 +181,19 @@ public class MockMultiUserChat
 
     private void mockLeave(MockRoomMember member)
     {
-        if (!members.remove(member))
+        synchronized (members)
         {
-            throw new RuntimeException("Member is not in the room " + member);
-        }
 
-        fireMemberPresenceEvent(
-            member, member,
-            ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            if (!members.remove(member))
+            {
+                throw new RuntimeException(
+                        "Member is not in the room " + member);
+            }
+
+            fireMemberPresenceEvent(
+                    member, member,
+                    ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+        }
     }
 
     @Override
@@ -200,10 +210,13 @@ public class MockMultiUserChat
 
         isJoined = false;
 
-        members.remove(me);
+        synchronized (members)
+        {
+            members.remove(me);
 
-        fireMemberPresenceEvent(
-            me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(
+                me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+        }
 
         me = null;
     }

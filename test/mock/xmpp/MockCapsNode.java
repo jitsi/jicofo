@@ -1,6 +1,7 @@
 package mock.xmpp;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -11,7 +12,8 @@ public class MockCapsNode
 
     private final String[] features;
 
-    protected List<MockCapsNode> childNodes = new ArrayList<MockCapsNode>();
+    protected List<MockCapsNode> childNodes
+        = new CopyOnWriteArrayList<MockCapsNode>();
 
     public MockCapsNode(String nodeName, String[] features)
     {
