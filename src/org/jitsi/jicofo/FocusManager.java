@@ -93,11 +93,6 @@ public class FocusManager
     private String focusUserName;
 
     /**
-     * Optional focus user password(if null then will login anonymously).
-     */
-    private String focusUserPassword;
-
-    /**
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private FocusExpireThread expireThread = new FocusExpireThread();
@@ -156,7 +151,7 @@ public class FocusManager
 
         focusUserName = config.getString(FOCUS_USER_NAME_PNAME);
 
-        focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
+        String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
 
         protocolProviderHandler.start(
             hostName, focusUserDomain, focusUserPassword, focusUserName);
@@ -172,9 +167,10 @@ public class FocusManager
                 .addExtensionProvider(LogPacketExtension.LOG_ELEM_NAME,
                     LogPacketExtension.NAMESPACE,
                     new LogExtensionProvider());
+
         FocusBundleActivator
             .bundleContext.registerService(
-            JitsiMeetServices.class, jitsiMeetServices, null);
+                JitsiMeetServices.class, jitsiMeetServices, null);
 
         protocolProviderHandler.addRegistrationListener(this);
 

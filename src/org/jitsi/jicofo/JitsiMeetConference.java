@@ -833,25 +833,6 @@ public class JitsiMeetConference
     }
 
     /**
-     * Initializes the conference by inviting first participants.
-     *
-     * @return <tt>false</tt> if it's too early to start, or <tt>true</tt>
-     *         if the conference has started.
-     */
-    private boolean initConference()
-    {
-        if (!checkAtLeastTwoParticipants())
-            return false;
-
-        for (ChatRoomMember member : chatRoom.getMembers())
-        {
-            inviteChatMember(member);
-        }
-
-        return true;
-    }
-
-    /**
      * Counts the number of non-focus chat room members and returns
      * <tt>true</tt> if there are at least two of them.
      *
@@ -883,7 +864,7 @@ public class JitsiMeetConference
      */
     boolean isFocusMember(ChatRoomMember member)
     {
-        return member.getName().equals(xmppUsername);
+        return member.getName().equals(focusUserName);
     }
 
     /**
@@ -929,8 +910,11 @@ public class JitsiMeetConference
             recorder = null;
         }
 
-        colibriConference.expireConference();
-        colibriConference = null;
+        if (colibriConference != null)
+        {
+            colibriConference.expireConference();
+            colibriConference = null;
+        }
     }
 
     /**
@@ -1093,21 +1077,6 @@ public class JitsiMeetConference
         return null;
     }
 
-    private void terminateParticipant(Participant participant)
-        throws OperationFailedException
-    {
-        JingleSession session = participant.getJingleSession();
-        if (session != null)
-        {
-            jingle.terminateSession(session, Reason.EXPIRED);
-        }
-
-        // Kick out of the room
-        chatRoom.kickParticipant(
-            participant.getChatMember(),
-            "End of the conference");
-    }
-
     /**
      * Callback called when 'session-accept' is received from invited
      * participant.
@@ -1120,6 +1089,14 @@ public class JitsiMeetConference
     {
         Participant participant
             = findParticipantForJingleSession(peerJingleSession);
+
+        if (participant == null)
+        {
+            logger.error(
+                "No participant found for: " + peerJingleSession.getAddress());
+            return;
+        }
+
         if (participant.getJingleSession() != null)
         {
             //FIXME: we should reject it ?
@@ -1395,7 +1372,7 @@ public class JitsiMeetConference
 
         if (!rtpDescMap.isEmpty())
         {
-            colibri.updateRtpDescription(
+            colibriConference.updateRtpDescription(
                     rtpDescMap, participant.getColibriChannelsInfo());
         }
     }
@@ -1424,8 +1401,7 @@ public class JitsiMeetConference
         sourcePeer.removeSSRCs(ssrcsToRemove);
 
         sourcePeer.removeSSRCGroups(ssrcGroupsToRemove);
-        
-        //FIXME: verify if merged ok
+
         // Updates SSRC Groups on the bridge
         colibriConference.updateSourcesInfo(
             sourcePeer.getSSRCsCopy(),

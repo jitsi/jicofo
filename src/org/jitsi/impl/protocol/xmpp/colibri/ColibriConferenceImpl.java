@@ -15,6 +15,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
@@ -230,7 +231,7 @@ public class ColibriConferenceImpl
         colibriBuilder.reset();
 
         colibriBuilder.addRtpDescription(
-                map, localChannelsInfo);
+            map, localChannelsInfo);
 
         ColibriConferenceIQ conferenceRequest
                 = colibriBuilder.getRequest(jitsiVideobridge);

@@ -254,9 +254,17 @@ public class MeetExtensionsHandler
 
     private void handleRayoIQ(RayoIqProvider.DialIq dialIq)
     {
-        String initiatorJid = dialIq.getFrom();
+        String from = dialIq.getFrom();
 
-        ChatRoomMemberRole role = conference.getRoleForMucJid(initiatorJid);
+        JitsiMeetConference conference = getConferenceForMucJid(from);
+
+        if (conference == null)
+        {
+            logger.debug("Mute error: room not found for JID: " + from);
+            return;
+        }
+
+        ChatRoomMemberRole role = conference.getRoleForMucJid(from);
 
         if (role == null)
         {
@@ -306,7 +314,7 @@ public class MeetExtensionsHandler
 
         // Send Jigasi response back to the client
         reply.setFrom(null);
-        reply.setTo(initiatorJid);
+        reply.setTo(from);
         reply.setPacketID(originalPacketId);
 
         smackXmpp.getXmppConnection().sendPacket(reply);
@@ -338,6 +346,14 @@ public class MeetExtensionsHandler
      */
     private void handleLogRequest(LogPacketExtension log, String jid)
     {
+        JitsiMeetConference conference = getConferenceForMucJid(jid);
+
+        if (conference == null)
+        {
+            logger.debug("Room not found for JID: " + jid);
+            return;
+        }
+
         Participant participant = conference.findParticipantForRoomJid(jid);
         if (participant != null)
         {
@@ -386,6 +402,16 @@ public class MeetExtensionsHandler
         // unavailable is sent when user leaves the room
         if (!presence.isAvailable())
         {
+            return;
+        }
+
+        String from = presence.getFrom();
+
+        JitsiMeetConference conference = getConferenceForMucJid(from);
+
+        if (conference == null)
+        {
+            logger.debug("Room not found for JID: " + from);
             return;
         }
 
