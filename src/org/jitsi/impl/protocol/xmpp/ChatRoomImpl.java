@@ -148,6 +148,9 @@ public class ChatRoomImpl
     {
         try
         {
+            this.myNickName = nickname;
+            this.myMucAddress = roomName + "/" + nickname;
+
             muc.addPresenceInterceptor(new PacketInterceptor()
             {
                 @Override
@@ -162,8 +165,6 @@ public class ChatRoomImpl
 
             muc.create(nickname);
             //muc.join(nickname);
-            this.myNickName = nickname;
-            this.myMucAddress = muc.getRoom() + "/" + muc.getNickname();
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -290,8 +291,7 @@ public class ChatRoomImpl
     {
         if(this.role == null)
         {
-            Occupant o = muc.getOccupant(
-                muc.getRoom() + "/" + muc.getNickname());
+            Occupant o = muc.getOccupant(myMucAddress);
 
             if(o == null)
                 return null;
@@ -1066,10 +1066,12 @@ public class ChatRoomImpl
                 logger.debug("Presence received " + presence.toXML());
             }
 
-            // FIXME: temporary for debug purpose
+            // Should never happen, but log if something is broken
             if (myMucAddress == null)
-                logger.warn(
+            {
+                logger.error(
                     "Processing presence when we're not aware of our address");
+            }
 
             if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
                 processOwnPresence(presence);

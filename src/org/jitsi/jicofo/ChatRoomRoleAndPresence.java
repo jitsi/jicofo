@@ -200,19 +200,7 @@ public class ChatRoomRoleAndPresence
         {
             // We don't know if we have permissions yet
             logger.warn("Focus role unknown");
-            /**
-             * FIXME: https://github.com/jitsi/jicofo/issues/15
-             * Focus not always grants owner role and we end up in situation
-             * without moderator in the room.
-             * Sometimes for some reason(still need to figure out)
-             * localUserRoleChanged() is never fired(reproduced on meet.jit.si).
-             * Heap dump from meet.jit.si says local presence processing never
-             * happened although all conditions seems to be met. Focus presence
-             * packets are also visible in client logs who participant in faulty
-             * conference. Dumps also say that we have Occupant for focus user
-             * in MUC,  so here we try to fetch focus role on demand, but this
-             * might not solve the issue.
-             */
+
             ChatRoomMemberRole userRole = chatRoom.getUserRole();
 
             logger.info("Obtained focus role: " + userRole);
