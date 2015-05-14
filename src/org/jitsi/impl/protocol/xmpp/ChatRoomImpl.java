@@ -294,7 +294,7 @@ public class ChatRoomImpl
                 muc.getRoom() + "/" + muc.getNickname());
 
             if(o == null)
-                return ChatRoomMemberRole.GUEST;
+                return null;
             else
                 this.role = ChatRoomJabberImpl.smackRoleToScRole(
                     o.getRole(), o.getAffiliation());
@@ -1065,6 +1065,11 @@ public class ChatRoomImpl
             {
                 logger.debug("Presence received " + presence.toXML());
             }
+
+            // FIXME: temporary for debug purpose
+            if (myMucAddress == null)
+                logger.warn(
+                    "Processing presence when we're not aware of our address");
 
             if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
                 processOwnPresence(presence);

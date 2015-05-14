@@ -37,6 +37,12 @@ public class ChatRoomRoleAndPresence
         = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
+     * The name of configuration property that disable auto owner role granting.
+     */
+    private final static String DISABLE_AUTO_OWNER_PNAME
+        = "org.jitsi.jicofo.DISABLE_AUTO_OWNER";
+
+    /**
      * The {@link JitsiMeetConference} for which this instance is handling MUC
      * related stuff.
      */
@@ -56,6 +62,13 @@ public class ChatRoomRoleAndPresence
      * The {@link ChatRoomMemberRole} of conference focus.
      */
     private ChatRoomMemberRole focusRole;
+
+    /**
+     * Flag indicates whether auto owner feature is active. First participant to
+     * join the room will become conference owner. When the owner leaves the
+     * room next participant be selected as new owner.
+     */
+    private boolean autoOwner = true;
 
     /**
      * Current owner(other than the focus itself) of Jitsi Meet conference.
@@ -82,6 +95,15 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
+        if (FocusBundleActivator.getConfigService()
+                .getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
+        {
+            autoOwner = false;
+        }
+
+        logger.info(
+            "Auto owner feature " + (autoOwner ? "enabled" : "disabled"));
+
         authAuthority = ServiceUtils.getService(
                 FocusBundleActivator.bundleContext,
                 AuthenticationAuthority.class);
@@ -171,12 +193,39 @@ public class ChatRoomRoleAndPresence
      */
     private void electNewOwner()
     {
+        if (!autoOwner)
+            return;
+
         if (focusRole == null)
         {
             // We don't know if we have permissions yet
             logger.warn("Focus role unknown");
-            return;
+            /**
+             * FIXME: https://github.com/jitsi/jicofo/issues/15
+             * Focus not always grants owner role and we end up in situation
+             * without moderator in the room.
+             * Sometimes for some reason(still need to figure out)
+             * localUserRoleChanged() is never fired(reproduced on meet.jit.si).
+             * Heap dump from meet.jit.si says local presence processing never
+             * happened although all conditions seems to be met. Focus presence
+             * packets are also visible in client logs who participant in faulty
+             * conference. Dumps also say that we have Occupant for focus user
+             * in MUC,  so here we try to fetch focus role on demand, but this
+             * might not solve the issue.
+             */
+            ChatRoomMemberRole userRole = chatRoom.getUserRole();
+
+            logger.info("Obtained focus role: " + userRole);
+
+            if (userRole == null)
+                return;
+
+            focusRole = userRole;
+
+            if (!verifyFocusRole())
+                return;
         }
+
         if (authAuthority != null)
         {
             // If we have authentication authority we do not grant owner
@@ -240,6 +289,17 @@ public class ChatRoomRoleAndPresence
         //}
     }
 
+    private boolean verifyFocusRole()
+    {
+        if (ChatRoomMemberRole.OWNER.compareTo(focusRole) < 0)
+        {
+            logger.error("Focus must be an owner!");
+            conference.stop();
+            return false;
+        }
+        return true;
+    }
+
     /**
      * Waits for initial focus role and refuses to join if owner is
      * not granted. Elects the first owner of the conference.
@@ -251,10 +311,8 @@ public class ChatRoomRoleAndPresence
             "Focus role: " + evt.getNewRole() + " init: " + evt.isInitial());
 
         focusRole = evt.getNewRole();
-        if (ChatRoomMemberRole.OWNER.compareTo(focusRole) < 0)
+        if (!verifyFocusRole())
         {
-            logger.error("Focus must be an owner!");
-            conference.stop();
             return;
         }
 
