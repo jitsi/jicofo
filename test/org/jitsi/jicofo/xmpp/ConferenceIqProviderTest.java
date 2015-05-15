@@ -10,6 +10,8 @@ import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 
+import java.io.*;
+import java.net.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -55,10 +57,13 @@ public class ConferenceIqProviderTest
         assertEquals("name2", property2.getName());
         assertEquals("value2", property2.getValue());
 
+        String originalUrl = "somesdf23454$%12!://";
+        String encodedUrl = URLEncoder.encode(originalUrl, "UTF8");
+
         // AuthUrlIq
         String authUrlIqXml = "<iq to='to1' from='from3' type='result'>" +
-                "<auth-url xmlns='http://jitsi.org/protocol/focus'" +
-                " url='somesdf23454$%12!://' room='someroom1234' />" +
+                "<login-url xmlns='http://jitsi.org/protocol/focus'" +
+                " url=\'" + encodedUrl + "\' room='someroom1234' />" +
                 "</iq>";
 
         LoginUrlIQ authUrlIq
@@ -68,12 +73,13 @@ public class ConferenceIqProviderTest
         assertEquals("to1", authUrlIq.getTo());
         assertEquals("from3", authUrlIq.getFrom());
         assertEquals(IQ.Type.RESULT, authUrlIq.getType());
-        assertEquals("somesdf23454$%12!://", authUrlIq.getUrl());
+        assertEquals(originalUrl, authUrlIq.getUrl());
         assertEquals("someroom1234", authUrlIq.getRoom());
     }
 
     @Test
     public void testToXml()
+        throws UnsupportedEncodingException
     {
         ConferenceIq conferenceIq = new ConferenceIq();
 
@@ -84,21 +90,21 @@ public class ConferenceIqProviderTest
         conferenceIq.setRoom("testroom1234");
         conferenceIq.setReady(false);
         conferenceIq.addProperty(
-            new ConferenceIq.Property("prop1","some1"));
+            new ConferenceIq.Property("prop1", "some1"));
         conferenceIq.addProperty(
-            new ConferenceIq.Property("name2","xyz2"));
+            new ConferenceIq.Property("name2", "xyz2"));
 
         assertEquals("<iq id=\"123xyz\" to=\"toJid\" from=\"fromJid\" " +
-                         "type=\"get\">" +
-                         "<conference " +
-                         "xmlns='http://jitsi.org/protocol/focus' " +
-                         "room='testroom1234' ready='false' " +
-                         ">" +
-                         "<property  name='prop1' value='some1'/>" +
-                         "<property  name='name2' value='xyz2'/>" +
-                         "</conference>" +
-                         "</iq>",
-                     conferenceIq.toXML());
+                "type=\"get\">" +
+                "<conference " +
+                "xmlns='http://jitsi.org/protocol/focus' " +
+                "room='testroom1234' ready='false' " +
+                ">" +
+                "<property  name='prop1' value='some1'/>" +
+                "<property  name='name2' value='xyz2'/>" +
+                "</conference>" +
+                "</iq>",
+            conferenceIq.toXML());
 
         LoginUrlIQ authUrlIQ = new LoginUrlIQ();
 
@@ -110,12 +116,14 @@ public class ConferenceIqProviderTest
         authUrlIQ.setUrl("url://dsf78645!!@3fsd&");
         authUrlIQ.setRoom("room@sdaf.dsf.dsf");
 
+        String encodedUrl = URLEncoder.encode(authUrlIQ.getUrl(), "UTF8");
+
         assertEquals("<iq id=\"1df:234sadf\" to=\"to657\" " +
                 "from=\"23from2134#@1\" " +
                         "type=\"result\">" +
-                        "<auth-url " +
+                        "<login-url " +
                         "xmlns='http://jitsi.org/protocol/focus' " +
-                        "url='url://dsf78645!!@3fsd&' " +
+                        "url=\'" + encodedUrl + "\' " +
                         "room='room@sdaf.dsf.dsf' " +
                         "/>" +
                         "</iq>", authUrlIQ.toXML());
