@@ -204,14 +204,6 @@ public class JitsiMeetServices
     }
 
     /**
-     * Returns the XMPP address of videobridge component.
-     */
-    public String getVideobridge()
-    {
-        return bridgeSelector.selectVideobridge();
-    }
-
-    /**
      * Sets new XMPP address of the SIP gateway component.
      * @param sipGateway the XMPP address to be set as SIP gateway component
      *                   address.

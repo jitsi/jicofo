@@ -165,28 +165,8 @@ public class BridgeSelector
      */
     public String selectVideobridge()
     {
-        // FIXME: Consider caching elected bridge and reset on stats
-        // or is operational change
-        if (bridges.size() == 0)
-        {
-            // No bridges registered
-            return null;
-        }
-
-        // Elect best bridge
-        Iterator<BridgeState> bridgesIter = bridges.values().iterator();
-
-        BridgeState bestChoice = bridgesIter.next();
-        while (bridgesIter.hasNext())
-        {
-            BridgeState candidate = bridgesIter.next();
-            if (candidate.compareTo(bestChoice) < 0)
-            {
-                bestChoice = candidate;
-            }
-        }
-
-        return bestChoice.isOperational() ? bestChoice.jid : null;
+        List<String> bridges = getPrioritizedBridgesList();
+        return bridges.size() > 0 ? bridges.get(0) : null;
     }
 
     /**
