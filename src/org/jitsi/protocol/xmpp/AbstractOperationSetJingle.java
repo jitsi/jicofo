@@ -56,7 +56,7 @@ public abstract class AbstractOperationSetJingle
      * @return Jingle session for given session identifier or <tt>null</tt>
      *         if no such session exists.
      */
-    protected JingleSession getSession(String sid)
+    public JingleSession getSession(String sid)
     {
         return sessions.get(sid);
     }

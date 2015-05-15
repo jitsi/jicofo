@@ -53,7 +53,9 @@ public class AdvertiseSSRCsTest
 
     @Test
     public void testOneToOneConference()
-        throws OperationFailedException, OperationNotSupportedException
+        throws OperationFailedException,
+               OperationNotSupportedException,
+               InterruptedException
     {
         //FIXME: test when there is participant without contents
 
@@ -109,7 +111,9 @@ public class AdvertiseSSRCsTest
 
     @Test
     public void testOneToOneSSRCGroupsConference()
-        throws OperationFailedException, OperationNotSupportedException
+        throws OperationFailedException,
+               OperationNotSupportedException,
+               InterruptedException
     {
         String roomName = "testSSRCs@conference.pawel.jitsi.net";
         String serverName = "test-server";

@@ -14,6 +14,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -63,6 +64,8 @@ public class MockParticipant
     private HashMap<String, IceUdpTransportPacketExtension> transportMap;
 
     private JingleSession jingleSession;
+
+    private JingleHandler jingleHandler = new JingleHandler();
 
     private String myJid;
 
@@ -126,15 +129,26 @@ public class MockParticipant
 
         user.setupFeatures(useBundle);
 
-        chat.mockJoin(user);
-
         initContents();
 
-        mockConnection
-            = ((MockProtocolProvider)chat.getParentProvider())
-                    .getMockXmppConnection();
+        MockProtocolProvider protocolProvider
+            = (MockProtocolProvider)chat.getParentProvider();
+
+        mockConnection = protocolProvider.getMockXmppConnection();
+
+        OperationSetDirectSmackXmpp smackOpSet
+            = protocolProvider.getOperationSet(
+                    OperationSetDirectSmackXmpp.class);
+
+        myJid = chat.getName() + "/" + user.getName();
+
+        this.jingle = new UtilityJingleOpSet(myJid, mockConnection, smackOpSet);
+
+        jingle.init();
 
         mockConnection.addPacketHandler(this, this);
+
+        chat.mockJoin(user);
 
         synchronized (joinLock)
         {
@@ -222,24 +236,32 @@ public class MockParticipant
             @Override
             public void run()
             {
-                acceptInvite(5000);
+                try
+                {
+                    acceptInvite(5000);
+                }
+                catch (InterruptedException e)
+                {
+                    logger.error(e, e);
+                }
             }
         },"Accept invite " + nick).start();
     }
 
     public JingleIQ[] acceptInvite(long timeout)
+        throws InterruptedException
     {
-        JingleIQ user1Invite = (JingleIQ) xmppPeer.waitForPacket(timeout);
-        if (user1Invite == null)
+        JingleIQ invite = jingle.acceptSession(timeout, jingleHandler);
+        if (invite == null)
         {
             throw new RuntimeException(nick + " - wait for invite timeout");
         }
 
-        logger.info(nick + " invite: " + user1Invite.toXML());
+        logger.info(nick + " invite: " + invite.toXML());
 
         JingleIQ user1Accept = generateSessionAccept(
-            user1Invite,
-            createTransportMap(user1Invite));
+            invite,
+            createTransportMap(invite));
 
         logger.info(nick + " accept: " + user1Accept.toXML());
 
@@ -247,13 +269,9 @@ public class MockParticipant
 
         this.myJid = user1Accept.getFrom();
         this.remoteJid = user1Accept.getTo();
-        // FIXME: move accept to Jingle operation set
-        // FIXME: broken after single added XMPP conection
-        //this.jingleSession = new JingleSession(user1Accept.getSID(), remoteJid);
-        this.jingle = new UtilityJingleOpSet(myJid, mockConnection);
-        this.jingle.addSession(jingleSession);
+        this.jingleSession = jingle.getSession(invite.getSID());
 
-        return new JingleIQ[] { user1Invite, user1Accept };
+        return new JingleIQ[] { invite, user1Accept };
     }
 
     public void leave()
@@ -551,5 +569,10 @@ public class MockParticipant
     public List<SourcePacketExtension> getVideoSSRCS()
     {
         return localSSRCs.getSSRCsForMedia("video");
+    }
+
+    class JingleHandler extends DefaultJingleRequestHandler
+    {
+
     }
 }
