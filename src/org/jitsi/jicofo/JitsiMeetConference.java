@@ -315,10 +315,18 @@ public class JitsiMeetConference
             {
                 logger.warn("No recorder service discovered - using JVB");
 
+                String videobridge = colibriConference.getJitsiVideobridge();
+                if (StringUtils.isNullOrEmpty(videobridge))
+                {
+                    logger.error(
+                        "Unable to create JVB recorder - conferenc enot started yet.");
+                    return null;
+                }
+
                 recorder
                     = new JvbRecorder(
                             colibriConference.getConferenceId(),
-                            services.getVideobridge(), xmppOpSet);
+                            videobridge, xmppOpSet);
             }
         }
         return recorder;
