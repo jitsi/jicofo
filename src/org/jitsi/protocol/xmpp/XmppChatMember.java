@@ -20,4 +20,10 @@ public interface XmppChatMember
      * Returns ths original user's connection Jabber ID and not the MUC address.
      */
     String getJabberID();
+
+    /**
+     * Returns number based on the order of joining of the members in the room.
+     * @return number based on the order of joining of the members in the room.
+     */
+    int getJoinOrderNumber();
 }

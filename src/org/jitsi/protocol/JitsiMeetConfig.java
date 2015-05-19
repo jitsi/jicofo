@@ -65,6 +65,16 @@ public class JitsiMeetConfig
      */
     public static final String OPEN_SCTP_PNAME = "openSctp";
 
+    /**
+     * The name of the start muted property for audio.
+     */
+    public static final String START_AUDIO_MUTED = "startAudioMuted";
+
+    /**
+     * The name of the start muted property for video.
+     */
+    public static final String START_VIDEO_MUTED = "startVideoMuted";
+
     private final Map<String, String> properties;
 
     /**
@@ -169,5 +179,23 @@ public class JitsiMeetConfig
             }
         }
         return intValue;
+    }
+
+    /**
+     * Returns the value of the start muted audio property.
+     * @return the value of the start muted audio property.
+     */
+    public Integer getAudioMuted()
+    {
+        return getInt(START_AUDIO_MUTED);
+    }
+
+    /**
+     * Returns the value of the start muted video property.
+     * @return the value of the start muted video property.
+     */
+    public Integer getVideoMuted()
+    {
+        return getInt(START_VIDEO_MUTED);
     }
 }

@@ -32,7 +32,15 @@ public class ChatMemberImpl
      */
     private final String nickname;
 
+    /**
+     * The chat room of the member.
+     */
     private final ChatRoomImpl chatRoom;
+
+    /**
+     * Join order number
+     */
+    private final int joinOrderNumber;
 
     /**
      * Full MUC address:
@@ -42,11 +50,13 @@ public class ChatMemberImpl
 
     private ChatRoomMemberRole role;
 
-    public ChatMemberImpl(String participant, ChatRoomImpl chatRoom)
+    public ChatMemberImpl(String participant, ChatRoomImpl chatRoom,
+        int joinOrderNumber)
     {
         this.address = participant;
         this.nickname = participant.substring(participant.lastIndexOf("/")+1);
         this.chatRoom = chatRoom;
+        this.joinOrderNumber = joinOrderNumber;
     }
 
     @Override
@@ -126,5 +136,11 @@ public class ChatMemberImpl
     public String getJabberID()
     {
         return chatRoom.getMemberJid(address);
+    }
+
+    @Override
+    public int getJoinOrderNumber()
+    {
+        return joinOrderNumber;
     }
 }

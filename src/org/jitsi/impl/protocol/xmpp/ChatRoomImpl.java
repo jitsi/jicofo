@@ -13,7 +13,6 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.protocol.xmpp.*;
-
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.*;
@@ -94,6 +93,11 @@ public class ChatRoomImpl
      * Stores our last MUC presence packet for future update.
      */
     private Presence lastPresenceSent;
+
+    /**
+     * Number of participants in the chat room. That excludes the focus member.
+     */
+    private Integer participantNumber = 0;
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
@@ -818,7 +822,13 @@ public class ChatRoomImpl
             return null;
         }
 
-        newMember = new ChatMemberImpl(participant, ChatRoomImpl.this);
+        if(participant != myMucAddress)
+        {
+            participantNumber++;
+        }
+
+        newMember = new ChatMemberImpl(participant, ChatRoomImpl.this,
+            participantNumber);
 
         members.put(participant, newMember);
 
@@ -864,6 +874,8 @@ public class ChatRoomImpl
 
             if (removed == null)
                 logger.error(participant + " not in " + roomName);
+
+            participantNumber--;
 
             return removed;
         }

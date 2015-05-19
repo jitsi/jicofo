@@ -11,9 +11,9 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
-
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -72,12 +72,16 @@ public abstract class AbstractOperationSetJingle
      * @param requestHandler <tt>JingleRequestHandler</tt> that will be used
      *                       to process request related to newly created
      *                       JingleSession.
+     * @param startMuted if the first element is <tt>true</tt> the participant
+     * will start audio muted. if the second element is <tt>true</tt> the
+     * participant will start video muted.
      */
     @Override
     public void initiateSession(boolean useBundle,
                                 String address,
                                 List<ContentPacketExtension> contents,
-                                JingleRequestHandler requestHandler)
+                                JingleRequestHandler requestHandler,
+                                boolean[] startMuted)
     {
         logger.info("INVITE PEER: " + address);
 
@@ -108,6 +112,15 @@ public abstract class AbstractOperationSetJingle
                 content.addChildExtension(
                     new BundlePacketExtension());
             }
+        }
+
+        if(startMuted[0] || startMuted[1])
+        {
+            StartMutedPacketExtension startMutedExt
+                = new StartMutedPacketExtension();
+            startMutedExt.setAudioMute(startMuted[0]);
+            startMutedExt.setVideoMute(startMuted[1]);
+            inviteIQ.addExtension(startMutedExt);
         }
 
         getConnection().sendPacket(inviteIQ);

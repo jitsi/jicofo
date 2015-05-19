@@ -170,6 +170,13 @@ public class JitsiMeetConference
     private long idleTimestamp = -1;
 
     /**
+     * If the first element is <tt>true</tt> the participant
+     * will start audio muted. if the second element is <tt>true</tt> the
+     * participant will start video muted.
+     */
+    private boolean[] startMuted = new boolean[] {false, false};
+
+    /**
      * Creates new instance of {@link JitsiMeetConference}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -205,7 +212,7 @@ public class JitsiMeetConference
             return;
 
         started = true;
-        
+
         colibri
             = protocolProviderHandler.getOperationSet(
                     OperationSetColibriConference.class);
@@ -389,13 +396,16 @@ public class JitsiMeetConference
         {
             for (final ChatRoomMember member : chatRoom.getMembers())
             {
-                inviteChatMember(member);
+                final boolean[] startMuted = hasToStartMuted(member,
+                    member == chatRoomMember);
+                inviteChatMember(member, startMuted);
             }
         }
         // Only the one who has just joined
         else
         {
-            inviteChatMember(chatRoomMember);
+            final boolean[] startMuted = hasToStartMuted(chatRoomMember, true);
+            inviteChatMember(chatRoomMember, startMuted);
         }
     }
 
@@ -404,8 +414,11 @@ public class JitsiMeetConference
      * established and videobridge channels being allocated.
      *
      * @param chatRoomMember the chat member to be invited into the conference.
+     * @param startMuted array with values for audio and video that indicates
+     * whether the participant should start muted.
      */
-    private void inviteChatMember(final ChatRoomMember chatRoomMember)
+    private void inviteChatMember(final ChatRoomMember chatRoomMember,
+        final boolean[] startMuted)
     {
         if (isFocusMember(chatRoomMember))
             return;
@@ -437,9 +450,67 @@ public class JitsiMeetConference
             @Override
             public void run()
             {
-                discoverFeaturesAndInvite(newParticipant, address);
+                discoverFeaturesAndInvite(newParticipant, address, startMuted);
             }
         });
+    }
+
+    /**
+     * Returns array of boolean values that indicates whether the last
+     * participant have to start video or audio muted.
+     * @param member the participant
+     * @param justJoined indicates whether the participant joined the room now
+     * or he was in the room before.
+     * @return array of boolean values that indicates whether the last
+     * participant have to start video or audio muted. The first element
+     * should be associated with the audio and the second with video.
+     */
+    private final boolean[] hasToStartMuted(ChatRoomMember member,
+        boolean justJoined)
+    {
+        final boolean[] startMuted = new boolean[] {false, false};
+        if(this.startMuted != null && this.startMuted[0] && justJoined)
+            startMuted[0] = true;
+
+        if(this.startMuted != null && this.startMuted[1] && justJoined)
+            startMuted[1] = true;
+
+        if(startMuted[0] && startMuted[1])
+        {
+            return startMuted;
+        }
+
+        int participantNumber = 0;
+        if(member != null && member instanceof XmppChatMember)
+        {
+            participantNumber = ((XmppChatMember)member).getJoinOrderNumber();
+        }
+        else
+        {
+            participantNumber = participants.size();
+        }
+
+
+        if(!startMuted[0])
+        {
+            Integer startAudioMuted = this.config.getAudioMuted();
+            if(startAudioMuted != null)
+            {
+                startMuted[0] = (participantNumber > startAudioMuted);
+            }
+        }
+
+        if(!startMuted[1])
+        {
+            Integer startVideoMuted = this.config.getVideoMuted();
+            if(startVideoMuted != null)
+            {
+                startMuted[1] = (participantNumber > startVideoMuted);
+            }
+        }
+
+
+        return startMuted;
     }
 
     /**
@@ -447,9 +518,13 @@ public class JitsiMeetConference
      * discovery and channel allocation for new participants.
      * @param newParticipant new <tt>Participant</tt> instance.
      * @param address new participant full MUC address.
+     * @param startMuted if the first element is <tt>true</tt> the participant
+     * will start audio muted. if the second element is <tt>true</tt> the
+     * participant will start video muted.
      */
     private void discoverFeaturesAndInvite(Participant     newParticipant,
-                                           String          address)
+                                           String          address,
+                                           boolean[]       startMuted)
     {
         // Feature discovery
         List<String> features
@@ -463,10 +538,12 @@ public class JitsiMeetConference
 
         try
         {
-            List<ContentPacketExtension> offer = createOffer(newParticipant);
+            List<ContentPacketExtension> offer
+                = createOffer(newParticipant);
 
             jingle.initiateSession(
-                    newParticipant.hasBundleSupport(), address, offer, this);
+                    newParticipant.hasBundleSupport(), address, offer, this,
+                    startMuted);
         }
         catch (OperationFailedException e)
         {
@@ -524,10 +601,10 @@ public class JitsiMeetConference
             try
             {
                 logger.info(
-                    "Using " + colibriConference.getJitsiVideobridge() 
+                    "Using " + colibriConference.getJitsiVideobridge()
                         + " to allocate channels for: "
                         + peer.getChatMember().getContactAddress());
-                
+
                 ColibriConferenceIQ peerChannels
                     = colibriConference.createColibriChannels(
                             peer.hasBundleSupport(),
@@ -615,7 +692,7 @@ public class JitsiMeetConference
             = new ArrayList<ContentPacketExtension>();
 
         boolean disableIce = !peer.hasIceSupport();
-        
+
         if (peer.hasAudioSupport())
         {
             contents.add(
@@ -1029,7 +1106,7 @@ public class JitsiMeetConference
 
         if (RegistrationState.REGISTERED.equals(evt.getNewState()))
         {
-         
+
             if (chatRoom == null)
             {
                 joinTheRoom();
@@ -1592,7 +1669,7 @@ public class JitsiMeetConference
      */
     public String getFocusJid()
     {
-        
+
         return roomName + "/" + focusUserName;
     }
 
@@ -1706,5 +1783,14 @@ public class JitsiMeetConference
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConference conference);
+    }
+
+    /**
+     * Sets <tt>startMuted</tt> property.
+     * @param startMuted the new value to be set.
+     */
+    public void setStartMuted(boolean[] startMuted)
+    {
+        this.startMuted = startMuted;
     }
 }

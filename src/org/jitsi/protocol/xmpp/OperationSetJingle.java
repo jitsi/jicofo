@@ -35,12 +35,16 @@ public interface OperationSetJingle
      * @param contents media contents description of our offer.
      * @param requestHandler <tt>JingleRequestHandler</tt> that will be bound
      *                       to new Jingle session instance.
+     * @param startMuted if the first element is <tt>true</tt> the participant
+     * will start audio muted. if the second element is <tt>true</tt> the
+     * participant will start video muted.
      */
     void initiateSession(
             boolean useBundle,
             String address,
             List<ContentPacketExtension> contents,
-            JingleRequestHandler requestHandler);
+            JingleRequestHandler requestHandler,
+            boolean[] startMuted);
 
     /**
      * Sends 'source-add' proprietary notification.

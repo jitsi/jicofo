@@ -15,7 +15,6 @@ import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-
 import org.jitsi.videobridge.eventadmin.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
@@ -69,6 +68,10 @@ public class MeetExtensionsHandler
         RayoIqProvider rayoIqProvider = new RayoIqProvider();
         rayoIqProvider.registerRayoIQs(
                 ProviderManager.getInstance());
+
+        StartMutedProvider startMutedProvider = new StartMutedProvider();
+        startMutedProvider.registerStartMutedProvider(
+            ProviderManager.getInstance());
     }
 
     /**
@@ -415,6 +418,28 @@ public class MeetExtensionsHandler
             return;
         }
 
+        ChatRoomMemberRole role
+            = conference.getRoleForMucJid(presence.getFrom());
+
+        logger.info("presence received");
+        if(role != null &&
+            role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+        {
+            logger.info("from moderator " + presence.toXML());
+            StartMutedPacketExtension ext
+                = (StartMutedPacketExtension) presence.getExtension(
+                    StartMutedPacketExtension.ELEMENT_NAME,
+                    StartMutedPacketExtension.NAMESPACE);
+            if(ext != null)
+            {
+                logger.info("Set start muted!!!");
+                boolean[] startMuted = new boolean[2];
+                startMuted[0] = ext.getAudioMuted();
+                startMuted[1] = ext.getVideoMuted();
+                conference.setStartMuted(startMuted);
+            }
+        }
+
         Participant participant
                 = conference.findParticipantForRoomJid(presence.getFrom());
         if (participant != null)
@@ -440,6 +465,7 @@ public class MeetExtensionsHandler
                     newDisplayName = ((Nick) pe).getName();
                     break;
                 }
+
             }
 
             if ((oldDisplayName == null && newDisplayName != null)
