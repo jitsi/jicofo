@@ -421,18 +421,15 @@ public class MeetExtensionsHandler
         ChatRoomMemberRole role
             = conference.getRoleForMucJid(presence.getFrom());
 
-        logger.info("presence received");
         if(role != null &&
             role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
         {
-            logger.info("from moderator " + presence.toXML());
             StartMutedPacketExtension ext
                 = (StartMutedPacketExtension) presence.getExtension(
                     StartMutedPacketExtension.ELEMENT_NAME,
                     StartMutedPacketExtension.NAMESPACE);
             if(ext != null)
             {
-                logger.info("Set start muted!!!");
                 boolean[] startMuted = new boolean[2];
                 startMuted[0] = ext.getAudioMuted();
                 startMuted[1] = ext.getVideoMuted();
