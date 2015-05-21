@@ -69,10 +69,10 @@ public class BridgeSelectorTest
         osgi.shutdown();
     }
 
-    private void createMockJvbNodes(JitsiMeetServices meetServices)
+    private void createMockJvbNodes(JitsiMeetServices meetServices,
+                                    MockProtocolProvider protocolProvider)
     {
-        MockSetSimpleCapsOpSet capsOpSet
-            = (MockSetSimpleCapsOpSet) meetServices.getCapsOpSet();
+        MockSetSimpleCapsOpSet capsOpSet = protocolProvider.getMockCapsOpSet();
 
         MockCapsNode jvb1Node
             = new MockCapsNode(
@@ -108,7 +108,7 @@ public class BridgeSelectorTest
         MockProtocolProvider mockProvider
             = (MockProtocolProvider) providerListener.obtainProvider(1000);
 
-        createMockJvbNodes(meetServices);
+        createMockJvbNodes(meetServices, mockProvider);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
 

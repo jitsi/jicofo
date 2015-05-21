@@ -130,9 +130,6 @@ public class OSGi
             {
                 "net/java/sip/communicator/service/protocol/ProtocolProviderActivator"
             },
-            {
-                "net/java/sip/communicator/plugin/reconnectplugin/ReconnectPluginActivator"
-            },
             // Shall we use mock protocol providers ?
             useMockProtocols ? mockProtocols : protocols,
             {

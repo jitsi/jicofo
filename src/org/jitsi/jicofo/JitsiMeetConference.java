@@ -248,11 +248,8 @@ public class JitsiMeetConference
         {
             joinTheRoom();
         }
-        else
-        {
-            // Wait until it registers
-            protocolProviderHandler.addRegistrationListener(this);
-        }
+
+        protocolProviderHandler.addRegistrationListener(this);
 
         idleTimestamp = System.currentTimeMillis();
     }
@@ -997,7 +994,10 @@ public class JitsiMeetConference
 
         if (colibriConference != null)
         {
-            colibriConference.expireConference();
+            if (protocolProviderHandler.isRegistered())
+            {
+                colibriConference.expireConference();
+            }
             colibriConference = null;
         }
     }
@@ -1090,6 +1090,11 @@ public class JitsiMeetConference
 
         started = false;
 
+        if (protocolProviderHandler != null)
+        {
+            protocolProviderHandler.removeRegistrationListener(this);
+        }
+
         disposeConference();
 
         leaveTheRoom();
@@ -1111,8 +1116,10 @@ public class JitsiMeetConference
             {
                 joinTheRoom();
             }
-            // We're not interested in event other that REGISTERED
-            protocolProviderHandler.removeRegistrationListener(this);
+        }
+        else if (RegistrationState.UNREGISTERED.equals(evt.getNewState()))
+        {
+            stop();
         }
     }
 

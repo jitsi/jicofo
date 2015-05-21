@@ -9,6 +9,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
+import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.util.*;
 
 import org.osgi.framework.*;
@@ -25,6 +26,9 @@ import java.util.concurrent.*;
 public class ProtocolProviderHandler
     implements RegistrationStateChangeListener
 {
+    private final static Logger logger
+        = Logger.getLogger(ProtocolProviderHandler.class);
+
     /**
      * XMPP provider factory used to create and destroy XMPP account used by
      * the focus.
@@ -120,7 +124,14 @@ public class ProtocolProviderHandler
     {
         for(RegistrationStateChangeListener l : regListeners)
         {
-            l.registrationStateChanged(evt);
+            try
+            {
+                l.registrationStateChanged(evt);
+            }
+            catch (Exception e)
+            {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 

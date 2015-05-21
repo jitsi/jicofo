@@ -244,7 +244,7 @@ public class ChatRoomImpl
     public void leave()
     {
         Connection connection = opSet.getConnection();
-        if (connection != null)
+        if (connection != null && connection.isConnected())
         {
             muc.leave();
         }
@@ -269,6 +269,8 @@ public class ChatRoomImpl
                 LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
                 reason,
                 alternateAddress);*/
+
+        opSet.removeRoom(this);
     }
 
     @Override

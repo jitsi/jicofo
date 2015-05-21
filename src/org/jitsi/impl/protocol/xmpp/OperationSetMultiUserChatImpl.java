@@ -158,4 +158,9 @@ public class OperationSetMultiUserChatImpl
     {
         return protocolProvider;
     }
+
+    public void removeRoom(ChatRoomImpl chatRoom)
+    {
+        rooms.remove(chatRoom.getName());
+    }
 }

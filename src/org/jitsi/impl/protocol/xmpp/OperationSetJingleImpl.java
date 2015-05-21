@@ -82,7 +82,7 @@ class OperationSetJingleImpl
         try
         {
             // We handle JingleIQ and SessionIQ.
-            if (!(packet instanceof JingleIQ))
+            /*if (!(packet instanceof JingleIQ))
             {
                 // FIXME: find session for packet ID to make sure
                 // that the error belongs to this class
@@ -96,7 +96,7 @@ class OperationSetJingleImpl
                         "Received an error: code=" + error.getCode()
                             + " message=" + errorMessage+", " + packet.toXML());
                 }
-            }
+            }*/
 
             return packet instanceof JingleIQ
                 && getSession(((JingleIQ) packet).getSID()) != null;

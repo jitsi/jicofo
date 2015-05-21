@@ -138,21 +138,68 @@ public class BridgeSelector
      */
     public void addJvbAddress(String bridgeJid)
     {
+        if (isJvbOnTheList(bridgeJid))
+        {
+            return;
+        }
+
+        logger.info("Added videobridge: " + bridgeJid);
+
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
         {
+            // FIXME: retry if node is not available yet
             logger.info(
-                "Subscribing to pubsub notfications to "
+                "Subscribing to pub-sub notifications to "
                     + pubSubNode + " for " + bridgeJid);
             subscriptionOpSet.subscribe(pubSubNode, this);
         }
         else
         {
-            logger.warn("No pub-sub node mapped for " + bridgeJid
-                        + " statistics will not be tracked fro this instance.");
+            logger.warn(
+                "No pub-sub node mapped for " + bridgeJid
+                    + " statistics will not be tracked for this instance.");
         }
 
         bridges.put(bridgeJid, new BridgeState(bridgeJid));
+    }
+
+    /**
+     * Returns <tt>true</tt> if given JVB XMPP address is already known to this
+     * <tt>BridgeSelector</tt>.
+     *
+     * @param jvbJid the JVB JID to be checked eg. jitsi-videobridge.example.com
+     *
+     * @return <tt>true</tt> if given JVB XMPP address is already known to this
+     * <tt>BridgeSelector</tt>.
+     */
+    boolean isJvbOnTheList(String jvbJid)
+    {
+        return bridges.containsKey(jvbJid);
+    }
+
+    /**
+     * Removes Jitsi Videobridge XMPP address from the list videobridge
+     * instances available in the system .
+     *
+     * @param bridgeJid the JID of videobridge to be removed from this selector's
+     *                  set of videobridges.
+     */
+    public void removeJvbAddress(String bridgeJid)
+    {
+        logger.info("Removing JVB: " + bridgeJid);
+
+        bridges.remove(bridgeJid);
+
+        String pubSubNode = findNodeForBridge(bridgeJid);
+        if (pubSubNode != null)
+        {
+            logger.info(
+                "Removing PubSub subscription to "
+                    + pubSubNode + " for " + bridgeJid);
+
+            subscriptionOpSet.unSubscribe(pubSubNode);
+        }
     }
 
     /**

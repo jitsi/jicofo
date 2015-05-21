@@ -110,4 +110,36 @@ public class DiscoveryUtil
         features.add(FEATURE_SCTP);
         return features;
     }
+
+    /**
+     * Checks if all of the features given on <tt>reqFeatures</tt> array exist
+     * on declared list of <tt>capabilities</tt>.
+     * @param reqFeatures array of required features to check.
+     * @param capabilities the list of features supported by the client.
+     * @return <tt>true</tt> if all features from <tt>reqFeatures</tt> array
+     *         exist on <tt>capabilities</tt> list.
+     */
+    static public boolean checkFeatureSupport(String[] reqFeatures,
+                                              List<String> capabilities)
+    {
+        for (String toCheck : reqFeatures)
+        {
+            if (!capabilities.contains(toCheck))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns <tt>true</tt> if <tt>list1</tt> and <tt>list2</tt> contain the
+     * same elements where items order is not relevant.
+     * @param list1 the first list of <tt>String</tt> to be compared against
+     *              the second list.
+     * @param list2 the second list of <tt>String</tt> to be compared against
+     *              the first list.
+     */
+    static public boolean areTheSame(List<String> list1, List<String> list2)
+    {
+        return list1.size() == list2.size() && list2.containsAll(list1);
+    }
 }

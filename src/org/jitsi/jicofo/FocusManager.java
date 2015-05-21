@@ -14,6 +14,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.provider.*;
@@ -123,6 +124,12 @@ public class FocusManager
     private JitsiMeetServices jitsiMeetServices;
 
     /**
+     * Observes and discovers JVB instances and other conference components on
+     * our XMPP domain.
+     */
+    private ComponentsDiscovery componentsDiscovery;
+
+    /**
      * Indicates if graceful shutdown mode has been enabled and
      * no new conference request will be accepted.
      */
@@ -133,7 +140,7 @@ public class FocusManager
      * IQs sent from conference participants to the focus.
      */
     private MeetExtensionsHandler meetExtensionsHandler;
-    
+
     /**
      * Starts this manager for given <tt>hostName</tt>.
      */
@@ -156,9 +163,13 @@ public class FocusManager
         protocolProviderHandler.start(
             hostName, focusUserDomain, focusUserPassword, focusUserName);
 
-        jitsiMeetServices = new JitsiMeetServices();
+        jitsiMeetServices = new JitsiMeetServices(
+            protocolProviderHandler.getOperationSet(
+                OperationSetSubscription.class));
 
-        jitsiMeetServices.start(xmppDomain, protocolProviderHandler);
+        componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
+
+        componentsDiscovery.start(xmppDomain, protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -184,7 +195,11 @@ public class FocusManager
     {
         expireThread.stop();
 
-        jitsiMeetServices.stop();
+        if (componentsDiscovery != null)
+        {
+            componentsDiscovery.stop();
+            componentsDiscovery = null;
+        }
 
         meetExtensionsHandler.dispose();
 

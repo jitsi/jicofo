@@ -8,6 +8,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
@@ -53,8 +54,11 @@ public class OpSetSimpleCapsImpl
     @Override
     public boolean hasFeatureSupport(String node, String[] features)
     {
-        return xmppProvider.checkFeatureSupport(
-            node, features);
+        List<String> itemFeatures = getFeatures(node);
+
+        return itemFeatures != null &&
+            DiscoveryUtil.checkFeatureSupport(features, itemFeatures);
+
     }
     
     public List<String> getFeatures(String node)
