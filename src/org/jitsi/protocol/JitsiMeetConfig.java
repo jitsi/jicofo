@@ -174,8 +174,7 @@ public class JitsiMeetConfig
             }
             catch (NumberFormatException ex)
             {
-                logger.error(
-                    "Error parsing: " + name + ", v: " + stringValue, ex);
+                logger.error("Error parsing: " + name + ", v: " + stringValue);
             }
         }
         return intValue;
