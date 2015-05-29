@@ -127,4 +127,11 @@ public class MockRoomMember
     {
         return null;
     }
+
+    @Override
+    public int getJoinOrderNumber()
+    {
+        //FIXME: implement in order to test start muted feature
+        return 0;
+    }
 }

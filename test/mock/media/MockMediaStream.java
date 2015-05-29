@@ -1,5 +1,7 @@
 package mock.media;
 
+import org.jitsi.impl.neomedia.*;
+import org.jitsi.impl.neomedia.transform.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.device.*;
 import org.jitsi.service.neomedia.format.*;
@@ -21,6 +23,18 @@ public class MockMediaStream
 
     @Override
     public void stop()
+    {
+
+    }
+
+    @Override
+    public void setExternalTransformer(TransformEngine transformEngine)
+    {
+
+    }
+
+    @Override
+    public void injectPacket(RawPacket rawPacket, boolean b, boolean b1)
     {
 
     }
@@ -112,6 +126,12 @@ public class MockMediaStream
     @Override
     public void addDynamicRTPPayloadType(byte rtpPayloadType,
                                          MediaFormat format)
+    {
+
+    }
+
+    @Override
+    public void clearDynamicRTPPayloadTypes()
     {
 
     }
