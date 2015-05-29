@@ -824,7 +824,7 @@ public class ChatRoomImpl
             return null;
         }
 
-        if(participant != myMucAddress)
+        if(!participant.equals(myMucAddress))
         {
             participantNumber++;
         }
