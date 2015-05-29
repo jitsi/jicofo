@@ -9,17 +9,23 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 
 /**
- * XMPP extended interface of {@link ChatRoomMember}.
+ * Extended interface {@link ChatRoomMember} for the purpose of Jitsi-meet.
  *
  * @author Pawel Domas
  */
-public interface XmppChatMember
+public interface MeetChatMember
     extends ChatRoomMember
 {
     /**
      * Returns ths original user's connection Jabber ID and not the MUC address.
      */
     String getJabberID();
+
+    /**
+     * Returns unique Colibri endpoint ID for conference participant represented
+     * by this chat member.
+     */
+    String getEndpointID();
 
     /**
      * Returns number based on the order of joining of the members in the room.

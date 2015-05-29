@@ -242,7 +242,7 @@ public class ChatRoomRoleAndPresence
                 try
                 {
                     chatRoom.grantOwnership(
-                            ((XmppChatMember)member).getJabberID());
+                            ((MeetChatMember)member).getJabberID());
 
                     logger.info(
                             "Granted owner to " + member.getContactAddress());
@@ -327,8 +327,8 @@ public class ChatRoomRoleAndPresence
 
     private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
-        XmppChatMember xmppMember = (XmppChatMember) member;
-        String jabberId = xmppMember.getJabberID();
+        MeetChatMember meetChatMember = (MeetChatMember) member;
+        String jabberId = meetChatMember.getJabberID();
         if (StringUtils.isNullOrEmpty(jabberId))
         {
             return;
@@ -350,9 +350,9 @@ public class ChatRoomRoleAndPresence
 
                 eventAdmin.sendEvent(
                     EventFactory.endpointAuthenticated(
-                            authSessionId,
-                            conference.getId(),
-                            Participant.getEndpointId(member)
+                        authSessionId,
+                        conference.getId(),
+                        meetChatMember.getEndpointID()
                     )
                 );
             }
@@ -365,8 +365,8 @@ public class ChatRoomRoleAndPresence
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            XmppChatMember xmppMember = (XmppChatMember) member;
-            if (realJid.equals(xmppMember.getJabberID()))
+            MeetChatMember meetChatMember = (MeetChatMember) member;
+            if (realJid.equals(meetChatMember.getJabberID()))
             {
                 checkGrantOwnerToAuthUser(member);
             }

@@ -27,7 +27,7 @@ public class Participant
     /**
      * MUC chat member of this participant.
      */
-    private final XmppChatMember roomMember;
+    private final MeetChatMember roomMember;
 
     /**
      * Jingle session(if any) established with this peer.
@@ -92,25 +92,12 @@ public class Participant
     private String displayName = null;
 
     /**
-     * Returns the endpoint ID for a participant in the videobridge(Colibri)
-     * context. This method can be used before <tt>Participant</tt> instance is
-     * created for the <tt>ChatRoomMember</tt>.
-     *
-     * @param chatRoomMember XMPP MUC chat room member which represent a
-     *                       <tt>Participant</tt>.
-     */
-    static public String getEndpointId(ChatRoomMember chatRoomMember)
-    {
-        return chatRoomMember.getName(); // XMPP MUC Nickname
-    }
-
-    /**
      * Creates new {@link Participant} for given chat room member.
      *
-     * @param roomMember the {@link XmppChatMember} that represent this
+     * @param roomMember the {@link MeetChatMember} that represent this
      *                   participant in MUC conference room.
      */
-    public Participant(XmppChatMember roomMember)
+    public Participant(MeetChatMember roomMember)
     {
         if (roomMember == null)
         {
@@ -138,10 +125,10 @@ public class Participant
     }
 
     /**
-     * Returns {@link XmppChatMember} that represents this participant in
+     * Returns {@link MeetChatMember} that represents this participant in
      * conference multi-user chat room.
      */
-    public XmppChatMember getChatMember()
+    public MeetChatMember getChatMember()
     {
         return roomMember;
     }
@@ -462,7 +449,7 @@ public class Participant
      */
     public String getEndpointId()
     {
-        return getEndpointId(roomMember);
+        return roomMember.getEndpointID();
     }
 
     /**
