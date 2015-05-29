@@ -77,7 +77,7 @@ public abstract class AbstractOperationSetJingle
      * participant will start video muted.
      */
     @Override
-    public void initiateSession(boolean useBundle,
+    public boolean initiateSession(boolean useBundle,
                                 String address,
                                 List<ContentPacketExtension> contents,
                                 JingleRequestHandler requestHandler,
@@ -123,7 +123,26 @@ public abstract class AbstractOperationSetJingle
             inviteIQ.addExtension(startMutedExt);
         }
 
-        getConnection().sendPacket(inviteIQ);
+        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+        if (reply != null && IQ.Type.RESULT.equals(reply.getType()))
+        {
+            return true;
+        }
+        else
+        {
+            if (reply == null)
+            {
+                logger.error(
+                    "Timeout waiting for session-accept from " + address);
+            }
+            else
+            {
+                logger.error(
+                    "Failed to send session-initiate to " + address
+                        + ", error: " + reply.getError());
+            }
+            return false;
+        }
     }
 
     /**

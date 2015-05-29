@@ -38,8 +38,11 @@ public interface OperationSetJingle
      * @param startMuted if the first element is <tt>true</tt> the participant
      * will start audio muted. if the second element is <tt>true</tt> the
      * participant will start video muted.
+     *
+     * @return <tt>true</tt> if have have received RESULT response to
+     *         session-initiate IQ.
      */
-    void initiateSession(
+    boolean initiateSession(
             boolean useBundle,
             String address,
             List<ContentPacketExtension> contents,

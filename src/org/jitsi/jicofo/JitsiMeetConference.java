@@ -127,7 +127,7 @@ public class JitsiMeetConference
     /**
      * instance of Colibri conference used in this conference.
      */
-    private ColibriConference colibriConference;
+    private volatile ColibriConference colibriConference;
 
     /**
      * Jitsi Meet tool used for specific operations like adding presence
@@ -436,18 +436,20 @@ public class JitsiMeetConference
 
         // Invite peer takes time because of channel allocation, so schedule
         // this on separate thread.
-        // FIXME:
-        // Because channel allocation is done on separate thread it is
-        // possible that participant will leave while channels are being
-        // allocated. In "on participant left" event channel ids will not yet be
-        // assigned, so we won't expire them. We are letting those channels to
-        // leek and get expired automatically on the bridge.
         FocusBundleActivator.getSharedThreadPool().submit(new Runnable()
         {
             @Override
             public void run()
             {
-                discoverFeaturesAndInvite(newParticipant, address, startMuted);
+                try
+                {
+                    discoverFeaturesAndInvite(
+                            newParticipant, address, startMuted);
+                }
+                catch (Exception e)
+                {
+                    logger.error("Exception on participant invite", e);
+                }
             }
         });
     }
@@ -533,19 +535,23 @@ public class JitsiMeetConference
         logger.info(
             address + " has bundle ? " + newParticipant.hasBundleSupport());
 
+        // Store instance here as it is set to null when conference is disposed
+        ColibriConference conference = this.colibriConference;
+        List<ContentPacketExtension> offer;
+
         try
         {
-            List<ContentPacketExtension> offer
-                = createOffer(newParticipant);
-
-            jingle.initiateSession(
-                    newParticipant.hasBundleSupport(), address, offer, this,
-                    startMuted);
+            offer = createOffer(newParticipant);
+            if (offer == null)
+            {
+                logger.info("Channel allocation cancelled for " + address);
+                return;
+            }
         }
         catch (OperationFailedException e)
         {
             //FIXME: retry ? sometimes it's just timeout
-            logger.error("Failed to invite " + address, e);
+            logger.error("Failed to allocate channels for " + address, e);
 
             // Notify users about bridge is down event
             if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
@@ -553,6 +559,37 @@ public class JitsiMeetConference
                 meetTools.sendPresenceExtension(
                     chatRoom, new BridgeIsDownPacketExt());
             }
+            // Cancel - no channels allocated
+            return;
+        }
+        /*
+           This check makes sure that at the point when we're trying to
+           invite new participant:
+           - the conference has not been disposed in the meantime
+           - he's still in the room
+           - we have managed to send Jingle session-initiate
+           Otherwise we expire allocated channels.
+        */
+        if (chatRoom == null ||
+            findMember(address) == null ||
+            !jingle.initiateSession(
+                newParticipant.hasBundleSupport(), address, offer, this,
+                startMuted))
+        {
+            if (chatRoom == null)
+            {
+                // Conference disposed
+                logger.info(
+                    "Expiring " + address + " channels - conference disposed");
+            }
+            else
+            {
+                // Participant has left the room
+                logger.info(
+                    "Expiring " + address + " channels - participant has left");
+            }
+            conference.expireChannels(
+                newParticipant.getColibriChannelsInfo());
         }
     }
 
@@ -564,7 +601,8 @@ public class JitsiMeetConference
      * @param contents the media offer description passed to the bridge.
      *
      * @return {@link ColibriConferenceIQ} that describes channels allocated for
-     *         given <tt>peer</tt>.
+     *         given <tt>peer</tt>. <tt>null</tt> is returned if conference is
+     *         disposed before we manage to allocate the channels.
      *
      * @throws OperationFailedException if we have failed to allocate channels
      *         using existing bridge and we can not switch to another bridge.
@@ -573,6 +611,18 @@ public class JitsiMeetConference
             Participant peer, List<ContentPacketExtension> contents)
         throws OperationFailedException
     {
+        // This method is executed on thread pool.
+
+        // Store colibri instance here to be able to free the channels even
+        // after the conference has been disposed.
+        ColibriConference colibriConference = this.colibriConference;
+        if (this.colibriConference == null)
+        {
+            // Nope - the conference has been disposed, before the thread got
+            // the chance to do anything
+            return null;
+        }
+
         // Allocate by trying all bridges on prioritized list
         BridgeSelector bridgeSelector = services.getBridgeSelector();
 
@@ -593,7 +643,7 @@ public class JitsiMeetConference
                 bridgesIterator.next());
         }
 
-        while (true)
+        while (this.colibriConference != null)
         {
             try
             {
@@ -670,6 +720,9 @@ public class JitsiMeetConference
                 }
             }
         }
+        // If we reach this point it means that the conference has been disposed
+        // before we've managed to allocate anything
+        return null;
     }
 
     /**
@@ -677,7 +730,9 @@ public class JitsiMeetConference
      *
      * @param peer the participant for whom Jingle offer will be created.
      *
-     * @return the list of contents describing conference Jingle offer.
+     * @return the list of contents describing conference Jingle offer or
+     *         <tt>null</tt> if the conference has been disposed before we've
+     *         managed to allocate Colibri channels.
      *
      * @throws OperationFailedException if focus fails to allocate channels
      *         or something goes wrong.
@@ -718,6 +773,9 @@ public class JitsiMeetConference
         boolean useBundle = peer.hasBundleSupport();
 
         ColibriConferenceIQ peerChannels = allocateChannels(peer, contents);
+
+        if (peerChannels == null)
+            return null;
 
         peer.setColibriChannelsInfo(peerChannels);
 
