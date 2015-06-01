@@ -428,7 +428,7 @@ public class JitsiMeetConference
         if (findParticipantForChatMember(chatRoomMember) != null)
             return;
 
-        newParticipant = new Participant((MeetChatMember) chatRoomMember);
+        newParticipant = new Participant((XmppChatMember) chatRoomMember);
 
         participants.add(newParticipant);
 
@@ -480,9 +480,9 @@ public class JitsiMeetConference
         }
 
         int participantNumber = 0;
-        if(member != null && member instanceof MeetChatMember)
+        if(member != null && member instanceof XmppChatMember)
         {
-            participantNumber = ((MeetChatMember)member).getJoinOrderNumber();
+            participantNumber = ((XmppChatMember)member).getJoinOrderNumber();
         }
         else
         {

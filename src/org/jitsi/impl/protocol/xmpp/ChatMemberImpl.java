@@ -20,7 +20,7 @@ import org.jivesoftware.smackx.muc.*;
  * @author Pawel Domas
  */
 public class ChatMemberImpl
-    implements MeetChatMember
+    implements XmppChatMember
 {
     /**
      * The logger.
@@ -48,22 +48,15 @@ public class ChatMemberImpl
      */
     private final String address;
 
-    /**
-     * ID of Colibri endpoint assigned to conference participant represented by
-     * this XMPP MUC member instance.
-     */
-    private final String endpointId;
-
     private ChatRoomMemberRole role;
 
     public ChatMemberImpl(String participant, ChatRoomImpl chatRoom,
-        int joinOrderNumber, String endpointGenerator)
+        int joinOrderNumber)
     {
         this.address = participant;
         this.nickname = participant.substring(participant.lastIndexOf("/")+1);
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
-        this.endpointId = nickname + "_" + endpointGenerator;
     }
 
     @Override
@@ -143,12 +136,6 @@ public class ChatMemberImpl
     public String getJabberID()
     {
         return chatRoom.getMemberJid(address);
-    }
-
-    @Override
-    public String getEndpointID()
-    {
-        return endpointId;
     }
 
     @Override

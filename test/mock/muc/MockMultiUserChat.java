@@ -106,9 +106,7 @@ public class MockMultiUserChat
         isJoined = true;
 
         MockRoomMember member
-            = new MockRoomMember(
-                    createAddressForName(nickname),
-                    this, generateEndpointId(nickname));
+            = new MockRoomMember(createAddressForName(nickname), this);
 
         // FIXME: for mock purposes we are always the owner on join()
         boolean isOwner = true;//= members.size() == 0;
@@ -135,8 +133,7 @@ public class MockMultiUserChat
 
     public MockRoomMember mockOwnerJoin(String name)
     {
-        MockRoomMember member
-            = new MockRoomMember(name, this, generateEndpointId(name));
+        MockRoomMember member = new MockRoomMember(name, this);
 
         member.setRole(ChatRoomMemberRole.OWNER);
 
@@ -154,14 +151,7 @@ public class MockMultiUserChat
     public MockRoomMember createMockRoomMember(String nickname)
     {
         return new MockRoomMember(
-            createAddressForName(nickname), this, generateEndpointId(nickname));
-    }
-
-    private int generator = 0;
-
-    private synchronized String generateEndpointId(String nickname)
-    {
-        return nickname + "_" + generator++;
+            createAddressForName(nickname), this);
     }
 
     public MockRoomMember mockJoin(MockRoomMember member)

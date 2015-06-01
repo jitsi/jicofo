@@ -100,14 +100,6 @@ public class ChatRoomImpl
     private Integer participantNumber = 0;
 
     /**
-     * We generate Colibri endpoint IDs based on chat nicknames to have relation
-     * with Colibri endpoint and chat member for debugging purpose from JVB logs.
-     * This counter is used to generate unique endpoint IDs even for chat
-     * members who re-join later with the same nickname.
-     */
-    private int endpointGenerator = 0;
-
-    /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param parentChatOperationSet parent multi user chat operation set.
@@ -837,9 +829,8 @@ public class ChatRoomImpl
             participantNumber++;
         }
 
-        newMember = new ChatMemberImpl(
-            participant,       ChatRoomImpl.this,
-            participantNumber, String.valueOf(endpointGenerator++));
+        newMember = new ChatMemberImpl(participant, ChatRoomImpl.this,
+            participantNumber);
 
         members.put(participant, newMember);
 

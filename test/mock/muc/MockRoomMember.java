@@ -18,7 +18,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockRoomMember
-    implements MeetChatMember
+    implements XmppChatMember
 {
     private final String name;
 
@@ -26,16 +26,13 @@ public class MockRoomMember
 
     private final MockMultiUserChat room;
 
-    private final String endpointId;
-
     private ChatRoomMemberRole role = ChatRoomMemberRole.MEMBER;
 
-    MockRoomMember(String address, MockMultiUserChat chatRoom, String endpointId)
+    MockRoomMember(String address, MockMultiUserChat chatRoom)
     {
         this.address = address;
         this.name = address.substring(address.lastIndexOf("/")+1);
         this.room = chatRoom;
-        this.endpointId = endpointId;
     }
 
     public void setupFeatures(boolean useBundle)
@@ -129,12 +126,6 @@ public class MockRoomMember
     public String getJabberID()
     {
         return null;
-    }
-
-    @Override
-    public String getEndpointID()
-    {
-        return endpointId;
     }
 
     @Override
