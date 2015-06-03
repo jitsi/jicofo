@@ -744,19 +744,20 @@ public class JitsiMeetConference
             = new ArrayList<ContentPacketExtension>();
 
         boolean disableIce = !peer.hasIceSupport();
+        boolean useDtls = peer.hasDtlsSupport();
 
         if (peer.hasAudioSupport())
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.AUDIO, disableIce));
+                    MediaType.AUDIO, disableIce, useDtls));
         }
 
         if (peer.hasVideoSupport())
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.VIDEO, disableIce));
+                    MediaType.VIDEO, disableIce, useDtls));
         }
 
         // Is SCTP enabled ?
@@ -767,7 +768,7 @@ public class JitsiMeetConference
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.DATA, disableIce));
+                    MediaType.DATA, disableIce, useDtls));
         }
 
         boolean useBundle = peer.hasBundleSupport();

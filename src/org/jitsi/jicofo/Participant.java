@@ -295,6 +295,14 @@ public class Participant
     }
 
     /**
+     * Returns <tt>true</tt> if this participant supports DTLS.
+     */
+    public boolean hasDtlsSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_DTLS);
+    }
+
+    /**
      * FIXME: we need to remove "is SIP gateway code", but there are still 
      * situations where we need to know whether given peer is a human or not.
      * For example when we close browser window and only SIP gateway stays

@@ -27,15 +27,17 @@ public class JingleOfferFactory
      * included in initial conference offer.
      *
      * @param mediaType the media type for which new offer content will
-     *                  be created.
+     * be created.
      * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
-     *                   should be indicated in the offer.
+     * should be indicated in the offer.
+     * @param useDtls whether to add a DTLS element under the transport
+     * elements in the offer.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType, boolean disableIce)
+            MediaType mediaType, boolean disableIce, boolean useDtls)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -220,7 +222,13 @@ public class JingleOfferFactory
 
         if (!disableIce)
         {
-            content.addChildExtension(new IceUdpTransportPacketExtension());
+            IceUdpTransportPacketExtension iceUdpTransportPacketExtension
+                    = new IceUdpTransportPacketExtension();
+            if (useDtls)
+                iceUdpTransportPacketExtension
+                        .addChildExtension(new DtlsFingerprintPacketExtension());
+
+            content.addChildExtension(iceUdpTransportPacketExtension);
         }
         else
         {

@@ -50,6 +50,11 @@ public class DiscoveryUtil
             = "urn:xmpp:jingle:transports:dtls-sctp:1";
 
     /**
+     * The Jingle DTLS feature name (XEP-0320).
+     */
+    public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
+
+    /**
      * RTCP mux feature name.  
      */
     public final static String FEATURE_RTCP_MUX = "urn:ietf:rfc:5761";
