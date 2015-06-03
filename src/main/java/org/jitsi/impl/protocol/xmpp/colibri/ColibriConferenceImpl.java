@@ -126,6 +126,7 @@ public class ColibriConferenceImpl
         colibriBuilder.setAdaptiveLastN(config.isAdaptiveLastNEnabled());
         colibriBuilder.setAdaptiveSimulcast(
                 config.isAdaptiveSimulcastEnabled());
+        colibriBuilder.setSimulcastMode(config.getSimulcastMode());
     }
 
     /**
@@ -296,6 +297,8 @@ public class ColibriConferenceImpl
         // simulcast group has been added or removed.
         boolean updateNeeded = false;
 
+        // TODO take into account the SimulcastMode and serve the correct
+        // sources.
         for (ColibriConferenceIQ.Content content
             : localChannelsInfo.getContents())
         {

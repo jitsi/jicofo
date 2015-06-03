@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol;
 
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.util.*;
@@ -69,6 +70,12 @@ public class JitsiMeetConfig
      * enable or 'false' to disable.
      */
     public static final String ADAPTIVE_SIMULCAST_PNAME = "adaptiveSimulcast";
+
+    /**
+     * The name of adaptive simulcast configuration property. Pass 'true' to
+     * enable or 'false' to disable.
+     */
+    public static final String SIMULCAST_MODE_PNAME = "simulcastMode";
 
     /*
      * The name of the open sctp configuration property. Pass 'true' to
@@ -141,6 +148,16 @@ public class JitsiMeetConfig
     public Boolean isAdaptiveSimulcastEnabled()
     {
         return getBoolean(ADAPTIVE_SIMULCAST_PNAME);
+    }
+
+    /**
+     * Returns a boolean value of adaptive simulcast property or <tt>null</tt>
+     * if it has not been specified.
+     */
+    public SimulcastMode getSimulcastMode()
+    {
+        String mode = properties.get(SIMULCAST_MODE_PNAME);
+        return SimulcastMode.fromString(mode);
     }
 
     /**
