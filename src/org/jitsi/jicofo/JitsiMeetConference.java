@@ -1150,6 +1150,10 @@ public class JitsiMeetConference
 
         if (protocolProviderHandler != null)
         {
+            //FIXME: remove when leak is fixed
+            logger.info(
+                "Removing protocol listener - " + roomName
+                + ", " + this);
             protocolProviderHandler.removeRegistrationListener(this);
         }
 

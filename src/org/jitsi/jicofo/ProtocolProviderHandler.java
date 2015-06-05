@@ -151,7 +151,9 @@ public class ProtocolProviderHandler
      */
     public void removeRegistrationListener(RegistrationStateChangeListener l)
     {
-        regListeners.remove(l);
+        //FIXME: remove when leak is fixed
+        boolean ok = regListeners.remove(l);
+        logger.info("Listener removed ? " + ok + ", " + l);
     }
 
     /**
