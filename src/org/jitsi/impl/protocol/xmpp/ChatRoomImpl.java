@@ -50,6 +50,10 @@ public class ChatRoomImpl
      */
     private final MemberListener memberListener;
 
+    private final ParticipantListener participantListener;
+
+    private PacketInterceptor presenceInterceptor;
+
     /**
      * Smack multi user chat backend instance.
      */
@@ -117,7 +121,9 @@ public class ChatRoomImpl
 
         this.memberListener = new MemberListener();
         muc.addParticipantStatusListener(memberListener);
-        muc.addParticipantListener(new ParticipantListener());
+
+        this.participantListener = new ParticipantListener();
+        muc.addParticipantListener(participantListener);
     }
 
     @Override
@@ -155,7 +161,7 @@ public class ChatRoomImpl
             this.myNickName = nickname;
             this.myMucAddress = roomName + "/" + nickname;
 
-            muc.addPresenceInterceptor(new PacketInterceptor()
+            this.presenceInterceptor = new PacketInterceptor()
             {
                 @Override
                 public void interceptPacket(Packet packet)
@@ -165,7 +171,8 @@ public class ChatRoomImpl
                         lastPresenceSent = (Presence) packet;
                     }
                 }
-            });
+            };
+            muc.addPresenceInterceptor(presenceInterceptor);
 
             muc.create(nickname);
             //muc.join(nickname);
@@ -269,6 +276,13 @@ public class ChatRoomImpl
                 LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
                 reason,
                 alternateAddress);*/
+
+        if (presenceInterceptor != null)
+            muc.removePresenceInterceptor(presenceInterceptor);
+        muc.removeParticipantStatusListener(memberListener);
+        muc.removeParticipantListener(participantListener);
+
+        muc.dispose();
 
         opSet.removeRoom(this);
     }
