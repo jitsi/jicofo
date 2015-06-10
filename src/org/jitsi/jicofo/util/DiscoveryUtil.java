@@ -113,6 +113,7 @@ public class DiscoveryUtil
         features.add(FEATURE_VIDEO);
         features.add(FEATURE_ICE);
         features.add(FEATURE_SCTP);
+        features.add(FEATURE_DTLS);
         return features;
     }
 
