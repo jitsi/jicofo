@@ -177,6 +177,12 @@ public class JitsiMeetConference
     private boolean[] startMuted = new boolean[] {false, false};
 
     /**
+     * The name of shared Etherpad document. Is advertised through MUC Presence
+     * by Jicofo user.
+     */
+    private final String etherpadName;
+
+    /**
      * Creates new instance of {@link JitsiMeetConference}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -194,6 +200,7 @@ public class JitsiMeetConference
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
+        this.etherpadName = UUID.randomUUID().toString().replaceAll("-", "");
         this.protocolProviderHandler = protocolProviderHandler;
         this.listener = listener;
         this.config = config;
@@ -277,6 +284,10 @@ public class JitsiMeetConference
             rolesAndPresence.init();
 
             chatRoom.join();
+
+            // Advertise shared Etherpad document
+            meetTools.sendPresenceExtension(
+                chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
         }
         catch (Exception e)
         {
