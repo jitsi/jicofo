@@ -914,6 +914,45 @@ public class JitsiMeetConference
                         new RtcpmuxPacketExtension());
                 }
 
+                // Copy SSRC sent from the bridge(only the first one)
+                for (ColibriConferenceIQ.Channel channel
+                    : colibriContent.getChannels())
+                {
+                    SourcePacketExtension ssrcPe
+                        = channel.getSources().size() > 0
+                                ? channel.getSources().get(0) : null;
+                    if (ssrcPe == null)
+                        continue;
+
+                    try
+                    {
+                        String contentName = colibriContent.getName();
+                        SourcePacketExtension ssrcCopy = ssrcPe.copy();
+
+                        // FIXME: not all parameters are used currently
+                        ssrcCopy.addParameter(
+                            new ParameterPacketExtension("cname","mixed"));
+                        ssrcCopy.addParameter(
+                            new ParameterPacketExtension(
+                                "label",
+                                "mixedlabel" + contentName + "0"));
+                        ssrcCopy.addParameter(
+                            new ParameterPacketExtension(
+                                "msid",
+                                "mixedmslabel mixedlabel"
+                                    + contentName + "0"));
+                        ssrcCopy.addParameter(
+                            new ParameterPacketExtension(
+                                "mslabel","mixedmslabel"));
+
+                        rtpDescPe.addChildExtension(ssrcCopy);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Copy SSRC error", e);
+                    }
+                }
+
                 // Include all peers SSRCs
                 List<SourcePacketExtension> mediaSources
                     = getAllSSRCs(cpe.getName());
@@ -922,8 +961,7 @@ public class JitsiMeetConference
                 {
                     try
                     {
-                        rtpDescPe.addChildExtension(
-                            ssrc.copy());
+                        rtpDescPe.addChildExtension(ssrc.copy());
                     }
                     catch (Exception e)
                     {
@@ -937,46 +975,6 @@ public class JitsiMeetConference
                 for(SourceGroupPacketExtension ssrcGroup : sourceGroups)
                 {
                     rtpDescPe.addChildExtension(ssrcGroup);
-                }
-
-                // Copy SSRC sent from the bridge(only the first one)
-                for (ColibriConferenceIQ.Channel channel
-                        : colibriContent.getChannels())
-                {
-                    SourcePacketExtension ssrcPe
-                        = channel.getSources().size() > 0
-                            ? channel.getSources().get(0) : null;
-                    if (ssrcPe != null)
-                    {
-                        try
-                        {
-                            String contentName = colibriContent.getName();
-                            SourcePacketExtension ssrcCopy = ssrcPe.copy();
-
-                            // FIXME: not all parameters are used currently
-                            ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
-                                    "cname","mixed"));
-                            ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
-                                    "label",
-                                    "mixedlabel" + contentName + "0"));
-                            ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
-                                    "msid",
-                                    "mixedmslabel mixedlabel"
-                                            + contentName + "0"));
-                            ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
-                                    "mslabel","mixedmslabel"));
-
-                            rtpDescPe.addChildExtension(ssrcCopy);
-                        }
-                        catch (Exception e)
-                        {
-                            logger.error("Copy SSRC error", e);
-                        }
-                    }
                 }
             }
         }
