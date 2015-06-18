@@ -28,6 +28,7 @@ import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
+import org.jitsi.videobridge.eventadmin.*;
 import org.jivesoftware.smack.provider.*;
 
 import java.util.*;
@@ -224,9 +225,13 @@ public class FocusManager
      * @param properties configuration properties map included in the request.
      * @return <tt>true</tt> if conference focus is in the room and ready to
      *         handle session participants.
+     *
+     * @throws Exception if for any reason we have failed to create
+     *                   the conference
      */
     public synchronized boolean conferenceRequest(
             String room, Map<String, String> properties)
+        throws Exception
     {
         if (StringUtils.isNullOrEmpty(room))
             return false;
@@ -249,42 +254,54 @@ public class FocusManager
      * @param room name of the MUC room of Jitsi Meet conference.
      * @param properties configuration properties, see {@link JitsiMeetConfig}
      *                   for the list of valid properties.
+     *
+     * @throws Exception if any error occurs.
      */
     private void createConference(String room, Map<String, String> properties)
+        throws Exception
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
         JitsiMeetConference conference
             = new JitsiMeetConference(
                     room, focusUserName, protocolProviderHandler, this, config);
+
+        conferences.put(room, conference);
+
+        StringBuilder options = new StringBuilder();
+        for (Map.Entry<String, String> option : properties.entrySet())
+        {
+            options.append("\n    ")
+                .append(option.getKey())
+                .append(": ")
+                .append(option.getValue());
+
+        }
+
+        logger.info("Created new focus for " + room + "@" + focusUserDomain
+                        + " conferences count: " + conferences.size()
+                        + " options:" + options.toString());
+
+        // Send focus created event
+        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+        if (eventAdmin != null)
+        {
+            eventAdmin.sendEvent(
+                EventFactory.focusCreated(
+                    conference.getId(), conference.getRoomName()));
+        }
+
         try
         {
-            conferences.put(room, conference);
-
-            StringBuilder options = new StringBuilder();
-            for (Map.Entry<String, String> option : properties.entrySet())
-            {
-                options.append("\n    ")
-                    .append(option.getKey())
-                    .append(": ")
-                    .append(option.getValue());
-
-            }
-
-            logger.info("Created new focus for " + room + "@" + focusUserDomain
-                            + " conferences count: " + conferences.size()
-                            + " options:" + options.toString());
-
-            // Send focus created event
-            FocusBundleActivator.getEventAdmin().sendEvent(
-                    EventFactory.focusCreated(
-                            conference.getId(), conference.getRoomName()));
-
             conference.start();
         }
         catch (Exception e)
         {
-            logger.error("Failed to start conference for room: " + room, e);
+            logger.info("Exception while trying to start the conference", e);
+
+            conference.stop();
+
+            throw e;
         }
     }
 

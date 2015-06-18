@@ -223,7 +223,7 @@ public class JitsiMeetConference
      * @throws Exception if error occurs during initialization. Instance is
      *         considered broken in that case.
      */
-    public void start()
+    public synchronized void start()
         throws Exception
     {
         if (started)
@@ -282,30 +282,24 @@ public class JitsiMeetConference
 
     /**
      * Joins the conference room.
+     *
+     * @throws Exception if we have failed to join the room for any reason
      */
     private void joinTheRoom()
+        throws Exception
     {
         logger.info("Joining the room: " + roomName);
 
-        try
-        {
-            chatRoom = chatOpSet.findRoom(roomName);
+        chatRoom = chatOpSet.findRoom(roomName);
 
-            rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
-            rolesAndPresence.init();
+        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
+        rolesAndPresence.init();
 
-            chatRoom.join();
+        chatRoom.join();
 
-            // Advertise shared Etherpad document
-            meetTools.sendPresenceExtension(
-                chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
-        }
-        catch (Exception e)
-        {
-            logger.error(e, e);
-
-            stop();
-        }
+        // Advertise shared Etherpad document
+        meetTools.sendPresenceExtension(
+            chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
     }
 
     private OperationSetDirectSmackXmpp getDirectXmppOpSet()
@@ -1162,7 +1156,7 @@ public class JitsiMeetConference
      * Stops the conference, disposes colibri channels and releases all
      * resources used by the focus.
      */
-    void stop()
+    synchronized void stop()
     {
         if (!started)
             return;
@@ -1197,7 +1191,16 @@ public class JitsiMeetConference
 
             if (chatRoom == null)
             {
-                joinTheRoom();
+                try
+                {
+                    joinTheRoom();
+                }
+                catch (Exception e)
+                {
+                    logger.error("Failed to join the room: " + roomName, e);
+
+                    stop();
+                }
             }
         }
         else if (RegistrationState.UNREGISTERED.equals(evt.getNewState()))
@@ -1548,7 +1551,7 @@ public class JitsiMeetConference
         if (!rtpDescMap.isEmpty())
         {
             colibriConference.updateRtpDescription(
-                    rtpDescMap, participant.getColibriChannelsInfo());
+                rtpDescMap, participant.getColibriChannelsInfo());
         }
     }
 

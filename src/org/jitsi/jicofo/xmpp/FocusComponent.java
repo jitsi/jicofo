@@ -373,9 +373,9 @@ public class FocusComponent
 
     private org.jivesoftware.smack.packet.IQ handleConferenceIq(
             ConferenceIq query)
+        throws Exception
     {
         ConferenceIq response = new ConferenceIq();
-        String peerJid = query.getFrom();
         String room = query.getRoom();
 
         logger.info("Focus request for room: " + room);

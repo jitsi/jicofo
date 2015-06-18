@@ -55,10 +55,7 @@ public class LeakingRoomsTest
 
     @Test
     public void testOneToOneConference()
-            throws
-            OperationFailedException,
-            OperationNotSupportedException,
-            InterruptedException
+            throws Exception
     {
         String roomName = "testLeaks@conference.pawel.jitsi.net";
         String serverName = "test-server";

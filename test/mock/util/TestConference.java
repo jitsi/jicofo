@@ -54,7 +54,7 @@ public class TestConference
 
     public void allocateMockConference(OSGiHandler osgi,
                                        String serverName, String roomName)
-        throws OperationFailedException, OperationNotSupportedException
+        throws Exception
     {
         this.serverName = serverName;
         this.roomName = roomName;
