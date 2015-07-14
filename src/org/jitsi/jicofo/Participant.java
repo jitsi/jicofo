@@ -163,7 +163,21 @@ public class Participant
      */
     public void addSSRCsFromContent(List<ContentPacketExtension> answer)
     {
-        ssrcs.add(MediaSSRCMap.getSSRCsFromContent(answer));
+        // Configure SSRC owner in 'ssrc-info' with user's MUC Jid
+        MediaSSRCMap peerSSRCs = MediaSSRCMap.getSSRCsFromContent(answer);
+        for (String mediaType : peerSSRCs.getMediaTypes())
+        {
+            List<SourcePacketExtension> mediaSsrcs
+                = peerSSRCs.getSSRCsForMedia(mediaType);
+
+            for (SourcePacketExtension ssrcPe : mediaSsrcs)
+            {
+                SSRCSignaling.setSSRCOwner(
+                    ssrcPe, roomMember.getContactAddress());
+            }
+        }
+        // Store SSRCs
+        ssrcs.add(peerSSRCs);
     }
 
     /**

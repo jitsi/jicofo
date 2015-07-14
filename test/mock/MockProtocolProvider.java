@@ -193,10 +193,9 @@ public class MockProtocolProvider
 
     public void includeJitsiMeetTools()
     {
-        // FIXME: FIX THIS!!!
-        //addSupportedOperationSet(
-          //  OperationSetJitsiMeetTools.class,
-            //new MockJitsiMeetTools());
+        addSupportedOperationSet(
+            OperationSetJitsiMeetTools.class,
+            new MockJitsiMeetTools(this));
     }
 
     public void includeSubscriptionOpSet()

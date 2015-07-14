@@ -23,6 +23,7 @@ import mock.xmpp.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.*;
@@ -85,6 +86,8 @@ public class MockParticipant
     private MediaSSRCMap localSSRCs = new MediaSSRCMap();
 
     private MediaSSRCGroupMap localSSRCGroups = new MediaSSRCGroupMap();
+
+    private String ssrcVideoType = SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE;
 
     private boolean useSsrcGroups;
 
@@ -193,6 +196,7 @@ public class MockParticipant
         SourcePacketExtension audioSSRC
             = new SourcePacketExtension();
         audioSSRC.setSSRC(nextSSRC());
+        SSRCSignaling.setSSRCOwner(audioSSRC, myJid);
         audioRtpDesc.addChildExtension(audioSSRC);
 
         myContents.add(audio);
@@ -208,7 +212,13 @@ public class MockParticipant
         video.addChildExtension(videoRtpDesc);
 
         SourcePacketExtension videoSSRC = new SourcePacketExtension();
+
         videoSSRC.setSSRC(nextSSRC());
+
+        SSRCSignaling.setSSRCOwner(videoSSRC, myJid);
+
+        SSRCSignaling.setSSRCVideoType(videoSSRC, ssrcVideoType);
+
         videoRtpDesc.addChildExtension(videoSSRC);
 
         localSSRCs.getSSRCsForMedia("video").add(videoSSRC);
@@ -269,6 +279,10 @@ public class MockParticipant
         }
 
         logger.info(nick + " invite: " + invite.toXML());
+
+        // ACK invite
+        IQ inviteAck = JingleIQ.createResultIQ(invite);
+        mockConnection.sendPacket(inviteAck);
 
         JingleIQ user1Accept = generateSessionAccept(
             invite,
@@ -394,11 +408,10 @@ public class MockParticipant
             JingleIQ sessionInit,
             Map<String, IceUdpTransportPacketExtension> transportMap)
     {
-        //FIXME: we skip result packet
-
         JingleIQ accept = new JingleIQ();
 
         accept.setPacketID(Packet.nextID());
+        accept.setType(IQ.Type.SET);
 
         accept.setAction(JingleAction.SESSION_ACCEPT);
 
@@ -479,7 +492,7 @@ public class MockParticipant
 
             synchronized (addSourceLock)
             {
-                logger.debug("source-add received " + nick);
+                logger.info("source-add received " + nick);
 
                 addSourceLock.notifyAll();
             }
@@ -498,7 +511,7 @@ public class MockParticipant
 
             remoteSSRCgroups.remove(ssrcGroupsToRemove);
 
-            logger.debug("source-remove received " + nick);
+            logger.info("source-remove received " + nick);
         }
     }
 
@@ -580,6 +593,16 @@ public class MockParticipant
     public List<SourcePacketExtension> getVideoSSRCS()
     {
         return localSSRCs.getSSRCsForMedia("video");
+    }
+
+    public String getSsrcVideoType()
+    {
+        return ssrcVideoType;
+    }
+
+    public void setSsrcVideoType(String ssrcVideoType)
+    {
+        this.ssrcVideoType = ssrcVideoType;
     }
 
     class JingleHandler extends DefaultJingleRequestHandler

@@ -22,11 +22,12 @@ import mock.muc.*;
 import mock.util.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 
 import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.osgi.*;
 
+import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -84,8 +85,11 @@ public class AdvertiseSSRCsTest
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
+        user1.setSsrcVideoType(SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE);
         user1.join(chat);
+
         MockParticipant user2 = new MockParticipant("User2");
+        user2.setSsrcVideoType(SSRCInfoPacketExtension.SCREEN_VIDEO_TYPE);
         user2.join(chat);
 
         // Accept invite with all users
@@ -93,10 +97,33 @@ public class AdvertiseSSRCsTest
         assertNotNull(user2.acceptInvite(4000));
 
         user1.waitForAddSource(2000);
+        user2.waitForAddSource(2000);
 
         assertEquals(1, user1.getRemoteSSRCs("audio").size());
         // No groups
         assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
+
+        // Verify SSRC owners and video types
+        // From user 1 perspective
+        assertEquals(
+            user2.getMyJid(),
+            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("audio").get(0)));
+        assertEquals(
+            user2.getMyJid(),
+            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("video").get(0)));
+        assertEquals(
+            user2.getSsrcVideoType(),
+            SSRCSignaling.getVideoType(user1.getRemoteSSRCs("video").get(0)));
+        // From user 2 perspective
+        assertEquals(
+            user1.getMyJid(),
+            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("audio").get(0)));
+        assertEquals(
+            user1.getMyJid(),
+            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("video").get(0)));
+        assertEquals(
+            user1.getSsrcVideoType(),
+            SSRCSignaling.getVideoType(user2.getRemoteSSRCs("video").get(0)));
 
         user2.leave();
 
