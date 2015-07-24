@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -948,7 +949,13 @@ public class JitsiMeetConference
                                     + contentName + "0"));
                         ssrcCopy.addParameter(
                             new ParameterPacketExtension(
-                                "mslabel","mixedmslabel"));
+                                "mslabel", "mixedmslabel"));
+
+                        // Mark 'jvb' as SSRC owner
+                        SSRCInfoPacketExtension ssrcInfo
+                            = new SSRCInfoPacketExtension();
+                        ssrcInfo.setOwner("jvb");
+                        ssrcCopy.addChildExtension(ssrcInfo);
 
                         rtpDescPe.addChildExtension(ssrcCopy);
                     }
