@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
@@ -38,6 +39,7 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.eventadmin.*;
+import org.jivesoftware.smack.packet.*;
 
 import java.text.*;
 import java.util.*;
@@ -195,6 +197,12 @@ public class JitsiMeetConference
     private final String etherpadName;
 
     /**
+     * Keeps a record whether user has activated recording before other
+     * participants has joined and the actual conference has been created.
+     */
+    private RecordingState earlyRecordingState = null;
+
+    /**
      * Creates new instance of {@link JitsiMeetConference}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -336,11 +344,15 @@ public class JitsiMeetConference
             {
                 logger.warn("No recorder service discovered - using JVB");
 
+                if(colibriConference == null)
+                {
+                    return null;
+                }
+
                 String videobridge = colibriConference.getJitsiVideobridge();
                 if (StringUtils.isNullOrEmpty(videobridge))
                 {
-                    logger.error(
-                        "Unable to create JVB recorder - conferenc enot started yet.");
+                    //Unable to create JVB recorder, conference not started yet
                     return null;
                 }
 
@@ -794,6 +806,48 @@ public class JitsiMeetConference
 
         if (peerChannels == null)
             return null;
+
+
+        if (earlyRecordingState != null)
+        {
+            RecordingState recState = earlyRecordingState;
+            earlyRecordingState = null;
+
+            Recorder rec = getRecorder();
+            if(rec == null)
+                logger.error("No recorder found");
+            else
+            {
+                boolean isTokenCorrect = recorder.setRecording(
+                    recState.from,
+                    recState.token,
+                    recState.state,
+                    recState.path);
+
+                if (!isTokenCorrect)
+                {
+                    logger.info(
+                        "Incorrect recording token received ! Session: "
+                            + chatRoom.getName());
+                }
+
+                if (recorder.isRecording())
+                {
+                    ColibriConferenceIQ response = new ColibriConferenceIQ();
+
+                    response.setType(IQ.Type.SET);
+                    response.setTo(recState.from);
+                    response.setFrom(recState.to);
+
+                    response.setRecording(
+                        new ColibriConferenceIQ.Recording(State.ON));
+
+                    protocolProviderHandler.getOperationSet(
+                        OperationSetDirectSmackXmpp.class).getXmppConnection()
+                        .sendPacket(response);
+                }
+            }
+        }
 
         peer.setColibriChannelsInfo(peerChannels);
 
@@ -1705,27 +1759,31 @@ public class JitsiMeetConference
      * @param state the new recording state to set.
      * @param path output recording path(recorder implementation and deployment
      *             dependent).
+     * @param to the received colibri packet destination.
      * @return new recording state(unchanged if modify attempt has failed).
      */
-    public boolean modifyRecordingState(
-            String from, String token, boolean state, String path)
+    public State modifyRecordingState(
+            String from, String token, State state, String path, String to)
     {
         ChatRoomMember member = findMember(from);
         if (member == null)
         {
             logger.error("No member found for address: " + from);
-            return false;
+            return State.OFF;
         }
         if (ChatRoomMemberRole.MODERATOR.compareTo(member.getRole()) < 0)
         {
             logger.info("Recording - request denied, not a moderator: " + from);
-            return false;
+            return State.OFF;
         }
 
         Recorder recorder = getRecorder();
         if (recorder == null)
         {
-            return false;
+            // save for later dispatching
+            earlyRecordingState = new RecordingState(
+                from, token, state, path, to);
+            return State.PENDING;
         }
 
         boolean isTokenCorrect
@@ -1737,7 +1795,7 @@ public class JitsiMeetConference
                     + chatRoom.getName());
         }
 
-        return recorder.isRecording();
+        return recorder.isRecording() ? State.ON : State.OFF;
     }
 
     private ChatRoomMember findMember(String from)
@@ -1892,5 +1950,48 @@ public class JitsiMeetConference
     public void setStartMuted(boolean[] startMuted)
     {
         this.startMuted = startMuted;
+    }
+
+    /**
+     * Saves early recording requests by user. Dispatched when new participant
+     * joins.
+     */
+    private class RecordingState
+    {
+        /**
+         * JID of the participant that wants to modify recording state.
+         */
+        String from;
+
+        /**
+         * Recording security token that will be verified on modify attempt.
+         */
+        String token;
+
+        /**
+         * The new recording state to set.
+         */
+        State state;
+
+        /**
+         * Output recording path(recorder implementation
+         * and deployment dependent).
+         */
+        String path;
+
+        /**
+         * The received colibri packet destination.
+         */
+        String to;
+
+        public RecordingState(String from, String token,
+            State state, String path, String to)
+        {
+            this.from = from;
+            this.token = token;
+            this.state = state;
+            this.path = path;
+            this.to = to;
+        }
     }
 }

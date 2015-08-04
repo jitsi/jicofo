@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.recording;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
@@ -101,7 +102,7 @@ public class JireconRecorder
      */
     @Override
     public boolean setRecording(
-            String from, String token, boolean doRecord, String path)
+            String from, String token, State doRecord, String path)
     {
         if (!StringUtils.isNullOrEmpty(this.token)
             && !this.token.equals(token))
@@ -109,7 +110,7 @@ public class JireconRecorder
             return false;
         }
 
-        if (!isRecording() && doRecord)
+        if (!isRecording() && doRecord.equals(State.ON))
         {
             // Send start recording IQ
             JireconIq recording = new JireconIq();
@@ -144,7 +145,7 @@ public class JireconRecorder
                 logger.error("Unexpected response: " + reply.toXML());
             }
         }
-        else if (isRecording() && !doRecord)
+        else if (isRecording() && doRecord.equals(State.OFF))
         {
             // Send stop recording IQ
             JireconIq recording = new JireconIq();

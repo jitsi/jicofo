@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.recording;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
@@ -79,7 +80,7 @@ public class JvbRecorder
      */
     @Override
     public boolean setRecording(String from, String token,
-                                boolean doRecord, String path)
+                                State doRecord, String path)
     {
         ColibriConferenceIQ toggleRecordingIq = new ColibriConferenceIQ();
 
@@ -88,7 +89,8 @@ public class JvbRecorder
         toggleRecordingIq.setType(IQ.Type.SET);
 
         toggleRecordingIq.setRecording(
-            new ColibriConferenceIQ.Recording(!isRecording, token));
+            new ColibriConferenceIQ.Recording(
+                !isRecording ? State.ON : State.OFF, token));
 
         Packet reply
             = xmpp.getXmppConnection()
@@ -101,7 +103,8 @@ public class JvbRecorder
                 = colibriReply.getRecording();
             if (recording != null)
             {
-                isRecording = recording.getState();
+                isRecording = recording.getState().equals(State.ON)
+                    || recording.getState().equals(State.PENDING);
                 logger.info("REC status: " + conferenceId + ": " + isRecording);
             }
             else

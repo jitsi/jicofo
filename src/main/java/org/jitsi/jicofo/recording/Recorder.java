@@ -21,6 +21,7 @@ import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 
 /**
  * Abstract class used by {@link org.jitsi.jicofo.JitsiMeetConference} for
@@ -78,5 +79,5 @@ public abstract class Recorder
      *         otherwise.
      */
     public abstract boolean setRecording(
-        String from, String token, boolean doRecord, String path);
+        String from, String token, State doRecord, String path);
 }
