@@ -1599,7 +1599,7 @@ public class JitsiMeetConference
         {
             RtpDescriptionPacketExtension rtpDesc
                     = content.getFirstChildOfType(
-                    RtpDescriptionPacketExtension.class);
+                RtpDescriptionPacketExtension.class);
 
             if (rtpDesc == null)
             {
@@ -1780,6 +1780,12 @@ public class JitsiMeetConference
         Recorder recorder = getRecorder();
         if (recorder == null)
         {
+            if(state.equals(State.OFF))
+            {
+                earlyRecordingState = null;
+                return State.OFF;
+            }
+
             // save for later dispatching
             earlyRecordingState = new RecordingState(
                 from, token, state, path, to);
