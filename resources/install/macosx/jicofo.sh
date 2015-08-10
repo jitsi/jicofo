@@ -18,7 +18,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 mainClass="org.jitsi.jicofo.Main"
-cp=$(JARS=($SCRIPT_DIR/jicofo.jar $SCRIPT_DIR/lib/*.jar); IFS=:; echo "${JARS[*]}")
+cp=$(JARS=($SCRIPT_DIR/jicofo*.jar $SCRIPT_DIR/lib/*.jar); IFS=:; echo "${JARS[*]}")
 libs="$SCRIPT_DIR/lib/native/macosx"
 logging_config="$SCRIPT_DIR/lib/logging.properties"
 
