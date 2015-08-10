@@ -34,13 +34,28 @@ case "$1" in
 
             # storing default
             echo '# Jitsi Conference Focus settings' > $CONFIG
+            echo '# sets the host name of the XMPP server' >> $CONFIG
             echo "JICOFO_HOST=localhost" >> $CONFIG
+            echo >> $CONFIG
+            echo '# sets the XMPP domain (default: none)' >> $CONFIG
             echo "JICOFO_HOSTNAME=$JICOFO_HOSTNAME" >> $CONFIG
+            echo >> $CONFIG
+            echo '# sets the secret used to authenticate as an XMPP component' >> $CONFIG
             echo "JICOFO_SECRET=$JICOFO_SECRET" >> $CONFIG
+            echo >> $CONFIG
+            echo '# sets the port to use for the XMPP component connection' >> $CONFIG
             echo "JICOFO_PORT=$JICOFO_PORT" >> $CONFIG
+            echo >> $CONFIG
+            echo '# sets the XMPP domain name to use for XMPP user logins' >> $CONFIG
             echo "JICOFO_AUTH_DOMAIN=$JICOFO_AUTH_DOMAIN" >> $CONFIG
+            echo >> $CONFIG 
+            echo '# sets the username to use for XMPP user logins' >> $CONFIG
             echo "JICOFO_AUTH_USER=$JICOFO_AUTH_USER" >> $CONFIG
+            echo >> $CONFIG
+            echo '# sets the password to use for XMPP user logins' >> $CONFIG
             echo "JICOFO_AUTH_PASSWORD=$JICOFO_AUTH_PASSWORD" >> $CONFIG
+            echo >> $CONFIG
+            echo '# extra options to pass to the jicofo daemon' >> $CONFIG
             echo "JICOFO_OPTS=\"\"" >> $CONFIG
 
         fi
