@@ -1,4 +1,7 @@
-classes
-jicofo.jar
 *.class
+/classes/
+/dist/
+/jicofo.jar
+/junit-reports/
 *.swp
+/target/
