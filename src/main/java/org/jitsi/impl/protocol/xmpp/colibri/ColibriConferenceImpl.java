@@ -310,19 +310,13 @@ public class ColibriConferenceImpl
 
                 reqChannel.setID(channel.getID());
 
-                if (ssrcs != null)
+                List<SourcePacketExtension> sources
+                    = ssrcs.getSSRCsForMedia(content.getName());
+                for (SourcePacketExtension source : sources)
                 {
-                    List<SourcePacketExtension> sources
-                        = ssrcs.getSSRCsForMedia(content.getName());
-                    if (sources != null && !sources.isEmpty())
-                    {
-                        for (SourcePacketExtension source : sources)
-                        {
-                            reqChannel.addSource(source.copy());
-                            hasChannels = true;
-                            updateNeeded = true;
-                        }
-                    }
+                    reqChannel.addSource(source.copy());
+                    hasChannels = true;
+                    updateNeeded = true;
                 }
 
                 if (reqChannel.getSources() == null
