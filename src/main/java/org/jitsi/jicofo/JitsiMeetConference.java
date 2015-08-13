@@ -282,6 +282,31 @@ public class JitsiMeetConference
     }
 
     /**
+     * Stops the conference, disposes colibri channels and releases all
+     * resources used by the focus.
+     */
+    synchronized void stop()
+    {
+        if (!started)
+            return;
+
+        started = false;
+
+        if (protocolProviderHandler != null)
+        {
+            protocolProviderHandler.removeRegistrationListener(this);
+        }
+
+        disposeConference();
+
+        leaveTheRoom();
+
+        jingle.terminateHandlersSessions(this);
+
+        listener.conferenceEnded(this);
+    }
+
+    /**
      * Returns <tt>true</tt> if focus has joined the conference room.
      */
     public boolean isInTheRoom()
@@ -1211,35 +1236,6 @@ public class JitsiMeetConference
         {
             stop();
         }
-    }
-
-    /**
-     * Stops the conference, disposes colibri channels and releases all
-     * resources used by the focus.
-     */
-    synchronized void stop()
-    {
-        if (!started)
-            return;
-
-        started = false;
-
-        if (protocolProviderHandler != null)
-        {
-            //FIXME: remove when leak is fixed
-            logger.info(
-                "Removing protocol listener - " + roomName
-                + ", " + this);
-            protocolProviderHandler.removeRegistrationListener(this);
-        }
-
-        disposeConference();
-
-        leaveTheRoom();
-
-        jingle.terminateHandlersSessions(this);
-
-        listener.conferenceEnded(this);
     }
 
     @Override
