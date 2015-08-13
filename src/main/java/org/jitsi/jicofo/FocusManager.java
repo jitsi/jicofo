@@ -344,9 +344,13 @@ public class FocusManager
         }
 
         // Send focus destroyed event
-        FocusBundleActivator.getEventAdmin().sendEvent(
+        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+        if (eventAdmin != null)
+        {
+            eventAdmin.sendEvent(
                 EventFactory.focusDestroyed(
-                        conference.getId(), conference.getRoomName()));
+                    conference.getId(), conference.getRoomName()));
+        }
 
         maybeDoShutdown();
     }
