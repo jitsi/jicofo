@@ -299,7 +299,15 @@ public class FocusManager
         {
             logger.info("Exception while trying to start the conference", e);
 
-            conference.stop();
+            // stop() method is called by the conference automatically in order
+            // to not release the lock on JitsiMeetConference instance and avoid
+            // a deadlock. It may happen when this thread is about to call
+            // conference.stop() and another thread has entered the method
+            // before us. That other thread will try to call
+            // FocusManager.conferenceEnded, but we're still holding the lock
+            // on FocusManager instance.
+
+            //conference.stop();
 
             throw e;
         }

@@ -110,8 +110,7 @@ public class JitsiMeetConference
     /**
      * XMPP protocol provider handler used by the focus.
      */
-    private ProtocolProviderHandler protocolProviderHandler
-        = new ProtocolProviderHandler();
+    private final ProtocolProviderHandler protocolProviderHandler;
 
     /**
      * The name of XMPP user used by the focus to login.
@@ -217,6 +216,9 @@ public class JitsiMeetConference
                                ConferenceListener listener,
                                JitsiMeetConfig config)
     {
+        if (protocolProviderHandler == null)
+            throw new NullPointerException("protocolProviderHandler");
+
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
@@ -230,7 +232,10 @@ public class JitsiMeetConference
      * Starts conference focus processing, bind listeners and so on...
      *
      * @throws Exception if error occurs during initialization. Instance is
-     *         considered broken in that case.
+     *         considered broken in that case. It's stop method will be called
+     *         before throwing the exception to perform deinitialization where
+     *         possible. {@link ConferenceListener}s will be notified that this
+     *         conference has ended.
      */
     public synchronized void start()
         throws Exception
@@ -240,45 +245,55 @@ public class JitsiMeetConference
 
         started = true;
 
-        colibri
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetColibriConference.class);
-
-        jingle
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetJingle.class);
-
-        chatOpSet
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetMultiUserChat.class);
-
-        meetTools
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetJitsiMeetTools.class);
-
-        services
-            = ServiceUtils.getService(
-                    FocusBundleActivator.bundleContext,
-                    JitsiMeetServices.class);
-
-        // Set pre-configured videobridge
-        services.getBridgeSelector()
-            .setPreConfiguredBridge(config.getPreConfiguredVideobridge());
-
-        // Set pre-configured SIP gateway
-        if (config.getPreConfiguredSipGateway() != null)
+        try
         {
-            services.setSipGateway(config.getPreConfiguredSipGateway());
-        }
 
-        if (protocolProviderHandler.isRegistered())
+            colibri
+                = protocolProviderHandler.getOperationSet(
+                OperationSetColibriConference.class);
+
+            jingle
+                = protocolProviderHandler.getOperationSet(
+                OperationSetJingle.class);
+
+            chatOpSet
+                = protocolProviderHandler.getOperationSet(
+                OperationSetMultiUserChat.class);
+
+            meetTools
+                = protocolProviderHandler.getOperationSet(
+                OperationSetJitsiMeetTools.class);
+
+            services
+                = ServiceUtils.getService(
+                FocusBundleActivator.bundleContext,
+                JitsiMeetServices.class);
+
+            // Set pre-configured videobridge
+            services.getBridgeSelector()
+                .setPreConfiguredBridge(config.getPreConfiguredVideobridge());
+
+            // Set pre-configured SIP gateway
+            if (config.getPreConfiguredSipGateway() != null)
+            {
+                services.setSipGateway(config.getPreConfiguredSipGateway());
+            }
+
+            if (protocolProviderHandler.isRegistered())
+            {
+                joinTheRoom();
+            }
+
+            protocolProviderHandler.addRegistrationListener(this);
+
+            idleTimestamp = System.currentTimeMillis();
+        }
+        catch(Exception e)
         {
-            joinTheRoom();
+            this.stop();
+
+            throw e;
         }
-
-        protocolProviderHandler.addRegistrationListener(this);
-
-        idleTimestamp = System.currentTimeMillis();
     }
 
     /**
@@ -292,18 +307,17 @@ public class JitsiMeetConference
 
         started = false;
 
-        if (protocolProviderHandler != null)
-        {
-            protocolProviderHandler.removeRegistrationListener(this);
-        }
+        protocolProviderHandler.removeRegistrationListener(this);
 
         disposeConference();
 
         leaveTheRoom();
 
-        jingle.terminateHandlersSessions(this);
+        if (jingle != null)
+            jingle.terminateHandlersSessions(this);
 
-        listener.conferenceEnded(this);
+        if (listener != null)
+            listener.conferenceEnded(this);
     }
 
     /**
