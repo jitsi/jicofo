@@ -398,7 +398,9 @@ public class JitsiMeetConference
                 recorder
                     = new JvbRecorder(
                             colibriConference.getConferenceId(),
-                            videobridge, xmppOpSet);
+                            videobridge,
+                            colibriConference.getName(),
+                            xmppOpSet);
             }
         }
         return recorder;
@@ -454,6 +456,13 @@ public class JitsiMeetConference
             colibriConference = colibri.createNewConference();
 
             colibriConference.setConfig(config);
+
+            String roomName = chatRoom.getName();
+            int ix = roomName.indexOf("@");
+            if(ix > 0)
+                colibriConference.setName(roomName.substring(0, ix));
+            else
+                colibriConference.setName(roomName);
         }
 
         // Invite all not invited yet
@@ -846,7 +855,6 @@ public class JitsiMeetConference
         if (peerChannels == null)
             return null;
 
-
         if (earlyRecordingState != null)
         {
             RecordingState recState = earlyRecordingState;
@@ -877,6 +885,9 @@ public class JitsiMeetConference
                     response.setType(IQ.Type.SET);
                     response.setTo(recState.from);
                     response.setFrom(recState.to);
+
+                    if(colibriConference != null)
+                        response.setName(colibriConference.getName());
 
                     response.setRecording(
                         new ColibriConferenceIQ.Recording(State.ON));

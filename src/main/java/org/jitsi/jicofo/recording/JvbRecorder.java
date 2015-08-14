@@ -49,21 +49,26 @@ public class JvbRecorder
      */
     boolean isRecording;
 
+    private final String roomName;
+
     /**
      * Creates new instance of <tt>JvbRecorder</tt>.
      * @param conferenceId colibri conference ID obtained when allocated
      *                     on the bridge
      * @param videoBridgeComponentJid videobridge component address.
+     * @param roomName the room name.
      * @param xmpp {@link OperationSetDirectSmackXmpp}
      *              for current XMPP connection.
      */
     public JvbRecorder(String conferenceId,
                        String videoBridgeComponentJid,
+                       String roomName,
                        OperationSetDirectSmackXmpp xmpp)
     {
         super(videoBridgeComponentJid, xmpp);
 
         this.conferenceId = conferenceId;
+        this.roomName = roomName;
     }
 
     /**
@@ -87,6 +92,7 @@ public class JvbRecorder
         toggleRecordingIq.setID(conferenceId);
         toggleRecordingIq.setTo(recorderComponentJid);
         toggleRecordingIq.setType(IQ.Type.SET);
+        toggleRecordingIq.setName(roomName);
 
         toggleRecordingIq.setRecording(
             new ColibriConferenceIQ.Recording(

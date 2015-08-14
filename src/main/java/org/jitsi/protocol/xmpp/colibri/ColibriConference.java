@@ -66,6 +66,18 @@ public interface ColibriConference
     public void setConfig(JitsiMeetConfig config);
 
     /**
+     * Sets world readable name that identifies the conference.
+     * @param name the new name.
+     */
+    public void setName(String name);
+
+    /**
+     * Gets world readable name that identifies the conference.
+     * @return the name.
+     */
+    public String getName();
+
+    /**
      * Returns <tt>true</tt> if conference has been allocated during last
      * allocate channels request. Method is synchronized and will return
      * <tt>true</tt> only for the first time is called, so that only one thread

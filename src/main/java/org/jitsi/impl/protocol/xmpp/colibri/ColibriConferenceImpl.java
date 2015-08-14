@@ -430,6 +430,7 @@ public class ColibriConferenceImpl
     {
         ColibriConferenceIQ request = new ColibriConferenceIQ();
         request.setID(conferenceState.getID());
+        request.setName(conferenceState.getName());
 
         ColibriConferenceIQ.Content audioContent
             = channelsInfo.getContent("audio");
@@ -478,5 +479,23 @@ public class ColibriConferenceImpl
         // FIXME wait for response and set local status
 
         return true;
+    }
+
+    /**
+     * Sets world readable name that identifies the conference.
+     * @param name the new name.
+     */
+    public void setName(String name)
+    {
+        conferenceState.setName(name);
+    }
+
+    /**
+     * Gets world readable name that identifies the conference.
+     * @return the name.
+     */
+    public String getName()
+    {
+        return conferenceState.getName();
     }
 }

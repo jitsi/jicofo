@@ -188,6 +188,7 @@ public class MeetExtensionsHandler
         response.setPacketID(colibriIQ.getPacketID());
         response.setTo(colibriIQ.getFrom());
         response.setFrom(colibriIQ.getTo());
+        response.setName(colibriIQ.getName());
 
         response.setRecording(
             new ColibriConferenceIQ.Recording(recordingState));
