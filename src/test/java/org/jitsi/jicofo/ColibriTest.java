@@ -23,7 +23,6 @@ import mock.util.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.util.*;
@@ -50,11 +49,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(JUnit4.class)
 public class ColibriTest
 {
-    /**
-     * The logger
-     */
-    private final static Logger logger = Logger.getLogger(BundleTest.class);
-
     static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass

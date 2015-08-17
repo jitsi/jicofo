@@ -120,12 +120,10 @@ public class FocusComponent
     {
         BundleContext bc = FocusBundleActivator.bundleContext;
 
-        this.focusManager = ServiceUtils.getService(bc, FocusManager.class);
-
-        this.authAuthority
+        authAuthority
             = ServiceUtils.getService(bc, AuthenticationAuthority.class);
-
-        this.reservationSystem
+        focusManager = ServiceUtils.getService(bc, FocusManager.class);
+        reservationSystem
             = ServiceUtils.getService(bc, ReservationSystem.class);
 
         focusManager.start();
@@ -139,10 +137,8 @@ public class FocusComponent
         focusManager.stop();
 
         authAuthority = null;
-
-        reservationSystem = null;
-
         focusManager = null;
+        reservationSystem = null;
     }
 
     @Override
@@ -350,7 +346,7 @@ public class FocusComponent
             }
         }
 
-        // Check room reservation ?
+        // Check room reservation?
         if (!roomExists && reservationSystem != null)
         {
             String room = query.getRoom();
@@ -403,8 +399,8 @@ public class FocusComponent
 
         if (!isFocusAnonymous && authAuthority == null)
         {
-            // Focus is authenticated system admin, so we let
-            // them in immediately. Focus will get OWNER anyway.
+            // Focus is authenticated system admin, so we let them in
+            // immediately. Focus will get OWNER anyway.
             ready = true;
         }
 
@@ -418,7 +414,7 @@ public class FocusComponent
         // Config
         response.setFocusJid(focusAuthJid);
 
-        // Authentication module enabled ?
+        // Authentication module enabled?
         response.addProperty(
             new ConferenceIq.Property(
                     "authentication",

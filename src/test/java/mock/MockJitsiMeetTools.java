@@ -59,14 +59,14 @@ public class MockJitsiMeetTools
     }
 
     @Override
-    public void addRequestListener(JitsiMeetRequestListener jitsiMeetRequestListener)
+    public void addRequestListener(
+            JitsiMeetRequestListener jitsiMeetRequestListener)
     {
-
     }
 
     @Override
-    public void removeRequestListener(JitsiMeetRequestListener jitsiMeetRequestListener)
+    public void removeRequestListener(
+            JitsiMeetRequestListener jitsiMeetRequestListener)
     {
-
     }
 }

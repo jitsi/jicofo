@@ -97,7 +97,7 @@ public class OpSetSubscriptionImpl
     {
         if (ourJid == null)
         {
-            this.ourJid = parentProvider.getOurJid();
+            ourJid = parentProvider.getOurJid();
         }
         return ourJid;
     }
@@ -109,8 +109,10 @@ public class OpSetSubscriptionImpl
     {
         if (manager == null)
         {
-            manager = new PubSubManager(
-                parentProvider.getConnection(), pubSubAddress);
+            manager
+                = new PubSubManager(
+                        parentProvider.getConnection(),
+                        pubSubAddress);
         }
         return manager;
     }
@@ -150,9 +152,9 @@ public class OpSetSubscriptionImpl
             Node pubSubNode = manager.getNode(node);
             if (!isSubscribed(getOurJid(), pubSubNode))
             {
-                // FIXME: Is it possible that we will be subscribed after
-                // our connection dies ? If yes we won't add listener here
-                // and won't receive notifications
+                // FIXME: Is it possible that we will be subscribed after our
+                // connection dies? If yes, we won't add listener here and won't
+                // receive notifications.
                 pubSubNode.addItemEventListener(this);
                 pubSubNode.subscribe(parentProvider.getOurJid());
             }
@@ -180,9 +182,11 @@ public class OpSetSubscriptionImpl
         try
         {
             Node pubSubNode = manager.getNode(node);
-            if (isSubscribed(getOurJid(), pubSubNode))
+            String ourJid = getOurJid();
+
+            if (isSubscribed(ourJid, pubSubNode))
             {
-                pubSubNode.unsubscribe(getOurJid());
+                pubSubNode.unsubscribe(ourJid);
             }
         }
         catch (XMPPException e)
@@ -205,6 +209,7 @@ public class OpSetSubscriptionImpl
             logger.debug("PubSub update for node: " + nodeId);
 
         SubscriptionListener listener = listenerMap.get(nodeId);
+
         if (listener != null)
         {
             for(Object item : event.getItems())

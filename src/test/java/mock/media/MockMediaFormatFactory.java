@@ -17,13 +17,10 @@
  */
 package mock.media;
 
-import org.jitsi.impl.neomedia.*;
 import org.jitsi.impl.neomedia.format.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.format.*;
 
-import javax.media.*;
-import javax.media.format.*;
 import java.util.*;
 
 /**

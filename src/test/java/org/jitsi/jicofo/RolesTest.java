@@ -22,7 +22,6 @@ import mock.muc.*;
 import mock.util.*;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.osgi.*;
 
@@ -39,8 +38,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    private final static Logger logger = Logger.getLogger(BundleTest.class);
-
     static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass

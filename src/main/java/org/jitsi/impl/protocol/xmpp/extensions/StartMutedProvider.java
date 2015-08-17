@@ -17,29 +17,21 @@
  */
 package org.jitsi.impl.protocol.xmpp.extensions;
 
-import net.java.sip.communicator.util.*;
-
-import org.jitsi.jicofo.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.provider.*;
 import org.xmlpull.v1.*;
 
 /**
  * The parser of {@link StartMutedPacketExtension}
- * @author Hristo Terezov
  *
+ * @author Hristo Terezov
  */
 public class StartMutedProvider
     implements PacketExtensionProvider
 {
     /**
-     * The logger
-     */
-    private final static Logger logger
-        = Logger.getLogger(MeetExtensionsHandler.class);
-
-    /**
      * Registers this extension provider into given <tt>ProviderManager</tt>.
+     *
      * @param providerManager the <tt>ProviderManager</tt> to which this
      *                        instance will be bound to.
      */
@@ -96,9 +88,7 @@ public class StartMutedProvider
             default:
                 parser.next();
             }
-
         }
         return packetExtension;
     }
-
 }

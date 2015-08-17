@@ -21,8 +21,6 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.osgi.*;
 import org.junit.*;
 
@@ -33,9 +31,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    private static final Logger logger
-            = Logger.getLogger(AdvertiseSSRCsTest.class);
-
     static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass

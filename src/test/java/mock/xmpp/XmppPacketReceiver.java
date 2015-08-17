@@ -19,8 +19,6 @@ package mock.xmpp;
 
 import org.jivesoftware.smack.packet.*;
 
-import java.util.*;
-
 /**
  *
  */

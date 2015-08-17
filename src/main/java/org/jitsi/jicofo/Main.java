@@ -22,7 +22,6 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.whack.*;
@@ -30,7 +29,6 @@ import org.jivesoftware.whack.*;
 import org.osgi.framework.*;
 
 import org.xmpp.component.*;
-
 
 /**
  * Provides the <tt>main</tt> entry point of Jitsi Meet conference focus.
@@ -202,7 +200,7 @@ public class Main
         }
 
         // FIXME: Always trust mode - prevent failures because there's no GUI
-        // to ask the user, but do we always want to trust ?
+        // to ask the user, but do we always want to trust?
         System.setProperty(
             "net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED",
             "true");
@@ -243,16 +241,13 @@ public class Main
 
         OSGi.start(activator);
 
-
         ExternalComponentManager componentManager
             = new ExternalComponentManager(host, port);
 
         componentManager.setSecretKey(componentSubDomain, secret);
-
         componentManager.setServerName(componentDomain);
 
         boolean focusAnonymous = StringUtils.isNullOrEmpty(focusPassword);
-
         FocusComponent component
             = new FocusComponent(focusAnonymous,
                                  focusUserName + "@" + focusDomain);
@@ -359,7 +354,7 @@ public class Main
                         exitSynRoot.notifyAll();
                     }
                 }
-            }, null
-        );
+            },
+            null);
     }
 }

@@ -18,7 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
 import org.jivesoftware.smack.*;
 
@@ -33,11 +32,6 @@ import java.util.*;
 public class OperationSetMultiUserChatImpl
     extends AbstractOperationSetMultiUserChat
 {
-    /**
-     * The logger.
-     */
-    private Logger logger = Logger.getLogger(OperationSetMultiUserChatImpl.class);
-
     /**
      * Parent protocol provider.
      */

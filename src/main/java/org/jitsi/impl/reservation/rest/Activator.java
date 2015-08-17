@@ -55,7 +55,6 @@ public class Activator
     {
         ConfigurationService config
             = ServiceUtils.getService(context, ConfigurationService.class);
-
         String apiBaseUrl
             = config.getString(RESTReservations.API_BASE_URL_PNAME);
 

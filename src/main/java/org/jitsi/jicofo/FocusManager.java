@@ -161,13 +161,10 @@ public class FocusManager
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
-
         String hostName = config.getString(HOSTNAME_PNAME);
-
         String xmppDomain = config.getString(XMPP_DOMAIN_PNAME);
 
         focusUserDomain = config.getString(FOCUS_USER_DOMAIN_PNAME);
-
         focusUserName = config.getString(FOCUS_USER_NAME_PNAME);
 
         String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
@@ -180,7 +177,6 @@ public class FocusManager
                 OperationSetSubscription.class));
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-
         componentsDiscovery.start(xmppDomain, protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
@@ -196,7 +192,6 @@ public class FocusManager
                 JitsiMeetServices.class, jitsiMeetServices, null);
 
         protocolProviderHandler.addRegistrationListener(this);
-
         protocolProviderHandler.register();
     }
 

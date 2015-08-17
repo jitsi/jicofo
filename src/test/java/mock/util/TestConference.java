@@ -21,7 +21,6 @@ import mock.*;
 import mock.jvb.*;
 import mock.muc.*;
 
-import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.*;

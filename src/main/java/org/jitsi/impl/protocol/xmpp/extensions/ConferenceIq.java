@@ -124,15 +124,10 @@ public class ConferenceIq
     protected void printAttributes(StringBuilder out)
     {
         printStrAttr(out, ROOM_ATTR_NAME, room);
-
         printObjAttr(out, READY_ATTR_NAME, ready);
-
         printStrAttr(out, FOCUS_JID_ATTR_NAME, focusJid);
-
         printStrAttr(out, SESSION_ID_ATTR_NAME, sessionId);
-
         printStrAttr(out, MACHINE_UID_ATTR_NAME, machineUID);
-
         printStrAttr(out, IDENTITY_ATTR_NAME, identity);
     }
 

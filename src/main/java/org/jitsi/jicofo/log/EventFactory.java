@@ -159,6 +159,7 @@ public class EventFactory
     /**
      * Creates an Event after parsing <tt>stats</tt> as JSON in the format
      * used in Jitsi Meet.
+     *
      * @param conferenceId the ID of the conference.
      * @param endpointId the ID of the endpoint.
      * @param stats the string representation of
@@ -187,7 +188,6 @@ public class EventFactory
 
         // We specifically add a "time" column
         influxDBEvent.setUseLocalTime(false);
-
 
         return new Event(
                 PEER_CONNECTION_STATS_TOPIC, makeProperties(influxDBEvent));
@@ -250,7 +250,7 @@ public class EventFactory
             for (Object groupName : stats.keySet())
             {
                 JSONArray groupValue = new JSONArray();
-                JSONObject group = ((JSONObject) stats.get(groupName));
+                JSONObject group = (JSONObject) stats.get(groupName);
                 Object type = group.get("type");
 
                 groupValue.add(groupName);
@@ -463,4 +463,3 @@ public class EventFactory
         return map;
     }
 }
-

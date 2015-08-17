@@ -20,7 +20,6 @@ package mock;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.media.*;
-import net.java.sip.communicator.util.*;
 
 import java.text.*;
 import java.util.*;
@@ -32,9 +31,6 @@ import java.util.*;
 public class MockBasicTeleOpSet
     extends AbstractOperationSetBasicTelephony<MockProtocolProvider>
 {
-    private final static Logger logger
-        = Logger.getLogger(MockBasicTeleOpSet.class);
-
     private final MockProtocolProvider protocolProvider;
 
     private List<MockCall> activeCalls = new ArrayList<MockCall>();

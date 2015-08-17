@@ -97,14 +97,9 @@ public class RESTReservations
     public void start(FocusManager focusManager)
     {
         if (this.focusManager != null)
-        {
             throw new IllegalStateException("already started");
-        }
-
         if (focusManager == null)
-        {
             throw new NullPointerException("focusManager");
-        }
 
         this.focusManager = focusManager;
         focusManager.setFocusAllocationListener(this);
@@ -204,7 +199,6 @@ public class RESTReservations
                 logger.error(e, e);
                 return new Result(RESULT_INTERNAL_ERROR, e.getMessage());
             }
-
         }
 
         // Verify owner == creator

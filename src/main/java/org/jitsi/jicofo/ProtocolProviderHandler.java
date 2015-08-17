@@ -104,13 +104,11 @@ public class ProtocolProviderHandler
                 "Failed to load account: " + xmppAccount);
         }
 
-        ServiceReference protoRef
+        ServiceReference<ProtocolProviderService> protoRef
             = xmppProviderFactory.getProviderForAccount(xmppAccount);
 
         protocolService
-            = (ProtocolProviderService)
-                    FocusBundleActivator.bundleContext.getService(protoRef);
-
+            = FocusBundleActivator.bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
     }
 
@@ -126,7 +124,7 @@ public class ProtocolProviderHandler
 
     /**
      * Passes registration state changes of encapsulated protocol provider to
-     * registered {@lnik #regListeners}.
+     * registered {@link #regListeners}.
      *
      * {@inheritDoc}
      */

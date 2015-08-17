@@ -247,31 +247,27 @@ public class JitsiMeetConference
 
         try
         {
-
             colibri
                 = protocolProviderHandler.getOperationSet(
-                OperationSetColibriConference.class);
-
+                        OperationSetColibriConference.class);
             jingle
                 = protocolProviderHandler.getOperationSet(
-                OperationSetJingle.class);
-
+                        OperationSetJingle.class);
             chatOpSet
                 = protocolProviderHandler.getOperationSet(
-                OperationSetMultiUserChat.class);
-
+                        OperationSetMultiUserChat.class);
             meetTools
                 = protocolProviderHandler.getOperationSet(
-                OperationSetJitsiMeetTools.class);
+                        OperationSetJitsiMeetTools.class);
 
             services
                 = ServiceUtils.getService(
-                FocusBundleActivator.bundleContext,
-                JitsiMeetServices.class);
+                        FocusBundleActivator.bundleContext,
+                        JitsiMeetServices.class);
 
             // Set pre-configured videobridge
-            services.getBridgeSelector()
-                .setPreConfiguredBridge(config.getPreConfiguredVideobridge());
+            services.getBridgeSelector().setPreConfiguredBridge(
+                    config.getPreConfiguredVideobridge());
 
             // Set pre-configured SIP gateway
             if (config.getPreConfiguredSipGateway() != null)

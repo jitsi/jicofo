@@ -40,7 +40,6 @@ public class XmppProtocolActivator
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(
                     bundleContext, ProtocolNames.JABBER);
-
         Hashtable<String, String> hashtable = new Hashtable<String, String>();
 
         // Register XMPP

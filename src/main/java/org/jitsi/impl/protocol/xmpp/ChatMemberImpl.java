@@ -22,7 +22,6 @@ import net.java.sip.communicator.service.protocol.*;
 
 import net.java.sip.communicator.service.protocol.globalstatus.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.*;
 import org.jivesoftware.smackx.muc.*;
 
 /**
@@ -33,11 +32,6 @@ import org.jivesoftware.smackx.muc.*;
 public class ChatMemberImpl
     implements XmppChatMember
 {
-    /**
-     * The logger.
-     */
-    private final static Logger logger = Logger.getLogger(ChatMemberImpl.class);
-
     /**
      * The MUC nickname used by this member.
      */

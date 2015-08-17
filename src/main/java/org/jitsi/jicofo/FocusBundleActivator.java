@@ -71,11 +71,9 @@ public class FocusBundleActivator
         EntityCapsManager.setBundleContext(context);
 
         sharedThreadPool = Executors.newFixedThreadPool(SHARED_POOL_SIZE);
-
         context.registerService(ExecutorService.class, sharedThreadPool, null);
 
-        this.focusManager = new FocusManager();
-
+        focusManager = new FocusManager();
         context.registerService(FocusManager.class, focusManager, null);
     }
 
@@ -125,5 +123,4 @@ public class FocusBundleActivator
     {
         return sharedThreadPool;
     }
-
 }

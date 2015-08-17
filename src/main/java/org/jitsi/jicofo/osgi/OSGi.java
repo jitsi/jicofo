@@ -22,7 +22,6 @@ import org.jitsi.impl.neomedia.device.*;
 import org.jitsi.impl.neomedia.transform.csrc.*;
 import org.jitsi.impl.neomedia.transform.srtp.*;
 import org.jitsi.impl.osgi.framework.*;
-import org.jitsi.jicofo.log.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.osgi.framework.*;
@@ -141,7 +140,7 @@ public class OSGi
             {
                 "net/java/sip/communicator/service/protocol/ProtocolProviderActivator"
             },
-            // Shall we use mock protocol providers ?
+            // Shall we use mock protocol providers?
             useMockProtocols ? mockProtocols : protocols,
             {
                 "org/jitsi/jicofo/FocusBundleActivator",
@@ -164,11 +163,12 @@ public class OSGi
 
     /**
      * Loads list of OSGi bundles to run from specified file.
+     *
      * @param filename the name of the file that contains a list of OSGi
-     *        BundleActivator classes. Full class names should be placed in
-     *        separate line.
-     * @return the array of OSGi BundleActivator class names to be started in
-     *         order. Single class name per String array.
+     * {@code BundleActivator} classes. Full class names should be placed on
+     * separate lines.
+     * @return the array of OSGi {@code BundleActivator} class names to be
+     * started in order. Single class name per {@code String} array.
      */
     private static String[][] loadBundlesFromFile(String filename)
     {
@@ -302,6 +302,7 @@ public class OSGi
     /**
      * Make OSGi use mock protocol providers instead of original Jitsi protocols
      * implementation.
+     *
      * @param useMockProtocols <tt>true</tt> if Jitsi protocol providers should
      *                         be replaced with mock version.
      */
