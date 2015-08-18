@@ -457,12 +457,8 @@ public class JitsiMeetConference
 
             colibriConference.setConfig(config);
 
-            String roomName = chatRoom.getName();
-            int ix = roomName.indexOf("@");
-            if(ix > 0)
-                colibriConference.setName(roomName.substring(0, ix));
-            else
-                colibriConference.setName(roomName);
+            String roomName = MucUtil.extractName(chatRoom.getName());
+            colibriConference.setName(roomName);
         }
 
         // Invite all not invited yet
