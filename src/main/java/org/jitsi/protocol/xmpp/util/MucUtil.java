@@ -35,9 +35,10 @@ public class MucUtil
      */
     public static String extractName(String roomName)
     {
-        if (roomName.contains("@"))
+        int atIdx = roomName.indexOf("@");
+        if (atIdx != -1)
         {
-            roomName = roomName.substring(0, roomName.indexOf("@"));
+            roomName = roomName.substring(0, atIdx);
         }
         return roomName;
     }
