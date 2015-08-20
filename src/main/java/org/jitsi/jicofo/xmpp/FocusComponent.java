@@ -30,6 +30,7 @@ import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 import org.xmpp.component.*;
 import org.xmpp.packet.IQ;
+import org.xmpp.packet.Message;
 
 /**
  * XMPP component that listens for {@link ConferenceIq}
@@ -127,6 +128,8 @@ public class FocusComponent
 
         this.reservationSystem
             = ServiceUtils.getService(bc, ReservationSystem.class);
+
+        bc.registerService(FocusComponent.class, this, null);
 
         focusManager.start();
     }
@@ -489,5 +492,37 @@ public class FocusComponent
         logger.info("Sending url: " + result.toXML());
 
         return result;
+    }
+
+    @Override
+    protected void handleIQResult(IQ iq)
+    {
+        super.handleIQResult(iq);
+
+        logger.info("Got result IQ: " + iq.toXML());
+    }
+
+    @Override
+    protected void handleIQError(IQ iq)
+    {
+        super.handleIQError(iq);
+
+        logger.info("Got error IQ: " + iq.toXML());
+    }
+
+    public String sendMessage(String to, String body)
+    {
+        org.xmpp.packet.Message msg = new Message();
+
+        msg.setTo(to);
+        msg.setFrom("focus.pawel.jitsi.net");
+        msg.setType(Message.Type.normal);
+        msg.setBody(body);
+
+        logger.info("Sending message: " + msg.toXML());
+
+        send(msg);
+
+        return "Sent:\n" + msg.toXML();
     }
 }

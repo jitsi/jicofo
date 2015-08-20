@@ -135,11 +135,15 @@ public class XmppProtocolProvider
     {
         Message msg = new Message(to);
         msg.setBody(body);
+        msg.setType(Message.Type.normal);
 
         logger.info("Sending XMPP message: " + msg.toXML());
 
-        Packet response = getConnectionAdapter().sendPacketAndGetReply(msg);
-        return response != null ? response.toXML() : "timeout";
+        connection.sendPacket(msg);
+
+        return "Sent: " + msg.toXML();
+        //Packet response = getConnectionAdapter().sendPacketAndGetReply(msg);
+        //return response != null ? response.toXML() : "timeout";
     }
 
     /**
@@ -601,7 +605,7 @@ public class XmppProtocolProvider
         @Override
         public void processPacket(Packet packet)
         {
-            logger.debug(prefix + packet.toXML());
+            logger.info(prefix + packet.toXML());
         }
     }
 }

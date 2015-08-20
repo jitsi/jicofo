@@ -65,20 +65,13 @@ public class RequestHandler
     private void dumpRequestInfo(HttpServletRequest request)
     {
         logger.info(request.getRequestURL());
-        logger.debug("Headers: ");
-        Enumeration<String> headers = request.getHeaderNames();
-        while (headers.hasMoreElements())
+        logger.info("Parameters: ");
+        Enumeration<String> params = request.getParameterNames();
+        while (params.hasMoreElements())
         {
-            String headerName = headers.nextElement();
-            logger.debug(headerName + ": " + request.getHeader(headerName));
-        }
-        logger.debug("Attributes: ");
-        Enumeration<String> attributes = request.getAttributeNames();
-        while (attributes.hasMoreElements())
-        {
-            String attributeName = attributes.nextElement();
-            logger.debug(
-                attributeName + ": " + request.getAttribute(attributeName));
+            String paramName = params.nextElement();
+            logger.info(
+                paramName + ": " + request.getParameter(paramName));
         }
     }
 

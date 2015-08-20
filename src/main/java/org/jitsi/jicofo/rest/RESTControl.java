@@ -22,6 +22,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
+import org.jitsi.jicofo.xmpp.*;
 
 import java.io.*;
 import java.util.*;
@@ -170,6 +171,19 @@ public class RESTControl
 
     }
 
+    private FocusComponent focusComponent;
+
+    FocusComponent getFocusComponent()
+    {
+        if (focusComponent == null)
+        {
+            focusComponent = ServiceUtils.getService(
+                Activator.bundleContext,
+                FocusComponent.class);
+        }
+        return focusComponent;
+    }
+
     public String sendMessage(String roomJid, String msg)
     {
         XmppProtocolProvider xmpp = getProtocolProvider();
@@ -177,5 +191,12 @@ public class RESTControl
             return "Internal error: no XMPP protocol provider";
 
         return xmpp.sendMessage(roomJid, msg);
+
+        // FIXME use the code below if you need to send from component
+        /*FocusComponent focusComponent = getFocusComponent();
+        if (focusComponent == null)
+            return "Internal error: no focus component";
+
+        return focusComponent.sendMessage(roomJid, msg);*/
     }
 }
