@@ -146,7 +146,8 @@ public class OSGi
             {
                 "org/jitsi/jicofo/FocusBundleActivator",
                 "org/jitsi/impl/reservation/rest/Activator",
-                "org/jitsi/jicofo/auth/AuthBundleActivator"
+                "org/jitsi/jicofo/auth/AuthBundleActivator",
+                "org/jitsi/jicofo/rest/Activator"
             },
             {
                 "org/jitsi/videobridge/eventadmin/Activator"
