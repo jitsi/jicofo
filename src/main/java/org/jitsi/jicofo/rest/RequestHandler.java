@@ -24,10 +24,14 @@ public class RequestHandler
 
     private final List<String> supportedTargets = new ArrayList<String>();
 
-    public RequestHandler()
+    private final RESTControl restControl;
+
+    public RequestHandler(RESTControl restControl)
     {
         supportedTargets.add("/start");
         supportedTargets.add("/stop");
+
+        this.restControl = restControl;
     }
 
     @Override
@@ -99,12 +103,12 @@ public class RequestHandler
             return;
         }
 
-        String room = request.getParameter("room");
-        if (StringUtils.isNullOrEmpty(room))
+        String conf = request.getParameter("conf");
+        if (StringUtils.isNullOrEmpty(conf))
         {
             response.sendError(
                 HttpServletResponse.SC_BAD_REQUEST,
-                "Missing mandatory parameter 'room'");
+                "Missing mandatory parameter 'conf'");
             return;
         }
 
@@ -112,8 +116,11 @@ public class RequestHandler
         PrintWriter responseWriter = response.getWriter();
 
         responseWriter.println("You've sent me:\n");
-        responseWriter.println("GUID:" + guid + "\n");
-        responseWriter.println("room:" + room + "\n");
+        responseWriter.println("GUID: " + guid + "\n");
+        responseWriter.println("conf: " + conf + "\n");
+
+        String roomJid = restControl.getRoomJid(guid);
+        responseWriter.println("roomJID for " + guid + ": " + roomJid + "\n");
 
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);

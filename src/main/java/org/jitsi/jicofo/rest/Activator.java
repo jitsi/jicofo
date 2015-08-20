@@ -93,7 +93,7 @@ public class Activator
      */
     RESTControl restControl;
 
-    RequestHandler requestHandler = new RequestHandler();
+    RequestHandler requestHandler;
 
     /**
      * Reservation system OSGi service registration.
@@ -106,6 +106,10 @@ public class Activator
     public void start(BundleContext context)
             throws Exception
     {
+        restControl = new RESTControl();
+
+        requestHandler = new RequestHandler(restControl);
+
         ConfigurationService config
             = ServiceUtils.getService(context, ConfigurationService.class);
 
@@ -181,8 +185,6 @@ public class Activator
             else
                 throw new UndeclaredThrowableException(t);
         }
-
-        restControl = new RESTControl();
 
         serviceRegistration = context.registerService(
             RESTControl.class, restControl, null);

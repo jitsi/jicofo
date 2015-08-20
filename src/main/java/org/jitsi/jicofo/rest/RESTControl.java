@@ -21,6 +21,9 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 
+import java.io.*;
+import java.util.*;
+
 /**
  * Implements {@link ReservationSystem} in order to integrate with REST API of
  * the reservation system.<br/> Creates/destroys conferences via API endpoint
@@ -37,19 +40,18 @@ public class RESTControl
     private final static Logger logger
         = Logger.getLogger(org.jitsi.impl.reservation.rest.RESTReservations.class);
 
-    private final RequestHandler requestHandler;
-
     /**
      * Focus manager instance.
      */
     private FocusManager focusManager;
+
+    private Properties properties;
 
     /**
      *
      */
     public RESTControl()
     {
-        this.requestHandler = new RequestHandler();
     }
 
     /**
@@ -71,8 +73,60 @@ public class RESTControl
             throw new NullPointerException("focusManager");
         }
 
+        loadProperties();
+
         this.focusManager = focusManager;
         focusManager.setFocusAllocationListener(this);
+    }
+
+    private void loadProperties()
+    {
+        this.properties = new Properties();
+        FileInputStream fin = null;
+        try
+        {
+            fin = new FileInputStream("redshorts.properties");
+            properties.load(fin);
+        }
+        catch (IOException e)
+        {
+            logger.error("ERROR", e);
+            // we want to die
+            throw new RuntimeException();
+        }
+        finally
+        {
+            if (fin != null)
+            {
+                try
+                {
+                    fin.close();
+                }
+                catch (IOException e)
+                {
+                    logger.error("ERROR ON CLOSE", e);
+                }
+            }
+        }
+    }
+
+    public String getRoomJid(String guid)
+    {
+        return properties.getProperty(guid);
+    }
+
+    public String getGuid(String room)
+    {
+        if (room == null)
+            throw new NullPointerException("room");
+
+        for (String guid : properties.stringPropertyNames())
+        {
+            if (room.equals(properties.getProperty(guid)))
+                return guid;
+        }
+
+        return null;
     }
 
     /**
