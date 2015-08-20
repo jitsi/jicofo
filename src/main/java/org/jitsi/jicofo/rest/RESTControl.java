@@ -17,7 +17,9 @@
  */
 package org.jitsi.jicofo.rest;
 
-import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.util.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 
@@ -151,5 +153,29 @@ public class RESTControl
     synchronized public void onFocusDestroyed(String roomName)
     {
 
+    }
+
+    private XmppProtocolProvider protocolProvider;
+
+    private XmppProtocolProvider getProtocolProvider()
+    {
+        if (protocolProvider == null)
+        {
+            protocolProvider
+                = (XmppProtocolProvider) ServiceUtils.getService(
+                        Activator.bundleContext,
+                        ProtocolProviderService.class);
+        }
+        return protocolProvider;
+
+    }
+
+    public String sendMessage(String roomJid, String msg)
+    {
+        XmppProtocolProvider xmpp = getProtocolProvider();
+        if (xmpp == null)
+            return "Internal error: no XMPP protocol provider";
+
+        return xmpp.sendMessage(roomJid, msg);
     }
 }

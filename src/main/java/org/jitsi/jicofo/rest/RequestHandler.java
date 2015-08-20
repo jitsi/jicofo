@@ -28,8 +28,7 @@ public class RequestHandler
 
     public RequestHandler(RESTControl restControl)
     {
-        supportedTargets.add("/start");
-        supportedTargets.add("/stop");
+        supportedTargets.add("/send");
 
         this.restControl = restControl;
     }
@@ -103,24 +102,33 @@ public class RequestHandler
             return;
         }
 
-        String conf = request.getParameter("conf");
-        if (StringUtils.isNullOrEmpty(conf))
+        String msg = request.getParameter("msg");
+        if (StringUtils.isNullOrEmpty(msg))
         {
             response.sendError(
                 HttpServletResponse.SC_BAD_REQUEST,
-                "Missing mandatory parameter 'conf'");
+                "Missing mandatory parameter 'msg'");
             return;
         }
 
 
         PrintWriter responseWriter = response.getWriter();
 
-        responseWriter.println("You've sent me:\n");
-        responseWriter.println("GUID: " + guid + "\n");
-        responseWriter.println("conf: " + conf + "\n");
+        //responseWriter.println("You've sent me:\n");
+        //responseWriter.println("GUID: " + guid + "\n");
+        //responseWriter.println("msg: " + msg + "\n");
 
         String roomJid = restControl.getRoomJid(guid);
-        responseWriter.println("roomJID for " + guid + ": " + roomJid + "\n");
+        if (StringUtils.isNullOrEmpty(roomJid))
+        {
+            response.sendError(
+                HttpServletResponse.SC_NOT_ACCEPTABLE,
+                "No jid mapped for guid: " + guid);
+            return;
+        }
+
+        String roomResponse = restControl.sendMessage(roomJid, msg);
+        responseWriter.println(roomResponse);
 
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);

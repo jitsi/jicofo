@@ -30,6 +30,7 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.packet.*;
 
 import java.util.*;
@@ -128,6 +129,17 @@ public class XmppProtocolProvider
         addSupportedOperationSet(
             OperationSetSubscription.class,
             new OpSetSubscriptionImpl(this));
+    }
+
+    public String sendMessage(String to, String body)
+    {
+        Message msg = new Message(to);
+        msg.setBody(body);
+
+        logger.info("Sending XMPP message: " + msg.toXML());
+
+        Packet response = getConnectionAdapter().sendPacketAndGetReply(msg);
+        return response != null ? response.toXML() : "timeout";
     }
 
     /**

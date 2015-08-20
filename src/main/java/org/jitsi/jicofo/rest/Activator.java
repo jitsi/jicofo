@@ -102,10 +102,14 @@ public class Activator
 
     private Server server;
 
+    public static BundleContext bundleContext;
+
     @Override
     public void start(BundleContext context)
             throws Exception
     {
+        bundleContext = context;
+
         restControl = new RESTControl();
 
         requestHandler = new RequestHandler(restControl);
