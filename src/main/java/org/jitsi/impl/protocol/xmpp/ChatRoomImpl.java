@@ -268,7 +268,8 @@ public class ChatRoomImpl
         }
 
         // Simulate member left events
-        HashMap<String, ChatMemberImpl> membersCopy;
+        // No need to do this - we dispose whole conference anyway on stop
+        /*HashMap<String, ChatMemberImpl> membersCopy;
         synchronized (members)
         {
             membersCopy
@@ -278,7 +279,7 @@ public class ChatRoomImpl
         for (ChatMemberImpl member : membersCopy.values())
         {
             memberListener.left(member.getContactAddress());
-        }
+        }*/
 
         /*
         FIXME: we do not care about local user left for now
