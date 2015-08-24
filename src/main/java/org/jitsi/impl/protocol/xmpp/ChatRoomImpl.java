@@ -263,9 +263,7 @@ public class ChatRoomImpl
     {
         Connection connection = opSet.getConnection();
         if (connection != null && connection.isConnected())
-        {
             muc.leave();
-        }
 
         // Simulate member left events
         // No need to do this - we dispose whole conference anyway on stop
@@ -292,7 +290,9 @@ public class ChatRoomImpl
         if (presenceInterceptor != null)
             muc.removePresenceInterceptor(presenceInterceptor);
         muc.removeParticipantStatusListener(memberListener);
-        muc.removeParticipantListener(participantListener);
+
+        if (connection != null && connection.isConnected())
+            muc.removeParticipantListener(participantListener);
 
         muc.dispose();
 
