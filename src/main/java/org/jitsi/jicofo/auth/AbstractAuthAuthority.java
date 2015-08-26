@@ -17,19 +17,19 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.*;
+import java.util.*;
+import java.util.concurrent.*;
 
-import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.log.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-
 import org.jitsi.videobridge.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
 
-import java.util.*;
-import java.util.concurrent.*;
+import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.util.Logger;
 
 /**
  * Common class for {@link AuthenticationAuthority} implementations.
@@ -111,15 +111,18 @@ public abstract class AbstractAuthAuthority
      */
     public AbstractAuthAuthority()
     {
-        authenticationLifetime = FocusBundleActivator.getConfigService()
-                .getLong(AUTHENTICATION_LIFETIME_PNAME,
-                        DEFAULT_AUTHENTICATION_LIFETIME);
+        ConfigurationService cfg = FocusBundleActivator.getConfigService();
 
+        authenticationLifetime
+            = cfg.getLong(
+                    AUTHENTICATION_LIFETIME_PNAME,
+                    DEFAULT_AUTHENTICATION_LIFETIME);
         logger.info("Authentication lifetime: " + authenticationLifetime);
 
-        disableAutoLogin = FocusBundleActivator.getConfigService()
-            .getBoolean(AuthBundleActivator.DISABLE_AUTOLOGIN_PNAME, false);
-
+        disableAutoLogin
+            = cfg.getBoolean(
+                    AuthBundleActivator.DISABLE_AUTOLOGIN_PNAME,
+                    false);
         if (disableAutoLogin)
         {
             logger.info("Auto login disabled");

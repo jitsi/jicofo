@@ -45,30 +45,31 @@ public class AuthBundleActivator
     private static final String AUTH_PNAME = "org.jitsi.jicofo.auth";
 
     /**
-     * The name of configuration property that specifies the
-     * pattern of authentication URL. See {@link ShibbolethAuthAuthority}
-     * for more info.
+     * The name of the {@code ConfigurationService} property which specifies the
+     * pattern of authentication URL. See {@link ShibbolethAuthAuthority} for
+     * more information.
      */
     public static final String LOGIN_URL_PNAME = AUTH_PNAME + ".URL";
 
     /**
-     * The name of configuration property that specifies the
-     * pattern of logout URL. See {@link ShibbolethAuthAuthority}
-     * for more info.
+     * The name of the {@code ConfigurationService} property which specifies the
+     * pattern of logout URL. See {@link ShibbolethAuthAuthority} for more
+     * information.
      */
     public static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
 
     /**
-     * The name of the property that disables auto login feature. Authentication
-     * sessions are destroyed immediately when the conference ends.
+     * The name of the {@code ConfigurationService} property which disables auto
+     * login feature. Authentication sessions are destroyed immediately when the
+     * conference ends.
      */
     public static final String DISABLE_AUTOLOGIN_PNAME
         = AUTH_PNAME + ".DISABLE_AUTOLOGIN";
 
     /**
      * The name of the <tt>System</tt> and <tt>ConfigurationService</tt>
-     * property which specifies the port on which the servlet handling
-     * external authentication works. The default value is <tt>8888</tt>.
+     * property which specifies the port on which the servlet handling external
+     * authentication works. The default value is <tt>8888</tt>.
      */
     private static final String JETTY_PORT_PNAME
         = AUTH_PNAME + ".jetty.port";
@@ -143,9 +144,7 @@ public class AuthBundleActivator
                 = ServiceUtils.getService(
                         bundleContext,
                         ConfigurationService.class);
-
         String loginUrl = cfg.getString(LOGIN_URL_PNAME);
-        String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
 
         if (StringUtils.isNullOrEmpty(loginUrl))
         {
@@ -161,6 +160,8 @@ public class AuthBundleActivator
         }
         else
         {
+            String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
+
             this.authAuthority
                 = new ShibbolethAuthAuthority(loginUrl, logoutUrl);
         }

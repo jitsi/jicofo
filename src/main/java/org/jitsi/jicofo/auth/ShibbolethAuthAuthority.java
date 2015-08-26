@@ -192,8 +192,7 @@ public class ShibbolethAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    protected IQ processAuthLocked(
-            ConferenceIq query, ConferenceIq response)
+    protected IQ processAuthLocked(ConferenceIq query, ConferenceIq response)
     {
         // FIXME this now looks like it could be merged with XMPP or moved to
         // abstract
