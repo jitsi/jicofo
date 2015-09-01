@@ -426,7 +426,7 @@ public class XmppProtocolProvider
     /**
      * FIXME: move to operation set together with ScServiceDiscoveryManager
      */
-    public List<String> discoverItems(String node)
+    public Set<String> discoverItems(String node)
         throws XMPPException
     {
         DiscoverItems itemsDisco = discoInfoManager.discoverItems(node);
@@ -434,7 +434,7 @@ public class XmppProtocolProvider
         if (logger.isDebugEnabled())
             logger.debug("HAVE Discovered items for: " + node);
 
-        ArrayList<String> result = new ArrayList<String>();
+        Set<String> result = new HashSet<String>();
 
         Iterator<DiscoverItems.Item> items = itemsDisco.getItems();
         while (items.hasNext())
@@ -444,15 +444,7 @@ public class XmppProtocolProvider
             if (logger.isDebugEnabled())
                 logger.debug(item.toXML());
 
-            if (item.getNode() != null && item.getEntityID().equals(node))
-            {
-                // Subnode
-                result.add(item.getNode());
-            }
-            else
-            {
-                result.add(item.getEntityID());
-            }
+            result.add(item.getEntityID());
         }
 
         return result;

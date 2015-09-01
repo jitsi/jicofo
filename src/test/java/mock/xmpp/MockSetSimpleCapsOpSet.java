@@ -54,9 +54,9 @@ public class MockSetSimpleCapsOpSet
     }
 
     @Override
-    public List<String> getItems(String nodeName)
+    public Set<String> getItems(String nodeName)
     {
-        ArrayList<String> result = new ArrayList<String>(childNodes.size());
+        Set<String> result = new HashSet<String>(childNodes.size());
 
         MockCapsNode node;
         if (nodeName.endsWith(getNodeName()))

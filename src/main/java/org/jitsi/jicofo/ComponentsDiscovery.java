@@ -180,7 +180,7 @@ public class ComponentsDiscovery
      */
     public void discoverServices()
     {
-        List<String> nodes = capsOpSet.getItems(xmppDomain);
+        Set<String> nodes = capsOpSet.getItems(xmppDomain);
         List<String> onlineNodes = new ArrayList<String>();
         for (String node : nodes)
         {

@@ -36,7 +36,7 @@ public interface OperationSetSimpleCaps
      *
      * @return the list of sub-nodes of given <tt>node</tt>.
      */
-    List<String> getItems(String node);
+    Set<String> getItems(String node);
 
     /**
      * Check if given node supports specified feature set.

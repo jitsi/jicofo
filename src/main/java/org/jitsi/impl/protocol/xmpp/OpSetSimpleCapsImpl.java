@@ -46,7 +46,7 @@ public class OpSetSimpleCapsImpl
     }
 
     @Override
-    public List<String> getItems(String node)
+    public Set<String> getItems(String node)
     {
         try
         {

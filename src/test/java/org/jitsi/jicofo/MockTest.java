@@ -105,7 +105,7 @@ public class MockTest
                 "node1",
                 new String[]{ "featureA", "featureB"}));
 
-        List<String> nodes = mockCaps.getItems("root");
+        Set<String> nodes = mockCaps.getItems("root");
         assertEquals(3, nodes.size());
     }
 }
