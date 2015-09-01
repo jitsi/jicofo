@@ -17,18 +17,19 @@
  */
 package org.jitsi.impl.reservation.rest;
 
+import java.io.*;
 import net.java.sip.communicator.util.*;
 import org.apache.http.*;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.*;
 import org.apache.http.client.entity.*;
 import org.apache.http.client.methods.*;
-import org.apache.http.impl.client.*;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.*;
 import org.jitsi.impl.reservation.rest.json.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
 
-import java.io.*;
 import java.lang.Object;
 import java.util.*;
 
@@ -40,6 +41,25 @@ import java.util.*;
  */
 public class ApiHandler
 {
+
+    /**
+     *  Default maximum retries number for requests on conference create
+     *  API endpoint
+     */
+    private final int CONFERENCE_CREATE_MAX_RETRIES = 8;
+
+    /**
+     *  Default maximum retries number for requests on conference create
+     *  API endpoint
+     */
+    private final int CONFERENCE_RESOLVE_CONFLICT_RETRIES = 8;
+
+    /**
+     *  Default maximum retries number for requests on conference create
+     *  API endpoint
+     */
+    private final int CONFERENCE_DELETE_MAX_RETRIES = 13;
+
     /**
      * The logger
      */
@@ -51,9 +71,10 @@ public class ApiHandler
     private final String baseUrl;
 
     /**
-     * HTTP client used for sending requests.
+     *  Apache HTTP client instance used for communicating
+     *  with reservation REST API over HTTP
      */
-    private final DefaultHttpClient client = new DefaultHttpClient();
+    private final HttpClient httpClient;
 
     /**
      * <tt>JSONParser</tt> instance used for parsing JSON.
@@ -72,6 +93,22 @@ public class ApiHandler
     private final ErrorJsonHandler errorJson = new ErrorJsonHandler();
 
     /**
+     * Maximum retry number for create conference API endpoint
+     */
+    private final int retriesCreate;
+
+    /**
+     * Maximum retry number for resolve conflict conference API endpoint
+     */
+    private final int retriesResolveConflict;
+
+    /**
+     * Maximum retry number for delete conference API endpoint
+     */
+    private final int retriesDelete;
+
+
+    /**
      * Creates new instance of <tt>ApiHandler</tt>.
      *
      * @param baseUrl the base URL of REST API.
@@ -79,6 +116,36 @@ public class ApiHandler
     public ApiHandler(String baseUrl)
     {
         this.baseUrl = baseUrl;
+        this.httpClient = new DefaultHttpClient();
+        this.retriesCreate = CONFERENCE_CREATE_MAX_RETRIES;
+        this.retriesResolveConflict = CONFERENCE_RESOLVE_CONFLICT_RETRIES;
+        this.retriesDelete = CONFERENCE_DELETE_MAX_RETRIES;
+    }
+
+    /**
+     * Creates new instance of <tt>ApiHandler</tt> with custom HTTP client
+     */
+    public ApiHandler(String baseUrl, HttpClient httpClient)
+    {
+        this.baseUrl = baseUrl;
+        this.httpClient = httpClient;
+        this.retriesCreate = CONFERENCE_CREATE_MAX_RETRIES;
+        this.retriesResolveConflict = CONFERENCE_RESOLVE_CONFLICT_RETRIES;
+        this.retriesDelete = CONFERENCE_DELETE_MAX_RETRIES;
+    }
+
+    /**
+     * Creates new instance of <tt>ApiHandler</tt>
+     * with custom retries numbers for API endpoints
+     */
+    public ApiHandler(String baseUrl, HttpClient httpClient, int retriesCreate,
+                      int retriesResolveConflict, int retriesDelete)
+    {
+        this.baseUrl = baseUrl;
+        this.httpClient = httpClient;
+        this.retriesCreate = retriesCreate;
+        this.retriesDelete = retriesDelete;
+        this.retriesResolveConflict = retriesResolveConflict;
     }
 
     /**
@@ -93,12 +160,17 @@ public class ApiHandler
      *         <tt>Conference</tt> instance filled with data from
      *         the reservation system if everything goes OK.
      *
-     * @throws IOException IO exception if connectivity issues have occurred.
-     * @throws ParseException parse exception if any problems during JSON
-     *         parsing have occurred.
+     * @throws FaultTolerantRESTRequest.RetryExhaustedException
+     *         When the number of retries to submit the request
+     *         for the conference data is reached
+     * @throws UnsupportedEncodingException
+     *          When the room data have the encoding that does not play
+     *          with UTF8 standard
      */
     public ApiResult createNewConference(String ownerEmail, String mucRoomName)
-            throws IOException, ParseException
+            throws
+            FaultTolerantRESTRequest.RetryExhaustedException,
+            UnsupportedEncodingException
     {
         Conference conference
             = new Conference(mucRoomName, ownerEmail, new Date());
@@ -119,37 +191,14 @@ public class ApiHandler
 
         logger.info("Sending post: " + jsonMap);
 
-        HttpResponse response = null;
-        
-        try
-        {
-            response = client.execute(post);
+        CreateConferenceResponseParser conferenceResponseParser
+                = new CreateConferenceResponseParser(conference);
 
-            int statusCode = response.getStatusLine().getStatusCode();
+        FaultTolerantRESTRequest faultTolerantRESTRequest =
+                new FaultTolerantRESTRequest(post, conferenceResponseParser,
+                        retriesCreate, httpClient);
 
-            logger.info("STATUS CODE: " + statusCode);
-
-            if (200 == statusCode || 201 == statusCode)
-            {
-                // OK
-                readConferenceResponse(conference, response);
-
-                return new ApiResult(statusCode, conference);
-            }
-            else
-            {
-                ErrorResponse error = readErrorResponse(response);
-
-                return new ApiResult(statusCode, error);
-            }
-        }
-        finally
-        {
-            if (response != null && response.getEntity() != null)
-            {
-                response.getEntity().consumeContent();
-            }
-        }
+        return faultTolerantRESTRequest.submit();
     }
 
     /**
@@ -162,44 +211,24 @@ public class ApiHandler
      * @return <tt>ApiResult</tt> which describes the response. It will contain
      *         <tt>Conference</tt> if data has been read successfully.
      *
-     * @throws IOException if any IO problems occur.
-     * @throws ParseException if any problems during JSON parsing occur.
+     * @throws FaultTolerantRESTRequest.RetryExhaustedException
+     *         when the number of retries to submit the request
+     *         for the conference data is reached
      */
     public ApiResult getConference(Number conferenceId)
-            throws IOException, ParseException
+            throws FaultTolerantRESTRequest.RetryExhaustedException
     {
         HttpGet get = new HttpGet(baseUrl + "/conference/" + conferenceId);
 
-        HttpResponse response = null;
-        
-        try
-        {
-            response = client.execute(get);
-    
-            int statusCode = response.getStatusLine().getStatusCode();
-    
-            if (200 == statusCode || 201 == statusCode)
-            {
-                // OK
-                Conference conference
-                    = readConferenceResponse(null, response);
-    
-                return new ApiResult(statusCode, conference);
-            }
-            else
-            {
-                ErrorResponse error = readErrorResponse(response);
-    
-                return new ApiResult(statusCode, error);
-            }
-        }
-        finally 
-        {
-            if (response != null && response.getEntity() != null)
-            {
-                response.getEntity().consumeContent();
-            }
-        }
+        GetConferenceResponseParser conferenceResponseParser
+                = new GetConferenceResponseParser();
+
+        FaultTolerantRESTRequest faultTolerantRESTRequest
+                = new FaultTolerantRESTRequest(get, conferenceResponseParser,
+                        retriesResolveConflict, httpClient);
+
+        return faultTolerantRESTRequest.submit();
+
     }
 
     /**
@@ -210,42 +239,25 @@ public class ApiHandler
      * @return <tt>ApiResult</tt> that describes the response. Check
      *         <tt>ApiResult#statusCode</tt> to see if it went OK.
      *
-     * @throws IOException if any IO problems have occurred.
-     * @throws ParseException if there were any problems when parsing JSON data
+     * @throws FaultTolerantRESTRequest.RetryExhaustedException
+     *         When the number of retries to submit the request
+     *         for the conference data is reached
      */
     public ApiResult deleteConference(Number conferenceId)
-            throws IOException, ParseException
+            throws FaultTolerantRESTRequest.RetryExhaustedException
     {
         HttpDelete delete
             = new HttpDelete(baseUrl + "/conference/" + conferenceId);
 
-        HttpResponse response = null;
+        DeleteConferenceResponseParser conferenceResponseParser
+                = new DeleteConferenceResponseParser();
 
-        try
-        {
-            response = client.execute(delete);
+        FaultTolerantRESTRequest faultTolerantRESTRequest
+                = new FaultTolerantRESTRequest(delete, conferenceResponseParser,
+                        retriesDelete, httpClient);
 
-            int statusCode = response.getStatusLine().getStatusCode();
+        return faultTolerantRESTRequest.submit();
 
-            if (200 == statusCode || 201 == statusCode)
-            {
-                // OK
-                return new ApiResult(statusCode);
-            }
-            else
-            {
-                ErrorResponse error = readErrorResponse(response);
-
-                return new ApiResult(statusCode, error);
-            }
-        }
-        finally
-        {
-            if (response != null && response.getEntity() != null)
-            {
-                response.getEntity().consumeContent();
-            }
-        }
     }
 
     /**
@@ -259,7 +271,8 @@ public class ApiHandler
      * @throws ParseException if any issues with JSON parsing occur.
      */
     private ErrorResponse readErrorResponse(HttpResponse response)
-            throws IOException, ParseException
+            throws IOException,
+            ParseException
     {
         BufferedReader rd
             = new BufferedReader(
@@ -286,7 +299,8 @@ public class ApiHandler
      */
     private Conference readConferenceResponse(Conference conference,
                                               HttpResponse response)
-            throws IOException, ParseException
+            throws IOException,
+            ParseException
     {
         BufferedReader rd
             = new BufferedReader(
@@ -315,71 +329,148 @@ public class ApiHandler
     }
 
     /**
-     * Structure used for holding processing results. It contains HTTP status
-     * code, <tt>Conference</tt> instance which represents the data retrieved
-     * from the API or <tt>ErrorResponse</tt> which contains error details.
+     * This class will be used to parse the response for room
+     * deletion reservation callback.
      */
-    class ApiResult
+    protected class DeleteConferenceResponseParser
+            extends AbstractRESTResponseParser
     {
-        /**
-         * HTTP status code returned by the API.
-         */
-        int statusCode;
 
         /**
-         * <tt>Conference</tt> instance filled with data retrieved from the API.
-         */
-        Conference conference;
-
-        /**
-         * <tt>ErrorResponse</tt> which contains API error description.
-         */
-        ErrorResponse error;
-
-        /**
-         * Creates new <tt>ApiResult</tt> insatnce for given HTTP status code.
          *
-         * @param statusCode HTTP status code returned by the API endpoint.
+         * @param response The Apache HC client response
+         * @throws org.json.simple.parser.ParseException
          */
-        public ApiResult(int statusCode)
+        @Override
+        protected void parse(HttpResponse response)
+                throws IOException, ParseException,
+                FaultTolerantRESTRequest.RetryRequestedException
         {
-            this.statusCode = statusCode;
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            if (200 == statusCode || 201 == statusCode)
+            {
+                // OK
+                result = new ApiResult(statusCode);
+            }
+            else if ((statusCode >= 400) && (statusCode < 500))
+            {
+                // Client side error, indicates that the
+                // reservation backend do not want the resubmission
+                ErrorResponse error = readErrorResponse(response);
+
+                result = new ApiResult(statusCode, error);
+            }
+            else
+            {
+                // Unusual status code, request the retry
+                throw new FaultTolerantRESTRequest.RetryRequestedException();
+            }
+
         }
 
+    }
+
+    /**
+     *  The base class for dealing with conference data JSON response handling
+     */
+    protected class ReadConferenceResponseParser
+            extends AbstractRESTResponseParser
+    {
+
         /**
-         * Creates <tt>ApiResult</tt> which contains <tt>Conference</tt> data
-         * read from the API.
-         *
-         * @param statusCode HTTP status code returned by the API.
-         * @param conference <tt>Conference</tt> instance which contains the
-         *                   data read from the API.
+         * The conference instance that relates to this parti
          */
-        public ApiResult(int statusCode, Conference conference)
+        protected Conference conference;
+
+        /**
+         * Parse the room read response received from reservation backend.
+         *
+         * This will request the retry if the response status code differs from
+         * 200, 201 or 4xx.
+         *
+         * @param response The Apache HTTP client response
+         * @throws IOException
+         * @throws ParseException
+         * @throws FaultTolerantRESTRequest.RetryRequestedException
+         */
+        @Override
+        protected void parse(HttpResponse response)
+                throws
+                IOException,
+                ParseException,
+                FaultTolerantRESTRequest.RetryRequestedException
         {
-            this.statusCode = statusCode;
+
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            logger.info("STATUS CODE: " + statusCode);
+
+            if (200 == statusCode || 201 == statusCode)
+            {
+                // OK
+                conference = readConferenceResponse(conference, response);
+
+                result = new ApiResult(statusCode, conference);
+            }
+            else if ((statusCode >= 400) && (statusCode < 500))
+            {
+                // Client side error, indicates that the reservation
+                // backend do not want the resubmission
+                ErrorResponse error = readErrorResponse(response);
+
+                result = new ApiResult(statusCode, error);
+
+            }
+            else
+            {
+
+                // Unusual status code, request the retry
+                throw new FaultTolerantRESTRequest.RetryRequestedException();
+
+            }
+
+        }
+
+    }
+
+    /**
+     *  The response parser to use for conflict resolving
+     *  reservation system callback
+     */
+    protected class GetConferenceResponseParser
+            extends ReadConferenceResponseParser
+    {
+
+        /**
+         * Instantiate the <tt>GetConferenceResponseParser</tt>
+         */
+        public GetConferenceResponseParser()
+        {
+            this.conference = null;
+        }
+
+    }
+
+    /**
+     *  The response parser to use for conference creating
+     *  reservation system callback
+     */
+    protected class CreateConferenceResponseParser
+            extends ReadConferenceResponseParser
+    {
+
+        /**
+         * Instantiate the <tt>GetConferenceResponseParser</tt>
+         * with a given conference instance
+         * @param conference the <tt>Conference</tt> instance
+         *                   that is ought to perform communication callback
+         */
+        public CreateConferenceResponseParser(Conference conference)
+        {
             this.conference = conference;
         }
 
-        /**
-         * Creates new <tt>ApiResult</tt> for given <tt>ErrorResponse</tt>.
-         *
-         * @param statusCode HTTP status code returned by API endpoint.
-         * @param error <tt>ErrorResponse</tt> that contains error details
-         *              returned by API endpoint.
-         */
-        public ApiResult(int statusCode, ErrorResponse error)
-        {
-            this.statusCode = statusCode;
-            this.error = error;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString()
-        {
-            return "ApiError[" + statusCode + "](" + error + ")";
-        }
     }
+
 }

@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.reservation.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
@@ -28,6 +29,9 @@ import org.junit.runners.*;
 @Suite.SuiteClasses(
     {
         //XmppTest.class, FIXME: to be fixed
+        FaultTolerantRESTRequestTest.class,
+        ApiHandlerTest.class,
+        ConferenceJsonTest.class,
         MockTest.class,
         AdvertiseSSRCsTest.class,
         BundleTest.class,

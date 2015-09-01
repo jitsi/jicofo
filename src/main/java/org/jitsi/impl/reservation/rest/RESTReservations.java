@@ -21,7 +21,6 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.util.*;
-import org.json.simple.parser.*;
 
 import java.io.*;
 import java.util.*;
@@ -138,18 +137,18 @@ public class RESTReservations
             // Create new conference
             try
             {
-                ApiHandler.ApiResult result
+                ApiResult result
                     = api.createNewConference(creator, mucRoomName);
 
-                if (result.error == null)
+                if (result.getError() == null)
                 {
-                    conference = result.conference;
+                    conference = result.getConference();
                     conferenceMap.put(mucRoomName, conference);
                 }
-                else if (result.statusCode == 409
-                        && result.error.getConflictId() != null)
+                else if (result.getStatusCode() == 409
+                        && result.getError().getConflictId() != null)
                 {
-                    Number conflictId = result.error.getConflictId();
+                    Number conflictId = result.getError().getConflictId();
 
                     // Conference already exists(check if we have it locally)
                     conference = findConferenceForId(conflictId);
@@ -161,11 +160,11 @@ public class RESTReservations
                     // do GET conflict conference
                     if (conference == null)
                     {
-                        ApiHandler.ApiResult getResult
+                        ApiResult getResult
                             = api.getConference(conflictId);
-                        if (getResult.conference != null)
+                        if (getResult.getConference() != null)
                         {
-                            conference = getResult.conference;
+                            conference = getResult.getConference();
                             // Fill full room name as it is not transferred
                             // over REST API
                             conference.setMucRoomName(mucRoomName);
@@ -177,7 +176,7 @@ public class RESTReservations
                             logger.error("API error: " + result);
                             return new Result(
                                 RESULT_INTERNAL_ERROR,
-                                result.error.getMessage());
+                                result.getError().getMessage());
                         }
                     }
                 }
@@ -186,15 +185,16 @@ public class RESTReservations
                     // Other error
                     logger.error("API error: " + result);
                     return new Result(
-                            RESULT_INTERNAL_ERROR, result.error.getMessage());
+                            RESULT_INTERNAL_ERROR,
+                            result.getError().getMessage());
                 }
             }
-            catch (IOException e)
+            catch (FaultTolerantRESTRequest.RetryExhaustedException e)
             {
                 logger.error(e, e);
                 return new Result(RESULT_INTERNAL_ERROR, e.getMessage());
             }
-            catch (ParseException e)
+            catch (UnsupportedEncodingException e)
             {
                 logger.error(e, e);
                 return new Result(RESULT_INTERNAL_ERROR, e.getMessage());
@@ -255,8 +255,8 @@ public class RESTReservations
         try
         {
             logger.info("Deleting conference: " + id);
-            ApiHandler.ApiResult result = api.deleteConference(id);
-            if (result.statusCode == 200)
+            ApiResult result = api.deleteConference(id);
+            if (result.getStatusCode() == 200)
             {
                 logger.info("Conference " + id + " deleted - OK");
                 return RESULT_OK;
@@ -266,11 +266,7 @@ public class RESTReservations
                 logger.error("DELETE API ERROR: " + result);
             }
         }
-        catch (IOException e)
-        {
-            logger.error(e, e);
-        }
-        catch (ParseException e)
+        catch (FaultTolerantRESTRequest.RetryExhaustedException e)
         {
             logger.error(e, e);
         }

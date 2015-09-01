@@ -5,3 +5,5 @@
 /junit-reports/
 *.swp
 /target/
+.idea
+*.iml
