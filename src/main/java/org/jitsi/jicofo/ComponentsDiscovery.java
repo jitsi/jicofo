@@ -181,6 +181,12 @@ public class ComponentsDiscovery
     public void discoverServices()
     {
         Set<String> nodes = capsOpSet.getItems(xmppDomain);
+        if (nodes == null)
+        {
+            logger.error("Failed to discover services on " + xmppDomain);
+            return;
+        }
+
         List<String> onlineNodes = new ArrayList<String>();
         for (String node : nodes)
         {
