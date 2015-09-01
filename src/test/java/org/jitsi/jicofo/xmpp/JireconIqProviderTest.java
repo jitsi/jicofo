@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 
+import org.jitsi.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;

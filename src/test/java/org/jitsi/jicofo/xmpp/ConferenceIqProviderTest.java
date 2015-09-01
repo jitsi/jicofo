@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 

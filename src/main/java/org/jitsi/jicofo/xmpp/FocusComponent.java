@@ -26,6 +26,8 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.util.*;
+import org.jitsi.xmpp.component.*;
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 import org.xmpp.component.*;
@@ -38,7 +40,7 @@ import org.xmpp.packet.IQ;
  * @author Pawel Domas
  */
 public class FocusComponent
-    extends AbstractComponent
+    extends ComponentBase
 {
     /**
      * The logger.
@@ -51,7 +53,7 @@ public class FocusComponent
      * which shutdown requests will be accepted.
      */
     public static final String SHUTDOWN_ALLOWED_JID_PNAME
-        = "org.jitsi.focus.shutdown.ALLOWED_JID";
+        = "org.jitsi.jicofo.SHUTDOWN_ALLOWED_JID";
 
     /**
      * The JID from which shutdown request are accepted.
@@ -103,6 +105,9 @@ public class FocusComponent
      */
     public FocusComponent(boolean anonymousFocus, String focusAuthJid)
     {
+        loadConfig(
+            FocusBundleActivator.getConfigService(), "org.jitsi.jicofo");
+
         this.isFocusAnonymous = anonymousFocus;
         this.focusAuthJid = focusAuthJid;
         this.shutdownAllowedJid

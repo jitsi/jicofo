@@ -22,6 +22,7 @@ debian/usr/share/jicofo/lib/jnalib.jar
 debian/usr/share/jicofo/lib/json.jar
 debian/usr/share/jicofo/lib/libidn.jar
 debian/usr/share/jicofo/lib/libjitsi.jar
+debian/usr/share/jicofo/lib/libjitsi-protocol-1.0-SNAPSHOT.jar
 debian/usr/share/jicofo/lib/netaddr.jar
 debian/usr/share/jicofo/lib/osgi.core.jar
 debian/usr/share/jicofo/lib/protocol.jar
