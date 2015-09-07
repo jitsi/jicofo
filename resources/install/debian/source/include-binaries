@@ -1,4 +1,5 @@
 debian/usr/share/jicofo/jicofo.jar
+debian/usr/share/jicofo/lib/agafua-syslog.jar
 debian/usr/share/jicofo/lib/bccontrib.jar
 debian/usr/share/jicofo/lib/bouncycastle.jar
 debian/usr/share/jicofo/lib/commons-logging-1.2.jar

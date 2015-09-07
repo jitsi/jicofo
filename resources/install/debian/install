@@ -1,2 +1,3 @@
 debian/usr/share/jicofo/* /usr/share/jicofo/
 debian/usr/share/doc/* /usr/share/doc/
+debian/etc/jitsi/jicofo/logging.properties	/etc/jitsi/jicofo/

@@ -99,6 +99,7 @@
         <copy todir="${debian.dir}/usr/share/jicofo/lib"
               overwrite="true" includeEmptyDirs="No">
             <fileset dir="lib/">
+                <exclude name="logging.properties"/>
                 <exclude name="native/macos*/*"/>
                 <exclude name="native/windows*/*"/>
                 <exclude name="native/${exclude-dir}/*"/>
@@ -107,9 +108,16 @@
         <copy file="jicofo.jar"
               todir="${debian.dir}/usr/share/jicofo"
               overwrite="true"/>
+        <copy file="lib/logging.properties"
+              todir="${debian.dir}/etc/jitsi/jicofo"
+              overwrite="true"/>
         <copy file="resources/install/${include-dir}/jicofo.sh"
               todir="${debian.dir}/usr/share/jicofo"
               overwrite="true"/>
+        <replace file="${debian.dir}/usr/share/jicofo/jicofo.sh"
+                 token="$SCRIPT_DIR/lib/logging.properties">
+            <replacevalue>/etc/jitsi/jicofo/logging.properties</replacevalue>
+        </replace>
         <chmod file="${debian.dir}/usr/share/jicofo/jicofo.sh"
                perm="755"/>
 
@@ -175,6 +183,15 @@
         <replace file="${debian.release}/resources/install/linux-64/jicofo.sh"
                  token="$SCRIPT_DIR/lib/native/linux-64">
             <replacevalue>/usr/lib/jni</replacevalue>
+        </replace>
+        <!-- logging.properties -->
+        <replace file="${debian.release}/resources/install/linux/jicofo.sh"
+                 token="$SCRIPT_DIR/lib/logging.properties">
+            <replacevalue>/etc/jitsi/jicofo/logging.properties</replacevalue>
+        </replace>
+        <replace file="${debian.release}/resources/install/linux-64/jicofo.sh"
+                 token="$SCRIPT_DIR/lib/logging.properties">
+            <replacevalue>/etc/jitsi/jicofo/logging.properties</replacevalue>
         </replace>
         <copy todir="${debian.release}">
             <fileset dir="resources/install/">
