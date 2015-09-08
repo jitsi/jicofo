@@ -60,7 +60,7 @@ public class FocusBundleActivator
      * Shared thread pool available through OSGi for other components that do
      * not like to manage their own pool.
      */
-    private static ExecutorService sharedThreadPool;
+    private static ScheduledExecutorService sharedThreadPool;
 
     @Override
     public void start(BundleContext context)
@@ -70,8 +70,12 @@ public class FocusBundleActivator
 
         EntityCapsManager.setBundleContext(context);
 
-        sharedThreadPool = Executors.newFixedThreadPool(SHARED_POOL_SIZE);
-        context.registerService(ExecutorService.class, sharedThreadPool, null);
+        sharedThreadPool = Executors.newScheduledThreadPool(SHARED_POOL_SIZE);
+
+        context.registerService(
+            ExecutorService.class, sharedThreadPool, null);
+        context.registerService(
+            ScheduledExecutorService.class, sharedThreadPool, null);
 
         focusManager = new FocusManager();
         context.registerService(FocusManager.class, focusManager, null);
@@ -119,7 +123,7 @@ public class FocusBundleActivator
     /**
      * Returns shared thread pool service.
      */
-    public static ExecutorService getSharedThreadPool()
+    public static ScheduledExecutorService getSharedThreadPool()
     {
         return sharedThreadPool;
     }

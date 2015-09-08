@@ -33,10 +33,14 @@ public class XmppProtocolActivator
 {
     private ServiceRegistration<?> focusRegistration;
 
+    static BundleContext bundleContext;
+
     @Override
     public void start(BundleContext bundleContext)
         throws Exception
     {
+        XmppProtocolActivator.bundleContext = bundleContext;
+
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(
                     bundleContext, ProtocolNames.JABBER);
