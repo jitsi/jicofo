@@ -354,6 +354,13 @@ public class OpSetSubscriptionImpl
         {
             cancelled = true;
 
+            if (!parentProvider.isRegistered())
+            {
+                logger.warn(
+                    "No connection - skipped PubSub unsubscribe for: " + node);
+                return;
+            }
+
             PubSubManager manager = getManager();
 
             try

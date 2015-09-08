@@ -263,6 +263,18 @@ public class ComponentsDiscovery
         }
     }
 
+    private void setAllNodesOffline()
+    {
+        for (String node : itemMap.keySet())
+        {
+            logger.info("Connection lost - component offline: " + node);
+
+            meetServices.nodeNoLongerAvailable(node);
+        }
+
+        itemMap.clear();
+    }
+
     @Override
     public void registrationStateChanged(RegistrationStateChangeEvent evt)
     {
@@ -274,6 +286,8 @@ public class ComponentsDiscovery
             || RegistrationState.CONNECTION_FAILED.equals(evt.getNewState()))
         {
             cancelRediscovery();
+
+            setAllNodesOffline();
         }
     }
 
