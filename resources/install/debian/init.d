@@ -70,7 +70,7 @@ start() {
     fi
     echo -n "Starting $DESC: "
     start-stop-daemon --start --quiet --background --chuid $USER --make-pidfile --pidfile $PIDFILE \
-        --exec /bin/bash -- -c "cd $DEAMON_DIR; exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
+        --exec /bin/bash -- -c "cd $DEAMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
     echo "$NAME started."
 }
 

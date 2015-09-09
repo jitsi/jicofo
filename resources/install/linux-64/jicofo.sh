@@ -22,4 +22,9 @@ cp=$(JARS=($SCRIPT_DIR/jicofo*.jar $SCRIPT_DIR/lib/*.jar); IFS=:; echo "${JARS[*
 libs="$SCRIPT_DIR/lib/native/linux-64"
 logging_config="$SCRIPT_DIR/lib/logging.properties"
 
-LD_LIBRARY_PATH=$libs java -Xmx3072m -XX:-HeapDumpOnOutOfMemoryError -Djava.library.path=$libs -Djava.util.logging.config.file=$logging_config -cp $cp $mainClass $@
+# if there is a logging config file in lib folder use it (running from source)
+if [ -f $logging_config ]; then
+    LOGGING_CONFIG_PARAM="-Djava.util.logging.config.file=$logging_config"
+fi
+
+LD_LIBRARY_PATH=$libs java -Xmx3072m -XX:-HeapDumpOnOutOfMemoryError -Djava.library.path=$libs $LOGGING_CONFIG_PARAM $JAVA_SYS_PROPS -cp $cp $mainClass $@
