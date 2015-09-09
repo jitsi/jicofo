@@ -199,12 +199,6 @@ public class Main
             return;
         }
 
-        // FIXME: Always trust mode - prevent failures because there's no GUI
-        // to ask the user, but do we always want to trust?
-        System.setProperty(
-            "net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED",
-            "true");
-
         // Focus specific config properties
         System.setProperty(FocusManager.HOSTNAME_PNAME, host);
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
