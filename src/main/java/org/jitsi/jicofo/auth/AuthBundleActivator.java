@@ -24,7 +24,6 @@ import org.eclipse.jetty.ajp.*;
 import org.eclipse.jetty.server.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.rest.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -37,7 +36,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class AuthBundleActivator
-    extends AbstractJettyBundleActivator
+    extends org.jitsi.videobridge.rest.AbstractJettyBundleActivator
 {
     /**
      * The prefix of the names of {@code ConfigurationService} and/or
@@ -131,6 +130,7 @@ public class AuthBundleActivator
     {
         List<Handler> handlers = new ArrayList<Handler>();
 
+        // Shibboleth
         if (authAuthority instanceof ShibbolethAuthAuthority)
         {
             ShibbolethAuthAuthority shibbolethAuthAuthority
@@ -138,6 +138,11 @@ public class AuthBundleActivator
 
             handlers.add(new ShibbolethHandler(shibbolethAuthAuthority));
         }
+
+        // FIXME While Shibboleth is optional, the health checks of Jicofo (over
+        // REST) are mandatory at the time of this writing. Make the latter
+        // optional as well (in a way similar to Videobridge, for example).
+        handlers.add(new org.jitsi.jicofo.rest.HandlerImpl(bundleContext));
 
         return initializeHandlerList(handlers);
     }
@@ -246,6 +251,13 @@ public class AuthBundleActivator
             // Shibboleth works the same as every other web-based Single Sign-on
             // (SSO) system so it requires the Jetty HTTP server.
             b = (authAuthority instanceof ShibbolethAuthAuthority);
+
+            // FIXME While Shibboleth is optional, the health checks of Jicofo
+            // (over REST) are mandatory at the time of this writing. Make the
+            // latter optional as well (in a way similar to Videobridge, for
+            // example).
+            if (!b)
+                b = true;
         }
         return b;
     }

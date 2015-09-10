@@ -126,7 +126,7 @@ public class FocusManager
     /**
      * XMPP protocol provider handler used by the focus.
      */
-    private ProtocolProviderHandler protocolProviderHandler
+    private final ProtocolProviderHandler protocolProviderHandler
         = new ProtocolProviderHandler();
 
     /**
@@ -215,27 +215,28 @@ public class FocusManager
 
     /**
      * Allocates new focus for given MUC room.
+     *
      * @param room the name of MUC room for which new conference has to be
      *             allocated.
      * @param properties configuration properties map included in the request.
      * @return <tt>true</tt> if conference focus is in the room and ready to
      *         handle session participants.
-     *
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
     public synchronized boolean conferenceRequest(
-            String room, Map<String, String> properties)
+            String room,
+            Map<String, String> properties)
         throws Exception
     {
         if (StringUtils.isNullOrEmpty(room))
             return false;
 
-        if (shutdownInProgress && !conferences.containsKey(room))
-            return false;
-
         if (!conferences.containsKey(room))
         {
+            if (shutdownInProgress)
+                return false;
+
             createConference(room, properties);
         }
 
@@ -359,15 +360,23 @@ public class FocusManager
     }
 
     /**
-     * Returns {@link JitsiMeetConference} for given MUC <tt>roomName</tt>
-     * or <tt>null</tt> if no conference has been allocated yet.
+     * Returns {@link JitsiMeetConference} for given MUC {@code roomName} or
+     * {@code null} if no conference has been allocated yet.
      *
      * @param roomName the name of MUC room for which we want get the
-     *        {@link JitsiMeetConference} instance.
+     * {@code JitsiMeetConference} instance.
+     * @return the {@code JitsiMeetConference} for the specified
+     * {@code roomName} or {@code null} if no conference has been allocated yet
      */
     public JitsiMeetConference getConference(String roomName)
     {
-        return conferences.get(roomName);
+        // Other public methods which read from and/or write to the field
+        // conferences are sychronized (e.g. conferenceEnded, conferenceRequest)
+        // so synchronization is necessary here as well.
+        synchronized (this)
+        {
+            return conferences.get(roomName);
+        }
     }
 
     /**
@@ -386,7 +395,7 @@ public class FocusManager
 
     private void maybeDoShutdown()
     {
-        if (shutdownInProgress && conferences.size() == 0)
+        if (shutdownInProgress && conferences.isEmpty())
         {
             logger.info("Focus is shutting down NOW");
 
@@ -451,14 +460,25 @@ public class FocusManager
 
     /**
      * Returns operation set instance for focus XMPP connection.
+     *
      * @param opsetClass operation set class.
-     * @param <T> the class of Operation Set to be reqturned
+     * @param <T> the class of Operation Set to be returned
      * @return operation set instance of given class or <tt>null</tt> if
      * given operation set is not implemented by focus XMPP provider.
      */
     public <T extends OperationSet> T getOperationSet(Class<T> opsetClass)
     {
         return protocolProviderHandler.getOperationSet(opsetClass);
+    }
+
+    /**
+     * Gets the {@code ProtocolProviderSerivce} for focus XMPP connection.
+     *
+     * @return  the {@code ProtocolProviderService} for focus XMPP connection
+     */
+    public ProtocolProviderService getProtocolProvider()
+    {
+        return protocolProviderHandler.getProtocolProvider();
     }
 
     @Override

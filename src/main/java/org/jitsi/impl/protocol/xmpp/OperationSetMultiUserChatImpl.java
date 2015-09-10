@@ -40,8 +40,8 @@ public class OperationSetMultiUserChatImpl
     /**
      * The map of active chat rooms mapped by their names.
      */
-    private Map<String, ChatRoomImpl> rooms
-            = new HashMap<String, ChatRoomImpl>();
+    private final Map<String, ChatRoomImpl> rooms
+        = new HashMap<String, ChatRoomImpl>();
 
     /**
      * Creates new instance of {@link OperationSetMultiUserChatImpl}.
