@@ -191,34 +191,61 @@ public class OpSetSubscriptionImpl
     public synchronized void subscribe(String               node,
                                        SubscriptionListener listener)
     {
-        if (subscriptionsMap.containsKey(node))
+        Subscription subscription = subscriptionsMap.get(node);
+        if (subscription == null)
         {
-            logger.warn("Already subscribed to PubSub node: " + node);
-            return;
+            subscription = new Subscription(node, listener);
+            subscriptionsMap.put(node, subscription);
+            subscription.subscribe();
         }
-
-        Subscription subscription = new Subscription(node, listener);
-
-        subscriptionsMap.put(node, subscription);
-
-        subscription.subscribe();
+        else
+        {
+            subscription.addListener(listener);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void unSubscribe(String node)
+    public synchronized void unSubscribe(String               node,
+                                         SubscriptionListener listener)
     {
-        Subscription subscription = subscriptionsMap.remove(node);
+        Subscription subscription = subscriptionsMap.get(node);
         if (subscription != null)
         {
-            subscription.unSubscribe();
+            if (!subscription.removeListener(listener))
+            {
+                subscription.unSubscribe();
+                subscriptionsMap.remove(node);
+            }
         }
         else
         {
-            logger.warn("No PubSub listener for " + node);
+            logger.warn("No PubSub subscription for " + node);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<PayloadItem> getItems(String nodeName)
+    {
+        try
+        {
+            Node pubSubNode = getManager().getNode(nodeName);
+            if (pubSubNode instanceof LeafNode)
+            {
+                LeafNode leafPubSubNode = (LeafNode) pubSubNode;
+                return leafPubSubNode.getItems();
+            }
+        }
+        catch (XMPPException e)
+        {
+            logger.error("Failed to fetch PubSub items of: " + nodeName, e);
+        }
+        return null;
     }
 
     /**
@@ -244,8 +271,7 @@ public class OpSetSubscriptionImpl
                     continue;
 
                 PayloadItem payloadItem = (PayloadItem) item;
-                subscription.listener.
-                    onSubscriptionUpdate(nodeId, payloadItem.getPayload());
+                subscription.notifyListeners(payloadItem);
             }
         }
     }
@@ -262,9 +288,10 @@ public class OpSetSubscriptionImpl
         private final String node;
 
         /**
-         * Subscription listener.
+         * Subscription listeners.
          */
-        private final SubscriptionListener listener;
+        private final List<SubscriptionListener> listeners
+            = new CopyOnWriteArrayList<SubscriptionListener>();
 
         /**
          * Set to true on un-subscribe to cancel re-tries.
@@ -285,7 +312,46 @@ public class OpSetSubscriptionImpl
                 throw new NullPointerException("listener");
 
             this.node = node;
-            this.listener = listener;
+            this.listeners.add(listener);
+        }
+
+        /**
+         * Registers <tt>SubscriptionListener</tt> which will be notified about
+         * published PubSub items.
+         * @param listener the <tt>SubscriptionListener</tt> to be registered
+         */
+        void addListener(SubscriptionListener listener)
+        {
+            listeners.add(listener);
+        }
+
+        /**
+         * Removes <tt>SubscriptionListener</tt>.
+         * @param listener the instance of <tt>SubscriptionListener</tt> to be
+         *                 unregistered from PubSub notifications.
+         * @return <tt>false</tt> if there are no more listeners registered to
+         *         this <tt>Subscription</tt>
+         */
+        boolean removeListener(SubscriptionListener listener)
+        {
+            listeners.remove(listener);
+
+            return listeners.size() > 0;
+        }
+
+        /**
+         * Notifies all <tt>SubscriptionListener</tt>s about published
+         * <tt>PayloadItem</tt>.
+         * @param payloadItem new <tt>PayloadItem</tt> published to the PubSub
+         *                    node observed by this subscription.
+         */
+        void notifyListeners(PayloadItem payloadItem)
+        {
+            for (SubscriptionListener l : listeners)
+            {
+                l.onSubscriptionUpdate(
+                    node, payloadItem.getId(), payloadItem.getPayload());
+            }
         }
 
         /**

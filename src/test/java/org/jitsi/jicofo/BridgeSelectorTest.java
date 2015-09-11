@@ -177,20 +177,23 @@ public class BridgeSelectorTest
         MockSubscriptionOpSetImpl mockSubscriptions
             = mockProvider.getMockSubscriptionOpSet();
 
+        // When PubSub mapping is used itemId is not important
+        String itemId = "randomNodeForMappingTest";
+
         // Jvb 1 and 3 are occupied by some conferences, 2 is free
         mockSubscriptions.fireSubscriptionNotification(
-            jvb1PubSubNode, createJvbStats(10));
+            jvb1PubSubNode,itemId, createJvbStats(10));
         mockSubscriptions.fireSubscriptionNotification(
-            jvb2PubSubNode, createJvbStats(23));
+            jvb2PubSubNode, itemId, createJvbStats(23));
         mockSubscriptions.fireSubscriptionNotification(
-            jvb3PubSubNode, createJvbStats(0));
+            jvb3PubSubNode, itemId, createJvbStats(0));
 
         assertEquals(jvb3Jid, selector.selectVideobridge());
         assertEquals(jvb3Jid, selector.getPrioritizedBridgesList().get(0));
 
         // Now Jvb 3 gets occupied the most
         mockSubscriptions.fireSubscriptionNotification(
-            jvb3PubSubNode, createJvbStats(300));
+            jvb3PubSubNode, itemId, createJvbStats(300));
 
         assertEquals(jvb1Jid, selector.selectVideobridge());
         assertEquals(jvb1Jid, selector.getPrioritizedBridgesList().get(0));
@@ -220,13 +223,13 @@ public class BridgeSelectorTest
         selector.updateBridgeOperationalStatus(jvbPreConfigured, true);
 
         mockSubscriptions.fireSubscriptionNotification(
-                jvbPreConfigured, createJvbStats(1));
+                jvbPreConfigured, itemId, createJvbStats(1));
         mockSubscriptions.fireSubscriptionNotification(
-                jvb1PubSubNode, createJvbStats(0));
+                jvb1PubSubNode, itemId, createJvbStats(0));
         mockSubscriptions.fireSubscriptionNotification(
-                jvb2PubSubNode, createJvbStats(0));
+                jvb2PubSubNode, itemId, createJvbStats(0));
         mockSubscriptions.fireSubscriptionNotification(
-                jvb3PubSubNode, createJvbStats(0));
+                jvb3PubSubNode, itemId, createJvbStats(0));
 
         // Pre-configured one should not be in front
         assertNotEquals(jvbPreConfigured,
@@ -234,13 +237,13 @@ public class BridgeSelectorTest
 
         // JVB 2 least occupied
         mockSubscriptions.fireSubscriptionNotification(
-                jvbPreConfigured, createJvbStats(1));
+                jvbPreConfigured, itemId, createJvbStats(1));
         mockSubscriptions.fireSubscriptionNotification(
-                jvb1PubSubNode, createJvbStats(1));
+                jvb1PubSubNode, itemId, createJvbStats(1));
         mockSubscriptions.fireSubscriptionNotification(
-                jvb2PubSubNode, createJvbStats(0));
+                jvb2PubSubNode, itemId, createJvbStats(0));
         mockSubscriptions.fireSubscriptionNotification(
-                jvb3PubSubNode, createJvbStats(1));
+                jvb3PubSubNode, itemId, createJvbStats(1));
 
         assertEquals(jvb2Jid,
                 selector.getPrioritizedBridgesList().get(0));
@@ -269,7 +272,9 @@ public class BridgeSelectorTest
 
                 // Test node has 0 load...
                 mockSubscriptions.fireSubscriptionNotification(
-                    pubSubNodes[idx], createJvbStats(isTestNode ? 0 : 100));
+                    pubSubNodes[idx],
+                    "randomItemId",
+                    createJvbStats(isTestNode ? 0 : 100));
 
                 // ... and is not operational
                 selector.updateBridgeOperationalStatus(nodes[idx], !isTestNode);

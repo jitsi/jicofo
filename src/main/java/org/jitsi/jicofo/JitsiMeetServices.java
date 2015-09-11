@@ -41,6 +41,9 @@ public class JitsiMeetServices
     private final static Logger logger
         = Logger.getLogger(JitsiMeetServices.class);
 
+    public static final String BRIDGE_TO_PUBSUB_PNAME
+        = "org.jitsi.focus.PUBSUB_STATS_NODE";
+
     /**
      * Feature set advertised by videobridge.
      */
@@ -97,6 +100,16 @@ public class JitsiMeetServices
     private String sipGateway;
 
     /**
+     * Returns <tt>true</tt> if given list of features complies with JVB feature
+     * list.
+     * @param features the list of feature to be checked.
+     */
+    static public boolean isJitsiVideobridge(List<String> features)
+    {
+        return DiscoveryUtil.checkFeatureSupport(VIDEOBRIDGE_FEATURES, features);
+    }
+
+    /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *
      * @param operationSet subscription operation set to be used for watching
@@ -108,6 +121,15 @@ public class JitsiMeetServices
     }
 
     /**
+     * Called by other classes when they detect JVB instance.
+     * @param bridgeJid the JID of discovered JVB component.
+     */
+    void newBridgeDiscovered(String bridgeJid)
+    {
+        bridgeSelector.addJvbAddress(bridgeJid);
+    }
+
+    /**
      * Call when new component becomes available.
      *
      * @param node component XMPP address
@@ -115,9 +137,9 @@ public class JitsiMeetServices
      */
     void newNodeDiscovered(String node, List<String> features)
     {
-        if (DiscoveryUtil.checkFeatureSupport(VIDEOBRIDGE_FEATURES, features))
+        if (isJitsiVideobridge(features))
         {
-            bridgeSelector.addJvbAddress(node);
+            newBridgeDiscovered(node);
         }
         else if (
             jireconRecorder == null

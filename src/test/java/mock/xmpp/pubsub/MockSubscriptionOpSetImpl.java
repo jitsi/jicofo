@@ -20,6 +20,7 @@ package mock.xmpp.pubsub;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.pubsub.*;
 
 import java.util.*;
 
@@ -35,6 +36,9 @@ public class MockSubscriptionOpSetImpl
     private Map<String, SubscriptionListener> listenerMap
         = new HashMap<String, SubscriptionListener>();
 
+    private Map<String, List<PayloadItem>> nodeItems
+        = new HashMap<String, List<PayloadItem>>();
+
     @Override
     public void subscribe(String node, SubscriptionListener listener)
     {
@@ -42,18 +46,30 @@ public class MockSubscriptionOpSetImpl
     }
 
     public void fireSubscriptionNotification(String node,
+                                             String itemId,
                                              PacketExtension payload)
     {
         SubscriptionListener l = listenerMap.get(node);
         if (l != null)
         {
-            l.onSubscriptionUpdate(node, payload);
+            l.onSubscriptionUpdate(node, itemId, payload);
         }
     }
 
     @Override
-    public void unSubscribe(String node)
+    public void unSubscribe(String node, SubscriptionListener l)
     {
         listenerMap.remove(node);
+    }
+
+    public void setNodeItems(String nodeName, List<PayloadItem> items)
+    {
+        nodeItems.put(nodeName, items);
+    }
+
+    @Override
+    public List<PayloadItem> getItems(String node)
+    {
+        return nodeItems.get(node);
     }
 }

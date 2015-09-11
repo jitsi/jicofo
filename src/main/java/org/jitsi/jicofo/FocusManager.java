@@ -96,6 +96,14 @@ public class FocusManager
         = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
 
     /**
+     * The name of configuration property used to configure PubSub node to which
+     * videobridges are publishing their stats. Is used to discover bridges
+     * automatically.
+     */
+    public static final String SHARED_STATS_PUBSUB_NODE_PNAME
+        = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
+
+    /**
      * The XMPP domain used by the focus user to register to.
      */
     private String focusUserDomain;
@@ -176,8 +184,13 @@ public class FocusManager
             protocolProviderHandler.getOperationSet(
                 OperationSetSubscription.class));
 
+        String statsPubSubNode
+            = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
+
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(xmppDomain, protocolProviderHandler);
+
+        componentsDiscovery.start(
+            xmppDomain, statsPubSubNode, protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 

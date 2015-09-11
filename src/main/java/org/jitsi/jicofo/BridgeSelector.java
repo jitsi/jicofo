@@ -159,7 +159,6 @@ public class BridgeSelector
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
         {
-            // FIXME: retry if node is not available yet
             logger.info(
                 "Subscribing to pub-sub notifications to "
                     + pubSubNode + " for " + bridgeJid);
@@ -167,9 +166,7 @@ public class BridgeSelector
         }
         else
         {
-            logger.warn(
-                "No pub-sub node mapped for " + bridgeJid
-                    + " statistics will not be tracked for this instance.");
+            logger.warn("No pub-sub node mapped for " + bridgeJid);
         }
 
         bridges.put(bridgeJid, new BridgeState(bridgeJid));
@@ -209,7 +206,7 @@ public class BridgeSelector
                 "Removing PubSub subscription to "
                     + pubSubNode + " for " + bridgeJid);
 
-            subscriptionOpSet.unSubscribe(pubSubNode);
+            subscriptionOpSet.unSubscribe(pubSubNode, this);
         }
     }
 
@@ -345,7 +342,9 @@ public class BridgeSelector
      * {@inheritDoc}
      */
     @Override
-    public void onSubscriptionUpdate(String node, PacketExtension payload)
+    public void onSubscriptionUpdate(String          node,
+                                     String          itemId,
+                                     PacketExtension payload)
     {
         if (!(payload instanceof ColibriStatsExtension))
         {
@@ -358,9 +357,15 @@ public class BridgeSelector
         BridgeState bridgeState = findBridgeForNode(node);
         if (bridgeState == null)
         {
-            logger.warn(
-                "No bridge registered or missing mapping for node: " + node);
-            return;
+            // Try to figure out bridge by itemId
+            bridgeState = bridges.get(itemId);
+            if (bridgeState == null)
+            {
+                logger.warn(
+                    "No bridge registered or " +
+                        "missing mapping for node: " + node);
+                return;
+            }
         }
 
         ColibriStatsExtension stats = (ColibriStatsExtension) payload;

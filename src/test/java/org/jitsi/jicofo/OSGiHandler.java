@@ -40,8 +40,8 @@ public class OSGiHandler
     public void init()
         throws InterruptedException
     {
-        System.setProperty(FocusManager.HOSTNAME_PNAME, "testserver");
-        System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "testdomain");
+        System.setProperty(FocusManager.HOSTNAME_PNAME, "test.domain.net");
+        System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, "focusdomain");
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, "focus");
 

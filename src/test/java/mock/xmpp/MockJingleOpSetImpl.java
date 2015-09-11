@@ -54,7 +54,7 @@ public class MockJingleOpSetImpl
         return protocolProvider.getMockXmppConnection();
     }
 
-    public void start()
+    public synchronized void start()
     {
         this.receiver
             = new XmppPacketReceiver(
@@ -65,9 +65,10 @@ public class MockJingleOpSetImpl
         receiver.start();
     }
 
-    public void stop()
+    public synchronized void stop()
     {
-        receiver.stop();
+        if (receiver != null)
+            receiver.stop();
     }
 
     @Override

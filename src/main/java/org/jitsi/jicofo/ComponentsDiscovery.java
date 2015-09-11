@@ -22,8 +22,13 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.SubscriptionListener;
+import org.jitsi.util.*;
+import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.pubsub.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class observes components available on XMPP domain, classifies them as JVB,
@@ -86,6 +91,16 @@ public class ComponentsDiscovery
     private OperationSetSimpleCaps capsOpSet;
 
     /**
+     * Detects video bridges based on stats published to PubSub node.
+     */
+    private ThroughPubSubDiscovery pubSubBridgeDiscovery;
+
+    /**
+     * The name of PubSub node where videobridges are publishing their stats.
+     */
+    private String statsPubSubNode;
+
+    /**
      * Creates new instance of <tt>ComponentsDiscovery</tt>.
      *
      * @param meetServices {@link JitsiMeetServices} instance which will be
@@ -105,11 +120,16 @@ public class ComponentsDiscovery
      *
      * @param xmppDomain server address/main service XMPP xmppDomain that hosts
      *                      the conference system.
+     * @param statsPubSubNode the name of PubSub node where video bridges are
+     *        publishing their stats. It will be used to discover videobridges
+     *        automatically based on item's IDs(each bridges used it's JID as
+     *        item ID).
      * @param protocolProviderHandler protocol provider handler that provides
      *                                XMPP connection
      * @throws java.lang.IllegalStateException if started already.
      */
     public void start(String                  xmppDomain,
+                      String                  statsPubSubNode,
                       ProtocolProviderHandler protocolProviderHandler)
     {
         if (this.protocolProviderHandler != null)
@@ -127,6 +147,7 @@ public class ComponentsDiscovery
 
         this.xmppDomain = xmppDomain;
         this.protocolProviderHandler = protocolProviderHandler;
+        this.statsPubSubNode = statsPubSubNode;
 
         this.capsOpSet
             = protocolProviderHandler.getOperationSet(
@@ -164,6 +185,20 @@ public class ComponentsDiscovery
         rediscoveryTimer = new Timer();
 
         rediscoveryTimer.schedule(new RediscoveryTask(), interval, interval);
+
+        if (!StringUtils.isNullOrEmpty(statsPubSubNode))
+        {
+            OperationSetSubscription subOpSet
+                = protocolProviderHandler.getOperationSet(
+                       OperationSetSubscription.class);
+
+            this.pubSubBridgeDiscovery
+                = new ThroughPubSubDiscovery(
+                        subOpSet, capsOpSet,
+                        FocusBundleActivator.getSharedThreadPool());
+
+            pubSubBridgeDiscovery.start();
+        }
     }
 
     private void cancelRediscovery()
@@ -172,6 +207,12 @@ public class ComponentsDiscovery
         {
             rediscoveryTimer.cancel();
             rediscoveryTimer = null;
+        }
+
+        if (pubSubBridgeDiscovery != null)
+        {
+            pubSubBridgeDiscovery.stop();
+            pubSubBridgeDiscovery = null;
         }
     }
 
@@ -305,6 +346,227 @@ public class ComponentsDiscovery
             }
 
             discoverServices();
+        }
+    }
+
+    /**
+     * Each bridge is supposed to use it's JID as item ID and this class
+     * discovers videobridges by listening to PubSub stats notifications.
+     */
+    class ThroughPubSubDiscovery
+        implements SubscriptionListener
+    {
+        /**
+         * The name of configuration property used to configure max bridge stats
+         * age.
+         */
+        public static final String MAX_STATS_REPORT_AGE_PNAME
+            = "org.jitsi.jicofo.MAX_STATS_REPORT_AGE";
+
+        /**
+         * 15 seconds by default. If bridge does not publish stats for longer
+         * then it is considered offline.
+         */
+        private long MAX_STATS_REPORT_AGE = 15000L;
+
+        /**
+         * PubSub operation set.
+         */
+        private final OperationSetSubscription subOpSet;
+
+        /**
+         * Capabilities operation set used to check bridge features.
+         */
+        private final OperationSetSimpleCaps capsOpSet;
+
+        /**
+         * Maps bridge JID to last received stats timestamp. Used to expire
+         * bridge which do not send stats for too long.
+         */
+        private final Map<String, Long> bridgesMap
+            = new HashMap<String, Long>();
+
+        /**
+         * <tt>ScheduledExecutorService</tt> used to run cyclic task of bridge
+         * timestamp validation.
+         */
+        private final ScheduledExecutorService executor;
+
+        /**
+         * Cyclic task which validates timestamps and expires bridges.
+         */
+        private ScheduledFuture<?> expireTask;
+
+        /**
+         * Creates new Instance of <tt>ThroughPubSubDiscovery</tt>.
+         * @param subscriptionOpSet subscription operation set instance.
+         * @param capsOpSet capabilities operation set instance.
+         * @param executor scheduled executor service which will be used to run
+         *                 cyclic task.
+         */
+        public ThroughPubSubDiscovery(OperationSetSubscription subscriptionOpSet,
+                                      OperationSetSimpleCaps capsOpSet,
+                                      ScheduledExecutorService executor)
+        {
+            if (executor == null)
+                throw new NullPointerException("executor");
+
+            this.subOpSet = subscriptionOpSet;
+            this.capsOpSet = capsOpSet;
+            this.executor = executor;
+        }
+
+        /**
+         * Starts <tt>ThroughPubSubDiscovery</tt>.
+         */
+        synchronized void start()
+        {
+            logger.info(
+                "Bridges will be discovered through" +
+                    " PubSub stats on node: " + statsPubSubNode);
+
+            this.MAX_STATS_REPORT_AGE
+                = FocusBundleActivator.getConfigService()
+                    .getLong(MAX_STATS_REPORT_AGE_PNAME, MAX_STATS_REPORT_AGE);
+
+            if (MAX_STATS_REPORT_AGE <= 0)
+                throw new IllegalArgumentException(
+                        "MAX STATS AGE: " + MAX_STATS_REPORT_AGE);
+
+            logger.info("Max stats age: " + MAX_STATS_REPORT_AGE +" ms");
+
+            // Fetch all items already discovered
+            List<PayloadItem> items = subOpSet.getItems(statsPubSubNode);
+            if (items != null)
+            {
+                for (PayloadItem item : items)
+                {
+                    // Potential bridge JID may be carried in item ID
+                    verifyJvbJid(item.getId());
+                }
+            }
+
+            subOpSet.subscribe(statsPubSubNode, this);
+
+            this.expireTask = executor.scheduleAtFixedRate(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        validateBridges();
+                    }
+                },
+                MAX_STATS_REPORT_AGE / 2,
+                MAX_STATS_REPORT_AGE / 2,
+                TimeUnit.MILLISECONDS);
+        }
+
+        /**
+         * Stops <tt>ThroughPubSubDiscovery</tt>.
+         */
+        synchronized void stop()
+        {
+            subOpSet.unSubscribe(statsPubSubNode, this);
+
+            Iterator<Map.Entry<String, Long>> bridges
+                = bridgesMap.entrySet().iterator();
+            while (bridges.hasNext())
+            {
+                Map.Entry<String, Long> bridge = bridges.next();
+
+                bridgeWentOffline(bridge.getKey());
+
+                bridges.remove();
+            }
+
+            bridgesMap.clear();
+
+            if (expireTask != null)
+            {
+                expireTask.cancel(true);
+            }
+        }
+
+        /**
+         * Validates bridges timestamps and expires them.
+         */
+        synchronized void validateBridges()
+        {
+            Iterator<Map.Entry<String, Long>> bridges
+                = bridgesMap.entrySet().iterator();
+
+            while (bridges.hasNext())
+            {
+                Map.Entry<String, Long> bridge = bridges.next();
+                if (System.currentTimeMillis() - bridge.getValue()
+                    > MAX_STATS_REPORT_AGE)
+                {
+                    String bridgeJid = bridge.getKey();
+
+                    logger.info(
+                        "No stats seen from " + bridgeJid + " for too long");
+
+                    bridgeWentOffline(bridge.getKey());
+
+                    bridges.remove();
+                }
+            }
+        }
+
+        /**
+         * Verifies if given JID belongs to Jitsi videobridge XMPP component.
+         * @param bridgeJid the JID to be verified.
+         */
+        private void verifyJvbJid(String bridgeJid)
+        {
+            // Refresh bridge timestamp if it was discovered previously
+            if (bridgesMap.containsKey(bridgeJid))
+            {
+                // This indicate that the bridge is alive
+                refreshBridgeTimestamp(bridgeJid);
+                return;
+            }
+            // Is it JVB ?
+            if (bridgeJid.contains("."))
+            {
+                List<String> jidFeatures = capsOpSet.getFeatures(bridgeJid);
+                if (jidFeatures == null)
+                {
+                    logger.warn(
+                        "Failed to discover features for: " + bridgeJid);
+                    return;
+                }
+
+                if (JitsiMeetServices.isJitsiVideobridge(jidFeatures))
+                {
+                    logger.info("Bridge discovered from PubSub: " + bridgeJid);
+
+                    refreshBridgeTimestamp(bridgeJid);
+
+                    meetServices.newBridgeDiscovered(bridgeJid);
+                }
+            }
+        }
+        private void refreshBridgeTimestamp(String bridgeJid)
+        {
+            bridgesMap.put(bridgeJid, System.currentTimeMillis());
+        }
+
+        private void bridgeWentOffline(String bridgeJid)
+        {
+            meetServices.nodeNoLongerAvailable(bridgeJid);
+        }
+
+        @Override
+        public void onSubscriptionUpdate(
+            String node, String itemId, PacketExtension payload)
+        {
+            synchronized (this)
+            {
+                // Potential bridge JID may be carried in item ID
+                verifyJvbJid(itemId);
+            }
         }
     }
 

@@ -31,7 +31,10 @@ public interface SubscriptionListener
      * Callback called when update is received on some subscription node.
      *
      * @param node the source node of the event.
+     * @param itemId the ID of PubSub item for which this even was generated.
      * @param payload the payload of notification.
      */
-    void onSubscriptionUpdate(String node, PacketExtension payload);
+    void onSubscriptionUpdate(String          node,
+                              String          itemId,
+                              PacketExtension payload);
 }
