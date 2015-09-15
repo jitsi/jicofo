@@ -18,6 +18,7 @@
 package mock.media;
 
 import org.jitsi.impl.neomedia.*;
+import org.jitsi.impl.neomedia.rtp.*;
 import org.jitsi.impl.neomedia.transform.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.device.*;
@@ -33,39 +34,54 @@ public class MockMediaStream
     extends AbstractMediaStream
 {
     @Override
-    public void start()
+    public void addDynamicRTPPayloadType(byte rtpPayloadType,
+                                         MediaFormat format)
     {
-
     }
 
     @Override
-    public void stop()
+    public void addDynamicRTPPayloadTypeOverride(byte originalPt,
+                                                 byte overloadPt)
     {
-
     }
 
     @Override
-    public void setExternalTransformer(TransformEngine transformEngine)
+    public void addRTPExtension(byte extensionID, RTPExtension rtpExtension)
     {
-
     }
 
     @Override
-    public void injectPacket(RawPacket rawPacket, boolean b, boolean b1)
+    public void clearDynamicRTPPayloadTypes()
     {
-
     }
 
     @Override
     public void close()
     {
-
     }
 
     @Override
-    public void setFormat(MediaFormat format)
+    public Map<Byte, RTPExtension> getActiveRTPExtensions()
     {
+        return null;
+    }
 
+    @Override
+    public MediaDevice getDevice()
+    {
+        return null;
+    }
+
+    @Override
+    public MediaDirection getDirection()
+    {
+        return null;
+    }
+
+    @Override
+    public Map<Byte, MediaFormat> getDynamicRTPPayloadTypes()
+    {
+        return null;
     }
 
     @Override
@@ -75,19 +91,25 @@ public class MockMediaStream
     }
 
     @Override
-    public void setConnector(StreamConnector connector)
+    public long getLocalSourceID()
     {
-
+        return 0;
     }
 
     @Override
-    public void setDevice(MediaDevice device)
+    public MediaStreamStats getMediaStreamStats()
     {
-
+        return null;
     }
 
     @Override
-    public MediaDevice getDevice()
+    public InetSocketAddress getRemoteControlAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public InetSocketAddress getRemoteDataAddress()
     {
         return null;
     }
@@ -105,19 +127,19 @@ public class MockMediaStream
     }
 
     @Override
-    public long getLocalSourceID()
-    {
-        return 0;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteControlAddress()
+    public SrtpControl getSrtpControl()
     {
         return null;
     }
 
     @Override
-    public InetSocketAddress getRemoteDataAddress()
+    public StreamRTPManager getStreamRTPManager()
+    {
+        return null;
+    }
+
+    @Override
+    public MediaStreamTarget getTarget()
     {
         return null;
     }
@@ -129,77 +151,8 @@ public class MockMediaStream
     }
 
     @Override
-    public void setTarget(MediaStreamTarget target)
+    public void injectPacket(RawPacket rawPacket, boolean b, boolean b1)
     {
-
-    }
-
-    @Override
-    public MediaStreamTarget getTarget()
-    {
-        return null;
-    }
-
-    @Override
-    public void addDynamicRTPPayloadType(byte rtpPayloadType,
-                                         MediaFormat format)
-    {
-
-    }
-
-    @Override
-    public void clearDynamicRTPPayloadTypes()
-    {
-
-    }
-
-    @Override
-    public Map<Byte, MediaFormat> getDynamicRTPPayloadTypes()
-    {
-        return null;
-    }
-
-    @Override
-    public void addDynamicRTPPayloadTypeOverride(byte originalPt,
-                                                 byte overloadPt)
-    {
-
-    }
-
-    @Override
-    public void addRTPExtension(byte extensionID, RTPExtension rtpExtension)
-    {
-
-    }
-
-    @Override
-    public Map<Byte, RTPExtension> getActiveRTPExtensions()
-    {
-        return null;
-    }
-
-    @Override
-    public void setDirection(MediaDirection direction)
-    {
-
-    }
-
-    @Override
-    public MediaDirection getDirection()
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isStarted()
-    {
-        return false;
-    }
-
-    @Override
-    public void setMute(boolean mute)
-    {
-
     }
 
     @Override
@@ -209,38 +162,68 @@ public class MockMediaStream
     }
 
     @Override
-    public SrtpControl getSrtpControl()
+    public boolean isStarted()
     {
-        return null;
-    }
-
-    @Override
-    public RTPTranslator getRTPTranslator()
-    {
-        return null;
-    }
-
-    @Override
-    public void setRTPTranslator(RTPTranslator rtpTranslator)
-    {
-
-    }
-
-    @Override
-    public MediaStreamStats getMediaStreamStats()
-    {
-        return null;
+        return false;
     }
 
     @Override
     public void removeReceiveStreamForSsrc(long ssrc)
     {
+    }
 
+    @Override
+    public void setConnector(StreamConnector connector)
+    {
+    }
+
+    @Override
+    public void setDevice(MediaDevice device)
+    {
+    }
+
+    @Override
+    public void setDirection(MediaDirection direction)
+    {
+    }
+
+    @Override
+    public void setExternalTransformer(TransformEngine transformEngine)
+    {
+    }
+
+    @Override
+    public void setFormat(MediaFormat format)
+    {
+    }
+
+    @Override
+    public void setMute(boolean mute)
+    {
+    }
+
+    @Override
+    public void setRTPTranslator(RTPTranslator rtpTranslator)
+    {
     }
 
     @Override
     public void setSSRCFactory(SSRCFactory ssrcFactory)
     {
+    }
 
+    @Override
+    public void setTarget(MediaStreamTarget target)
+    {
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
     }
 }
