@@ -88,7 +88,7 @@ public class OSGi
 
         String[][] bundles = {
             {
-                "net/java/sip/communicator/impl/libjitsi/LibJitsiActivator"
+                "org/jitsi/service/libjitsi/LibJitsiActivator"
             },
             {
                 "net/java/sip/communicator/util/UtilActivator",
