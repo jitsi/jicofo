@@ -22,7 +22,7 @@ case "$1" in
         # let's check whether there is a setting in the $CONFIG
         # for home folder and logging props file
         if [ ! -n "$JAVA_SYS_PROPS" ]; then
-            $JICOFO_JAVA_SYS_PROPS_EXIST="false"
+            JICOFO_JAVA_SYS_PROPS_EXIST="false"
         fi
 
         # generate config on new install
