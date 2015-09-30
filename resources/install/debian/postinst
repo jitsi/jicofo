@@ -18,6 +18,13 @@ case "$1" in
             fi
         fi
 
+        JICOFO_JAVA_SYS_PROPS_EXIST="true"
+        # let's check whether there is a setting in the $CONFIG
+        # for home folder and logging props file
+        if [ ! -n "$JAVA_SYS_PROPS" ]; then
+            $JICOFO_JAVA_SYS_PROPS_EXIST="false"
+        fi
+
         # generate config on new install
         if [ "$OLDCONFIG" = "false" ]; then
 
@@ -74,7 +81,7 @@ case "$1" in
 
         # let's check whether there is a setting in the $CONFIG
         # for home folder and logging props file, if missing add it
-        if [ ! -n "$JAVA_SYS_PROPS" ]; then
+        if [ "$JICOFO_JAVA_SYS_PROPS_EXIST" = "false" ]; then
             echo >> $CONFIG
             echo '# adds java system props that are passed to jicofo (default are for home and logging config file)' >> $CONFIG
             echo "JAVA_SYS_PROPS=\"-Dnet.java.sip.communicator.SC_HOME_DIR_LOCATION=/etc/jitsi\
