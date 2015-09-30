@@ -254,7 +254,8 @@ public class Main
         }
         catch (ComponentException e)
         {
-            logger.error(e, e);
+            logger.error(
+                e.getMessage() + ", host:" + host + ", port:" + port, e);
             stop = true;
         }
 
