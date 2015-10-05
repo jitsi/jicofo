@@ -380,25 +380,51 @@ public class BridgeSelector
                 = (ColibriStatsExtension.Stat) child;
             if (VideobridgeStatistics.CONFERENCES.equals(stat.getName()))
             {
-                Object statValue = stat.getValue();
-                if (statValue == null)
-                {
-                    return;
-                }
-                String stringStatValue = String.valueOf(statValue);
-                try
-                {
-                    bridgeState.setConferenceCount(
-                        Integer.parseInt(stringStatValue));
-                }
-                catch(NumberFormatException e)
-                {
-                    logger.error(
-                        "Error parsing conference count stat: "
-                                + stringStatValue);
-                }
+                Integer val = getStatisticIntValue(stat);
+                if(val != null)
+                    bridgeState.setConferenceCount(val);
+            }
+            else if (VideobridgeStatistics.VIDEOCHANNELS.equals(stat.getName()))
+            {
+                Integer val = getStatisticIntValue(stat);
+                if(val != null)
+                    bridgeState.setVideoChannelCount(val);
+            }
+            else if (VideobridgeStatistics.VIDEOSTREAMS.equals(stat.getName()))
+            {
+                Integer val = getStatisticIntValue(stat);
+                if(val != null)
+                    bridgeState.setVideoStreamCount(val);
             }
         }
+    }
+
+    /**
+     * Extracts the statistic integer value from <tt>currentStats</tt> if
+     * available and in correct format.
+     * @param currentStats the current stats
+     */
+    private static Integer getStatisticIntValue(
+        ColibriStatsExtension.Stat currentStats)
+    {
+        Object statValue = currentStats.getValue();
+        if (statValue == null)
+        {
+            return null;
+        }
+        String stringStatValue = String.valueOf(statValue);
+        try
+        {
+            return new Integer(stringStatValue);
+        }
+        catch(NumberFormatException e)
+        {
+            logger.error(
+                "Error parsing conference count stat: "
+                    + stringStatValue);
+        }
+
+        return null;
     }
 
     /**
@@ -453,9 +479,23 @@ public class BridgeSelector
          */
         private final String jid;
 
-        // If not set we consider it highly occupied,
-        // because no stats we have been fetched so far.
+        /**
+         * If not set we consider it highly occupied,
+         * because no stats we have been fetched so far.
+         */
         private int conferenceCount = Integer.MAX_VALUE;
+
+        /**
+         * If not set we consider it highly occupied,
+         * because no stats we have been fetched so far.
+         */
+        private int videoChannelCount = Integer.MAX_VALUE;
+
+        /**
+         * If not set we consider it highly occupied,
+         * because no stats we have been fetched so far.
+         */
+        private int videoStreamCount = Integer.MAX_VALUE;
 
         /**
          * Stores *operational* status which means it has been successfully used
@@ -492,6 +532,42 @@ public class BridgeSelector
         public int getConferenceCount()
         {
             return this.conferenceCount;
+        }
+
+        /**
+         * Return the number of channels used.
+         * @return the number of channels used.
+         */
+        public int getVideoChannelCount()
+        {
+            return videoChannelCount;
+        }
+
+        /**
+         * Sets the number of channels used.
+         * @param channelCount the number of channels used.
+         */
+        public void setVideoChannelCount(int channelCount)
+        {
+            this.videoChannelCount = channelCount;
+        }
+
+        /**
+         * Returns the number of streams used.
+         * @return the number of streams used.
+         */
+        public int getVideoStreamCount()
+        {
+            return videoStreamCount;
+        }
+
+        /**
+         * Sets the stream count currently used.
+         * @param streamCount the stream count currently used.
+         */
+        public void setVideoStreamCount(int streamCount)
+        {
+            this.videoStreamCount = streamCount;
         }
 
         public void setIsOperational(boolean isOperational)
@@ -548,7 +624,7 @@ public class BridgeSelector
             else if (!meOperational && otherOperational)
                 return 1;
 
-            return conferenceCount - o.conferenceCount;
+            return videoStreamCount - o.videoStreamCount;
         }
     }
 }
