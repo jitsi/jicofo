@@ -337,6 +337,18 @@ public class BridgeSelector
     }
 
     /**
+     * Method called by {@link org.jitsi.jicofo.ComponentsDiscovery
+     * .ThroughPubSubDiscovery} whenever we receive stats update on shared
+     * PubSub node used to discover bridges.
+     * @param itemId stats item ID. Should be the JID of JVB instance.
+     * @param payload JVB stats payload.
+     */
+    void onSharedNodeUpdate(String itemId, PacketExtension payload)
+    {
+        onSubscriptionUpdate(null, itemId, payload);
+    }
+
+    /**
      * Pub-sub notification processing logic.
      *
      * {@inheritDoc}
@@ -354,7 +366,12 @@ public class BridgeSelector
             return;
         }
 
-        BridgeState bridgeState = findBridgeForNode(node);
+        BridgeState bridgeState = null;
+        if (node != null)
+        {
+            bridgeState = findBridgeForNode(node);
+        }
+
         if (bridgeState == null)
         {
             // Try to figure out bridge by itemId

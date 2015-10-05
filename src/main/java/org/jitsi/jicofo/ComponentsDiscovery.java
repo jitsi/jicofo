@@ -566,6 +566,11 @@ public class ComponentsDiscovery
             {
                 // Potential bridge JID may be carried in item ID
                 verifyJvbJid(itemId);
+
+                // Trigger PubSub update for the shared node on BridgeSelector
+                BridgeSelector selector = meetServices.getBridgeSelector();
+                if (selector != null)
+                    selector.onSharedNodeUpdate(itemId, payload);
             }
         }
     }
