@@ -20,6 +20,8 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.shutdown.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.cmd.*;
+import org.jitsi.impl.configuration.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.util.*;
@@ -43,7 +45,7 @@ public class Main
      * The name of the command-line argument which specifies the XMPP domain
      * to use for the XMPP client connection.
      */
-    private static final String DOMAIN_ARG_NAME = "--domain=";
+    private static final String DOMAIN_ARG_NAME = "domain";
 
     /**
      * The sync root used to hold the main thread until the exit procedure
@@ -55,13 +57,13 @@ public class Main
      * The name of the command-line argument which specifies the name of XMPP
      * domain used by focus user to login.
      */
-    private static final String USER_DOMAIN_ARG_NAME = "--user_domain=";
+    private static final String USER_DOMAIN_ARG_NAME = "--user_domain";
 
     /**
      * The name of the command-line argument which specifies the name of XMPP
      * user name to be used by the focus user('focus' by default).
      */
-    private static final String USER_NAME_ARG_NAME = "--user_name=";
+    private static final String USER_NAME_ARG_NAME = "--user_name";
 
     /**
      * Default value for {@link #USER_NAME_ARG_NAME}.
@@ -73,13 +75,13 @@ public class Main
      * used by focus XMPP user to login. If not provided then focus will use
      * anonymous authentication method.
      */
-    private static final String USER_PASSWORD_ARG_NAME = "--user_password=";
+    private static final String USER_PASSWORD_ARG_NAME = "--user_password";
 
     /**
      * The name of the command-line argument which specifies the IP address or
      * the name of the XMPP host to connect to.
      */
-    private static final String HOST_ARG_NAME = "--host=";
+    private static final String HOST_ARG_NAME = "--host";
 
     /**
      * The default value of the {@link #HOST_ARG_NAME} command-line argument if
@@ -91,7 +93,7 @@ public class Main
      * The name of the command-line argument which specifies the port of the
      * XMPP host to connect on.
      */
-    private static final String PORT_ARG_NAME = "--port=";
+    private static final String PORT_ARG_NAME = "--port";
 
     /**
      * The default value of the {@link #PORT_ARG_NAME} command-line argument if
@@ -104,13 +106,13 @@ public class Main
      * the sub-domain of the Jabber component implemented by this application
      * with which it is to authenticate to the XMPP server to connect to.
      */
-    private static final String SECRET_ARG_NAME = "--secret=";
+    private static final String SECRET_ARG_NAME = "--secret";
 
     /**
      * The name of the command-line argument which specifies sub-domain name for
      * the focus component.
      */
-    private static final String SUBDOMAIN_ARG_NAME = "--subdomain=";
+    private static final String SUBDOMAIN_ARG_NAME = "--subdomain";
 
     /**
      * The name of the command-line argument which specifies sub-domain name for
@@ -123,81 +125,47 @@ public class Main
      * @param args command-line arguments.
      */
     public static void main(String[] args)
+        throws ParseException
     {
-        // XMPP host
-        String host = HOST_ARG_VALUE;
-        String componentDomain = null;
-        // Focus user
-        String focusDomain = null;
-        String focusUserName = null;
-        String focusPassword = null;
-        // Focus XMPP component
-        String componentSubDomain = SUBDOMAIN_ARG_VALUE;
-        int port = PORT_ARG_VALUE;
-        String secret = null;
+        CmdLine cmdLine = new CmdLine();
 
-        for (String arg : args)
-        {
-            if (arg.startsWith(DOMAIN_ARG_NAME))
-            {
-                componentDomain = arg.substring(DOMAIN_ARG_NAME.length());
-            }
-            else if (arg.startsWith(HOST_ARG_NAME))
-            {
-                host = arg.substring(HOST_ARG_NAME.length());
-            }
-            else if (arg.startsWith(USER_DOMAIN_ARG_NAME))
-            {
-                focusDomain = arg.substring(USER_DOMAIN_ARG_NAME.length());
-            }
-            else if (arg.startsWith(USER_NAME_ARG_NAME))
-            {
-                focusUserName = arg.substring(USER_NAME_ARG_NAME.length());
-            }
-            else if (arg.startsWith(USER_PASSWORD_ARG_NAME))
-            {
-                focusPassword = arg.substring(USER_PASSWORD_ARG_NAME.length());
-            }
-            else if (arg.startsWith(PORT_ARG_NAME))
-            {
-                port = Integer.parseInt(arg.substring(PORT_ARG_NAME.length()));
-            }
-            else if (arg.startsWith(SECRET_ARG_NAME))
-            {
-                secret = arg.substring(SECRET_ARG_NAME.length());
-            }
-            else if (arg.startsWith(SUBDOMAIN_ARG_NAME))
-            {
-                componentSubDomain = arg.substring(SUBDOMAIN_ARG_NAME.length());
-            }
-        }
+        cmdLine.addRequiredArgument(SECRET_ARG_NAME);
 
+        // We may end execution here if one of required arguments is missing
+        cmdLine.parse(args);
+
+        // XMPP host/domain
+        String host;
+        String componentDomain;
+        // Try to get domain, can be null after this call(we'll fix that later)
+        componentDomain = cmdLine.getOptionValue(DOMAIN_ARG_NAME);
         // Host name
-        if (StringUtils.isNullOrEmpty(host))
-        {
-            host = (componentDomain == null) ? HOST_ARG_VALUE : componentDomain;
-        }
-        // Component domain
+        host = cmdLine.getOptionValue(
+                HOST_ARG_NAME,
+                componentDomain == null ? HOST_ARG_VALUE : componentDomain);
+        // Try to fix component domain
         if (StringUtils.isNullOrEmpty(componentDomain))
         {
             componentDomain = host;
         }
-        // Focus user domain
-        if (StringUtils.isNullOrEmpty(focusDomain))
-        {
-            focusDomain = componentDomain;
-        }
-        // Focus user name
-        if (StringUtils.isNullOrEmpty(focusUserName))
-        {
-            focusUserName = USER_NAME_ARG_VALUE;
-        }
 
-        if (secret == null)
-        {
-            System.err.println("Missing required argument " + SECRET_ARG_NAME);
-            return;
-        }
+        // Jicofo XMPP component
+        String componentSubDomain
+            = cmdLine.getOptionValue(
+                    SUBDOMAIN_ARG_NAME, SUBDOMAIN_ARG_VALUE);
+
+        int port = cmdLine.getIntOptionValue(PORT_ARG_NAME, PORT_ARG_VALUE);
+
+        String secret = cmdLine.getOptionValue(SECRET_ARG_NAME);
+
+        // Jicofo user
+        String focusDomain = cmdLine.getOptionValue(USER_DOMAIN_ARG_NAME);
+
+        String focusUserName
+            = cmdLine.getOptionValue(
+                    USER_NAME_ARG_NAME, USER_NAME_ARG_VALUE);
+
+        String focusPassword = cmdLine.getOptionValue(USER_PASSWORD_ARG_NAME);
 
         // Focus specific config properties
         System.setProperty(FocusManager.HOSTNAME_PNAME, host);
@@ -209,6 +177,12 @@ public class Main
             System.setProperty(
                     FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
         }
+
+        // Make sure that passwords values are not printed by
+        // the ConfigurationService on startup
+        ConfigurationServiceImpl.PASSWORD_SYS_PROPS = "pass";
+        ConfigurationServiceImpl
+            .PASSWORD_CMD_LINE_ARGS = "secret,user_password";
 
         /*
          * Start OSGi. It will invoke the application programming interfaces
@@ -223,6 +197,10 @@ public class Main
                     throws Exception
                 {
                     registerShutdownService(bundleContext);
+
+                    // Log config properties(hide password values)
+                    FocusBundleActivator.getConfigService()
+                        .logConfigurationProperties("(pass)|(secret)");
                 }
 
                 @Override
