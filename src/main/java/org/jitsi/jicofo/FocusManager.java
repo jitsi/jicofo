@@ -396,7 +396,7 @@ public class FocusManager
      * Enables shutdown mode which means that no new focus instances will
      * be allocated. After conference count drops to zero the process will exit.
      */
-    public void enableGracefulShutdownMode()
+    public synchronized void enableGracefulShutdownMode()
     {
         if (!this.shutdownInProgress)
         {
@@ -597,9 +597,15 @@ public class FocusManager
                 if (!enabled)
                     break;
 
+                ArrayList<JitsiMeetConference> conferenceCopy;
+                synchronized (this)
+                {
+                    conferenceCopy = new ArrayList<JitsiMeetConference>(
+                        conferences.values());
+                }
+
                 // Loop over conferences
-                for (JitsiMeetConference conference
-                    : new ArrayList<JitsiMeetConference>(conferences.values()))
+                for (JitsiMeetConference conference : conferenceCopy)
                 {
                     long idleStamp = conference.getIdleTimestamp();
                     // Is active ?
