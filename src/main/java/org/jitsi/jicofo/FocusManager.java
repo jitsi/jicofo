@@ -597,30 +597,38 @@ public class FocusManager
                 if (!enabled)
                     break;
 
-                ArrayList<JitsiMeetConference> conferenceCopy;
-                synchronized (this)
+                try
                 {
-                    conferenceCopy = new ArrayList<JitsiMeetConference>(
-                        conferences.values());
+                    ArrayList<JitsiMeetConference> conferenceCopy;
+                    synchronized (FocusManager.this)
+                    {
+                        conferenceCopy = new ArrayList<JitsiMeetConference>(
+                            conferences.values());
+                    }
+
+                    // Loop over conferences
+                    for (JitsiMeetConference conference : conferenceCopy)
+                    {
+                        long idleStamp = conference.getIdleTimestamp();
+                        // Is active ?
+                        if (idleStamp == -1)
+                        {
+                            continue;
+                        }
+                        if (System.currentTimeMillis() - idleStamp > timeout)
+                        {
+                            logger.info(
+                                "Focus idle timeout for "
+                                    + conference.getRoomName());
+
+                            conference.stop();
+                        }
+                    }
                 }
-
-                // Loop over conferences
-                for (JitsiMeetConference conference : conferenceCopy)
+                catch (Exception ex)
                 {
-                    long idleStamp = conference.getIdleTimestamp();
-                    // Is active ?
-                    if (idleStamp == -1)
-                    {
-                        continue;
-                    }
-                    if (System.currentTimeMillis() - idleStamp > timeout)
-                    {
-                        logger.info(
-                            "Focus idle timeout for "
-                                + conference.getRoomName());
-
-                        conference.stop();
-                    }
+                    logger.warn(
+                        "Error while checking for timeouted conference", ex);
                 }
             }
         }
