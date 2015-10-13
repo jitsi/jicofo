@@ -17,20 +17,13 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.shutdown.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.cmd.*;
-import org.jitsi.impl.configuration.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.meet.*;
 import org.jitsi.util.*;
-
-import org.jivesoftware.whack.*;
-
-import org.osgi.framework.*;
-
-import org.xmpp.component.*;
 
 /**
  * Provides the <tt>main</tt> entry point of Jitsi Meet conference focus.
@@ -178,156 +171,17 @@ public class Main
                     FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
         }
 
-        // Make sure that passwords values are not printed by
-        // the ConfigurationService on startup
-        ConfigurationServiceImpl.PASSWORD_SYS_PROPS = "pass";
-        ConfigurationServiceImpl
-            .PASSWORD_CMD_LINE_ARGS = "secret,user_password";
-
-        /*
-         * Start OSGi. It will invoke the application programming interfaces
-         * (APIs) of Jitsi Videobridge. Each of them will keep the application
-         * alive.
-         */
-        BundleActivator activator =
-            new BundleActivator()
-            {
-                @Override
-                public void start(BundleContext bundleContext)
-                    throws Exception
-                {
-                    registerShutdownService(bundleContext);
-
-                    // Log config properties(hide password values)
-                    FocusBundleActivator.getConfigService()
-                        .logConfigurationProperties("(pass)|(secret)");
-                }
-
-                @Override
-                public void stop(BundleContext bundleContext)
-                    throws Exception
-                {
-                    // TODO Auto-generated method stub
-                }
-            };
-
-        OSGi.start(activator);
-
-        ExternalComponentManager componentManager
-            = new ExternalComponentManager(host, port);
-
-        componentManager.setSecretKey(componentSubDomain, secret);
-        componentManager.setServerName(componentDomain);
+        ComponentMain componentMain = new ComponentMain();
 
         boolean focusAnonymous = StringUtils.isNullOrEmpty(focusPassword);
+
         FocusComponent component
-            = new FocusComponent(focusAnonymous,
-                                 focusUserName + "@" + focusDomain);
+            = new FocusComponent(
+                    host, port, componentDomain, componentSubDomain,
+                    secret, focusAnonymous, focusUserName + "@" + focusDomain);
 
-        boolean stop = false;
+        JicofoBundleConfig osgiBundles = new JicofoBundleConfig();
 
-        try
-        {
-            componentManager.addComponent(componentSubDomain, component);
-        }
-        catch (ComponentException e)
-        {
-            logger.error(
-                e.getMessage() + ", host:" + host + ", port:" + port, e);
-            stop = true;
-        }
-
-        component.init();
-
-        if (!stop)
-        {
-            try
-            {
-                synchronized (exitSynRoot)
-                {
-                    startQKeyHandler();
-
-                    exitSynRoot.wait();
-                }
-            }
-            catch (Exception e)
-            {
-                logger.error(e, e);
-            }
-        }
-        component.shutdown();
-        try
-        {
-            componentManager.removeComponent(componentSubDomain);
-        }
-        catch (ComponentException e)
-        {
-            logger.error(e, e);
-        }
-
-        component.dispose();
-
-        OSGi.stop();
-    }
-
-    /**
-     * FIXME Used for the time being for convenience - to be removed
-     */
-    private static void startQKeyHandler()
-    {
-
-        Thread handler = new Thread(new Runnable(){
-            @Override
-            public void run()
-            {
-                do
-                {
-                    try
-                    {
-                        if(System.in.read() == 'q')
-                            break;
-
-                        Thread.sleep(100);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error(e, e);
-                        break;
-                    }
-                }
-                while (true);
-                synchronized (exitSynRoot)
-                {
-                    exitSynRoot.notifyAll();
-                }
-            }
-        }, "q-key-handler");
-        handler.setDaemon(true);
-        handler.start();
-    }
-
-    /**
-     * Registers {@link ShutdownService} implementation that releases the main
-     * thread and exits the app.
-     *
-     * @param context the OSGi context on which shutdown service will
-     *                be registered.
-     */
-    private static void registerShutdownService(BundleContext context)
-    {
-        context.registerService(
-            ShutdownService.class,
-            new ShutdownService()
-            {
-                @Override
-                public void beginShutdown()
-                {
-                    synchronized (exitSynRoot)
-                    {
-                        exitSynRoot.notifyAll();
-                    }
-                }
-            },
-            null);
+        componentMain.runMainProgramLoop(component, osgiBundles);
     }
 }

@@ -58,7 +58,7 @@ public class FocusComponent
     /**
      * The JID from which shutdown request are accepted.
      */
-    private final String shutdownAllowedJid;
+    private String shutdownAllowedJid;
 
     /**
      * Indicates if the focus is anonymous user or authenticated system admin.
@@ -99,20 +99,28 @@ public class FocusComponent
 
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
+     * @param host the hostname or IP address to which this component will be
+     *             connected.
+     * @param port the port of XMPP server to which this component will connect.
+     * @param domain the name of main XMPP domain on which this component will
+     *               be served.
+     * @param subDomain the name of subdomain on which this component will be
+     *                  available.
+     * @param secret the password used by the component to authenticate with
+     *               XMPP server.
      * @param anonymousFocus indicates if the focus user is anonymous.
      * @param focusAuthJid the JID of authenticated focus user which will be
      *                     advertised to conference participants.
      */
-    public FocusComponent(boolean anonymousFocus, String focusAuthJid)
+    public FocusComponent(String host, int port,
+                          String domain, String subDomain,
+                          String secret,
+                          boolean anonymousFocus, String focusAuthJid)
     {
-        loadConfig(
-            FocusBundleActivator.getConfigService(), "org.jitsi.jicofo");
+        super(host, port, domain, subDomain, secret);
 
         this.isFocusAnonymous = anonymousFocus;
         this.focusAuthJid = focusAuthJid;
-        this.shutdownAllowedJid
-            = FocusBundleActivator.getConfigService()
-                    .getString(SHUTDOWN_ALLOWED_JID_PNAME);
 
         new ConferenceIqProvider();
         new ColibriIQProvider();
@@ -124,6 +132,13 @@ public class FocusComponent
     public void init()
     {
         BundleContext bc = FocusBundleActivator.bundleContext;
+
+        loadConfig(
+            FocusBundleActivator.getConfigService(), "org.jitsi.jicofo");
+
+        this.shutdownAllowedJid
+            = FocusBundleActivator.getConfigService()
+                    .getString(SHUTDOWN_ALLOWED_JID_PNAME);
 
         authAuthority
             = ServiceUtils.getService(bc, AuthenticationAuthority.class);

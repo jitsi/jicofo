@@ -21,7 +21,6 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
-import org.jitsi.jicofo.osgi.*;
 import org.junit.*;
 
 import static org.junit.Assert.assertEquals;
@@ -37,8 +36,6 @@ public class LeakingRoomsTest
     public static void setUpClass()
             throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 

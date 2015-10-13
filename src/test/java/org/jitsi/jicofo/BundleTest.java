@@ -26,7 +26,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 
 import net.java.sip.communicator.util.Logger;
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.util.*;
 
 import org.junit.*;
@@ -55,8 +54,6 @@ public class BundleTest
     public static void setUpClass()
         throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 

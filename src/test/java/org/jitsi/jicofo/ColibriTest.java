@@ -24,9 +24,7 @@ import mock.util.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.util.*;
-
 import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.service.neomedia.*;
@@ -55,8 +53,6 @@ public class ColibriTest
     public static void setUpClass()
         throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 

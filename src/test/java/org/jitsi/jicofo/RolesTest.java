@@ -23,8 +23,6 @@ import mock.util.*;
 
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.jicofo.osgi.*;
-
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -44,8 +42,6 @@ public class RolesTest
     public static void setUpClass()
         throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 

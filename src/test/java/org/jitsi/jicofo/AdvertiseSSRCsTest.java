@@ -25,7 +25,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 
 import net.java.sip.communicator.util.*;
-import org.jitsi.jicofo.osgi.*;
 
 import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
@@ -52,8 +51,6 @@ public class AdvertiseSSRCsTest
     public static void setUpClass()
         throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 

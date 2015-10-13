@@ -20,9 +20,10 @@ package org.jitsi.jicofo;
 import mock.*;
 import mock.xmpp.*;
 import mock.xmpp.pubsub.*;
+
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
-import org.jitsi.jicofo.osgi.*;
+
 import org.jitsi.videobridge.stats.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
@@ -66,8 +67,6 @@ public class PubSubBridgeSelectorTest
         System.setProperty(
             ComponentsDiscovery.ThroughPubSubDiscovery.MAX_STATS_REPORT_AGE_PNAME,
             String.valueOf(MAX_STATS_AGE));
-
-        OSGi.setUseMockProtocols(true);
 
         osgi.init();
     }

@@ -19,10 +19,13 @@ package org.jitsi.jicofo;
 
 import mock.*;
 import org.jitsi.jicofo.osgi.*;
+import org.jitsi.meet.*;
 import org.osgi.framework.*;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.
+ *
+ * FIXME there is similar class in JVB
  *
  * @author Pawel Domas
  */
@@ -54,7 +57,7 @@ public class OSGiHandler
                 bc = bundleContext;
                 synchronized (syncRoot)
                 {
-                    syncRoot.notify();
+                    syncRoot.notifyAll();
                 }
             }
 
@@ -62,9 +65,17 @@ public class OSGiHandler
             public void stop(BundleContext bundleContext)
                 throws Exception
             {
-
+                bc = null;
+                synchronized (syncRoot)
+                {
+                    syncRoot.notifyAll();
+                }
             }
         };
+
+        JicofoBundleConfig jicofoBundles = new JicofoBundleConfig();
+        jicofoBundles.setUseMockProtocols(true);
+        OSGi.setBundleConfig(jicofoBundles);
 
         OSGi.start(bundleActivator);
 
@@ -86,8 +97,11 @@ public class OSGiHandler
 
     public void shutdown()
     {
-        OSGi.stop();
-    }
+        if (bc != null)
+            OSGi.stop(bundleActivator);
 
+        if (bc != null)
+            throw new RuntimeException("Failed to stop OSGI");
+    }
 
 }

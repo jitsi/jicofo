@@ -18,13 +18,15 @@
 package org.jitsi.jicofo;
 
 import mock.*;
+
 import org.jitsi.impl.protocol.xmpp.extensions.*;
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.util.*;
+
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+
 import org.xmpp.packet.IQ;
 
 import static org.junit.Assert.assertNotNull;
@@ -42,8 +44,6 @@ public class XmppTest
     public static void setUpClass()
         throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 

@@ -21,7 +21,6 @@ import mock.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.osgi.*;
 
 import org.jitsi.jicofo.xmpp.*;
 import org.jivesoftware.smack.packet.*;
@@ -43,14 +42,16 @@ public class AuthenticationAuthorityTest
 {
     static OSGiHandler osgi = new OSGiHandler();
 
+    // This is called inside of the tests here
+    //@BeforeClass
     public static void setUpClass()
             throws InterruptedException
     {
-        OSGi.setUseMockProtocols(true);
-
         osgi.init();
     }
 
+    // This is called inside of the tests here
+    //@AfterClass
     public static void tearDownClass()
     {
         osgi.shutdown();

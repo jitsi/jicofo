@@ -24,7 +24,6 @@ import mock.xmpp.pubsub.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.videobridge.stats.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -68,8 +67,6 @@ public class BridgeSelectorTest
 
         System.setProperty(
             BridgeSelector.BRIDGE_TO_PUBSUB_PNAME, bridgeMapping);
-
-        OSGi.setUseMockProtocols(true);
 
         osgi.init();
     }
