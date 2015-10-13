@@ -25,10 +25,14 @@ import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.reservation.*;
+import org.jitsi.meet.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.xmpp.component.*;
 import org.jitsi.xmpp.util.*;
+
 import org.jivesoftware.smack.packet.*;
+
 import org.osgi.framework.*;
 import org.xmpp.component.*;
 import org.xmpp.packet.IQ;
@@ -41,6 +45,7 @@ import org.xmpp.packet.IQ;
  */
 public class FocusComponent
     extends ComponentBase
+    implements BundleActivator
 {
     /**
      * The logger.
@@ -131,14 +136,23 @@ public class FocusComponent
      */
     public void init()
     {
-        BundleContext bc = FocusBundleActivator.bundleContext;
+        OSGi.start(this);
+    }
 
-        loadConfig(
-            FocusBundleActivator.getConfigService(), "org.jitsi.jicofo");
+    /**
+     * Method will be called by OSGi after {@link #init()} is called.
+     */
+    @Override
+    public void start(BundleContext bc)
+        throws Exception
+    {
+        ConfigurationService configService
+            = ServiceUtils.getService(bc, ConfigurationService.class);
+
+        loadConfig(configService, "org.jitsi.jicofo");
 
         this.shutdownAllowedJid
-            = FocusBundleActivator.getConfigService()
-                    .getString(SHUTDOWN_ALLOWED_JID_PNAME);
+            = configService.getString(SHUTDOWN_ALLOWED_JID_PNAME);
 
         authAuthority
             = ServiceUtils.getService(bc, AuthenticationAuthority.class);
@@ -153,6 +167,16 @@ public class FocusComponent
      * Releases resources used by this instance.
      */
     public void dispose()
+    {
+        OSGi.stop(this);
+    }
+
+    /**
+     * Methods will be invoked by OSGi after {@link #dispose()} is called.
+     */
+    @Override
+    public void stop(BundleContext bundleContext)
+        throws Exception
     {
         focusManager.stop();
 
