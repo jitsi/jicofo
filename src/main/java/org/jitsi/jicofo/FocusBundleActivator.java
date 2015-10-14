@@ -22,8 +22,8 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.service.configuration.*;
 
-import org.jitsi.videobridge.eventadmin.*;
-import org.jitsi.videobridge.osgi.*;
+import org.jitsi.eventadmin.*;
+import org.jitsi.osgi.*;
 import org.osgi.framework.*;
 
 import java.util.concurrent.*;

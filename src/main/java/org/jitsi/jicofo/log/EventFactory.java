@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.log;
 
 import org.jitsi.util.*;
-import org.jitsi.videobridge.eventadmin.*;
+import org.jitsi.eventadmin.*;
 import org.jitsi.videobridge.influxdb.*;
 import org.json.simple.*;
 import org.json.simple.parser.*;

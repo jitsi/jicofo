@@ -28,7 +28,7 @@ import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.eventadmin.*;
+import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.provider.*;
 
 import java.util.*;

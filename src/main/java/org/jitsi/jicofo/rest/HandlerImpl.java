@@ -22,7 +22,7 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import org.eclipse.jetty.server.*;
 import org.jitsi.jicofo.FocusManager;
-import org.jitsi.videobridge.rest.*;
+import org.jitsi.rest.*;
 import org.osgi.framework.*;
 
 /**

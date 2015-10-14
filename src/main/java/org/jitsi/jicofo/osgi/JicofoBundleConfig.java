@@ -137,7 +137,7 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/videobridge/eventadmin/Activator"
+                "org/jitsi/eventadmin/Activator"
             },
             {
                 "org/jitsi/videobridge/influxdb/Activator"

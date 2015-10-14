@@ -22,6 +22,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.eclipse.jetty.ajp.*;
 import org.eclipse.jetty.server.*;
+import org.jitsi.rest.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.osgi.framework.*;
@@ -36,7 +37,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class AuthBundleActivator
-    extends org.jitsi.videobridge.rest.AbstractJettyBundleActivator
+    extends AbstractJettyBundleActivator
 {
     /**
      * The prefix of the names of {@code ConfigurationService} and/or

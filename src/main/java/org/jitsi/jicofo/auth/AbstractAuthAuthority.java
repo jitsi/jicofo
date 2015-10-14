@@ -25,7 +25,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.eventadmin.*;
+import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
 
 import net.java.sip.communicator.util.*;

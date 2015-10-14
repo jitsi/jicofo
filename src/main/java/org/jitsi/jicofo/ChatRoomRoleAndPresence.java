@@ -25,7 +25,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.eventadmin.*;
+import org.jitsi.eventadmin.*;
 
 /**
  * Class handled MUC roles and presence for the focus in particular:
