@@ -227,7 +227,7 @@ class ShibbolethHandler
         // Close this window or redirect ?
         boolean close = "true".equalsIgnoreCase(request.getParameter("close"));
 
-        responseWriter.println("<html><head><head/><body>");
+        responseWriter.println("<!DOCTYPE html><html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><head/><body>");
         responseWriter.println("<h1>Hello " + displayName + "!<h1/>");
         if (!close)
         {
