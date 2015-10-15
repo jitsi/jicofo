@@ -17,20 +17,26 @@
  */
 package org.jitsi.jicofo.log;
 
+import net.java.sip.communicator.util.*;
+
+import org.jitsi.influxdb.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.videobridge.influxdb.*;
 
 /**
- * Extends <tt>org.jitsi.videobridge.influxdb.LoggingHandler</tt> with
- * jicofo-specific functionality.
+ * Extends <tt>AbstractLoggingHandler</tt> with jicofo-specific functionality.
  *
  * @author Boris Grozev
  * @author Pawel Domas
  */
 public class LoggingHandler
-    extends org.jitsi.videobridge.influxdb.LoggingHandler
+    extends AbstractLoggingHandler
 {
+    /**
+     * The logger
+     */
+    private final static Logger logger = Logger.getLogger(LoggingHandler.class);
+
     /**
      * The names of the columns of an "endpoint display name" event.
      */
@@ -252,7 +258,7 @@ public class LoggingHandler
         }
         else
         {
-            super.handleEvent(event);
+            logger.warn("Unhandled event: " + event);
         }
     }
 

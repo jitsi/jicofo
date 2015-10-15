@@ -140,7 +140,7 @@ public class JicofoBundleConfig
                 "org/jitsi/eventadmin/Activator"
             },
             {
-                "org/jitsi/videobridge/influxdb/Activator"
+                "org/jitsi/jicofo/log/Activator"
             },
             useMockProtocols
                 ? new String[] { "mock/MockMainMethodActivator" }
@@ -148,19 +148,5 @@ public class JicofoBundleConfig
         };
 
         return bundles;
-    }
-
-    @Override
-    protected Map<String, String> getSystemPropertyDefaults()
-    {
-        Map<String, String> defaults = super.getSystemPropertyDefaults();
-
-        // Use the jicofo extended handler
-        defaults.put(
-            org.jitsi.videobridge.influxdb.Activator
-                .LOGGING_HANDLER_CLASS_PNAME,
-            org.jitsi.jicofo.log.LoggingHandler.class.getCanonicalName());
-
-        return defaults;
     }
 }

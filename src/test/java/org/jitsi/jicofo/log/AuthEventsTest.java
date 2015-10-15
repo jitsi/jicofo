@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.log;
 
-import org.jitsi.videobridge.eventadmin.*;
+import org.jitsi.eventadmin.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;

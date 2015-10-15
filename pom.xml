@@ -112,10 +112,6 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>jitsi-videobridge</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>libjitsi</artifactId>
     </dependency>
     <dependency>
@@ -140,6 +136,11 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>fmj</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jitsi-videobridge</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

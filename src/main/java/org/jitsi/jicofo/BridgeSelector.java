@@ -23,7 +23,6 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jitsi.videobridge.stats.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -395,19 +394,19 @@ public class BridgeSelector
 
             ColibriStatsExtension.Stat stat
                 = (ColibriStatsExtension.Stat) child;
-            if (VideobridgeStatistics.CONFERENCES.equals(stat.getName()))
+            if ("conferences".equals(stat.getName()))
             {
                 Integer val = getStatisticIntValue(stat);
                 if(val != null)
                     bridgeState.setConferenceCount(val);
             }
-            else if (VideobridgeStatistics.VIDEOCHANNELS.equals(stat.getName()))
+            else if ("videochannels".equals(stat.getName()))
             {
                 Integer val = getStatisticIntValue(stat);
                 if(val != null)
                     bridgeState.setVideoChannelCount(val);
             }
-            else if (VideobridgeStatistics.VIDEOSTREAMS.equals(stat.getName()))
+            else if ("videostreams".equals(stat.getName()))
             {
                 Integer val = getStatisticIntValue(stat);
                 if(val != null)

@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.log;
 
+import org.jitsi.influxdb.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.videobridge.influxdb.*;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -33,7 +33,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class EventFactory
-    extends org.jitsi.videobridge.EventFactory
+    extends AbstractEventFactory
 {
     /**
      * The logger instance used by this class.
