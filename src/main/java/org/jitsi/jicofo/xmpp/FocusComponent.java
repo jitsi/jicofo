@@ -151,6 +151,9 @@ public class FocusComponent
 
         loadConfig(configService, "org.jitsi.jicofo");
 
+        if (!isPingTaskStarted())
+            startPingTask();
+
         this.shutdownAllowedJid
             = configService.getString(SHUTDOWN_ALLOWED_JID_PNAME);
 
