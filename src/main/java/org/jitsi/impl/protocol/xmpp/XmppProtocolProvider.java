@@ -21,11 +21,13 @@ import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
+import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.util.*;
+import org.jitsi.retry.*;
+import org.jitsi.util.Logger;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
@@ -33,6 +35,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.packet.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * XMPP protocol provider service used by Jitsi Meet focus to create anonymous
@@ -69,6 +72,12 @@ public class XmppProtocolProvider
      * The XMPP connection used by this instance.
      */
     private XMPPConnection connection;
+
+    /**
+     * We need a retry strategy for the first connect attempt. Later those are
+     * handled by Smack internally.
+     */
+    private RetryStrategy connectRetry;
 
     /**
      * Listens to connection status updates.
@@ -154,13 +163,51 @@ public class XmppProtocolProvider
 
         connection = new XMPPConnection(connConfig);
 
+        if (logger.isDebugEnabled())
+        {
+            enableDebugPacketsLogging();
+        }
+
+        ScheduledExecutorService executorService
+            = ServiceUtils.getService(
+                    XmppProtocolActivator.bundleContext,
+                    ScheduledExecutorService.class);
+
+        connectRetry = new RetryStrategy(executorService);
+
+        // FIXME we could make retry interval configurable, but we do not have
+        // control over retries executed by smack after first connect, so...
+        connectRetry.runRetryingTask(
+            new SimpleRetryTask(0, 5000L, true, getConnectCallable()));
+    }
+
+    private Callable<Boolean> getConnectCallable()
+    {
+        return new Callable<Boolean>()
+        {
+            @Override
+            public Boolean call()
+                throws Exception
+            {
+                return doConnect();
+            }
+        };
+    }
+
+    /**
+     * Method tries to establish the connection to XMPP server and return
+     * <tt>false</tt> in case we have failed want to retry connection attempt.
+     * <tt>true</tt> is returned when we either connect successfully or when we
+     * detect that there is no chance to get connected any any future retries
+     * should be cancelled.
+     */
+    synchronized private boolean doConnect()
+    {
+        if (connection == null)
+            return false;
+
         try
         {
-            if (logger.isDebugEnabled())
-            {
-                enableDebugPacketsLogging();
-            }
-
             connection.connect();
 
             connection.addConnectionListener(connListener);
@@ -176,26 +223,27 @@ public class XmppProtocolProvider
                 String resource = jabberAccountID.getResource();
                 connection.login(login, pass, resource);
             }
+
+            colibriTools.initialize(getConnectionAdapter());
+
+            jingleOpSet.initialize();
+
+            discoInfoManager = new ScServiceDiscoveryManager(
+                XmppProtocolProvider.this, connection,
+                new String[]{}, new String[]{}, false);
+
+            notifyConnected();
+
+            logger.info("XMPP provider " + jabberAccountID +
+                        " connected (JID: " + connection.getUser() + ")");
+
+            return false;
         }
         catch (XMPPException e)
         {
-            throw new OperationFailedException(
-                "Failed to connect",
-                OperationFailedException.GENERAL_ERROR, e);
+            logger.error("Failed to connect: " + e.getMessage(), e);
+            return true;
         }
-
-        colibriTools.initialize(getConnectionAdapter());
-
-        jingleOpSet.initialize();
-
-        discoInfoManager = new ScServiceDiscoveryManager(
-            this, connection,
-            new String[]{}, new String[]{}, false);
-
-        notifyConnected();
-
-        logger.info("XMPP provider " + jabberAccountID + " connected (JID: "
-            + connection.getUser() + ")");
     }
 
     private void notifyConnected()
@@ -249,6 +297,12 @@ public class XmppProtocolProvider
     {
         if (connection == null)
             return;
+
+        if (connectRetry != null)
+        {
+            connectRetry.cancel();
+            connectRetry = null;
+        }
 
         connection.disconnect();
 

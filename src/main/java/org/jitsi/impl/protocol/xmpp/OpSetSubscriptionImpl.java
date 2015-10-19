@@ -22,6 +22,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
+import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.pubsub.*;
@@ -80,15 +81,13 @@ public class OpSetSubscriptionImpl
         = new HashMap<String, Subscription>();
 
     /**
-     * Parent XMPP provider used to hndle the protocol.
+     * Parent XMPP provider used to handle the protocol.
      */
     private final XmppProtocolProvider parentProvider;
 
     /**
-     * Executor service.
+     * How often do we retry PubSub subscribe operation(in ms).
      */
-    private ScheduledExecutorService executor;
-
     private Long retryInterval;
 
     /**
@@ -103,20 +102,6 @@ public class OpSetSubscriptionImpl
         this.pubSubAddress
             = FocusBundleActivator.getConfigService()
                     .getString(PUBSUB_ADDRESS_PNAME);
-    }
-
-    /**
-     * Gets <tt>ScheduledExecutorService</tt> service.
-     */
-    private ScheduledExecutorService getExecutor()
-    {
-        if (executor == null)
-        {
-            executor = ServiceUtils.getService(
-                    XmppProtocolActivator.bundleContext,
-                    ScheduledExecutorService.class);
-        }
-        return executor;
     }
 
     /**
@@ -294,9 +279,9 @@ public class OpSetSubscriptionImpl
             = new CopyOnWriteArrayList<SubscriptionListener>();
 
         /**
-         * Set to true on un-subscribe to cancel re-tries.
+         * Retry strategy for subscribe operation.
          */
-        private boolean cancelled = false;
+        private final RetryStrategy retryStrategy;
 
         /**
          * Creates new subscription instance.
@@ -313,6 +298,9 @@ public class OpSetSubscriptionImpl
 
             this.node = node;
             this.listeners.add(listener);
+            this.retryStrategy
+                = new RetryStrategy(
+                        XmppProtocolActivator.bundleContext);
         }
 
         /**
@@ -357,9 +345,15 @@ public class OpSetSubscriptionImpl
         /**
          * Tries to subscribe to PubSub node notifications and returns
          * <tt>true</> on success.
+         *
+         * @throws Exception if application specific error occurs
          */
-        private boolean trySubscribe()
+        synchronized private boolean doSubscribe()
+            throws Exception
         {
+            if (retryStrategy.isCancelled())
+                return false;
+
             logger.info("Subscribing to " + node + " node at " + pubSubAddress);
 
             PubSubManager manager = getManager();
@@ -375,28 +369,14 @@ public class OpSetSubscriptionImpl
                     pubSubNode.addItemEventListener(OpSetSubscriptionImpl.this);
                     pubSubNode.subscribe(parentProvider.getOurJid());
                 }
-                return true;
+                return false;
             }
             catch (XMPPException e)
             {
                 logger.error(e.getMessage(), e);
-                return false;
-            }
-        }
 
-        /**
-         * Schedules subscribe task for later execution
-         */
-        private void retry()
-        {
-            getExecutor().schedule(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    subscribe();
-                }
-            }, getRetryInterval(), TimeUnit.MILLISECONDS);
+                return true;
+            }
         }
 
         /**
@@ -404,13 +384,9 @@ public class OpSetSubscriptionImpl
          */
         synchronized void subscribe()
         {
-            if (cancelled)
-                return;
-
-            if (!trySubscribe())
-            {
-                retry();
-            }
+            retryStrategy.runRetryingTask(
+                new SimpleRetryTask(
+                        0, getRetryInterval(), true, getRetryCallable()));
         }
 
         /**
@@ -418,7 +394,7 @@ public class OpSetSubscriptionImpl
          */
         synchronized void unSubscribe()
         {
-            cancelled = true;
+            retryStrategy.cancel();
 
             if (!parentProvider.isRegistered())
             {
@@ -443,6 +419,19 @@ public class OpSetSubscriptionImpl
             {
                 logger.error(e.getMessage(), e);
             }
+        }
+
+        private Callable<Boolean> getRetryCallable()
+        {
+            return new Callable<Boolean>()
+            {
+                @Override
+                public Boolean call()
+                    throws Exception
+                {
+                    return doSubscribe();
+                }
+            };
         }
     }
 }
