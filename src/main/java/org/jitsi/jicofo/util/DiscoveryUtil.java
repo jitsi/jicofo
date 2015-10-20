@@ -37,6 +37,11 @@ public class DiscoveryUtil
         = Logger.getLogger(DiscoveryUtil.class);
 
     /**
+     * List contains default feature set.
+     */
+    private static ArrayList<String> defaultFeatures;
+
+    /**
      * Audio RTP feature name.  
      */
     public final static String FEATURE_AUDIO
@@ -115,17 +120,22 @@ public class DiscoveryUtil
     }
 
     /**
-     * Returns default participant feature set.
+     * Returns default participant feature set(all features).
      */
     static public List<String> getDefaultParticipantFeatureSet()
     {
-        ArrayList<String> features = new ArrayList<String>(4);
-        features.add(FEATURE_AUDIO);
-        features.add(FEATURE_VIDEO);
-        features.add(FEATURE_ICE);
-        features.add(FEATURE_SCTP);
-        features.add(FEATURE_DTLS);
-        return features;
+        if (defaultFeatures == null)
+        {
+            defaultFeatures = new ArrayList<String>(7);
+            defaultFeatures.add(FEATURE_AUDIO);
+            defaultFeatures.add(FEATURE_VIDEO);
+            defaultFeatures.add(FEATURE_ICE);
+            defaultFeatures.add(FEATURE_SCTP);
+            defaultFeatures.add(FEATURE_DTLS);
+            defaultFeatures.add(FEATURE_RTCP_MUX);
+            defaultFeatures.add(FEATURE_RTP_BUNDLE);
+        }
+        return defaultFeatures;
     }
 
     /**
