@@ -1226,6 +1226,8 @@ public class JitsiMeetConference
             {
                 logger.info("Hanging up member " + contactAddress);
 
+                jingle.terminateSession(peerJingleSession, Reason.GONE);
+
                 removeSSRCs(peerJingleSession,
                         leftPeer.getSSRCsCopy(),
                         leftPeer.getSSRCGroupsCopy());
@@ -1238,7 +1240,6 @@ public class JitsiMeetConference
                     colibriConference.expireChannels(
                         leftPeer.getColibriChannelsInfo());
                 }
-                //jingle.terminateSession(session.getJingleSession());
             }
             boolean removed = participants.remove(leftPeer);
             logger.info(
