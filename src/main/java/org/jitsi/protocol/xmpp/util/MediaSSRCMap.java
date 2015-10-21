@@ -104,9 +104,12 @@ public class MediaSSRCMap
      *
      * @param mapToRemove the map that contains media SSRCs to be removed from
      *                    this instance f they are present.
+     * @return the <tt>MediaSSRCMap</tt> that contains only these SSRCs that
+     *         were actually removed(existed in this map).
      */
-    public void remove(MediaSSRCMap mapToRemove)
+    public MediaSSRCMap remove(MediaSSRCMap mapToRemove)
     {
+        MediaSSRCMap removedSSRCs = new MediaSSRCMap();
         // FIXME: fix duplication
         for (String media : mapToRemove.ssrcs.keySet())
         {
@@ -129,7 +132,10 @@ public class MediaSSRCMap
             }
 
             ssrcList.removeAll(toBeRemoved);
+
+            removedSSRCs.getSSRCsForMedia(media).addAll(toBeRemoved);
         }
+        return removedSSRCs;
     }
 
     /**

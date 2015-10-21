@@ -183,10 +183,11 @@ public class Participant
     /**
      * Removes given media SSRCs from this peer state.
      * @param ssrcMap the SSRC map that contains the SSRCs to be removed.
+     * @return <tt>MediaSSRCMap</tt> which contains SSRCs removed from this map.
      */
-    public void removeSSRCs(MediaSSRCMap ssrcMap)
+    public MediaSSRCMap removeSSRCs(MediaSSRCMap ssrcMap)
     {
-        this.ssrcs.remove(ssrcMap);
+        return ssrcs.remove(ssrcMap);
     }
 
     /**
@@ -481,12 +482,14 @@ public class Participant
 
     /**
      * Removes SSRC groups from this participant state.
-     * @param ssrcGroupsToRemove the map of SSRC groups that will be removed
-     *                           from this participant media state description.
+     * @param groupsToRemove the map of SSRC groups that will be removed
+     *                       from this participant media state description.
+     * @return <tt>MediaSSRCGroupMap</tt> which contains SSRC groups removed
+     *         from this map.
      */
-    public void removeSSRCGroups(MediaSSRCGroupMap ssrcGroupsToRemove)
+    public MediaSSRCGroupMap removeSSRCGroups(MediaSSRCGroupMap groupsToRemove)
     {
-        this.ssrcGroups.remove(ssrcGroupsToRemove);
+        return ssrcGroups.remove(groupsToRemove);
     }
 
     /**

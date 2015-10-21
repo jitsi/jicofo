@@ -156,9 +156,13 @@ public class MediaSSRCGroupMap
      * this map if they exist.
      * @param mapToRemove the <tt>MediaSSRCGroupMap</tt> that contains SSRC
      *                    groups mappings to be removed from this instance.
+     * @return the <tt>MediaSSRCGroupMap</tt> that contains only these SSRC
+     *         groups which were actually removed(existed in this map).
      */
-    public void remove(MediaSSRCGroupMap mapToRemove)
+    public MediaSSRCGroupMap remove(MediaSSRCGroupMap mapToRemove)
     {
+        MediaSSRCGroupMap removedGroups = new MediaSSRCGroupMap();
+
         for (String media : mapToRemove.groupMap.keySet())
         {
             List<SSRCGroup> groupList
@@ -179,8 +183,12 @@ public class MediaSSRCGroupMap
                 }
             }
 
+            removedGroups.getSSRCGroupsForMedia(media).addAll(toBeRemoved);
+
             groupList.removeAll(toBeRemoved);
         }
+
+        return removedGroups;
     }
 
     /**

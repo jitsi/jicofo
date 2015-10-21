@@ -1650,9 +1650,23 @@ public class JitsiMeetConference
             return;
         }
 
-        sourcePeer.removeSSRCs(ssrcsToRemove);
+        // Only SSRCs owned by this peer end up in "removed" set
+        MediaSSRCMap removedSSRCs = sourcePeer.removeSSRCs(ssrcsToRemove);
 
-        sourcePeer.removeSSRCGroups(ssrcGroupsToRemove);
+        MediaSSRCGroupMap removedGroups
+            = sourcePeer.removeSSRCGroups(ssrcGroupsToRemove);
+
+        if (removedSSRCs.isEmpty() && removedGroups.isEmpty())
+        {
+            logger.warn(
+                "No ssrcs or groups to be removed from: "
+                    + sourceJingleSession.getAddress());
+            return;
+        }
+
+        // This prevents from removing SSRCs which do not belong to this peer
+        ssrcsToRemove = removedSSRCs;
+        ssrcGroupsToRemove = removedGroups;
 
         // Updates SSRC Groups on the bridge
         colibriConference.updateSourcesInfo(
