@@ -116,6 +116,11 @@
               overwrite="true"/>
         <chmod file="${debian.dir}/usr/share/jicofo/jicofo.sh"
                perm="755"/>
+        <copy file="resources/collect-dump-logs.sh"
+              todir="${debian.dir}/usr/share/jicofo"
+              overwrite="true"/>
+        <chmod file="${debian.dir}/usr/share/jicofo/collect-dump-logs.sh"
+               perm="755"/>
 
         <!-- creating a debian archive file
         <tar destfile="jicofo_${label}-1.debian.tar.gz"
