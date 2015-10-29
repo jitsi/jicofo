@@ -583,6 +583,11 @@ public class BridgeSelector
          */
         public void setVideoStreamCount(int streamCount)
         {
+            if (this.videoStreamCount != streamCount)
+            {
+                logger.info(
+                    "Video stream count for: " + jid + ": " + streamCount);
+            }
             this.videoStreamCount = streamCount;
         }
 
