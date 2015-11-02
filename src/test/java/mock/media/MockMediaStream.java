@@ -29,6 +29,8 @@ import java.util.*;
 
 /**
  *
+ * @author Pawel Domas
+ * @author Lyubomir Marinov
  */
 public class MockMediaStream
     extends AbstractMediaStream
@@ -57,6 +59,17 @@ public class MockMediaStream
 
     @Override
     public void close()
+    {
+    }
+
+    @Override
+    public void configureSSRCRewriting(
+            Set<Integer> ssrcGroup,
+            Integer ssrcTargetPrimary,
+            Map<Integer, Byte> ssrc2fec,
+            Map<Integer, Byte> ssrc2red,
+            Map<Integer, Integer> rtxGroups,
+            Integer ssrcTargetRTX)
     {
     }
 
