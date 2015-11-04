@@ -1921,6 +1921,13 @@ public class JitsiMeetConference
             return false;
         }
 
+        // do not allow unmuting other participants even for the moderator
+        if (!doMute && !fromJid.equals(toBeMutedJid))
+        {
+            logger.warn("Do not allow unmuting other participants!");
+            return false;
+        }
+
         logger.info(
             "Will " + (doMute ? "mute" : "unmute")
                 + " " + toBeMutedJid + " on behalf of " + fromJid);
