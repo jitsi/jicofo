@@ -18,7 +18,7 @@ org.jitsi.impl.reservation.rest.BASE_URL=http://reservation.example.com
 ```
 
 It can be either specified with <tt>-Darg=value</tt> when running from the
-command line directly or in <tt>/usr/share/jicofo/.sip-communicator/sip-communicator.properties</tt>
+command line directly or in <tt>/etc/jitsi/jicofo/sip-communicator.properties</tt>
 in case Jicofo has been installed from our [Debian package].
  
 [Debian package]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md

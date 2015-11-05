@@ -143,7 +143,7 @@ authenticated domain.
 ```
 
 If you have Jicofo installed from the Debian package this should go directly to
-<b>/usr/share/jicofo/.sip-communicator/sip-communicator.properties</b> file:
+<b>/etc/jitsi/jicofo/sip-communicator.properties</b> file:
 ```
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```

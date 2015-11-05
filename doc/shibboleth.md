@@ -287,7 +287,7 @@ Before <b>\<ApplicationDefaults\></b> element append following config(replace
 
 ###Enable Shibboleth servlet in Jicofo
 
-Edit <b>/usr/share/jicofo/.sip-communicator/sip-communicator.properties</b> file
+Edit <b>/etc/jitsi/jicofo/sip-communicator.properties</b> file
 and add following lines:
 
 ```
