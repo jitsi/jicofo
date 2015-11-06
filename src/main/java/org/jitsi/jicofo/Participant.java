@@ -178,6 +178,9 @@ public class Participant
         }
         // Store SSRCs
         ssrcs.add(peerSSRCs);
+
+        // FIXME to be removed when we use single stream in jitsi-meet client
+        SSRCSignaling.mergeAudioIntoVideo(ssrcs);
     }
 
     /**
