@@ -19,7 +19,7 @@
   <url>https://github.com/jitsi/jicofo</url>
 
   <properties>
-    <assembly.skipAssembly>false</assembly.skipAssembly>
+    <assembly.skipAssembly>true</assembly.skipAssembly>
     <jetty.version>8.1.16.v20140903</jetty.version>
   </properties>
 
