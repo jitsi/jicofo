@@ -167,24 +167,26 @@ public class ComponentsDiscovery
         long interval = FocusBundleActivator.getConfigService()
             .getLong(REDISCOVERY_INTERVAL_PNAME, DEFAULT_REDISCOVERY_INT);
 
-        if (interval <= 0)
+        if (interval > 0)
+        {
+            if (rediscoveryTimer != null)
+            {
+                logger.warn(
+                    "Attempt to schedule rediscovery when it's already done");
+                return;
+            }
+
+            logger.info("Services re-discovery interval: " + interval);
+
+            rediscoveryTimer = new Timer();
+
+            rediscoveryTimer.schedule(
+                new RediscoveryTask(), interval, interval);
+        }
+        else
         {
             logger.info("Service rediscovery disabled");
-            return;
         }
-
-        if (rediscoveryTimer != null)
-        {
-            logger.warn(
-                "Attempt to schedule rediscovery when it's already done");
-            return;
-        }
-
-        logger.info("Services re-discovery interval: " + interval);
-
-        rediscoveryTimer = new Timer();
-
-        rediscoveryTimer.schedule(new RediscoveryTask(), interval, interval);
 
         if (!StringUtils.isNullOrEmpty(statsPubSubNode))
         {
