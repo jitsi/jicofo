@@ -1866,16 +1866,6 @@ public class JitsiMeetConference
     }
 
     /**
-     * Gets the full real (as opposed to the room JID in a MUC) JID of the
-     * focus.
-     * @return the full real JID of the focus.
-     */
-    private String getFocusRealJid()
-    {
-        return getXmppProvider().getAccountID().getAccountAddress();
-    }
-
-    /**
      * Returns {@link JitsiMeetServices} instance used in this conference.
      */
     public JitsiMeetServices getServices()
