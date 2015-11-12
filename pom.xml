@@ -141,6 +141,10 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>ice4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
       <scope>test</scope>
     </dependency>
