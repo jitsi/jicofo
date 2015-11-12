@@ -178,4 +178,9 @@ public class MockVideobridge
     {
         return bridgeJid;
     }
+
+    public int getConferenceCount()
+    {
+        return bridge.getConferenceCount();
+    }
 }

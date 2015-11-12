@@ -237,4 +237,10 @@ public class MockProtocolProvider
         return (MockSetSimpleCapsOpSet)
             getOperationSet(OperationSetSimpleCaps.class);
     }
+
+    public MockColibriOpSet getMockColibriOpSet()
+    {
+        return (MockColibriOpSet)
+            getOperationSet(OperationSetColibriConference.class);
+    }
 }

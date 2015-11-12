@@ -41,6 +41,12 @@ public class MockColibriOpSet
         colibriImpl.initialize(protocolProvider.getMockXmppConnection());
     }
 
+    public AllocThreadingTestColibriConference createAllocThreadingConf()
+    {
+        return new AllocThreadingTestColibriConference(
+            protocolProvider.getMockXmppConnection());
+    }
+
     @Override
     public ColibriConference createNewConference()
     {
