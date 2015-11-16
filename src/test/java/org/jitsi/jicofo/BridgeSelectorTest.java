@@ -34,9 +34,7 @@ import org.junit.runners.*;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Tests for bridge selection logic.
@@ -283,15 +281,18 @@ public class BridgeSelectorTest
             // Test node should recover
             assertEquals(nodes[testNode], selector.selectVideobridge());
         }
+
+        selector.setFailureResetThreshold(
+            BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
     }
 
-    PacketExtension createJvbStats(int conferenceCount)
+    PacketExtension createJvbStats(int videoStreamCount)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                VideobridgeStatistics.CONFERENCES, "" + conferenceCount));
+                VideobridgeStatistics.VIDEOSTREAMS, "" + videoStreamCount));
 
         return statsExtension;
     }
