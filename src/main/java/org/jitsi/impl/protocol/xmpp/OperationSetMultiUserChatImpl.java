@@ -91,6 +91,8 @@ public class OperationSetMultiUserChatImpl
                                    Map<String, Object> roomProperties)
         throws OperationFailedException, OperationNotSupportedException
     {
+        roomName = roomName.toLowerCase();
+
         if (rooms.containsKey(roomName))
         {
             throw new OperationFailedException(
@@ -112,6 +114,8 @@ public class OperationSetMultiUserChatImpl
     public ChatRoom findRoom(String roomName)
         throws OperationFailedException, OperationNotSupportedException
     {
+        roomName = roomName.toLowerCase();
+
         ChatRoom room = rooms.get(roomName);
         if (room == null)
         {

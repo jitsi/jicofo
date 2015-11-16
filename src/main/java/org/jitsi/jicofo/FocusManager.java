@@ -245,6 +245,8 @@ public class FocusManager
         if (StringUtils.isNullOrEmpty(room))
             return false;
 
+        room = room.toLowerCase();
+
         if (!conferences.containsKey(room))
         {
             if (shutdownInProgress)
@@ -330,6 +332,8 @@ public class FocusManager
      */
     public synchronized void destroyConference(String roomName, String reason)
     {
+        roomName = roomName.toLowerCase();
+
         JitsiMeetConference conference = getConference(roomName);
         if (conference == null)
         {
@@ -383,6 +387,8 @@ public class FocusManager
      */
     public JitsiMeetConference getConference(String roomName)
     {
+        roomName = roomName.toLowerCase();
+
         // Other public methods which read from and/or write to the field
         // conferences are sychronized (e.g. conferenceEnded, conferenceRequest)
         // so synchronization is necessary here as well.
