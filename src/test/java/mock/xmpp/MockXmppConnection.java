@@ -109,7 +109,9 @@ public class MockXmppConnection
                              && p instanceof IQ)
                     {
                         IQ iq = (IQ) p;
-                        if (IQ.Type.RESULT.equals(iq.getType())
+                        IQ.Type iqType = iq.getType();
+                        if ((IQ.Type.RESULT.equals(iqType) || IQ.Type.ERROR.equals(iqType))
+
                             && packetId.equals(p.getPacketID()))
                         {
                             myPacket = p;

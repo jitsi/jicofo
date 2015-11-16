@@ -22,6 +22,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.videobridge.simulcast.*;
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 
@@ -48,6 +49,8 @@ public class MockVideobridge
     private boolean run = true;
 
     private Videobridge bridge;
+
+    private XMPPError.Condition error;
 
     public MockVideobridge(BundleContext bc,
                            MockXmppConnection connection,
@@ -102,10 +105,19 @@ public class MockVideobridge
             {
                 logger.debug("JVB rcv: " + p.toXML());
 
-                IQ response
-                    = bridge.handleColibriConferenceIQ(
-                            (ColibriConferenceIQ) p,
-                            Videobridge.OPTION_ALLOW_ANY_FOCUS);
+                IQ response;
+                if (error == null)
+                {
+                    response
+                        = bridge.handleColibriConferenceIQ(
+                                (ColibriConferenceIQ) p,
+                                Videobridge.OPTION_ALLOW_ANY_FOCUS);
+                }
+                else
+                {
+                    response = IQ.createErrorResponse(
+                        (IQ) p, new XMPPError(error));
+                }
 
                 if (response != null)
                 {
@@ -182,5 +194,15 @@ public class MockVideobridge
     public int getConferenceCount()
     {
         return bridge.getConferenceCount();
+    }
+
+    public void setError(XMPPError.Condition error)
+    {
+        this.error = error;
+    }
+
+    public XMPPError.Condition getError()
+    {
+        return error;
     }
 }
