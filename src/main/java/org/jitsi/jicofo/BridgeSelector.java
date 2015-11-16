@@ -427,9 +427,7 @@ public class BridgeSelector
         }
         catch(NumberFormatException e)
         {
-            logger.error(
-                "Error parsing conference count stat: "
-                    + stringStatValue);
+            logger.error("Error parsing stat item: " + currentStats.toXML());
         }
 
         return null;
