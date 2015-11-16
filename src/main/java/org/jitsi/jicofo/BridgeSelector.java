@@ -445,9 +445,15 @@ public class BridgeSelector
      * Sets the JID of pre-configured JVB instance which will be used when all
      * auto-detected bridges are down.
      * @param preConfiguredBridge XMPP address of pre-configured JVB component.
+     *
+     * @throws NullPointerException if <tt>preConfiguredBridge</tt> is
+     *         <tt>null</tt>.
      */
     synchronized public void setPreConfiguredBridge(String preConfiguredBridge)
     {
+        if (preConfiguredBridge == null)
+            throw new NullPointerException("preConfiguredBridge");
+
         logger.info("Configuring default bridge: " + preConfiguredBridge);
 
         addJvbAddress(preConfiguredBridge);

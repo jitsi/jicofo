@@ -272,8 +272,13 @@ public class JitsiMeetConference
                         JitsiMeetServices.class);
 
             // Set pre-configured videobridge
-            services.getBridgeSelector().setPreConfiguredBridge(
-                    config.getPreConfiguredVideobridge());
+            String preConfiguredBridge = config.getPreConfiguredVideobridge();
+
+            if (!StringUtils.isNullOrEmpty(preConfiguredBridge))
+            {
+                services.getBridgeSelector().setPreConfiguredBridge(
+                    preConfiguredBridge);
+            }
 
             // Set pre-configured SIP gateway
             if (config.getPreConfiguredSipGateway() != null)
