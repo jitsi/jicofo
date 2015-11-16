@@ -77,7 +77,7 @@ public class BridgeSelector
      * The amount of time we will wait after bridge instance failure before it
      * will get another chance.
      */
-    private long failureResetThreshold;
+    private long failureResetThreshold = DEFAULT_FAILURE_RESET_THRESHOLD;
 
     /**
      * Operation set used to subscribe to PubSub nodes notifications.
@@ -115,20 +115,24 @@ public class BridgeSelector
 
         String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
 
-        if (StringUtils.isNullOrEmpty(mappingPropertyValue))
+        if (!StringUtils.isNullOrEmpty(mappingPropertyValue))
         {
-            return;
-        }
+            String[] pairs = mappingPropertyValue.split(";");
+            for (String pair : pairs)
+            {
+                String[] bridgeAndNode = pair.split(":");
+                if (bridgeAndNode.length != 2)
+                {
+                    logger.error("Invalid mapping element: " + pair);
+                    continue;
+                }
 
-        String[] pairs = mappingPropertyValue.split(";");
-        for (String pair : pairs)
-        {
-            String[] bridgeAndNode = pair.split(":");
-            String bridge = bridgeAndNode[0];
-            String pubSubNode = bridgeAndNode[1];
-            pubSubToBridge.put(pubSubNode, bridge);
+                String bridge = bridgeAndNode[0];
+                String pubSubNode = bridgeAndNode[1];
+                pubSubToBridge.put(pubSubNode, bridge);
 
-            logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
+                logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
+            }
         }
 
         setFailureResetThreshold(
@@ -477,9 +481,19 @@ public class BridgeSelector
      * get another chance.
      *
      * @param failureResetThreshold the amount of time in millis.
+     *
+     * @throws IllegalArgumentException if given threshold value is equal or
+     *         less than zero.
      */
     public void setFailureResetThreshold(long failureResetThreshold)
     {
+        if (failureResetThreshold <= 0)
+        {
+            throw new IllegalArgumentException(
+                "Bridge failure reset threshold" +
+                    " must be greater than 0, given value: " +
+                    failureResetThreshold);
+        }
         this.failureResetThreshold = failureResetThreshold;
     }
 
