@@ -113,6 +113,12 @@ public class JitsiMeetConference
     private final ProtocolProviderHandler protocolProviderHandler;
 
     /**
+     * Synchronization root for currently selected bridge for the
+     * {@link #colibriConference}.
+     */
+    private final Object bridgeSelectSync = new Object();
+
+    /**
      * The name of XMPP user used by the focus to login.
      */
     private final String focusUserName;
@@ -695,30 +701,38 @@ public class JitsiMeetConference
         // Allocate by trying all bridges on prioritized list
         BridgeSelector bridgeSelector = services.getBridgeSelector();
 
-        Iterator<String> bridgesIterator
-            = bridgeSelector.getPrioritizedBridgesList().iterator();
-
         // Set initial bridge if we haven't used any yet
-        if (StringUtils.isNullOrEmpty(colibriConference.getJitsiVideobridge()))
+        synchronized (bridgeSelectSync)
         {
-            if (!bridgesIterator.hasNext())
+            if (StringUtils.isNullOrEmpty(
+                    colibriConference.getJitsiVideobridge()))
             {
-                throw new OperationFailedException(
-                    "Failed to allocate channels - no bridge configured",
-                    OperationFailedException.GENERAL_ERROR);
-            }
+                String bridge = bridgeSelector.selectVideobridge();
 
-            colibriConference.setJitsiVideobridge(
-                bridgesIterator.next());
+                if (StringUtils.isNullOrEmpty(bridge))
+                {
+                    throw new OperationFailedException(
+                        "Failed to allocate channels - no bridge configured",
+                        OperationFailedException.GENERAL_ERROR);
+                }
+
+                colibriConference.setJitsiVideobridge(bridge);
+            }
         }
+
+        String jvb = null;
 
         while (this.colibriConference != null)
         {
             try
             {
+                synchronized (bridgeSelectSync)
+                {
+                    jvb = colibriConference.getJitsiVideobridge();
+                }
+
                 logger.info(
-                    "Using " + colibriConference.getJitsiVideobridge()
-                        + " to allocate channels for: "
+                    "Using " + jvb + " to allocate channels for: "
                         + peer.getChatMember().getContactAddress());
 
                 ColibriConferenceIQ peerChannels
@@ -727,8 +741,7 @@ public class JitsiMeetConference
                             peer.getEndpointId(),
                             true, contents);
 
-                bridgeSelector.updateBridgeOperationalStatus(
-                    colibriConference.getJitsiVideobridge(), true);
+                bridgeSelector.updateBridgeOperationalStatus(jvb, true);
 
                 if (colibriConference.hasJustAllocated())
                 {
@@ -741,21 +754,17 @@ public class JitsiMeetConference
                                     colibriConference.getConferenceId(),
                                     roomName,
                                     getId(),
-                                    colibriConference.getJitsiVideobridge()));
+                                    jvb));
                     }
                 }
                 return peerChannels;
             }
             catch(OperationFailedException exc)
             {
-                String faultyBridge = colibriConference.getJitsiVideobridge();
-
                 logger.error(
-                    "Failed to allocate channels using bridge: "
-                        + colibriConference.getJitsiVideobridge(), exc);
+                    "Failed to allocate channels using bridge: " + jvb, exc);
 
-                bridgeSelector.updateBridgeOperationalStatus(
-                    faultyBridge, false);
+                bridgeSelector.updateBridgeOperationalStatus(jvb, false);
 
                 // Check if the conference is in progress
                 if (!StringUtils.isNullOrEmpty(
@@ -767,25 +776,26 @@ public class JitsiMeetConference
                 }
 
                 // Try next bridge
-                String nextBridge = null;
-                if (bridgesIterator.hasNext())
-                    nextBridge = bridgesIterator.next();
-
-                // Is it the same which has just failed ?
-                // (we do not always call iterator.next() at the beginning)
-                if (faultyBridge.equals(nextBridge))
-                    nextBridge = null;
-
-                if (nextBridge != null)
+                synchronized (bridgeSelectSync)
                 {
-                    colibriConference.setJitsiVideobridge(nextBridge);
-                }
-                else
-                {
-                    // No more bridges to try
-                    throw new OperationFailedException(
-                        "Failed to allocate channels - all bridges are faulty",
-                        BRIDGE_FAILURE_ERR_CODE);
+                    jvb = bridgeSelector.selectVideobridge();
+
+                    // Is it the same which has just failed ?
+                    // (we do not always call iterator.next() at the beginning)
+                    //if (faultyBridge.equals(nextBridge))
+                    //    nextBridge = null;
+                    if (!StringUtils.isNullOrEmpty(jvb))
+                    {
+                        colibriConference.setJitsiVideobridge(jvb);
+                    }
+                    else
+                    {
+                        // No more bridges to try
+                        throw new OperationFailedException(
+                            "Failed to allocate channels " +
+                                "- all bridges are faulty",
+                                BRIDGE_FAILURE_ERR_CODE);
+                    }
                 }
             }
         }

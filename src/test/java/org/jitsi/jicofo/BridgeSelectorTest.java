@@ -148,7 +148,6 @@ public class BridgeSelectorTest
         selector.updateBridgeOperationalStatus(jvb2Jid, false);
 
         assertEquals(jvb3Jid, selector.selectVideobridge());
-        assertEquals(jvb3Jid, selector.getPrioritizedBridgesList().get(0));
 
         // Bridge 1 is up again, but 3 is down instead
         workingBridges.add(jvb1Jid);
@@ -158,7 +157,6 @@ public class BridgeSelectorTest
         selector.updateBridgeOperationalStatus(jvb3Jid, false);
 
         assertEquals(jvb1Jid, selector.selectVideobridge());
-        assertEquals(jvb1Jid, selector.getPrioritizedBridgesList().get(0));
 
         // Reset all bridges - now we'll select based on conference count
         workingBridges.clear();
@@ -184,31 +182,26 @@ public class BridgeSelectorTest
             jvb3PubSubNode, itemId, createJvbStats(0));
 
         assertEquals(jvb3Jid, selector.selectVideobridge());
-        assertEquals(jvb3Jid, selector.getPrioritizedBridgesList().get(0));
 
         // Now Jvb 3 gets occupied the most
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(300));
 
         assertEquals(jvb1Jid, selector.selectVideobridge());
-        assertEquals(jvb1Jid, selector.getPrioritizedBridgesList().get(0));
 
         // Jvb 1 is gone
         selector.updateBridgeOperationalStatus(jvb1Jid, false);
 
         assertEquals(jvb2Jid, selector.selectVideobridge());
-        assertEquals(jvb2Jid, selector.getPrioritizedBridgesList().get(0));
 
         // TEST pre-configured bridge
         selector.updateBridgeOperationalStatus(jvb2Jid, false);
         selector.updateBridgeOperationalStatus(jvb3Jid, false);
         // Use pre-configured bridge if all others are down
-        assertEquals(jvbPreConfigured,
-                     selector.getPrioritizedBridgesList().get(0));
-        // Pre-configured bridge is never removed from the list
+        assertEquals(jvbPreConfigured, selector.selectVideobridge());
+        // Pre-configured one is down
         selector.updateBridgeOperationalStatus(jvbPreConfigured, false);
-        assertEquals(jvbPreConfigured,
-                     selector.getPrioritizedBridgesList().get(0));
+        assertEquals(null, selector.selectVideobridge());
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
@@ -227,8 +220,7 @@ public class BridgeSelectorTest
                 jvb3PubSubNode, itemId, createJvbStats(0));
 
         // Pre-configured one should not be in front
-        assertNotEquals(jvbPreConfigured,
-                selector.getPrioritizedBridgesList().get(0));
+        assertNotEquals(jvbPreConfigured, selector.selectVideobridge());
 
         // JVB 2 least occupied
         mockSubscriptions.fireSubscriptionNotification(
@@ -240,11 +232,20 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
                 jvb3PubSubNode, itemId, createJvbStats(1));
 
-        assertEquals(jvb2Jid,
-                selector.getPrioritizedBridgesList().get(0));
+        assertEquals(jvb2Jid, selector.selectVideobridge());
 
         // FAILURE RESET THRESHOLD
         testFailureResetThreshold(selector, mockSubscriptions);
+
+        // Test drain bridges queue
+        int maxCount = selector.getKnownBridgesCount();
+        while (selector.selectVideobridge() != null)
+        {
+            String bridge = selector.selectVideobridge();
+            selector.updateBridgeOperationalStatus(bridge, false);
+            if (--maxCount < 0)
+                fail("Max count exceeded");
+        }
     }
 
     private void testFailureResetThreshold(

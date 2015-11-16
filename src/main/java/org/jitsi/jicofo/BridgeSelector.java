@@ -150,7 +150,7 @@ public class BridgeSelector
      * @param bridgeJid the JID of videobridge to be added to this selector's
      *                  set of videobridges.
      */
-    public void addJvbAddress(String bridgeJid)
+    synchronized public void addJvbAddress(String bridgeJid)
     {
         if (isJvbOnTheList(bridgeJid))
         {
@@ -184,7 +184,7 @@ public class BridgeSelector
      * @return <tt>true</tt> if given JVB XMPP address is already known to this
      * <tt>BridgeSelector</tt>.
      */
-    boolean isJvbOnTheList(String jvbJid)
+    synchronized boolean isJvbOnTheList(String jvbJid)
     {
         return bridges.containsKey(jvbJid);
     }
@@ -196,7 +196,7 @@ public class BridgeSelector
      * @param bridgeJid the JID of videobridge to be removed from this selector's
      *                  set of videobridges.
      */
-    public void removeJvbAddress(String bridgeJid)
+    synchronized public void removeJvbAddress(String bridgeJid)
     {
         logger.info("Removing JVB: " + bridgeJid);
 
@@ -219,50 +219,38 @@ public class BridgeSelector
      * allocating channels.
      *
      * @return the JID of least loaded videobridge or <tt>null</tt> if there are
-     *         not any operational bridges currently.
+     *         no operational bridges currently available.
      */
-    public String selectVideobridge()
+    synchronized public String selectVideobridge()
     {
-        List<String> bridges = getPrioritizedBridgesList();
-        return bridges.size() > 0 ? bridges.get(0) : null;
+        List<BridgeState> bridges = getPrioritizedBridgesList();
+        if (bridges.size() == 0)
+            return null;
+
+        return bridges.get(0).isOperational() ? bridges.get(0).jid : null;
     }
 
     /**
      * Returns the list of all known videobridges JIDs ordered by load and
      * *operational* status. Not operational bridges are at the end of the list.
      */
-    public List<String> getPrioritizedBridgesList()
+    private List<BridgeState> getPrioritizedBridgesList()
     {
         ArrayList<BridgeState> bridgeList
             = new ArrayList<BridgeState>(bridges.values());
 
         Collections.sort(bridgeList);
 
-        boolean isAnyBridgeUp = false;
-        ArrayList<String> bridgeJidList = new ArrayList<String>();
-        for (BridgeState bridgeState : bridgeList)
+        Iterator<BridgeState> bridgesIter = bridgeList.iterator();
+
+        while (bridgesIter.hasNext())
         {
-            bridgeJidList.add(bridgeState.jid);
-            if (bridgeState.isOperational())
-            {
-                isAnyBridgeUp = true;
-            }
+            BridgeState bridge = bridgesIter.next();
+            if (!bridge.isOperational())
+                bridgesIter.remove();
         }
-        // Check if we have pre-configured bridge to include in the list
-        if (!StringUtils.isNullOrEmpty(preConfiguredBridge)
-            && !bridgeJidList.contains(preConfiguredBridge))
-        {
-            // If no auto-detected bridge is up then put pre-configured up front
-            if (!isAnyBridgeUp)
-            {
-                bridgeJidList.add(0, preConfiguredBridge);
-            }
-            else
-            {
-                bridgeJidList.add(preConfiguredBridge);
-            }
-        }
-        return bridgeJidList;
+
+        return bridgeList;
     }
 
     /**
@@ -273,7 +261,7 @@ public class BridgeSelector
      * @param isWorking <tt>true</tt> if bridge successfully allocated
      *                  the channels which means it is in *operational* state.
      */
-    public void updateBridgeOperationalStatus(String bridgeJid,
+    synchronized public void updateBridgeOperationalStatus(String bridgeJid,
                                               boolean isWorking)
     {
         BridgeState bridge = bridges.get(bridgeJid);
@@ -295,7 +283,7 @@ public class BridgeSelector
      *
      * @return videobridge JID for given pub-sub node.
      */
-    public String getBridgeForPubSubNode(String pubSubNode)
+    synchronized public String getBridgeForPubSubNode(String pubSubNode)
     {
         BridgeState bridge = findBridgeForNode(pubSubNode);
         return bridge != null ? bridge.jid : null;
@@ -357,9 +345,9 @@ public class BridgeSelector
      * {@inheritDoc}
      */
     @Override
-    public void onSubscriptionUpdate(String          node,
-                                     String          itemId,
-                                     PacketExtension payload)
+    synchronized public void onSubscriptionUpdate(String          node,
+                                                  String          itemId,
+                                                  PacketExtension payload)
     {
         if (!(payload instanceof ColibriStatsExtension))
         {
@@ -450,7 +438,7 @@ public class BridgeSelector
     /**
      * Returns the JID of pre-configured Jitsi Videobridge instance.
      */
-    public String getPreConfiguredBridge()
+    synchronized public String getPreConfiguredBridge()
     {
         return preConfiguredBridge;
     }
@@ -460,8 +448,12 @@ public class BridgeSelector
      * auto-detected bridges are down.
      * @param preConfiguredBridge XMPP address of pre-configured JVB component.
      */
-    public void setPreConfiguredBridge(String preConfiguredBridge)
+    synchronized public void setPreConfiguredBridge(String preConfiguredBridge)
     {
+        logger.info("Configuring default bridge: " + preConfiguredBridge);
+
+        addJvbAddress(preConfiguredBridge);
+
         this.preConfiguredBridge = preConfiguredBridge;
     }
 
@@ -495,6 +487,15 @@ public class BridgeSelector
                     failureResetThreshold);
         }
         this.failureResetThreshold = failureResetThreshold;
+    }
+
+    /**
+     * Returns the number of JVBs known to this bridge selector. Not all of them
+     * have to be operational.
+     */
+    public int getKnownBridgesCount()
+    {
+        return bridges.size();
     }
 
     /**
