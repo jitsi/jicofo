@@ -41,9 +41,6 @@ public class JitsiMeetServices
     private final static Logger logger
         = Logger.getLogger(JitsiMeetServices.class);
 
-    public static final String BRIDGE_TO_PUBSUB_PNAME
-        = "org.jitsi.focus.PUBSUB_STATS_NODE";
-
     /**
      * Feature set advertised by videobridge.
      */
@@ -57,6 +54,13 @@ public class JitsiMeetServices
             ProtocolProviderServiceJabberImpl
                 .URN_XMPP_JINGLE_RAW_UDP_0
         };
+
+    /**
+     * The XMPP Service Discovery features of MUC service provided by the XMPP
+     * server.
+     */
+    private static final String[] MUC_FEATURES
+        = { "http://jabber.org/protocol/muc" };
 
     /**
      * Features advertised by Jirecon recorder container.
@@ -98,6 +102,11 @@ public class JitsiMeetServices
      * SIP gateway component XMPP address.
      */
     private String sipGateway;
+
+    /**
+     * The address of MUC component served by our XMPP domain.
+     */
+    private String mucService;
 
     /**
      * Returns <tt>true</tt> if given list of features complies with JVB feature
@@ -157,6 +166,13 @@ public class JitsiMeetServices
 
             setSipGateway(node);
         }
+        else if (mucService == null
+            && DiscoveryUtil.checkFeatureSupport(MUC_FEATURES, features))
+        {
+            logger.info("MUC component discovered: " + node);
+
+            setMucService(node);
+        }
         /*
         FIXME: pub-sub service auto-detect ?
         else if (capsOpSet.hasFeatureSupport(item, PUBSUB_FEATURES))
@@ -195,6 +211,12 @@ public class JitsiMeetServices
             logger.warn("SIP gateway went offline: " + node);
 
             sipGateway = null;
+        }
+        else if (node.equals(mucService))
+        {
+            logger.warn("MUC component went offline: " + node);
+
+            mucService = null;
         }
     }
 
@@ -241,5 +263,22 @@ public class JitsiMeetServices
     public BridgeSelector getBridgeSelector()
     {
         return bridgeSelector;
+    }
+
+    /**
+     * Returns the address of MUC component for our XMPP domain.
+     */
+    public String getMucService()
+    {
+        return mucService;
+    }
+
+    /**
+     * Sets the address of MUC component.
+     * @param mucService component sub domain that refers to MUC
+     */
+    public void setMucService(String mucService)
+    {
+        this.mucService = mucService;
     }
 }

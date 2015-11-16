@@ -21,11 +21,10 @@ import java.io.*;
 import java.util.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import net.java.sip.communicator.service.protocol.*;
+
 import org.eclipse.jetty.server.*;
+
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 /**
@@ -49,14 +48,6 @@ public class Health
     private static final Logger logger = Logger.getLogger(Health.class);
 
     /**
-     * The XMPP Service Discovery features required by {@code Health} from a
-     * MUC service provided by the XMPP server associated with a
-     * {@code FocusManager}.
-     */
-    private static final String[] MUC_FEATURES
-        = { "http://jabber.org/protocol/muc" };
-
-    /**
      * The pseudo-random generator used to generate random input for
      * {@link FocusManager} such as room names.
      */
@@ -74,11 +65,19 @@ public class Health
     private static void check(FocusManager focusManager)
         throws Exception
     {
-        // Discover a MUC service to perform the check on.
-        String mucService = discoverMUCService(focusManager);
+        // Get the MUC service to perform the check on.
+        JitsiMeetServices services = focusManager.getJitsiMeetServices();
 
-        if (mucService != null && mucService.isEmpty())
-            mucService = null;
+        String mucService = services != null ? services.getMucService() : null;
+
+        if (StringUtils.isNullOrEmpty(mucService))
+        {
+            logger.error(
+                "No MUC service found on XMPP domain or Jicofo has not" +
+                " finished initial components discovery yet");
+
+            throw new RuntimeException("No MUC component");
+        }
 
         // Generate a pseudo-random room name. Minimize the risk of clashing
         // with existing conferences.
@@ -86,9 +85,7 @@ public class Health
 
         do
         {
-            roomName = generateRoomName();
-            if (mucService != null)
-                roomName = roomName + "@" + mucService;
+            roomName = generateRoomName() + "@" + mucService;
         }
         while (focusManager.getConference(roomName) != null);
 
@@ -98,43 +95,6 @@ public class Health
             throw new RuntimeException(
                     "Failed to create conference with room name " + roomName);
         }
-    }
-
-    /**
-     * Discovers a MUC service provided by the XMPP server associated with a
-     * specific {@code FocusManager}.
-     *
-     * @param focusManager the {@code FocusManager} which is associated with the
-     * XMPP server to discover a MUC service on
-     * @return a MUC service provided by the XMPP server associated with
-     * {@code focusManager} or {@code null} if no such MUC service is discovered
-     */
-    private static String discoverMUCService(FocusManager focusManager)
-    {
-        // OperationSetSimpleCaps
-        ProtocolProviderService pps = focusManager.getProtocolProvider();
-        OperationSetSimpleCaps ossc
-            = focusManager.getOperationSet(OperationSetSimpleCaps.class);
-
-        // XMPP domain
-        // FIXME The XMPP domain (name) does not seem to be accessible through
-        // focusManager so it is read from a ConfigurationService property like
-        // ComponentsDiscovery does. Additionally, ComponentsDiscovery does not
-        // appear to report the MUC service. All of the above are weird.
-        ConfigurationService cfg = FocusBundleActivator.getConfigService();
-        String xmppDomain = cfg.getString(FocusManager.XMPP_DOMAIN_PNAME);
-
-        Set<String> items = ossc.getItems(xmppDomain);
-
-        if (items != null)
-        {
-            for (String item : items)
-            {
-                if (ossc.hasFeatureSupport(item, MUC_FEATURES))
-                    return item;
-            }
-        }
-        return null;
     }
 
     /**
