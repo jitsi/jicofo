@@ -73,10 +73,6 @@
     <!-- org.jitsi -->
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>ice4j</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
     </dependency>
     <dependency>
@@ -141,6 +137,11 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>fmj</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>ice4j</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
