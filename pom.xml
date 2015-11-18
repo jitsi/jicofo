@@ -127,21 +127,27 @@
       <groupId>xpp3</groupId>
       <artifactId>xpp3</artifactId>
     </dependency>
+    <!-- runtime -->
+    <dependency>
+      <groupId>rusv</groupId>
+      <artifactId>agafua-syslog</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+      <!--
+      jitsi-videobridge requires a patched version of ours from the branch
+      r1rv51-patched of gpolitis/bc-java (at GitHub).
+      Jicofo will use the same version.
+      -->
+      <version>1.51-jitsi-1</version>
+      <scope>runtime</scope>
+    </dependency>
     <!-- test -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- org.jitsi -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>fmj</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>ice4j</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

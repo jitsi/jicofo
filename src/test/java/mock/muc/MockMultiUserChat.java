@@ -85,7 +85,8 @@ public class MockMultiUserChat
     public void join()
         throws OperationFailedException
     {
-        joinAs(getParentProvider().getAccountID().getAccountDisplayName());
+        joinAs(getParentProvider().getAccountID()
+            .getAccountPropertyString(ProtocolProviderFactory.DISPLAY_NAME));
     }
 
     @Override

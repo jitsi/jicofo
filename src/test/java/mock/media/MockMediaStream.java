@@ -74,6 +74,12 @@ public class MockMediaStream
     }
 
     @Override
+    public RawPacketCache getPacketCache()
+    {
+        return null;
+    }
+
+    @Override
     public Map<Byte, RTPExtension> getActiveRTPExtensions()
     {
         return null;
