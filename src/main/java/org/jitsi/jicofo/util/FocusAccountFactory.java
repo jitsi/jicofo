@@ -58,9 +58,7 @@ public class FocusAccountFactory
         properties.put(ProtocolProviderFactory.SERVER_PORT, "5222");
 
         // This is used as the multi user chat nick when joining the room
-        properties.put(
-            ProtocolProviderFactory.ACCOUNT_DISPLAY_NAME,
-            userName);
+        properties.put(ProtocolProviderFactory.DISPLAY_NAME, userName);
 
         properties.put(ProtocolProviderFactory.RESOURCE,
                        resource);
