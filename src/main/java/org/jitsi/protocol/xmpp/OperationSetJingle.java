@@ -20,7 +20,6 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import java.util.*;
