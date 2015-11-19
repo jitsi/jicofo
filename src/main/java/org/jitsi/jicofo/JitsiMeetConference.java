@@ -58,7 +58,8 @@ import java.util.concurrent.*;
  */
 public class JitsiMeetConference
     implements RegistrationStateChangeListener,
-               JingleRequestHandler
+               JingleRequestHandler,
+               BridgeListener
 
 {
     /**
@@ -117,6 +118,12 @@ public class JitsiMeetConference
      * {@link #colibriConference}.
      */
     private final Object bridgeSelectSync = new Object();
+
+    /**
+     * The instance of <tt>BridgeSelector</tt> we use to select JVB for this
+     * conference.
+     */
+    private BridgeSelector bridgeSelector;
 
     /**
      * The name of XMPP user used by the focus to login.
@@ -271,13 +278,17 @@ public class JitsiMeetConference
                         FocusBundleActivator.bundleContext,
                         JitsiMeetServices.class);
 
+            bridgeSelector = services.getBridgeSelector();
+
+            bridgeSelector.addBridgeListener(this);
+
             // Set pre-configured videobridge
             String preConfiguredBridge = config.getPreConfiguredVideobridge();
 
             if (!StringUtils.isNullOrEmpty(preConfiguredBridge))
             {
-                services.getBridgeSelector().setPreConfiguredBridge(
-                    preConfiguredBridge);
+                bridgeSelector.setPreConfiguredBridge(
+                        preConfiguredBridge);
             }
 
             // Set pre-configured SIP gateway
@@ -315,6 +326,9 @@ public class JitsiMeetConference
         started = false;
 
         protocolProviderHandler.removeRegistrationListener(this);
+
+        if (bridgeSelector != null)
+            bridgeSelector.removeBridgeListener(this);
 
         disposeConference();
 
@@ -703,9 +717,6 @@ public class JitsiMeetConference
             return null;
         }
 
-        // Allocate by trying all bridges on prioritized list
-        BridgeSelector bridgeSelector = services.getBridgeSelector();
-
         // Set initial bridge if we haven't used any yet
         synchronized (bridgeSelectSync)
         {
@@ -718,7 +729,7 @@ public class JitsiMeetConference
                 {
                     throw new OperationFailedException(
                         "Failed to allocate channels - no bridge configured",
-                        OperationFailedException.GENERAL_ERROR);
+                        BRIDGE_FAILURE_ERR_CODE);
                 }
 
                 colibriConference.setJitsiVideobridge(bridge);
@@ -1975,6 +1986,26 @@ public class JitsiMeetConference
     public String getId()
     {
         return id;
+    }
+
+    /**
+     * Handles on bridge up event(no action for now - we don't care here)
+     */
+    @Override
+    public void onBridgeUp(BridgeSelector src, String bridgeJid) { }
+
+    /**
+     * Handles on bridge down event by shutting down the conference if it's the
+     * one we're using here.
+     */
+    @Override
+    public void onBridgeDown(BridgeSelector src, String bridgeJid)
+    {
+        if (colibriConference != null &&
+            bridgeJid.equals(colibriConference.getJitsiVideobridge()))
+        {
+            stop();
+        }
     }
 
     /**

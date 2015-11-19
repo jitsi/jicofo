@@ -27,6 +27,7 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -89,6 +90,13 @@ public class BridgeSelector
      */
     private Map<String, BridgeState> bridges
         = new HashMap<String, BridgeState>();
+
+    /**
+     * The list of {@link BridgeListener}s that are notified whenever new bridge
+     * working bridge is discovered or when one of the bridges goes down.
+     */
+    private List<BridgeListener> bridgeListeners =
+        new CopyOnWriteArrayList<BridgeListener>();
 
     /**
      * Pre-configured JVB used as last chance option even if no bridge has been
@@ -172,7 +180,11 @@ public class BridgeSelector
             logger.warn("No pub-sub node mapped for " + bridgeJid);
         }
 
-        bridges.put(bridgeJid, new BridgeState(bridgeJid));
+        BridgeState newBridge = new BridgeState(bridgeJid);
+
+        bridges.put(bridgeJid, newBridge);
+
+        notifyBridgeUp(newBridge);
     }
 
     /**
@@ -200,7 +212,7 @@ public class BridgeSelector
     {
         logger.info("Removing JVB: " + bridgeJid);
 
-        bridges.remove(bridgeJid);
+        BridgeState bridge = bridges.remove(bridgeJid);
 
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
@@ -211,6 +223,9 @@ public class BridgeSelector
 
             subscriptionOpSet.unSubscribe(pubSubNode, this);
         }
+
+        if (bridge != null)
+            notifyBridgeDown(bridge);
     }
 
     /**
@@ -500,6 +515,64 @@ public class BridgeSelector
     public int getKnownBridgesCount()
     {
         return bridges.size();
+    }
+
+    /**
+     * Adds <tt>BridgeListener</tt> to the bridge observers list.
+     *
+     * @param listener the bridge listener instance to be registered for bridges
+     *                 status updates
+     */
+    public void addBridgeListener(BridgeListener listener)
+    {
+        bridgeListeners.add(listener);
+    }
+
+    /**
+     * Removes <tt>BridgeListener</tt> from the bridge observers list.
+     *
+     * @param listener the bridge listener instance to be unregistered from
+     *                 bridge status updates.
+     */
+    public void removeBridgeListener(BridgeListener listener)
+    {
+        bridgeListeners.remove(listener);
+    }
+
+    private void notifyBridgeUp(BridgeState bridge)
+    {
+        if (logger.isDebugEnabled())
+            logger.debug("Propagating new bridge added event: " + bridge.jid);
+
+        for (BridgeListener listener : bridgeListeners)
+        {
+            try
+            {
+                listener.onBridgeUp(this, bridge.jid);
+            }
+            catch (Exception e)
+            {
+                logger.error("Error when propagating bridge up event", e);
+            }
+        }
+    }
+
+    private void notifyBridgeDown(BridgeState bridge)
+    {
+        if (logger.isDebugEnabled())
+            logger.debug("Propagating bridge went down event: " + bridge.jid);
+
+        for (BridgeListener listener : bridgeListeners)
+        {
+            try
+            {
+                listener.onBridgeDown(this, bridge.jid);
+            }
+            catch (Exception e)
+            {
+                logger.error("Error when propagating bridge down event", e);
+            }
+        }
     }
 
     /**
