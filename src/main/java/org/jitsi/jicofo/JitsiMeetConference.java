@@ -32,7 +32,6 @@ import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
