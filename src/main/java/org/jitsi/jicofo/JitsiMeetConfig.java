@@ -41,25 +41,6 @@ public class JitsiMeetConfig
         = Logger.getLogger(JitsiMeetConfig.class);
 
     /**
-     * The name the configuration property used to configure videobridge
-     * instance. It will be used when all auto-detected instances fail(or if we
-     * fail to detect any bridges at all).
-     */
-    public static final String BRIDGE_PNAME = "bridge";
-
-    /**
-     * The name of the configuration property used to configure Jigasi(SIP
-     * gateway) instance.
-     */
-    public static final String SIP_GATEWAY_PNAME = "call_control";
-
-    /**
-     * The name of channel last N configuration property. Should be non-negative
-     * number. Pass <tt>-1</tt> to disable last N functionality.
-     */
-    public static final String CHANNEL_LAST_N_PNAME = "channelLastN";
-
-    /**
      * The name of adaptive last N configuration property. Pass 'true' to enable
      * or 'false' to disable.
      */
@@ -72,16 +53,35 @@ public class JitsiMeetConfig
     public static final String ADAPTIVE_SIMULCAST_PNAME = "adaptiveSimulcast";
 
     /**
-     * The name of adaptive simulcast configuration property. Pass 'true' to
-     * enable or 'false' to disable.
+     * The name the configuration property used to configure videobridge
+     * instance. It will be used when all auto-detected instances fail(or if we
+     * fail to detect any bridges at all).
      */
-    public static final String SIMULCAST_MODE_PNAME = "simulcastMode";
+    public static final String BRIDGE_PNAME = "bridge";
+
+    /**
+     * The name of channel last N configuration property. Should be non-negative
+     * number. Pass <tt>-1</tt> to disable last N functionality.
+     */
+    public static final String CHANNEL_LAST_N_PNAME = "channelLastN";
 
     /*
      * The name of the open sctp configuration property. Pass 'true' to
      * enable or 'false' to disable.
      */
     public static final String OPEN_SCTP_PNAME = "openSctp";
+
+    /**
+     * The name of adaptive simulcast configuration property. Pass 'true' to
+     * enable or 'false' to disable.
+     */
+    public static final String SIMULCAST_MODE_PNAME = "simulcastMode";
+
+    /**
+     * The name of the configuration property used to configure Jigasi(SIP
+     * gateway) instance.
+     */
+    public static final String SIP_GATEWAY_PNAME = "call_control";
 
     /**
      * The name of the start muted property for audio.
