@@ -228,7 +228,9 @@ public class OpSetSubscriptionImpl
         }
         catch (XMPPException e)
         {
-            logger.error("Failed to fetch PubSub items of: " + nodeName, e);
+            logger.error(
+                "Failed to fetch PubSub items of: " + nodeName +
+                ", reason: " + e);
         }
         return null;
     }
@@ -373,7 +375,9 @@ public class OpSetSubscriptionImpl
             }
             catch (XMPPException e)
             {
-                logger.error(e.getMessage(), e);
+                logger.error(
+                    "Failed to subscribe to " + node +
+                    " at "+ pubSubAddress + " error: " + e);
 
                 return true;
             }
@@ -417,7 +421,10 @@ public class OpSetSubscriptionImpl
             }
             catch (XMPPException e)
             {
-                logger.error(e.getMessage(), e);
+                logger.error(
+                    "An error occurred while trying to unsubscribe from" +
+                    " PubSub: " + node + " at " + pubSubAddress +
+                    ", reason: " + e);
             }
         }
 
