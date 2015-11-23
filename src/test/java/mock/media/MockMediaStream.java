@@ -171,7 +171,7 @@ public class MockMediaStream
     }
 
     @Override
-    public void injectPacket(RawPacket rawPacket, boolean b, boolean b1)
+    public void injectPacket(RawPacket pkt, boolean data, TransformEngine after)
     {
     }
 
