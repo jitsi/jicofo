@@ -647,7 +647,7 @@ public class JitsiMeetConference
             logger.error("Failed to allocate channels for " + address, e);
 
             // Notify users about bridge is down event
-            if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode())
+            if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode() && chatRoom != null)
             {
                 meetTools.sendPresenceExtension(
                     chatRoom, new BridgeIsDownPacketExt());
@@ -722,7 +722,19 @@ public class JitsiMeetConference
             if (StringUtils.isNullOrEmpty(
                     colibriConference.getJitsiVideobridge()))
             {
-                String bridge = bridgeSelector.selectVideobridge();
+                String bridge = null;
+
+                if (!StringUtils.isNullOrEmpty(config.getEnforcedVideobridge()))
+                {
+                    bridge = config.getEnforcedVideobridge();
+                    logger.info(
+                        "Will force bridge: " + bridge
+                            + " on: " + getRoomName());
+                }
+                else
+                {
+                    bridge = bridgeSelector.selectVideobridge();
+                }
 
                 if (StringUtils.isNullOrEmpty(bridge))
                 {
@@ -793,7 +805,17 @@ public class JitsiMeetConference
                 // Try next bridge
                 synchronized (bridgeSelectSync)
                 {
-                    jvb = bridgeSelector.selectVideobridge();
+                    if (StringUtils.isNullOrEmpty(
+                            config.getEnforcedVideobridge()))
+                    {
+                        jvb = bridgeSelector.selectVideobridge();
+                    }
+                    else
+                    {
+                        // If the "enforced" bridge has failed we do not try
+                        // any other bridges, but fail immediately
+                        jvb = null;
+                    }
 
                     // Is it the same which has just failed ?
                     // (we do not always call iterator.next() at the beginning)

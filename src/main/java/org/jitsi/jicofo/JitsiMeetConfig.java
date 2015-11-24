@@ -65,6 +65,15 @@ public class JitsiMeetConfig
      */
     public static final String CHANNEL_LAST_N_PNAME = "channelLastN";
 
+    /**
+     * The name of the property that specifies JID of the bridge which should be
+     * used instead of any bridges elected by <tt>BridgeSelector</tt>.
+     * The property is meant to be used in a test that aims to run a conference
+     * on specific bridge instance.
+     * That property is per conference specific.
+     */
+    public static final String ENFORCED_BRIDGE = "enforcedBridge";
+
     /*
      * The name of the open sctp configuration property. Pass 'true' to
      * enable or 'false' to disable.
@@ -103,6 +112,17 @@ public class JitsiMeetConfig
     public JitsiMeetConfig(Map<String, String> properties)
     {
         this.properties = properties;
+    }
+
+    /**
+     * Returns pre-configured JVB address of the bridge that must be used in a
+     * conference instead of any other bridges that would come from
+     * <tt>BridgeSelector</tt>. <tt>null</tt> if not specified.
+     * That property is per conference specific.
+     */
+    public String getEnforcedVideobridge()
+    {
+        return properties.get(ENFORCED_BRIDGE);
     }
 
     /**
