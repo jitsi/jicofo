@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -47,6 +48,11 @@ public class ChatRoomImpl
     private final static Logger logger = Logger.getLogger(ChatRoomImpl.class);
 
     /**
+     * The room whois value (constant for now)
+     */
+    private static final String ROOM_WHOIS = "anyone";
+    
+    /**
      * Parent MUC operation set.
      */
     private final OperationSetMultiUserChatImpl opSet;
@@ -65,6 +71,11 @@ public class ChatRoomImpl
 
     private PacketInterceptor presenceInterceptor;
 
+    /**
+     * The factory for the <tt>Form</tt> which will configure this room on join
+     */
+    private ChatRoomConfigurationFactory roomConfigurationFactory;
+    
     /**
      * Smack multi user chat backend instance.
      */
@@ -135,6 +146,8 @@ public class ChatRoomImpl
 
         this.participantListener = new ParticipantListener();
         muc.addParticipantListener(participantListener);
+        roomConfigurationFactory 
+            = new ChatRoomConfigurationFactory(ROOM_WHOIS);
     }
 
     @Override
@@ -187,49 +200,15 @@ public class ChatRoomImpl
             muc.addPresenceInterceptor(presenceInterceptor);
 
             muc.create(nickname);
-            //muc.join(nickname);
-
-            // Make the room non-anonymous, so that others can
-            // recognize focus JID
-            Form config = muc.getConfigurationForm();
-            /*Iterator<FormField> fields = config.getFields();
-            while (fields.hasNext())
-            {
-                FormField field = fields.next();
-                logger.info("FORM: " + field.toXML());
-            }*/
-            Form answer = config.createAnswerForm();
-            // Room non-anonymous
-            FormField whois = new FormField("muc#roomconfig_whois");
-            whois.addValue("anyone");
-            answer.addField(whois);
-            // Room moderated
-            //FormField roomModerated
-            //    = new FormField("muc#roomconfig_moderatedroom");
-            //roomModerated.addValue("true");
-            //answer.addField(roomModerated);
-            // Only participants can send private messages
-            //FormField onlyParticipantsPm
-            //        = new FormField("muc#roomconfig_allowpm");
-            //onlyParticipantsPm.addValue("participants");
-            //answer.addField(onlyParticipantsPm);
-            // Presence broadcast
-            //FormField presenceBroadcast
-            //        = new FormField("muc#roomconfig_presencebroadcast");
-            //presenceBroadcast.addValue("participant");
-            //answer.addField(presenceBroadcast);
-            // Get member list
-            //FormField getMemberList
-            //        = new FormField("muc#roomconfig_getmemberlist");
-            //getMemberList.addValue("participant");
-            //answer.addField(getMemberList);
-            // Public logging
-            //FormField publicLogging
-            //        = new FormField("muc#roomconfig_enablelogging");
-            //publicLogging.addValue("false");
-            //answer.addField(publicLogging);
-
-            muc.sendConfigurationForm(answer);
+            
+            // Get the config IQ from XMPP server and assign it to our factory
+            // as current question
+            roomConfigurationFactory
+                .setConfigurationFormQuestion(muc.getConfigurationForm());
+            
+            // Send the room configuration form
+            muc.sendConfigurationForm(
+                roomConfigurationFactory.getConfigurationFormAnswer());
         }
         catch (XMPPException e)
         {
