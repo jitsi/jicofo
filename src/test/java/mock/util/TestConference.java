@@ -115,7 +115,7 @@ public class TestConference
         String conferenceId = confUtility.getJvbConferenceId();
         String videoChannelId
             = confUtility.getParticipantVideoChannelId(peerJid);
-        SortedSet<SimulcastLayer> layers
+        List<SimulcastLayer> layers
             = mockBridge.getSimulcastLayers(conferenceId, videoChannelId);
 
         long[] ssrcs = new long[layers.size()];

@@ -17,7 +17,9 @@
  */
 package mock;
 
+import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.protocol.jabber.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -42,6 +44,10 @@ public class MockActivator
     public void start(BundleContext bundleContext)
         throws Exception
     {
+        // FIXME: make sure that we're using interoperability layer
+        AbstractSmackInteroperabilityLayer.setImplementationClass(
+            SmackV3InteroperabilityLayer.class);
+
         sipFactory
             = new MockProtocolProviderFactory(
                     bundleContext, ProtocolNames.SIP);

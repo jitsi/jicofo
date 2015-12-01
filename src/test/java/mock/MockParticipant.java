@@ -232,7 +232,7 @@ public class MockParticipant
             videoRtpDesc.addChildExtension(videoSSRC2);
             localSSRCs.getSSRCsForMedia("video").add(videoSSRC2);
 
-            // Audio SSRC group
+            // Video SSRC group
             SourceGroupPacketExtension ssrcGroupPe
                 = SourceGroupPacketExtension.createSimulcastGroup();
 

@@ -20,6 +20,7 @@ package mock.muc;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+import org.jitsi.protocol.xmpp.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -31,6 +32,7 @@ import java.util.concurrent.*;
  */
 public class MockMultiUserChat
     extends AbstractChatRoom
+    implements ChatRoom2
 {
     /**
      * The logger
@@ -648,5 +650,11 @@ public class MockMultiUserChat
         return "MockMUC@" + hashCode()
             + "["+ this.roomName + ", "
             + protocolProvider + "]";
+    }
+
+    @Override
+    public XmppChatMember findChatMember(String mucJid)
+    {
+        return findMember(mucJid);
     }
 }
