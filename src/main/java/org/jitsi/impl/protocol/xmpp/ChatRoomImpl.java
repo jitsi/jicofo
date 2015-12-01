@@ -40,6 +40,7 @@ import java.util.concurrent.*;
  */
 public class ChatRoomImpl
     extends AbstractChatRoom
+    implements ChatRoom2
 {
     /**
      * The logger used by this class.
@@ -499,6 +500,23 @@ public class ChatRoomImpl
     public List<ChatRoomMember> getMembers()
     {
         return new ArrayList<ChatRoomMember>(members.values());
+    }
+
+    @Override
+    public XmppChatMember findChatMember(String mucJid)
+    {
+        ArrayList<ChatMemberImpl> copy
+            = new ArrayList<ChatMemberImpl>(members.values());
+
+        for (ChatMemberImpl member : copy)
+        {
+            if (member.getContactAddress().equals(mucJid))
+            {
+                return member;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -1102,9 +1120,9 @@ public class ChatRoomImpl
             }
 
             Presence presence = (Presence) packet;
-            if (logger.isDebugEnabled())
+            if (logger.isTraceEnabled())
             {
-                logger.debug("Presence received " + presence.toXML());
+                logger.trace("Presence received " + presence.toXML());
             }
 
             // Should never happen, but log if something is broken
@@ -1170,8 +1188,18 @@ public class ChatRoomImpl
          */
         private void processOtherPresence(Presence presence)
         {
-            // Not used anymore- but can implement some presence processing
-            // here if needed
+            ChatMemberImpl chatMember
+                = (ChatMemberImpl) findChatMember(presence.getFrom());
+
+            if (chatMember != null)
+            {
+                chatMember.processPresence(presence);
+            }
+            else
+            {
+                logger.warn(
+                    "Presence for not existing member: " + presence.toXML());
+            }
         }
     }
 }

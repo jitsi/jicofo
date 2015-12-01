@@ -18,10 +18,13 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import net.java.sip.communicator.service.protocol.globalstatus.*;
+import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
 
 /**
@@ -32,6 +35,11 @@ import org.jivesoftware.smackx.muc.*;
 public class ChatMemberImpl
     implements XmppChatMember
 {
+    /**
+     * The logger
+     */
+    static final private Logger logger = Logger.getLogger(ChatMemberImpl.class);
+
     /**
      * The MUC nickname used by this member.
      */
@@ -54,6 +62,11 @@ public class ChatMemberImpl
     private final String address;
 
     private ChatRoomMemberRole role;
+
+    /**
+     * Stores video muted status if any.
+     */
+    private Boolean videoMuted;
 
     public ChatMemberImpl(String participant, ChatRoomImpl chatRoom,
         int joinOrderNumber)
@@ -147,5 +160,38 @@ public class ChatMemberImpl
     public int getJoinOrderNumber()
     {
         return joinOrderNumber;
+    }
+
+    @Override
+    public Boolean hasVideoMuted()
+    {
+        return videoMuted;
+    }
+
+    /**
+     * Does presence processing.
+     *
+     * @param presence the instance of <tt>Presence</tt> packet extension sent
+     *                 by this chat member.
+     */
+    void processPresence(Presence presence)
+    {
+        VideoMutedExtension videoMutedExt
+            = (VideoMutedExtension)
+                presence.getExtension(
+                    VideoMutedExtension.ELEMENT_NAME,
+                    VideoMutedExtension.NAMESPACE);
+
+        if (videoMutedExt != null)
+        {
+            Boolean newStatus = videoMutedExt.isVideoMuted();
+            if (newStatus != videoMuted)
+            {
+                logger.debug(
+                    getContactAddress() + " video muted: " + newStatus);
+
+                videoMuted = newStatus;
+            }
+        }
     }
 }

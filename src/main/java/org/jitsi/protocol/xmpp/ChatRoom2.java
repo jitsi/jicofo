@@ -20,28 +20,21 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 
 /**
- * XMPP extended interface of {@link ChatRoomMember}.
+ * Extended version of {@link ChatRoom} that adds methods specific to Jicofo.
  *
  * @author Pawel Domas
  */
-public interface XmppChatMember
-    extends ChatRoomMember
+public interface ChatRoom2
+    extends ChatRoom
 {
     /**
-     * Returns ths original user's connection Jabber ID and not the MUC address.
+     * Finds chat member for given MUC jid.
+     *
+     * @param mucJid full MUC jid of the user for whom we want to find chat
+     *               member instance. Ex. chatroom1@muc.server.com/nick1234
+     *
+     * @return an instance of <tt>XmppChatMember</tt> for given MUC jid or
+     *         <tt>null</tt> if not found.
      */
-    String getJabberID();
-
-    /**
-     * Returns number based on the order of joining of the members in the room.
-     * @return number based on the order of joining of the members in the room.
-     */
-    int getJoinOrderNumber();
-
-    /**
-     * Check for video muted status.
-     * @return <tt>true</tt> if the user has video muted, <tt>false</tt> when
-     *         video is not muted or <tt>null</tt> if the status is unknown.
-     */
-    Boolean hasVideoMuted();
+    XmppChatMember findChatMember(String mucJid);
 }

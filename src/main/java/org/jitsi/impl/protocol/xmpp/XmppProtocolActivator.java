@@ -17,8 +17,12 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import net.java.sip.communicator.impl.protocol.jabber.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.service.protocol.*;
 
+import net.java.sip.communicator.service.protocol.jabber.*;
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -40,6 +44,14 @@ public class XmppProtocolActivator
         throws Exception
     {
         XmppProtocolActivator.bundleContext = bundleContext;
+
+        // FIXME: make sure that we're using interoperability layer
+        AbstractSmackInteroperabilityLayer.setImplementationClass(
+            SmackV3InteroperabilityLayer.class);
+
+        // Constructors called to register extension providers
+        new ConferenceIqProvider();
+        new ColibriIQProvider();
 
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(

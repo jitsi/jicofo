@@ -145,4 +145,11 @@ public class MockRoomMember
         //FIXME: implement in order to test start muted feature
         return 0;
     }
+
+    @Override
+    public Boolean hasVideoMuted()
+    {
+        // FIXME: not implemented
+        return null;
+    }
 }

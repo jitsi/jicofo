@@ -137,7 +137,7 @@ public class JitsiMeetConference
     /**
      * Conference room chat instance.
      */
-    private ChatRoom chatRoom;
+    private ChatRoom2 chatRoom;
 
     /**
      * Operation set used to handle Jingle sessions with conference peers.
@@ -358,7 +358,7 @@ public class JitsiMeetConference
     {
         logger.info("Joining the room: " + roomName);
 
-        chatRoom = chatOpSet.findRoom(roomName);
+        chatRoom = (ChatRoom2) chatOpSet.findRoom(roomName);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
         rolesAndPresence.init();
@@ -1881,14 +1881,8 @@ public class JitsiMeetConference
 
     private ChatRoomMember findMember(String from)
     {
-        for (ChatRoomMember member : chatRoom.getMembers())
-        {
-            if (member.getContactAddress().equals(from))
-            {
-                return member;
-            }
-        }
-        return null;
+        return chatRoom != null ?
+            chatRoom.findChatMember(from) : null;
     }
 
     /**

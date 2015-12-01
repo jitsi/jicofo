@@ -126,9 +126,6 @@ public class FocusComponent
 
         this.isFocusAnonymous = anonymousFocus;
         this.focusAuthJid = focusAuthJid;
-
-        new ConferenceIqProvider();
-        new ColibriIQProvider();
     }
 
     /**

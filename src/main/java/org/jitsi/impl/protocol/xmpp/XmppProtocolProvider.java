@@ -18,6 +18,8 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
@@ -32,6 +34,7 @@ import org.jitsi.util.Logger;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.provider.*;
 import org.jivesoftware.smackx.packet.*;
 
 import java.util.*;
@@ -111,6 +114,15 @@ public class XmppProtocolProvider
     {
         this.jabberAccountID = (JabberAccountID) accountID;
 
+        // <videomuted> element from jitsi-meet presence
+        ProviderManager.getInstance()
+            .addExtensionProvider(
+                VideoMutedExtension.ELEMENT_NAME,
+                VideoMutedExtension.NAMESPACE,
+                new DefaultPacketExtensionProvider<VideoMutedExtension>(
+                        VideoMutedExtension.class)
+            );
+
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
 
@@ -163,7 +175,7 @@ public class XmppProtocolProvider
 
         connection = new XMPPConnection(connConfig);
 
-        if (logger.isDebugEnabled())
+        if (logger.isTraceEnabled())
         {
             enableDebugPacketsLogging();
         }
@@ -635,7 +647,7 @@ public class XmppProtocolProvider
         @Override
         public void processPacket(Packet packet)
         {
-            logger.debug(prefix + packet.toXML());
+            logger.trace(prefix + packet.toXML());
         }
     }
 }
