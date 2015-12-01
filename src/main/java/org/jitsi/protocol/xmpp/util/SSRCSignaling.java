@@ -18,12 +18,7 @@
 package org.jitsi.protocol.xmpp.util;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
-
-import org.jitsi.util.*;
-
-import java.util.*;
 
 /**
  * Class gathers utility method related to SSRC signaling.
@@ -32,53 +27,6 @@ import java.util.*;
  */
 public class SSRCSignaling
 {
-    /**
-     * Copies value of "<parameter>" SSRC child element. The parameter to be
-     * copied must exist in both source and destination SSRCs.
-     * @param dst target <tt>SourcePacketExtension</tt> to which we want copy
-     *            parameter value.
-     * @param src origin <tt>SourcePacketExtension</tt> from which we want to
-     *            copy parameter value.
-     * @param name the name of the parameter to copy.
-     */
-    public static void copyParamAttr( SourcePacketExtension    dst,
-                                      SourcePacketExtension    src,
-                                      String                  name)
-    {
-        ParameterPacketExtension srcParam = getParam(src, name);
-        ParameterPacketExtension dstParam = getParam(dst, name);
-        if (srcParam != null && dstParam != null)
-        {
-            dstParam.setValue(srcParam.getValue());
-        }
-    }
-
-    /**
-     * Obtains <tt>ParameterPacketExtension</tt> for given name(if it exists).
-     * @param ssrc the <tt>SourcePacketExtension</tt> to be searched for
-     *             parameter
-     * @param name the name of the parameter to be found
-     * @return <tt>ParameterPacketExtension</tt> instance for given
-     *         <tt>name</tt> or <tt>null</tt> if not found.
-     */
-    public static ParameterPacketExtension getParam( SourcePacketExtension ssrc,
-                                                     String                name)
-    {
-        for(ParameterPacketExtension param : ssrc.getParameters())
-        {
-            if (name.equals(param.getName()))
-                return param;
-        }
-        return null;
-    }
-
-    /**
-     * Gets the owner of <tt>SourcePacketExtension</tt> in jitsi-meet context
-     * signaled through {@link SSRCInfoPacketExtension}.
-     * @param ssrcPe the <tt>SourcePacketExtension</tt> instance for which we
-     *               want to find an owner.
-     * @return MUC jid of the user who own this SSRC.
-     */
     public static String getSSRCOwner(SourcePacketExtension ssrcPe)
     {
         SSRCInfoPacketExtension ssrcInfo
@@ -87,92 +35,12 @@ public class SSRCSignaling
         return ssrcInfo != null ? ssrcInfo.getOwner() : null;
     }
 
-    /**
-     * Get's WebRTC stream ID extracted from "msid" SSRC parameter.
-     * @param ssrc <tt>SourcePacketExtension</tt> that describes the SSRC for
-     *             which we want to obtain WebRTC stream ID.
-     * @return WebRTC stream ID that is the first part of "msid" SSRC parameter.
-     */
-    public static String getStreamId(SourcePacketExtension ssrc)
-    {
-        ParameterPacketExtension msid = getParam(ssrc, "msid");
-
-        if (msid == null || StringUtils.isNullOrEmpty(msid.getValue()))
-            return null;
-
-        String[] streamAndTrack = msid.getValue().split(" ");
-        return streamAndTrack.length == 2 ? streamAndTrack[0] : null;
-    }
-
-    /**
-     * Get's WebRTC track ID extracted from "msid" SSRC parameter.
-     * @param ssrc <tt>SourcePacketExtension</tt> that describes the SSRC for
-     *             which we want to obtain WebRTC stream ID.
-     * @return WebRTC track ID that is the second part of "msid" SSRC parameter.
-     */
-    public static String getTrackId(SourcePacketExtension ssrc)
-    {
-        ParameterPacketExtension msid = getParam(ssrc, "msid");
-
-        if (msid == null || StringUtils.isNullOrEmpty(msid.getValue()))
-            return null;
-
-        String[] streamAndTrack = msid.getValue().split(" ");
-        return streamAndTrack.length == 2 ? streamAndTrack[1] : null;
-    }
-
     public static String getVideoType(SourcePacketExtension ssrcPe)
     {
         SSRCInfoPacketExtension ssrcInfo
             = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
 
         return ssrcInfo != null ? ssrcInfo.getVideoType() : null;
-    }
-
-    /**
-     * Merges first audio SSRC into the first video stream described by
-     * <tt>MediaSSRCMap</tt>.
-     *
-     * @param peerSSRCs the map of media SSRC to be modified.
-     *
-     * @return <tt>true</tt> if streams were merged.
-     */
-    public static boolean mergeAudioIntoVideo(MediaSSRCMap peerSSRCs)
-    {
-        List<SourcePacketExtension> audioSSRCs
-            = peerSSRCs.getSSRCsForMedia("audio");
-
-        List<SourcePacketExtension> videoSSRCs
-            = peerSSRCs.getSSRCsForMedia("video");
-
-        if (videoSSRCs.size() <= 0 || audioSSRCs.size() <= 0)
-        {
-            return false;
-        }
-
-        SourcePacketExtension audioSSRC = audioSSRCs.get(0);
-        SourcePacketExtension videoSSRC = videoSSRCs.get(0);
-
-        // Will merge stream by modifying msid and copying cname and label
-
-        String videoStreamId = getStreamId(videoSSRC);
-        String audioTrackId = getTrackId(audioSSRC);
-        ParameterPacketExtension audioMsid = getParam(audioSSRC, "msid");
-
-        if ( StringUtils.isNullOrEmpty(videoStreamId)
-             || StringUtils.isNullOrEmpty(audioTrackId)
-             ||  audioMsid == null )
-        {
-            return false;
-        }
-
-        // Copy cname and label
-        copyParamAttr(audioSSRC, videoSSRC, "cname");
-        copyParamAttr(audioSSRC, videoSSRC, "mslabel");
-
-        audioMsid.setValue(videoStreamId + " " + audioTrackId);
-
-        return true;
     }
 
     public static void setSSRCOwner(SourcePacketExtension ssrcPe, String owner)
@@ -189,8 +57,7 @@ public class SSRCSignaling
         ssrcInfo.setOwner(owner);
     }
 
-    public static void setSSRCVideoType( SourcePacketExtension     ssrcPe,
-                                         String                 videoType)
+    public static void setSSRCVideoType(SourcePacketExtension ssrcPe, String videoType)
     {
         SSRCInfoPacketExtension ssrcInfo
             = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
