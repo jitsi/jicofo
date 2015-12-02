@@ -908,10 +908,34 @@ public class ChatRoomImpl
                 //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
 
                 ChatMemberImpl member = addMember(participant);
-                if (member != null)
+                if (member == null)
                 {
-                    notifyParticipantJoined(member);
+                    logger.error("member is NULL");
+                    return;
                 }
+
+                // Process any cached presence
+                XmppProtocolProvider protocolProvider
+                    = (XmppProtocolProvider) getParentProvider();
+
+                XMPPConnection connection = protocolProvider.getConnection();
+                if (connection == null)
+                {
+                    logger.error("Connection is NULL");
+                    return;
+                }
+
+                // Try to process presence cached in the roster to init fields
+                // like video muted
+                Roster roster = connection.getRoster();
+                Presence cachedPresence
+                    = roster.getPresence(member.getContactAddress());
+                if (cachedPresence != null)
+                {
+                    member.processPresence(cachedPresence);
+                }
+
+                notifyParticipantJoined(member);
             }
         }
 
