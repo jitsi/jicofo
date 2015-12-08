@@ -32,13 +32,14 @@ public class ErrorFactory
      * Creates 'not-authorized' XMPP error response to given <tt>query</tt>.
      *
      * @param query the IQ for which error response wil be created.
+     * @param msg optional error description to be included in the response.
      *
      * @return XMPP 'not-authorized' error response to given <tt>query</tt>.
      */
-    public static IQ createNotAuthorizedError(IQ query)
+    public static IQ createNotAuthorizedError(IQ query, String msg)
     {
         final XMPPError error
-            = new XMPPError(XMPPError.Condition.not_authorized);
+            = new XMPPError(XMPPError.Condition.not_authorized, msg);
 
         return IQ.createErrorResponse(query, error);
     }

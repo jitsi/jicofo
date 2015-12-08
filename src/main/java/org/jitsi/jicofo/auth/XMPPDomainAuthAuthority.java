@@ -103,16 +103,6 @@ public class XMPPDomainAuthAuthority
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getSessionForJid(String jabberId)
-    {
-        AuthenticationSession session = findSessionForJabberId(jabberId);
-        return session != null ? session.getSessionId() : null;
-    }
-
     @Override
     public String createLoginUrl(
             String machineUID, String peerFullJid, String roomName, boolean popup)

@@ -298,6 +298,16 @@ public abstract class AbstractAuthAuthority
      * {@inheritDoc}
      */
     @Override
+    public String getSessionForJid(String jabberId)
+    {
+        AuthenticationSession session = findSessionForJabberId(jabberId);
+        return session != null ? session.getSessionId() : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getUserIdentity(String jabberId)
     {
         AuthenticationSession session = findSessionForJabberId(jabberId);

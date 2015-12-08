@@ -385,7 +385,7 @@ public class FocusComponent
                 if (identity == null)
                 {
                     // Error not authorized
-                    return ErrorFactory.createNotAuthorizedError(query);
+                    return ErrorFactory.createNotAuthorizedError(query, null);
                 }
             }
         }

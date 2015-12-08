@@ -31,8 +31,16 @@ import java.util.*;
 
 /**
  * Implements <tt>BundleActivator</tt> for the OSGi bundle responsible for
- * authentication with external systems. Authentication URL pattern must be
- * configured in order to active the bundle {@link #LOGIN_URL_PNAME}.
+ * authentication with external systems.
+ *
+ * Either JWT config or authentication URL pattern must be configured in order
+ * to activate the bundle.
+ *
+ * To configure the JWT specify application ID and secret in
+ * {@link JWTAuthAuthority#JWT_APP_ID} and {@link JWTAuthAuthority#JWT_SECRET}
+ * config properties.
+ *
+ * To use another external provider set {@link #LOGIN_URL_PNAME}.
  *
  * @author Pawel Domas
  */
@@ -183,9 +191,20 @@ public class AuthBundleActivator
             = ServiceUtils.getService(
                     bundleContext,
                     ConfigurationService.class);
+
+        String jwtAppId = cfg.getString(JWTAuthAuthority.JWT_APP_ID);
+        String jwtSecret = cfg.getString(JWTAuthAuthority.JWT_SECRET);
+
         String loginUrl = cfg.getString(LOGIN_URL_PNAME);
 
-        if (!StringUtils.isNullOrEmpty(loginUrl))
+        if (!StringUtils.isNullOrEmpty(jwtAppId) &&
+            !StringUtils.isNullOrEmpty(jwtSecret))
+        {
+            logger.info("Starting authentication service - will use JWT");
+
+            authAuthority = new JWTAuthAuthority(jwtAppId, jwtSecret);
+        }
+        else if (!StringUtils.isNullOrEmpty(loginUrl))
         {
             logger.info("Starting authentication service... URL: " + loginUrl);
 
@@ -201,6 +220,10 @@ public class AuthBundleActivator
                 authAuthority
                     = new ShibbolethAuthAuthority(loginUrl, logoutUrl);
             }
+        }
+
+        if (authAuthority != null)
+        {
             logger.info("Auth authority: " + authAuthority);
 
             authAuthorityServiceRegistration

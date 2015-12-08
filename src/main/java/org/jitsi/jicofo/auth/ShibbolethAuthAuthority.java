@@ -182,16 +182,6 @@ public class ShibbolethAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public String getSessionForJid(String jabberId)
-    {
-        AuthenticationSession session = findSessionForJabberId(jabberId);
-        return session != null ? session.getSessionId() : null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     protected IQ processAuthLocked(ConferenceIq query, ConferenceIq response)
     {
         // FIXME this now looks like it could be merged with XMPP or moved to
