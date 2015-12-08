@@ -144,7 +144,7 @@ public class MockVideobridge
         }
     }
 
-    public List<SimulcastLayer> getSimulcastLayers(
+    public List<SimulcastStream> getSimulcastLayers(
         String confId, String channelId)
     {
         Conference conference = bridge.getConference(confId, null);
@@ -152,12 +152,12 @@ public class MockVideobridge
         VideoChannel videoChannel
             = (VideoChannel) videoContent.getChannel(channelId);
 
-        SimulcastLayer[] layers
+        SimulcastStream[] layers
             = videoChannel
                     .getTransformEngine()
                             .getSimulcastEngine()
                                     .getSimulcastReceiver()
-                                            .getSimulcastLayers();
+                                            .getSimulcastStreams();
 
         return Arrays.asList(layers);
     }
