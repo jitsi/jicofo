@@ -45,16 +45,19 @@ public abstract class AbstractOperationSetJingle
     /**
      * The list of active Jingle session.
      */
-    protected Map<String, JingleSession> sessions
-        = new HashMap<String, JingleSession>();
+    protected Map<String, JingleSession> sessions = new HashMap<>();
 
     /**
      * Implementing classes should return our JID here.
+     *
+     * @return our JID
      */
     protected abstract String getOurJID();
 
     /**
      * Returns {@link XmppConnection} implementation.
+     *
+     * @return {@link XmppConnection} implementation
      */
     protected abstract XmppConnection getConnection();
 
@@ -96,7 +99,6 @@ public abstract class AbstractOperationSetJingle
         logger.info("INVITE PEER: " + address);
 
         String sid = JingleIQ.generateSID();
-
         JingleSession session = new JingleSession(sid, address, requestHandler);
 
         sessions.put(sid, session);
@@ -119,8 +121,7 @@ public abstract class AbstractOperationSetJingle
             {
                 // FIXME: is it mandatory ?
                 // http://estos.de/ns/bundle
-                content.addChildExtension(
-                    new BundlePacketExtension());
+                content.addChildExtension(new BundlePacketExtension());
             }
         }
 
@@ -134,23 +135,37 @@ public abstract class AbstractOperationSetJingle
         }
 
         IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
-        if (reply != null && IQ.Type.RESULT.equals(reply.getType()))
+
+        if (reply == null)
+        {
+            // XXX By the time the acknowledgement timeout occurs, we may have
+            // received and acted upon the session-accept. We have seen that
+            // happen multiple times: the conference is established, the media
+            // starts flowing between the participants (i.e. we have acted upon
+            // the session-accept), and the conference is suddenly torn down
+            // (because the acknowldegment timeout has occured eventually). As a
+            // workaround, we will ignore the lack of the acknowledgment if we
+            // have already acted upon the session-accept.
+            if (session.isAccepted())
+            {
+                return true;
+            }
+            else
+            {
+                logger.error(
+                        "Timeout waiting for session-accept from " + address);
+                return false;
+            }
+        }
+        else if (IQ.Type.RESULT.equals(reply.getType()))
         {
             return true;
         }
         else
         {
-            if (reply == null)
-            {
-                logger.error(
-                    "Timeout waiting for session-accept from " + address);
-            }
-            else
-            {
-                logger.error(
+            logger.error(
                     "Failed to send session-initiate to " + address
                         + ", error: " + reply.getError());
-            }
             return false;
         }
     }
@@ -193,29 +208,24 @@ public abstract class AbstractOperationSetJingle
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
 
-        if (JingleAction.SESSION_ACCEPT.equals(action))
+        switch (action)
         {
+        case SESSION_ACCEPT:
             logger.info(session.getAddress() + " real jid: " + iq.getFrom());
-            requestHandler.onSessionAccept(
-                session, iq.getContentList());
-        }
-        else if (JingleAction.TRANSPORT_INFO.equals(action))
-        {
-            requestHandler.onTransportInfo(
-                session, iq.getContentList());
-        }
-        else if (JingleAction.ADDSOURCE.equals(action)
-            || JingleAction.SOURCEADD.equals(action))
-        {
+            requestHandler.onSessionAccept(session, iq.getContentList());
+            break;
+        case TRANSPORT_INFO:
+            requestHandler.onTransportInfo(session, iq.getContentList());
+            break;
+        case ADDSOURCE:
+        case SOURCEADD:
             requestHandler.onAddSource(session, iq.getContentList());
-        }
-        else if (JingleAction.REMOVESOURCE.equals(action)
-            || JingleAction.SOURCEREMOVE.equals(action))
-        {
+            break;
+        case REMOVESOURCE:
+        case SOURCEREMOVE:
             requestHandler.onRemoveSource(session, iq.getContentList());
-        }
-        else
-        {
+            break;
+        default:
             logger.warn("unsupported action " + action);
         }
     }
@@ -439,8 +449,8 @@ public abstract class AbstractOperationSetJingle
     @Override
     public void terminateHandlersSessions(JingleRequestHandler requestHandler)
     {
-        List<JingleSession> sessions
-            = new ArrayList<JingleSession>(this.sessions.values());
+        List<JingleSession> sessions = new ArrayList<>(this.sessions.values());
+
         for (JingleSession session : sessions)
         {
             if (session.getRequestHandler() == requestHandler)
@@ -463,9 +473,9 @@ public abstract class AbstractOperationSetJingle
     {
         logger.info("Terminate session: " + session.getAddress());
 
-        /*
-        we do not send session-terminate as muc addresses are invalid at this point
-        FIXME: but there is also connection address available */
+        // we do not send session-terminate as muc addresses are invalid at this
+        // point
+        // FIXME: but there is also connection address available
         JingleIQ terminate
             = JinglePacketFactory.createSessionTerminate(
                     getOurJID(),

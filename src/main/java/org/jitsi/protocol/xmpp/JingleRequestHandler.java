@@ -73,5 +73,4 @@ public interface JingleRequestHandler
      */
     void onTransportInfo(JingleSession jingleSession,
                          List<ContentPacketExtension> contents);
-
 }

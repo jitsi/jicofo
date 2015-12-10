@@ -85,13 +85,13 @@ public class XmppProtocolProvider
     /**
      * Listens to connection status updates.
      */
-    private XmppConnectionListener connListener
+    private final XmppConnectionListener connListener
         = new XmppConnectionListener();
 
     /**
      * Colibri operation set.
      */
-    private OperationSetColibriConferenceImpl colibriTools
+    private final OperationSetColibriConferenceImpl colibriTools
         = new OperationSetColibriConferenceImpl();
 
     /**
@@ -119,8 +119,7 @@ public class XmppProtocolProvider
             .addExtensionProvider(
                 VideoMutedExtension.ELEMENT_NAME,
                 VideoMutedExtension.NAMESPACE,
-                new DefaultPacketExtensionProvider<VideoMutedExtension>(
-                        VideoMutedExtension.class)
+                new DefaultPacketExtensionProvider<>(VideoMutedExtension.class)
             );
 
         addSupportedOperationSet(
@@ -402,6 +401,8 @@ public class XmppProtocolProvider
 
     /**
      * Returns implementation of {@link org.jitsi.protocol.xmpp.XmppConnection}.
+     *
+     * @return implementation of {@link org.jitsi.protocol.xmpp.XmppConnection}
      */
     public XMPPConnection getConnection()
     {
@@ -410,6 +411,8 @@ public class XmppProtocolProvider
 
     /**
      * Returns our JID if we're connected or <tt>null</tt> otherwise.
+     *
+     * @return our JID if we're connected or <tt>null</tt> otherwise
      */
     public String getOurJid()
     {
@@ -500,7 +503,7 @@ public class XmppProtocolProvider
         if (logger.isDebugEnabled())
             logger.debug("HAVE Discovered items for: " + node);
 
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
 
         Iterator<DiscoverItems.Item> items = itemsDisco.getItems();
         while (items.hasNext())
@@ -521,10 +524,9 @@ public class XmppProtocolProvider
         try
         {
             DiscoverInfo info = discoInfoManager.discoverInfo(node);
-            
             Iterator<DiscoverInfo.Feature> features =  info.getFeatures();
-            
-            List<String> featureList = new ArrayList<String>();
+            List<String> featureList = new ArrayList<>();
+
             while (features.hasNext())
             {
                 featureList.add(features.next().getVar());
@@ -631,7 +633,7 @@ public class XmppProtocolProvider
     class DebugLogger
         implements PacketFilter, PacketListener
     {
-        private String prefix;
+        private final String prefix;
 
         DebugLogger(String prefix)
         {

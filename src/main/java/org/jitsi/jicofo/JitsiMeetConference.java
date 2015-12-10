@@ -1336,8 +1336,8 @@ public class JitsiMeetConference
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember()
-                .getContactAddress().equals(jingleSession.getAddress()))
+            if (participant.getChatMember().getContactAddress().equals(
+                    jingleSession.getAddress()))
                 return participant;
         }
         return null;
@@ -1401,9 +1401,17 @@ public class JitsiMeetConference
         {
             //FIXME: we should reject it ?
             logger.error(
-                "Reassigning jingle session for participant: "
+                    "Reassigning jingle session for participant: "
                         + peerJingleSession.getAddress());
         }
+
+        // XXX We will be acting on the received session-accept bellow.
+        // Unfortunately, we may have not received an acknowledgment of our
+        // session-initiate yet and whatever we do bellow will be torn down when
+        // the acknowledgement timeout occurrs later on. Since we will have
+        // acted on the session-accept by the time the acknowledgement timeout
+        // occurs, we may as well ignore the timeout.
+        peerJingleSession.setAccepted(true);
 
         participant.setJingleSession(peerJingleSession);
 
@@ -1442,9 +1450,9 @@ public class JitsiMeetConference
                 continue;
 
             jingle.sendAddSourceIQ(
-                participant.getSSRCS(),
-                participant.getSSRCGroups(),
-                jingleSessionToNotify);
+                    participant.getSSRCS(),
+                    participant.getSSRCGroups(),
+                    jingleSessionToNotify);
         }
 
         // Notify the peer itself since it is now stable

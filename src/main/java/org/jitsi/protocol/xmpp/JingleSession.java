@@ -21,6 +21,7 @@ package org.jitsi.protocol.xmpp;
  * Class describes Jingle session.
  *
  * @author Pawel Domas
+ * @author Lyubomir Marinov
  */
 public class JingleSession
 {
@@ -39,6 +40,16 @@ public class JingleSession
      * session.
      */
     private final JingleRequestHandler requestHandler;
+
+    /**
+     * The indicator which determines whether a {@code session-accept} was
+     * received from the remote peer in response to our {@code session-initiate}
+     * which initialized this instance. Introduced to work around a case in
+     * which we do not receive an acknowledgment from the remote peer in
+     * response to our {@code session-initiate} but do receive a
+     * {@code session-accept}.
+     */
+    private boolean _accepted = false;
 
     /**
      * Creates new instance of <tt>JingleSession</tt> for given parameters.
@@ -62,6 +73,8 @@ public class JingleSession
 
     /**
      * Returns Jingle session identifier.
+     *
+     * @return Jingle session identifier
      */
     public String getSessionID()
     {
@@ -70,6 +83,8 @@ public class JingleSession
 
     /**
      * Returns remote peer's full XMPP address.
+     *
+     * @return remote peer's full XMPP address
      */
     public String getAddress()
     {
@@ -79,9 +94,40 @@ public class JingleSession
     /**
      * Returns <tt>JingleRequestHandler</tt> that is responsible for handling
      * request for this Jingle session.
+     *
+     * @return <tt>JingleRequestHandler</tt> that is responsible for handling
+     * request for this Jingle session
      */
     public JingleRequestHandler getRequestHandler()
     {
         return requestHandler;
+    }
+
+    /**
+     * Determines whether a {@code session-accept} was received from the remote
+     * peer in response to our {@code session-initiate} which initialized this
+     * instance.
+     *
+     * @return {@code true} if a {@code session-accept} was received from the
+     * remote peer in response to our {@code session-initiate} which initialized
+     * this instance; otherwise, {@code false}
+     */
+    public boolean isAccepted()
+    {
+        return _accepted;
+    }
+
+    /**
+     * Sets the indicator which determines whether a {@code session-accept} was
+     * received from the remote peer in response to our {@code session-initiate}
+     * which initialized this instance.
+     *
+     * @param accepted {@code true} if a {@code session-accept} was received
+     * from the remote peer in response to our {@code session-initiate} which
+     * initialized this instance; otherwise, {@code false}
+     */
+    public void setAccepted(boolean accepted)
+    {
+        _accepted = accepted;
     }
 }

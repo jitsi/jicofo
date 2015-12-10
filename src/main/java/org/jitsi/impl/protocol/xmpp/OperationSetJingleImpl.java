@@ -124,6 +124,7 @@ class OperationSetJingleImpl
      *
      * {@inheritDoc}
      */
+    @Override
     public void processPacket(Packet packet)
     {
         IQ iq = (IQ) packet;
