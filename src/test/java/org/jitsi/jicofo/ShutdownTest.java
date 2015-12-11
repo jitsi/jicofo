@@ -94,7 +94,7 @@ public class ShutdownTest
         assertNotNull(conf1User2.acceptInvite(4000));
 
         // Try shutdown from wrong jid
-        GracefulShutdownIQ gracefulShutdownIQ = new GracefulShutdownIQ();
+        ShutdownIQ gracefulShutdownIQ = ShutdownIQ.createGracefulShutdownIQ();
 
         gracefulShutdownIQ.setFrom("randomJid1234");
 

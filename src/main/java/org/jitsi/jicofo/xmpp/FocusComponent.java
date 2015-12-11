@@ -288,10 +288,18 @@ public class FocusComponent
 
                 return response != null ? IQUtils.convert(response) : null;
             }
-            else if (smackIq instanceof GracefulShutdownIQ)
+            else if (smackIq instanceof ShutdownIQ)
             {
-                GracefulShutdownIQ gracefulShutdownIQ
-                    = (GracefulShutdownIQ) smackIq;
+                ShutdownIQ gracefulShutdownIQ
+                    = (ShutdownIQ) smackIq;
+
+                if (!gracefulShutdownIQ.isGracefulShutdown())
+                {
+                    return IQUtils.convert(
+                        org.jivesoftware.smack.packet.IQ.createErrorResponse(
+                            smackIq,
+                            new XMPPError(XMPPError.Condition.bad_request)));
+                }
 
                 String from = gracefulShutdownIQ.getFrom();
                 String bareFrom
