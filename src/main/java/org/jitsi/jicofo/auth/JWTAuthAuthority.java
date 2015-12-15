@@ -37,6 +37,8 @@ import java.util.*;
  * reflected in 'iss' JWT claim.
  * <li>org.jitsi.jicofo.auth.jwt.SECRET</li> - is shared secret used to
  * authenticate the token
+ * <li>org.jitsi.jicofo.auth.jwt.ALLOW_NO_TOKEN</li> - special mode option that
+ * allows to not provide JWT token and get authenticated. Token must be empty.
  *
  * @author Pawel Domas
  */
@@ -50,16 +52,24 @@ public class JWTAuthAuthority
         = Logger.getLogger(JWTAuthAuthority.class);
 
     /**
+     * The name of the property that enabled "no token" mode which allows to get
+     * authenticated when token is not provided. The tokens are still validated
+     * if provided though.
+     */
+    public static final String CFG_ALLOW_NO_TOKEN
+        = "org.jitsi.jicofo.auth.jwt.ALLOW_NO_TOKEN";
+
+    /**
      * The name of config property that specifies the application ID('iss' JWT
      * claim).
      */
-    public static final String JWT_APP_ID = "org.jitsi.jicofo.auth.jwt.APP_ID";
+    public static final String CFG_APP_ID = "org.jitsi.jicofo.auth.jwt.APP_ID";
 
     /**
      * The name of the property that configures shared secret used to
      * authenticate the token.
      */
-    public static final String JWT_SECRET = "org.jitsi.jicofo.auth.jwt.SECRET";
+    public static final String CFG_SECRET = "org.jitsi.jicofo.auth.jwt.SECRET";
 
     /**
      * Shared JWT secret.
@@ -72,11 +82,16 @@ public class JWTAuthAuthority
     private final String appId;
 
     /**
+     * Indicates if users who do not provide any token should be accepted.
+     */
+    private final boolean allowNoToken;
+
+    /**
      * Creates new instance of <tt>JWTAuthAuthority</tt>.
      * @param appId the application ID(issuer JWT claim).
      * @param secret shared secret used to verify and authenticate JWT tokens.
      */
-    public JWTAuthAuthority(String appId, String secret)
+    public JWTAuthAuthority(String appId, String secret, boolean allowNoToken)
     {
         if (StringUtils.isNullOrEmpty(appId))
             throw new IllegalArgumentException("Invalid app ID: " + appId);
@@ -86,6 +101,23 @@ public class JWTAuthAuthority
 
         this.appId = appId;
         this.secret = secret;
+        this.allowNoToken = allowNoToken;
+
+        if (allowNoToken)
+        {
+            logger.warn(
+                "!!! User connections without the token will be accepted !!!");
+        }
+    }
+
+    /**
+     * Creates new instance of <tt>JWTAuthAuthority</tt>.
+     * @param appId the application ID(issuer JWT claim).
+     * @param secret shared secret used to verify and authenticate JWT tokens.
+     */
+    public JWTAuthAuthority(String appId, String secret)
+    {
+        this(appId, secret, false);
     }
 
     private String getBareJid(String fullJid)
@@ -132,26 +164,31 @@ public class JWTAuthAuthority
         // In JWT auth session is identified by the token
         try
         {
-            byte[] secretBytes = secret.getBytes();
-
-            JWTVerifier verifier
-                = new JWTVerifier(secretBytes, null, appId);
-
-            Map<String,Object> decodedPayload = verifier.verify(sessionId);
-
-            String queryRoom = query.getRoom();
-            if (StringUtils.isNullOrEmpty(queryRoom))
+            // In "allow no token" mode we do not check user
+            // if the token is empty
+            if (!(allowNoToken && StringUtils.isNullOrEmpty(sessionId)))
             {
-                return ErrorFactory.createNotAcceptableError(
-                    query, "no room in the query");
-            }
-            queryRoom = MucUtil.extractName(queryRoom);
+                byte[] secretBytes = secret.getBytes();
 
-            String room = (String) decodedPayload.get("room");
-            if (!queryRoom.equals(room))
-            {
-                return ErrorFactory.createNotAuthorizedError(query,
-                    "invalid room: " + room);
+                JWTVerifier verifier
+                    = new JWTVerifier(secretBytes, null, appId);
+
+                Map<String, Object> decodedPayload = verifier.verify(sessionId);
+
+                String queryRoom = query.getRoom();
+                if (StringUtils.isNullOrEmpty(queryRoom))
+                {
+                    return ErrorFactory.createNotAcceptableError(
+                        query, "no room in the query");
+                }
+                queryRoom = MucUtil.extractName(queryRoom);
+
+                String room = (String) decodedPayload.get("room");
+                if (!queryRoom.equals(room))
+                {
+                    return ErrorFactory.createNotAuthorizedError(query,
+                        "invalid room: " + room);
+                }
             }
 
             session
@@ -169,6 +206,13 @@ public class JWTAuthAuthority
                         query, e.getMessage());
         }
         catch (SignatureException e)
+        {
+            return
+                ErrorFactory.createNotAuthorizedError(
+                        query, e.getMessage());
+        }
+        // No token provided
+        catch (IllegalStateException e)
         {
             return
                 ErrorFactory.createNotAuthorizedError(

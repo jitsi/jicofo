@@ -73,13 +73,14 @@ public class ColibriThreadingTest
 
     @Before
     public void setUp()
-        throws InterruptedException
+        throws Exception
     {
         osgi.init();
     }
 
     @After
     public void tearDown()
+        throws Exception
     {
         osgi.shutdown();
     }

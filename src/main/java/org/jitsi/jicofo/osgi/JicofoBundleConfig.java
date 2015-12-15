@@ -141,10 +141,7 @@ public class JicofoBundleConfig
             },
             {
                 "org/jitsi/jicofo/log/Activator"
-            },
-            useMockProtocols
-                ? new String[] { "mock/MockMainMethodActivator" }
-                : new String[] { }
+            }
         };
 
         return bundles;

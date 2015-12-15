@@ -56,7 +56,7 @@ public class BridgeSelectorTest
 
     @BeforeClass
     public static void setUpClass()
-        throws InterruptedException
+        throws Exception
     {
         String bridgeMapping
             = jvb1Jid + ":" + jvb1PubSubNode + ";" +
@@ -71,6 +71,7 @@ public class BridgeSelectorTest
 
     @AfterClass
     public static void tearDownClass()
+        throws Exception
     {
         osgi.shutdown();
     }

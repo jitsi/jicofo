@@ -40,8 +40,10 @@ public class OSGiHandler
 
     private final Object syncRoot = new Object();
 
+    private MockMainMethodActivator mockMain;
+
     public void init()
-        throws InterruptedException
+        throws Exception
     {
         System.setProperty(FocusManager.HOSTNAME_PNAME, "test.domain.net");
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
@@ -79,6 +81,10 @@ public class OSGiHandler
 
         OSGi.start(bundleActivator);
 
+        mockMain = new MockMainMethodActivator();
+
+        OSGi.start(mockMain);
+
         if (bc == null)
         {
             synchronized (syncRoot)
@@ -96,9 +102,17 @@ public class OSGiHandler
     }
 
     public void shutdown()
+        throws Exception
     {
         if (bc != null)
+        {
+            if (mockMain != null)
+            {
+                OSGi.stop(mockMain);
+            }
+
             OSGi.stop(bundleActivator);
+        }
 
         if (bc != null)
             throw new RuntimeException("Failed to stop OSGI");

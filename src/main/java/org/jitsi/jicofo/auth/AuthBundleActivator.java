@@ -37,7 +37,7 @@ import java.util.*;
  * to activate the bundle.
  *
  * To configure the JWT specify application ID and secret in
- * {@link JWTAuthAuthority#JWT_APP_ID} and {@link JWTAuthAuthority#JWT_SECRET}
+ * {@link JWTAuthAuthority#CFG_APP_ID} and {@link JWTAuthAuthority#CFG_SECRET}
  * config properties.
  *
  * To use another external provider set {@link #LOGIN_URL_PNAME}.
@@ -192,8 +192,10 @@ public class AuthBundleActivator
                     bundleContext,
                     ConfigurationService.class);
 
-        String jwtAppId = cfg.getString(JWTAuthAuthority.JWT_APP_ID);
-        String jwtSecret = cfg.getString(JWTAuthAuthority.JWT_SECRET);
+        String jwtAppId = cfg.getString(JWTAuthAuthority.CFG_APP_ID);
+        String jwtSecret = cfg.getString(JWTAuthAuthority.CFG_SECRET);
+        boolean jwtAllowNoToken
+            = cfg.getBoolean(JWTAuthAuthority.CFG_ALLOW_NO_TOKEN, false);
 
         String loginUrl = cfg.getString(LOGIN_URL_PNAME);
 
@@ -202,7 +204,8 @@ public class AuthBundleActivator
         {
             logger.info("Starting authentication service - will use JWT");
 
-            authAuthority = new JWTAuthAuthority(jwtAppId, jwtSecret);
+            authAuthority
+                = new JWTAuthAuthority(jwtAppId, jwtSecret, jwtAllowNoToken);
         }
         else if (!StringUtils.isNullOrEmpty(loginUrl))
         {

@@ -56,7 +56,7 @@ public class PubSubBridgeSelectorTest
 
     @BeforeClass
     public static void setUpClass()
-        throws InterruptedException
+        throws Exception
     {
         System.clearProperty(
             BridgeSelector.BRIDGE_TO_PUBSUB_PNAME);
@@ -73,6 +73,7 @@ public class PubSubBridgeSelectorTest
 
     @AfterClass
     public static void tearDownClass()
+        throws Exception
     {
         osgi.shutdown();
     }

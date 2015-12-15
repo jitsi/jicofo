@@ -50,7 +50,7 @@ public class ShutdownTest
 
     @BeforeClass
     public static void setUpClass()
-        throws InterruptedException
+        throws Exception
     {
         System.setProperty(
             FocusComponent.SHUTDOWN_ALLOWED_JID_PNAME, shutdownJid);
@@ -60,6 +60,7 @@ public class ShutdownTest
 
     @AfterClass
     public static void tearDownClass()
+        throws Exception
     {
         osgi.shutdown();
     }

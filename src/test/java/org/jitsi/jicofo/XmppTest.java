@@ -42,13 +42,14 @@ public class XmppTest
 
     @BeforeClass
     public static void setUpClass()
-        throws InterruptedException
+        throws Exception
     {
         osgi.init();
     }
 
     @AfterClass
     public static void tearDownClass()
+        throws Exception
     {
         osgi.shutdown();
     }
