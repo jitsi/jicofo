@@ -90,7 +90,7 @@ public class JitsiMeetConfig
      * The name of the configuration property used to configure Jigasi(SIP
      * gateway) instance.
      */
-    public static final String SIP_GATEWAY_PNAME = "call_control";
+    //public static final String SIP_GATEWAY_PNAME = "call_control";
 
     /**
      * The name of the start muted property for audio.
@@ -138,10 +138,10 @@ public class JitsiMeetConfig
      * Returns pre-configured XMPP address of SIP gateway or <tt>null</tt> if
      * no info was passed in the config.
      */
-    public String getPreConfiguredSipGateway()
+    /*public String getPreConfiguredSipGateway()
     {
         return properties.get(SIP_GATEWAY_PNAME);
-    }
+    }*/
 
     /**
      * Returns an integer value of channel last N property or <tt>null</tt>

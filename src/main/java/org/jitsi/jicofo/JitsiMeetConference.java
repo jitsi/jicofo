@@ -291,10 +291,10 @@ public class JitsiMeetConference
             }
 
             // Set pre-configured SIP gateway
-            if (config.getPreConfiguredSipGateway() != null)
-            {
-                services.setSipGateway(config.getPreConfiguredSipGateway());
-            }
+            //if (config.getPreConfiguredSipGateway() != null)
+            //{
+            //    services.setSipGateway(config.getPreConfiguredSipGateway());
+            //}
 
             if (protocolProviderHandler.isRegistered())
             {
