@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.auth;
 
-import com.auth0.jwt.*;
 import mock.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
@@ -28,8 +27,6 @@ import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-
-import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -59,187 +56,6 @@ public class AuthenticationAuthorityTest
         throws Exception
     {
         osgi.shutdown();
-    }
-
-    private String generateToken(String appId, String appSeceret, String room)
-    {
-        JWTSigner signer = new JWTSigner(appSeceret);
-
-        Map<String, Object> claims = new HashMap<String, Object>();
-
-        claims.put("iss", appId);
-        claims.put("room", room);
-
-        return signer.sign(claims);
-    }
-
-    @Test
-    public void testJWTAuthenticationModule()
-        throws Exception
-    {
-        String appId = "dfag78ert934gj";
-        String secret = "ds2398rqwfdlm";
-
-        // Enable shibboleth authentication
-        System.setProperty(
-            JWTAuthAuthority.CFG_APP_ID, appId);
-        System.setProperty(
-            JWTAuthAuthority.CFG_SECRET, secret);
-
-        setUpClass();
-
-        testJWTAuth(appId, secret, false);
-
-        // Restart OSGi - test "no token allowed" mode
-        System.setProperty(
-            JWTAuthAuthority.CFG_ALLOW_NO_TOKEN, "true");
-
-        tearDownClass();
-
-        setUpClass();
-
-        testJWTAuth(appId, secret, true);
-
-        tearDownClass();
-    }
-
-    private void testJWTAuth(String appId, String secret, boolean noTokenAllowed)
-    {
-        FocusComponent focusComponent
-            = MockMainMethodActivator.getFocusComponent();
-
-        JWTAuthAuthority jwtAuth
-            = (JWTAuthAuthority) ServiceUtils.getService(
-            FocusBundleActivator.bundleContext,
-            AuthenticationAuthority.class);
-
-        assertNotNull(jwtAuth);
-
-        String user1Jid = "user1@server.net";
-        String user1MachineUid="machine1uid";
-
-        String user2Jid = "user2@server.net";
-        String user2MachineUid="machine2uid";
-
-        boolean roomExists = false;
-        String room1 = "testroom1";
-
-        String user1token = generateToken(appId, secret, room1);
-        String user2token = generateToken(appId, secret, room1);
-
-        ConferenceIq query = new ConferenceIq();
-        ConferenceIq response = new ConferenceIq();
-
-        query.setFrom(user1Jid);
-        query.setMachineUID(user1MachineUid);
-        query.setRoom(room1);
-
-        // CASE 1: No session-id passed and room does not exist
-        IQ authError
-            = focusComponent.processExtensions(query, response, roomExists);
-
-        if (!noTokenAllowed)
-        {
-            // REPLY WITH: 'not-authorized'
-            assertNotNull(authError);
-            assertEquals(
-                XMPPError.Condition.not_authorized.toString(),
-                authError.getError().getCondition());
-        }
-        else
-        {
-            assertNull(authError);
-        }
-
-        // CASE 2: Valid session-id passed and room does not exist
-
-        // JWT token goes as session-id
-        query.setSessionId(user1token);
-
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
-
-        // REPLY WITH: null - no errors
-        assertNull(authError);
-
-        // CASE 3: no session-id/token, room exists
-        roomExists = true;
-        query.setSessionId(null);
-        query.setFrom(user2Jid);
-        query.setMachineUID(user2MachineUid);
-
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
-
-        if (!noTokenAllowed)
-        {
-            // REPLY WITH: 'not-authorized' - token is always required
-            assertNotNull(authError);
-            assertEquals(
-                XMPPError.Condition.not_authorized.toString(),
-                authError.getError().getCondition());
-        }
-        else
-        {
-            assertNull(authError);
-        }
-
-        // CASE 4: invalid session-id, room exists
-        /*roomExists = true;
-        query.setSessionId("someinvalidsessionid");
-        query.setFrom(user2Jid);
-        query.setMachineUID(user2MachineUid);
-
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
-
-        // REPLY with session-invalid
-        assertNotNull(authError);
-        assertNotNull(authError.getError().getExtension(
-            SessionInvalidPacketExtension.ELEMENT_NAME,
-            SessionInvalidPacketExtension.NAMESPACE));*/
-
-        // CASE 5: valid session, room exists
-        roomExists = true;
-
-        query.setSessionId(user2token);
-        query.setFrom(user2Jid);
-        query.setMachineUID(user2MachineUid);
-
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
-        // REPLY with null - no error
-        assertNull(authError);
-
-        // CASE 6: do not allow to use session-id from different machine
-        // NOTE: in JWT token and session-id are the same thing, so it can be
-        // used by multiple users
-        /**query.setSessionId(user2token);
-         query.setFrom(user1Jid);
-         query.setMachineUID(user1MachineUid);
-
-         authError
-         = focusComponent.processExtensions(query, response, roomExists);
-
-         // not-acceptable
-         assertNotNull(authError);
-         assertEquals(
-         XMPPError.Condition.no_acceptable.toString(),
-         authError.getError().getCondition());*/
-
-        // CASE 8: session used without machine UID
-        query.setFrom(user1Jid);
-        query.setSessionId(user1token);
-        query.setMachineUID(null);
-
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
-
-        // not-acceptable
-        assertNotNull(authError);
-        assertNotNull(
-            XMPPError.Condition.no_acceptable.toString(),
-            authError.getError().getCondition());
     }
 
     @Test
