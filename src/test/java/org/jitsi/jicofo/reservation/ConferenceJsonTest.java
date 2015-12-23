@@ -24,6 +24,7 @@ import org.junit.*;
 
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 import static org.junit.Assert.*;
 
@@ -106,12 +107,17 @@ public class ConferenceJsonTest
         assertEquals("pawel.gawel", objects.get(ConferenceJsonHandler
                 .CONF_OWNER_KEY));
 
-        // FIXME: This will fail in different time zone
+        SimpleDateFormat timeZoneOffsetFormat = new SimpleDateFormat("X");
+
+        String timeZoneOffset = timeZoneOffsetFormat.format(c.getTime());
+
         assertEquals(
-            "2014-01-08T09:02:00.000+01",
+            "2014-01-08T09:02:00.000" + timeZoneOffset,
             objects.get(ConferenceJsonHandler.CONF_START_TIME_KEY));
 
         //assertEquals("00:05" ,objects.get(ConferenceJsonHandler
-          //  .CONF_DURATION_KEY));
+        //    .CONF_DURATION_KEY));
     }
+
+
 }
