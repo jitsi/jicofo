@@ -2056,7 +2056,7 @@ public class JitsiMeetConference
      * Saves early recording requests by user. Dispatched when new participant
      * joins.
      */
-    private class RecordingState
+    private static class RecordingState
     {
         /**
          * JID of the participant that wants to modify recording state.

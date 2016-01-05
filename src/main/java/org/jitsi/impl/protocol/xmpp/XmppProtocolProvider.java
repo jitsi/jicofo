@@ -69,7 +69,7 @@ public class XmppProtocolProvider
      * Current registration state.
      */
     private RegistrationState registrationState
-            = RegistrationState.UNREGISTERED;
+        = RegistrationState.UNREGISTERED;
 
     /**
      * The XMPP connection used by this instance.
@@ -115,19 +115,17 @@ public class XmppProtocolProvider
         this.jabberAccountID = (JabberAccountID) accountID;
 
         // <videomuted> element from jitsi-meet presence
-        ProviderManager.getInstance()
-            .addExtensionProvider(
+        ProviderManager.getInstance().addExtensionProvider(
                 VideoMutedExtension.ELEMENT_NAME,
                 VideoMutedExtension.NAMESPACE,
-                new DefaultPacketExtensionProvider<>(VideoMutedExtension.class)
-            );
+                new DefaultPacketExtensionProvider<>(
+                        VideoMutedExtension.class));
 
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
 
         this.jingleOpSet = new OperationSetJingleImpl(this);
-        addSupportedOperationSet(
-            OperationSetJingle.class, jingleOpSet);
+        addSupportedOperationSet(OperationSetJingle.class, jingleOpSet);
 
         addSupportedOperationSet(
             OperationSetMultiUserChat.class,
@@ -592,7 +590,7 @@ public class XmppProtocolProvider
     /**
      * Implements {@link XmppConnection}.
      */
-    class XmppConnectionAdapter
+    private static class XmppConnectionAdapter
         implements XmppConnection
     {
         private final XMPPConnection connection;
@@ -630,7 +628,7 @@ public class XmppProtocolProvider
         }
     }
 
-    class DebugLogger
+    private static class DebugLogger
         implements PacketFilter, PacketListener
     {
         private final String prefix;

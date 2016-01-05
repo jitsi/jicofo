@@ -430,21 +430,20 @@ public class BridgeSelector
     private static Integer getStatisticIntValue(
         ColibriStatsExtension.Stat currentStats)
     {
-        Object statValue = currentStats.getValue();
-        if (statValue == null)
+        Object obj = currentStats.getValue();
+        if (obj == null)
         {
             return null;
         }
-        String stringStatValue = String.valueOf(statValue);
+        String str = obj.toString();
         try
         {
-            return new Integer(stringStatValue);
+            return Integer.valueOf(str);
         }
         catch(NumberFormatException e)
         {
             logger.error("Error parsing stat item: " + currentStats.toXML());
         }
-
         return null;
     }
 

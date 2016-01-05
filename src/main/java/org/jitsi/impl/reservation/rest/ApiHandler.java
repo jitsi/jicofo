@@ -319,7 +319,7 @@ public class ApiHandler
      * code, <tt>Conference</tt> instance which represents the data retrieved
      * from the API or <tt>ErrorResponse</tt> which contains error details.
      */
-    class ApiResult
+    static class ApiResult
     {
         /**
          * HTTP status code returned by the API.
