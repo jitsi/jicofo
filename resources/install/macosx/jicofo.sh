@@ -22,4 +22,4 @@ cp=$(JARS=($SCRIPT_DIR/jicofo*.jar $SCRIPT_DIR/lib/*.jar); IFS=:; echo "${JARS[*
 libs="$SCRIPT_DIR/lib/native/macosx"
 logging_config="$SCRIPT_DIR/lib/logging.properties"
 
-java -Djava.library.path=$libs -Djava.util.logging.config.file=$logging_config -cp $cp $mainClass $@
+exec java -Djava.library.path=$libs -Djava.util.logging.config.file=$logging_config -cp $cp $mainClass $@

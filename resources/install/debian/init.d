@@ -38,24 +38,13 @@ test -x $DAEMON || exit 0
 
 set -e
 
-killParentPid() {
-    PARENT_PPID=$(ps -o pid --no-headers --ppid $1 || true)
-    if [ $PARENT_PPID ]; then
-        kill $PARENT_PPID
-    fi
-}
-
 stop() {
     if [ -f $PIDFILE ]; then
         PID=$(cat $PIDFILE)
     fi
-    echo -n "Stopping $DESC: "
+    echo -n "Stopping $NAME: "
     if [ $PID ]; then
-        killParentPid $PID
-        rm $PIDFILE || true
-        echo "$NAME stopped."
-    elif [ $(ps -C jicofo.sh --no-headers -o pid) ]; then
-        kill $(ps -o pid --no-headers --ppid $(ps -C jicofo.sh --no-headers -o pid))
+        kill $PID
         rm $PIDFILE || true
         echo "$NAME stopped."
     else
@@ -65,10 +54,10 @@ stop() {
 
 start() {
     if [ -f $PIDFILE ]; then
-        echo "$DESC seems to be already running, we found pidfile $PIDFILE."
+        echo "$NAME seems to be already running, we found pidfile $PIDFILE."
         exit 1
     fi
-    echo -n "Starting $DESC: "
+    echo -n "Starting $NAME: "
     start-stop-daemon --start --quiet --background --chuid $USER --make-pidfile --pidfile $PIDFILE \
         --exec /bin/bash -- -c "cd $DEAMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
     echo "$NAME started."
@@ -79,7 +68,7 @@ reload() {
 }
 
 status() {
-    status_of_proc -p $PIDFILE "$DAEMON" "$NAME" && exit 0 || exit $?
+    status_of_proc -p $PIDFILE java "$NAME" && exit 0 || exit $?
 }
 
 case "$1" in

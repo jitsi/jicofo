@@ -27,4 +27,4 @@ if [ -f $logging_config ]; then
     LOGGING_CONFIG_PARAM="-Djava.util.logging.config.file=$logging_config"
 fi
 
-LD_LIBRARY_PATH=$libs java -Xmx3072m -XX:-HeapDumpOnOutOfMemoryError -Djava.library.path=$libs $LOGGING_CONFIG_PARAM $JAVA_SYS_PROPS -cp $cp $mainClass $@
+LD_LIBRARY_PATH=$libs exec java -Xmx3072m -XX:-HeapDumpOnOutOfMemoryError -Djava.library.path=$libs $LOGGING_CONFIG_PARAM $JAVA_SYS_PROPS -cp $cp $mainClass $@
