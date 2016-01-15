@@ -471,7 +471,7 @@ public class ColibriConferenceImpl
                         logger.error("Error copying extension", e);
                     }
                 }
-                if (groups.isEmpty())
+                if (groups.isEmpty() && "video".equals(content.getName()))
                 {
                     // Put empty source group to turn off simulcast layers
                     reqChannel.addSourceGroup(
