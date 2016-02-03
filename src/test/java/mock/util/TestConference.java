@@ -68,7 +68,11 @@ public class TestConference
 
         meetServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
 
-        focusManager.conferenceRequest(roomName, new HashMap<String, String>());
+        HashMap<String,String> properties = new HashMap<>();
+
+        properties.put(JitsiMeetConfig.SIMULCAST_MODE_PNAME, "rewriting");
+
+        focusManager.conferenceRequest(roomName, properties);
 
         this.conference = focusManager.getConference(roomName);
 
