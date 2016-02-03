@@ -148,6 +148,8 @@ public class MockVideobridge
                             .getSimulcastEngine()
                                     .getSimulcastReceiver()
                                             .getSimulcastStreams();
+        if (layers == null)
+            return new ArrayList<>();
 
         return Arrays.asList(layers);
     }
