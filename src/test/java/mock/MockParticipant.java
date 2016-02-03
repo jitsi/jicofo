@@ -64,7 +64,7 @@ public class MockParticipant
 
     private ArrayList<ContentPacketExtension> myContents;
 
-    private final Object addSourceLock = new Object();
+    private final Object sourceLock = new Object();
 
     private final Object joinLock = new Object();
 
@@ -477,40 +477,45 @@ public class MockParticipant
 
         if (JingleAction.SOURCEADD.equals(action))
         {
-            MediaSSRCMap ssrcMap
-                = MediaSSRCMap.getSSRCsFromContent(
-                        modifySSRcIq.getContentList());
-
-            remoteSSRCs.add(ssrcMap);
-
-            MediaSSRCGroupMap ssrcGroupMap
-                = MediaSSRCGroupMap.getSSRCGroupsForContents(
-                        modifySSRcIq.getContentList());
-
-            remoteSSRCgroups.add(ssrcGroupMap);
-
-            synchronized (addSourceLock)
+            synchronized (sourceLock)
             {
+                MediaSSRCMap ssrcMap
+                    = MediaSSRCMap.getSSRCsFromContent(
+                            modifySSRcIq.getContentList());
+
+                remoteSSRCs.add(ssrcMap);
+
+                MediaSSRCGroupMap ssrcGroupMap
+                    = MediaSSRCGroupMap.getSSRCGroupsForContents(
+                            modifySSRcIq.getContentList());
+
+                remoteSSRCgroups.add(ssrcGroupMap);
+
                 logger.info("source-add received " + nick);
 
-                addSourceLock.notifyAll();
+                sourceLock.notifyAll();
             }
         }
         else if (JingleAction.SOURCEREMOVE.equals(action))
         {
-            MediaSSRCMap ssrcsToRemove
-                = MediaSSRCMap.getSSRCsFromContent(
-                    modifySSRcIq.getContentList());
+            synchronized (sourceLock)
+            {
+                MediaSSRCMap ssrcsToRemove
+                    = MediaSSRCMap.getSSRCsFromContent(
+                            modifySSRcIq.getContentList());
 
-            remoteSSRCs.remove(ssrcsToRemove);
+                remoteSSRCs.remove(ssrcsToRemove);
 
-            MediaSSRCGroupMap ssrcGroupsToRemove
-                = MediaSSRCGroupMap.getSSRCGroupsForContents(
-                    modifySSRcIq.getContentList());
+                MediaSSRCGroupMap ssrcGroupsToRemove
+                    = MediaSSRCGroupMap.getSSRCGroupsForContents(
+                            modifySSRcIq.getContentList());
 
-            remoteSSRCgroups.remove(ssrcGroupsToRemove);
+                remoteSSRCgroups.remove(ssrcGroupsToRemove);
 
-            logger.info("source-remove received " + nick);
+                logger.info("source-remove received " + nick);
+
+                sourceLock.notifyAll();
+            }
         }
     }
 
@@ -561,16 +566,40 @@ public class MockParticipant
 
     public void waitForAddSource(long timeout)
     {
-        synchronized (addSourceLock)
+        synchronized (sourceLock)
         {
             try
             {
-                addSourceLock.wait(timeout);
+                sourceLock.wait(timeout);
             }
             catch (InterruptedException e)
             {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    public void waitForSSRCCondition( SSRCCondition    condition,
+                                      long             timeout)
+        throws InterruptedException
+    {
+        synchronized (sourceLock)
+        {
+            long start = System.currentTimeMillis();
+            long end = start + timeout;
+
+            while (!condition.checkCondition(this) &&
+                       System.currentTimeMillis() < end)
+            {
+                long wait = end - System.currentTimeMillis();
+                if (wait > 0)
+                {
+                    sourceLock.wait(wait);
+                }
+            }
+
+            //if (!condition.checkCondition(this))
+              // fail(errorMsg);
         }
     }
 
@@ -607,5 +636,10 @@ public class MockParticipant
     class JingleHandler extends DefaultJingleRequestHandler
     {
 
+    }
+
+    public interface SSRCCondition
+    {
+        boolean checkCondition(MockParticipant me);
     }
 }
