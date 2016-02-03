@@ -36,6 +36,8 @@ import java.util.*;
 public class MockMediaStream
     extends AbstractMediaStream
 {
+    private MockMediaStreamStats streamStats = new MockMediaStreamStats();
+
     @Override
     public void addDynamicRTPPayloadType(byte rtpPayloadType,
                                          MediaFormat format)
@@ -119,7 +121,7 @@ public class MockMediaStream
     @Override
     public MediaStreamStats getMediaStreamStats()
     {
-        return null;
+        return streamStats;
     }
 
     @Override

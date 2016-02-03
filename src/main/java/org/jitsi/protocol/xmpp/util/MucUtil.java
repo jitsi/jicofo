@@ -42,4 +42,24 @@ public class MucUtil
         }
         return roomName;
     }
+
+    /**
+     * Extracts user's nickname from full MUC jid.
+     *
+     * @param mucJid full MUC jid, ex: room1@conference.server.net/nick1
+     *
+     * @return nick part of given MUC jid, ex: nick1
+     *
+     * @throws IllegalArgumentException if given <tt>mucJid</tt> has invalid
+     *         format.
+     */
+    public static String extractNickname(String mucJid)
+    {
+        int slashIdx = mucJid.lastIndexOf("/");
+        if (slashIdx == -1)
+        {
+            throw new IllegalArgumentException("Invalid MUC JID: " + mucJid);
+        }
+        return mucJid.substring(slashIdx + 1);
+    }
 }

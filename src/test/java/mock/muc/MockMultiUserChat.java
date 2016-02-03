@@ -21,6 +21,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.util.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -655,6 +656,8 @@ public class MockMultiUserChat
     @Override
     public XmppChatMember findChatMember(String mucJid)
     {
-        return findMember(mucJid);
+        String nick = MucUtil.extractNickname(mucJid);
+
+        return findMember(nick);
     }
 }
