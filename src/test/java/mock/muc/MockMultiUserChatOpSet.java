@@ -35,6 +35,11 @@ public class MockMultiUserChatOpSet
     private final Map<String, MockMultiUserChat> chatRooms
         = new HashMap<String, MockMultiUserChat>();
 
+    private static String fixRoomName(String room)
+    {
+        return room.toLowerCase();
+    }
+
     public MockMultiUserChatOpSet(
         ProtocolProviderService protocolProviderService)
     {
@@ -70,6 +75,8 @@ public class MockMultiUserChatOpSet
                                    Map<String, Object> roomProperties)
         throws OperationFailedException, OperationNotSupportedException
     {
+        roomName = fixRoomName(roomName);
+
         synchronized (chatRooms)
         {
             if (chatRooms.containsKey(roomName))
@@ -102,6 +109,9 @@ public class MockMultiUserChatOpSet
     public ChatRoom findRoom(String roomName)
         throws OperationFailedException, OperationNotSupportedException
     {
+        // MUC room names are case insensitive
+        roomName = fixRoomName(roomName);
+
         synchronized (chatRooms)
         {
             if (!chatRooms.containsKey(roomName))
