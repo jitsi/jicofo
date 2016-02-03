@@ -39,7 +39,7 @@ public class MockTest
         throws InterruptedException
     {
         MockXmppConnection mockConnection
-            = new MockXmppConnection();
+            = new MockXmppConnectionImpl();
 
         XmppPeer peerA = new XmppPeer("A", mockConnection);
         XmppPeer peerB = new XmppPeer("B", mockConnection);

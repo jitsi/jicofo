@@ -17,6 +17,8 @@
  */
 package mock.xmpp;
 
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -25,14 +27,11 @@ import java.util.*;
  *
  */
 public class XmppPeer
+    implements PacketListener
 {
     private final String jid;
 
     private final MockXmppConnection connection;
-
-    private Thread receiver;
-
-    private boolean run = true;
 
     private final List<Packet> packets = new ArrayList<Packet>();
 
@@ -44,27 +43,16 @@ public class XmppPeer
 
     public void start()
     {
-        receiver = new Thread(new Runnable()
-        {
-            @Override
-            public void run()
+        this.connection.addPacketHandler(
+            this,
+            new PacketFilter()
             {
-                while (run)
+                @Override
+                public boolean accept(Packet packet)
                 {
-                    Packet p = connection.readNextPacket(jid, 500);
-                    if (p != null)
-                    {
-                        synchronized (packets)
-                        {
-                            packets.add(p);
-
-                            packets.notifyAll();
-                        }
-                    }
+                    return jid.equals(packet.getTo());
                 }
-            }
-        });
-        receiver.start();
+            });
     }
 
     public Packet waitForPacket(long timeout)
@@ -89,17 +77,11 @@ public class XmppPeer
 
     public void stop()
     {
-        run = false;
-
-        receiver.interrupt();
-
-        try
+        synchronized (packets)
         {
-            receiver.join();
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
+            connection.removePacketHandler(this);
+
+            packets.notifyAll();
         }
     }
 
@@ -116,6 +98,17 @@ public class XmppPeer
         synchronized (packets)
         {
             return packets.get(idx);
+        }
+    }
+
+    @Override
+    public void processPacket(Packet packet)
+    {
+        synchronized (packets)
+        {
+            packets.add(packet);
+
+            packets.notifyAll();
         }
     }
 }

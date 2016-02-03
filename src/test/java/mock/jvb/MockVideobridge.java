@@ -22,7 +22,8 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.videobridge.simulcast.*;
-import org.jitsi.xmpp.util.*;
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 
@@ -33,6 +34,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockVideobridge
+    implements PacketFilter, PacketListener
 {
     /**
      * The logger
@@ -43,10 +45,6 @@ public class MockVideobridge
     private final MockXmppConnection connection;
 
     private final String bridgeJid;
-
-    private Thread thread;
-
-    private boolean run = true;
 
     private Videobridge bridge;
 
@@ -76,71 +74,63 @@ public class MockVideobridge
 
     public void start()
     {
-        this.thread = new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    jvbLoop();
-                }
-                catch (Exception e)
-                {
-                    logger.error(e, e);
-                }
-            }
-        });
-
-        thread.start();
+        connection.addPacketHandler(this, this);
     }
 
-    private void jvbLoop()
-        throws Exception
+    @Override
+    public boolean accept(Packet packet)
     {
-        while (run)
-        {
-            Packet p = connection.readNextPacket(bridgeJid, 500);
-            if (p instanceof ColibriConferenceIQ)
-            {
-                logger.debug("JVB rcv: " + p.toXML());
+        return bridgeJid.equals(packet.getTo());
+    }
 
-                IQ response;
-                if (error == null)
+    public void processPacket(Packet p)
+    {
+        if (p instanceof ColibriConferenceIQ)
+        {
+            logger.debug("JVB rcv: " + p.toXML());
+
+            IQ response = null;
+            if (error == null)
+            {
+                try
                 {
                     response
                         = bridge.handleColibriConferenceIQ(
                                 (ColibriConferenceIQ) p,
                                 Videobridge.OPTION_ALLOW_ANY_FOCUS);
                 }
-                else
+                catch (Exception e)
                 {
-                    response = IQ.createErrorResponse(
-                        (IQ) p, new XMPPError(error));
-                }
-
-                if (response != null)
-                {
-                    response.setTo(p.getFrom());
-                    response.setFrom(bridgeJid);
-                    if (IQ.Type.RESULT.equals(response.getType()))
-                    {
-                        response.setPacketID(p.getPacketID());
-                    }
-                    connection.sendPacket(response);
-
-                    logger.debug("JVB sent: " + response.toXML());
-                }
-                else
-                {
-                    logger.warn("The bridge sent no response for "
-                                    + p.toString());
+                    logger.error("JVB internal error!", e);
                 }
             }
-            else if (p != null)
+            else
             {
-                logger.error("Discarded " + p.toXML());
+                response = IQ.createErrorResponse(
+                    (IQ) p, new XMPPError(error));
             }
+
+            if (response != null)
+            {
+                response.setTo(p.getFrom());
+                response.setFrom(bridgeJid);
+                if (IQ.Type.RESULT.equals(response.getType()))
+                {
+                    response.setPacketID(p.getPacketID());
+                }
+                connection.sendPacket(response);
+
+                logger.debug("JVB sent: " + response.toXML());
+            }
+            else
+            {
+                logger.warn("The bridge sent no response for "
+                                + p.toXML());
+            }
+        }
+        else if (p != null)
+        {
+            logger.error(bridgeJid + " has discarded " + p.toXML());
         }
     }
 

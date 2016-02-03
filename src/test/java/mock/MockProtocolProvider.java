@@ -45,8 +45,10 @@ public class MockProtocolProvider
     private RegistrationState registrationState
         = RegistrationState.UNREGISTERED;
 
-    private static MockXmppConnection sharedMockConnection
-        = new MockXmppConnection();
+    private static MockXmppConnectionImpl sharedMockConnection
+        = new MockXmppConnectionImpl();
+
+    private AddressedXmppConnection connection;
 
     private MockJingleOpSetImpl jingleOpSet;
 
@@ -212,7 +214,13 @@ public class MockProtocolProvider
 
     public MockXmppConnection getMockXmppConnection()
     {
-        return sharedMockConnection;
+        if (this.connection == null)
+        {
+            this.connection
+                = new AddressedXmppConnection(
+                        getOurJID(), sharedMockConnection);
+        }
+        return connection;
     }
 
     public String getOurJID()

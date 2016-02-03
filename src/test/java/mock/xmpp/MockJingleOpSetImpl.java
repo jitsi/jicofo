@@ -19,23 +19,20 @@ package mock.xmpp;
 
 import mock.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+
 
 /**
  *
  */
 public class MockJingleOpSetImpl
     extends AbstractOperationSetJingle
-    implements XmppPacketReceiver.PacketListener
+    implements PacketListener, PacketFilter
 {
-    private final static Logger logger
-        = Logger.getLogger(MockJingleOpSetImpl.class);
-
     private final MockProtocolProvider protocolProvider;
-
-    private XmppPacketReceiver receiver;
 
     public MockJingleOpSetImpl(MockProtocolProvider protocolProvider)
     {
@@ -56,31 +53,23 @@ public class MockJingleOpSetImpl
 
     public synchronized void start()
     {
-        this.receiver
-            = new XmppPacketReceiver(
-                    getOurJID(),
-                    (MockXmppConnection) getConnection(),
-                    this);
-
-        receiver.start();
+        protocolProvider.getMockXmppConnection().addPacketHandler(this, this);
     }
 
     public synchronized void stop()
     {
-        if (receiver != null)
-            receiver.stop();
+        protocolProvider.getMockXmppConnection().removePacketHandler(this);
     }
 
     @Override
-    public void onPacket(Packet p)
+    public void processPacket(Packet packet)
     {
-        if (p instanceof JingleIQ)
-        {
-            processJingleIQ((JingleIQ) p);
-        }
-        else
-        {
-            logger.error("Jingle Op set discarded: " + p.toXML());
-        }
+        processJingleIQ((JingleIQ) packet);
+    }
+
+    @Override
+    public boolean accept(Packet packet)
+    {
+        return packet instanceof JingleIQ && packet.getTo().equals(getOurJID());
     }
 }
