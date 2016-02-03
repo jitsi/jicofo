@@ -663,24 +663,38 @@ public class JitsiMeetConference
            - we have managed to send Jingle session-initiate
            Otherwise we expire allocated channels.
         */
-        if (chatRoom == null ||
-            findMember(address) == null ||
-            !jingle.initiateSession(
-                newParticipant.hasBundleSupport(), address, offer, this,
-                startMuted))
+        boolean expireChannels = false;
+
+        if (chatRoom == null)
         {
-            if (chatRoom == null)
-            {
-                // Conference disposed
-                logger.info(
-                    "Expiring " + address + " channels - conference disposed");
-            }
-            else
-            {
-                // Participant has left the room
-                logger.info(
-                    "Expiring " + address + " channels - participant has left");
-            }
+            // Conference disposed
+            logger.info(
+                "Expiring " + address + " channels - conference disposed");
+
+            expireChannels = true;
+        }
+        else if (findMember(address) == null)
+        {
+            // Participant has left the room
+            logger.info(
+                "Expiring " + address + " channels - participant has left");
+
+            expireChannels = true;
+        }
+        else if (!jingle.initiateSession(
+                     newParticipant.hasBundleSupport(), address, offer, this,
+                     startMuted))
+        {
+            // Failed to invite
+            logger.info(
+                "Expiring " + address +
+                    " channels - no RESULT for session-invite");
+
+            expireChannels = true;
+        }
+
+        if (expireChannels)
+        {
             conference.expireChannels(
                 newParticipant.getColibriChannelsInfo());
         }
