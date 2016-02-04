@@ -103,7 +103,7 @@ public class MockMediaStream
     @Override
     public Map<Byte, MediaFormat> getDynamicRTPPayloadTypes()
     {
-        return null;
+        return new HashMap<>();
     }
 
     @Override

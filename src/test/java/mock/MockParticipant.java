@@ -620,6 +620,12 @@ public class MockParticipant
         return ssrcAddQueue.poll(timeout, TimeUnit.MILLISECONDS);
     }
 
+    public JingleIQ waitForRemoveSource(long timeout)
+        throws InterruptedException
+    {
+        return ssrcRemoveQueue.poll(timeout, TimeUnit.MILLISECONDS);
+    }
+
     public void waitForSSRCCondition( SSRCCondition    condition,
                                       long             timeout)
         throws InterruptedException

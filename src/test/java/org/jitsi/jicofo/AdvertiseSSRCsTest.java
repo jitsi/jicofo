@@ -261,19 +261,9 @@ public class AdvertiseSSRCsTest
         desktopSSRC[0] = MockParticipant.nextSSRC();
         user2.switchVideoSSRCs(desktopSSRC, false);
         // Wait for update
-        //user1.waitForAddSource(5000);
+        user1.waitForAddSource(1000);
+        user1.waitForRemoveSource(1000);
         // Check one SSRC is received and no groups
-        // FIXME: fix tests failing randomly at this point with 3 SSRCs
-        // looks like some issue when sending source-remove
-        user1.waitForSSRCCondition(new MockParticipant.SSRCCondition()
-            {
-                @Override
-                public boolean checkCondition(MockParticipant me)
-                {
-                    return 1 == user1.getRemoteSSRCs("video").size()
-                        && 0 == user1.getRemoteSSRCGroups("video").size();
-                }
-            }, 4000);
         assertEquals(1, user1.getRemoteSSRCs("video").size());
         assertEquals(0, user1.getRemoteSSRCGroups("video").size());
         // Verify on the bridge
@@ -287,17 +277,9 @@ public class AdvertiseSSRCsTest
         videoSSRCs[1] = MockParticipant.nextSSRC();
         user2.switchVideoSSRCs(videoSSRCs, true);
         // Wait for update
-        //user1.waitForAddSource(2000);
+        user1.waitForAddSource(1000);
+        user1.waitForRemoveSource(1000);
         // Check 2 SSRCs are received and 1 group
-        user1.waitForSSRCCondition(new MockParticipant.SSRCCondition()
-        {
-            @Override
-            public boolean checkCondition(MockParticipant me)
-            {
-                return 2 == me.getRemoteSSRCs("video").size() &&
-                    1 == me.getRemoteSSRCGroups("video").size();
-            }
-        }, 2000);
         assertEquals(2, user1.getRemoteSSRCs("video").size());
         assertEquals(1, user1.getRemoteSSRCGroups("video").size());
         // Verify on the bridge
@@ -305,6 +287,8 @@ public class AdvertiseSSRCsTest
 
         // User2 - quit
         user2.leave();
+
+        assertNotNull(user1.waitForRemoveSource(1000));
 
         assertEquals(0, user1.getRemoteSSRCs("audio").size());
         // No groups
