@@ -55,10 +55,10 @@ public class MockRoomMember
         MockSetSimpleCapsOpSet mockCaps = (MockSetSimpleCapsOpSet) caps;
 
         List<String> features = DiscoveryUtil.getDefaultParticipantFeatureSet();
-        if (useBundle)
+        if (!useBundle)
         {
-            features.add("urn:ietf:rfc:5761"/* rtcp-mux */);
-            features.add("urn:ietf:rfc:5888"/* bundle */);
+            features.remove(DiscoveryUtil.FEATURE_RTCP_MUX);
+            features.remove(DiscoveryUtil.FEATURE_RTP_BUNDLE);
         }
 
         MockCapsNode myNode
