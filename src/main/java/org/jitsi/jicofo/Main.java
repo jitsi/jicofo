@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.cmd.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
@@ -114,6 +115,12 @@ public class Main
     private static final String SUBDOMAIN_ARG_VALUE = "focus";
 
     /**
+     * The value of the command line argument, which, when assigned to 
+     * <tt>EXPOSE_ROOMS_ARG_NAME</tt>, makes all rooms exposed in Jicofo
+     */
+    private static final String EXPOSE_ROOMS_ARG_VALUE = "false";
+
+    /**
      * Program entry point.
      * @param args command-line arguments.
      */
@@ -141,7 +148,7 @@ public class Main
         {
             componentDomain = host;
         }
-
+        
         // Jicofo XMPP component
         String componentSubDomain
             = cmdLine.getOptionValue(
@@ -157,7 +164,8 @@ public class Main
         String focusUserName
             = cmdLine.getOptionValue(
                     USER_NAME_ARG_NAME, USER_NAME_ARG_VALUE);
-
+        
+        
         String focusPassword = cmdLine.getOptionValue(USER_PASSWORD_ARG_NAME);
 
         // Focus specific config properties
@@ -165,11 +173,15 @@ public class Main
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
+        
         if (!StringUtils.isNullOrEmpty(focusPassword))
         {
             System.setProperty(
                     FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
         }
+
+        // Room exposeness evaluation
+        ChatRoomConfigurationFactory.evaluateRoomExpose();
 
         ComponentMain componentMain = new ComponentMain();
 

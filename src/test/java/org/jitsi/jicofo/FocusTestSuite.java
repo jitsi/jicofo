@@ -31,7 +31,8 @@ import org.junit.runners.*;
         MockTest.class,
         AdvertiseSSRCsTest.class,
         BundleTest.class,
-        RolesTest.class
+        RolesTest.class,
+        RoomExposingTest.class
     })
 public class FocusTestSuite
 {
