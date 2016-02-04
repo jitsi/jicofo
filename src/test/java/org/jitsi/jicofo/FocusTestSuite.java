@@ -17,6 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.auth.*;
+import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.reservation.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
@@ -27,11 +31,25 @@ import org.junit.runners.*;
 @RunWith(Suite.class)
 @Suite.SuiteClasses(
     {
-        //XmppTest.class, FIXME: to be fixed
-        MockTest.class,
+        AuthenticationAuthorityTest.class,
+        AuthEventsTest.class,
+        ConferenceJsonTest.class,
+        ConferenceIqProviderTest.class,
+        JireconIqProviderTest.class,
+        MuteIqProviderTest.class,
         AdvertiseSSRCsTest.class,
+        BridgeSelectorTest.class,
         BundleTest.class,
-        RolesTest.class
+        ColibriTest.class,
+        ColibriThreadingTest.class,
+        LeakingRoomsTest.class,
+        MediaSSRCGroupMapTest.class,
+        MediaSSRCMapTest.class,
+        MockTest.class,
+        PubSubBridgeSelectorTest.class,
+        RolesTest.class,
+        XmppTest.class,
+        ShutdownTest.class
     })
 public class FocusTestSuite
 {
