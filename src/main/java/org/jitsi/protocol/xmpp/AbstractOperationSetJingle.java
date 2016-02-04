@@ -330,8 +330,9 @@ public abstract class AbstractOperationSetJingle
         addSourceIq.setTo(session.getAddress());
         addSourceIq.setSID(peerSid);
 
-        logger.info("Notify add SSRC" + session.getAddress()
-                        + " SID: " + peerSid);
+        logger.info(
+            "Notify add SSRC" + session.getAddress()
+                + " SID: " + peerSid + " " + ssrcs);
 
         getConnection().sendPacket(addSourceIq);
     }

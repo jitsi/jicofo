@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -35,6 +36,11 @@ import java.util.*;
  */
 public class Participant
 {
+    /**
+     * The logger
+     */
+    private final static Logger logger = Logger.getLogger(Participant.class);
+
     /**
      * MUC chat member of this participant.
      */
@@ -159,25 +165,48 @@ public class Participant
 
     /**
      * Imports media SSRCs from given list of <tt>ContentPacketExtension</tt>.
-     * @param answer the list that contains peer's media contents.
+     *
+     * @param contents the list that contains peer's media contents.
+     *
+     * @return <tt>MediaSSRCMap</tt> tha contains only the SSRCs that were
+     *        actually added to this participant(which were not duplicated).
      */
-    public void addSSRCsFromContent(List<ContentPacketExtension> answer)
+    public MediaSSRCMap addSSRCsFromContent(
+            List<ContentPacketExtension> contents)
     {
         // Configure SSRC owner in 'ssrc-info' with user's MUC Jid
-        MediaSSRCMap peerSSRCs = MediaSSRCMap.getSSRCsFromContent(answer);
-        for (String mediaType : peerSSRCs.getMediaTypes())
+        MediaSSRCMap ssrcsToAdd = MediaSSRCMap.getSSRCsFromContent(contents);
+
+        MediaSSRCMap addedSSRCs = new MediaSSRCMap();
+
+        for (String mediaType : ssrcsToAdd.getMediaTypes())
         {
             List<SourcePacketExtension> mediaSsrcs
-                = peerSSRCs.getSSRCsForMedia(mediaType);
+                = ssrcsToAdd.getSSRCsForMedia(mediaType);
 
             for (SourcePacketExtension ssrcPe : mediaSsrcs)
             {
                 SSRCSignaling.setSSRCOwner(
                     ssrcPe, roomMember.getContactAddress());
+
+                long ssrcValue = ssrcPe.getSSRC();
+
+                if (ssrcs.findSSRC(mediaType, ssrcValue) == null)
+                {
+                    ssrcs.addSSRC(mediaType, ssrcPe.copy());
+
+                    addedSSRCs.addSSRC(mediaType, ssrcPe);
+                }
+                else
+                {
+                    logger.warn(
+                        "Detected duplicated SSRC " + ssrcValue
+                            + " signalled by " + getEndpointId());
+                }
             }
         }
-        // Store SSRCs
-        ssrcs.add(peerSSRCs);
+
+        return addedSSRCs;
     }
 
     /**
@@ -428,19 +457,21 @@ public class Participant
     }
 
     /**
-     * Adds SSRC groups for media described in given Jiongle content list.
+     * Adds SSRC groups for media described in given Jingle content list.
      * @param contents the list of <tt>ContentPacketExtension</tt> that
      *                 describes media SSRC groups.
+     * @return <tt>MediaSSRCGroupMap</tt> with <tt>SSRCGroup</tt>s
+     *         which were added to this participant.
      */
-    public void addSSRCGroupsFromContent(List<ContentPacketExtension> contents)
+    public MediaSSRCGroupMap addSSRCGroupsFromContent(
+            List<ContentPacketExtension> contents)
     {
-        for (ContentPacketExtension content : contents)
-        {
-            List<SSRCGroup> groups
-                = SSRCGroup.getSSRCGroupsForContent(content);
+        MediaSSRCGroupMap addedSsrcGroups
+            = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
-            ssrcGroups.addSSRCGroups(content.getName(), groups);
-        }
+        ssrcGroups.add(addedSsrcGroups.copy());
+
+        return addedSsrcGroups;
     }
 
     /**

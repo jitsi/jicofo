@@ -80,6 +80,28 @@ public class SSRCGroup
     }
 
     /**
+     * Adds SSRC to this group.
+     *
+     * @param ssrcPe the <tt>SourcePacketExtension</tt> to be added to this
+     *               group.
+     */
+    public void addSource(SourcePacketExtension ssrcPe)
+    {
+        group.addChildExtension(ssrcPe);
+    }
+
+    /**
+     * Adds the list of SSRCs to this group.
+     *
+     * @param video the list of <tt>SourcePacketExtension</tt> which will be
+     *              added to this group.
+     */
+    public void addSources(List<SourcePacketExtension> video)
+    {
+        group.addSources(video);
+    }
+
+    /**
      * Returns deep copy of underlying <tt>SourceGroupPacketExtension</tt>.
      */
     public SourceGroupPacketExtension getExtensionCopy()

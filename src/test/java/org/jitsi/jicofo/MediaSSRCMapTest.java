@@ -77,17 +77,17 @@ public class MediaSSRCMapTest
                 {"msid", "bfghjh56-udff2-r43"}
             });
 
-        ssrcMap.getSSRCsForMedia("audio").add(audioSSRC1);
-        ssrcMap.getSSRCsForMedia("audio").add(audioSSRC2);
+        ssrcMap.addSSRC("audio", audioSSRC1);
+        ssrcMap.addSSRC("audio", audioSSRC2);
 
-        ssrcMap.getSSRCsForMedia("video").add(videoSSRC1);
-        ssrcMap.getSSRCsForMedia("video").add(videoSSRC2);
-        ssrcMap.getSSRCsForMedia("video").add(videoSSRC3);
+        ssrcMap.addSSRC("video", videoSSRC1);
+        ssrcMap.addSSRC("video", videoSSRC2);
+        ssrcMap.addSSRC("video", videoSSRC3);
 
         MediaSSRCMap toBeRemoved = new MediaSSRCMap();
-        toBeRemoved.getSSRCsForMedia("audio").add(audioSSRC1.copy());
-        toBeRemoved.getSSRCsForMedia("video").add(videoSSRC1.copy());
-        toBeRemoved.getSSRCsForMedia("video").add(videoSSRC2.copy());
+        toBeRemoved.addSSRC("audio", audioSSRC1.copy());
+        toBeRemoved.addSSRC("video", videoSSRC1.copy());
+        toBeRemoved.addSSRC("video", videoSSRC2.copy());
 
         MediaSSRCMap removed = ssrcMap.remove(toBeRemoved);
 

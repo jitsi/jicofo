@@ -90,13 +90,58 @@ public class MediaSSRCMap
     {
         for (String media : mapToMerge.ssrcs.keySet())
         {
-            List<SourcePacketExtension> ssrcList
-                = getSSRCsForMedia(media);
-
-            // FIXME: addAll will not detect duplications
-            // as .equals is not overridden
-            ssrcList.addAll(mapToMerge.ssrcs.get(media));
+            addSSRCs(media, mapToMerge.ssrcs.get(media));
         }
+    }
+
+    /**
+     * Adds SSRC to this map. NOTE that duplicated SSRCs wil be stored in
+     * the map.
+     *
+     * @param media the media type of the SSRC to be added.
+     *
+     * @param ssrc the <tt>SourcePacketExtension</tt> to be added to this map.
+     */
+    public void addSSRC(String media, SourcePacketExtension ssrc)
+    {
+        // BEWARE! add will not detect duplications
+        getSSRCsForMedia(media).add(ssrc);
+    }
+
+    /**
+     * Adds SSRCs to this map. NOTE that duplicates will be stored in the map.
+     *
+     * @param media the media type of SSRCs to be added to this map.
+     *
+     * @param ssrcs collection of SSRCs which will be included in this map.
+     */
+    public void addSSRCs(String media, Collection<SourcePacketExtension> ssrcs)
+    {
+        // BEWARE! addAll will not detect duplications
+        // as .equals is not overridden
+        getSSRCsForMedia(media).addAll(ssrcs);
+    }
+
+    /**
+     * Looks for SSRC in this map.
+     *
+     * @param media the name of media type of the SSRC we're looking for.
+     *
+     * @param ssrcValue SSRC value which identifies
+     *                  the <tt>SourcePacketExtension</tt> we're looking for.
+     *
+     * @return <tt>SourcePacketExtension</tt> found in this map which has
+     *         the same SSRC number as given in the <tt>ssrcValue</tt> or
+     *         <tt>null</tt> if not found.
+     */
+    public SourcePacketExtension findSSRC(String media, long ssrcValue)
+    {
+        for (SourcePacketExtension ssrc : getSSRCsForMedia(media))
+        {
+            if (ssrcValue == ssrc.getSSRC())
+                return ssrc;
+        }
+        return null;
     }
 
     /**
@@ -220,5 +265,29 @@ public class MediaSSRCMap
         }
 
         return new MediaSSRCMap(ssrcMap);
+    }
+
+    //FIXME: move to jitsi-protocol-jabber ?
+    String SSRCsToString(List<SourcePacketExtension> ssrcs)
+    {
+        StringBuilder str = new StringBuilder();
+        for (SourcePacketExtension ssrc : ssrcs)
+        {
+            str.append(ssrc.getSSRC()).append(" ");
+        }
+        return str.toString();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder("SSRCs{");
+        for (String media : getMediaTypes())
+        {
+            str.append(" ").append(media).append(": [");
+            str.append(SSRCsToString(getSSRCsForMedia(media)));
+            str.append("]");
+        }
+        return str.append(" }@").append(hashCode()).toString();
     }
 }

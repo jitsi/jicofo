@@ -1433,13 +1433,15 @@ public class JitsiMeetConference
 
         participant.addSSRCGroupsFromContent(answer);
 
+        logger.info(
+            "Received SSRCs from " + peerJingleSession.getAddress()
+                + " " + participant.getSSRCS());
+
         // Update SSRC groups
         colibriConference.updateSourcesInfo(
             participant.getSSRCsCopy(),
             participant.getSSRCGroupsCopy(),
             participant.getColibriChannelsInfo());
-
-        logger.info("Got SSRCs from " + peerJingleSession.getAddress());
 
         for (Participant peerToNotify : participants)
         {
@@ -1592,15 +1594,11 @@ public class JitsiMeetConference
             return;
         }
 
-        participant.addSSRCsFromContent(contents);
-
-        participant.addSSRCGroupsFromContent(contents);
-
         MediaSSRCMap ssrcsToAdd
-            = MediaSSRCMap.getSSRCsFromContent(contents);
+            = participant.addSSRCsFromContent(contents);
 
         MediaSSRCGroupMap ssrcGroupsToAdd
-            = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
+            = participant.addSSRCGroupsFromContent(contents);
 
         // Updates SSRC Groups on the bridge
         colibriConference.updateSourcesInfo(
@@ -1744,7 +1742,9 @@ public class JitsiMeetConference
             sourcePeer.getSSRCGroupsCopy(),
             sourcePeer.getColibriChannelsInfo());
 
-        logger.info("Remove SSRC " + sourceJingleSession.getAddress());
+        logger.info(
+            "Removing " + sourceJingleSession.getAddress()
+                + " SSRCs " + ssrcsToRemove);
 
         for (Participant peer : participants)
         {
