@@ -117,9 +117,8 @@ public class AdvertiseSSRCsTest
 
         user1.videoSourceAdd(new long[]{ u1VideoSSRC2, u1VideoSSRC }, false);
 
-        assertNotNull(user2.waitForAddSource(1000));
-        assertNotNull(user2.waitForAddSource(1000));
-        assertNotNull(user2.waitForAddSource(1000));
+        // There should be no source-add notifications sent
+        assertEquals(null, user2.waitForAddSource(500));
 
         assertEquals(1, user2.getRemoteSSRCs("audio").size());
         // There is 1 + 2 extra we've created here in the test

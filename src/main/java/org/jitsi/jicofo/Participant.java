@@ -469,9 +469,7 @@ public class Participant
         MediaSSRCGroupMap addedSsrcGroups
             = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
-        ssrcGroups.add(addedSsrcGroups.copy());
-
-        return addedSsrcGroups;
+        return ssrcGroups.add(addedSsrcGroups.copy());
     }
 
     /**

@@ -73,9 +73,13 @@ public class SSRCGroup
      * Creates new instance of <tt>SSRCGroup</tt>.
      * @param group the packet extension that described SSRC group to be wrapped
      *              by new object.
+     * @throws NullPointerException if <tt>group</tt> is <tt>null</tt>.
      */
     public SSRCGroup(SourceGroupPacketExtension group)
     {
+        if (group == null)
+            throw new NullPointerException("group");
+
         this.group = group;
     }
 
@@ -153,5 +157,17 @@ public class SSRCGroup
             }
         }
         return true;
+    }
+
+    /**
+     * Check if this <tt>SSRCGroup</tt> contains any
+     * <tt>SourceGroupPacketExtension</tt>s.
+     *
+     * @return <tt>true</tt> if this <tt>SSRCGroup</tt> is empty or
+     *         <tt>false</tt> otherwise.
+     */
+    public boolean isEmpty()
+    {
+        return this.group.getSources().isEmpty();
     }
 }

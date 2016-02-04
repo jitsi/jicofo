@@ -1600,6 +1600,12 @@ public class JitsiMeetConference
         MediaSSRCGroupMap ssrcGroupsToAdd
             = participant.addSSRCGroupsFromContent(contents);
 
+        if (ssrcsToAdd.isEmpty() && ssrcGroupsToAdd.isEmpty())
+        {
+            logger.warn("Not sending source-add, notification would be empty");
+            return;
+        }
+
         // Updates SSRC Groups on the bridge
         colibriConference.updateSourcesInfo(
             participant.getSSRCsCopy(),

@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol.xmpp.util;
 
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import java.util.*;
@@ -127,13 +128,26 @@ public class MediaSSRCGroupMap
      * map instance.
      * @param ssrcGroups the <tt>MediaSSRCGroupMap</tt> that will be added to
      *                   this map instance.
+     * @return returns that map that contains only those groups that were
+     *         actually added.
      */
-    public void add(MediaSSRCGroupMap ssrcGroups)
+    public MediaSSRCGroupMap add(MediaSSRCGroupMap ssrcGroups)
     {
+        MediaSSRCGroupMap addedGroups = new MediaSSRCGroupMap();
         for (String media : ssrcGroups.getMediaTypes())
         {
-            addSSRCGroups(media, ssrcGroups.getSSRCGroupsForMedia(media));
+            List<SSRCGroup> groups = ssrcGroups.getSSRCGroupsForMedia(media);
+            for (SSRCGroup group : groups)
+            {
+                if (!group.isEmpty())
+                {
+                    addSSRCGroup(media, group);
+
+                    addedGroups.addSSRCGroup(media, group);
+                }
+            }
         }
+        return addedGroups;
     }
 
     /**
@@ -215,5 +229,38 @@ public class MediaSSRCGroupMap
         }
 
         return new MediaSSRCGroupMap(mapCopy);
+    }
+
+    String groupsToString(List<SSRCGroup> ssrcs)
+    {
+        StringBuilder str = new StringBuilder();
+        for (SSRCGroup group : ssrcs)
+        {
+            SourceGroupPacketExtension sourceGroup = group.getExtensionCopy();
+
+            str.append("SSRCGroup(")
+                .append(sourceGroup.getSemantics())
+                .append(")[ ");
+
+            for (SourcePacketExtension ssrc : sourceGroup.getSources())
+            {
+                str.append(ssrc.getSSRC()).append(" ");
+            }
+            str.append("]");
+        }
+        return str.toString();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder("SSRC_Groups{");
+        for (String media : getMediaTypes())
+        {
+            str.append(" ").append(media).append(":[ ");
+            str.append(groupsToString(getSSRCGroupsForMedia(media)));
+            str.append(" ]");
+        }
+        return str.append(" }@").append(hashCode()).toString();
     }
 }

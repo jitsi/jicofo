@@ -331,8 +331,8 @@ public abstract class AbstractOperationSetJingle
         addSourceIq.setSID(peerSid);
 
         logger.info(
-            "Notify add SSRC" + session.getAddress()
-                + " SID: " + peerSid + " " + ssrcs);
+            "Notify add SSRC " + session.getAddress()
+                + " SID: " + peerSid + " " + ssrcs + " " + ssrcGroupMap);
 
         getConnection().sendPacket(addSourceIq);
     }
@@ -436,8 +436,9 @@ public abstract class AbstractOperationSetJingle
         removeSourceIq.setTo(session.getAddress());
         removeSourceIq.setSID(peerSid);
 
-        logger.info("Notify remove SSRC " + session.getAddress()
-                        + " SID: " + peerSid);
+        logger.info(
+            "Notify remove SSRC " + session.getAddress()
+                + " SID: " + peerSid + " " + ssrcs + " " + ssrcGroupMap);
 
         XmppConnection connection = getConnection();
 
