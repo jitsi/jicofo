@@ -62,73 +62,6 @@ public class AdvertiseSSRCsTest
     }
 
     @Test
-    public void testDuplicatedSSRCs()
-        throws Exception
-    {
-        String roomName = "testSSRCs@conference.pawel.jitsi.net";
-        String serverName = "test-server";
-
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
-
-        MockProtocolProvider pps
-            = testConf.getFocusProtocolProvider();
-
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-
-        MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
-
-        // Join with all users
-        MockParticipant user1 = new MockParticipant("User1");
-        user1.join(chat);
-
-        MockParticipant user2 = new MockParticipant("User2");
-        user2.join(chat);
-
-        // Accept invite with all users
-        // Add 2 duplicated SSRCs to user 1 accept
-        long u1VideoSSRC = MockParticipant.nextSSRC();
-        user1.addLocalVideoSSRC(u1VideoSSRC, null);
-
-        long u1VideoSSRC2 = MockParticipant.nextSSRC();
-        user1.addLocalVideoSSRC(u1VideoSSRC2, null);
-        user1.addLocalVideoSSRC(u1VideoSSRC2, null);
-
-        assertNotNull(user1.acceptInvite(4000));
-
-        assertNotNull(user2.acceptInvite(4000));
-
-        assertNotNull(user1.waitForAddSource(1000));
-        assertNotNull(user2.waitForAddSource(1000));
-
-        // There is 1 + 2 extra we've created here in the test
-        assertEquals(3, user2.getRemoteSSRCs("video").size());
-        // No groups
-        assertEquals(0, user2.getRemoteSSRCGroups("video").size());
-
-        user1.videoSourceAdd(new long[]{ u1VideoSSRC }, false);
-
-        user1.videoSourceAdd(
-            new long[]{
-                u1VideoSSRC, u1VideoSSRC2, u1VideoSSRC,
-                u1VideoSSRC, u1VideoSSRC, u1VideoSSRC2
-            }, false);
-
-        user1.videoSourceAdd(new long[]{ u1VideoSSRC2, u1VideoSSRC }, false);
-
-        // There should be no source-add notifications sent
-        assertEquals(null, user2.waitForAddSource(500));
-
-        assertEquals(1, user2.getRemoteSSRCs("audio").size());
-        // There is 1 + 2 extra we've created here in the test
-        assertEquals(3, user2.getRemoteSSRCs("video").size());
-
-        user2.leave();
-        user1.leave();
-    }
-
-    @Test
     public void testOneToOneConference()
         throws Exception
     {
@@ -207,6 +140,73 @@ public class AdvertiseSSRCsTest
         assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
 
         user3.leave();
+        user1.leave();
+    }
+
+    @Test
+    public void testDuplicatedSSRCs()
+        throws Exception
+    {
+        String roomName = "testSSRCs@conference.pawel.jitsi.net";
+        String serverName = "test-server";
+
+        TestConference testConf = new TestConference();
+        testConf.allocateMockConference(osgi, serverName, roomName);
+
+        MockProtocolProvider pps
+            = testConf.getFocusProtocolProvider();
+
+        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
+
+        MockMultiUserChat chat
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+
+        // Join with all users
+        MockParticipant user1 = new MockParticipant("User1");
+        user1.join(chat);
+
+        MockParticipant user2 = new MockParticipant("User2");
+        user2.join(chat);
+
+        // Accept invite with all users
+        // Add 2 duplicated SSRCs to user 1 accept
+        long u1VideoSSRC = MockParticipant.nextSSRC();
+        user1.addLocalVideoSSRC(u1VideoSSRC, null);
+
+        long u1VideoSSRC2 = MockParticipant.nextSSRC();
+        user1.addLocalVideoSSRC(u1VideoSSRC2, null);
+        user1.addLocalVideoSSRC(u1VideoSSRC2, null);
+
+        assertNotNull(user1.acceptInvite(4000));
+
+        assertNotNull(user2.acceptInvite(4000));
+
+        assertNotNull(user1.waitForAddSource(1000));
+        assertNotNull(user2.waitForAddSource(1000));
+
+        // There is 1 + 2 extra we've created here in the test
+        assertEquals(3, user2.getRemoteSSRCs("video").size());
+        // No groups
+        assertEquals(0, user2.getRemoteSSRCGroups("video").size());
+
+        user1.videoSourceAdd(new long[]{ u1VideoSSRC }, false);
+
+        user1.videoSourceAdd(
+            new long[]{
+                u1VideoSSRC, u1VideoSSRC2, u1VideoSSRC,
+                u1VideoSSRC, u1VideoSSRC, u1VideoSSRC2
+            }, false);
+
+        user1.videoSourceAdd(new long[]{ u1VideoSSRC2, u1VideoSSRC }, false);
+
+        // There should be no source-add notifications sent
+        assertEquals(null, user2.waitForAddSource(500));
+
+        assertEquals(1, user2.getRemoteSSRCs("audio").size());
+        // There is 1 + 2 extra we've created here in the test
+        assertEquals(3, user2.getRemoteSSRCs("video").size());
+
+        user2.leave();
         user1.leave();
     }
 
