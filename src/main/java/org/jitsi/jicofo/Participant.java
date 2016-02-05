@@ -99,6 +99,11 @@ public class Participant
     private List<String> supportedFeatures = new ArrayList<String>();
 
     /**
+     * Tells how many unique SSRCs per media participant is allowed to advertise
+     */
+    private final int maxSSRCCount;
+
+    /**
      * Remembers participant's muted status.
      */
     private boolean mutedStatus;
@@ -126,14 +131,18 @@ public class Participant
      *
      * @param roomMember the {@link XmppChatMember} that represent this
      *                   participant in MUC conference room.
+     *
+     * @param maxSSRCCount how many unique SSRCs per media this participant
+     *                     instance will be allowed to advertise.
      */
-    public Participant(XmppChatMember roomMember)
+    public Participant(XmppChatMember roomMember, int maxSSRCCount)
     {
         if (roomMember == null)
         {
             throw new NullPointerException("roomMember");
         }
         this.roomMember = roomMember;
+        this.maxSSRCCount = maxSSRCCount;
     }
 
     /**
@@ -191,18 +200,26 @@ public class Participant
 
                 long ssrcValue = ssrcPe.getSSRC();
 
-                if (ssrcs.findSSRC(mediaType, ssrcValue) == null)
-                {
-                    ssrcs.addSSRC(mediaType, ssrcPe.copy());
-
-                    addedSSRCs.addSSRC(mediaType, ssrcPe);
-                }
-                else
+                if (ssrcs.findSSRC(mediaType, ssrcValue) != null)
                 {
                     logger.warn(
                         "Detected duplicated SSRC " + ssrcValue
                             + " signalled by " + getEndpointId());
+                    continue;
                 }
+                else if (
+                    ssrcs.getSSRCsForMedia(mediaType).size() >= maxSSRCCount)
+                {
+                    logger.warn(
+                        "SSRC limit of " + maxSSRCCount + " exceeded by "
+                            + getEndpointId() + " - dropping "
+                            + mediaType + " SSRC: " + ssrcValue);
+                    break;
+                }
+
+                ssrcs.addSSRC(mediaType, ssrcPe.copy());
+
+                addedSSRCs.addSSRC(mediaType, ssrcPe);
             }
         }
 

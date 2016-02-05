@@ -52,15 +52,20 @@ public class FocusBundleActivator
     private static ConfigurationService configService;
 
     /**
+     * Shared thread pool available through OSGi for other components that do
+     * not like to manage their own pool.
+     */
+    private static ScheduledExecutorService sharedThreadPool;
+
+    /**
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
      */
     private FocusManager focusManager;
 
     /**
-     * Shared thread pool available through OSGi for other components that do
-     * not like to manage their own pool.
+     * Global configuration of Jitsi COnference FOcus
      */
-    private static ScheduledExecutorService sharedThreadPool;
+    private JitsiMeetGlobalConfig globalConfig;
 
     @Override
     public void start(BundleContext context)
@@ -77,6 +82,8 @@ public class FocusBundleActivator
         context.registerService(
             ScheduledExecutorService.class, sharedThreadPool, null);
 
+        globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
+
         focusManager = new FocusManager();
         context.registerService(FocusManager.class, focusManager, null);
     }
@@ -91,6 +98,12 @@ public class FocusBundleActivator
         configService = null;
 
         EntityCapsManager.setBundleContext(null);
+
+        if (globalConfig != null)
+        {
+            globalConfig.stopGlobalConfigService();
+            globalConfig = null;
+        }
     }
 
     /**

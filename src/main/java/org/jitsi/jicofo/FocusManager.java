@@ -272,9 +272,14 @@ public class FocusManager
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
+        JitsiMeetGlobalConfig globalConfig
+            = JitsiMeetGlobalConfig.getGlobalConfig(
+                FocusBundleActivator.bundleContext);
+
         JitsiMeetConference conference
             = new JitsiMeetConference(
-                    room, focusUserName, protocolProviderHandler, this, config);
+                    room, focusUserName, protocolProviderHandler,
+                    this, config, globalConfig);
 
         conferences.put(room, conference);
 

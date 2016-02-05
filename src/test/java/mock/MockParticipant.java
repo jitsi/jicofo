@@ -184,7 +184,7 @@ public class MockParticipant
         return random.nextInt(Integer.MAX_VALUE);
     }
 
-    private SourcePacketExtension newVideoSSRC(long ssrc, String ssrcVideoType)
+    private SourcePacketExtension newSSRC(long ssrc, String ssrcVideoType)
     {
         SourcePacketExtension ssrcPe = new SourcePacketExtension();
 
@@ -211,14 +211,14 @@ public class MockParticipant
         audioRtpDesc.setMedia("audio");
         audio.addChildExtension(audioRtpDesc);
 
-        SourcePacketExtension audioSSRC
-            = new SourcePacketExtension();
-        audioSSRC.setSSRC(nextSSRC());
-        SSRCSignaling.setSSRCOwner(audioSSRC, myJid);
-        audioRtpDesc.addChildExtension(audioSSRC);
+        addLocalAudioSSRC(nextSSRC());
+
+        for (SourcePacketExtension ssrc : localSSRCs.getSSRCsForMedia("audio"))
+        {
+            audioRtpDesc.addChildExtension(ssrc);
+        }
 
         myContents.add(audio);
-        localSSRCs.addSSRC("audio", audioSSRC);
 
         // VIDEO
         ContentPacketExtension video = new ContentPacketExtension();
@@ -245,7 +245,7 @@ public class MockParticipant
         if (useSsrcGroups)
         {
             // Video SSRC group
-            SSRCGroup videoGroup = getLocalVideoSSRCGroup();
+            SSRCGroup videoGroup = getLocalSSRCGroup("video");
             videoGroup.addSources(getVideoSSRCS());
 
             videoRtpDesc.addChildExtension(videoGroup.getExtensionCopy());
@@ -561,9 +561,8 @@ public class MockParticipant
         videoSourceAdd(newVideoSSRCs, useSsrcGroups);
     }
 
-    private SSRCGroup getLocalVideoSSRCGroup()
+    private SSRCGroup getLocalSSRCGroup(String media)
     {
-        final String media = "video";
         List<SSRCGroup> videoGroups
             = localSSRCGroups.getSSRCGroupsForMedia(media);
         SSRCGroup group = null;
@@ -583,25 +582,66 @@ public class MockParticipant
         return group;
     }
 
-    public void videoSourceAdd(long[] newVideoSSRCs, boolean useSsrcGroups)
+    public List<SourcePacketExtension> videoSourceAdd(int count)
     {
-        MediaSSRCMap toAdd = new MediaSSRCMap();
-        SSRCGroup ssrcGroup = getLocalVideoSSRCGroup();
-        // Create new SSRCs
-        for (long ssrc : newVideoSSRCs)
-        {
-            SourcePacketExtension ssrcPe
-                = addLocalVideoSSRC(ssrc, null);
+        return sourceAdd("video", count, false, null);
+    }
 
-            toAdd.addSSRC("video", ssrcPe);
+    public List<SourcePacketExtension> audioSourceAdd(int count)
+    {
+        return sourceAdd("audio", count, false, null);
+    }
+
+    private List<SourcePacketExtension> sourceAdd(
+            String media, int count, boolean useGroups, String[] videoTypes)
+    {
+        long[] ssrcs = new long[count];
+        for (int i=0; i<count; i++)
+        {
+            ssrcs[i] = nextSSRC();
+        }
+        return sourceAdd(media, ssrcs, useGroups, videoTypes);
+    }
+
+    public List<SourcePacketExtension> videoSourceAdd(
+            long[] newSSRCs, boolean useSsrcGroups)
+    {
+        return sourceAdd("video", newSSRCs, useSsrcGroups, null);
+    }
+
+    public List<SourcePacketExtension> sourceAdd(
+        String media, long[] newSSRCs, boolean useSsrcGroups, String[] ssrcsVideoTypes)
+    {
+        List<SourcePacketExtension> addedSSRCs
+            = new ArrayList<>(newSSRCs.length);
+        MediaSSRCMap toAdd = new MediaSSRCMap();
+        SSRCGroup ssrcGroup = getLocalSSRCGroup(media);
+
+        // Create new SSRCs
+        for (int i=0; i<newSSRCs.length; i++)
+        {
+            String videoType = null;
+            if (ssrcsVideoTypes != null)
+            {
+                videoType = ssrcsVideoTypes[i];
+            }
+
+            SourcePacketExtension ssrcPe
+                = addLocalSSRC(media, newSSRCs[i], videoType);
+
+            toAdd.addSSRC(media, ssrcPe);
+            addedSSRCs.add(ssrcPe);
 
             if (useSsrcGroups)
             {
                 ssrcGroup.addSource(ssrcPe);
             }
         }
+
         // Send source-add
         jingle.sendAddSourceIQ(toAdd, localSSRCGroups, jingleSession);
+
+        return addedSSRCs;
     }
 
     public List<SourcePacketExtension> getRemoteSSRCs(String media)
@@ -680,13 +720,44 @@ public class MockParticipant
         this.ssrcVideoType = ssrcVideoType;
     }
 
-    public SourcePacketExtension addLocalVideoSSRC(long ssrc, String videoType)
+    public List<SourcePacketExtension> addMultipleAudioSSRCs(int count)
     {
-        SourcePacketExtension newSSRC = newVideoSSRC(ssrc, videoType);
+        List<SourcePacketExtension> newSSRCs = new ArrayList<>(count);
+        for (int i=0; i<count; i++)
+        {
+            newSSRCs.add(addLocalAudioSSRC(nextSSRC()));
+        }
+        return newSSRCs;
+    }
 
-        localSSRCs.addSSRC("video", newSSRC);
+    public List<SourcePacketExtension> addMultipleVideoSSRCs(int count)
+    {
+        List<SourcePacketExtension> newSSRCs = new ArrayList<>(count);
+        for (int i=0; i<count; i++)
+        {
+            newSSRCs.add(addLocalVideoSSRC(nextSSRC(), null));
+        }
+        return newSSRCs;
+    }
+
+    public SourcePacketExtension addLocalSSRC(
+        String media, long ssrc, String videoType)
+    {
+        SourcePacketExtension newSSRC = newSSRC(ssrc, videoType);
+
+        localSSRCs.addSSRC(media, newSSRC);
 
         return newSSRC;
+    }
+
+    public SourcePacketExtension addLocalVideoSSRC(long ssrc, String videoType)
+    {
+        return addLocalSSRC("video", ssrc, videoType);
+    }
+
+    public SourcePacketExtension addLocalAudioSSRC(long ssrc)
+    {
+        return addLocalSSRC("audio", ssrc, null);
     }
 
     class JingleHandler extends DefaultJingleRequestHandler

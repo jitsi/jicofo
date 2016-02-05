@@ -108,6 +108,11 @@ public class JitsiMeetConference
     private final JitsiMeetConfig config;
 
     /**
+     * The instance of global configuration.
+     */
+    private final JitsiMeetGlobalConfig globalConfig;
+
+    /**
      * XMPP protocol provider handler used by the focus.
      */
     private final ProtocolProviderHandler protocolProviderHandler;
@@ -221,12 +226,14 @@ public class JitsiMeetConference
      * @param listener the listener that will be notified about this instance
      *        events.
      * @param config the conference configuration instance.
+     * @param globalConfig an instance of the global config service.
      */
     public JitsiMeetConference(String roomName,
                                String focusUserName,
                                ProtocolProviderHandler protocolProviderHandler,
                                ConferenceListener listener,
-                               JitsiMeetConfig config)
+                               JitsiMeetConfig config,
+                               JitsiMeetGlobalConfig globalConfig)
     {
         if (protocolProviderHandler == null)
             throw new NullPointerException("protocolProviderHandler");
@@ -238,6 +245,7 @@ public class JitsiMeetConference
         this.protocolProviderHandler = protocolProviderHandler;
         this.listener = listener;
         this.config = config;
+        this.globalConfig = globalConfig;
     }
 
     /**
@@ -521,7 +529,10 @@ public class JitsiMeetConference
         if (findParticipantForChatMember(chatRoomMember) != null)
             return;
 
-        newParticipant = new Participant((XmppChatMember) chatRoomMember);
+        newParticipant
+            = new Participant(
+                (XmppChatMember) chatRoomMember,
+                globalConfig.getMaxSSRCsPerUser());
 
         participants.add(newParticipant);
 
