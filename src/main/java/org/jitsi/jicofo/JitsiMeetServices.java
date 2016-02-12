@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.util.*;
 
@@ -280,5 +281,15 @@ public class JitsiMeetServices
     public void setMucService(String mucService)
     {
         this.mucService = mucService;
+    }
+
+    public void init()
+    {
+        bridgeSelector.init();
+    }
+
+    public void dispose()
+    {
+        bridgeSelector.dispose();
     }
 }

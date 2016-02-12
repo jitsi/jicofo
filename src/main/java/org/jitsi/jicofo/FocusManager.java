@@ -183,6 +183,8 @@ public class FocusManager
             protocolProviderHandler.getOperationSet(
                 OperationSetSubscription.class));
 
+        jitsiMeetServices.init();
+
         String statsPubSubNode
             = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
 
@@ -218,6 +220,11 @@ public class FocusManager
         {
             componentsDiscovery.stop();
             componentsDiscovery = null;
+        }
+
+        if (jitsiMeetServices != null)
+        {
+            jitsiMeetServices.dispose();
         }
 
         meetExtensionsHandler.dispose();

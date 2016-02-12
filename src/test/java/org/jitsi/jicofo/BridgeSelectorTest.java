@@ -24,6 +24,9 @@ import mock.xmpp.pubsub.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.osgi.*;
 import org.jitsi.videobridge.stats.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -235,6 +238,9 @@ public class BridgeSelectorTest
 
         assertEquals(jvb2Jid, selector.selectVideobridge());
 
+        // TRANSIENT CONFERENCE COUNTER
+        testTransientConferenceCount(mockSubscriptions, itemId, selector);
+
         // FAILURE RESET THRESHOLD
         testFailureResetThreshold(selector, mockSubscriptions);
 
@@ -247,6 +253,90 @@ public class BridgeSelectorTest
             if (--maxCount < 0)
                 fail("Max count exceeded");
         }
+    }
+
+    private void testTransientConferenceCount(
+        MockSubscriptionOpSetImpl mockSubscriptions,
+        String itemId,
+        BridgeSelector selector)
+    {
+        // All bridges have 0 load - no updates between select
+        mockSubscriptions.fireSubscriptionNotification(
+            jvb1PubSubNode, itemId, createJvbStats(0));
+        mockSubscriptions.fireSubscriptionNotification(
+            jvb2PubSubNode, itemId, createJvbStats(0));
+        mockSubscriptions.fireSubscriptionNotification(
+            jvb3PubSubNode, itemId, createJvbStats(0));
+
+        OSGIServiceRef<EventAdmin> eventAdminRef
+            = new OSGIServiceRef<>(osgi.bc, EventAdmin.class);
+
+        Map<String, Integer> selectDistribution = new HashMap<>();
+        selectDistribution.put(jvb1Jid, 0);
+        selectDistribution.put(jvb2Jid, 0);
+        selectDistribution.put(jvb3Jid, 0);
+
+        for (int i=0; i<9; i++)
+        {
+            String selected = selector.selectVideobridge();
+
+            selectDistribution.put(
+                selected, selectDistribution.get(selected)+1);
+
+            // Simulate local conference allocated event
+            eventAdminRef.get().sendEvent(
+                BridgeEvent.createConfAllocated(selected));
+        }
+
+        assertEquals(
+            selectDistribution.toString(),
+            Integer.valueOf(3), selectDistribution.get(jvb1Jid));
+        assertEquals(
+            selectDistribution.toString(),
+            Integer.valueOf(3), selectDistribution.get(jvb2Jid));
+        assertEquals(
+            selectDistribution.toString(),
+            Integer.valueOf(3), selectDistribution.get(jvb3Jid));
+
+        // Now test transient counters reset
+        selectDistribution.put(jvb1Jid, 0);
+        selectDistribution.put(jvb2Jid, 0);
+        selectDistribution.put(jvb3Jid, 0);
+
+        // Set 10 on jvb3, jvb1 and jvb2 should get same alloc amount
+        mockSubscriptions.fireSubscriptionNotification(
+            jvb3PubSubNode, itemId, createJvbStats(10));
+
+        int jvb1Count = 0;
+
+        for (int i=0; i<8; i++)
+        {
+            String selected = selector.selectVideobridge();
+
+            selectDistribution.put(
+                selected, selectDistribution.get(selected)+1);
+
+            // Simulate local conference allocated event
+            eventAdminRef.get().sendEvent(
+                BridgeEvent.createConfAllocated(selected));
+            // Jvb1 will be getting PUBSUB notifications after each allocation
+            // which should reset the counter
+            //if (jvb1Jid.equals(selected))
+            //{
+              //  mockSubscriptions.fireSubscriptionNotification(
+                //jvb1PubSubNode, itemId, createJvbStats(++jvb1Count));
+            //}
+        }
+
+        assertEquals(
+            selectDistribution.toString(),
+            Integer.valueOf(4), selectDistribution.get(jvb1Jid));
+        assertEquals(
+            selectDistribution.toString(),
+            Integer.valueOf(4), selectDistribution.get(jvb2Jid));
+        assertEquals(
+            selectDistribution.toString(),
+            Integer.valueOf(0), selectDistribution.get(jvb3Jid));
     }
 
     private void testFailureResetThreshold(

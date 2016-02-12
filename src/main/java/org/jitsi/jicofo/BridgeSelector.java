@@ -20,14 +20,16 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -37,7 +39,8 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class BridgeSelector
-    implements SubscriptionListener
+    implements SubscriptionListener,
+               EventHandler
 {
     /**
      * The logger.
@@ -74,6 +77,8 @@ public class BridgeSelector
      */
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
 
+    private ServiceRegistration<EventHandler> handlerRegistration;
+
     /**
      * The amount of time we will wait after bridge instance failure before it
      * will get another chance.
@@ -91,12 +96,7 @@ public class BridgeSelector
     private Map<String, BridgeState> bridges
         = new HashMap<String, BridgeState>();
 
-    /**
-     * The list of {@link BridgeListener}s that are notified whenever new bridge
-     * working bridge is discovered or when one of the bridges goes down.
-     */
-    private List<BridgeListener> bridgeListeners =
-        new CopyOnWriteArrayList<BridgeListener>();
+    private EventAdmin eventAdmin;
 
     /**
      * Pre-configured JVB used as last chance option even if no bridge has been
@@ -118,37 +118,6 @@ public class BridgeSelector
     public BridgeSelector(OperationSetSubscription subscriptionOpSet)
     {
         this.subscriptionOpSet = subscriptionOpSet;
-
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-
-        String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
-
-        if (!StringUtils.isNullOrEmpty(mappingPropertyValue))
-        {
-            String[] pairs = mappingPropertyValue.split(";");
-            for (String pair : pairs)
-            {
-                String[] bridgeAndNode = pair.split(":");
-                if (bridgeAndNode.length != 2)
-                {
-                    logger.error("Invalid mapping element: " + pair);
-                    continue;
-                }
-
-                String bridge = bridgeAndNode[0];
-                String pubSubNode = bridgeAndNode[1];
-                pubSubToBridge.put(pubSubNode, bridge);
-
-                logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
-            }
-        }
-
-        setFailureResetThreshold(
-            config.getLong( BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
-                            DEFAULT_FAILURE_RESET_THRESHOLD));
-
-        logger.info(
-            "Bridge failure reset threshold: " + getFailureResetThreshold());
     }
 
     /**
@@ -241,6 +210,21 @@ public class BridgeSelector
         List<BridgeState> bridges = getPrioritizedBridgesList();
         if (bridges.size() == 0)
             return null;
+
+        // Need to shuffle equal bridges on the list
+        /*if (bridges.size() > 1 &&
+            bridges.get(0).compareTo(bridges.get(1)) == 0)
+        {
+            int endOfEqual=1;
+            for (int i=1; i < bridges.size()-1;i++)
+            {
+                if (bridges.get(i).compareTo(bridges.get(i+1)) != 0)
+                    break;
+                endOfEqual++;
+            }
+            bridges = bridges.subList(0, endOfEqual);
+            Collections.shuffle(bridges);
+        }*/
 
         return bridges.get(0).isOperational() ? bridges.get(0).jid : null;
     }
@@ -516,44 +500,13 @@ public class BridgeSelector
         return bridges.size();
     }
 
-    /**
-     * Adds <tt>BridgeListener</tt> to the bridge observers list.
-     *
-     * @param listener the bridge listener instance to be registered for bridges
-     *                 status updates
-     */
-    public void addBridgeListener(BridgeListener listener)
-    {
-        bridgeListeners.add(listener);
-    }
-
-    /**
-     * Removes <tt>BridgeListener</tt> from the bridge observers list.
-     *
-     * @param listener the bridge listener instance to be unregistered from
-     *                 bridge status updates.
-     */
-    public void removeBridgeListener(BridgeListener listener)
-    {
-        bridgeListeners.remove(listener);
-    }
-
     private void notifyBridgeUp(BridgeState bridge)
     {
         if (logger.isDebugEnabled())
             logger.debug("Propagating new bridge added event: " + bridge.jid);
 
-        for (BridgeListener listener : bridgeListeners)
-        {
-            try
-            {
-                listener.onBridgeUp(this, bridge.jid);
-            }
-            catch (Exception e)
-            {
-                logger.error("Error when propagating bridge up event", e);
-            }
-        }
+        eventAdmin.sendEvent(
+            BridgeEvent.createBridgeUp(bridge.jid));
     }
 
     private void notifyBridgeDown(BridgeState bridge)
@@ -561,16 +514,99 @@ public class BridgeSelector
         if (logger.isDebugEnabled())
             logger.debug("Propagating bridge went down event: " + bridge.jid);
 
-        for (BridgeListener listener : bridgeListeners)
+        eventAdmin.sendEvent(
+            BridgeEvent.createBridgeDown(bridge.jid));
+    }
+
+    @Override
+    public void handleEvent(Event event)
+    {
+        String topic = event.getTopic();
+        BridgeState bridgeState;
+        BridgeEvent bridgeEvent;
+        String bridgeJid;
+
+        if (!BridgeEvent.isBridgeEvent(event))
         {
-            try
+            logger.warn("Received non-bridge event: " + event);
+            return;
+        }
+
+        bridgeEvent = (BridgeEvent) event;
+        bridgeJid = bridgeEvent.getBridgeJid();
+
+        bridgeState = bridges.get(bridgeEvent.getBridgeJid());
+        if (bridgeState == null)
+        {
+            logger.warn("Unable to handle bridge event for: " + bridgeJid);
+            return;
+        }
+
+        switch (topic)
+        {
+            case BridgeEvent.CONFERENCE_ALLOCATED:
+                bridgeState.onConferenceAllocated();
+                break;
+            case BridgeEvent.CONFERENCE_EXPIRED:
+                bridgeState.onConferenceExpired();
+                break;
+        }
+    }
+
+    public void init()
+    {
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+
+        String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
+
+        if (!StringUtils.isNullOrEmpty(mappingPropertyValue))
+        {
+            String[] pairs = mappingPropertyValue.split(";");
+            for (String pair : pairs)
             {
-                listener.onBridgeDown(this, bridge.jid);
+                String[] bridgeAndNode = pair.split(":");
+                if (bridgeAndNode.length != 2)
+                {
+                    logger.error("Invalid mapping element: " + pair);
+                    continue;
+                }
+
+                String bridge = bridgeAndNode[0];
+                String pubSubNode = bridgeAndNode[1];
+                pubSubToBridge.put(pubSubNode, bridge);
+
+                logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
             }
-            catch (Exception e)
-            {
-                logger.error("Error when propagating bridge down event", e);
-            }
+        }
+
+        setFailureResetThreshold(
+            config.getLong( BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
+                DEFAULT_FAILURE_RESET_THRESHOLD));
+
+        logger.info(
+            "Bridge failure reset threshold: " + getFailureResetThreshold());
+
+        this.eventAdmin = FocusBundleActivator.getEventAdmin();
+        if (eventAdmin == null)
+        {
+            throw new RuntimeException("EventAdmin service not found");
+        }
+
+        this.handlerRegistration = EventUtil.registerEventHandler(
+            FocusBundleActivator.bundleContext,
+            new String[] {
+                BridgeEvent.CONFERENCE_ALLOCATED,
+                BridgeEvent.CONFERENCE_EXPIRED
+            },
+            this);
+    }
+
+    public void dispose()
+    {
+        if (this.handlerRegistration != null)
+        {
+            handlerRegistration.unregister();
+            handlerRegistration = null;
         }
     }
 
@@ -593,10 +629,18 @@ public class BridgeSelector
         private int conferenceCount = Integer.MAX_VALUE;
 
         /**
+         * Counts conferences allocated locally, but not advertised through
+         * the stats yet(as there was no update since).
+         */
+        private int transientConferenceCount = 0;
+
+        /**
          * If not set we consider it highly occupied,
          * because no stats we have been fetched so far.
          */
         private int videoChannelCount = Integer.MAX_VALUE;
+
+        private int transientVideoChannelCount = 0;
 
         /**
          * If not set we consider it highly occupied,
@@ -634,6 +678,8 @@ public class BridgeSelector
                     "Conference count for: " + jid + ": " + conferenceCount);
             }
             this.conferenceCount = conferenceCount;
+            // Reset transient counter
+            this.transientConferenceCount = 0;
         }
 
         public int getConferenceCount()
@@ -736,7 +782,34 @@ public class BridgeSelector
             else if (!meOperational && otherOperational)
                 return 1;
 
-            return videoStreamCount - o.videoStreamCount;
+            int result = videoStreamCount - o.videoStreamCount;
+            if (result != 0)
+            {
+                return result;
+            }
+            else
+            {
+                return (videoStreamCount + transientConferenceCount)
+                    - (o.videoStreamCount + o.transientConferenceCount);
+            }
+            //Random r = new Random();
+            //return result != 0 ? result : (r.nextInt(3)-1);
+        }
+
+        private void onConferenceAllocated()
+        {
+            transientConferenceCount++;
+            logger.info("Conference allocated on: " + jid + " tc: " + transientConferenceCount);
+        }
+
+        private void onConferenceExpired()
+        {
+            if (--transientConferenceCount < 0)
+            {
+                // Don't want negative
+                transientConferenceCount = 0;
+            }
+            logger.info("Conference expired on: " + jid + " tc: " + transientConferenceCount);
         }
     }
 }

@@ -28,7 +28,9 @@ import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.util.*;
@@ -39,6 +41,7 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 import java.text.*;
 import java.util.*;
@@ -58,7 +61,7 @@ import java.util.concurrent.*;
 public class JitsiMeetConference
     implements RegistrationStateChangeListener,
                JingleRequestHandler,
-               BridgeListener
+               EventHandler
 
 {
     /**
@@ -218,6 +221,10 @@ public class JitsiMeetConference
      */
     private RecordingState earlyRecordingState = null;
 
+    private ServiceRegistration eventHandlerRegistration;
+
+    private OSGIServiceRef<EventAdmin> eventAdminRef;
+
     /**
      * Creates new instance of {@link JitsiMeetConference}.
      *
@@ -280,14 +287,14 @@ public class JitsiMeetConference
                 = protocolProviderHandler.getOperationSet(
                         OperationSetJitsiMeetTools.class);
 
-            services
-                = ServiceUtils.getService(
-                        FocusBundleActivator.bundleContext,
-                        JitsiMeetServices.class);
+            BundleContext osgiCtx = FocusBundleActivator.bundleContext;
+
+            services = ServiceUtils.getService(
+                osgiCtx, JitsiMeetServices.class);
+
+            eventAdminRef = new OSGIServiceRef<>(osgiCtx, EventAdmin.class);
 
             bridgeSelector = services.getBridgeSelector();
-
-            bridgeSelector.addBridgeListener(this);
 
             // Set pre-configured videobridge
             String preConfiguredBridge = config.getPreConfiguredVideobridge();
@@ -312,12 +319,33 @@ public class JitsiMeetConference
             protocolProviderHandler.addRegistrationListener(this);
 
             idleTimestamp = System.currentTimeMillis();
+
+            // Register for bridge events
+            registerEventHandler(osgiCtx);
         }
         catch(Exception e)
         {
             this.stop();
 
             throw e;
+        }
+    }
+
+    private void registerEventHandler(BundleContext osgiCtx)
+    {
+        String[] topics = { BridgeEvent.BRIDGE_DOWN };
+
+        eventHandlerRegistration
+            = EventUtil.registerEventHandler(
+                osgiCtx, topics, this);
+    }
+
+    private void unregisterEventHandler()
+    {
+        if (eventHandlerRegistration != null)
+        {
+            eventHandlerRegistration.unregister();
+            eventHandlerRegistration = null;
         }
     }
 
@@ -332,10 +360,9 @@ public class JitsiMeetConference
 
         started = false;
 
-        protocolProviderHandler.removeRegistrationListener(this);
+        unregisterEventHandler();
 
-        if (bridgeSelector != null)
-            bridgeSelector.removeBridgeListener(this);
+        protocolProviderHandler.removeRegistrationListener(this);
 
         disposeConference();
 
@@ -795,19 +822,24 @@ public class JitsiMeetConference
 
                 bridgeSelector.updateBridgeOperationalStatus(jvb, true);
 
-                if (colibriConference.hasJustAllocated())
+                EventAdmin eventAdmin = eventAdminRef.get();
+                if (eventAdmin != null)
                 {
-                    EventAdmin eventAdmin
-                            = FocusBundleActivator.getEventAdmin();
-                    if (eventAdmin != null)
+                    if (colibriConference.hasJustAllocated())
                     {
+                        // Logging event
                         eventAdmin.sendEvent(
                             EventFactory.conferenceRoom(
-                                    colibriConference.getConferenceId(),
-                                    roomName,
-                                    getId(),
-                                    jvb));
+                                colibriConference.getConferenceId(),
+                                roomName,
+                                getId(),
+                                jvb));
+                        // Generic event for BridgeSelector logic
+                        eventAdmin.sendEvent(
+                            BridgeEvent.createConfAllocated(jvb));
                     }
+                    eventAdmin.sendEvent(
+                            BridgeEvent.createChannelsAlloc(jvb, 1, 1));
                 }
                 return peerChannels;
             }
@@ -1309,8 +1341,17 @@ public class JitsiMeetConference
                 if (peerChannels != null)
                 {
                     logger.info("Expiring channels for: " + contactAddress);
+
                     colibriConference.expireChannels(
                         leftPeer.getColibriChannelsInfo());
+
+                    EventAdmin eventAdmin = eventAdminRef.get();
+                    if (eventAdmin != null)
+                    {
+                        eventAdmin.sendEvent(
+                            BridgeEvent.createChannelsExpired(
+                                colibriConference.getJitsiVideobridge(), 1, 1));
+                    }
                 }
             }
             boolean removed = participants.remove(leftPeer);
@@ -1324,6 +1365,18 @@ public class JitsiMeetConference
 
         if (participants.size() == 0)
         {
+            if (!StringUtils.isNullOrEmpty(
+                    colibriConference.getConferenceId()))
+            {
+                EventAdmin eventAdmin = eventAdminRef.get();
+                if (eventAdmin != null)
+                {
+                    eventAdmin.sendEvent(
+                        BridgeEvent.createConfExpired(
+                            colibriConference.getJitsiVideobridge()));
+                }
+            }
+
             stop();
         }
     }
@@ -2042,18 +2095,23 @@ public class JitsiMeetConference
         return id;
     }
 
-    /**
-     * Handles on bridge up event(no action for now - we don't care here)
-     */
     @Override
-    public void onBridgeUp(BridgeSelector src, String bridgeJid) { }
+    public void handleEvent(Event event)
+    {
+        switch (event.getTopic())
+        {
+            case BridgeEvent.BRIDGE_DOWN:
+                BridgeEvent bridgeEvent = (BridgeEvent) event;
+                onBridgeDown(bridgeEvent.getBridgeJid());
+                break;
+        }
+    }
 
     /**
      * Handles on bridge down event by shutting down the conference if it's the
      * one we're using here.
      */
-    @Override
-    public void onBridgeDown(BridgeSelector src, String bridgeJid)
+    private void onBridgeDown(String bridgeJid)
     {
         if (colibriConference != null &&
             bridgeJid.equals(colibriConference.getJitsiVideobridge()))
