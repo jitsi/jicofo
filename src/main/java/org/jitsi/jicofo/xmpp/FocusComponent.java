@@ -159,8 +159,6 @@ public class FocusComponent
         focusManager = ServiceUtils.getService(bc, FocusManager.class);
         reservationSystem
             = ServiceUtils.getService(bc, ReservationSystem.class);
-
-        focusManager.start();
     }
 
     /**
@@ -178,8 +176,6 @@ public class FocusComponent
     public void stop(BundleContext bundleContext)
         throws Exception
     {
-        focusManager.stop();
-
         authAuthority = null;
         focusManager = null;
         reservationSystem = null;

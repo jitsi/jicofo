@@ -63,6 +63,11 @@ public class FocusBundleActivator
     private FocusManager focusManager;
 
     /**
+     * <tt>FocusManager</tt> service registration.
+     */
+    private ServiceRegistration<FocusManager> focusMangerRegistration;
+
+    /**
      * Global configuration of Jitsi COnference FOcus
      */
     private JitsiMeetGlobalConfig globalConfig;
@@ -85,13 +90,29 @@ public class FocusBundleActivator
         globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
 
         focusManager = new FocusManager();
-        context.registerService(FocusManager.class, focusManager, null);
+
+        focusManager.start();
+
+        focusMangerRegistration
+            = context.registerService(FocusManager.class, focusManager, null);
     }
 
     @Override
     public void stop(BundleContext context)
         throws Exception
     {
+        if (focusMangerRegistration != null)
+        {
+            focusMangerRegistration.unregister();
+            focusMangerRegistration = null;
+        }
+
+        if (focusManager != null)
+        {
+            focusManager.stop();
+            focusManager = null;
+        }
+
         sharedThreadPool.shutdownNow();
         sharedThreadPool = null;
 
