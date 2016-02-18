@@ -77,15 +77,6 @@ public class FocusComponent
     private final String focusAuthJid;
 
     /**
-     * Optional password for focus user authentication. If authenticated login
-     * is used we expect focus user to have admin privileges, so that it has
-     * explicit moderator rights. Also in this case focus component will always
-     * return 'ready=true' status, so that users don't have to wait for
-     * the focus to create the room. If focus is authenticated and is not
-     * an admin then will refuse to join MUC room.
-     */
-
-    /**
      * The manager object that creates and expires
      * {@link org.jitsi.jicofo.JitsiMeetConference}s.
      */
