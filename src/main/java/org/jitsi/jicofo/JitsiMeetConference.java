@@ -28,6 +28,7 @@ import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.jicofo.reservation.*;
@@ -38,7 +39,10 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
+
 import org.jivesoftware.smack.packet.*;
+
+import org.osgi.framework.*;
 
 import java.text.*;
 import java.util.*;
@@ -58,8 +62,7 @@ import java.util.concurrent.*;
 public class JitsiMeetConference
     implements RegistrationStateChangeListener,
                JingleRequestHandler,
-               BridgeListener
-
+               EventHandler
 {
     /**
      * The logger instance used by this class.
@@ -219,6 +222,11 @@ public class JitsiMeetConference
     private RecordingState earlyRecordingState = null;
 
     /**
+     * Bridge <tt>EventHandler</tt> registration.
+     */
+    private ServiceRegistration<EventHandler> eventHandlerRegistration;
+
+    /**
      * Creates new instance of {@link JitsiMeetConference}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -280,14 +288,12 @@ public class JitsiMeetConference
                 = protocolProviderHandler.getOperationSet(
                         OperationSetJitsiMeetTools.class);
 
+            BundleContext osgiCtx = FocusBundleActivator.bundleContext;
+
             services
-                = ServiceUtils.getService(
-                        FocusBundleActivator.bundleContext,
-                        JitsiMeetServices.class);
+                = ServiceUtils.getService(osgiCtx, JitsiMeetServices.class);
 
             bridgeSelector = services.getBridgeSelector();
-
-            bridgeSelector.addBridgeListener(this);
 
             // Set pre-configured videobridge
             String preConfiguredBridge = config.getPreConfiguredVideobridge();
@@ -312,6 +318,11 @@ public class JitsiMeetConference
             protocolProviderHandler.addRegistrationListener(this);
 
             idleTimestamp = System.currentTimeMillis();
+
+            // Register for bridge events
+            eventHandlerRegistration
+                = EventUtil.registerEventHandler(
+                    osgiCtx, new String[] { BridgeEvent.BRIDGE_DOWN }, this);
         }
         catch(Exception e)
         {
@@ -332,10 +343,13 @@ public class JitsiMeetConference
 
         started = false;
 
-        protocolProviderHandler.removeRegistrationListener(this);
+        if (eventHandlerRegistration != null)
+        {
+            eventHandlerRegistration.unregister();
+            eventHandlerRegistration = null;
+        }
 
-        if (bridgeSelector != null)
-            bridgeSelector.removeBridgeListener(this);
+        protocolProviderHandler.removeRegistrationListener(this);
 
         disposeConference();
 
@@ -2042,18 +2056,23 @@ public class JitsiMeetConference
         return id;
     }
 
-    /**
-     * Handles on bridge up event(no action for now - we don't care here)
-     */
     @Override
-    public void onBridgeUp(BridgeSelector src, String bridgeJid) { }
+    public void handleEvent(Event event)
+    {
+        switch (event.getTopic())
+        {
+            case BridgeEvent.BRIDGE_DOWN:
+                BridgeEvent bridgeEvent = (BridgeEvent) event;
+                onBridgeDown(bridgeEvent.getBridgeJid());
+                break;
+        }
+    }
 
     /**
      * Handles on bridge down event by shutting down the conference if it's the
      * one we're using here.
      */
-    @Override
-    public void onBridgeDown(BridgeSelector src, String bridgeJid)
+    private void onBridgeDown(String bridgeJid)
     {
         if (colibriConference != null &&
             bridgeJid.equals(colibriConference.getJitsiVideobridge()))

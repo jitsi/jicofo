@@ -164,6 +164,7 @@ public class FocusManager
      * Starts this manager for given <tt>hostName</tt>.
      */
     public void start()
+        throws Exception
     {
         expireThread.start();
 
@@ -182,6 +183,9 @@ public class FocusManager
         jitsiMeetServices = new JitsiMeetServices(
             protocolProviderHandler.getOperationSet(
                 OperationSetSubscription.class));
+
+        jitsiMeetServices.start(
+            FocusBundleActivator.bundleContext);
 
         String statsPubSubNode
             = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
@@ -218,6 +222,19 @@ public class FocusManager
         {
             componentsDiscovery.stop();
             componentsDiscovery = null;
+        }
+
+        if (jitsiMeetServices != null)
+        {
+            try
+            {
+                jitsiMeetServices.stop(
+                    FocusBundleActivator.bundleContext);
+            }
+            catch (Exception e)
+            {
+                logger.error("Error when trying to stop JitsiMeetServices", e);
+            }
         }
 
         meetExtensionsHandler.dispose();

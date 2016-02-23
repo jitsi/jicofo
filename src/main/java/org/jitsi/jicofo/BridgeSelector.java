@@ -20,6 +20,8 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
@@ -27,7 +29,6 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -92,11 +93,10 @@ public class BridgeSelector
         = new HashMap<String, BridgeState>();
 
     /**
-     * The list of {@link BridgeListener}s that are notified whenever new bridge
-     * working bridge is discovered or when one of the bridges goes down.
+     * <tt>EventAdmin</tt> instance used by this instance to fire
+     * <tt>BridgeEvent</tt>s.
      */
-    private List<BridgeListener> bridgeListeners =
-        new CopyOnWriteArrayList<BridgeListener>();
+    private EventAdmin eventAdmin;
 
     /**
      * Pre-configured JVB used as last chance option even if no bridge has been
@@ -118,37 +118,6 @@ public class BridgeSelector
     public BridgeSelector(OperationSetSubscription subscriptionOpSet)
     {
         this.subscriptionOpSet = subscriptionOpSet;
-
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-
-        String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
-
-        if (!StringUtils.isNullOrEmpty(mappingPropertyValue))
-        {
-            String[] pairs = mappingPropertyValue.split(";");
-            for (String pair : pairs)
-            {
-                String[] bridgeAndNode = pair.split(":");
-                if (bridgeAndNode.length != 2)
-                {
-                    logger.error("Invalid mapping element: " + pair);
-                    continue;
-                }
-
-                String bridge = bridgeAndNode[0];
-                String pubSubNode = bridgeAndNode[1];
-                pubSubToBridge.put(pubSubNode, bridge);
-
-                logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
-            }
-        }
-
-        setFailureResetThreshold(
-            config.getLong( BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
-                            DEFAULT_FAILURE_RESET_THRESHOLD));
-
-        logger.info(
-            "Bridge failure reset threshold: " + getFailureResetThreshold());
     }
 
     /**
@@ -516,61 +485,63 @@ public class BridgeSelector
         return bridges.size();
     }
 
-    /**
-     * Adds <tt>BridgeListener</tt> to the bridge observers list.
-     *
-     * @param listener the bridge listener instance to be registered for bridges
-     *                 status updates
-     */
-    public void addBridgeListener(BridgeListener listener)
-    {
-        bridgeListeners.add(listener);
-    }
-
-    /**
-     * Removes <tt>BridgeListener</tt> from the bridge observers list.
-     *
-     * @param listener the bridge listener instance to be unregistered from
-     *                 bridge status updates.
-     */
-    public void removeBridgeListener(BridgeListener listener)
-    {
-        bridgeListeners.remove(listener);
-    }
-
     private void notifyBridgeUp(BridgeState bridge)
     {
-        if (logger.isDebugEnabled())
-            logger.debug("Propagating new bridge added event: " + bridge.jid);
+        logger.debug("Propagating new bridge added event: " + bridge.jid);
 
-        for (BridgeListener listener : bridgeListeners)
-        {
-            try
-            {
-                listener.onBridgeUp(this, bridge.jid);
-            }
-            catch (Exception e)
-            {
-                logger.error("Error when propagating bridge up event", e);
-            }
-        }
+        eventAdmin.sendEvent(
+            BridgeEvent.createBridgeUp(bridge.jid));
     }
 
     private void notifyBridgeDown(BridgeState bridge)
     {
-        if (logger.isDebugEnabled())
-            logger.debug("Propagating bridge went down event: " + bridge.jid);
+        logger.debug("Propagating bridge went down event: " + bridge.jid);
 
-        for (BridgeListener listener : bridgeListeners)
+        eventAdmin.sendEvent(
+            BridgeEvent.createBridgeDown(bridge.jid));
+    }
+
+    /**
+     * Initializes this instance by loading the config and obtaining required
+     * service references.
+     */
+    public void init()
+    {
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+
+        String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
+
+        if (!StringUtils.isNullOrEmpty(mappingPropertyValue))
         {
-            try
+            String[] pairs = mappingPropertyValue.split(";");
+            for (String pair : pairs)
             {
-                listener.onBridgeDown(this, bridge.jid);
+                String[] bridgeAndNode = pair.split(":");
+                if (bridgeAndNode.length != 2)
+                {
+                    logger.error("Invalid mapping element: " + pair);
+                    continue;
+                }
+
+                String bridge = bridgeAndNode[0];
+                String pubSubNode = bridgeAndNode[1];
+                pubSubToBridge.put(pubSubNode, bridge);
+
+                logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
             }
-            catch (Exception e)
-            {
-                logger.error("Error when propagating bridge down event", e);
-            }
+        }
+
+        setFailureResetThreshold(
+            config.getLong( BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
+                DEFAULT_FAILURE_RESET_THRESHOLD));
+
+        logger.info(
+            "Bridge failure reset threshold: " + getFailureResetThreshold());
+
+        this.eventAdmin = FocusBundleActivator.getEventAdmin();
+        if (eventAdmin == null)
+        {
+            throw new RuntimeException("EventAdmin service not found");
         }
     }
 

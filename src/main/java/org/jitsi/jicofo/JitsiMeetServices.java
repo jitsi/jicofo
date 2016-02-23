@@ -24,6 +24,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -34,6 +35,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class JitsiMeetServices
+    implements BundleActivator
 {
     /**
      * The logger
@@ -280,5 +282,19 @@ public class JitsiMeetServices
     public void setMucService(String mucService)
     {
         this.mucService = mucService;
+    }
+
+    @Override
+    public void start(BundleContext bundleContext)
+        throws Exception
+    {
+        bridgeSelector.init();
+    }
+
+    @Override
+    public void stop(BundleContext bundleContext)
+        throws Exception
+    {
+        // Not used for now
     }
 }
