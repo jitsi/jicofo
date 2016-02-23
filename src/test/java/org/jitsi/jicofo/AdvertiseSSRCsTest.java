@@ -69,8 +69,8 @@ public class AdvertiseSSRCsTest
         String roomName = "testSSRCs@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConf
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConf.getFocusProtocolProvider();
@@ -151,8 +151,8 @@ public class AdvertiseSSRCsTest
         String roomName = "testSSRCs@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConf
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConf.getFocusProtocolProvider();
@@ -218,8 +218,8 @@ public class AdvertiseSSRCsTest
         String roomName = "testSSRCs@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConf
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         JitsiMeetGlobalConfig globalConfig
             = ServiceUtils.getService(osgi.bc, JitsiMeetGlobalConfig.class);
@@ -314,8 +314,8 @@ public class AdvertiseSSRCsTest
         String roomName = "testSSRCs@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConf
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConf.getFocusProtocolProvider();

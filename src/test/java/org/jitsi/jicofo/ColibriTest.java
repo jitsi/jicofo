@@ -71,9 +71,8 @@ public class ColibriTest
         JitsiMeetConfig config
             = new JitsiMeetConfig(new HashMap<String,String>());
 
-        TestConference testConference = new TestConference();
-
-        testConference.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConference
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConference.getFocusProtocolProvider();
