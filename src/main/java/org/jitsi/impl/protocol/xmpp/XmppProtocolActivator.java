@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import net.java.sip.communicator.service.protocol.jabber.*;
@@ -52,6 +53,7 @@ public class XmppProtocolActivator
         // Constructors called to register extension providers
         new ConferenceIqProvider();
         new ColibriIQProvider();
+        HealthCheckIQProvider.registerIQProvider();
 
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(
