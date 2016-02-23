@@ -18,12 +18,11 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.caps.*;
-import net.java.sip.communicator.util.*;
 
-import org.jitsi.service.configuration.*;
-
-import org.jitsi.eventadmin.*;
 import org.jitsi.osgi.*;
+import org.jitsi.service.configuration.*;
+import org.jitsi.eventadmin.*;
+
 import org.osgi.framework.*;
 
 import java.util.concurrent.*;
@@ -49,7 +48,12 @@ public class FocusBundleActivator
     /**
      * {@link ConfigurationService} instance cached by the activator.
      */
-    private static ConfigurationService configService;
+    private static OSGIServiceRef<ConfigurationService> configServiceRef;
+
+    /**
+     * {@link EventAdmin} service reference.
+     */
+    private static OSGIServiceRef<EventAdmin> eventAdminRef;
 
     /**
      * Shared thread pool available through OSGi for other components that do
@@ -81,6 +85,11 @@ public class FocusBundleActivator
         EntityCapsManager.setBundleContext(context);
 
         sharedThreadPool = Executors.newScheduledThreadPool(SHARED_POOL_SIZE);
+
+        eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
+
+        configServiceRef
+            = new OSGIServiceRef<>(context, ConfigurationService.class);
 
         context.registerService(
             ExecutorService.class, sharedThreadPool, null);
@@ -116,7 +125,8 @@ public class FocusBundleActivator
         sharedThreadPool.shutdownNow();
         sharedThreadPool = null;
 
-        configService = null;
+        configServiceRef = null;
+        eventAdminRef = null;
 
         EntityCapsManager.setBundleContext(null);
 
@@ -132,12 +142,7 @@ public class FocusBundleActivator
      */
     public static ConfigurationService getConfigService()
     {
-        if (configService == null)
-        {
-            configService = ServiceUtils.getService(
-                bundleContext, ConfigurationService.class);
-        }
-        return configService;
+        return configServiceRef.get();
     }
 
     /**
@@ -146,12 +151,7 @@ public class FocusBundleActivator
      */
     public static EventAdmin getEventAdmin()
     {
-        if (bundleContext != null)
-        {
-            return ServiceUtils2.getService(bundleContext,
-                                            EventAdmin.class);
-        }
-        return null;
+        return eventAdminRef.get();
     }
 
     /**
