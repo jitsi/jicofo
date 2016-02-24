@@ -147,6 +147,16 @@ public class TestConference
         user.join(chat);
     }
 
+    public MockParticipant addParticipant()
+    {
+        MockParticipant newParticipant
+            = new MockParticipant(StringGenerator.nextRandomStr());
+
+        newParticipant.join(chat);
+
+        return newParticipant;
+    }
+
     public ConferenceUtility getConferenceUtility()
     {
         return new ConferenceUtility(conference);
@@ -173,5 +183,10 @@ public class TestConference
     public int getParticipantCount()
     {
         return conference.getParticipantCount();
+    }
+
+    public String getRoomName()
+    {
+        return roomName;
     }
 }

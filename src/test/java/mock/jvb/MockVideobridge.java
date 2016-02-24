@@ -19,12 +19,16 @@ package mock.jvb;
 
 import mock.xmpp.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.util.*;
+
 import org.jitsi.videobridge.*;
 import org.jitsi.videobridge.simulcast.*;
+
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -49,6 +53,8 @@ public class MockVideobridge
     private Videobridge bridge;
 
     private XMPPError.Condition error;
+
+    private boolean returnHealthError = false;
 
     public MockVideobridge(BundleContext bc,
                            MockXmppConnection connection,
@@ -85,7 +91,8 @@ public class MockVideobridge
 
     public void processPacket(Packet p)
     {
-        if (p instanceof ColibriConferenceIQ)
+        if (p instanceof ColibriConferenceIQ ||
+            p instanceof HealthCheckIQ)
         {
             logger.debug("JVB rcv: " + p.toXML());
 
@@ -94,10 +101,7 @@ public class MockVideobridge
             {
                 try
                 {
-                    response
-                        = bridge.handleColibriConferenceIQ(
-                                (ColibriConferenceIQ) p,
-                                Videobridge.OPTION_ALLOW_ANY_FOCUS);
+                    response = processImpl((IQ) p);
                 }
                 catch (Exception e)
                 {
@@ -131,6 +135,37 @@ public class MockVideobridge
         else if (p != null)
         {
             logger.error(bridgeJid + " has discarded " + p.toXML());
+        }
+    }
+
+    /**
+     *
+     * @param p <tt>ColibriConferenceIQ</tt> or <tt>HealthCheckIQ</tt> assumed
+     * @return
+     * @throws Exception
+     */
+    private IQ processImpl(IQ p)
+        throws Exception
+    {
+        if (p instanceof ColibriConferenceIQ)
+        {
+            return bridge.handleColibriConferenceIQ(
+                (ColibriConferenceIQ) p,
+                Videobridge.OPTION_ALLOW_ANY_FOCUS);
+        }
+        else
+        {
+            if (returnHealthError)
+            {
+                return IQ.createErrorResponse(
+                        p,
+                    new XMPPError(
+                        XMPPError.Condition.interna_server_error));
+            }
+            else
+            {
+                return bridge.handleHealthCheckIQ((HealthCheckIQ) p);
+            }
         }
     }
 
@@ -204,5 +239,15 @@ public class MockVideobridge
     public XMPPError.Condition getError()
     {
         return error;
+    }
+
+    public boolean isReturnHealthError()
+    {
+        return returnHealthError;
+    }
+
+    public void setReturnHealthError(boolean returnHealthError)
+    {
+        this.returnHealthError = returnHealthError;
     }
 }
