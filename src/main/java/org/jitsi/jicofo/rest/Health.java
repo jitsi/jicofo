@@ -150,8 +150,7 @@ public class Health
             // JVBs known to this Jicofo instance
             String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
 
-            if (!StringUtils.isNullOrEmpty(listJvbParam)
-                && "true".equals(listJvbParam.toLowerCase()))
+            if (Boolean.parseBoolean(listJvbParam))
             {
                 JitsiMeetServices services
                     = focusManager.getJitsiMeetServices();
