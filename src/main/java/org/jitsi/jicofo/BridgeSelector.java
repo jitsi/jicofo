@@ -517,6 +517,25 @@ public class BridgeSelector
     }
 
     /**
+     * Lists all operational JVB instance JIDs currently known to this
+     * <tt>BridgeSelector</tt> instance.
+     *
+     * @return a <tt>List</tt> of <tt>String</tt> with bridges JIDs.
+     */
+    synchronized public List<String> listKnownBridges()
+    {
+        ArrayList<String> listing = new ArrayList<>(bridges.size());
+        for (BridgeState bridge : bridges.values())
+        {
+            if (bridge.isOperational())
+            {
+                listing.add(bridge.jid);
+            }
+        }
+        return listing;
+    }
+
+    /**
      * Adds <tt>BridgeListener</tt> to the bridge observers list.
      *
      * @param listener the bridge listener instance to be registered for bridges

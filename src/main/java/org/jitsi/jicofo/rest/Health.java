@@ -42,6 +42,12 @@ public class Health
         = Collections.emptyMap();
 
     /**
+     * The name of the parameter that triggers known bridges listing in health
+     * check response;
+     */
+    private static final String LIST_JVB_PARAM_NAME = "list_jvb";
+
+    /**
      * The {@code Logger} utilized by the {@code Health} class to print
      * debug-related information.
      */
@@ -138,6 +144,31 @@ public class Health
         try
         {
             check(focusManager);
+
+            // At this point the health check has passed - now eventually list
+            // JVBs known to this Jicofo instance
+            String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
+
+            if (!StringUtils.isNullOrEmpty(listJvbParam)
+                && "true".equals(listJvbParam.toLowerCase()))
+            {
+                JitsiMeetServices services
+                    = focusManager.getJitsiMeetServices();
+
+                if (services == null)
+                    throw new NullPointerException("services");
+
+                BridgeSelector bridgeSelector = services.getBridgeSelector();
+
+                if (bridgeSelector == null)
+                    throw new NullPointerException("bridgeSelector");
+
+                for (String bridge : bridgeSelector.listKnownBridges())
+                {
+                    response.getWriter().append(bridge).append("\n");
+                }
+            }
+
             status = HttpServletResponse.SC_OK;
         }
         catch (Exception ex)
