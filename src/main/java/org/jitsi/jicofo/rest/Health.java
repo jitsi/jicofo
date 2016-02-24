@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
+import org.json.simple.*;
 
 /**
  * Checks the health of {@link FocusManager}.
@@ -163,10 +164,9 @@ public class Health
                 if (bridgeSelector == null)
                     throw new NullPointerException("bridgeSelector");
 
-                for (String bridge : bridgeSelector.listKnownBridges())
-                {
-                    response.getWriter().append(bridge).append("\n");
-                }
+                JSONObject jsonRoot = new JSONObject();
+                jsonRoot.put("jvbs", bridgeSelector.listKnownBridges());
+                response.getWriter().append(jsonRoot.toJSONString());
             }
 
             status = HttpServletResponse.SC_OK;
