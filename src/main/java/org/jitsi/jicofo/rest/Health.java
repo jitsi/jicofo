@@ -144,8 +144,6 @@ public class Health
 
         try
         {
-            check(focusManager);
-
             // At this point the health check has passed - now eventually list
             // JVBs known to this Jicofo instance
             String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
@@ -163,10 +161,25 @@ public class Health
                 if (bridgeSelector == null)
                     throw new NullPointerException("bridgeSelector");
 
+                List<String> activeJVBs = bridgeSelector.listActiveJVBs();
+
+                // ABORT here if the list is empty
+                if (activeJVBs.isEmpty())
+                {
+                    logger.debug(
+                        "The health check failed - 0 active JVB instances !");
+
+                    status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                    response.setStatus(status);
+                    return;
+                }
+
                 JSONObject jsonRoot = new JSONObject();
-                jsonRoot.put("jvbs", bridgeSelector.listKnownBridges());
+                jsonRoot.put("jvbs", activeJVBs);
                 response.getWriter().append(jsonRoot.toJSONString());
             }
+
+            check(focusManager);
 
             status = HttpServletResponse.SC_OK;
         }
