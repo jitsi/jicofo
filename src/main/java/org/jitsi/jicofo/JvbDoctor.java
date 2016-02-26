@@ -23,9 +23,9 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.osgi.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;

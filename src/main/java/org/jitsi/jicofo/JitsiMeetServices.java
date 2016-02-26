@@ -23,6 +23,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;

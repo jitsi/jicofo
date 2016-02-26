@@ -29,6 +29,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
