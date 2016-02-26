@@ -24,8 +24,8 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.SubscriptionListener;
 import org.jitsi.util.*;
@@ -108,6 +108,12 @@ public class ComponentsDiscovery
     private String statsPubSubNode;
 
     /**
+     * XMPP operation set used to send requests by this
+     * <tt>ComponentsDiscovery</tt> instance.
+     */
+    private OperationSetDirectSmackXmpp xmppOpSet;
+
+    /**
      * Creates new instance of <tt>ComponentsDiscovery</tt>.
      *
      * @param meetServices {@link JitsiMeetServices} instance which will be
@@ -153,6 +159,10 @@ public class ComponentsDiscovery
         this.capsOpSet
             = protocolProviderHandler.getOperationSet(
                     OperationSetSimpleCaps.class);
+
+        this.xmppOpSet
+            = protocolProviderHandler.getOperationSet(
+                    OperationSetDirectSmackXmpp.class);
 
         if (protocolProviderHandler.isRegistered())
         {
@@ -248,11 +258,16 @@ public class ComponentsDiscovery
 
             if (!itemMap.containsKey(node))
             {
-                logger.info("New component discovered: " + node);
-
                 itemMap.put(node, features);
 
-                meetServices.newNodeDiscovered(node, features);
+                // Try discovering version
+                Version version
+                    = DiscoveryUtil.discoverVersion(xmppOpSet, node, features);
+
+                logger.info(
+                        "New component discovered: " + node + ", " + version);
+
+                meetServices.newNodeDiscovered(node, features, version);
             }
             else if (itemMap.containsKey(node))
             {
@@ -576,24 +591,28 @@ public class ComponentsDiscovery
                 return;
             }
             // Is it JVB ?
-            if (bridgeJid.contains("."))
+            if (!bridgeJid.contains("."))
+                return;
+
+            List<String> jidFeatures = capsOpSet.getFeatures(bridgeJid);
+            if (jidFeatures == null)
             {
-                List<String> jidFeatures = capsOpSet.getFeatures(bridgeJid);
-                if (jidFeatures == null)
-                {
-                    logger.warn(
+                logger.warn(
                         "Failed to discover features for: " + bridgeJid);
-                    return;
-                }
+                return;
+            }
 
-                if (JitsiMeetServices.isJitsiVideobridge(jidFeatures))
-                {
-                    logger.info("Bridge discovered from PubSub: " + bridgeJid);
+            if (JitsiMeetServices.isJitsiVideobridge(jidFeatures))
+            {
+                logger.info("Bridge discovered from PubSub: " + bridgeJid);
 
-                    refreshBridgeTimestamp(bridgeJid);
+                refreshBridgeTimestamp(bridgeJid);
 
-                    meetServices.newBridgeDiscovered(bridgeJid);
-                }
+                Version jvbVersion
+                    = DiscoveryUtil.discoverVersion(
+                            xmppOpSet, bridgeJid, jidFeatures);
+
+                meetServices.newBridgeDiscovered(bridgeJid, jvbVersion);
             }
         }
         private void refreshBridgeTimestamp(String bridgeJid)

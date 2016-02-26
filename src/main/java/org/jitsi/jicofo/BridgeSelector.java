@@ -22,6 +22,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
@@ -127,14 +128,28 @@ public class BridgeSelector
      * @param bridgeJid the JID of videobridge to be added to this selector's
      *                  set of videobridges.
      */
-    synchronized public void addJvbAddress(String bridgeJid)
+    public void addJvbAddress(String bridgeJid)
+    {
+        addJvbAddress(bridgeJid, null);
+    }
+
+    /**
+     * Adds next Jitsi Videobridge XMPP address to be observed by this selected
+     * and taken into account in best bridge selection process.
+     *
+     * @param bridgeJid the JID of videobridge to be added to this selector's
+     *                  set of videobridges.
+     * @param version the {@link Version} IQ instance which contains the info
+     *                about JVB version.
+     */
+    synchronized public void addJvbAddress(String bridgeJid, Version version)
     {
         if (isJvbOnTheList(bridgeJid))
         {
             return;
         }
 
-        logger.info("Added videobridge: " + bridgeJid);
+        logger.info("Added videobridge: " + bridgeJid + " v: " + version);
 
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
@@ -259,12 +274,12 @@ public class BridgeSelector
     }
 
     /**
-     * Returns videobridge JID for given pub-sub node, but only if it has been
-     * added using {@link #addJvbAddress(String)} method.
+     * Returns videobridge JID for given pub-sub node.
      *
      * @param pubSubNode the pub-sub node name.
      *
-     * @return videobridge JID for given pub-sub node.
+     * @return videobridge JID for given pub-sub node or <tt>null</tt> if no
+     *         mapping found.
      */
     synchronized public String getBridgeForPubSubNode(String pubSubNode)
     {

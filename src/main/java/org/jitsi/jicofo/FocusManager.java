@@ -186,6 +186,7 @@ public class FocusManager
 
         jitsiMeetServices
             = new JitsiMeetServices(
+                    focusUserDomain,
                     protocolProviderHandler.getOperationSet(
                             OperationSetSubscription.class));
         jitsiMeetServices.start(bundleContext);
