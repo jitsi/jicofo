@@ -43,7 +43,7 @@ public class MockVideobridge
     /**
      * The logger
      */
-    private final static Logger logger
+    private static final Logger logger
         = Logger.getLogger(MockVideobridge.class);
 
     private final MockXmppConnection connection;
@@ -61,9 +61,9 @@ public class MockVideobridge
                            String bridgeJid)
     {
         this.connection = connection;
+        this.bridgeJid = bridgeJid;
 
-        VideobridgeBundleActivator activator
-            = new VideobridgeBundleActivator();
+        VideobridgeBundleActivator activator = new VideobridgeBundleActivator();
         try
         {
             activator.start(bc);
@@ -74,8 +74,6 @@ public class MockVideobridge
         }
 
         bridge = ServiceUtils.getService(bc, Videobridge.class);
-
-        this.bridgeJid = bridgeJid;
     }
 
     public void start()
@@ -91,12 +89,12 @@ public class MockVideobridge
 
     public void processPacket(Packet p)
     {
-        if (p instanceof ColibriConferenceIQ ||
-            p instanceof HealthCheckIQ)
+        if (p instanceof ColibriConferenceIQ
+                || p instanceof HealthCheckIQ)
         {
             logger.debug("JVB rcv: " + p.toXML());
 
-            IQ response = null;
+            IQ response;
             if (error == null)
             {
                 try
@@ -105,13 +103,13 @@ public class MockVideobridge
                 }
                 catch (Exception e)
                 {
+                    response = null;
                     logger.error("JVB internal error!", e);
                 }
             }
             else
             {
-                response = IQ.createErrorResponse(
-                    (IQ) p, new XMPPError(error));
+                response = IQ.createErrorResponse((IQ) p, new XMPPError(error));
             }
 
             if (response != null)
@@ -128,8 +126,7 @@ public class MockVideobridge
             }
             else
             {
-                logger.warn("The bridge sent no response for "
-                                + p.toXML());
+                logger.warn("The bridge sent no response to " + p.toXML());
             }
         }
         else if (p != null)
@@ -149,28 +146,27 @@ public class MockVideobridge
     {
         if (p instanceof ColibriConferenceIQ)
         {
-            return bridge.handleColibriConferenceIQ(
-                (ColibriConferenceIQ) p,
-                Videobridge.OPTION_ALLOW_ANY_FOCUS);
+            return
+                bridge.handleColibriConferenceIQ(
+                        (ColibriConferenceIQ) p,
+                        Videobridge.OPTION_ALLOW_ANY_FOCUS);
+        }
+        else if (isReturnHealthError())
+        {
+            return
+                IQ.createErrorResponse(
+                        p,
+                        new XMPPError(
+                                XMPPError.Condition.interna_server_error));
         }
         else
         {
-            if (returnHealthError)
-            {
-                return IQ.createErrorResponse(
-                        p,
-                    new XMPPError(
-                        XMPPError.Condition.interna_server_error));
-            }
-            else
-            {
-                return bridge.handleHealthCheckIQ((HealthCheckIQ) p);
-            }
+            return bridge.handleHealthCheckIQ((HealthCheckIQ) p);
         }
     }
 
     public List<SimulcastStream> getSimulcastLayers(
-        String confId, String channelId)
+            String confId, String channelId)
     {
         Conference conference = bridge.getConference(confId, null);
         Content videoContent = conference.getOrCreateContent("video");

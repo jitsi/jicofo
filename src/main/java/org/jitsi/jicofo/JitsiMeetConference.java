@@ -2061,10 +2061,11 @@ public class JitsiMeetConference
     {
         switch (event.getTopic())
         {
-            case BridgeEvent.BRIDGE_DOWN:
-                BridgeEvent bridgeEvent = (BridgeEvent) event;
-                onBridgeDown(bridgeEvent.getBridgeJid());
-                break;
+        case BridgeEvent.BRIDGE_DOWN:
+            BridgeEvent bridgeEvent = (BridgeEvent) event;
+
+            onBridgeDown(bridgeEvent.getBridgeJid());
+            break;
         }
     }
 
@@ -2074,8 +2075,8 @@ public class JitsiMeetConference
      */
     private void onBridgeDown(String bridgeJid)
     {
-        if (colibriConference != null &&
-            bridgeJid.equals(colibriConference.getJitsiVideobridge()))
+        if (colibriConference != null
+                && bridgeJid.equals(colibriConference.getJitsiVideobridge()))
         {
             stop();
         }

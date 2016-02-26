@@ -30,6 +30,8 @@ import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.provider.*;
 
+import org.osgi.framework.*;
+
 import java.util.*;
 
 /**
@@ -166,6 +168,8 @@ public class FocusManager
     public void start()
         throws Exception
     {
+        BundleContext bundleContext = FocusBundleActivator.bundleContext;
+
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
@@ -180,18 +184,16 @@ public class FocusManager
         protocolProviderHandler.start(
             hostName, focusUserDomain, focusUserPassword, focusUserName);
 
-        jitsiMeetServices = new JitsiMeetServices(
-            protocolProviderHandler.getOperationSet(
-                OperationSetSubscription.class));
-
-        jitsiMeetServices.start(
-            FocusBundleActivator.bundleContext);
+        jitsiMeetServices
+            = new JitsiMeetServices(
+                    protocolProviderHandler.getOperationSet(
+                            OperationSetSubscription.class));
+        jitsiMeetServices.start(bundleContext);
 
         String statsPubSubNode
             = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-
         componentsDiscovery.start(
             xmppDomain, statsPubSubNode, protocolProviderHandler);
 
@@ -199,13 +201,15 @@ public class FocusManager
 
         ProviderManager
             .getInstance()
-                .addExtensionProvider(LogPacketExtension.LOG_ELEM_NAME,
-                    LogPacketExtension.NAMESPACE,
-                    new LogExtensionProvider());
+                .addExtensionProvider(
+                        LogPacketExtension.LOG_ELEM_NAME,
+                        LogPacketExtension.NAMESPACE,
+                        new LogExtensionProvider());
 
-        FocusBundleActivator
-            .bundleContext.registerService(
-                JitsiMeetServices.class, jitsiMeetServices, null);
+        bundleContext.registerService(
+                JitsiMeetServices.class,
+                jitsiMeetServices,
+                null);
 
         protocolProviderHandler.addRegistrationListener(this);
         protocolProviderHandler.register();
@@ -228,8 +232,7 @@ public class FocusManager
         {
             try
             {
-                jitsiMeetServices.stop(
-                    FocusBundleActivator.bundleContext);
+                jitsiMeetServices.stop(FocusBundleActivator.bundleContext);
             }
             catch (Exception e)
             {

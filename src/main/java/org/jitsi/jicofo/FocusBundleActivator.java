@@ -19,9 +19,9 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.caps.*;
 
-import org.jitsi.osgi.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.service.configuration.*;
+import org.jitsi.osgi.*;
 
 import org.osgi.framework.*;
 
@@ -99,9 +99,7 @@ public class FocusBundleActivator
         globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
 
         focusManager = new FocusManager();
-
         focusManager.start();
-
         focusMangerRegistration
             = context.registerService(FocusManager.class, focusManager, null);
     }
@@ -115,7 +113,6 @@ public class FocusBundleActivator
             focusMangerRegistration.unregister();
             focusMangerRegistration = null;
         }
-
         if (focusManager != null)
         {
             focusManager.stop();

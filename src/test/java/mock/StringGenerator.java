@@ -22,6 +22,7 @@ import java.security.*;
 
 /**
  *
+ * @author Pawel Domas
  */
 public class StringGenerator
 {

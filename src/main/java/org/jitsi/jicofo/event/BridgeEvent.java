@@ -113,12 +113,12 @@ public class BridgeEvent
     {
         switch (event.getTopic())
         {
-            case BRIDGE_DOWN:
-            case BRIDGE_UP:
-            case HEALTH_CHECK_FAILED:
-                return true;
-            default:
-                return false;
+        case BRIDGE_DOWN:
+        case BRIDGE_UP:
+        case HEALTH_CHECK_FAILED:
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -149,7 +149,7 @@ public class BridgeEvent
             return false;
         }
         BridgeEvent other = (BridgeEvent) obj;
-        return this.getTopic().equals(other.getTopic()) &&
-            this.getBridgeJid().equals(other.getBridgeJid());
+        return getTopic().equals(other.getTopic()) &&
+            getBridgeJid().equals(other.getBridgeJid());
     }
 }

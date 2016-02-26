@@ -55,7 +55,7 @@ public class JvbDoctor
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(JvbDoctor.class);
+    private static final Logger logger = Logger.getLogger(JvbDoctor.class);
 
     /**
      * The name of the configuration property used to configure health check
@@ -67,12 +67,13 @@ public class JvbDoctor
     /**
      * Default value for JVB health checks is 10 seconds.
      */
-    public static long DEFAULT_HEALTH_CHECK_INTERVAL = 10000;
+    public static final long DEFAULT_HEALTH_CHECK_INTERVAL = 10000;
 
     /**
      * Constant array for health check feature discovery.
      */
-    private final static String[] HEALTH_CHECK_FEATURES = new String[]
+    private static final String[] HEALTH_CHECK_FEATURES
+        = new String[]
         {
             DiscoveryUtil.FEATURE_HEALTH_CHECK
         };
@@ -90,7 +91,7 @@ public class JvbDoctor
     /**
      * Health check tasks map.
      */
-    private Map<String, ScheduledFuture> tasks
+    private final Map<String, ScheduledFuture> tasks
         = new ConcurrentHashMap<>();
 
     /**
@@ -137,7 +138,7 @@ public class JvbDoctor
     {
         if (this.osgiBc != null)
         {
-            throw new IllegalStateException("Already started ?");
+            throw new IllegalStateException("Started already?");
         }
 
         this.osgiBc = bundleContext;
@@ -147,38 +148,39 @@ public class JvbDoctor
         this.executorServiceRef
             = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
 
-        this.healthCheckInterval
+        healthCheckInterval
             = FocusBundleActivator.getConfigService().getLong(
-            HEALTH_CHECK_INTERVAL_PNAME, DEFAULT_HEALTH_CHECK_INTERVAL);
-
+                    HEALTH_CHECK_INTERVAL_PNAME,
+                    DEFAULT_HEALTH_CHECK_INTERVAL);
         if (healthCheckInterval <= 0)
+        {
             throw new IllegalArgumentException(
-                "Health check interval: " + healthCheckInterval);
+                    "Health check interval: " + healthCheckInterval);
+        }
 
-        // We assume that in Jicofo there is only one XMPP provider running
-        // at a time
-        this.protocolProvider
+        // We assume that in Jicofo there is only one XMPP provider running at a
+        // time.
+        protocolProvider
             = ServiceUtils.getService(osgiBc, ProtocolProviderService.class);
-
         if (protocolProvider == null)
             throw new NullPointerException("protocolProvider");
 
-        // Assert XMPP protocol used
+        // Assert XMPP protocol used.
         if (!ProtocolNames.JABBER.equals(protocolProvider.getProtocolName()))
+        {
             throw new IllegalArgumentException(
-                "ProtocolProvider is not an XMPP one");
+                    "ProtocolProvider is not an XMPP one");
+        }
 
         xmppOpSet
             = protocolProvider.getOperationSet(
                     OperationSetDirectSmackXmpp.class);
-
         if (xmppOpSet == null)
             throw new NullPointerException("xmppOpSet");
 
         capsOpSet
             = protocolProvider.getOperationSet(
                     OperationSetSimpleCaps.class);
-
         if (capsOpSet == null)
             throw new NullPointerException("capsOpSet");
 
@@ -192,10 +194,10 @@ public class JvbDoctor
     synchronized public void stop(BundleContext bundleContext)
         throws Exception
     {
+        super.stop(bundleContext);
+
         if (this.osgiBc == null)
             return;
-
-        super.stop(bundleContext);
 
         try
         {
@@ -223,22 +225,22 @@ public class JvbDoctor
     {
         if (!BridgeEvent.isBridgeEvent(event))
         {
-            throw new RuntimeException(
-                "We should not get non-bridge events - ever!");
+            throw new RuntimeException("We should NEVER get non-BridgeEvents!");
         }
 
         BridgeEvent bridgeEvent = (BridgeEvent) event;
+
         switch (bridgeEvent.getTopic())
         {
-            case BridgeEvent.BRIDGE_UP:
-                addBridge(bridgeEvent.getBridgeJid());
-                break;
-            case BridgeEvent.BRIDGE_DOWN:
-                removeBridge(bridgeEvent.getBridgeJid());
-                break;
-            default:
-                logger.error("Received unwanted event: " + event.getTopic());
-                break;
+        case BridgeEvent.BRIDGE_UP:
+            addBridge(bridgeEvent.getBridgeJid());
+            break;
+        case BridgeEvent.BRIDGE_DOWN:
+            removeBridge(bridgeEvent.getBridgeJid());
+            break;
+        default:
+            logger.error("Received unwanted event: " + event.getTopic());
+            break;
         }
     }
 
@@ -253,12 +255,13 @@ public class JvbDoctor
         ScheduledExecutorService executorService = executorServiceRef.get();
         if (executorService == null)
         {
-            throw new RuntimeException("No ScheduledExecutorService running!");
+            throw new IllegalStateException(
+                    "No ScheduledExecutorService running!");
         }
 
         ScheduledFuture healthTask
             = executorService.scheduleAtFixedRate(
-                new HealthCheckTask(bridgeJid),
+                    new HealthCheckTask(bridgeJid),
                     healthCheckInterval,
                     healthCheckInterval,
                     TimeUnit.MILLISECONDS);
@@ -274,8 +277,8 @@ public class JvbDoctor
         if (healthTask == null)
         {
             logger.warn(
-                "Trying to remove a bridge that does not exist anymore: "
-                    + bridgeJid);
+                    "Trying to remove a bridge that does not exist anymore: "
+                        + bridgeJid);
             return;
         }
 
@@ -290,8 +293,8 @@ public class JvbDoctor
         if (eventAdmin == null)
         {
             logger.error(
-                "Unable to trigger health-check failed event: "
-                    + "no EventAdmin service found!");
+                    "Unable to trigger health-check failed event: "
+                        + "no EventAdmin service found!");
             return;
         }
 
@@ -319,7 +322,8 @@ public class JvbDoctor
             catch (Exception e)
             {
                 logger.error(
-                    "Error when doing health-check on: " + bridgeJid, e);
+                        "Error when doing health-check on: " + bridgeJid,
+                        e);
             }
         }
 
@@ -328,8 +332,8 @@ public class JvbDoctor
             if (!tasks.containsKey(bridgeJid))
             {
                 logger.info(
-                    "Health check task cancelled for: " + bridgeJid
-                        + " - response processing skipped");
+                        "Health check task cancelled for: " + bridgeJid
+                            + " - response processing skipped");
                 return false;
             }
             return true;
@@ -341,8 +345,8 @@ public class JvbDoctor
             if (!protocolProvider.isRegistered())
             {
                 logger.debug(
-                    "XMPP disconnected - "
-                        + "skipping health check for: " + bridgeJid);
+                        "XMPP disconnected - skipping health check for: "
+                            + bridgeJid);
                 return;
             }
 
@@ -363,15 +367,15 @@ public class JvbDoctor
                 if (jvbFeatures == null)
                 {
                     logger.warn(
-                        "Failed to check for health check support on "
-                            + bridgeJid);
+                            "Failed to check for health check support on "
+                                + bridgeJid);
                     return;
                 }
                 if (!DiscoveryUtil.checkFeatureSupport(
-                        HEALTH_CHECK_FEATURES, jvbFeatures))
+                        HEALTH_CHECK_FEATURES,
+                        jvbFeatures))
                 {
-                    logger.warn(
-                        bridgeJid + " does not support health checks !");
+                    logger.warn(bridgeJid + " does not support health checks!");
                     return;
                 }
 
@@ -389,8 +393,10 @@ public class JvbDoctor
                     return;
 
                 logger.debug(
-                    "Health check response from: " + bridgeJid + ", r: " +
-                    (response != null ? response.toXML() : "timeout"));
+                        "Health check response from: " + bridgeJid + ": "
+                            + (response == null
+                                ? "timeout"
+                                : response.toXML()));
 
                 if (!(response instanceof IQ))
                 {
@@ -418,10 +424,8 @@ public class JvbDoctor
                 {
                     XMPPError error = responseIQ.getError();
 
-                    String internalErrorConst
-                        = XMPPError.Condition.interna_server_error.toString();
-
-                    if (internalErrorConst.equals(error.getCondition()))
+                    if (XMPPError.Condition.interna_server_error.toString()
+                            .equals(error.getCondition()))
                     {
                         // Health check failure
                         notifyHealthCheckFailed(bridgeJid);
@@ -429,8 +433,8 @@ public class JvbDoctor
                     else
                     {
                         logger.error(
-                            "Unexpected error returned by the bridge: "
-                                + bridgeJid + ", err: " + response.toXML());
+                                "Unexpected error returned by the bridge: "
+                                    + bridgeJid + ", err: " + response.toXML());
                     }
                 }
             }

@@ -89,11 +89,10 @@ public class BridgeSelector
     /**
      * The map of bridge JID to <tt>BridgeState</tt>.
      */
-    private Map<String, BridgeState> bridges
-        = new HashMap<String, BridgeState>();
+    private final Map<String, BridgeState> bridges = new HashMap<>();
 
     /**
-     * <tt>EventAdmin</tt> instance used by this instance to fire
+     * The <tt>EventAdmin</tt> used by this instance to fire/send
      * <tt>BridgeEvent</tt>s.
      */
     private EventAdmin eventAdmin;
@@ -107,7 +106,7 @@ public class BridgeSelector
     /**
      * The map of Pub-Sub nodes to videobridge JIDs.
      */
-    private Map<String, String> pubSubToBridge = new HashMap<String, String>();
+    private final Map<String, String> pubSubToBridge = new HashMap<>();
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -220,8 +219,7 @@ public class BridgeSelector
      */
     private List<BridgeState> getPrioritizedBridgesList()
     {
-        ArrayList<BridgeState> bridgeList
-            = new ArrayList<BridgeState>(bridges.values());
+        ArrayList<BridgeState> bridgeList = new ArrayList<>(bridges.values());
 
         Collections.sort(bridgeList);
 
@@ -485,6 +483,25 @@ public class BridgeSelector
         return bridges.size();
     }
 
+    /**
+     * Lists all operational JVB instance JIDs currently known to this
+     * <tt>BridgeSelector</tt> instance.
+     *
+     * @return a <tt>List</tt> of <tt>String</tt> with bridges JIDs.
+     */
+    synchronized public List<String> listKnownBridges()
+    {
+        ArrayList<String> listing = new ArrayList<>(bridges.size());
+        for (BridgeState bridge : bridges.values())
+        {
+            if (bridge.isOperational())
+            {
+                listing.add(bridge.jid);
+            }
+        }
+        return listing;
+    }
+
     private void notifyBridgeUp(BridgeState bridge)
     {
         logger.debug("Propagating new bridge added event: " + bridge.jid);
@@ -532,8 +549,9 @@ public class BridgeSelector
         }
 
         setFailureResetThreshold(
-            config.getLong( BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
-                DEFAULT_FAILURE_RESET_THRESHOLD));
+                config.getLong(
+                        BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
+                        DEFAULT_FAILURE_RESET_THRESHOLD));
 
         logger.info(
             "Bridge failure reset threshold: " + getFailureResetThreshold());
@@ -541,7 +559,7 @@ public class BridgeSelector
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
         {
-            throw new RuntimeException("EventAdmin service not found");
+            throw new IllegalStateException("EventAdmin service not found");
         }
     }
 
