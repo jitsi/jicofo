@@ -36,6 +36,7 @@ import org.junit.runners.*;
         ConferenceJsonTest.class,
         ConferenceIqProviderTest.class,
         JireconIqProviderTest.class,
+        JvbDoctorTest.class,
         MuteIqProviderTest.class,
         AdvertiseSSRCsTest.class,
         BridgeSelectorTest.class,

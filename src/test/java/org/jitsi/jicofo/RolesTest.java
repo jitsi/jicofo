@@ -62,9 +62,8 @@ public class RolesTest
         String roomName = "testroom@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConference = new TestConference();
-
-        testConference.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConference
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConference.getFocusProtocolProvider();

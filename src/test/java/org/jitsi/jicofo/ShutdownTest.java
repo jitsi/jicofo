@@ -81,9 +81,9 @@ public class ShutdownTest
         FocusComponent focusComponent
             = MockMainMethodActivator.getFocusComponent();
 
-        TestConference conf1 = new TestConference();
-
-        conf1.allocateMockConference(osgi, serverName, roomName);
+        TestConference conf1
+            = TestConference.allocate(
+                    osgi.bc, serverName, roomName);
 
         MockParticipant conf1User1 = new MockParticipant("C1U1");
         MockParticipant conf1User2 = new MockParticipant("C1U2");

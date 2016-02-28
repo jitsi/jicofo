@@ -17,8 +17,10 @@
  */
 package org.jitsi.jicofo.util;
 
+import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
+
 import org.jitsi.protocol.xmpp.*;
 
 import java.util.*;
@@ -79,6 +81,11 @@ public class DiscoveryUtil
      * RTP bundle feature name. 
      */
     public final static String FEATURE_RTP_BUNDLE = "urn:ietf:rfc:5888";
+
+    /**
+     * Heath checks feature namespace.
+     */
+    public final static String FEATURE_HEALTH_CHECK = HealthCheckIQ.NAMESPACE;
 
     /**
      * Gets the list of features supported by participant. If we fail to 

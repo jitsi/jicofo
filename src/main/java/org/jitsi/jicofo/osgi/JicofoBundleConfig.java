@@ -81,6 +81,7 @@ public class JicofoBundleConfig
             },
             {
                 "net/java/sip/communicator/util/UtilActivator",
+                "org/jitsi/eventadmin/Activator",
                 //"net/java/sip/communicator/impl/fileaccess/FileAccessActivator"
             },
             {
@@ -137,10 +138,10 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/eventadmin/Activator"
+                "org/jitsi/jicofo/log/Activator"
             },
             {
-                "org/jitsi/jicofo/log/Activator"
+                "org/jitsi/jicofo/JvbDoctor"
             }
         };
 

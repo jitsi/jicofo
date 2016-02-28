@@ -22,8 +22,12 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -34,6 +38,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class JitsiMeetServices
+    extends EventHandlerActivator
 {
     /**
      * The logger
@@ -126,6 +131,8 @@ public class JitsiMeetServices
      */
     public JitsiMeetServices(OperationSetSubscription operationSet)
     {
+        super(new String[] { BridgeEvent.HEALTH_CHECK_FAILED });
+
         this.bridgeSelector = new BridgeSelector(operationSet);
     }
 
@@ -280,5 +287,25 @@ public class JitsiMeetServices
     public void setMucService(String mucService)
     {
         this.mucService = mucService;
+    }
+
+    @Override
+    public void start(BundleContext bundleContext)
+        throws Exception
+    {
+        bridgeSelector.init();
+
+        super.start(bundleContext);
+    }
+
+    @Override
+    public void handleEvent(Event event)
+    {
+        if (BridgeEvent.HEALTH_CHECK_FAILED.equals(event.getTopic()))
+        {
+            BridgeEvent bridgeEvent = (BridgeEvent) event;
+
+            bridgeSelector.removeJvbAddress(bridgeEvent.getBridgeJid());
+        }
     }
 }

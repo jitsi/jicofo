@@ -19,12 +19,16 @@ package mock.jvb;
 
 import mock.xmpp.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.util.*;
+
 import org.jitsi.videobridge.*;
 import org.jitsi.videobridge.simulcast.*;
+
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -39,7 +43,7 @@ public class MockVideobridge
     /**
      * The logger
      */
-    private final static Logger logger
+    private static final Logger logger
         = Logger.getLogger(MockVideobridge.class);
 
     private final MockXmppConnection connection;
@@ -50,14 +54,16 @@ public class MockVideobridge
 
     private XMPPError.Condition error;
 
+    private boolean returnHealthError = false;
+
     public MockVideobridge(BundleContext bc,
                            MockXmppConnection connection,
                            String bridgeJid)
     {
         this.connection = connection;
+        this.bridgeJid = bridgeJid;
 
-        VideobridgeBundleActivator activator
-            = new VideobridgeBundleActivator();
+        VideobridgeBundleActivator activator = new VideobridgeBundleActivator();
         try
         {
             activator.start(bc);
@@ -68,8 +74,6 @@ public class MockVideobridge
         }
 
         bridge = ServiceUtils.getService(bc, Videobridge.class);
-
-        this.bridgeJid = bridgeJid;
     }
 
     public void start()
@@ -85,29 +89,27 @@ public class MockVideobridge
 
     public void processPacket(Packet p)
     {
-        if (p instanceof ColibriConferenceIQ)
+        if (p instanceof ColibriConferenceIQ
+                || p instanceof HealthCheckIQ)
         {
             logger.debug("JVB rcv: " + p.toXML());
 
-            IQ response = null;
+            IQ response;
             if (error == null)
             {
                 try
                 {
-                    response
-                        = bridge.handleColibriConferenceIQ(
-                                (ColibriConferenceIQ) p,
-                                Videobridge.OPTION_ALLOW_ANY_FOCUS);
+                    response = processImpl((IQ) p);
                 }
                 catch (Exception e)
                 {
+                    response = null;
                     logger.error("JVB internal error!", e);
                 }
             }
             else
             {
-                response = IQ.createErrorResponse(
-                    (IQ) p, new XMPPError(error));
+                response = IQ.createErrorResponse((IQ) p, new XMPPError(error));
             }
 
             if (response != null)
@@ -124,8 +126,7 @@ public class MockVideobridge
             }
             else
             {
-                logger.warn("The bridge sent no response for "
-                                + p.toXML());
+                logger.warn("The bridge sent no response to " + p.toXML());
             }
         }
         else if (p != null)
@@ -134,8 +135,38 @@ public class MockVideobridge
         }
     }
 
+    /**
+     *
+     * @param p <tt>ColibriConferenceIQ</tt> or <tt>HealthCheckIQ</tt> assumed
+     * @return
+     * @throws Exception
+     */
+    private IQ processImpl(IQ p)
+        throws Exception
+    {
+        if (p instanceof ColibriConferenceIQ)
+        {
+            return
+                bridge.handleColibriConferenceIQ(
+                        (ColibriConferenceIQ) p,
+                        Videobridge.OPTION_ALLOW_ANY_FOCUS);
+        }
+        else if (isReturnHealthError())
+        {
+            return
+                IQ.createErrorResponse(
+                        p,
+                        new XMPPError(
+                                XMPPError.Condition.interna_server_error));
+        }
+        else
+        {
+            return bridge.handleHealthCheckIQ((HealthCheckIQ) p);
+        }
+    }
+
     public List<SimulcastStream> getSimulcastLayers(
-        String confId, String channelId)
+            String confId, String channelId)
     {
         Conference conference = bridge.getConference(confId, null);
         Content videoContent = conference.getOrCreateContent("video");
@@ -204,5 +235,15 @@ public class MockVideobridge
     public XMPPError.Condition getError()
     {
         return error;
+    }
+
+    public boolean isReturnHealthError()
+    {
+        return returnHealthError;
+    }
+
+    public void setReturnHealthError(boolean returnHealthError)
+    {
+        this.returnHealthError = returnHealthError;
     }
 }
