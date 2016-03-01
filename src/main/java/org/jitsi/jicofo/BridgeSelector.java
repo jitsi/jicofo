@@ -352,8 +352,9 @@ public class BridgeSelector
             if (bridgeState == null)
             {
                 logger.warn(
-                    "No bridge registered or " +
-                        "missing mapping for node: " + node);
+                        "Received PubSub update for unknown bridge: "
+                            + itemId + " node: "
+                            + (node == null ? "'shared'" : node));
                 return;
             }
         }

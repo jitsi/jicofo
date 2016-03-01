@@ -20,12 +20,18 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
+
+import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.SubscriptionListener;
 import org.jitsi.util.*;
+
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.pubsub.*;
+
+import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -67,8 +73,7 @@ public class ComponentsDiscovery
     /**
      * Map of component features.
      */
-    private Map<String, List<String>> itemMap
-        = new HashMap<String, List<String>>();
+    private Map<String, List<String>> itemMap = new HashMap<>();
 
     /**
      * Timer which runs re-discovery task.
@@ -199,7 +204,8 @@ public class ComponentsDiscovery
                         subOpSet, capsOpSet,
                         FocusBundleActivator.getSharedThreadPool());
 
-            pubSubBridgeDiscovery.start();
+            pubSubBridgeDiscovery.start(
+                    FocusBundleActivator.bundleContext);
         }
     }
 
@@ -356,7 +362,8 @@ public class ComponentsDiscovery
      * discovers videobridges by listening to PubSub stats notifications.
      */
     class ThroughPubSubDiscovery
-        implements SubscriptionListener
+        implements SubscriptionListener,
+                   EventHandler
     {
         /**
          * The name of configuration property used to configure max bridge stats
@@ -400,6 +407,11 @@ public class ComponentsDiscovery
         private ScheduledFuture<?> expireTask;
 
         /**
+         * <tt>EventHandler</tt> registration.
+         */
+        private ServiceRegistration<EventHandler> evtHandlerReg;
+
+        /**
          * Creates new Instance of <tt>ThroughPubSubDiscovery</tt>.
          * @param subscriptionOpSet subscription operation set instance.
          * @param capsOpSet capabilities operation set instance.
@@ -421,7 +433,7 @@ public class ComponentsDiscovery
         /**
          * Starts <tt>ThroughPubSubDiscovery</tt>.
          */
-        synchronized void start()
+        synchronized void start(BundleContext osgiCtx)
         {
             logger.info(
                 "Bridges will be discovered through" +
@@ -456,12 +468,25 @@ public class ComponentsDiscovery
                     @Override
                     public void run()
                     {
-                        validateBridges();
+                        try
+                        {
+                            validateBridges();
+                        }
+                        catch (Exception e)
+                        {
+                            logger.error(e, e);
+                        }
                     }
                 },
                 MAX_STATS_REPORT_AGE / 2,
                 MAX_STATS_REPORT_AGE / 2,
                 TimeUnit.MILLISECONDS);
+
+            evtHandlerReg
+                = EventUtil.registerEventHandler(
+                        osgiCtx,
+                        new String[] { BridgeEvent.BRIDGE_DOWN },
+                        this);
         }
 
         /**
@@ -469,6 +494,12 @@ public class ComponentsDiscovery
          */
         synchronized void stop()
         {
+            if (evtHandlerReg != null)
+            {
+                evtHandlerReg.unregister();
+                evtHandlerReg = null;
+            }
+
             subOpSet.unSubscribe(statsPubSubNode, this);
 
             Iterator<Map.Entry<String, Long>> bridges
@@ -509,9 +540,29 @@ public class ComponentsDiscovery
                     logger.info(
                         "No stats seen from " + bridgeJid + " for too long");
 
-                    bridgeWentOffline(bridge.getKey());
-
                     bridges.remove();
+
+                    bridgeWentOffline(bridge.getKey());
+                }
+            }
+        }
+
+        @Override
+        synchronized public void handleEvent(Event event)
+        {
+            if (!(event instanceof BridgeEvent))
+                return;
+
+            // We need to remove JVB mapping if the bridge went "down" for
+            // external reasons, so that we will re-discover it correctly if it
+            // starts sending stats before we timeout it in 'validateBridges'.
+            BridgeEvent bridgeEvent = (BridgeEvent) event;
+            if (BridgeEvent.BRIDGE_DOWN.equals(bridgeEvent.getTopic()))
+            {
+                String bridgeJid = bridgeEvent.getBridgeJid();
+                if (bridgesMap.remove(bridgeJid) != null)
+                {
+                    logger.info("Cleared info about: " + bridgeJid);
                 }
             }
         }
