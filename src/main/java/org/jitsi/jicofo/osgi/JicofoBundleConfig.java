@@ -125,7 +125,7 @@ public class JicofoBundleConfig
                 //"net/java/sip/communicator/impl/certificate/CertificateVerificationActivator"
             },
             {
-                //"net/java/sip/communicator/impl/version/VersionActivator"
+                "org/jitsi/jicofo/version/VersionActivator"
             },
             {
                 "net/java/sip/communicator/service/protocol/ProtocolProviderActivator"
