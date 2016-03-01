@@ -126,7 +126,7 @@ public class JvbDoctor
      */
     public JvbDoctor()
     {
-        super(new String[] { "org/jitsi/jicofo/JVB/*"});
+        super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_DOWN });
     }
 
     /**
