@@ -126,7 +126,7 @@ public class JvbDoctor
      */
     public JvbDoctor()
     {
-        super(new String[] { "org/jitsi/jicofo/JVB/*"});
+        super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_DOWN });
     }
 
     /**
@@ -287,7 +287,7 @@ public class JvbDoctor
         healthTask.cancel(true);
     }
 
-    private void notifyHealthCheckFailed(String bridgeJid)
+    private void notifyHealthCheckFailed(String bridgeJid, XMPPError error)
     {
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin == null)
@@ -298,7 +298,8 @@ public class JvbDoctor
             return;
         }
 
-        logger.warn("Health check failed on " + bridgeJid);
+        logger.warn("Health check failed on: " + bridgeJid + " error: "
+                + (error != null ? error.toXML() : "timeout"));
 
         eventAdmin.sendEvent(BridgeEvent.createHealthFailed(bridgeJid));
     }
@@ -306,6 +307,13 @@ public class JvbDoctor
     private class HealthCheckTask implements Runnable
     {
         private final String bridgeJid;
+
+        /**
+         * Indicates whether or not the bridge has health-check support.
+         * If set to <tt>null</tt> it means that we don't know that yet
+         * (there was no successful disco-info exchange so far).
+         */
+        private Boolean hasHealthCheckSupport;
 
         public HealthCheckTask(String bridgeJid)
         {
@@ -339,6 +347,31 @@ public class JvbDoctor
             return true;
         }
 
+        private void verifyHealthCheckSupport()
+        {
+            if (hasHealthCheckSupport == null)
+            {
+                // Check if that bridge comes with health check support
+                List<String> jvbFeatures = capsOpSet.getFeatures(bridgeJid);
+                if (jvbFeatures == null)
+                {
+                    logger.warn(
+                        "Failed to check for health check support on "
+                            + bridgeJid);
+                    return;
+                }
+                if (!DiscoveryUtil.checkFeatureSupport(
+                    HEALTH_CHECK_FEATURES,
+                    jvbFeatures))
+                {
+                    logger.warn(bridgeJid + " does not support health checks!");
+                    hasHealthCheckSupport = false;
+                }
+                // This JVB supports health checks
+                hasHealthCheckSupport = true;
+            }
+        }
+
         private void doHealthCheck()
         {
             // If XMPP is currently not connected skip the health-check
@@ -362,20 +395,12 @@ public class JvbDoctor
                 if (!checkTaskStillValid())
                     return;
 
-                // Check if that bridge comes with health check support
-                List<String> jvbFeatures = capsOpSet.getFeatures(bridgeJid);
-                if (jvbFeatures == null)
+                // Check for health-check support
+                verifyHealthCheckSupport();
+
+                if (!Boolean.TRUE.equals(hasHealthCheckSupport))
                 {
-                    logger.warn(
-                            "Failed to check for health check support on "
-                                + bridgeJid);
-                    return;
-                }
-                if (!DiscoveryUtil.checkFeatureSupport(
-                        HEALTH_CHECK_FEATURES,
-                        jvbFeatures))
-                {
-                    logger.warn(bridgeJid + " does not support health checks!");
+                    // This JVB does not support health-checks
                     return;
                 }
 
@@ -406,7 +431,7 @@ public class JvbDoctor
                     }
                     else
                     {
-                        notifyHealthCheckFailed(bridgeJid);
+                        notifyHealthCheckFailed(bridgeJid, null);
                     }
                     return;
                 }
@@ -423,12 +448,15 @@ public class JvbDoctor
                 if (IQ.Type.ERROR.equals(responseType))
                 {
                     XMPPError error = responseIQ.getError();
+                    String condition = error.getCondition();
 
                     if (XMPPError.Condition.interna_server_error.toString()
-                            .equals(error.getCondition()))
+                            .equals(condition)
+                        || XMPPError.Condition.service_unavailable.toString()
+                            .equals(condition))
                     {
                         // Health check failure
-                        notifyHealthCheckFailed(bridgeJid);
+                        notifyHealthCheckFailed(bridgeJid, error);
                     }
                     else
                     {

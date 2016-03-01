@@ -61,6 +61,21 @@ public class JitsiMeetServices
         };
 
     /**
+     * Feature set advertised by videobridge which does support health-checks.
+     */
+    public static final String[] VIDEOBRIDGE_FEATURES2 = new String[]
+        {
+            ColibriConferenceIQ.NAMESPACE,
+            DiscoveryUtil.FEATURE_HEALTH_CHECK,
+            ProtocolProviderServiceJabberImpl
+                .URN_XMPP_JINGLE_DTLS_SRTP,
+            ProtocolProviderServiceJabberImpl
+                .URN_XMPP_JINGLE_ICE_UDP_1,
+            ProtocolProviderServiceJabberImpl
+                .URN_XMPP_JINGLE_RAW_UDP_0
+        };
+
+    /**
      * The XMPP Service Discovery features of MUC service provided by the XMPP
      * server.
      */

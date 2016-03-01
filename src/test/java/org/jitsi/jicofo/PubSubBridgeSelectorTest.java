@@ -18,19 +18,27 @@
 package org.jitsi.jicofo;
 
 import mock.*;
+import mock.jvb.*;
 import mock.xmpp.*;
 import mock.xmpp.pubsub.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.videobridge.stats.*;
+
 import org.jivesoftware.smack.packet.*;
+
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
+import org.mockito.*;
+
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Basic test for bridge discovery through PubSub stats.
@@ -48,9 +56,11 @@ public class PubSubBridgeSelectorTest
 
     private static String sharedPubSubNode = "sharedJvbStats";
 
-    private static final long MAX_STATS_AGE = 200;
+    private static final long MAX_STATS_AGE = 400;
 
     private static final long x2_MAX_STATS_AGE = MAX_STATS_AGE * 2;
+
+    private static final int HEALTH_CHECK_INT = 150;
 
     private MockSubscriptionOpSetImpl subOpSet;
 
@@ -65,8 +75,12 @@ public class PubSubBridgeSelectorTest
             FocusManager.SHARED_STATS_PUBSUB_NODE_PNAME, sharedPubSubNode);
 
         System.setProperty(
-            ComponentsDiscovery.ThroughPubSubDiscovery.MAX_STATS_REPORT_AGE_PNAME,
+            ComponentsDiscovery
+                .ThroughPubSubDiscovery.MAX_STATS_REPORT_AGE_PNAME,
             String.valueOf(MAX_STATS_AGE));
+
+        System.setProperty(
+            JvbDoctor.HEALTH_CHECK_INTERVAL_PNAME, "" + HEALTH_CHECK_INT);
 
         osgi.init();
     }
@@ -117,6 +131,7 @@ public class PubSubBridgeSelectorTest
         this.subOpSet
             = mockProvider.getMockSubscriptionOpSet();
 
+        // FIXME: remove sleep
         Thread.sleep(2000);
 
         createMockJvbNodes(mockProvider);
@@ -138,6 +153,100 @@ public class PubSubBridgeSelectorTest
 
         triggerJvbStats(jvb2Jid, 0);
         assertTrue(selector.isJvbOnTheList(jvb2Jid));
+    }
+
+    /**
+     * If the bridge is restarted and we have health check failed on it, but
+     * before {@link ComponentsDiscovery#ThroughPubSubDiscovery} has timed out
+     * this instance we will not re-discover it through the PubSub.
+     */
+    @Test
+    public void clearPubSubBridgeStateIssueTest()
+    {
+        String jvb1 = "jvb1.jitsi.net";
+
+        FocusManager focusManager
+            = ServiceUtils.getService(osgi.bc, FocusManager.class);
+
+        MockProtocolProvider focusPps
+            = (MockProtocolProvider) focusManager.getProtocolProvider();
+
+        this.subOpSet
+            = focusPps.getMockSubscriptionOpSet();
+
+        MockVideobridge mockBridge
+            = new MockVideobridge(
+                    osgi.bc, focusPps.getMockXmppConnection(), jvb1);
+
+        // Make sure that jvb advertises features with health-check support
+        MockSetSimpleCapsOpSet mockCaps = focusPps.getMockCapsOpSet();
+        MockCapsNode jvbNode
+            = new MockCapsNode(
+                    jvb1, JitsiMeetServices.VIDEOBRIDGE_FEATURES2);
+        mockCaps.addChildNode(jvbNode);
+
+        mockBridge.start();
+
+        JitsiMeetServices meetServices
+            = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+
+        EventHandler eventSpy = mock(EventHandler.class);
+        EventUtil.registerEventHandler(
+            osgi.bc,
+            new String[] {
+                BridgeEvent.BRIDGE_UP,
+                BridgeEvent.BRIDGE_DOWN,
+                BridgeEvent.HEALTH_CHECK_FAILED },
+            eventSpy);
+
+        // Trigger PubSub, so that the bridge is discovered
+        triggerJvbStats(jvb1, 0);
+
+        // Verify that the bridge has been discovered
+        verify(eventSpy, timeout(100))
+            .handleEvent(BridgeEvent.createBridgeUp(jvb1));
+
+        // Now make the bridge return health-check failure
+        mockBridge.setReturnHealthError(true);
+
+        // Here we verify that first there was HEALTH_CHECK_FAILED event
+        // send by JvbDoctor
+        verify(eventSpy, timeout(HEALTH_CHECK_INT * 2))
+            .handleEvent(BridgeEvent.createHealthFailed(jvb1));
+
+        // and after that BRIDGE_DOWN should be triggered
+        // by BridgeSelector
+        verify(eventSpy, timeout(100))
+            .handleEvent(BridgeEvent.createBridgeDown(jvb1));
+
+        // Now we fix back the bridge and send some PubSub stats
+        mockBridge.setReturnHealthError(false);
+
+        triggerJvbStats(jvb1, 1);
+        triggerJvbStats(jvb1, 0);
+
+        // Assert the bridge has been discovered again
+        verify(eventSpy,  times(2))
+            .handleEvent(BridgeEvent.createBridgeUp(jvb1));
+
+        // Verify events order
+        InOrder eventsOrder = inOrder(eventSpy);
+
+        eventsOrder
+            .verify(eventSpy)
+            .handleEvent(BridgeEvent.createBridgeUp(jvb1));
+
+        eventsOrder
+            .verify(eventSpy)
+            .handleEvent(BridgeEvent.createHealthFailed(jvb1));
+
+        eventsOrder
+            .verify(eventSpy)
+            .handleEvent(BridgeEvent.createBridgeDown(jvb1));
+
+        eventsOrder
+            .verify(eventSpy)
+            .handleEvent(BridgeEvent.createBridgeUp(jvb1));
     }
 
     PacketExtension triggerJvbStats(String itemId, int conferenceCount)
