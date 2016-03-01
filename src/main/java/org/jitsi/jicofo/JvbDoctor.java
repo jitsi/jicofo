@@ -447,9 +447,12 @@ public class JvbDoctor
                 if (IQ.Type.ERROR.equals(responseType))
                 {
                     XMPPError error = responseIQ.getError();
+                    String condition = error.getCondition();
 
                     if (XMPPError.Condition.interna_server_error.toString()
-                            .equals(error.getCondition()))
+                            .equals(condition)
+                        || XMPPError.Condition.service_unavailable.toString()
+                            .equals(condition))
                     {
                         // Health check failure
                         notifyHealthCheckFailed(bridgeJid);
