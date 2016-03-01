@@ -287,7 +287,7 @@ public class JvbDoctor
         healthTask.cancel(true);
     }
 
-    private void notifyHealthCheckFailed(String bridgeJid)
+    private void notifyHealthCheckFailed(String bridgeJid, XMPPError error)
     {
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin == null)
@@ -298,7 +298,8 @@ public class JvbDoctor
             return;
         }
 
-        logger.warn("Health check failed on " + bridgeJid);
+        logger.warn("Health check failed on: " + bridgeJid + " error: "
+                + (error != null ? error.toXML() : "timeout"));
 
         eventAdmin.sendEvent(BridgeEvent.createHealthFailed(bridgeJid));
     }
@@ -430,7 +431,7 @@ public class JvbDoctor
                     }
                     else
                     {
-                        notifyHealthCheckFailed(bridgeJid);
+                        notifyHealthCheckFailed(bridgeJid, null);
                     }
                     return;
                 }
@@ -455,7 +456,7 @@ public class JvbDoctor
                             .equals(condition))
                     {
                         // Health check failure
-                        notifyHealthCheckFailed(bridgeJid);
+                        notifyHealthCheckFailed(bridgeJid, error);
                     }
                     else
                     {
