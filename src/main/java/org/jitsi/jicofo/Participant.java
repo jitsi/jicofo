@@ -22,6 +22,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -137,10 +138,8 @@ public class Participant
      */
     public Participant(XmppChatMember roomMember, int maxSSRCCount)
     {
-        if (roomMember == null)
-        {
-            throw new NullPointerException("roomMember");
-        }
+        Assert.notNull(roomMember, "roomMember");
+
         this.roomMember = roomMember;
         this.maxSSRCCount = maxSSRCCount;
     }
@@ -427,10 +426,7 @@ public class Participant
      */
     public void setSupportedFeatures(List<String> supportedFeatures)
     {
-        if (supportedFeatures == null)
-        {
-            throw new NullPointerException("supportedFeatures");
-        }
+        Assert.notNull(supportedFeatures, "supportedFeatures");
 
         this.supportedFeatures = supportedFeatures;
     }

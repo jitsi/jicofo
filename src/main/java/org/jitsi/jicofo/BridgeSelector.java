@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
@@ -433,8 +434,7 @@ public class BridgeSelector
      */
     synchronized public void setPreConfiguredBridge(String preConfiguredBridge)
     {
-        if (preConfiguredBridge == null)
-            throw new NullPointerException("preConfiguredBridge");
+        Assert.notNull(preConfiguredBridge, "preConfiguredBridge");
 
         logger.info("Configuring default bridge: " + preConfiguredBridge);
 
