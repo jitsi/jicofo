@@ -27,6 +27,7 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.assertions.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
@@ -243,8 +244,7 @@ public class JitsiMeetConference
                                JitsiMeetConfig config,
                                JitsiMeetGlobalConfig globalConfig)
     {
-        if (protocolProviderHandler == null)
-            throw new NullPointerException("protocolProviderHandler");
+        Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
 
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;

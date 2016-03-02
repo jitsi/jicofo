@@ -24,6 +24,7 @@ import javax.servlet.http.*;
 
 import org.eclipse.jetty.server.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
 import org.json.simple.*;
@@ -155,13 +156,11 @@ public class Health
                 JitsiMeetServices services
                     = focusManager.getJitsiMeetServices();
 
-                if (services == null)
-                    throw new NullPointerException("services");
+                Assert.notNull(services, "services");
 
                 BridgeSelector bridgeSelector = services.getBridgeSelector();
 
-                if (bridgeSelector == null)
-                    throw new NullPointerException("bridgeSelector");
+                Assert.notNull(bridgeSelector, "bridgeSelector");
 
                 JSONObject jsonRoot = new JSONObject();
                 jsonRoot.put("jvbs", bridgeSelector.listKnownBridges());

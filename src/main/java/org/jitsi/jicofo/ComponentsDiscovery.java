@@ -21,6 +21,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
@@ -114,8 +115,7 @@ public class ComponentsDiscovery
      */
     public ComponentsDiscovery(JitsiMeetServices meetServices)
     {
-        if (meetServices == null)
-            throw new NullPointerException("meetServices");
+        Assert.notNull(meetServices, "meetServices");
 
         this.meetServices = meetServices;
     }
@@ -141,14 +141,9 @@ public class ComponentsDiscovery
         {
             throw new IllegalStateException("Already started");
         }
-        else if (xmppDomain == null)
-        {
-            throw new NullPointerException("xmppDomain");
-        }
-        else if (protocolProviderHandler == null)
-        {
-            throw new NullPointerException("protocolProviderHandler");
-        }
+
+        Assert.notNull(xmppDomain, "xmppDomain");
+        Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
 
         this.xmppDomain = xmppDomain;
         this.protocolProviderHandler = protocolProviderHandler;
@@ -422,8 +417,7 @@ public class ComponentsDiscovery
                                       OperationSetSimpleCaps capsOpSet,
                                       ScheduledExecutorService executor)
         {
-            if (executor == null)
-                throw new NullPointerException("executor");
+            Assert.notNull(executor, "executor");
 
             this.subOpSet = subscriptionOpSet;
             this.capsOpSet = capsOpSet;

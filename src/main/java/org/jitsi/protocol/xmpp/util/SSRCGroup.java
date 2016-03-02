@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.util.*;
 
 import java.util.*;
@@ -77,8 +78,7 @@ public class SSRCGroup
      */
     public SSRCGroup(SourceGroupPacketExtension group)
     {
-        if (group == null)
-            throw new NullPointerException("group");
+        Assert.notNull(group, "group");
 
         this.group = group;
     }

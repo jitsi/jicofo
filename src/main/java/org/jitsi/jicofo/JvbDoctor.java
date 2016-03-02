@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.osgi.*;
@@ -162,8 +163,8 @@ public class JvbDoctor
         // time.
         protocolProvider
             = ServiceUtils.getService(osgiBc, ProtocolProviderService.class);
-        if (protocolProvider == null)
-            throw new NullPointerException("protocolProvider");
+
+        Assert.notNull(protocolProvider, "protocolProvider");
 
         // Assert XMPP protocol used.
         if (!ProtocolNames.JABBER.equals(protocolProvider.getProtocolName()))
@@ -175,14 +176,14 @@ public class JvbDoctor
         xmppOpSet
             = protocolProvider.getOperationSet(
                     OperationSetDirectSmackXmpp.class);
-        if (xmppOpSet == null)
-            throw new NullPointerException("xmppOpSet");
+
+        Assert.notNull(xmppOpSet, "xmppOpSet");
 
         capsOpSet
             = protocolProvider.getOperationSet(
                     OperationSetSimpleCaps.class);
-        if (capsOpSet == null)
-            throw new NullPointerException("capsOpSet");
+
+        Assert.notNull(capsOpSet, "capsOpSet");
 
         super.start(bundleContext);
     }
