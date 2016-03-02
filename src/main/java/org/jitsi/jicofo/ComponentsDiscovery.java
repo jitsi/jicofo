@@ -508,9 +508,9 @@ public class ComponentsDiscovery
             {
                 Map.Entry<String, Long> bridge = bridges.next();
 
-                bridgeWentOffline(bridge.getKey());
-
                 bridges.remove();
+
+                bridgeWentOffline(bridge.getKey());
             }
 
             bridgesMap.clear();
