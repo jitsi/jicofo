@@ -81,10 +81,8 @@ public class RESTReservations
      */
     public RESTReservations(String baseUrl)
     {
-        if (StringUtils.isNullOrEmpty(baseUrl))
-        {
-            throw new NullPointerException("baseUrl");
-        }
+        Assert.notNullNorEmpty(baseUrl, "baseUrl: " + baseUrl);
+
         this.api = new ApiHandler(baseUrl);
     }
 

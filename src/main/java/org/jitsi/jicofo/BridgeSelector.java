@@ -610,8 +610,7 @@ public class BridgeSelector
 
         BridgeState(String bridgeJid)
         {
-            if (StringUtils.isNullOrEmpty(bridgeJid))
-                throw new NullPointerException("bridgeJid");
+            Assert.notNullNorEmpty(bridgeJid, "bridgeJid: " + bridgeJid);
 
             this.jid = bridgeJid;
         }
