@@ -391,6 +391,16 @@ public class JitsiMeetConference
         // Advertise shared Etherpad document
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
+
+        // Trigger focus joined room event
+        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+        if (eventAdmin != null)
+        {
+            eventAdmin.sendEvent(
+                    EventFactory.focusJoinedRoom(
+                            roomName,
+                            getId()));
+        }
     }
 
     private OperationSetDirectSmackXmpp getDirectXmppOpSet()
@@ -2081,6 +2091,11 @@ public class JitsiMeetConference
         {
             stop();
         }
+    }
+
+    public ChatRoom2 getChatRoom()
+    {
+        return chatRoom;
     }
 
     /**
