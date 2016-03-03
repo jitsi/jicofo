@@ -360,4 +360,19 @@ public class JitsiMeetServices
     {
         return XMPPServerVersion;
     }
+
+    /**
+     * Finds the version of the videobridge identified by given
+     * <tt>bridgeJid</tt>.
+     *
+     * @param bridgeJid the XMPP address of the videobridge for which we want to
+     *        obtain the version.
+     *
+     * @return {@link Version} instance which holds the details about JVB
+     *         version or <tt>null</tt> if unknown.
+     */
+    public Version getBridgeVersion(String bridgeJid)
+    {
+        return bridgeSelector.getBridgeVersion(bridgeJid);
+    }
 }

@@ -25,10 +25,22 @@ package org.jitsi.jicofo.discovery;
 public class Version
     extends org.jivesoftware.smackx.packet.Version
 {
+    /**
+     * Creates a string representation of this <tt>Version</tt> IQ which will
+     * include the application name, version number and OS.
+     * @return a string with the following format {name}({version},{os})
+     */
+    public String getNameVersionOsString()
+    {
+        return getName() + "(" + getVersion() + "," + getOs() + ")";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString()
     {
-        return "Version[" + getName() + "(" + getVersion() + "," + getOs()
-            + ")@"+hashCode();
+        return "Version[" + getNameVersionOsString() + "@" + hashCode();
     }
 }

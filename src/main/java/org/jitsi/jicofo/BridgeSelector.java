@@ -164,7 +164,7 @@ public class BridgeSelector
             logger.warn("No pub-sub node mapped for " + bridgeJid);
         }
 
-        BridgeState newBridge = new BridgeState(bridgeJid);
+        BridgeState newBridge = new BridgeState(bridgeJid, version);
 
         bridges.put(bridgeJid, newBridge);
 
@@ -580,6 +580,23 @@ public class BridgeSelector
     }
 
     /**
+     * Finds the version of the videobridge identified by given
+     * <tt>bridgeJid</tt>.
+     *
+     * @param bridgeJid the XMPP address of the videobridge for which we want to
+     *        obtain the version.
+     *
+     * @return {@link Version} instance which holds the details about JVB
+     *         version or <tt>null</tt> if unknown.
+     */
+    synchronized public Version getBridgeVersion(String bridgeJid)
+    {
+        BridgeState bridgeState = bridges.get(bridgeJid);
+
+        return bridgeState != null ? bridgeState.version : null;
+    }
+
+    /**
      * Class holds videobridge state and implements {@link java.lang.Comparable}
      * interface to find least loaded bridge.
      */
@@ -610,6 +627,12 @@ public class BridgeSelector
         private int videoStreamCount = Integer.MAX_VALUE;
 
         /**
+         * Holds bridge version(if known - not all bridge version are capable of
+         * reporting it).
+         */
+        private final Version version;
+
+        /**
          * Stores *operational* status which means it has been successfully used
          * by the focus to allocate the channels. It is reset to false when
          * focus fails to allocate channels, but it gets another chance when all
@@ -623,11 +646,12 @@ public class BridgeSelector
          */
         private long failureTimestamp;
 
-        BridgeState(String bridgeJid)
+        BridgeState(String bridgeJid, Version version)
         {
             Assert.notNullNorEmpty(bridgeJid, "bridgeJid: " + bridgeJid);
 
             this.jid = bridgeJid;
+            this.version = version;
         }
 
         public void setConferenceCount(int conferenceCount)

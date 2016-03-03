@@ -141,7 +141,8 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/log/Activator"
             },
             {
-                "org/jitsi/jicofo/JvbDoctor"
+                "org/jitsi/jicofo/JvbDoctor",
+                "org/jitsi/jicofo/VersionBroadcaster"
             }
         };
 
