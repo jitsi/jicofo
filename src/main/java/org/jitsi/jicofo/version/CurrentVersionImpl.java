@@ -49,7 +49,7 @@ public class CurrentVersionImpl
     /**
      * The nightly build ID. This file is auto-updated by build.xml.
      */
-    public static final String NIGHTLY_BUILD_ID = "nightly";
+    public static final String NIGHTLY_BUILD_ID = "build.SVN";
 
     /**
      * {@inheritDoc}
