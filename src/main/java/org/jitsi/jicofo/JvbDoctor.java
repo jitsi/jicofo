@@ -66,6 +66,14 @@ public class JvbDoctor
         = "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL";
 
     /**
+     * The name of the configuration property used to configure 2nd chance
+     * delay. This is how long we will wait to retry the health check after 1st
+     * timeout.
+     */
+    public static final String SECOND_CHANCE_DELAY_PNAME
+        = "org.jitsi.jicofo.HEALTH_CHECK_2NDTRY_DELAY";
+
+    /**
      * Default value for JVB health checks is 10 seconds.
      */
     public static final long DEFAULT_HEALTH_CHECK_INTERVAL = 10000;
@@ -82,7 +90,13 @@ public class JvbDoctor
     /**
      * Tells how often we send health checks to the bridge in ms.
      */
-    private long healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+    private long healthCheckInterval;
+
+    /**
+     * 2nd chance delay which tells how long we will wait to retry the health
+     * check after 1st attempt has timed out.
+     */
+    private long secondChanceDelay;
 
     /**
      * OSGi bundle context.
@@ -142,22 +156,27 @@ public class JvbDoctor
             throw new IllegalStateException("Started already?");
         }
 
-        this.osgiBc = bundleContext;
-
-        this.eventAdminRef = new OSGIServiceRef<>(osgiBc, EventAdmin.class);
-
-        this.executorServiceRef
-            = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
-
         healthCheckInterval
             = FocusBundleActivator.getConfigService().getLong(
                     HEALTH_CHECK_INTERVAL_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL);
         if (healthCheckInterval <= 0)
         {
-            throw new IllegalArgumentException(
-                    "Health check interval: " + healthCheckInterval);
+            logger.warn("JVB health-checks disabled");
+            return;
         }
+
+        secondChanceDelay
+            = FocusBundleActivator.getConfigService().getLong(
+                    SECOND_CHANCE_DELAY_PNAME,
+                    DEFAULT_HEALTH_CHECK_INTERVAL / 2);
+
+        this.osgiBc = bundleContext;
+
+        this.eventAdminRef = new OSGIServiceRef<>(osgiBc, EventAdmin.class);
+
+        this.executorServiceRef
+            = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
 
         // We assume that in Jicofo there is only one XMPP provider running at a
         // time.
@@ -195,10 +214,10 @@ public class JvbDoctor
     synchronized public void stop(BundleContext bundleContext)
         throws Exception
     {
-        super.stop(bundleContext);
-
         if (this.osgiBc == null)
             return;
+
+        super.stop(bundleContext);
 
         try
         {
@@ -302,7 +321,7 @@ public class JvbDoctor
         logger.warn("Health check failed on: " + bridgeJid + " error: "
                 + (error != null ? error.toXML() : "timeout"));
 
-        eventAdmin.sendEvent(BridgeEvent.createHealthFailed(bridgeJid));
+        eventAdmin.postEvent(BridgeEvent.createHealthFailed(bridgeJid));
     }
 
     private class HealthCheckTask implements Runnable
@@ -338,14 +357,16 @@ public class JvbDoctor
 
         private boolean checkTaskStillValid()
         {
-            if (!tasks.containsKey(bridgeJid))
+            synchronized (JvbDoctor.this)
             {
-                logger.info(
-                        "Health check task cancelled for: " + bridgeJid
-                            + " - response processing skipped");
-                return false;
+                if (!tasks.containsKey(bridgeJid))
+                {
+                    logger.info(
+                            "Health check task cancelled for: " + bridgeJid);
+                    return false;
+                }
+                return true;
             }
-            return true;
         }
 
         private void verifyHealthCheckSupport()
@@ -373,6 +394,14 @@ public class JvbDoctor
             }
         }
 
+        private HealthCheckIQ newHealthCheckIQ(String bridgeJid)
+        {
+            HealthCheckIQ healthIq = new HealthCheckIQ();
+            healthIq.setTo(bridgeJid);
+            healthIq.setType(IQ.Type.GET);
+            return healthIq;
+        }
+
         private void doHealthCheck()
         {
             // If XMPP is currently not connected skip the health-check
@@ -385,10 +414,6 @@ public class JvbDoctor
             }
 
             XmppConnection connection;
-
-            HealthCheckIQ healthIq = new HealthCheckIQ();
-            healthIq.setTo(bridgeJid);
-            healthIq.setType(IQ.Type.GET);
 
             // Sync on start/stop and bridges state
             synchronized (JvbDoctor.this)
@@ -410,7 +435,34 @@ public class JvbDoctor
                 logger.debug("Sending health-check request to: " + bridgeJid);
             }
 
-            Packet response = connection.sendPacketAndGetReply(healthIq);
+            Packet response = connection.sendPacketAndGetReply(
+                    newHealthCheckIQ(bridgeJid));
+
+            // On timeout we'll give it one more try
+            if (response == null && secondChanceDelay > 0)
+            {
+                try
+                {
+                    if (!checkTaskStillValid())
+                        return;
+
+                    logger.warn(bridgeJid + " health-check timed out,"
+                            + " but will give it another try after: "
+                            + secondChanceDelay);
+
+                    Thread.sleep(secondChanceDelay);
+
+                    if (!checkTaskStillValid())
+                        return;
+
+                    response = connection.sendPacketAndGetReply(
+                            newHealthCheckIQ(bridgeJid));
+                }
+                catch (InterruptedException e)
+                {
+                    logger.error("Second chance delay wait interrupted", e);
+                }
+            }
 
             // Sync on start/stop and bridges state
             synchronized (JvbDoctor.this)
