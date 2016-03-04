@@ -122,6 +122,12 @@ public class JitsiMeetConference
     private final ProtocolProviderHandler protocolProviderHandler;
 
     /**
+     * Indicates if the bridge used in this conference is faulty. We use this
+     * flag to skip channel expiration step when conference is being disposed.
+     */
+    private boolean bridgeHasFailed;
+
+    /**
      * Synchronization root for currently selected bridge for the
      * {@link #colibriConference}.
      */
@@ -1256,7 +1262,9 @@ public class JitsiMeetConference
 
         if (colibriConference != null)
         {
-            if (protocolProviderHandler.isRegistered())
+            // We will not expire channels if the bridge is faulty or
+            // when our connection is down
+            if (!bridgeHasFailed && protocolProviderHandler.isRegistered())
             {
                 colibriConference.expireConference();
             }
@@ -1320,7 +1328,7 @@ public class JitsiMeetConference
 
                 ColibriConferenceIQ peerChannels
                         = leftPeer.getColibriChannelsInfo();
-                if (peerChannels != null)
+                if (!bridgeHasFailed && peerChannels != null)
                 {
                     logger.info("Expiring channels for: " + contactAddress);
                     colibriConference.expireChannels(
@@ -2078,6 +2086,10 @@ public class JitsiMeetConference
         if (colibriConference != null
                 && bridgeJid.equals(colibriConference.getJitsiVideobridge()))
         {
+            // We will not send expire channels requests
+            // when the bridge has failed
+            bridgeHasFailed = true;
+
             stop();
         }
     }
