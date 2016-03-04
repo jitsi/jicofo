@@ -142,22 +142,22 @@ public class JvbDoctor
             throw new IllegalStateException("Started already?");
         }
 
-        this.osgiBc = bundleContext;
-
-        this.eventAdminRef = new OSGIServiceRef<>(osgiBc, EventAdmin.class);
-
-        this.executorServiceRef
-            = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
-
         healthCheckInterval
             = FocusBundleActivator.getConfigService().getLong(
                     HEALTH_CHECK_INTERVAL_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL);
         if (healthCheckInterval <= 0)
         {
-            throw new IllegalArgumentException(
-                    "Health check interval: " + healthCheckInterval);
+            logger.warn("JVB health-checks disabled");
+            return;
         }
+
+        this.osgiBc = bundleContext;
+
+        this.eventAdminRef = new OSGIServiceRef<>(osgiBc, EventAdmin.class);
+
+        this.executorServiceRef
+            = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
 
         // We assume that in Jicofo there is only one XMPP provider running at a
         // time.
@@ -195,10 +195,10 @@ public class JvbDoctor
     synchronized public void stop(BundleContext bundleContext)
         throws Exception
     {
-        super.stop(bundleContext);
-
         if (this.osgiBc == null)
             return;
+
+        super.stop(bundleContext);
 
         try
         {
