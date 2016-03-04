@@ -621,7 +621,8 @@ public class FocusManager
                 }
                 catch (InterruptedException e)
                 {
-                    Thread.currentThread().interrupt();
+                    // Continue to check the enabled flag
+                    // if we're still supposed to run
                 }
 
                 if (!enabled)

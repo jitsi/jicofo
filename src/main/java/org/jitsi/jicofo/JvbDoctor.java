@@ -321,7 +321,7 @@ public class JvbDoctor
         logger.warn("Health check failed on: " + bridgeJid + " error: "
                 + (error != null ? error.toXML() : "timeout"));
 
-        eventAdmin.sendEvent(BridgeEvent.createHealthFailed(bridgeJid));
+        eventAdmin.postEvent(BridgeEvent.createHealthFailed(bridgeJid));
     }
 
     private class HealthCheckTask implements Runnable
@@ -362,8 +362,7 @@ public class JvbDoctor
                 if (!tasks.containsKey(bridgeJid))
                 {
                     logger.info(
-                            "Health check task cancelled for: " + bridgeJid
-                                + " - response processing skipped");
+                            "Health check task cancelled for: " + bridgeJid);
                     return false;
                 }
                 return true;
