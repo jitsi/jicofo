@@ -69,9 +69,13 @@ public class JingleOfferFactory
             RTPHdrExtPacketExtension ssrcAudioLevel
                 = new RTPHdrExtPacketExtension();
             ssrcAudioLevel.setID("1");
-            ssrcAudioLevel.setURI(
-                URI.create("urn:ietf:params:rtp-hdrext:ssrc-audio-level"));
-            rtpDesc.addExtmap(ssrcAudioLevel);
+            ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
+                           rtpDesc.addExtmap(ssrcAudioLevel);
+            RTPHdrExtPacketExtension absSendTime
+                    = new RTPHdrExtPacketExtension();
+            absSendTime.setID("3");
+            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
+            rtpDesc.addExtmap(absSendTime);
 
             // a=rtpmap:111 opus/48000/2
             PayloadTypePacketExtension opus
@@ -170,9 +174,7 @@ public class JingleOfferFactory
             RTPHdrExtPacketExtension absSendTime
                 = new RTPHdrExtPacketExtension();
             absSendTime.setID("3");
-            absSendTime.setURI(
-                URI.create(
-                    "http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time"));
+            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
             rtpDesc.addExtmap(absSendTime);
             // a=rtpmap:100 VP8/90000
             PayloadTypePacketExtension vp8
