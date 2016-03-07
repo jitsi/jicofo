@@ -163,13 +163,17 @@ public class JingleOfferFactory
 
             rtpDesc.setMedia("video");
 
+            // This is currently disabled, because we don't support it in the
+            // bridge (and currently clients seem to not use it when
+            // abs-send-time is available).
             // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
-            RTPHdrExtPacketExtension toOffset
-                = new RTPHdrExtPacketExtension();
-            toOffset.setID("2");
-            toOffset.setURI(
-                URI.create("urn:ietf:params:rtp-hdrext:toffset"));
-            rtpDesc.addExtmap(toOffset);
+            //RTPHdrExtPacketExtension toOffset
+            //    = new RTPHdrExtPacketExtension();
+            //toOffset.setID("2");
+            //toOffset.setURI(
+            //    URI.create("urn:ietf:params:rtp-hdrext:toffset"));
+            //rtpDesc.addExtmap(toOffset);
+
             // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
             RTPHdrExtPacketExtension absSendTime
                 = new RTPHdrExtPacketExtension();
