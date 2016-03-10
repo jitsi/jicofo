@@ -61,6 +61,12 @@ public class ChatMemberImpl
      */
     private final String address;
 
+    /**
+     * Stores the last <tt>Presence</tt> processed by this
+     * <tt>ChatMemberImpl</tt>.
+     */
+    private Presence presence;
+
     private ChatRoomMemberRole role;
 
     /**
@@ -81,6 +87,15 @@ public class ChatMemberImpl
     public ChatRoom getChatRoom()
     {
         return chatRoom;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Presence getPresence()
+    {
+        return presence;
     }
 
     @Override
@@ -176,6 +191,8 @@ public class ChatMemberImpl
      */
     void processPresence(Presence presence)
     {
+        this.presence = presence;
+
         VideoMutedExtension videoMutedExt
             = (VideoMutedExtension)
                 presence.getExtension(
