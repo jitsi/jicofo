@@ -85,20 +85,24 @@ public class ChatRoomImpl
      * Member presence listeners.
      */
     private CopyOnWriteArrayList<ChatRoomMemberPresenceListener> listeners
-        = new CopyOnWriteArrayList<ChatRoomMemberPresenceListener>();
+        = new CopyOnWriteArrayList<>();
 
     /**
      * Local user role listeners.
      */
     private CopyOnWriteArrayList<ChatRoomLocalUserRoleListener>
-        localUserRoleListeners
-            = new CopyOnWriteArrayList<ChatRoomLocalUserRoleListener>();
+        localUserRoleListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Nickname to member impl class map.
      */
-    private final Map<String, ChatMemberImpl> members
-        = new HashMap<String, ChatMemberImpl>();
+    private final Map<String, ChatMemberImpl> members = new HashMap<>();
+
+    /**
+     * The list of <tt>ChatRoomMemberPropertyChangeListener</tt>.
+     */
+    private CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener>
+        propListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Local user role.
@@ -480,14 +484,14 @@ public class ChatRoomImpl
     public void addMemberPropertyChangeListener(
         ChatRoomMemberPropertyChangeListener listener)
     {
-
+        propListeners.add(listener);
     }
 
     @Override
     public void removeMemberPropertyChangeListener(
         ChatRoomMemberPropertyChangeListener listener)
     {
-
+        propListeners.remove(listener);
     }
 
     @Override
@@ -803,6 +807,20 @@ public class ChatRoomImpl
         }
     }
 
+    private void notifyMemberPropertyChanged(ChatMemberImpl member)
+    {
+        ChatRoomMemberPropertyChangeEvent event
+            = new ChatRoomMemberPropertyChangeEvent(
+                    member, this,
+                    ChatRoomMemberPropertyChangeEvent.MEMBER_PRESENCE,
+                    null, member.getPresence());
+
+        for (ChatRoomMemberPropertyChangeListener l : propListeners)
+        {
+            l.chatRoomPropertyChanged(event);
+        }
+    }
+
     public Occupant getOccupant(ChatMemberImpl chatMemeber)
     {
         return muc.getOccupant(chatMemeber.getContactAddress());
@@ -935,7 +953,14 @@ public class ChatRoomImpl
                     member.processPresence(cachedPresence);
                 }
 
+                // Trigger participant "joined"
                 notifyParticipantJoined(member);
+
+                // Fire presence event after "joined" event
+                if (cachedPresence != null)
+                {
+                    notifyMemberPropertyChanged(member);
+                }
             }
         }
 
@@ -1218,6 +1243,8 @@ public class ChatRoomImpl
             if (chatMember != null)
             {
                 chatMember.processPresence(presence);
+
+                notifyMemberPropertyChanged(chatMember);
             }
             else
             {
