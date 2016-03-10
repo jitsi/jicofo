@@ -62,6 +62,12 @@ public class ChatMemberImpl
     private final String address;
 
     /**
+     * Caches real JID of the participant if we're able to see it(not the MUC
+     * address stored in {@link ChatMemberImpl#address}).
+     */
+    private String memberJid = null;
+
+    /**
      * Stores the last <tt>Presence</tt> processed by this
      * <tt>ChatMemberImpl</tt>.
      */
@@ -168,7 +174,11 @@ public class ChatMemberImpl
     @Override
     public String getJabberID()
     {
-        return chatRoom.getMemberJid(address);
+        if (memberJid == null)
+        {
+            memberJid = chatRoom.getMemberJid(address);
+        }
+        return memberJid;
     }
 
     @Override
