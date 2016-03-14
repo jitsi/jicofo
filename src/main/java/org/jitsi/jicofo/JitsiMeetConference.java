@@ -33,6 +33,7 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -398,6 +399,13 @@ public class JitsiMeetConference
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
 
+        // init recorder
+        Recorder recorder = getRecorder();
+        if (recorder != null)
+        {
+            recorder.init();
+        }
+
         // Trigger focus joined room event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
@@ -424,45 +432,50 @@ public class JitsiMeetConference
      */
     private Recorder getRecorder()
     {
-        if (recorder == null)
+        if (recorder != null)
+            return recorder;
+
+        OperationSetDirectSmackXmpp xmppOpSet = getDirectXmppOpSet();
+
+        if (services.getJibriDetector() != null)
         {
-            OperationSetDirectSmackXmpp xmppOpSet
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetDirectSmackXmpp.class);
-
-            String recorderService = services.getJireconRecorder();
-            if (!StringUtils.isNullOrEmpty(recorderService))
-            {
-                recorder
-                    = new JireconRecorder(
-                            getFocusJid(),
-                            services.getJireconRecorder(), xmppOpSet);
-            }
-            else
-            {
-                logger.warn("No recorder service discovered - using JVB");
-
-                if(colibriConference == null)
-                {
-                    return null;
-                }
-
-                String videobridge = colibriConference.getJitsiVideobridge();
-                if (StringUtils.isNullOrEmpty(videobridge))
-                {
-                    //Unable to create JVB recorder, conference not started yet
-                    return null;
-                }
-
-                recorder
-                    = new JvbRecorder(
-                            colibriConference.getConferenceId(),
-                            videobridge,
-                            colibriConference.getName(),
-                            xmppOpSet);
-            }
+            recorder = new JibriRecorder(this, xmppOpSet);
+            return recorder;
         }
-        return recorder;
+
+        String recorderService = services.getJireconRecorder();
+        if (!StringUtils.isNullOrEmpty(recorderService))
+        {
+            recorder
+                = new JireconRecorder(
+                        getFocusJid(),
+                        services.getJireconRecorder(), xmppOpSet);
+            return recorder;
+        }
+        else
+        {
+            logger.warn("No recorder service discovered - using JVB");
+
+            if(colibriConference == null)
+            {
+                return null;
+            }
+
+            String videobridge = colibriConference.getJitsiVideobridge();
+            if (StringUtils.isNullOrEmpty(videobridge))
+            {
+                //Unable to create JVB recorder, conference not started yet
+                return null;
+            }
+
+            recorder
+                = new JvbRecorder(
+                        colibriConference.getConferenceId(),
+                        videobridge,
+                        colibriConference.getName(),
+                        xmppOpSet);
+            return recorder;
+        }
     }
 
     /**
@@ -1423,7 +1436,7 @@ public class JitsiMeetConference
         return null;
     }
 
-    ChatRoomMemberRole getRoleForMucJid(String mucJid)
+    public ChatRoomMemberRole getRoleForMucJid(String mucJid)
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
@@ -2105,6 +2118,10 @@ public class JitsiMeetConference
         }
     }
 
+    /**
+     * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
+     * currently in or <tt>null</tt> if it isn't in any.
+     */
     public ChatRoom2 getChatRoom()
     {
         return chatRoom;

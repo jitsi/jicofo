@@ -20,14 +20,17 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
-import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.util.*;
 
 import org.osgi.framework.*;
 
@@ -116,6 +119,11 @@ public class JitsiMeetServices
     private final BridgeSelector bridgeSelector;
 
     /**
+     * Instance of {@link JibriDetector} which manages Jibri instances.
+     */
+    private JibriDetector jibriDetector;
+
+    /**
      * The name of XMPP domain to which Jicofo user logs in.
      */
     private final String jicofoUserDomain;
@@ -124,6 +132,11 @@ public class JitsiMeetServices
      * Jirecon recorder component XMPP address.
      */
     private String jireconRecorder;
+
+    /**
+     * The {@link ProtocolProviderHandler} for Jicofo XMPP connection.
+     */
+    private final ProtocolProviderHandler protocolProvider;
 
     /**
      * SIP gateway component XMPP address.
@@ -155,18 +168,27 @@ public class JitsiMeetServices
     /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *
+     * @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo
+     *        XMPP connection.
      * @param jicofoUserDomain the name of the XMPP domain to which Jicofo user
      *        is connecting to.
-     * @param operationSet subscription operation set to be used for watching
-     *        JVB stats sent over pub-sub.
      */
-    public JitsiMeetServices(String jicofoUserDomain,
-                             OperationSetSubscription operationSet)
+    public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
+                             String jicofoUserDomain)
     {
         super(new String[] { BridgeEvent.HEALTH_CHECK_FAILED });
 
+        Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
+
+        OperationSetSubscription subscriptionOpSet
+            = protocolProviderHandler.getOperationSet(
+                    OperationSetSubscription.class);
+
+        Assert.notNull(subscriptionOpSet, "subscriptionOpSet");
+
         this.jicofoUserDomain = jicofoUserDomain;
-        this.bridgeSelector = new BridgeSelector(operationSet);
+        this.protocolProvider = protocolProviderHandler;
+        this.bridgeSelector = new BridgeSelector(subscriptionOpSet);
     }
 
     /**
@@ -297,6 +319,16 @@ public class JitsiMeetServices
     }
 
     /**
+     * Returns {@link JibriDetector} instance that manages Jibri pool used by
+     * this Jicofo process or <tt>null</tt> if unavailable in the current
+     * session.
+     */
+    public JibriDetector getJibriDetector()
+    {
+        return jibriDetector;
+    }
+
+    /**
      * Returns the XMPP address of Jirecon recorder component.
      */
     public String getJireconRecorder()
@@ -337,6 +369,31 @@ public class JitsiMeetServices
         bridgeSelector.init();
 
         super.start(bundleContext);
+
+        String jibriBreweryName
+            = JibriDetector.loadBreweryName(
+                    FocusBundleActivator.getConfigService());
+
+        if (!StringUtils.isNullOrEmpty(jibriBreweryName))
+        {
+            jibriDetector
+                = new JibriDetector(protocolProvider, jibriBreweryName);
+
+            jibriDetector.init();
+        }
+    }
+
+    @Override
+    public void stop(BundleContext bundleContext)
+        throws Exception
+    {
+        if (jibriDetector != null)
+        {
+            jibriDetector.dispose();
+            jibriDetector = null;
+        }
+
+        super.stop(bundleContext);
     }
 
     @Override
