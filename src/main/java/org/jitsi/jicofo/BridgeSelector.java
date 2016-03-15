@@ -490,7 +490,7 @@ public class BridgeSelector
      *
      * @return a <tt>List</tt> of <tt>String</tt> with bridges JIDs.
      */
-    synchronized public List<String> listKnownBridges()
+    synchronized public List<String> listActiveJVBs()
     {
         ArrayList<String> listing = new ArrayList<>(bridges.size());
         for (BridgeState bridge : bridges.values())
