@@ -129,6 +129,13 @@ public class EventFactory
             = "org/jitsi/jicofo/FOCUS_CREATED";
 
     /**
+     * The name of the topic of a "focus joined MUC room" event which is fired
+     * just after Jicofo joins the MUC room.
+     */
+    public static final String FOCUS_JOINED_ROOM_TOPIC
+        = "org/jitsi/jicofo/FOCUS_JOINED_ROOM";
+
+    /**
      * The name of the topic of a "focus instance destroyed" event.
      */
     public static final String FOCUS_DESTROYED_TOPIC
@@ -283,6 +290,25 @@ public class EventFactory
         return values.toArray();
     }
 
+    /**
+     * Creates new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
+     *
+     * @param roomJid the full address of MUC room.
+     * @param focusId focus instance identifier.
+     *
+     * @return new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
+     */
+    public static Event focusJoinedRoom(
+            String roomJid,
+            String focusId)
+    {
+        Dictionary properties = new Hashtable(2);
+
+        properties.put(ROOM_JID_KEY, roomJid);
+        properties.put(FOCUS_ID_KEY, focusId);
+
+        return new Event(FOCUS_JOINED_ROOM_TOPIC, properties);
+    }
 
     /**
      * Creates a new "room conference" <tt>Event</tt> which binds a COLIBRI

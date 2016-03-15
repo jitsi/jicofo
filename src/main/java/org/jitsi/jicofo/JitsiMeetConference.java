@@ -29,6 +29,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.jicofo.recording.*;
@@ -396,6 +397,16 @@ public class JitsiMeetConference
         // Advertise shared Etherpad document
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
+
+        // Trigger focus joined room event
+        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+        if (eventAdmin != null)
+        {
+            eventAdmin.sendEvent(
+                    EventFactory.focusJoinedRoom(
+                            roomName,
+                            getId()));
+        }
     }
 
     private OperationSetDirectSmackXmpp getDirectXmppOpSet()
@@ -2092,6 +2103,11 @@ public class JitsiMeetConference
 
             stop();
         }
+    }
+
+    public ChatRoom2 getChatRoom()
+    {
+        return chatRoom;
     }
 
     /**

@@ -15,13 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.util;
+package org.jitsi.jicofo.discovery;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
+import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
+
+import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 
@@ -88,6 +91,14 @@ public class DiscoveryUtil
     public final static String FEATURE_HEALTH_CHECK = HealthCheckIQ.NAMESPACE;
 
     /**
+     * Array constant which can be used to check for Version IQ support.
+     */
+    public final static String[] VERSION_FEATURES = new String[]
+        {
+            ProtocolProviderServiceJabberImpl.URN_XMPP_IQ_VERSION
+        };
+
+    /**
      * Gets the list of features supported by participant. If we fail to 
      * obtain it due to network failure default feature list is returned. 
      * @param protocolProvider protocol provider service instance that will 
@@ -124,6 +135,50 @@ public class DiscoveryUtil
         }
 
         return participantFeatures;
+    }
+
+    /**
+     * Discovers version of given <tt>jid</tt>.
+     *
+     * @param xmppOpSet the direct smack operation set which will be used to
+     *                  send the query.
+     * @param jid       the JID to which version query wil be sent.
+     * @param features  the list of <tt>jid</tt> feature which will be used to
+     *                  determine support for the version IQ.
+     *
+     * @return {@link Version} if given <tt>jid</tt> supports version IQ and if
+     *         we the query was successful or <tt>null</tt> otherwise.
+     */
+    static public Version discoverVersion(
+            OperationSetDirectSmackXmpp    xmppOpSet,
+            String                               jid,
+            List<String>                    features )
+    {
+        // If the bridge supports version IQ query it's version
+        if (DiscoveryUtil.checkFeatureSupport(VERSION_FEATURES, features))
+        {
+            Version versionIq = new Version();
+            versionIq.setType(IQ.Type.GET);
+            versionIq.setTo(jid);
+
+            Packet response
+                = xmppOpSet.getXmppConnection()
+                        .sendPacketAndGetReply(versionIq);
+
+            if (response instanceof Version)
+            {
+                return  (Version) response;
+            }
+            else
+            {
+                logger.error(
+                        "Failed to discover version, req: " + versionIq.toXML()
+                            + ", response: "
+                            + (response != null ?
+                            response.toXML() : "null(timeout)"));
+            }
+        }
+        return null;
     }
 
     /**

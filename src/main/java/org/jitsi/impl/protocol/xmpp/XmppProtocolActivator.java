@@ -55,6 +55,12 @@ public class XmppProtocolActivator
         new ColibriIQProvider();
         HealthCheckIQProvider.registerIQProvider();
 
+        // Override original Smack Version IQ class
+        AbstractSmackInteroperabilityLayer.getInstance()
+            .addIQProvider(
+                    "query", "jabber:iq:version",
+                    org.jitsi.jicofo.discovery.Version.class);
+
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(
                     bundleContext, ProtocolNames.JABBER);

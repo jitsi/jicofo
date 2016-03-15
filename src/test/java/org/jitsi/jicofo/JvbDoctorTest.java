@@ -19,22 +19,22 @@ package org.jitsi.jicofo;
 
 import mock.*;
 import mock.jvb.*;
-
 import mock.util.*;
 import mock.xmpp.*;
+
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 
-import org.jitsi.jicofo.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
 import static org.junit.Assert.assertNotNull;
-
 import static org.junit.Assert.assertNull;
+
 import static org.mockito.Mockito.*;
 
 /**
