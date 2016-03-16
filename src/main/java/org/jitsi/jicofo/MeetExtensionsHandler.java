@@ -26,6 +26,7 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.*;
@@ -201,19 +202,9 @@ public class MeetExtensionsHandler
         return packet instanceof MuteIq;
     }
 
-    private String getRoomNameFromMucJid(String mucJid)
-    {
-        int atIndex = mucJid.indexOf("@");
-        int slashIndex = mucJid.indexOf("/");
-        if (atIndex == -1 || slashIndex == -1)
-            return null;
-
-        return mucJid.substring(0, slashIndex);
-    }
-
     private JitsiMeetConference getConferenceForMucJid(String mucJid)
     {
-        String roomName = getRoomNameFromMucJid(mucJid);
+        String roomName = MucUtil.extractRoomNameFromMucJid(mucJid);
         if (roomName == null)
         {
             return null;

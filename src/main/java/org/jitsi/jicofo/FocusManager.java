@@ -24,10 +24,10 @@ import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
+
 import org.jivesoftware.smack.provider.*;
 
 import org.osgi.framework.*;
@@ -186,9 +186,8 @@ public class FocusManager
 
         jitsiMeetServices
             = new JitsiMeetServices(
-                    focusUserDomain,
-                    protocolProviderHandler.getOperationSet(
-                            OperationSetSubscription.class));
+                    protocolProviderHandler,
+                    focusUserDomain);
         jitsiMeetServices.start(bundleContext);
 
         String statsPubSubNode

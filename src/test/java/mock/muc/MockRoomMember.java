@@ -24,6 +24,7 @@ import net.java.sip.communicator.service.protocol.globalstatus.*;
 
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 
@@ -150,6 +151,13 @@ public class MockRoomMember
 
     @Override
     public Boolean hasVideoMuted()
+    {
+        // FIXME: not implemented
+        return null;
+    }
+
+    @Override
+    public Presence getPresence()
     {
         // FIXME: not implemented
         return null;

@@ -19,6 +19,8 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jivesoftware.smack.packet.*;
+
 /**
  * XMPP extended interface of {@link ChatRoomMember}.
  *
@@ -37,6 +39,14 @@ public interface XmppChatMember
      * @return number based on the order of joining of the members in the room.
      */
     int getJoinOrderNumber();
+
+    /**
+     * Obtains the last MUC <tt>Presence</tt> seen for this chat member.
+     * @return the last {@link Presence} packet received for this
+     *         <tt>XmppChatMember</tt> or <tt>null</tt> if we haven't received
+     *         it yet.
+     */
+    Presence getPresence();
 
     /**
      * Check for video muted status.

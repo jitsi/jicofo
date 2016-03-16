@@ -61,6 +61,18 @@ public class ChatMemberImpl
      */
     private final String address;
 
+    /**
+     * Caches real JID of the participant if we're able to see it(not the MUC
+     * address stored in {@link ChatMemberImpl#address}).
+     */
+    private String memberJid = null;
+
+    /**
+     * Stores the last <tt>Presence</tt> processed by this
+     * <tt>ChatMemberImpl</tt>.
+     */
+    private Presence presence;
+
     private ChatRoomMemberRole role;
 
     /**
@@ -81,6 +93,15 @@ public class ChatMemberImpl
     public ChatRoom getChatRoom()
     {
         return chatRoom;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Presence getPresence()
+    {
+        return presence;
     }
 
     @Override
@@ -153,7 +174,11 @@ public class ChatMemberImpl
     @Override
     public String getJabberID()
     {
-        return chatRoom.getMemberJid(address);
+        if (memberJid == null)
+        {
+            memberJid = chatRoom.getMemberJid(address);
+        }
+        return memberJid;
     }
 
     @Override
@@ -176,6 +201,8 @@ public class ChatMemberImpl
      */
     void processPresence(Presence presence)
     {
+        this.presence = presence;
+
         VideoMutedExtension videoMutedExt
             = (VideoMutedExtension)
                 presence.getExtension(
