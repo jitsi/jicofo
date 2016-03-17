@@ -21,7 +21,6 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
-import org.jitsi.util.*;
 import org.json.simple.parser.*;
 
 import java.io.*;

@@ -19,8 +19,6 @@ package org.jitsi.jicofo.osgi;
 
 import org.jitsi.meet.*;
 
-import java.util.*;
-
 /**
  * Jicofo OSGi bundles description.
  *
