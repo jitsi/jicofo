@@ -248,7 +248,10 @@ public class JibriRecorder
             startIq.setAction(JibriIq.Action.START);
 
             startIq.setStreamId(iq.getStreamId());
-            startIq.setUrl(iq.getUrl());
+
+            // Insert name of the room into Jibri START IQ
+            String roomName = MucUtil.extractRoomNameFromMucJid(senderMucJid);
+            startIq.setRoom(roomName);
 
             logger.debug("Starting Jibri recording: " + startIq.toXML());
 
