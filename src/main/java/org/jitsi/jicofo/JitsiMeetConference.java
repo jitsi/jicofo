@@ -175,8 +175,7 @@ public class JitsiMeetConference
     /**
      * The list of active conference participants.
      */
-    private final List<Participant> participants
-        = new CopyOnWriteArrayList<Participant>();
+    private final List<Participant> participants = new CopyOnWriteArrayList<>();
 
     /**
      * Takes care of conference recording.
@@ -234,12 +233,12 @@ public class JitsiMeetConference
      * @param config the conference configuration instance.
      * @param globalConfig an instance of the global config service.
      */
-    public JitsiMeetConference(String roomName,
-                               String focusUserName,
-                               ProtocolProviderHandler protocolProviderHandler,
-                               ConferenceListener listener,
-                               JitsiMeetConfig config,
-                               JitsiMeetGlobalConfig globalConfig)
+    public JitsiMeetConference(String                   roomName,
+                               String                   focusUserName,
+                               ProtocolProviderHandler  protocolProviderHandler,
+                               ConferenceListener       listener,
+                               JitsiMeetConfig          config,
+                               JitsiMeetGlobalConfig    globalConfig)
     {
         Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
 
@@ -465,8 +464,10 @@ public class JitsiMeetConference
         {
             for (final ChatRoomMember member : chatRoom.getMembers())
             {
-                final boolean[] startMuted = hasToStartMuted(member,
-                    member == chatRoomMember);
+                final boolean[] startMuted
+                    = hasToStartMuted(
+                            member, member == chatRoomMember /* justJoined */);
+
                 inviteChatMember(member, startMuted);
             }
         }
@@ -486,8 +487,8 @@ public class JitsiMeetConference
      * @param startMuted array with values for audio and video that indicates
      * whether the participant should start muted.
      */
-    private void inviteChatMember(final ChatRoomMember chatRoomMember,
-        final boolean[] startMuted)
+    private void inviteChatMember(final ChatRoomMember    chatRoomMember,
+                                  final boolean[]         startMuted)
     {
         if (isFocusMember(chatRoomMember))
             return;
@@ -502,8 +503,8 @@ public class JitsiMeetConference
 
         newParticipant
             = new Participant(
-                (XmppChatMember) chatRoomMember,
-                globalConfig.getMaxSSRCsPerUser());
+                    (XmppChatMember) chatRoomMember,
+                    globalConfig.getMaxSSRCsPerUser());
 
         participants.add(newParticipant);
 
@@ -539,8 +540,8 @@ public class JitsiMeetConference
      * participant have to start video or audio muted. The first element
      * should be associated with the audio and the second with video.
      */
-    private final boolean[] hasToStartMuted(ChatRoomMember member,
-        boolean justJoined)
+    private final boolean[] hasToStartMuted(ChatRoomMember    member,
+                                            boolean           justJoined)
     {
         final boolean[] startMuted = new boolean[] {false, false};
         if(this.startMuted != null && this.startMuted[0] && justJoined)
@@ -564,7 +565,6 @@ public class JitsiMeetConference
             participantNumber = participants.size();
         }
 
-
         if(!startMuted[0])
         {
             Integer startAudioMuted = this.config.getAudioMuted();
@@ -582,7 +582,6 @@ public class JitsiMeetConference
                 startMuted[1] = (participantNumber > startVideoMuted);
             }
         }
-
 
         return startMuted;
     }
@@ -603,7 +602,7 @@ public class JitsiMeetConference
         // Feature discovery
         List<String> features
             = DiscoveryUtil.discoverParticipantFeatures(
-            getXmppProvider(), address);
+                    getXmppProvider(), address);
 
         newParticipant.setSupportedFeatures(features);
 
@@ -697,7 +696,8 @@ public class JitsiMeetConference
      *         using existing bridge and we can not switch to another bridge.
      */
     private ColibriConferenceIQ allocateChannels(
-            Participant peer, List<ContentPacketExtension> contents)
+            Participant                     peer,
+            List<ContentPacketExtension>    contents)
         throws OperationFailedException
     {
         // This method is executed on thread pool.
@@ -855,8 +855,7 @@ public class JitsiMeetConference
     private List<ContentPacketExtension> createOffer(Participant peer)
         throws OperationFailedException
     {
-        List<ContentPacketExtension> contents
-            = new ArrayList<ContentPacketExtension>();
+        List<ContentPacketExtension> contents = new ArrayList<>();
 
         boolean disableIce = !peer.hasIceSupport();
         boolean useDtls = peer.hasDtlsSupport();
@@ -1461,6 +1460,9 @@ public class JitsiMeetConference
             return;
         }
 
+        // FIXME: initiator
+        final boolean initiator = true;
+
         if (participant.hasBundleSupport())
         {
             // Select first transport
@@ -1469,7 +1471,7 @@ public class JitsiMeetConference
             {
                 IceUdpTransportPacketExtension contentTransport
                     = cpe.getFirstChildOfType(
-                        IceUdpTransportPacketExtension.class);
+                            IceUdpTransportPacketExtension.class);
                 if (contentTransport != null)
                 {
                     transport = contentTransport;
@@ -1479,16 +1481,14 @@ public class JitsiMeetConference
             if (transport == null)
             {
                 logger.error(
-                    "No valid transport suppied in transport-update from "
-                        + participant.getChatMember().getContactAddress());
+                        "No valid transport supplied in transport-update from "
+                            + participant.getChatMember().getContactAddress());
                 return;
             }
 
             transport.addChildExtension(
                 new RtcpmuxPacketExtension());
 
-            // FIXME: initiator
-            boolean initiator = true;
             colibriConference.updateBundleTransportInfo(
                 initiator,
                 transport,
@@ -1497,7 +1497,7 @@ public class JitsiMeetConference
         else
         {
             Map<String, IceUdpTransportPacketExtension> transportMap
-                = new HashMap<String, IceUdpTransportPacketExtension>();
+                = new HashMap<>();
 
             for (ContentPacketExtension cpe : contentList)
             {
@@ -1510,12 +1510,10 @@ public class JitsiMeetConference
                 }
             }
 
-            // FIXME: initiator
-            boolean initiator = true;
             colibriConference.updateTransportInfo(
-                initiator,
-                transportMap,
-                participant.getColibriChannelsInfo());
+                    initiator,
+                    transportMap,
+                    participant.getColibriChannelsInfo());
         }
     }
 
@@ -1624,8 +1622,7 @@ public class JitsiMeetConference
             return;
         }
 
-        Map<String, RtpDescriptionPacketExtension> rtpDescMap
-                = new HashMap<String, RtpDescriptionPacketExtension>();
+        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
 
         for (ContentPacketExtension content : contents)
         {
@@ -1732,8 +1729,7 @@ public class JitsiMeetConference
      */
     private List<SourcePacketExtension> getAllSSRCs(String media)
     {
-        List<SourcePacketExtension> mediaSSRCs
-            = new ArrayList<SourcePacketExtension>();
+        List<SourcePacketExtension> mediaSSRCs = new ArrayList<>();
 
         for (Participant peer : participants)
         {
@@ -1758,8 +1754,7 @@ public class JitsiMeetConference
      */
     private List<SourceGroupPacketExtension> getAllSSRCGroups(String media)
     {
-        List<SourceGroupPacketExtension> ssrcGroups
-            = new ArrayList<SourceGroupPacketExtension>();
+        List<SourceGroupPacketExtension> ssrcGroups = new ArrayList<>();
 
         for (Participant peer : participants)
         {
