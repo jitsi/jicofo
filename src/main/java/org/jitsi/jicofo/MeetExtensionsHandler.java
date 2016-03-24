@@ -26,6 +26,7 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
@@ -388,13 +389,24 @@ public class MeetExtensionsHandler
                     String content = LogUtil.getContent(log);
                     if (content != null)
                     {
-                        Event event =
-                            EventFactory.peerConnectionStats(
-                                conference.getColibriConference().getConferenceId(),
-                                participant.getEndpointId(),
-                                content);
-                        if (event != null)
-                            eventAdmin.sendEvent(event);
+                        ColibriConference colibriConference
+                            = conference.getColibriConference();
+                        if (colibriConference != null)
+                        {
+                            Event event =
+                                EventFactory.peerConnectionStats(
+                                    colibriConference.getConferenceId(),
+                                    participant.getEndpointId(),
+                                    content);
+                            if (event != null)
+                                eventAdmin.sendEvent(event);
+                        }
+                        else
+                        {
+                            logger.warn(
+                                    "Unhandled log request"
+                                        + "- no valid Colibri conference");
+                        }
                     }
                 }
                 else
@@ -459,11 +471,11 @@ public class MeetExtensionsHandler
 
         Participant participant
                 = conference.findParticipantForRoomJid(presence.getFrom());
-        if (participant != null)
+        ColibriConference colibriConference = conference.getColibriConference();
+        if (participant != null && colibriConference != null)
         {
             // Check if this conference is valid
-            String conferenceId
-                = conference.getColibriConference().getConferenceId();
+            String conferenceId = colibriConference.getConferenceId();
             if (StringUtils.isNullOrEmpty(conferenceId))
             {
                 logger.error(

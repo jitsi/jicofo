@@ -50,7 +50,8 @@ public class ConferenceUtility
     public String getJvbConferenceId()
     {
         ColibriConference colibriConference = conference.getColibriConference();
-        return colibriConference.getConferenceId();
+        return colibriConference != null
+            ? colibriConference.getConferenceId() : null;
     }
 
     /**
