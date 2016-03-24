@@ -250,7 +250,7 @@ public class JibriRecorder
             startIq.setStreamId(iq.getStreamId());
 
             // Insert name of the room into Jibri START IQ
-            String roomName = MucUtil.extractRoomNameFromMucJid(senderMucJid);
+            String roomName = MucUtil.extractName(senderMucJid);
             startIq.setRoom(roomName);
 
             logger.debug("Starting Jibri recording: " + startIq.toXML());
