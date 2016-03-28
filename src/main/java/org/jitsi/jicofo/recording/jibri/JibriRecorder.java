@@ -381,6 +381,12 @@ public class JibriRecorder
     {
         jibriStatus = newStatus;
 
+        if (JibriIq.Status.OFF.equals(newStatus)
+            && recorderComponentJid != null)
+        {
+            recorderComponentJid = null;
+        }
+
         RecordingStatus recordingStatus = new RecordingStatus();
 
         recordingStatus.setStatus(newStatus);
@@ -429,9 +435,9 @@ public class JibriRecorder
 
         if (IQ.Type.RESULT.equals(stopReply.getType()))
         {
+            // Setting OFF will clear "recorderComponentJid"
             setJibriStatus(JibriIq.Status.OFF);
 
-            recorderComponentJid = null;
             return null;
         }
         else
