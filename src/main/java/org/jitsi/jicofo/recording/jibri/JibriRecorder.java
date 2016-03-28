@@ -220,19 +220,20 @@ public class JibriRecorder
         logger.debug(
                 "Jibri request from " + senderMucJid + " iq: " + iq.toXML());
 
+        // verifyModeratorRole sends 'not_allowed' error on false
+        if (!verifyModeratorRole(iq))
+        {
+            logger.warn(
+                "Ignored Jibri request from non-moderator: "
+                        + senderMucJid);
+            return;
+        }
+
         // start ?
         if (JibriIq.Action.START.equals(action) &&
             JibriIq.Status.OFF.equals(jibriStatus) &&
             recorderComponentJid == null)
         {
-            if (!verifyModeratorRole(iq))
-            {
-                logger.warn(
-                        "Ignored Jibri request from non-moderator: "
-                            + senderMucJid);
-                return;
-            }
-
             // Check if we have Jibri available
             String jibriJid = jibriDetector.selectJibri();
             if (jibriJid == null)
@@ -295,9 +296,6 @@ public class JibriRecorder
             (JibriIq.Status.ON.equals(jibriStatus) ||
              JibriIq.Status.PENDING.equals(jibriStatus)))
         {
-            if (!verifyModeratorRole(iq))
-                return;
-
             XMPPError error = sendStopIQ();
             sendPacket(
                 error == null
@@ -383,6 +381,12 @@ public class JibriRecorder
     {
         jibriStatus = newStatus;
 
+        if (JibriIq.Status.OFF.equals(newStatus)
+            && recorderComponentJid != null)
+        {
+            recorderComponentJid = null;
+        }
+
         RecordingStatus recordingStatus = new RecordingStatus();
 
         recordingStatus.setStatus(newStatus);
@@ -431,9 +435,9 @@ public class JibriRecorder
 
         if (IQ.Type.RESULT.equals(stopReply.getType()))
         {
+            // Setting OFF will clear "recorderComponentJid"
             setJibriStatus(JibriIq.Status.OFF);
 
-            recorderComponentJid = null;
             return null;
         }
         else
