@@ -264,21 +264,6 @@ public class JingleOfferFactory
         // a=rtpmap:104 ISAC/32000
         addPayloadTypeExtension(rtpDesc, 104, "ISAC", 32000);
 
-        // a=rtpmap:0 PCMU/8000
-        addPayloadTypeExtension(rtpDesc, 0, "PCMU", 8000);
-
-        // a=rtpmap:8 PCMA/8000
-        addPayloadTypeExtension(rtpDesc, 8, "PCMA", 8000);
-
-        // a=rtpmap:106 CN/32000
-        addPayloadTypeExtension(rtpDesc, 106, "CN", 32000);
-
-        // a=rtpmap:105 CN/16000
-        addPayloadTypeExtension(rtpDesc, 105, "CN", 16000);
-
-        // a=rtpmap:13 CN/8000
-        addPayloadTypeExtension(rtpDesc, 13, "CN", 8000);
-
         // rtpmap:126 telephone-event/8000
         addPayloadTypeExtension(rtpDesc, 126, Constants.TELEPHONE_EVENT, 8000);
 
