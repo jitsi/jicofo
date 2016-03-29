@@ -62,199 +62,11 @@ public class JingleOfferFactory
         // to construct the offer
         if (mediaType == MediaType.AUDIO)
         {
-            RtpDescriptionPacketExtension rtpDesc
-                = new RtpDescriptionPacketExtension();
-
-            rtpDesc.setMedia("audio");
-
-            RTPHdrExtPacketExtension ssrcAudioLevel
-                = new RTPHdrExtPacketExtension();
-            ssrcAudioLevel.setID("1");
-            ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
-                           rtpDesc.addExtmap(ssrcAudioLevel);
-            RTPHdrExtPacketExtension absSendTime
-                    = new RTPHdrExtPacketExtension();
-            absSendTime.setID("3");
-            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
-            rtpDesc.addExtmap(absSendTime);
-
-            // a=rtpmap:111 opus/48000/2
-            PayloadTypePacketExtension opus
-                = new PayloadTypePacketExtension();
-            opus.setId(111);
-            opus.setName("opus");
-            opus.setClockrate(48000);
-            opus.setChannels(2);
-            rtpDesc.addPayloadType(opus);
-
-            // fmtp:111 minptime=10
-            ParameterPacketExtension opusMinptime
-                = new ParameterPacketExtension();
-            opusMinptime.setName("minptime");
-            opusMinptime.setValue("10");
-            opus.addParameter(opusMinptime);
-            ParameterPacketExtension opusFec
-                    = new ParameterPacketExtension();
-            opusFec.setName("useinbandfec");
-            opusFec.setValue("1");
-            opus.addParameter(opusFec);
-
-            // a=rtpmap:103 ISAC/16000
-            PayloadTypePacketExtension isac16
-                = new PayloadTypePacketExtension();
-            isac16.setId(103);
-            isac16.setName("ISAC");
-            isac16.setClockrate(16000);
-            rtpDesc.addPayloadType(isac16);
-
-            // a=rtpmap:104 ISAC/32000
-            PayloadTypePacketExtension isac32
-                = new PayloadTypePacketExtension();
-            isac32.setId(104);
-            isac32.setName("ISAC");
-            isac32.setClockrate(32000);
-            rtpDesc.addPayloadType(isac32);
-
-            // a=rtpmap:0 PCMU/8000
-            PayloadTypePacketExtension pcmu
-                = new PayloadTypePacketExtension();
-            pcmu.setId(0);
-            pcmu.setName("PCMU");
-            pcmu.setClockrate(8000);
-            rtpDesc.addPayloadType(pcmu);
-
-            // a=rtpmap:8 PCMA/8000
-            PayloadTypePacketExtension pcma
-                = new PayloadTypePacketExtension();
-            pcma.setId(8);
-            pcma.setName("PCMA");
-            pcma.setClockrate(8000);
-            rtpDesc.addPayloadType(pcma);
-
-            // a=rtpmap:106 CN/32000
-            PayloadTypePacketExtension cn
-                = new PayloadTypePacketExtension();
-            cn.setId(106);
-            cn.setName("CN");
-            cn.setClockrate(32000);
-            rtpDesc.addPayloadType(cn);
-
-            // a=rtpmap:105 CN/16000
-            PayloadTypePacketExtension cn16
-                = new PayloadTypePacketExtension();
-            cn16.setId(105);
-            cn16.setName("CN");
-            cn16.setClockrate(16000);
-            rtpDesc.addPayloadType(cn16);
-
-            // a=rtpmap:13 CN/8000
-            PayloadTypePacketExtension cn8
-                = new PayloadTypePacketExtension();
-            cn8.setId(13);
-            cn8.setName("CN");
-            cn8.setClockrate(8000);
-            rtpDesc.addPayloadType(cn8);
-
-            // rtpmap:126 telephone-event/8000
-            PayloadTypePacketExtension teleEvent
-                = new PayloadTypePacketExtension();
-            teleEvent.setId(126);
-            teleEvent.setName("telephone-event");
-            teleEvent.setClockrate(8000);
-            rtpDesc.addPayloadType(teleEvent);
-
-            // a=maxptime:60
-            rtpDesc.setAttribute("maxptime", "60");
-            content.addChildExtension(rtpDesc);
+            addAudioToContent(content);
         }
         else if (mediaType == MediaType.VIDEO)
         {
-            RtpDescriptionPacketExtension rtpDesc
-                = new RtpDescriptionPacketExtension();
-
-            rtpDesc.setMedia("video");
-
-            // This is currently disabled, because we don't support it in the
-            // bridge (and currently clients seem to not use it when
-            // abs-send-time is available).
-            // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
-            //RTPHdrExtPacketExtension toOffset
-            //    = new RTPHdrExtPacketExtension();
-            //toOffset.setID("2");
-            //toOffset.setURI(
-            //    URI.create("urn:ietf:params:rtp-hdrext:toffset"));
-            //rtpDesc.addExtmap(toOffset);
-
-            // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
-            RTPHdrExtPacketExtension absSendTime
-                = new RTPHdrExtPacketExtension();
-            absSendTime.setID("3");
-            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
-            rtpDesc.addExtmap(absSendTime);
-
-            // a=rtpmap:100 VP8/90000
-            int vp8pt = 100;
-            PayloadTypePacketExtension vp8
-                = new PayloadTypePacketExtension();
-            vp8.setId(vp8pt);
-            vp8.setName(Constants.VP8);
-            vp8.setClockrate(90000);
-            rtpDesc.addPayloadType(vp8);
-
-            // a=rtpmap:96 rtx/90000
-            PayloadTypePacketExtension rtx
-                = new PayloadTypePacketExtension();
-            rtx.setId(96);
-            rtx.setName(Constants.RTX);
-            rtx.setClockrate(90000);
-            rtpDesc.addPayloadType(rtx);
-
-            // a=fmtp:96 apt=100
-            ParameterPacketExtension rtxApt
-                = new ParameterPacketExtension();
-            rtxApt.setName("apt");
-            rtxApt.setValue(String.valueOf(vp8pt));
-            vp8.addParameter(rtxApt);
-
-            // a=rtcp-fb:100 ccm fir
-            RtcpFbPacketExtension ccmFir = new RtcpFbPacketExtension();
-            ccmFir.setFeedbackType("ccm");
-            ccmFir.setFeedbackSubtype("fir");
-            vp8.addRtcpFeedbackType(ccmFir);
-
-            // a=rtcp-fb:100 nack
-            RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
-            nack.setFeedbackType("nack");
-            vp8.addRtcpFeedbackType(nack);
-
-            // a=rtcp-fb:100 nack pli
-            RtcpFbPacketExtension nackPli = new RtcpFbPacketExtension();
-            nackPli.setFeedbackType("nack");
-            nackPli.setFeedbackSubtype("pli");
-            vp8.addRtcpFeedbackType(nackPli);
-
-            // a=rtcp-fb:100 goog-remb
-            RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
-            remb.setFeedbackType("goog-remb");
-            vp8.addRtcpFeedbackType(remb);
-
-            // a=rtpmap:116 red/90000
-            PayloadTypePacketExtension red
-                = new PayloadTypePacketExtension();
-            red.setId(116);
-            red.setName("red");
-            red.setClockrate(90000);
-            rtpDesc.addPayloadType(red);
-
-            // a=rtpmap:117 ulpfec/90000
-            PayloadTypePacketExtension ulpfec
-                = new PayloadTypePacketExtension();
-            ulpfec.setId(117);
-            ulpfec.setName("ulpfec");
-            ulpfec.setClockrate(90000);
-            rtpDesc.addPayloadType(ulpfec);
-
-            content.addChildExtension(rtpDesc);
+            addVideoToContent(content);
         }
         else if (mediaType == MediaType.DATA)
         {
@@ -271,7 +83,9 @@ public class JingleOfferFactory
             content.addChildExtension(rdpe);
         }
         else
-            return null;
+        {
+            throw new IllegalArgumentException("mediaType");
+        }
 
         // DTLS-SRTP
         //setDtlsEncryptionOnContent(mediaType, content, null);
@@ -292,5 +106,213 @@ public class JingleOfferFactory
         }
 
         return content;
+    }
+
+    /**
+     * Adds the audio-related extensions for an offer to a
+     * {@link ContentPacketExtension}.
+     * @param content the {@link ContentPacketExtension} to add extensions to.
+     */
+    private static void addVideoToContent(ContentPacketExtension content)
+    {
+        RtpDescriptionPacketExtension rtpDesc
+            = new RtpDescriptionPacketExtension();
+
+        rtpDesc.setMedia("video");
+
+        // This is currently disabled, because we don't support it in the
+        // bridge (and currently clients seem to not use it when
+        // abs-send-time is available).
+        // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
+        //RTPHdrExtPacketExtension toOffset
+        //    = new RTPHdrExtPacketExtension();
+        //toOffset.setID("2");
+        //toOffset.setURI(
+        //    URI.create("urn:ietf:params:rtp-hdrext:toffset"));
+        //rtpDesc.addExtmap(toOffset);
+
+        // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+        RTPHdrExtPacketExtension absSendTime
+            = new RTPHdrExtPacketExtension();
+        absSendTime.setID("3");
+        absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
+        rtpDesc.addExtmap(absSendTime);
+
+        // a=rtpmap:100 VP8/90000
+        int vp8pt = 100;
+        PayloadTypePacketExtension vp8
+            = new PayloadTypePacketExtension();
+        vp8.setId(vp8pt);
+        vp8.setName(Constants.VP8);
+        vp8.setClockrate(90000);
+        rtpDesc.addPayloadType(vp8);
+
+        // a=rtpmap:96 rtx/90000
+        PayloadTypePacketExtension rtx
+            = new PayloadTypePacketExtension();
+        rtx.setId(96);
+        rtx.setName(Constants.RTX);
+        rtx.setClockrate(90000);
+        rtpDesc.addPayloadType(rtx);
+
+        // a=fmtp:96 apt=100
+        ParameterPacketExtension rtxApt
+            = new ParameterPacketExtension();
+        rtxApt.setName("apt");
+        rtxApt.setValue(String.valueOf(vp8pt));
+        vp8.addParameter(rtxApt);
+
+        // a=rtcp-fb:100 ccm fir
+        RtcpFbPacketExtension ccmFir = new RtcpFbPacketExtension();
+        ccmFir.setFeedbackType("ccm");
+        ccmFir.setFeedbackSubtype("fir");
+        vp8.addRtcpFeedbackType(ccmFir);
+
+        // a=rtcp-fb:100 nack
+        RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
+        nack.setFeedbackType("nack");
+        vp8.addRtcpFeedbackType(nack);
+
+        // a=rtcp-fb:100 nack pli
+        RtcpFbPacketExtension nackPli = new RtcpFbPacketExtension();
+        nackPli.setFeedbackType("nack");
+        nackPli.setFeedbackSubtype("pli");
+        vp8.addRtcpFeedbackType(nackPli);
+
+        // a=rtcp-fb:100 goog-remb
+        RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
+        remb.setFeedbackType("goog-remb");
+        vp8.addRtcpFeedbackType(remb);
+
+        // a=rtpmap:116 red/90000
+        PayloadTypePacketExtension red
+            = new PayloadTypePacketExtension();
+        red.setId(116);
+        red.setName("red");
+        red.setClockrate(90000);
+        rtpDesc.addPayloadType(red);
+
+        // a=rtpmap:117 ulpfec/90000
+        PayloadTypePacketExtension ulpfec
+            = new PayloadTypePacketExtension();
+        ulpfec.setId(117);
+        ulpfec.setName("ulpfec");
+        ulpfec.setClockrate(90000);
+        rtpDesc.addPayloadType(ulpfec);
+
+        content.addChildExtension(rtpDesc);
+    }
+
+    /**
+     * Adds the video-related extensions for an offer to a
+     * {@link ContentPacketExtension}.
+     * @param content the {@link ContentPacketExtension} to add extensions to.
+     */
+    private static void addAudioToContent(ContentPacketExtension content)
+    {
+        RtpDescriptionPacketExtension rtpDesc
+            = new RtpDescriptionPacketExtension();
+
+        rtpDesc.setMedia("audio");
+
+        RTPHdrExtPacketExtension ssrcAudioLevel
+            = new RTPHdrExtPacketExtension();
+        ssrcAudioLevel.setID("1");
+        ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
+        rtpDesc.addExtmap(ssrcAudioLevel);
+        RTPHdrExtPacketExtension absSendTime
+                = new RTPHdrExtPacketExtension();
+        absSendTime.setID("3");
+        absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
+        rtpDesc.addExtmap(absSendTime);
+
+        // a=rtpmap:111 opus/48000/2
+        PayloadTypePacketExtension opus
+            = new PayloadTypePacketExtension();
+        opus.setId(111);
+        opus.setName("opus");
+        opus.setClockrate(48000);
+        opus.setChannels(2);
+        rtpDesc.addPayloadType(opus);
+
+        // fmtp:111 minptime=10
+        ParameterPacketExtension opusMinptime
+            = new ParameterPacketExtension();
+        opusMinptime.setName("minptime");
+        opusMinptime.setValue("10");
+        opus.addParameter(opusMinptime);
+        ParameterPacketExtension opusFec
+                = new ParameterPacketExtension();
+        opusFec.setName("useinbandfec");
+        opusFec.setValue("1");
+        opus.addParameter(opusFec);
+
+        // a=rtpmap:103 ISAC/16000
+        PayloadTypePacketExtension isac16
+            = new PayloadTypePacketExtension();
+        isac16.setId(103);
+        isac16.setName("ISAC");
+        isac16.setClockrate(16000);
+        rtpDesc.addPayloadType(isac16);
+
+        // a=rtpmap:104 ISAC/32000
+        PayloadTypePacketExtension isac32
+            = new PayloadTypePacketExtension();
+        isac32.setId(104);
+        isac32.setName("ISAC");
+        isac32.setClockrate(32000);
+        rtpDesc.addPayloadType(isac32);
+
+        // a=rtpmap:0 PCMU/8000
+        PayloadTypePacketExtension pcmu
+            = new PayloadTypePacketExtension();
+        pcmu.setId(0);
+        pcmu.setName("PCMU");
+        pcmu.setClockrate(8000);
+        rtpDesc.addPayloadType(pcmu);
+
+        // a=rtpmap:8 PCMA/8000
+        PayloadTypePacketExtension pcma
+            = new PayloadTypePacketExtension();
+        pcma.setId(8);
+        pcma.setName("PCMA");
+        pcma.setClockrate(8000);
+        rtpDesc.addPayloadType(pcma);
+
+        // a=rtpmap:106 CN/32000
+        PayloadTypePacketExtension cn
+            = new PayloadTypePacketExtension();
+        cn.setId(106);
+        cn.setName("CN");
+        cn.setClockrate(32000);
+        rtpDesc.addPayloadType(cn);
+
+        // a=rtpmap:105 CN/16000
+        PayloadTypePacketExtension cn16
+            = new PayloadTypePacketExtension();
+        cn16.setId(105);
+        cn16.setName("CN");
+        cn16.setClockrate(16000);
+        rtpDesc.addPayloadType(cn16);
+
+        // a=rtpmap:13 CN/8000
+        PayloadTypePacketExtension cn8
+            = new PayloadTypePacketExtension();
+        cn8.setId(13);
+        cn8.setName("CN");
+        cn8.setClockrate(8000);
+        rtpDesc.addPayloadType(cn8);
+
+        // rtpmap:126 telephone-event/8000
+        PayloadTypePacketExtension teleEvent
+            = new PayloadTypePacketExtension();
+        teleEvent.setId(126);
+        teleEvent.setName("telephone-event");
+        teleEvent.setClockrate(8000);
+        rtpDesc.addPayloadType(teleEvent);
+
+        // a=maxptime:60
+        rtpDesc.setAttribute("maxptime", "60");
+        content.addChildExtension(rtpDesc);
     }
 }
