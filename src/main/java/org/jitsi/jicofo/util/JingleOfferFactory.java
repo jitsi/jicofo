@@ -20,6 +20,7 @@ package org.jitsi.jicofo.util;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import org.jitsi.service.neomedia.*;
+import org.jitsi.service.neomedia.codec.*;
 
 import java.net.*;
 
@@ -85,6 +86,7 @@ public class JingleOfferFactory
             opus.setClockrate(48000);
             opus.setChannels(2);
             rtpDesc.addPayloadType(opus);
+
             // fmtp:111 minptime=10
             ParameterPacketExtension opusMinptime
                 = new ParameterPacketExtension();
@@ -96,6 +98,7 @@ public class JingleOfferFactory
             opusFec.setName("useinbandfec");
             opusFec.setValue("1");
             opus.addParameter(opusFec);
+
             // a=rtpmap:103 ISAC/16000
             PayloadTypePacketExtension isac16
                 = new PayloadTypePacketExtension();
@@ -103,6 +106,7 @@ public class JingleOfferFactory
             isac16.setName("ISAC");
             isac16.setClockrate(16000);
             rtpDesc.addPayloadType(isac16);
+
             // a=rtpmap:104 ISAC/32000
             PayloadTypePacketExtension isac32
                 = new PayloadTypePacketExtension();
@@ -110,6 +114,7 @@ public class JingleOfferFactory
             isac32.setName("ISAC");
             isac32.setClockrate(32000);
             rtpDesc.addPayloadType(isac32);
+
             // a=rtpmap:0 PCMU/8000
             PayloadTypePacketExtension pcmu
                 = new PayloadTypePacketExtension();
@@ -117,6 +122,7 @@ public class JingleOfferFactory
             pcmu.setName("PCMU");
             pcmu.setClockrate(8000);
             rtpDesc.addPayloadType(pcmu);
+
             // a=rtpmap:8 PCMA/8000
             PayloadTypePacketExtension pcma
                 = new PayloadTypePacketExtension();
@@ -124,6 +130,7 @@ public class JingleOfferFactory
             pcma.setName("PCMA");
             pcma.setClockrate(8000);
             rtpDesc.addPayloadType(pcma);
+
             // a=rtpmap:106 CN/32000
             PayloadTypePacketExtension cn
                 = new PayloadTypePacketExtension();
@@ -131,6 +138,7 @@ public class JingleOfferFactory
             cn.setName("CN");
             cn.setClockrate(32000);
             rtpDesc.addPayloadType(cn);
+
             // a=rtpmap:105 CN/16000
             PayloadTypePacketExtension cn16
                 = new PayloadTypePacketExtension();
@@ -138,6 +146,7 @@ public class JingleOfferFactory
             cn16.setName("CN");
             cn16.setClockrate(16000);
             rtpDesc.addPayloadType(cn16);
+
             // a=rtpmap:13 CN/8000
             PayloadTypePacketExtension cn8
                 = new PayloadTypePacketExtension();
@@ -145,6 +154,7 @@ public class JingleOfferFactory
             cn8.setName("CN");
             cn8.setClockrate(8000);
             rtpDesc.addPayloadType(cn8);
+
             // rtpmap:126 telephone-event/8000
             PayloadTypePacketExtension teleEvent
                 = new PayloadTypePacketExtension();
@@ -152,6 +162,7 @@ public class JingleOfferFactory
             teleEvent.setName("telephone-event");
             teleEvent.setClockrate(8000);
             rtpDesc.addPayloadType(teleEvent);
+
             // a=maxptime:60
             rtpDesc.setAttribute("maxptime", "60");
             content.addChildExtension(rtpDesc);
@@ -180,31 +191,53 @@ public class JingleOfferFactory
             absSendTime.setID("3");
             absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
             rtpDesc.addExtmap(absSendTime);
+
             // a=rtpmap:100 VP8/90000
+            int vp8pt = 100;
             PayloadTypePacketExtension vp8
                 = new PayloadTypePacketExtension();
-            vp8.setId(100);
-            vp8.setName("VP8");
+            vp8.setId(vp8pt);
+            vp8.setName(Constants.VP8);
             vp8.setClockrate(90000);
             rtpDesc.addPayloadType(vp8);
+
+            // a=rtpmap:96 rtx/90000
+            PayloadTypePacketExtension rtx
+                = new PayloadTypePacketExtension();
+            rtx.setId(96);
+            rtx.setName(Constants.RTX);
+            rtx.setClockrate(90000);
+            rtpDesc.addPayloadType(rtx);
+
+            // a=fmtp:96 apt=100
+            ParameterPacketExtension rtxApt
+                = new ParameterPacketExtension();
+            rtxApt.setName("apt");
+            rtxApt.setValue(String.valueOf(vp8pt));
+            vp8.addParameter(rtxApt);
+
             // a=rtcp-fb:100 ccm fir
             RtcpFbPacketExtension ccmFir = new RtcpFbPacketExtension();
             ccmFir.setFeedbackType("ccm");
             ccmFir.setFeedbackSubtype("fir");
             vp8.addRtcpFeedbackType(ccmFir);
+
             // a=rtcp-fb:100 nack
             RtcpFbPacketExtension nack = new RtcpFbPacketExtension();
             nack.setFeedbackType("nack");
             vp8.addRtcpFeedbackType(nack);
+
             // a=rtcp-fb:100 nack pli
             RtcpFbPacketExtension nackPli = new RtcpFbPacketExtension();
             nackPli.setFeedbackType("nack");
             nackPli.setFeedbackSubtype("pli");
             vp8.addRtcpFeedbackType(nackPli);
+
             // a=rtcp-fb:100 goog-remb
             RtcpFbPacketExtension remb = new RtcpFbPacketExtension();
             remb.setFeedbackType("goog-remb");
             vp8.addRtcpFeedbackType(remb);
+
             // a=rtpmap:116 red/90000
             PayloadTypePacketExtension red
                 = new PayloadTypePacketExtension();
@@ -212,6 +245,7 @@ public class JingleOfferFactory
             red.setName("red");
             red.setClockrate(90000);
             rtpDesc.addPayloadType(red);
+
             // a=rtpmap:117 ulpfec/90000
             PayloadTypePacketExtension ulpfec
                 = new PayloadTypePacketExtension();
