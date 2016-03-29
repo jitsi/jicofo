@@ -377,8 +377,7 @@ public class JibriRecorder
                 && recorderComponentJid != null)
             {
                 logger.info("Recording stopped for: " + roomName);
-                recorderComponentJid = null;
-                updateJibriAvailability();
+                recordingStopped();
             }
             else
             {
@@ -441,9 +440,10 @@ public class JibriRecorder
 
         if (IQ.Type.RESULT.equals(stopReply.getType()))
         {
-            // Setting OFF will clear "recorderComponentJid"
-            setJibriStatus(JibriIq.Status.OFF);
-
+            logger.info(
+                    "Recording stopped on user request in "
+                        + conference.getRoomName());
+            recordingStopped();
             return null;
         }
         else
@@ -459,9 +459,19 @@ public class JibriRecorder
     }
 
     /**
-     * The method is called whenever we receive presence update from the brewery
-     * room. It is supposed to update Jibri availability status to OFF if we
-     * have any Jibri available or to UNDEFINED if there are no any.
+     * Methods clears {@link #recorderComponentJid} which means we're no longer
+     * recording nor in contact with any Jibri instance.
+     * Refreshes recording status in the room based on Jibri availability.
+     */
+    private void recordingStopped()
+    {
+        recorderComponentJid = null;
+        updateJibriAvailability();
+    }
+
+    /**
+     * The method is supposed to update Jibri availability status to OFF if we
+     * have any Jibris available or to UNDEFINED if there are no any.
      */
     private void updateJibriAvailability()
     {
@@ -488,8 +498,7 @@ public class JibriRecorder
         if (jibriJid.equals(recorderComponentJid))
         {
             logger.warn("Our recorder went offline: " + recorderComponentJid);
-            recorderComponentJid = null;
-            updateJibriAvailability();
+            recordingStopped();
         }
     }
 }
