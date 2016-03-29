@@ -166,6 +166,21 @@ public class JingleOfferFactory
         rtxApt.setValue(String.valueOf(vp8pt));
         rtx.addParameter(rtxApt);
 
+        // Chrome doesn't have these when it creates an offer, but they were
+        // observed in a hangouts conference. Not sure whether they have any
+        // effect.
+        // a=rtcp-fb:96 ccm fir
+        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
+
+        // a=rtcp-fb:96 nack
+        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
+
+        // a=rtcp-fb:96 nack pli
+        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
+
+        // a=rtcp-fb:96 goog-remb
+        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
+
         // a=rtpmap:116 red/90000
         //addPayloadTypeExtension(rtpDesc, 116, Constants.RED, 90000);
 
