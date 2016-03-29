@@ -368,24 +368,30 @@ public class JibriRecorder
         JibriIq.Status status = iq.getStatus();
         if (!JibriIq.Status.UNDEFINED.equals(status))
         {
-            logger.info("Updating status from Jibri: " + iq.toXML()
-                + " for " + conference.getRoomName());
+            String roomName = conference.getRoomName();
 
-            setJibriStatus(status);
+            logger.info("Updating status from Jibri: " + iq.toXML()
+                + " for " + roomName);
+
+            if (JibriIq.Status.OFF.equals(status)
+                && recorderComponentJid != null)
+            {
+                logger.info("Recording stopped for: " + roomName);
+                recorderComponentJid = null;
+                updateJibriAvailability();
+            }
+            else
+            {
+                setJibriStatus(status);
+            }
         }
 
         sendPacket(IQ.createResultIQ(iq));
     }
 
-    synchronized private void setJibriStatus(JibriIq.Status newStatus)
+    private void setJibriStatus(JibriIq.Status newStatus)
     {
         jibriStatus = newStatus;
-
-        if (JibriIq.Status.OFF.equals(newStatus)
-            && recorderComponentJid != null)
-        {
-            recorderComponentJid = null;
-        }
 
         RecordingStatus recordingStatus = new RecordingStatus();
 
@@ -452,40 +458,38 @@ public class JibriRecorder
         }
     }
 
-    @Override
-    public void onJibriStatusChanged(String jibriJid, boolean idle)
+    /**
+     * The method is called whenever we receive presence update from the brewery
+     * room. It is supposed to update Jibri availability status to OFF if we
+     * have any Jibri available or to UNDEFINED if there are no any.
+     */
+    private void updateJibriAvailability()
     {
-        // If we're recording then we listen to status coming from our Jibri
-        // through IQs
-        if (recorderComponentJid != null)
-            return;
+        setJibriStatus(
+            jibriDetector.selectJibri() != null
+                ? JibriIq.Status.OFF : JibriIq.Status.UNDEFINED);
+    }
 
-        String jibri = jibriDetector.selectJibri();
-        if (jibri != null)
+    @Override
+    synchronized public void onJibriStatusChanged(String jibriJid, boolean idle)
+    {
+        // We listen to status updates coming from our Jibri through IQs
+        // if recording is in progress(recorder JID is not null),
+        // otherwise it is fine to update Jibri recording availability here
+        if (recorderComponentJid == null)
         {
-            logger.info("Recording enabled");
-            setJibriStatus(JibriIq.Status.OFF);
-        }
-        else
-        {
-            logger.info("Recording disabled - all jibris are busy");
-            setJibriStatus(JibriIq.Status.UNDEFINED);
+            updateJibriAvailability();
         }
     }
 
     @Override
-    public void onJibriOffline(String jibriJid)
+    synchronized public void onJibriOffline(String jibriJid)
     {
         if (jibriJid.equals(recorderComponentJid))
         {
             logger.warn("Our recorder went offline: " + recorderComponentJid);
             recorderComponentJid = null;
-        }
-
-        String jibri = jibriDetector.selectJibri();
-        if (jibri == null && recorderComponentJid == null)
-        {
-            setJibriStatus(JibriIq.Status.UNDEFINED);
+            updateJibriAvailability();
         }
     }
 }
