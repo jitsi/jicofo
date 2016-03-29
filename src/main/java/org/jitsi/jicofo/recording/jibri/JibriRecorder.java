@@ -20,14 +20,17 @@ package org.jitsi.jicofo.recording.jibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
+
+import java.util.concurrent.*;
 
 /**
  * Handles conference recording through Jibri.
@@ -53,6 +56,11 @@ public class JibriRecorder
     private final JitsiMeetConference conference;
 
     /**
+     * The global config used by this instance.
+     */
+    private final JitsiMeetGlobalConfig globalConfig;
+
+    /**
      * Meet tools instance used to inject packet extensions to Jicofo's MUC
      * presence.
      */
@@ -69,17 +77,38 @@ public class JibriRecorder
     private JibriIq.Status jibriStatus = JibriIq.Status.UNDEFINED;
 
     /**
+     * Executor service for used to schedule pending timeout tasks.
+     */
+    private final ScheduledExecutorService scheduledExecutor;
+
+    /**
+     * Reference to scheduled {@link PendingStatusTimeout}
+     */
+    private ScheduledFuture<?> pendingTimeoutTask;
+
+    /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
      *        instance.
      * @param xmpp XMPP operation set which wil be used to send XMPP queries.
+     * @param scheduledExecutor the executor service used by this instance
+     * @param globalConfig the global config that provides some values required
+     *                     by <tt>JibriRecorder</tt> to work.
      */
-    public JibriRecorder(JitsiMeetConference conference,
-                         OperationSetDirectSmackXmpp xmpp)
+    public JibriRecorder(JitsiMeetConference         conference,
+                         OperationSetDirectSmackXmpp xmpp,
+                         ScheduledExecutorService    scheduledExecutor,
+                         JitsiMeetGlobalConfig       globalConfig)
     {
         super(null, xmpp);
 
         this.conference = conference;
+        this.scheduledExecutor = scheduledExecutor;
+        this.globalConfig = globalConfig;
+
+        Assert.notNull(conference, "conference");
+        Assert.notNull(globalConfig, "globalConfig");
+        Assert.notNull(scheduledExecutor, "scheduledExecutor");
 
         ProtocolProviderService protocolService = conference.getXmppProvider();
 
@@ -271,10 +300,13 @@ public class JibriRecorder
 
             if (IQ.Type.RESULT.equals(startReply.getType()))
             {
+                // Store Jibri JID
                 recorderComponentJid = jibriJid;
-
+                // We're now in PENDING state(waiting for Jibri ON update)
                 setJibriStatus(JibriIq.Status.PENDING);
-
+                // We will not wait forever for the Jibri to start
+                schedulePendingTimeout();
+                // ACK the original request
                 sendResultResponse(iq);
                 return;
             }
@@ -313,6 +345,29 @@ public class JibriRecorder
             iq, XMPPError.Condition.bad_request,
             "Unable to handle: '" + action
                 + "' in state: '" + jibriStatus + "'");
+    }
+
+    /**
+     * Method schedules {@link PendingStatusTimeout} which will clear recording
+     * state after {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}.
+     */
+    private void schedulePendingTimeout()
+    {
+        if (pendingTimeoutTask != null)
+        {
+            logger.error("Pending timeout scheduled already!?");
+            return;
+        }
+
+        int pendingTimeout = globalConfig.getJibriPendingTimeout();
+        if (pendingTimeout > 0)
+        {
+            pendingTimeoutTask
+                = scheduledExecutor.schedule(
+                        new PendingStatusTimeout(),
+                        pendingTimeout,
+                        TimeUnit.SECONDS);
+        }
     }
 
     private boolean verifyModeratorRole(JibriIq iq)
@@ -391,6 +446,14 @@ public class JibriRecorder
     private void setJibriStatus(JibriIq.Status newStatus)
     {
         jibriStatus = newStatus;
+
+        // Clear "pending" status timeout if we enter state other than "pending"
+        if (pendingTimeoutTask != null
+                && !JibriIq.Status.PENDING.equals(newStatus))
+        {
+            pendingTimeoutTask.cancel(false);
+            pendingTimeoutTask = null;
+        }
 
         RecordingStatus recordingStatus = new RecordingStatus();
 
@@ -499,6 +562,32 @@ public class JibriRecorder
         {
             logger.warn("Our recorder went offline: " + recorderComponentJid);
             recordingStopped();
+        }
+    }
+
+    /**
+     * Task scheduled after we have received RESULT response from Jibri and
+     * entered PENDING state. Will abort the recording if we do not transit to
+     * ON state after {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}
+     * limit is exceeded.
+     */
+    class PendingStatusTimeout implements Runnable
+    {
+        public void run()
+        {
+            synchronized (JibriRecorder.this)
+            {
+                // Clear this task reference, so it won't be
+                // cancelling itself on status change from PENDING
+                pendingTimeoutTask = null;
+
+                if (JibriIq.Status.PENDING.equals(jibriStatus))
+                {
+                    logger.warn(
+                        "Jibri pending timeout! " + conference.getRoomName());
+                    recordingStopped();
+                }
+            }
         }
     }
 }
