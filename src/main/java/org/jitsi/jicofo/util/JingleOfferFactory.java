@@ -167,10 +167,10 @@ public class JingleOfferFactory
         rtx.addParameter(rtxApt);
 
         // a=rtpmap:116 red/90000
-        addPayloadTypeExtension(rtpDesc, 116, Constants.RED, 90000);
+        //addPayloadTypeExtension(rtpDesc, 116, Constants.RED, 90000);
 
         // a=rtpmap:117 ulpfec/90000
-        addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
+        //addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
 
         content.addChildExtension(rtpDesc);
     }
