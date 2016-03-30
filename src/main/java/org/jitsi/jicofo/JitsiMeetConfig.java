@@ -102,6 +102,11 @@ public class JitsiMeetConfig
      */
     public static final String START_VIDEO_MUTED = "startVideoMuted";
 
+    /**
+     * The name of the "disableRtx" property.
+     */
+    public static final String DISABLE_RTX_PNAME = "disableRtx";
+
     private final Map<String, String> properties;
 
     /**
@@ -178,6 +183,16 @@ public class JitsiMeetConfig
     {
         String mode = properties.get(SIMULCAST_MODE_PNAME);
         return SimulcastMode.fromString(mode);
+    }
+
+    /**
+     * @return {@code true} iff RTX is enabled in this {@link JitsiMeetConfig}.
+     */
+    public boolean isRtxEnabled()
+    {
+        String disableRtxStr = properties.get(DISABLE_RTX_PNAME);
+        return StringUtils.isNullOrEmpty(disableRtxStr)
+            || !Boolean.parseBoolean(disableRtxStr);
     }
 
     /**

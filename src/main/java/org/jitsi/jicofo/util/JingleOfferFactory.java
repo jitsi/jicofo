@@ -49,7 +49,8 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType, boolean disableIce, boolean useDtls)
+            MediaType mediaType, boolean disableIce,
+            boolean useDtls, boolean useRtx)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -66,7 +67,7 @@ public class JingleOfferFactory
         }
         else if (mediaType == MediaType.VIDEO)
         {
-            addVideoToContent(content);
+            addVideoToContent(content, useRtx);
         }
         else if (mediaType == MediaType.DATA)
         {
@@ -113,7 +114,8 @@ public class JingleOfferFactory
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
-    private static void addVideoToContent(ContentPacketExtension content)
+    private static void addVideoToContent(ContentPacketExtension content,
+                                          boolean useRtx)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -155,31 +157,35 @@ public class JingleOfferFactory
         // a=rtcp-fb:100 goog-remb
         vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
 
-        // a=rtpmap:96 rtx/90000
-        PayloadTypePacketExtension rtx
-            = addPayloadTypeExtension(rtpDesc, 96, Constants.RTX, 90000);
+        if (useRtx)
+        {
+            // a=rtpmap:96 rtx/90000
+            PayloadTypePacketExtension rtx
+                = addPayloadTypeExtension(rtpDesc, 96, Constants.RTX, 90000);
 
-        // a=fmtp:96 apt=100
-        ParameterPacketExtension rtxApt
-            = new ParameterPacketExtension();
-        rtxApt.setName("apt");
-        rtxApt.setValue(String.valueOf(vp8pt));
-        rtx.addParameter(rtxApt);
+            // a=fmtp:96 apt=100
+            ParameterPacketExtension rtxApt
+                = new ParameterPacketExtension();
+            rtxApt.setName("apt");
+            rtxApt.setValue(String.valueOf(vp8pt));
+            rtx.addParameter(rtxApt);
 
-        // Chrome doesn't have these when it creates an offer, but they were
-        // observed in a hangouts conference. Not sure whether they have any
-        // effect.
-        // a=rtcp-fb:96 ccm fir
-        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
+            // Chrome doesn't have these when it creates an offer, but they were
+            // observed in a hangouts conference. Not sure whether they have any
+            // effect.
+            // a=rtcp-fb:96 ccm fir
+            rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
 
-        // a=rtcp-fb:96 nack
-        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
+            // a=rtcp-fb:96 nack
+            rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
 
-        // a=rtcp-fb:96 nack pli
-        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
+            // a=rtcp-fb:96 nack pli
+            rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:96 goog-remb
-        rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
+            // a=rtcp-fb:96 goog-remb
+            rtx.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+        }
 
         // a=rtpmap:116 red/90000
         //addPayloadTypeExtension(rtpDesc, 116, Constants.RED, 90000);
