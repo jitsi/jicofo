@@ -77,7 +77,7 @@ public class VersionBroadcaster
      * {@inheritDoc}
      */
     @Override
-    synchronized public void start(BundleContext bundleContext)
+    public void start(BundleContext bundleContext)
         throws Exception
     {
         focusManager
@@ -102,7 +102,7 @@ public class VersionBroadcaster
      * {@inheritDoc}
      */
     @Override
-    synchronized public void stop(BundleContext bundleContext)
+    public void stop(BundleContext bundleContext)
         throws Exception
     {
         super.stop(bundleContext);
@@ -119,7 +119,7 @@ public class VersionBroadcaster
      * {@inheritDoc}
      */
     @Override
-    synchronized public void handleEvent(Event event)
+    public void handleEvent(Event event)
     {
         String topic = event.getTopic();
         if (!topic.equals(EventFactory.FOCUS_JOINED_ROOM_TOPIC)
