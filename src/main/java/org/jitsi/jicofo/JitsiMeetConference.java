@@ -1373,19 +1373,24 @@ public class JitsiMeetConference
 
         participant.setJingleSession(peerJingleSession);
 
+        // Extract and store various session information in the Participant
+        participant.setRTPDescription(answer);
+        participant.addTransportFromJingle(answer);
         participant.addSSRCsFromContent(answer);
-
         participant.addSSRCGroupsFromContent(answer);
 
         logger.info(
             "Received SSRCs from " + peerJingleSession.getAddress()
                 + " " + participant.getSSRCS());
 
-        // Update SSRC groups
-        colibriConference.updateSourcesInfo(
-            participant.getSSRCsCopy(),
-            participant.getSSRCGroupsCopy(),
-            participant.getColibriChannelsInfo());
+        // Update channel info
+        colibriConference.updateChannelsInfo(
+                participant.getColibriChannelsInfo(),
+                participant.getRtpDescriptionMap(),
+                participant.getSSRCsCopy(),
+                participant.getSSRCGroupsCopy(),
+                participant.getBundleTransport(),
+                participant.getTransportMap());
 
         for (Participant peerToNotify : participants)
         {
@@ -1434,12 +1439,6 @@ public class JitsiMeetConference
 
             participant.clearSsrcsToRemove();
         }
-
-        // Notify the bridge about eventual transport included
-        onTransportInfo(peerJingleSession, answer);
-
-        // Notify the bridge about eventual RTP description included.
-        onDescriptionInfo(peerJingleSession, answer);
     }
 
     /**
@@ -1460,59 +1459,20 @@ public class JitsiMeetConference
             return;
         }
 
-        // FIXME: initiator
-        final boolean initiator = true;
+        // Participant will figure out bundle or non-bundle transport
+        // based on it's hasBundleSupport() value
+        participant.addTransportFromJingle(contentList);
 
         if (participant.hasBundleSupport())
         {
-            // Select first transport
-            IceUdpTransportPacketExtension transport = null;
-            for (ContentPacketExtension cpe : contentList)
-            {
-                IceUdpTransportPacketExtension contentTransport
-                    = cpe.getFirstChildOfType(
-                            IceUdpTransportPacketExtension.class);
-                if (contentTransport != null)
-                {
-                    transport = contentTransport;
-                    break;
-                }
-            }
-            if (transport == null)
-            {
-                logger.error(
-                        "No valid transport supplied in transport-update from "
-                            + participant.getChatMember().getContactAddress());
-                return;
-            }
-
-            transport.addChildExtension(
-                new RtcpmuxPacketExtension());
-
             colibriConference.updateBundleTransportInfo(
-                initiator,
-                transport,
-                participant.getColibriChannelsInfo());
+                    participant.getBundleTransport(),
+                    participant.getColibriChannelsInfo());
         }
         else
         {
-            Map<String, IceUdpTransportPacketExtension> transportMap
-                = new HashMap<>();
-
-            for (ContentPacketExtension cpe : contentList)
-            {
-                IceUdpTransportPacketExtension transport
-                    = cpe.getFirstChildOfType(
-                            IceUdpTransportPacketExtension.class);
-                if (transport != null)
-                {
-                    transportMap.put(cpe.getName(), transport);
-                }
-            }
-
             colibriConference.updateTransportInfo(
-                    initiator,
-                    transportMap,
+                    participant.getTransportMap(),
                     participant.getColibriChannelsInfo());
         }
     }
@@ -1600,51 +1560,6 @@ public class JitsiMeetConference
         removeSSRCs(sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove);
     }
 
-    public void onDescriptionInfo(JingleSession session,
-                                  List<ContentPacketExtension> contents)
-    {
-        if (session == null)
-        {
-            logger.error("session is null.");
-            return;
-        }
-
-        if (contents == null || contents.isEmpty())
-        {
-            logger.error("contents is null.");
-            return;
-        }
-
-        Participant participant = findParticipantForJingleSession(session);
-        if (participant == null)
-        {
-            logger.error("no peer state for " + session.getAddress());
-            return;
-        }
-
-        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
-
-        for (ContentPacketExtension content : contents)
-        {
-            RtpDescriptionPacketExtension rtpDesc
-                    = content.getFirstChildOfType(
-                RtpDescriptionPacketExtension.class);
-
-            if (rtpDesc == null)
-            {
-                continue;
-            }
-
-            rtpDescMap.put(content.getName(), rtpDesc);
-        }
-
-        if (!rtpDescMap.isEmpty())
-        {
-            colibriConference.updateRtpDescription(
-                rtpDescMap, participant.getColibriChannelsInfo());
-        }
-    }
-
     /**
      * Removes SSRCs from the conference and notifies other participants.
      *
@@ -1653,9 +1568,9 @@ public class JitsiMeetConference
      * @param ssrcsToRemove the {@link MediaSSRCMap} of SSRCs to be removed from
      *                      the conference.
      */
-    private void removeSSRCs(JingleSession sourceJingleSession,
-                             MediaSSRCMap ssrcsToRemove,
-                             MediaSSRCGroupMap ssrcGroupsToRemove)
+    private void removeSSRCs(JingleSession        sourceJingleSession,
+                             MediaSSRCMap         ssrcsToRemove,
+                             MediaSSRCGroupMap    ssrcGroupsToRemove)
     {
         Participant sourcePeer
             = findParticipantForJingleSession(sourceJingleSession);

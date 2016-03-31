@@ -251,6 +251,33 @@ public class MediaSSRCGroupMap
         return str.toString();
     }
 
+    /**
+     * Converts to a map of <tt>SourceGroupPacketExtension</tt>.
+     * @return a map of Colibri content's names to the lists of
+     *         <tt>SourceGroupPacketExtension</tt> which reflects current state
+     *         of this <tt>MediaSSRCGroupMap</tt>.
+     */
+    public Map<String, List<SourceGroupPacketExtension>> toMap()
+    {
+        Map<String, List<SourceGroupPacketExtension>> map = new HashMap<>();
+
+        for (String media : groupMap.keySet())
+        {
+            List<SSRCGroup> groups = groupMap.get(media);
+            List<SourceGroupPacketExtension> peGroups
+                = new ArrayList<>(groups.size());
+
+            for (SSRCGroup group : groups)
+            {
+                peGroups.add(group.getExtensionCopy());
+            }
+
+            map.put(media, peGroups);
+        }
+
+        return map;
+    }
+
     @Override
     public String toString()
     {
