@@ -101,7 +101,8 @@ public class JvbRecorder
         Packet reply
             = xmpp.getXmppConnection()
                     .sendPacketAndGetReply(toggleRecordingIq);
-        logger.info("REC reply received: " + reply.toXML());
+        logger.info("REC reply received: "
+            + (reply != null ? reply.toXML() : "timeout"));
         if (reply instanceof ColibriConferenceIQ)
         {
             ColibriConferenceIQ colibriReply = (ColibriConferenceIQ) reply;

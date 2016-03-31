@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
@@ -32,8 +31,6 @@ import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.log.*;
-import org.jitsi.jicofo.recording.*;
-import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -42,8 +39,6 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
-
-import org.jivesoftware.smack.packet.*;
 
 import org.osgi.framework.*;
 
@@ -184,15 +179,15 @@ public class JitsiMeetConference
         = new CopyOnWriteArrayList<Participant>();
 
     /**
+     * Takes care of conference recording.
+     */
+    private JitsiMeetRecording recording;
+
+    /**
      * Information about Jitsi Meet conference services like videobridge,
      * SIP gateway, Jirecon.
      */
     private JitsiMeetServices services;
-
-    /**
-     * Recording functionality implementation.
-     */
-    private Recorder recorder;
 
     /**
      * Chat room roles and presence handler.
@@ -223,12 +218,6 @@ public class JitsiMeetConference
      * by Jicofo user.
      */
     private final String etherpadName;
-
-    /**
-     * Keeps a record whether user has activated recording before other
-     * participants has joined and the actual conference has been created.
-     */
-    private RecordingState earlyRecordingState = null;
 
     /**
      * Bridge <tt>EventHandler</tt> registration.
@@ -300,6 +289,8 @@ public class JitsiMeetConference
 
             services
                 = ServiceUtils.getService(osgiCtx, JitsiMeetServices.class);
+
+            recording = new JitsiMeetRecording(this, services);
 
             bridgeSelector = services.getBridgeSelector();
 
@@ -400,11 +391,8 @@ public class JitsiMeetConference
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
 
         // init recorder
-        Recorder recorder = getRecorder();
-        if (recorder != null)
-        {
-            recorder.init();
-        }
+        if (recording != null)
+            recording.init();
 
         // Trigger focus joined room event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
@@ -414,67 +402,6 @@ public class JitsiMeetConference
                     EventFactory.focusJoinedRoom(
                             roomName,
                             getId()));
-        }
-    }
-
-    private OperationSetDirectSmackXmpp getDirectXmppOpSet()
-    {
-        return protocolProviderHandler.getOperationSet(
-            OperationSetDirectSmackXmpp.class);
-    }
-
-    /**
-     * Lazy initializer for {@link #recorder}. If there is Jirecon component
-     * service available then {@link JireconRecorder} is used. Otherwise we fall
-     * back to direct videobridge communication through {@link JvbRecorder}.
-     *
-     * @return {@link Recorder} implementation used by this instance.
-     */
-    private Recorder getRecorder()
-    {
-        if (recorder != null)
-            return recorder;
-
-        OperationSetDirectSmackXmpp xmppOpSet = getDirectXmppOpSet();
-
-        if (services.getJibriDetector() != null)
-        {
-            recorder = new JibriRecorder(this, xmppOpSet);
-            return recorder;
-        }
-
-        String recorderService = services.getJireconRecorder();
-        if (!StringUtils.isNullOrEmpty(recorderService))
-        {
-            recorder
-                = new JireconRecorder(
-                        getFocusJid(),
-                        services.getJireconRecorder(), xmppOpSet);
-            return recorder;
-        }
-        else
-        {
-            logger.warn("No recorder service discovered - using JVB");
-
-            if(colibriConference == null)
-            {
-                return null;
-            }
-
-            String videobridge = colibriConference.getJitsiVideobridge();
-            if (StringUtils.isNullOrEmpty(videobridge))
-            {
-                //Unable to create JVB recorder, conference not started yet
-                return null;
-            }
-
-            recorder
-                = new JvbRecorder(
-                        colibriConference.getConferenceId(),
-                        videobridge,
-                        colibriConference.getName(),
-                        xmppOpSet);
-            return recorder;
         }
     }
 
@@ -852,6 +779,9 @@ public class JitsiMeetConference
                                     getId(),
                                     jvb));
                     }
+
+                    if (recording != null)
+                        recording.onConferenceAllocated();
                 }
                 return peerChannels;
             }
@@ -962,50 +892,6 @@ public class JitsiMeetConference
 
         if (peerChannels == null)
             return null;
-
-        if (earlyRecordingState != null)
-        {
-            RecordingState recState = earlyRecordingState;
-            earlyRecordingState = null;
-
-            Recorder rec = getRecorder();
-            if(rec == null)
-                logger.error("No recorder found");
-            else
-            {
-                boolean isTokenCorrect = recorder.setRecording(
-                    recState.from,
-                    recState.token,
-                    recState.state,
-                    recState.path);
-
-                if (!isTokenCorrect)
-                {
-                    logger.info(
-                        "Incorrect recording token received ! Session: "
-                            + chatRoom.getName());
-                }
-
-                if (recorder.isRecording())
-                {
-                    ColibriConferenceIQ response = new ColibriConferenceIQ();
-
-                    response.setType(IQ.Type.SET);
-                    response.setTo(recState.from);
-                    response.setFrom(recState.to);
-
-                    if(colibriConference != null)
-                        response.setName(colibriConference.getName());
-
-                    response.setRecording(
-                        new ColibriConferenceIQ.Recording(State.ON));
-
-                    protocolProviderHandler.getOperationSet(
-                        OperationSetDirectSmackXmpp.class).getXmppConnection()
-                        .sendPacket(response);
-                }
-            }
-        }
 
         peer.setColibriChannelsInfo(peerChannels);
 
@@ -1277,11 +1163,13 @@ public class JitsiMeetConference
      */
     private void disposeConference()
     {
-        // FIXME: Does it make sense to put recorder here ?
-        if (recorder != null)
+        // We dispose the recorder here as the recording session is usually
+        // bound to Colibri conference instance which will be invalid once we
+        // dispose/expire the conference on the bridge
+        // FIXME re-init recorder after ICE restart
+        if (recording != null)
         {
-            recorder.dispose();
-            recorder = null;
+            recording.dispose();
         }
 
         if (colibriConference != null)
@@ -1910,61 +1798,7 @@ public class JitsiMeetConference
         return protocolProviderHandler.getProtocolProvider();
     }
 
-    /**
-     * Attempts to modify conference recording state.
-     *
-     * @param from JID of the participant that wants to modify recording state.
-     * @param token recording security token that will be verified on modify
-     *              attempt.
-     * @param state the new recording state to set.
-     * @param path output recording path(recorder implementation and deployment
-     *             dependent).
-     * @param to the received colibri packet destination.
-     * @return new recording state(unchanged if modify attempt has failed).
-     */
-    public State modifyRecordingState(
-            String from, String token, State state, String path, String to)
-    {
-        ChatRoomMember member = findMember(from);
-        if (member == null)
-        {
-            logger.error("No member found for address: " + from);
-            return State.OFF;
-        }
-        if (ChatRoomMemberRole.MODERATOR.compareTo(member.getRole()) < 0)
-        {
-            logger.info("Recording - request denied, not a moderator: " + from);
-            return State.OFF;
-        }
-
-        Recorder recorder = getRecorder();
-        if (recorder == null)
-        {
-            if(state.equals(State.OFF))
-            {
-                earlyRecordingState = null;
-                return State.OFF;
-            }
-
-            // save for later dispatching
-            earlyRecordingState = new RecordingState(
-                from, token, state, path, to);
-            return State.PENDING;
-        }
-
-        boolean isTokenCorrect
-            = recorder.setRecording(from, token, state, path);
-        if (!isTokenCorrect)
-        {
-            logger.info(
-                "Incorrect recording token received ! Session: "
-                    + chatRoom.getName());
-        }
-
-        return recorder.isRecording() ? State.ON : State.OFF;
-    }
-
-    private ChatRoomMember findMember(String from)
+    ChatRoomMember findMember(String from)
     {
         return chatRoom != null ?
             chatRoom.findChatMember(from) : null;
@@ -2128,6 +1962,17 @@ public class JitsiMeetConference
     }
 
     /**
+     * Returns <tt>JitsiMeetRecording</tt> for this conference.
+     * @return <tt>JitsiMeetRecording</tt> instance for this conference or
+     *         <tt>null</tt> if it's not available yet(should be after we join
+     *         the MUC).
+     */
+    public JitsiMeetRecording getRecording()
+    {
+        return recording;
+    }
+
+    /**
      * The interface used to listen for conference events.
      */
     public interface ConferenceListener
@@ -2146,48 +1991,5 @@ public class JitsiMeetConference
     public void setStartMuted(boolean[] startMuted)
     {
         this.startMuted = startMuted;
-    }
-
-    /**
-     * Saves early recording requests by user. Dispatched when new participant
-     * joins.
-     */
-    private static class RecordingState
-    {
-        /**
-         * JID of the participant that wants to modify recording state.
-         */
-        String from;
-
-        /**
-         * Recording security token that will be verified on modify attempt.
-         */
-        String token;
-
-        /**
-         * The new recording state to set.
-         */
-        State state;
-
-        /**
-         * Output recording path(recorder implementation
-         * and deployment dependent).
-         */
-        String path;
-
-        /**
-         * The received colibri packet destination.
-         */
-        String to;
-
-        public RecordingState(String from, String token,
-            State state, String path, String to)
-        {
-            this.from = from;
-            this.token = token;
-            this.state = state;
-            this.path = path;
-            this.to = to;
-        }
     }
 }
