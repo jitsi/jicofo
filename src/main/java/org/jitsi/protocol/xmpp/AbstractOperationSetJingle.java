@@ -153,7 +153,9 @@ public abstract class AbstractOperationSetJingle
             else
             {
                 logger.error(
-                        "Timeout waiting for session-accept from " + address);
+                        "Timeout waiting for RESULT response to "
+                            + "'session-initiate' request from "
+                            + address);
                 return false;
             }
         }
