@@ -1235,7 +1235,8 @@ public class JitsiMeetConference
 
                 removeSSRCs(peerJingleSession,
                         leftPeer.getSSRCsCopy(),
-                        leftPeer.getSSRCGroupsCopy());
+                        leftPeer.getSSRCGroupsCopy(),
+                        false /* no JVB update - will expire */);
 
                 ColibriConferenceIQ peerChannels
                         = leftPeer.getColibriChannelsInfo();
@@ -1557,7 +1558,8 @@ public class JitsiMeetConference
         MediaSSRCGroupMap ssrcGroupsToRemove
             = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
-        removeSSRCs(sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove);
+        removeSSRCs(
+                sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove, true);
     }
 
     /**
@@ -1567,10 +1569,13 @@ public class JitsiMeetConference
      *                            being removed.
      * @param ssrcsToRemove the {@link MediaSSRCMap} of SSRCs to be removed from
      *                      the conference.
+     * @param updateChannels tells whether or not SSRC update request should be
+     *                       sent to the bridge.
      */
     private void removeSSRCs(JingleSession        sourceJingleSession,
                              MediaSSRCMap         ssrcsToRemove,
-                             MediaSSRCGroupMap    ssrcGroupsToRemove)
+                             MediaSSRCGroupMap    ssrcGroupsToRemove,
+                             boolean              updateChannels)
     {
         Participant sourcePeer
             = findParticipantForJingleSession(sourceJingleSession);
@@ -1600,10 +1605,13 @@ public class JitsiMeetConference
         ssrcGroupsToRemove = removedGroups;
 
         // Updates SSRC Groups on the bridge
-        colibriConference.updateSourcesInfo(
-            sourcePeer.getSSRCsCopy(),
-            sourcePeer.getSSRCGroupsCopy(),
-            sourcePeer.getColibriChannelsInfo());
+        if (updateChannels)
+        {
+            colibriConference.updateSourcesInfo(
+                    sourcePeer.getSSRCsCopy(),
+                    sourcePeer.getSSRCGroupsCopy(),
+                    sourcePeer.getColibriChannelsInfo());
+        }
 
         logger.info(
             "Removing " + sourceJingleSession.getAddress()
