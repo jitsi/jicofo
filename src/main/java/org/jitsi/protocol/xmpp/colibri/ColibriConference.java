@@ -62,19 +62,19 @@ public interface ColibriConference
      * @param config <tt>JitsiMeetConfig</tt> to be used for allocating
      *               Colibri channels in this conference.
      */
-    public void setConfig(JitsiMeetConfig config);
+    void setConfig(JitsiMeetConfig config);
 
     /**
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
-    public void setName(String name);
+    void setName(String name);
 
     /**
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
-    public String getName();
+    String getName();
 
     /**
      * Returns <tt>true</tt> if conference has been allocated during last
@@ -85,7 +85,7 @@ public interface ColibriConference
      * conference ID == null before operation, so it can't be used to detect
      * conference created event.
      */
-    public boolean hasJustAllocated();
+    boolean hasJustAllocated();
 
     /**
      * Creates channels on the videobridge for given parameters.
@@ -102,11 +102,11 @@ public interface ColibriConference
      *                                  network or bridge failure.
      */
     ColibriConferenceIQ createColibriChannels(
-        boolean useBundle,
-        String endpointName,
-        boolean peerIsInitiator,
-        List<ContentPacketExtension> contents)
-        throws OperationFailedException;
+            boolean                         useBundle,
+            String                          endpointName,
+            boolean                         peerIsInitiator,
+            List<ContentPacketExtension>    contents)
+        throws    OperationFailedException;
 
     /**
      * Does Colibri channels update of RTP description, SSRC and transport
@@ -155,8 +155,8 @@ public interface ColibriConference
      * updated on the bridge.
      */
     void updateRtpDescription(
-            Map<String, RtpDescriptionPacketExtension> map,
-            ColibriConferenceIQ localChannelsInfo);
+            Map<String, RtpDescriptionPacketExtension>    map,
+            ColibriConferenceIQ                           localChannelsInfo);
 
     /**
      * Updates transport information for active channels
@@ -169,8 +169,8 @@ public interface ColibriConference
      *                          on the bridge.
      */
     void updateTransportInfo(
-        Map<String, IceUdpTransportPacketExtension> map,
-        ColibriConferenceIQ localChannelsInfo);
+            Map<String, IceUdpTransportPacketExtension>   map,
+            ColibriConferenceIQ                           localChannelsInfo);
 
     /**
      * Updates simulcast layers on the bridge.
@@ -182,9 +182,9 @@ public interface ColibriConference
      *                          on the bridge.</tt>
      */
     void updateSourcesInfo(
-        MediaSSRCMap ssrcs,
-        MediaSSRCGroupMap ssrcGroups,
-        ColibriConferenceIQ localChannelsInfo);
+            MediaSSRCMap           ssrcs,
+            MediaSSRCGroupMap      ssrcGroups,
+            ColibriConferenceIQ    localChannelsInfo);
 
     /**
      * Updates channel bundle transport information for channels described by
@@ -199,8 +199,8 @@ public interface ColibriConference
      *                          bundle group.
      */
     void updateBundleTransportInfo(
-        IceUdpTransportPacketExtension transport,
-        ColibriConferenceIQ localChannelsInfo);
+            IceUdpTransportPacketExtension    transport,
+            ColibriConferenceIQ               localChannelsInfo);
 
     /**
      * Expires the channels described by given <tt>ColibriConferenceIQ</tt>.
