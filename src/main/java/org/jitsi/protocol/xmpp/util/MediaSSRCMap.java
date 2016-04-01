@@ -88,9 +88,10 @@ public class MediaSSRCMap
      */
     public void add(MediaSSRCMap mapToMerge)
     {
-        for (String media : mapToMerge.ssrcs.keySet())
+        for (Map.Entry<String, List<SourcePacketExtension>> e
+                : mapToMerge.ssrcs.entrySet())
         {
-            addSSRCs(media, mapToMerge.ssrcs.get(media));
+            addSSRCs(e.getKey(), e.getValue());
         }
     }
 
@@ -193,11 +194,12 @@ public class MediaSSRCMap
         Map<String, List<SourcePacketExtension>> mapCopy
             = new HashMap<String, List<SourcePacketExtension>>();
 
-        for (String media : ssrcs.keySet())
+        for (Map.Entry<String, List<SourcePacketExtension>> e
+                : ssrcs.entrySet())
         {
+            String media = e.getKey();
             List<SourcePacketExtension> listCopy
-                = new ArrayList<SourcePacketExtension>(
-                ssrcs.get(media));
+                = new ArrayList<>(e.getValue());
 
             mapCopy.put(media, listCopy);
         }
