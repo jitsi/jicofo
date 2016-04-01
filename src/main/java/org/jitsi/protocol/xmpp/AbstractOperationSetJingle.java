@@ -24,6 +24,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
+
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -90,11 +91,11 @@ public abstract class AbstractOperationSetJingle
      * participant will start video muted.
      */
     @Override
-    public boolean initiateSession(boolean useBundle,
-                                String address,
-                                List<ContentPacketExtension> contents,
-                                JingleRequestHandler requestHandler,
-                                boolean[] startMuted)
+    public boolean initiateSession(boolean                      useBundle,
+                                   String                       address,
+                                   List<ContentPacketExtension> contents,
+                                   JingleRequestHandler         requestHandler,
+                                   boolean[]                    startMuted)
     {
         logger.info("INVITE PEER: " + address);
 
@@ -103,12 +104,38 @@ public abstract class AbstractOperationSetJingle
 
         sessions.put(sid, session);
 
+        JingleIQ inviteIQ = createInviteIQ(
+                sid, useBundle, address, contents, startMuted);
+
+        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+
+        return wasInviteAccepted(session, reply);
+    }
+
+    /**
+     * Creates Jingle 'session-initiate' IQ for given parameters.
+     *
+     * @param sessionId Jingle session ID
+     * @param useBundle <tt>true</tt> if bundled transport is being used or
+     * <tt>false</tt> otherwise
+     * @param address the XMPP address where the IQ will be sent
+     * @param contents the list of Jingle contents which describes the actual
+     * offer
+     * @param startMuted an array where the first value stands for "start with
+     * audio muted" and the seconds one for "start video muted"
+     *
+     * @return New instance of <tt>JingleIQ</tt> filled up with the details
+     * provided as parameters.
+     */
+    private JingleIQ createInviteIQ(String                          sessionId,
+                                    boolean                         useBundle,
+                                    String                          address,
+                                    List<ContentPacketExtension>    contents,
+                                    boolean[]                       startMuted)
+    {
         JingleIQ inviteIQ
             = JinglePacketFactory.createSessionInitiate(
-                    getOurJID(),
-                    address,
-                    sid,
-                    contents);
+                    getOurJID(), address, sessionId, contents);
 
         if (useBundle)
         {
@@ -125,6 +152,8 @@ public abstract class AbstractOperationSetJingle
             }
         }
 
+        // FIXME Move this to a place where offer's contents are created or
+        // convert the array to a list of extra PacketExtensions
         if(startMuted[0] || startMuted[1])
         {
             StartMutedPacketExtension startMutedExt
@@ -134,8 +163,24 @@ public abstract class AbstractOperationSetJingle
             inviteIQ.addExtension(startMutedExt);
         }
 
-        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+        return inviteIQ;
+    }
 
+    /**
+     * Checks based on supplied <tt>reply</tt> IQ value whether or not given
+     * <tt>JingleSession</tt> has been accepted by the client.
+     *
+     * @param session <tt>JingleSession</tt> instance for which we're evaluating
+     * the response value.
+     * @param reply <tt>IQ</tt> response to Jingle invite IQ or <tt>null</tt> in
+     * case of timeout.
+     *
+     * @return <tt>true</tt> if invite IQ for which we're evaluating the value
+     * of response packet is considered accepted or <tt>false</tt> otherwise.
+     */
+    private boolean wasInviteAccepted(JingleSession session, IQ reply)
+    {
+        String address = session.getAddress();
         if (reply == null)
         {
             // XXX By the time the acknowledgement timeout occurs, we may have
@@ -166,7 +211,7 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Failed to send session-initiate to " + address
+                    "Failed to send 'session-initiate' to " + address
                         + ", error: " + reply.getError());
             return false;
         }
@@ -243,9 +288,9 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendAddSourceIQ(MediaSSRCMap ssrcs,
-                                MediaSSRCGroupMap ssrcGroupMap,
-                                JingleSession session)
+    public void sendAddSourceIQ(MediaSSRCMap         ssrcs,
+                                MediaSSRCGroupMap    ssrcGroupMap,
+                                JingleSession        session)
     {
         JingleIQ addSourceIq = new JingleIQ();
 
@@ -349,9 +394,9 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendRemoveSourceIQ(MediaSSRCMap ssrcs,
-                                   MediaSSRCGroupMap ssrcGroupMap,
-                                   JingleSession session)
+    public void sendRemoveSourceIQ(MediaSSRCMap         ssrcs,
+                                   MediaSSRCGroupMap    ssrcGroupMap,
+                                   JingleSession        session)
     {
         JingleIQ removeSourceIq = new JingleIQ();
 
