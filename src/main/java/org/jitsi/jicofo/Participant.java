@@ -66,12 +66,12 @@ public class Participant
     /**
      * Peer's media SSRCs.
      */
-    private MediaSSRCMap ssrcs = new MediaSSRCMap();
+    private final MediaSSRCMap ssrcs = new MediaSSRCMap();
 
     /**
      * Peer's media SSRC groups.
      */
-    private MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
+    private final MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
 
     /**
      * SSRCs received from other peers scheduled for later addition, because

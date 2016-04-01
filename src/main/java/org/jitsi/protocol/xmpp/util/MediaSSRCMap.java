@@ -33,8 +33,7 @@ public class MediaSSRCMap
     /**
      * The media SSRC map storage.
      */
-    private Map<String, List<SourcePacketExtension>> ssrcs
-        = new HashMap<String, List<SourcePacketExtension>>();
+    private final Map<String, List<SourcePacketExtension>> ssrcs;
 
     /**
      * Creates new empty instance of <tt>MediaSSRCMap</tt>.
