@@ -73,4 +73,21 @@ public interface JingleRequestHandler
      */
     void onTransportInfo(JingleSession jingleSession,
                          List<ContentPacketExtension> contents);
+
+    /**
+     * Called when 'transport-accept' IQ is received from the client.
+     *
+     * @param jingleSession the session that has received the notification
+     * @param contents content list that contains media transport description
+     */
+    void onTransportAccept(JingleSession jingleSession,
+                           List<ContentPacketExtension> contents);
+
+    /**
+     * Called when 'transport-reject' IQ is received from the client.
+     *
+     * @param jingleSession the session that has received the notification
+     * @param rejectIq full reject IQ provided for further analysis purposes
+     */
+    void onTransportReject(JingleSession jingleSession, JingleIQ rejectIq);
 }

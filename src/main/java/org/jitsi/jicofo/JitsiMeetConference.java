@@ -138,9 +138,18 @@ public class JitsiMeetConference
     private OperationSetColibriConference colibri;
 
     /**
-     * instance of Colibri conference used in this conference.
+     * Instance of Colibri conference used in this conference. It will have
+     * <tt>null</tt> value only when the conference has been disposed. To avoid
+     * hitting <tt>null</tt> during conference restart all access must be
+     * synchronized on {@link #colibriConfSyncRoot}.
      */
     private volatile ColibriConference colibriConference;
+
+    /**
+     * Write to {@link #colibriConference} is synchronized on this
+     * <tt>Object</tt>.
+     */
+    private final Object colibriConfSyncRoot = new Object();
 
     /**
      * Jitsi Meet tool used for specific operations like adding presence
@@ -324,7 +333,10 @@ public class JitsiMeetConference
 
         protocolProviderHandler.removeRegistrationListener(this);
 
-        disposeConference();
+        synchronized (colibriConfSyncRoot)
+        {
+            disposeConference();
+        }
 
         leaveTheRoom();
 
@@ -423,15 +435,12 @@ public class JitsiMeetConference
             return;
         }
 
-        // FIXME: verify
-        if (colibriConference == null)
+        synchronized (colibriConfSyncRoot)
         {
-            colibriConference = colibri.createNewConference();
-
-            colibriConference.setConfig(config);
-
-            String roomName = MucUtil.extractName(chatRoom.getName());
-            colibriConference.setName(roomName);
+            if (colibriConference == null)
+            {
+                initNewColibriConference();
+            }
         }
 
         // Invite all not invited yet
@@ -452,6 +461,18 @@ public class JitsiMeetConference
             final boolean[] startMuted = hasToStartMuted(chatRoomMember, true);
             inviteChatMember(chatRoomMember, startMuted, colibriConference);
         }
+    }
+
+    private void initNewColibriConference()
+    {
+        colibriConference = colibri.createNewConference();
+
+        colibriConference.setConfig(config);
+
+        String roomName = MucUtil.extractName(chatRoom.getName());
+        colibriConference.setName(roomName);
+
+        bridgeHasFailed = false;
     }
 
     /**
@@ -490,7 +511,8 @@ public class JitsiMeetConference
         // this on separate thread.
         FocusBundleActivator.getSharedThreadPool().submit(
                 new ChannelAllocator(
-                        this, colibriConference, newParticipant, startMuted));
+                        this, colibriConference, newParticipant,
+                        startMuted, false /* re-invite */));
     }
 
     /**
@@ -636,6 +658,10 @@ public class JitsiMeetConference
             if (!bridgeHasFailed && protocolProviderHandler.isRegistered())
             {
                 colibriConference.expireConference();
+            }
+            else
+            {
+                colibriConference.dispose();
             }
             colibriConference = null;
         }
@@ -859,13 +885,16 @@ public class JitsiMeetConference
                     + participant.getSSRCS());
 
         // Update channel info
-        colibriConference.updateChannelsInfo(
-                participant.getColibriChannelsInfo(),
-                participant.getRtpDescriptionMap(),
-                participant.getSSRCsCopy(),
-                participant.getSSRCGroupsCopy(),
-                participant.getBundleTransport(),
-                participant.getTransportMap());
+        if (colibriConference != null)
+        {
+            colibriConference.updateChannelsInfo(
+                    participant.getColibriChannelsInfo(),
+                    participant.getRtpDescriptionMap(),
+                    participant.getSSRCsCopy(),
+                    participant.getSSRCGroupsCopy(),
+                    participant.getBundleTransport(),
+                    participant.getTransportMap());
+        }
 
         for (Participant peerToNotify : participants)
         {
@@ -938,6 +967,15 @@ public class JitsiMeetConference
         // based on it's hasBundleSupport() value
         participant.addTransportFromJingle(contentList);
 
+        ColibriConference colibriConference = this.colibriConference;
+        // We can hit null here during conference restart, but the state will be
+        // synced up later when the client sends 'transport-accept'
+        if (colibriConference == null)
+        {
+            logger.warn("Skipped transport-info processing - no conference");
+            return;
+        }
+
         if (participant.hasBundleSupport())
         {
             colibriConference.updateBundleTransportInfo(
@@ -950,6 +988,51 @@ public class JitsiMeetConference
                     participant.getTransportMap(),
                     participant.getColibriChannelsInfo());
         }
+    }
+
+    /**
+     * 'transport-accept' message is received by the focus after it has sent
+     * 'transport-replace' which is supposed to move the conference to another
+     * bridge. It means that the client has accepted new transport.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public void onTransportAccept(JingleSession                   jingleSession,
+                                  List<ContentPacketExtension>    contents)
+    {
+        jingleSession.setAccepted(true);
+
+        logger.info("Got transport-accept from: " + jingleSession.getAddress());
+
+        // We basically do the same processing as with transport-info by just
+        // forwarding transport/rtp information to the bridge
+        onTransportInfo(jingleSession, contents);
+    }
+
+    /**
+     * Message sent by the client when for any reason it's unable to handle
+     * 'transport-replace' message.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public void onTransportReject(JingleSession jingleSession, JingleIQ reply)
+    {
+        Participant p = findParticipantForJingleSession(jingleSession);
+        if (p == null)
+        {
+            logger.error(
+                    "No participant for " + Objects.toString(jingleSession));
+            return;
+        }
+
+        // We could expire channels immediately here, but we're leaving them to
+        // auto expire on the bridge or we're going to do that when user leaves
+        // the MUC anyway
+        logger.error(
+                "Participant has rejected our transport offer: " + p.getMucJid()
+                    + ", response: " + reply.toXML());
     }
 
     /**
@@ -985,10 +1068,16 @@ public class JitsiMeetConference
         }
 
         // Updates SSRC Groups on the bridge
-        colibriConference.updateSourcesInfo(
-            participant.getSSRCsCopy(),
-            participant.getSSRCGroupsCopy(),
-            participant.getColibriChannelsInfo());
+        // We may miss the notification, but the state will be synced up
+        // after conference has been relocated to the new bridge
+        ColibriConference colibriConference = this.colibriConference;
+        if (colibriConference != null)
+        {
+            colibriConference.updateSourcesInfo(
+                    participant.getSSRCsCopy(),
+                    participant.getSSRCGroupsCopy(),
+                    participant.getColibriChannelsInfo());
+        }
 
         for (Participant peerToNotify : participants)
         {
@@ -999,8 +1088,8 @@ public class JitsiMeetConference
             if (peerJingleSession == null)
             {
                 logger.warn(
-                    "Add source: no call for "
-                        + peerToNotify.getChatMember().getContactAddress());
+                        "Add source: no call for "
+                            + peerToNotify.getChatMember().getContactAddress());
 
                 peerToNotify.scheduleSSRCsToAdd(ssrcsToAdd);
 
@@ -1010,7 +1099,7 @@ public class JitsiMeetConference
             }
 
             jingle.sendAddSourceIQ(
-                ssrcsToAdd, ssrcGroupsToAdd, peerJingleSession);
+                    ssrcsToAdd, ssrcGroupsToAdd, peerJingleSession);
         }
     }
 
@@ -1120,16 +1209,23 @@ public class JitsiMeetConference
      * conference state.
      *
      * @param media the media type of SSRCs that are being returned.
+     * @param except optional <tt>Participant</tt> instance whose SSRCs will be
+     *               excluded from the list
      *
      * @return the list of all SSRCs of given media type that exist in current
      *         conference state.
      */
-    List<SourcePacketExtension> getAllSSRCs(String media)
+    List<SourcePacketExtension> getAllSSRCs(String         media,
+                                            Participant    except)
     {
         List<SourcePacketExtension> mediaSSRCs = new ArrayList<>();
 
         for (Participant peer : participants)
         {
+            // We want to exclude this one
+            if (peer == except)
+                continue;
+
             List<SourcePacketExtension> peerSSRC
                 = peer.getSSRCS().getSSRCsForMedia(media);
 
@@ -1146,17 +1242,24 @@ public class JitsiMeetConference
      *
      * @param media the media type of SSRC groups that are being returned.
      *
+     * @param except optional <tt>Participant</tt> instance whose SSRC groups
+     *               will be excluded from the list
+     *
      * @return the list of all SSRC groups of given media type that exist in
      *         current conference state.
      */
-    List<SourceGroupPacketExtension> getAllSSRCGroups(String media)
+    List<SourceGroupPacketExtension> getAllSSRCGroups(String         media,
+                                                      Participant    except)
     {
         List<SourceGroupPacketExtension> ssrcGroups = new ArrayList<>();
 
         for (Participant peer : participants)
         {
-            List<SSRCGroup> peerSSRCGroups
-                = peer.getSSRCGroupsForMedia(media);
+            // Excluded this participant groups
+            if (peer == except)
+                continue;
+
+            List<SSRCGroup> peerSSRCGroups = peer.getSSRCGroupsForMedia(media);
 
             for (SSRCGroup ssrcGroup : peerSSRCGroups)
             {
@@ -1166,7 +1269,7 @@ public class JitsiMeetConference
                 }
                 catch (Exception e)
                 {
-                    logger.error("Error copying source group extension");
+                    logger.error("Error copying source group extension", e);
                 }
             }
         }
@@ -1238,6 +1341,13 @@ public class JitsiMeetConference
                               String toBeMutedJid,
                               boolean doMute)
     {
+        ColibriConference colibriConference = this.colibriConference;
+        if (colibriConference == null)
+        {
+            logger.error("Conference disposed - mute request not handled");
+            return false;
+        }
+
         Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
@@ -1333,14 +1443,38 @@ public class JitsiMeetConference
      */
     void onBridgeDown(String bridgeJid)
     {
-        if (colibriConference != null
-                && bridgeJid.equals(colibriConference.getJitsiVideobridge()))
+        synchronized (colibriConfSyncRoot)
         {
-            // We will not send expire channels requests
-            // when the bridge has failed
-            bridgeHasFailed = true;
+            if (colibriConference != null
+                    && bridgeJid.equals(
+                            colibriConference.getJitsiVideobridge()))
+            {
+                // We will not send expire channels requests
+                // when the bridge has failed
+                bridgeHasFailed = true;
 
-            stop();
+                restartConference();
+            }
+        }
+    }
+
+    private void restartConference()
+    {
+        logger.warn("Restarting the conference for room: " + getRoomName());
+
+        disposeConference();
+
+        initNewColibriConference();
+
+        // Invite all not invited yet
+        for (final Participant p : participants)
+        {
+            // Invite peer takes time because of channel allocation, so schedule
+            // this on separate thread.
+            FocusBundleActivator.getSharedThreadPool().submit(
+                    new ChannelAllocator(
+                            this, colibriConference,
+                            p, startMuted, true /* re-invite */));
         }
     }
 

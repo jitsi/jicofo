@@ -79,6 +79,15 @@ public class ChannelAllocator implements Runnable
     private final boolean[] startMuted;
 
     /**
+     * Indicates whether or not this thread will be doing a "re-invite". It
+     * means that we're going to replace previous conference which has failed.
+     * Channels are allocated on new JVB and peer is re-invited with
+     * 'transport-replace' Jingle action as opposed to 'session-initiate' in
+     * regular invite.
+     */
+    private final boolean reInvite;
+
+    /**
      * Creates new instance of <tt>ChannelAllocator</tt> which is meant to
      * invite given <tt>Participant</tt> into the given
      * <tt>JitsiMeetConference</tt>.
@@ -91,16 +100,20 @@ public class ChannelAllocator implements Runnable
      * @param startMuted an array which must have the size of 2 where the first
      * value stands for "start audio muted" and the second one for "video
      * muted". This is to be included in client's offer.
+     * @param reInvite <tt>true</tt> if the offer will be a 're-invite' one or
+     * <tt>false</tt> otherwise.
      */
     public ChannelAllocator(JitsiMeetConference    meetConference,
                             ColibriConference      colibriConference,
                             Participant            newParticipant,
-                            boolean[]              startMuted)
+                            boolean[]              startMuted,
+                            boolean                reInvite)
     {
         this.meetConference = meetConference;
         this.colibriConference = colibriConference;
         this.newParticipant = newParticipant;
         this.startMuted = startMuted;
+        this.reInvite = reInvite;
     }
 
     private OperationSetJitsiMeetTools getMeetTools()
@@ -207,19 +220,30 @@ public class ChannelAllocator implements Runnable
         }
         else
         {
-            boolean ack
-                = getJingle().initiateSession(
+            boolean ack;
+            if (!reInvite)
+            {
+                ack = getJingle().initiateSession(
                         newParticipant.hasBundleSupport(),
                         address,
                         offer,
                         meetConference,
                         startMuted);
+            }
+            else
+            {
+                ack = getJingle().replaceTransport(
+                        newParticipant.hasBundleSupport(),
+                        newParticipant.getJingleSession(),
+                        offer,
+                        startMuted);
+            }
             if (!ack)
             {
                 // Failed to invite
                 logger.info(
                         "Expiring " + address + " channels - no RESULT for "
-                            + "session-invite");
+                        + (reInvite ? "transport-replace" : "session-invite"));
                 expireChannels = true;
             }
         }
@@ -228,6 +252,17 @@ public class ChannelAllocator implements Runnable
         {
             meetConference.expireParticipantChannels(
                     colibriConference, newParticipant);
+        }
+        else if (reInvite)
+        {
+            // Update channels info
+            // FIXME we should include this stuff in the offer
+            colibriConference.updateChannelsInfo(
+                    newParticipant.getColibriChannelsInfo(),
+                    newParticipant.getRtpDescriptionMap(),
+                    newParticipant.getSSRCsCopy(),
+                    newParticipant.getSSRCGroupsCopy(),
+                    null, null);
         }
     }
 
@@ -620,7 +655,8 @@ public class ChannelAllocator implements Runnable
 
                 // Include all peers SSRCs
                 List<SourcePacketExtension> mediaSources
-                    = meetConference.getAllSSRCs(cpe.getName());
+                    = meetConference.getAllSSRCs(
+                            cpe.getName(), reInvite ? newParticipant : null);
 
                 for (SourcePacketExtension ssrc : mediaSources)
                 {
@@ -636,7 +672,8 @@ public class ChannelAllocator implements Runnable
 
                 // Include SSRC groups
                 List<SourceGroupPacketExtension> sourceGroups
-                    = meetConference.getAllSSRCGroups(cpe.getName());
+                    = meetConference.getAllSSRCGroups(
+                            cpe.getName(), reInvite ? newParticipant : null);
 
                 for(SourceGroupPacketExtension ssrcGroup : sourceGroups)
                 {

@@ -218,6 +218,40 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean replaceTransport(boolean                         useBundle,
+                                    JingleSession                   session,
+                                    List<ContentPacketExtension>    contents,
+                                    boolean[]                       startMuted)
+    {
+        String address = session.getAddress();
+
+        logger.info("RE-INVITE PEER: " + address);
+
+        if (!sessions.containsValue(session))
+        {
+            throw new IllegalStateException(
+                    "Session does not exist for: " + address);
+        }
+
+        // Reset 'accepted' flag on the session
+        session.setAccepted(false);
+
+        JingleIQ inviteIQ
+            =  createInviteIQ(
+                    session.getSessionID(), useBundle, address,
+                    contents, startMuted);
+
+        inviteIQ.setAction(JingleAction.TRANSPORT_REPLACE);
+
+        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+
+        return wasInviteAccepted(session, reply);
+    }
+
+    /**
      * The logic for processing received JingleIQs.
      *
      * @param iq the <tt>JingleIQ</tt> to process.
@@ -261,8 +295,14 @@ public abstract class AbstractOperationSetJingle
             logger.info(session.getAddress() + " real jid: " + iq.getFrom());
             requestHandler.onSessionAccept(session, iq.getContentList());
             break;
+        case TRANSPORT_ACCEPT:
+            requestHandler.onTransportAccept(session, iq.getContentList());
+            break;
         case TRANSPORT_INFO:
             requestHandler.onTransportInfo(session, iq.getContentList());
+            break;
+        case TRANSPORT_REJECT:
+            requestHandler.onTransportReject(session, iq);
             break;
         case ADDSOURCE:
         case SOURCEADD:

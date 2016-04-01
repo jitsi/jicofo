@@ -60,6 +60,24 @@ public interface OperationSetJingle
             boolean[] startMuted);
 
     /**
+     * Sends 'transport-replace' IQ to the client.
+     *
+     * @param useBundle <tt>true</tt> if bundled transport is being used or
+     * <tt>false</tt> otherwise
+     * @param session the <tt>JingleSession</tt> used to send the notification.
+     * @param contents the list of Jingle contents which describes the actual
+     * offer
+     * @param startMuted an array where the first value stands for "start with
+     * audio muted" and the seconds one for "start video muted"
+     *
+     * @return <tt>true</tt> if have have received RESULT response to the IQ.
+     */
+    boolean replaceTransport(boolean                         useBundle,
+                             JingleSession                   session,
+                             List<ContentPacketExtension>    contents,
+                             boolean[]                       startMuted);
+
+    /**
      * Sends 'source-add' proprietary notification.
      *
      * @param ssrcMap the media SSRCs map which will be included in
