@@ -271,8 +271,7 @@ public abstract class AbstractOperationSetJingle
             {
                 try
                 {
-                    rtpDesc.addChildExtension(
-                        ssrc.copy());
+                    rtpDesc.addChildExtension(ssrc.copy());
                 }
                 catch (Exception e)
                 {
@@ -377,8 +376,7 @@ public abstract class AbstractOperationSetJingle
             {
                 try
                 {
-                    rtpDesc.addChildExtension(
-                        ssrc.copy());
+                    rtpDesc.addChildExtension(ssrc.copy());
                 }
                 catch (Exception e)
                 {

@@ -314,6 +314,12 @@ public class ColibriConferenceImpl
         }
     }
 
+    private void logRequest(String message, IQ iq)
+    {
+        if (logger.isDebugEnabled())
+            logger.debug(message + "\n" + iq.toXML().replace(">",">\n"));
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -333,6 +339,8 @@ public class ColibriConferenceImpl
 
         if (iq != null)
         {
+            logRequest("Expire peer channels", iq);
+
             connection.sendPacket(iq);
         }
     }
@@ -345,7 +353,7 @@ public class ColibriConferenceImpl
             Map<String, RtpDescriptionPacketExtension> map,
             ColibriConferenceIQ localChannelsInfo)
     {
-        ColibriConferenceIQ conferenceRequest;
+        ColibriConferenceIQ iq;
 
         synchronized (syncRoot)
         {
@@ -353,12 +361,14 @@ public class ColibriConferenceImpl
 
             colibriBuilder.addRtpDescription(map, localChannelsInfo);
 
-            conferenceRequest = colibriBuilder.getRequest(jitsiVideobridge);
+            iq = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
-        if (conferenceRequest != null)
+        if (iq != null)
         {
-            connection.sendPacket(conferenceRequest);
+            logRequest("Sending RTP desc update: ", iq);
+
+            connection.sendPacket(iq);
         }
     }
 
@@ -367,7 +377,6 @@ public class ColibriConferenceImpl
      */
     @Override
     public void updateTransportInfo(
-            boolean initiator,
             Map<String, IceUdpTransportPacketExtension> map,
             ColibriConferenceIQ localChannelsInfo)
     {
@@ -377,14 +386,15 @@ public class ColibriConferenceImpl
         {
             colibriBuilder.reset();
 
-            colibriBuilder.addTransportUpdateReq(
-                initiator, map, localChannelsInfo);
+            colibriBuilder.addTransportUpdateReq(map, localChannelsInfo);
 
-            iq =colibriBuilder.getRequest(jitsiVideobridge);
+            iq = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
         if (iq != null)
         {
+            logRequest("Sending transport info update: ", iq);
+
             connection.sendPacket(iq);
         }
     }
@@ -397,99 +407,45 @@ public class ColibriConferenceImpl
                                   MediaSSRCGroupMap ssrcGroups,
                                   ColibriConferenceIQ localChannelsInfo)
     {
-        // FIXME: move to ColibriBuilder
-        ColibriConferenceIQ updateIq = new ColibriConferenceIQ();
+        ColibriConferenceIQ iq;
 
-        String confId = conferenceState.getID();
-        if (StringUtils.isNullOrEmpty(confId))
+        synchronized (syncRoot)
         {
-            logger.error(
-                "Have not updated SSRC info on the bridge - " +
-                "no conference in progress");
-            return;
+            if (StringUtils.isNullOrEmpty(conferenceState.getID()))
+            {
+                logger.error(
+                        "Have not updated SSRC info on the bridge - "
+                            + "no conference in progress");
+                return;
+            }
+
+            colibriBuilder.reset();
+
+            boolean send = false;
+
+            // ssrcs
+            if (ssrcs != null
+                    && colibriBuilder.addSSSRCInfo(
+                            ssrcs.toMap(), localChannelsInfo))
+            {
+                send = true;
+            }
+            // ssrcGroups
+            if (ssrcGroups != null
+                    && colibriBuilder.addSSSRCGroupsInfo(
+                            ssrcGroups.toMap(), localChannelsInfo))
+            {
+                send = true;
+            }
+
+            iq = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
         }
 
-        updateIq.setID(confId);
-        updateIq.setType(IQ.Type.SET);
-        updateIq.setTo(jitsiVideobridge);
-
-        // NOTE(gp) now that we send sources as well, I think we can scrap this
-        // flag, if its initial purpose was to determine whether or not the
-        // simulcast group has been added or removed.
-        boolean updateNeeded = false;
-
-        // TODO take into account the SimulcastMode and serve the correct
-        // sources.
-        for (ColibriConferenceIQ.Content content
-            : localChannelsInfo.getContents())
+        if (iq != null)
         {
-            ColibriConferenceIQ.Content reqContent
-                = new ColibriConferenceIQ.Content(content.getName());
+            logRequest("Sending SSRC update: ", iq);
 
-            boolean hasChannels = false;
-            for (ColibriConferenceIQ.Channel channel : content.getChannels())
-            {
-                ColibriConferenceIQ.Channel reqChannel
-                    = new ColibriConferenceIQ.Channel();
-
-                reqChannel.setID(channel.getID());
-
-                List<SourcePacketExtension> sources
-                    = ssrcs.getSSRCsForMedia(content.getName());
-                for (SourcePacketExtension source : sources)
-                {
-                    reqChannel.addSource(source.copy());
-                    hasChannels = true;
-                    updateNeeded = true;
-                }
-
-                if (reqChannel.getSources() == null
-                    || reqChannel.getSources().isEmpty())
-                {
-                    // Put an empty source to remove all sources
-                    SourcePacketExtension emptySource
-                        = new SourcePacketExtension();
-                    emptySource.setSSRC(-1l);
-                    reqChannel.addSource(emptySource);
-
-                    hasChannels = true;
-                    updateNeeded = true;
-                }
-
-                List<SSRCGroup> groups
-                    = ssrcGroups.getSSRCGroupsForMedia(content.getName());
-                for (SSRCGroup group : groups)
-                {
-                    try
-                    {
-                        reqChannel.addSourceGroup(group.getExtensionCopy());
-                        hasChannels = true;
-                        updateNeeded = true;
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Error copying extension", e);
-                    }
-                }
-                if (groups.isEmpty() && "video".equals(content.getName()))
-                {
-                    // Put empty source group to turn off simulcast layers
-                    reqChannel.addSourceGroup(
-                        SourceGroupPacketExtension.createSimulcastGroup());
-                    hasChannels = true;
-                    updateNeeded = true;
-                }
-                reqContent.addChannel(reqChannel);
-            }
-            if (hasChannels)
-            {
-                updateIq.addContent(reqContent);
-            }
-        }
-
-        if (updateNeeded)
-        {
-            connection.sendPacketAndGetReply(updateIq);
+            connection.sendPacket(iq);
         }
     }
 
@@ -498,7 +454,6 @@ public class ColibriConferenceImpl
      */
     @Override
     public void updateBundleTransportInfo(
-            boolean                        initiator,
             IceUdpTransportPacketExtension transport,
             ColibriConferenceIQ            localChannelsInfo)
     {
@@ -509,13 +464,15 @@ public class ColibriConferenceImpl
             colibriBuilder.reset();
 
             colibriBuilder.addBundleTransportUpdateReq(
-                initiator, transport, localChannelsInfo);
+                    transport, localChannelsInfo);
 
             iq = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
         if (iq != null)
         {
+            logRequest("Sending bundle transport info update: ", iq);
+
             connection.sendPacket(iq);
         }
     }
@@ -539,13 +496,16 @@ public class ColibriConferenceImpl
             }
 
             // Expire all channels
-            colibriBuilder.addExpireChannelsReq(conferenceState);
-
-            iq = colibriBuilder.getRequest(jitsiVideobridge);
-
-            if (iq != null)
+            if (colibriBuilder.addExpireChannelsReq(conferenceState))
             {
-                connection.sendPacket(iq);
+                iq = colibriBuilder.getRequest(jitsiVideobridge);
+
+                if (iq != null)
+                {
+                    logRequest("Expire conference: ", iq);
+
+                    connection.sendPacket(iq);
+                }
             }
 
             // Reset conference state
@@ -631,6 +591,73 @@ public class ColibriConferenceImpl
     public String getName()
     {
         return conferenceState.getName();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateChannelsInfo(
+            ColibriConferenceIQ                            localChannelsInfo,
+            Map<String, RtpDescriptionPacketExtension>     rtpInfoMap,
+            MediaSSRCMap                                   ssrcs,
+            MediaSSRCGroupMap                              ssrcGroups,
+            IceUdpTransportPacketExtension                 bundleTransport,
+            Map<String, IceUdpTransportPacketExtension>    transportMap)
+    {
+        ColibriConferenceIQ iq;
+
+        synchronized (syncRoot)
+        {
+            colibriBuilder.reset();
+
+            boolean send = false;
+
+            // RTP description
+            if (rtpInfoMap != null
+                    && colibriBuilder.addRtpDescription(
+                            rtpInfoMap, localChannelsInfo))
+            {
+                send = true;
+            }
+            // SSRCs
+            if (ssrcs != null
+                    && colibriBuilder.addSSSRCInfo(
+                            ssrcs.toMap(), localChannelsInfo))
+            {
+                send = true;
+            }
+            // SSRC groups
+            if (ssrcGroups != null
+                    && colibriBuilder.addSSSRCGroupsInfo(
+                            ssrcGroups.toMap(), localChannelsInfo))
+            {
+                send = true;
+            }
+            // Bundle transport...
+            if (bundleTransport != null
+                    && colibriBuilder.addBundleTransportUpdateReq(
+                            bundleTransport, localChannelsInfo))
+            {
+                send = true;
+            }
+            // ...or non-bundle transport
+            else if (transportMap != null
+                    && colibriBuilder.addTransportUpdateReq(
+                            transportMap, localChannelsInfo))
+            {
+                send = true;
+            }
+
+            iq = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
+        }
+
+        if (iq != null)
+        {
+            logRequest("Sending channel info update: ", iq);
+
+            connection.sendPacket(iq);
+        }
     }
 
     /**

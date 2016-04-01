@@ -40,7 +40,7 @@ public class MediaSSRCGroupMap
      */
     public MediaSSRCGroupMap()
     {
-        groupMap = new HashMap<String, List<SSRCGroup>>();
+        this(new HashMap<String, List<SSRCGroup>>());
     }
 
     /**
@@ -63,7 +63,7 @@ public class MediaSSRCGroupMap
         List<SSRCGroup> mediaGroups = groupMap.get(media);
         if (mediaGroups == null)
         {
-            mediaGroups = new ArrayList<SSRCGroup>();
+            mediaGroups = new ArrayList<>();
             groupMap.put(media, mediaGroups);
         }
         return mediaGroups;
@@ -98,7 +98,7 @@ public class MediaSSRCGroupMap
      */
     public List<String> getMediaTypes()
     {
-        return new ArrayList<String>(groupMap.keySet());
+        return new ArrayList<>(groupMap.keySet());
     }
 
     /**
@@ -179,11 +179,8 @@ public class MediaSSRCGroupMap
 
         for (String media : mapToRemove.groupMap.keySet())
         {
-            List<SSRCGroup> groupList
-                = getSSRCGroupsForMedia(media);
-
-            List<SSRCGroup> toBeRemoved
-                = new ArrayList<SSRCGroup>();
+            List<SSRCGroup> groupList = getSSRCGroupsForMedia(media);
+            List<SSRCGroup> toBeRemoved= new ArrayList<>();
 
             for (SSRCGroup ssrcGroupToCheck
                 : mapToRemove.groupMap.get(media))
@@ -210,15 +207,12 @@ public class MediaSSRCGroupMap
      */
     public MediaSSRCGroupMap copy()
     {
-        Map<String, List<SSRCGroup>> mapCopy
-            = new HashMap<String, List<SSRCGroup>>();
+        Map<String, List<SSRCGroup>> mapCopy = new HashMap<>();
 
         for (String media : groupMap.keySet())
         {
-            List<SSRCGroup> listToCopy
-                = new ArrayList<SSRCGroup>(groupMap.get(media));
-            List<SSRCGroup> listCopy
-                = new ArrayList<SSRCGroup>(listToCopy.size());
+            List<SSRCGroup> listToCopy = new ArrayList<>(groupMap.get(media));
+            List<SSRCGroup> listCopy = new ArrayList<>(listToCopy.size());
 
             for (SSRCGroup group : listToCopy)
             {
@@ -249,6 +243,33 @@ public class MediaSSRCGroupMap
             str.append("]");
         }
         return str.toString();
+    }
+
+    /**
+     * Converts to a map of <tt>SourceGroupPacketExtension</tt>.
+     * @return a map of Colibri content's names to the lists of
+     *         <tt>SourceGroupPacketExtension</tt> which reflects current state
+     *         of this <tt>MediaSSRCGroupMap</tt>.
+     */
+    public Map<String, List<SourceGroupPacketExtension>> toMap()
+    {
+        Map<String, List<SourceGroupPacketExtension>> map = new HashMap<>();
+
+        for (String media : groupMap.keySet())
+        {
+            List<SSRCGroup> groups = groupMap.get(media);
+            List<SourceGroupPacketExtension> peGroups
+                = new ArrayList<>(groups.size());
+
+            for (SSRCGroup group : groups)
+            {
+                peGroups.add(group.getExtensionCopy());
+            }
+
+            map.put(media, peGroups);
+        }
+
+        return map;
     }
 
     @Override
