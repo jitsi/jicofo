@@ -353,7 +353,7 @@ public class ColibriConferenceImpl
             Map<String, RtpDescriptionPacketExtension> map,
             ColibriConferenceIQ localChannelsInfo)
     {
-        ColibriConferenceIQ conferenceRequest;
+        ColibriConferenceIQ iq;
 
         synchronized (syncRoot)
         {
@@ -361,14 +361,14 @@ public class ColibriConferenceImpl
 
             colibriBuilder.addRtpDescription(map, localChannelsInfo);
 
-            conferenceRequest = colibriBuilder.getRequest(jitsiVideobridge);
+            iq = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
-        if (conferenceRequest != null)
+        if (iq != null)
         {
-            logRequest("Sending RTP desc update: ", conferenceRequest);
+            logRequest("Sending RTP desc update: ", iq);
 
-            connection.sendPacket(conferenceRequest);
+            connection.sendPacket(iq);
         }
     }
 
@@ -407,38 +407,38 @@ public class ColibriConferenceImpl
                                   MediaSSRCGroupMap ssrcGroups,
                                   ColibriConferenceIQ localChannelsInfo)
     {
-        ColibriConferenceIQ iq = null;
-
-        boolean send = false;
+        ColibriConferenceIQ iq;
 
         synchronized (syncRoot)
         {
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
             {
                 logger.error(
-                    "Have not updated SSRC info on the bridge - " +
-                        "no conference in progress");
+                        "Have not updated SSRC info on the bridge - "
+                            + "no conference in progress");
                 return;
             }
 
             colibriBuilder.reset();
 
+            boolean send = false;
+
+            // ssrcs
             if (ssrcs != null
-                && colibriBuilder.addSSSRCInfo(
-                        ssrcs.toMap(), localChannelsInfo))
+                    && colibriBuilder.addSSSRCInfo(
+                            ssrcs.toMap(), localChannelsInfo))
             {
                 send = true;
             }
-
+            // ssrcGroups
             if (ssrcGroups != null
-                && colibriBuilder.addSSSRCGroupsInfo(
-                        ssrcGroups.toMap(), localChannelsInfo))
+                    && colibriBuilder.addSSSRCGroupsInfo(
+                            ssrcGroups.toMap(), localChannelsInfo))
             {
                 send = true;
             }
 
-            if (send)
-                iq = colibriBuilder.getRequest(jitsiVideobridge);
+            iq = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
         }
 
         if (iq != null)
@@ -605,61 +605,58 @@ public class ColibriConferenceImpl
             IceUdpTransportPacketExtension                 bundleTransport,
             Map<String, IceUdpTransportPacketExtension>    transportMap)
     {
-        ColibriConferenceIQ conferenceRequest = null;
-
-        boolean send = false;
+        ColibriConferenceIQ iq;
 
         synchronized (syncRoot)
         {
             colibriBuilder.reset();
 
+            boolean send = false;
+
             // RTP description
             if (rtpInfoMap != null
-                && colibriBuilder.addRtpDescription(
-                        rtpInfoMap, localChannelsInfo))
+                    && colibriBuilder.addRtpDescription(
+                            rtpInfoMap, localChannelsInfo))
             {
                 send = true;
             }
             // SSRCs
             if (ssrcs != null
-                && colibriBuilder.addSSSRCInfo(
-                        ssrcs.toMap(), localChannelsInfo))
+                    && colibriBuilder.addSSSRCInfo(
+                            ssrcs.toMap(), localChannelsInfo))
             {
                 send = true;
             }
             // SSRC groups
             if (ssrcGroups != null
-                && colibriBuilder.addSSSRCGroupsInfo(
-                        ssrcGroups.toMap(), localChannelsInfo))
+                    && colibriBuilder.addSSSRCGroupsInfo(
+                            ssrcGroups.toMap(), localChannelsInfo))
             {
                 send = true;
             }
             // Bundle transport...
             if (bundleTransport != null
-                && colibriBuilder.addBundleTransportUpdateReq(
-                        bundleTransport, localChannelsInfo))
+                    && colibriBuilder.addBundleTransportUpdateReq(
+                            bundleTransport, localChannelsInfo))
             {
                 send = true;
             }
             // ...or non-bundle transport
             else if (transportMap != null
-                && colibriBuilder.addTransportUpdateReq(
-                        transportMap, localChannelsInfo))
+                    && colibriBuilder.addTransportUpdateReq(
+                            transportMap, localChannelsInfo))
             {
                 send = true;
             }
 
-            if (send)
-            {
-                conferenceRequest = colibriBuilder.getRequest(jitsiVideobridge);
-            }
+            iq = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
         }
 
-        if (conferenceRequest != null)
+        if (iq != null)
         {
-            logRequest("Sending channel info update: ", conferenceRequest);
+            logRequest("Sending channel info update: ", iq);
 
-            connection.sendPacket(conferenceRequest);
+            connection.sendPacket(iq);
         }
     }
 
