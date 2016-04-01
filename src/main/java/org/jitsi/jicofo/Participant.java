@@ -729,4 +729,13 @@ public class Participant
     {
         this.displayName = displayName;
     }
+
+    /**
+     * Returns MUC JID of this <tt>Participant</tt>
+     * @return full MUC address eg. "room1@muc.server.net/nickname"
+     */
+    public String getMucJid()
+    {
+        return roomMember.getContactAddress();
+    }
 }
