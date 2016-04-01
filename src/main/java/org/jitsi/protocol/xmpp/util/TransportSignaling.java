@@ -32,50 +32,50 @@ public class TransportSignaling
     /**
      * Merges source transport into destination by copying information
      * important for Jitsi Meet transport signaling.
-     * @param dest destination <tt>IceUdpTransportPacketExtension</tt>
-     * @param source source <tt>IceUdpTransportPacketExtension</tt> from which
-     *               all relevant information will be merged into <tt>dest</tt>
+     * @param dst destination <tt>IceUdpTransportPacketExtension</tt>
+     * @param src source <tt>IceUdpTransportPacketExtension</tt> from which
+     *               all relevant information will be merged into <tt>dst</tt>
      */
     static public void mergeTransportExtension(
-            IceUdpTransportPacketExtension    dest,
-            IceUdpTransportPacketExtension    source)
+            IceUdpTransportPacketExtension    dst,
+            IceUdpTransportPacketExtension    src)
     {
-        Objects.requireNonNull(dest, "dest");
-        Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(dst, "dst");
+        Objects.requireNonNull(src, "src");
 
         // Attributes
-        for (String attribute : source.getAttributeNames())
+        for (String attribute : src.getAttributeNames())
         {
-            dest.setAttribute(attribute, source.getAttribute(attribute));
+            dst.setAttribute(attribute, src.getAttribute(attribute));
         }
 
         // RTCP-MUX
-        if (source.isRtcpMux() && !dest.isRtcpMux())
+        if (src.isRtcpMux() && !dst.isRtcpMux())
         {
-            dest.addChildExtension(new RtcpmuxPacketExtension());
+            dst.addChildExtension(new RtcpmuxPacketExtension());
         }
 
         // Candidates
-        for (CandidatePacketExtension c : source.getCandidateList())
+        for (CandidatePacketExtension c : src.getCandidateList())
         {
-            dest.addCandidate(c);
+            dst.addCandidate(c);
         }
 
         // DTLS fingerprint
         DtlsFingerprintPacketExtension srcDtls
-            = source.getFirstChildOfType(DtlsFingerprintPacketExtension.class);
+            = src.getFirstChildOfType(DtlsFingerprintPacketExtension.class);
         if (srcDtls != null)
         {
             // Remove the current one if any
             DtlsFingerprintPacketExtension dstDtls
-                = dest.getFirstChildOfType(
+                = dst.getFirstChildOfType(
                         DtlsFingerprintPacketExtension.class);
             if (dstDtls != null)
             {
-                dest.removeChildExtension(dstDtls);
+                dst.removeChildExtension(dstDtls);
             }
             // Set the fingerprint from the source
-            dest.addChildExtension(srcDtls);
+            dst.addChildExtension(srcDtls);
         }
     }
 }
