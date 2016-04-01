@@ -211,7 +211,9 @@ public interface ColibriConference
     void expireChannels(ColibriConferenceIQ channelInfo);
 
     /**
-     * Expires all channels in current conference and resets conference state.
+     * Expires all channels in current conference and this instance goes into
+     * disposed state(like calling {@link #dispose()} method). It must not be
+     * used anymore.
      */
     void expireConference();
 
@@ -225,4 +227,19 @@ public interface ColibriConference
      *         otherwise.
      */
     boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute);
+
+    /**
+     * Disposes of any resources allocated by this instance. Once disposed this
+     * instance must not be used anymore.
+     */
+    void dispose();
+
+    /**
+     * Checks whether or not this instance has been disposed. The instance must
+     * not be used for any Colibri operations once disposed.
+     *
+     * @return <tt>true</tt> if this instance is in "disposed" state or
+     *         <tt>false</tt> otherwise.
+     */
+    boolean isDisposed();
 }

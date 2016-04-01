@@ -92,7 +92,13 @@ public class ColibriConferenceImpl
      * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
      */
     private boolean justAllocated = false;
-    
+
+    /**
+     * Flag indicates that this instance has been disposed and should not be
+     * used anymore.
+     */
+    private boolean disposed;
+
     /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by new
@@ -101,6 +107,26 @@ public class ColibriConferenceImpl
     public ColibriConferenceImpl(XmppConnection connection)
     {
         this.connection = connection;
+    }
+
+    /**
+     * Checks if this instance has been disposed already and if so prints
+     * a warning message.
+     *
+     * @param operationName the name of the operation that will not happen and
+     * should be mentioned in the warning message.
+     *
+     * @return <tt>true</tt> if this instance has not been disposed yet or
+     * <tt>false</tt> otherwise.
+     */
+    private boolean assertNotDisposed(String operationName)
+    {
+        if (disposed)
+        {
+            logger.warn("Not doing " + operationName + " - instance disposed");
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -171,6 +197,10 @@ public class ColibriConferenceImpl
         {
             synchronized (syncRoot)
             {
+                // Only if not in 'disposed' state
+                if (!assertNotDisposed("createColibriChannels"))
+                    return null;
+
                 acquireCreateConferenceSemaphore(endpointName);
 
                 colibriBuilder.reset();
@@ -330,6 +360,10 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            // Only if not in 'disposed' state
+            if (!assertNotDisposed("expireChannels"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addExpireChannelsReq(channelInfo);
@@ -357,6 +391,10 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            // Only if not in 'disposed' state
+            if (!assertNotDisposed("updateRtpDescription"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addRtpDescription(map, localChannelsInfo);
@@ -384,6 +422,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (!assertNotDisposed("updateTransportInfo"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addTransportUpdateReq(map, localChannelsInfo);
@@ -411,6 +452,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (!assertNotDisposed("updateSourcesInfo"))
+                return;
+
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
             {
                 logger.error(
@@ -461,6 +505,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (!assertNotDisposed("updateBundleTransportInfo"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addBundleTransportUpdateReq(
@@ -487,6 +534,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (!assertNotDisposed("expireConference"))
+                return;
+
             colibriBuilder.reset();
 
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
@@ -510,7 +560,31 @@ public class ColibriConferenceImpl
 
             // Reset conference state
             conferenceState = new ColibriConferenceIQ();
+
+            // Mark instance as 'disposed'
+            dispose();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void dispose()
+    {
+        synchronized (syncRoot)
+        {
+            this.disposed = true;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isDisposed()
+    {
+        return disposed;
     }
 
     /**
@@ -520,6 +594,9 @@ public class ColibriConferenceImpl
     public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
                                    boolean mute)
     {
+        if (!assertNotDisposed("muteParticipant"))
+            return false;
+
         ColibriConferenceIQ request = new ColibriConferenceIQ();
         request.setID(conferenceState.getID());
         request.setName(conferenceState.getName());
@@ -609,6 +686,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (!assertNotDisposed("updateChannelsInfo"))
+                return;
+
             colibriBuilder.reset();
 
             boolean send = false;
