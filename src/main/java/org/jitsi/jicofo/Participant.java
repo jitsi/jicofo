@@ -117,7 +117,7 @@ public class Participant
     /**
      * The list of XMPP features supported by this participant. 
      */
-    private List<String> supportedFeatures = new ArrayList<String>();
+    private List<String> supportedFeatures = new ArrayList<>();
 
     /**
      * Tells how many unique SSRCs per media participant is allowed to advertise

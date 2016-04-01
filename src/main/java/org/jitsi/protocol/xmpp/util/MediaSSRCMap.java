@@ -40,7 +40,7 @@ public class MediaSSRCMap
      */
     public MediaSSRCMap()
     {
-        ssrcs = new HashMap<String, List<SourcePacketExtension>>();
+        this(new HashMap<String, List<SourcePacketExtension>>());
     }
 
     /**
@@ -66,7 +66,7 @@ public class MediaSSRCMap
         List<SourcePacketExtension> ssrcList = ssrcs.get(media);
         if (ssrcList == null)
         {
-            ssrcList = new ArrayList<SourcePacketExtension>();
+            ssrcList = new ArrayList<>();
             ssrcs.put(media, ssrcList);
         }
         return ssrcList;
@@ -187,8 +187,7 @@ public class MediaSSRCMap
      */
     public MediaSSRCMap copyShallow()
     {
-        Map<String, List<SourcePacketExtension>> mapCopy
-            = new HashMap<String, List<SourcePacketExtension>>();
+        Map<String, List<SourcePacketExtension>> mapCopy = new HashMap<>();
 
         for (Map.Entry<String, List<SourcePacketExtension>> e
                 : ssrcs.entrySet())
@@ -233,8 +232,7 @@ public class MediaSSRCMap
     public static MediaSSRCMap getSSRCsFromContent(
         List<ContentPacketExtension> contents)
     {
-        Map<String, List<SourcePacketExtension>> ssrcMap
-            = new HashMap<String, List<SourcePacketExtension>>();
+        Map<String, List<SourcePacketExtension>> ssrcMap = new HashMap<>();
 
         for (ContentPacketExtension content : contents)
         {

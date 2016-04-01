@@ -40,7 +40,7 @@ public class MediaSSRCGroupMap
      */
     public MediaSSRCGroupMap()
     {
-        groupMap = new HashMap<String, List<SSRCGroup>>();
+        this(new HashMap<String, List<SSRCGroup>>());
     }
 
     /**
@@ -63,7 +63,7 @@ public class MediaSSRCGroupMap
         List<SSRCGroup> mediaGroups = groupMap.get(media);
         if (mediaGroups == null)
         {
-            mediaGroups = new ArrayList<SSRCGroup>();
+            mediaGroups = new ArrayList<>();
             groupMap.put(media, mediaGroups);
         }
         return mediaGroups;
@@ -98,7 +98,7 @@ public class MediaSSRCGroupMap
      */
     public List<String> getMediaTypes()
     {
-        return new ArrayList<String>(groupMap.keySet());
+        return new ArrayList<>(groupMap.keySet());
     }
 
     /**
@@ -207,15 +207,12 @@ public class MediaSSRCGroupMap
      */
     public MediaSSRCGroupMap copy()
     {
-        Map<String, List<SSRCGroup>> mapCopy
-            = new HashMap<String, List<SSRCGroup>>();
+        Map<String, List<SSRCGroup>> mapCopy = new HashMap<>();
 
         for (String media : groupMap.keySet())
         {
-            List<SSRCGroup> listToCopy
-                = new ArrayList<SSRCGroup>(groupMap.get(media));
-            List<SSRCGroup> listCopy
-                = new ArrayList<SSRCGroup>(listToCopy.size());
+            List<SSRCGroup> listToCopy = new ArrayList<>(groupMap.get(media));
+            List<SSRCGroup> listCopy = new ArrayList<>(listToCopy.size());
 
             for (SSRCGroup group : listToCopy)
             {
