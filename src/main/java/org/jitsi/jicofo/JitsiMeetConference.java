@@ -1381,8 +1381,8 @@ public class JitsiMeetConference
         participant.addSSRCGroupsFromContent(answer);
 
         logger.info(
-            "Received SSRCs from " + peerJingleSession.getAddress()
-                + " " + participant.getSSRCS());
+                "Received SSRCs from " + peerJingleSession.getAddress() + " "
+                    + participant.getSSRCS());
 
         // Update channel info
         colibriConference.updateChannelsInfo(
@@ -1396,7 +1396,8 @@ public class JitsiMeetConference
         for (Participant peerToNotify : participants)
         {
             JingleSession jingleSessionToNotify
-                    = peerToNotify.getJingleSession();
+                = peerToNotify.getJingleSession();
+
             if (jingleSessionToNotify == null)
             {
                 logger.warn(
@@ -1404,9 +1405,8 @@ public class JitsiMeetConference
                         + peerToNotify.getChatMember().getContactAddress());
 
                 peerToNotify.scheduleSSRCsToAdd(participant.getSSRCS());
-
                 peerToNotify.scheduleSSRCGroupsToAdd(
-                    participant.getSSRCGroups());
+                        participant.getSSRCGroups());
 
                 continue;
             }

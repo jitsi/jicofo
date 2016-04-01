@@ -179,11 +179,8 @@ public class MediaSSRCGroupMap
 
         for (String media : mapToRemove.groupMap.keySet())
         {
-            List<SSRCGroup> groupList
-                = getSSRCGroupsForMedia(media);
-
-            List<SSRCGroup> toBeRemoved
-                = new ArrayList<SSRCGroup>();
+            List<SSRCGroup> groupList = getSSRCGroupsForMedia(media);
+            List<SSRCGroup> toBeRemoved= new ArrayList<>();
 
             for (SSRCGroup ssrcGroupToCheck
                 : mapToRemove.groupMap.get(media))

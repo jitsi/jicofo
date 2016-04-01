@@ -217,12 +217,10 @@ public class Participant
                 = content.getFirstChildOfType(
                         RtpDescriptionPacketExtension.class);
 
-            if (rtpDesc == null)
+            if (rtpDesc != null)
             {
-                continue;
+                rtpDescMap.put(content.getName(), rtpDesc);
             }
-
-            rtpDescMap.put(content.getName(), rtpDesc);
         }
 
         this.rtpDescriptionMap = rtpDescMap;
@@ -263,8 +261,8 @@ public class Participant
                             + " signalled by " + getEndpointId());
                     continue;
                 }
-                else if (
-                    ssrcs.getSSRCsForMedia(mediaType).size() >= maxSSRCCount)
+                else if (ssrcs.getSSRCsForMedia(mediaType).size()
+                        >= maxSSRCCount)
                 {
                     logger.warn(
                         "SSRC limit of " + maxSSRCCount + " exceeded by "
@@ -440,8 +438,7 @@ public class Participant
      */
     public boolean isSipGateway()
     {
-        return supportedFeatures.contains(
-                "http://jitsi.org/protocol/jigasi");
+        return supportedFeatures.contains("http://jitsi.org/protocol/jigasi");
     }
 
     /**
@@ -595,11 +592,12 @@ public class Participant
      * Extracts and stores transport information from given map of Jingle
      * content. Depending on the {@link #hasBundleSupport()} either 'bundle' or
      * 'non-bundle' transport information will be stored. If we already have the
-     * transport information it will be merged into the currently sored one with
-     * {@link TransportSignaling#mergeTransportExtension}.
+     * transport information it will be merged into the currently stored one
+     * with {@link TransportSignaling#mergeTransportExtension}.
+     *
      * @param contents the list of <tt>ContentPacketExtension</tt> from one of
-     *        jingle message which can potentially contain transport info like
-     *        'session-accept', 'transport-info', 'transport-accept' etc.
+     * jingle message which can potentially contain transport info like
+     * 'session-accept', 'transport-info', 'transport-accept' etc.
      */
     public void addTransportFromJingle(List<ContentPacketExtension> contents)
     {
@@ -628,8 +626,7 @@ public class Participant
 
             if (!transport.isRtcpMux())
             {
-                transport.addChildExtension(
-                    new RtcpmuxPacketExtension());
+                transport.addChildExtension(new RtcpmuxPacketExtension());
             }
 
             if (bundleTransport == null)
@@ -648,12 +645,11 @@ public class Participant
             {
                 IceUdpTransportPacketExtension srcTransport
                     = cpe.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
+                            IceUdpTransportPacketExtension.class);
 
                 if (srcTransport != null)
                 {
                     String contentName = cpe.getName().toLowerCase();
-
                     IceUdpTransportPacketExtension dstTransport
                         = transportMap.get(contentName);
 
@@ -733,5 +729,4 @@ public class Participant
     {
         this.displayName = displayName;
     }
-
 }

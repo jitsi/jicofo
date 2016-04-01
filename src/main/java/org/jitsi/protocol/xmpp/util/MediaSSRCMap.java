@@ -158,11 +158,8 @@ public class MediaSSRCMap
         // FIXME: fix duplication
         for (String media : mapToRemove.ssrcs.keySet())
         {
-            List<SourcePacketExtension> ssrcList
-                = getSSRCsForMedia(media);
-
-            List<SourcePacketExtension> toBeRemoved
-                = new ArrayList<SourcePacketExtension>();
+            List<SourcePacketExtension> ssrcList = getSSRCsForMedia(media);
+            List<SourcePacketExtension> toBeRemoved = new ArrayList<>();
 
             for (SourcePacketExtension ssrcToCheck
                     : mapToRemove.ssrcs.get(media))
@@ -243,7 +240,7 @@ public class MediaSSRCMap
         {
             RtpDescriptionPacketExtension rtpDesc
                 = content.getFirstChildOfType(
-                RtpDescriptionPacketExtension.class);
+                        RtpDescriptionPacketExtension.class);
 
             List<SourcePacketExtension> ssrcPe;
             String media;
