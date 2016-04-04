@@ -168,7 +168,8 @@ public class JitsiMeetConfig
      */
     public Boolean isAdaptiveSimulcastEnabled()
     {
-        return !getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
+        Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
+        return disabled == null ? null : !disabled;
     }
 
     /**
