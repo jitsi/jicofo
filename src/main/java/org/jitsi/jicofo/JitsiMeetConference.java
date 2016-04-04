@@ -462,6 +462,10 @@ public class JitsiMeetConference
         }
     }
 
+    /**
+     * Initialized new instance of {@link #colibriConference}. Call to this
+     * method must be synchronized on {@link #colibriConfSyncRoot}.
+     */
     private void initNewColibriConference()
     {
         colibriConference = colibri.createNewConference();
@@ -638,7 +642,8 @@ public class JitsiMeetConference
     }
 
     /**
-     * Expires the conference on the bridge and other stuff realted to it.
+     * Expires the conference on the bridge and other stuff related to it.
+     * Call must be synchronized on {@link #colibriConfSyncRoot}.
      */
     private void disposeConference()
     {
@@ -890,7 +895,10 @@ public class JitsiMeetConference
                 "Received SSRCs from " + peerJingleSessionAddress + " "
                     + peerSSRCs);
 
-        // Update channel info
+        // Update channel info - we may miss update during conference restart,
+        // but the state will be synced up after channels are allocated for this
+        // peer on the new bridge
+        ColibriConference colibriConference = this.colibriConference;
         if (colibriConference != null)
         {
             colibriConference.updateChannelsInfo(
