@@ -207,7 +207,8 @@ public class ChannelAllocator implements Runnable
         {
             OperationSetJingle jingle = meetConference.getJingle();
             boolean ack;
-            if (!reInvite)
+            JingleSession jingleSession = newParticipant.getJingleSession();
+            if (!reInvite || jingleSession == null)
             {
                 ack = jingle.initiateSession(
                         newParticipant.hasBundleSupport(),
@@ -220,7 +221,7 @@ public class ChannelAllocator implements Runnable
             {
                 ack = jingle.replaceTransport(
                         newParticipant.hasBundleSupport(),
-                        newParticipant.getJingleSession(),
+                        jingleSession,
                         offer,
                         startMuted);
             }
