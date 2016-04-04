@@ -1492,6 +1492,32 @@ public class JitsiMeetConference
     }
 
     /**
+     * Method called by {@link ChannelAllocator} when it fails to allocate
+     * channels with {@link OperationFailedException}. We need to make some
+     * decisions here.
+     *
+     * @param channelAllocator instance of <tt>ChannelAllocator</tt> which is
+     * reporting the error.
+     * @param exc <tt>OperationFailedException</tt> which provides details about
+     * the reason for channel allocation failure.
+     */
+    void onChannelAllocationFailed(
+            ChannelAllocator         channelAllocator,
+            OperationFailedException exc)
+    {
+        // Notify users about bridge is down event
+        if (ChannelAllocator.BRIDGE_FAILURE_ERR_CODE == exc.getErrorCode()
+                && chatRoom != null)
+        {
+            if (meetTools != null)
+            {
+                meetTools.sendPresenceExtension(
+                        chatRoom, new BridgeIsDownPacketExt());
+            }
+        }
+    }
+
+    /**
      * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
      * currently in or <tt>null</tt> if it isn't in any.
      */

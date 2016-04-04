@@ -23,7 +23,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -47,7 +46,7 @@ public class ChannelAllocator implements Runnable
      * working videobridge bridges.
      * FIXME: consider moving to OperationFailedException ?
      */
-    private final static int BRIDGE_FAILURE_ERR_CODE = 20;
+    final static int BRIDGE_FAILURE_ERR_CODE = 20;
 
     /**
      * The logger instance used in this class.
@@ -169,18 +168,10 @@ public class ChannelAllocator implements Runnable
             //FIXME: retry ? sometimes it's just timeout
             logger.error("Failed to allocate channels for " + address, e);
 
-            // Notify users about bridge is down event
-            ChatRoom chatRoom = meetConference.getChatRoom();
-            if (BRIDGE_FAILURE_ERR_CODE == e.getErrorCode() && chatRoom != null)
-            {
-                OperationSetJitsiMeetTools meetTools = getMeetTools();
-                if (meetTools != null)
-                {
-                    meetTools.sendPresenceExtension(
-                            chatRoom, new BridgeIsDownPacketExt());
-                }
-            }
-            // Cancel - no channels allocated
+            // Notify conference about failure
+            meetConference.onChannelAllocationFailed(this, e);
+
+            // Cancel this thread - nothing to be done after failure
             return;
         }
         /*
