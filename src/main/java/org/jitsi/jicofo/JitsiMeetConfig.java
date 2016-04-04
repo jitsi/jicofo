@@ -48,9 +48,10 @@ public class JitsiMeetConfig
 
     /**
      * The name of adaptive simulcast configuration property. Pass 'true' to
-     * enable or 'false' to disable.
+     * disable or 'false' to enable.
      */
-    public static final String ADAPTIVE_SIMULCAST_PNAME = "adaptiveSimulcast";
+    public static final String DISABLE_ADAPTIVE_SIMULCAST_PNAME
+        = "disableAdaptiveSimulcast";
 
     /**
      * The name the configuration property used to configure videobridge
@@ -167,7 +168,8 @@ public class JitsiMeetConfig
      */
     public Boolean isAdaptiveSimulcastEnabled()
     {
-        return getBoolean(ADAPTIVE_SIMULCAST_PNAME);
+        Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
+        return disabled == null ? null : !disabled;
     }
 
     /**
