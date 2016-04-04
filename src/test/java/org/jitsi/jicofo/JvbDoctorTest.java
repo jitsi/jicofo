@@ -135,7 +135,7 @@ public class JvbDoctorTest
         for (int i=0; i<testConfs.length; i++)
         {
             testConfs[i] = TestConference.allocate(
-                osgi.bc, roomName + i, serverName, mockBridge);
+                osgi.bc, serverName, roomName + i, mockBridge);
 
             testConfs[i].addParticipant();
             testConfs[i].addParticipant();
@@ -156,15 +156,19 @@ public class JvbDoctorTest
         verify(eventSpy, timeout(100))
             .handleEvent(BridgeEvent.createBridgeDown(jvb1));
 
-        // Make sure conferences are now terminated, since we have no secondary
-        // bridge
-        // FIXME with ICE-restart conference is not destroyed, we should make
-        // sure here that it is restarted on a new bridge instead
-        //for (TestConference testConf : testConfs)
-        //{
-        //    assertNull(
-        //        focusManager.getConference(testConf.getRoomName()));
-        //}
+        // We have no secondary bridge, so all restarts should fail
+        // We'll know that by having null returned for currently used bridge in
+        // the conference
+        for (TestConference testConf : testConfs)
+        {
+            JitsiMeetConference conference
+                = focusManager.getConference(testConf.getRoomName());
+
+            assertNotNull(conference);
+
+            // No jvb currently in use
+            assertNull(testConf.getConferenceUtility().getJvbConferenceId());
+        }
 
         mockBridge.stop(osgi.bc);
     }
