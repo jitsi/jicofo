@@ -1701,6 +1701,17 @@ public class JitsiMeetConference
     }
 
     /**
+     * Returns global config instance.
+     *
+     * @return instance of <tt>JitsiMeetGlobalConfig</tt> used by this
+     * conference.
+     */
+    JitsiMeetGlobalConfig getGlobalConfig()
+    {
+        return globalConfig;
+    }
+
+    /**
      * Returns the name of conference multi-user chat room.
      */
     public String getRoomName()
