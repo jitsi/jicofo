@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording;
 
+import org.jitsi.assertions.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
@@ -48,6 +49,8 @@ public abstract class Recorder
                     OperationSetDirectSmackXmpp xmpp)
     {
         this.recorderComponentJid = recorderComponentJid;
+
+        Assert.notNull(xmpp, "xmpp");
         this.xmpp = xmpp;
         xmpp.addPacketHandler(this, this);
     }
