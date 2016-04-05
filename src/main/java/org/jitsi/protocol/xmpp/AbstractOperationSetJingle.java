@@ -153,7 +153,9 @@ public abstract class AbstractOperationSetJingle
             else
             {
                 logger.error(
-                        "Timeout waiting for session-accept from " + address);
+                        "Timeout waiting for RESULT response to "
+                            + "'session-initiate' request from "
+                            + address);
                 return false;
             }
         }
@@ -269,8 +271,7 @@ public abstract class AbstractOperationSetJingle
             {
                 try
                 {
-                    rtpDesc.addChildExtension(
-                        ssrc.copy());
+                    rtpDesc.addChildExtension(ssrc.copy());
                 }
                 catch (Exception e)
                 {
@@ -375,8 +376,7 @@ public abstract class AbstractOperationSetJingle
             {
                 try
                 {
-                    rtpDesc.addChildExtension(
-                        ssrc.copy());
+                    rtpDesc.addChildExtension(ssrc.copy());
                 }
                 catch (Exception e)
                 {

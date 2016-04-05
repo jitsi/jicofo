@@ -26,7 +26,7 @@ fi
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/share/jicofo/jicofo.sh
-DEAMON_DIR=/usr/share/jicofo/
+DAEMON_DIR=/usr/share/jicofo/
 NAME=jicofo
 USER=jicofo
 PIDFILE=/var/run/jicofo.pid
@@ -59,7 +59,7 @@ start() {
     fi
     echo -n "Starting $NAME: "
     start-stop-daemon --start --quiet --background --chuid $USER --make-pidfile --pidfile $PIDFILE \
-        --exec /bin/bash -- -c "cd $DEAMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
+        --exec /bin/bash -- -c "cd $DAEMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
     echo "$NAME started."
 }
 

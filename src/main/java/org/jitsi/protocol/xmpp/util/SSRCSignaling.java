@@ -47,8 +47,8 @@ public class SSRCSignaling
                                       String                  name)
     {
         ParameterPacketExtension srcParam = getParam(src, name);
-        ParameterPacketExtension dstParam = getParam(dst, name);
-        if (srcParam != null && dstParam != null)
+        ParameterPacketExtension dstParam;
+        if (srcParam != null && (dstParam = getParam(dst, name)) != null)
         {
             dstParam.setValue(srcParam.getValue());
         }
@@ -143,13 +143,14 @@ public class SSRCSignaling
         List<SourcePacketExtension> audioSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.AUDIO.toString());
 
+        if (audioSSRCs.isEmpty())
+            return false;
+
         List<SourcePacketExtension> videoSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.VIDEO.toString());
 
-        if (videoSSRCs.size() <= 0 || audioSSRCs.size() <= 0)
-        {
+        if (videoSSRCs.isEmpty())
             return false;
-        }
 
         SourcePacketExtension audioSSRC = audioSSRCs.get(0);
         SourcePacketExtension videoSSRC = videoSSRCs.get(0);

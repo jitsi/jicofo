@@ -175,13 +175,28 @@ public class MeetExtensionsHandler
             return;
         }
 
+        JitsiMeetRecording recordingHandler = conference.getRecording();
+        if (recordingHandler == null)
+        {
+            logger.error(
+                    "JitsiMeetRecording is null for iq: " + colibriIQ.toXML());
+
+            // Internal server error
+            smackXmpp.getXmppConnection().sendPacket(
+                    IQ.createErrorResponse(
+                            colibriIQ,
+                            new XMPPError(
+                                    XMPPError.Condition.interna_server_error)));
+            return;
+        }
+
         State recordingState =
-            conference.modifyRecordingState(
-                colibriIQ.getFrom(),
-                recording.getToken(),
-                recording.getState(),
-                recording.getDirectory(),
-                colibriIQ.getTo());
+            recordingHandler.modifyRecordingState(
+                    colibriIQ.getFrom(),
+                    recording.getToken(),
+                    recording.getState(),
+                    recording.getDirectory(),
+                    colibriIQ.getTo());
 
         ColibriConferenceIQ response = new ColibriConferenceIQ();
 
