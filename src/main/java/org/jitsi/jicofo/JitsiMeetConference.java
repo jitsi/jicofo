@@ -685,7 +685,7 @@ public class JitsiMeetConference
      * Allocates Colibri channels for given {@link Participant} by trying all
      * available bridges returned by {@link BridgeSelector}.
      *
-     * @param peer the for whom Colibri channel are to be allocated.
+     * @param peer the participant for whom Colibri channel are to be allocated.
      * @param contents the media offer description passed to the bridge.
      *
      * @return {@link ColibriConferenceIQ} that describes channels allocated for
@@ -859,19 +859,20 @@ public class JitsiMeetConference
 
         boolean disableIce = !peer.hasIceSupport();
         boolean useDtls = peer.hasDtlsSupport();
+        boolean useRtx = config.isRtxEnabled() && peer.hasRtxSupport();
 
         if (peer.hasAudioSupport())
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.AUDIO, disableIce, useDtls));
+                    MediaType.AUDIO, disableIce, useDtls, useRtx));
         }
 
         if (peer.hasVideoSupport())
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.VIDEO, disableIce, useDtls));
+                    MediaType.VIDEO, disableIce, useDtls, useRtx));
         }
 
         // Is SCTP enabled ?
@@ -882,7 +883,7 @@ public class JitsiMeetConference
         {
             contents.add(
                 JingleOfferFactory.createContentForMedia(
-                    MediaType.DATA, disableIce, useDtls));
+                    MediaType.DATA, disableIce, useDtls, useRtx));
         }
 
         boolean useBundle = peer.hasBundleSupport();

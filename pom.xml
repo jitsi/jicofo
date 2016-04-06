@@ -123,7 +123,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>libjitsi</artifactId>
-      <version>1.0-20160308.153702-107</version>
+      <version>1.0-20160329.203638-125</version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
