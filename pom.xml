@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.jitsi</groupId>
     <artifactId>jitsi-universe</artifactId>
-    <version>1.0-20160204.002115-13</version>
+    <version>1.0-20160405.235512-16</version>
   </parent>
 
   <artifactId>jicofo</artifactId>
@@ -141,17 +141,6 @@
     <dependency>
       <groupId>rusv</groupId>
       <artifactId>agafua-syslog</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-      <!--
-      jitsi-videobridge requires a patched version of ours from the branch
-      r1rv51-patched of gpolitis/bc-java (at GitHub).
-      Jicofo will use the same version.
-      -->
-      <version>1.51-jitsi-1</version>
       <scope>runtime</scope>
     </dependency>
     <!-- test -->
