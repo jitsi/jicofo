@@ -71,12 +71,6 @@ public class DiscoveryUtil
             = "urn:xmpp:jingle:transports:dtls-sctp:1";
 
     /**
-     * RTX (RFC4588) support.
-     */
-    public final static String FEATURE_RTX
-        = "urn:ietf:rfc:4588";
-
-    /**
      * The Jingle DTLS feature name (XEP-0320).
      */
     public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
