@@ -315,15 +315,15 @@ public class ColibriThreadingTest
 
         contents.add(
             JingleOfferFactory.createContentForMedia(
-                MediaType.AUDIO, false, true));
+                MediaType.AUDIO, false, true, false));
 
         contents.add(
             JingleOfferFactory.createContentForMedia(
-                MediaType.VIDEO, false, true));
+                MediaType.VIDEO, false, true, false));
 
         contents.add(
             JingleOfferFactory.createContentForMedia(
-                MediaType.DATA, false, true));
+                MediaType.DATA, false, true, false));
 
         return contents;
     }
