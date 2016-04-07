@@ -574,10 +574,7 @@ public class ColibriConferenceImpl
     @Override
     public void dispose()
     {
-        synchronized (syncRoot)
-        {
-            this.disposed = true;
-        }
+        this.disposed = true;
     }
 
     /**
