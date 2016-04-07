@@ -44,13 +44,14 @@ import java.util.*;
 public class ColibriConferenceImpl
     implements ColibriConference
 {
-    private final static net.java.sip.communicator.util.Logger logger
-            = Logger.getLogger(ColibriConferenceImpl.class);
+    private final static Logger logger
+        = Logger.getLogger(ColibriConferenceImpl.class);
 
     /**
      * The instance of XMPP connection.
      */
     private final XmppConnection connection;
+
     /**
      * XMPP address of videobridge component.
      */
@@ -92,7 +93,13 @@ public class ColibriConferenceImpl
      * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
      */
     private boolean justAllocated = false;
-    
+
+    /**
+     * Flag indicates that this instance has been disposed and should not be
+     * used anymore.
+     */
+    private boolean disposed;
+
     /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by new
@@ -104,6 +111,26 @@ public class ColibriConferenceImpl
     }
 
     /**
+     * Checks if this instance has been disposed already and if so prints
+     * a warning message.
+     *
+     * @param operationName the name of the operation that will not happen and
+     * should be mentioned in the warning message.
+     *
+     * @return <tt>true</tt> if this instance has been disposed already or
+     * <tt>false</tt> otherwise.
+     */
+    private boolean checkIfDisposed(String operationName)
+    {
+        if (disposed)
+        {
+            logger.warn("Not doing " + operationName + " - instance disposed");
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -112,7 +139,7 @@ public class ColibriConferenceImpl
         if (!StringUtils.isNullOrEmpty(conferenceState.getID()))
         {
             throw new IllegalStateException(
-                "Can not change the bridge on active conference");
+                "Cannot change the bridge on active conference");
         }
         this.jitsiVideobridge = videobridgeJid;
     }
@@ -171,6 +198,10 @@ public class ColibriConferenceImpl
         {
             synchronized (syncRoot)
             {
+                // Only if not in 'disposed' state
+                if (checkIfDisposed("createColibriChannels"))
+                    return null;
+
                 acquireCreateConferenceSemaphore(endpointName);
 
                 colibriBuilder.reset();
@@ -332,6 +363,10 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            // Only if not in 'disposed' state
+            if (checkIfDisposed("expireChannels"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addExpireChannelsReq(channelInfo);
@@ -359,6 +394,10 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            // Only if not in 'disposed' state
+            if (checkIfDisposed("updateRtpDescription"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addRtpDescription(map, localChannelsInfo);
@@ -386,6 +425,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (checkIfDisposed("updateTransportInfo"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addTransportUpdateReq(map, localChannelsInfo);
@@ -413,6 +455,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (checkIfDisposed("updateSourcesInfo"))
+                return;
+
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
             {
                 logger.error(
@@ -463,6 +508,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (checkIfDisposed("updateBundleTransportInfo"))
+                return;
+
             colibriBuilder.reset();
 
             colibriBuilder.addBundleTransportUpdateReq(
@@ -489,6 +537,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (checkIfDisposed("expireConference"))
+                return;
+
             colibriBuilder.reset();
 
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
@@ -512,7 +563,28 @@ public class ColibriConferenceImpl
 
             // Reset conference state
             conferenceState = new ColibriConferenceIQ();
+
+            // Mark instance as 'disposed'
+            dispose();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void dispose()
+    {
+        this.disposed = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isDisposed()
+    {
+        return disposed;
     }
 
     /**
@@ -522,6 +594,9 @@ public class ColibriConferenceImpl
     public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
                                    boolean mute)
     {
+        if (checkIfDisposed("muteParticipant"))
+            return false;
+
         ColibriConferenceIQ request = new ColibriConferenceIQ();
         request.setID(conferenceState.getID());
         request.setName(conferenceState.getName());
@@ -611,6 +686,9 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
+            if (checkIfDisposed("updateChannelsInfo"))
+                return;
+
             colibriBuilder.reset();
 
             boolean send = false;
