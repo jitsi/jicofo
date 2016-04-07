@@ -104,8 +104,9 @@ public abstract class AbstractOperationSetJingle
 
         sessions.put(sid, session);
 
-        JingleIQ inviteIQ = createInviteIQ(
-                sid, useBundle, address, contents, startMuted);
+        JingleIQ inviteIQ
+            = createInviteIQ(
+                    sid, useBundle, address, contents, startMuted);
 
         IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
 
