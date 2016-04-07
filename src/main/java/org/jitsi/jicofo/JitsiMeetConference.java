@@ -195,7 +195,7 @@ public class JitsiMeetConference
      * will start audio muted. if the second element is <tt>true</tt> the
      * participant will start video muted.
      */
-    private boolean[] startMuted = new boolean[] {false, false};
+    private boolean[] startMuted = { false, false };
 
     /**
      * The name of shared Etherpad document. Is advertised through MUC Presence
@@ -717,16 +717,18 @@ public class JitsiMeetConference
 
                 jingle.terminateSession(peerJingleSession, Reason.GONE);
 
-                removeSSRCs(peerJingleSession,
+                removeSSRCs(
+                        peerJingleSession,
                         leftPeer.getSSRCsCopy(),
                         leftPeer.getSSRCGroupsCopy(),
                         false /* no JVB update - will expire */);
 
                 expireParticipantChannels(colibriConference, leftPeer);
             }
+
             boolean removed = participants.remove(leftPeer);
             logger.info(
-                "Removed participant: " + removed + ", " + contactAddress);
+                    "Removed participant: " + removed + ", " + contactAddress);
         }
         else
         {
@@ -848,11 +850,12 @@ public class JitsiMeetConference
     {
         Participant participant
             = findParticipantForJingleSession(peerJingleSession);
+        String peerJingleSessionAddress = peerJingleSession.getAddress();
 
         if (participant == null)
         {
             logger.error(
-                "No participant found for: " + peerJingleSession.getAddress());
+                    "No participant found for: " + peerJingleSessionAddress);
             return;
         }
 
@@ -861,7 +864,7 @@ public class JitsiMeetConference
             //FIXME: we should reject it ?
             logger.error(
                     "Reassigning jingle session for participant: "
-                        + peerJingleSession.getAddress());
+                        + peerJingleSessionAddress);
         }
 
         // XXX We will be acting on the received session-accept bellow.
@@ -881,7 +884,7 @@ public class JitsiMeetConference
         participant.addSSRCGroupsFromContent(answer);
 
         logger.info(
-                "Received SSRCs from " + peerJingleSession.getAddress() + " "
+                "Received SSRCs from " + peerJingleSessionAddress + " "
                     + participant.getSSRCS());
 
         // Update channel info
@@ -904,8 +907,8 @@ public class JitsiMeetConference
             if (jingleSessionToNotify == null)
             {
                 logger.warn(
-                    "No jingle session yet for "
-                        + peerToNotify.getChatMember().getContactAddress());
+                        "No jingle session yet for "
+                            + peerToNotify.getChatMember().getContactAddress());
 
                 peerToNotify.scheduleSSRCsToAdd(participant.getSSRCS());
                 peerToNotify.scheduleSSRCGroupsToAdd(
@@ -1306,8 +1309,7 @@ public class JitsiMeetConference
 
     ChatRoomMember findMember(String from)
     {
-        return chatRoom != null ?
-            chatRoom.findChatMember(from) : null;
+        return chatRoom == null ? null : chatRoom.findChatMember(from);
     }
 
     /**

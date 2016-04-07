@@ -106,8 +106,7 @@ public abstract class AbstractOperationSetJingle
         sessions.put(sid, session);
 
         JingleIQ inviteIQ
-            = createInviteIQ(
-                    sid, useBundle, address, contents, startMuted);
+            = createInviteIQ(sid, useBundle, address, contents, startMuted);
 
         IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
 
@@ -183,7 +182,6 @@ public abstract class AbstractOperationSetJingle
      */
     private boolean wasInviteAccepted(JingleSession session, IQ reply)
     {
-        String address = session.getAddress();
         if (reply == null)
         {
             // XXX By the time the acknowledgement timeout occurs, we may have
@@ -203,7 +201,7 @@ public abstract class AbstractOperationSetJingle
                 logger.error(
                         "Timeout waiting for RESULT response to "
                             + "'session-initiate' request from "
-                            + address);
+                            + session.getAddress());
                 return false;
             }
         }
@@ -214,8 +212,9 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Failed to send 'session-initiate' to " + address
-                        + ", error: " + reply.getError());
+                    "Failed to send 'session-initiate' to "
+                        + session.getAddress() + ", error: "
+                        + reply.getError());
             return false;
         }
     }

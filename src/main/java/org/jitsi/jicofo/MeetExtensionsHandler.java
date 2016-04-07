@@ -441,37 +441,39 @@ public class MeetExtensionsHandler
         }
 
         String from = presence.getFrom();
-
         JitsiMeetConference conference = getConferenceForMucJid(from);
 
         if (conference == null)
         {
-            logger.debug("Room not found for JID: " + from);
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Room not found for JID: " + from);
+            }
             return;
         }
 
-        ChatRoomMemberRole role
-            = conference.getRoleForMucJid(presence.getFrom());
+        ChatRoomMemberRole role = conference.getRoleForMucJid(from);
 
-        if(role != null &&
-            role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+        if (role != null && role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
         {
             StartMutedPacketExtension ext
-                = (StartMutedPacketExtension) presence.getExtension(
-                    StartMutedPacketExtension.ELEMENT_NAME,
-                    StartMutedPacketExtension.NAMESPACE);
-            if(ext != null)
+                = (StartMutedPacketExtension)
+                    presence.getExtension(
+                            StartMutedPacketExtension.ELEMENT_NAME,
+                            StartMutedPacketExtension.NAMESPACE);
+
+            if (ext != null)
             {
-                boolean[] startMuted = new boolean[2];
-                startMuted[0] = ext.getAudioMuted();
-                startMuted[1] = ext.getVideoMuted();
+                boolean[] startMuted
+                    = { ext.getAudioMuted(), ext.getVideoMuted() };
+
                 conference.setStartMuted(startMuted);
             }
         }
 
-        Participant participant
-                = conference.findParticipantForRoomJid(presence.getFrom());
+        Participant participant = conference.findParticipantForRoomJid(from);
         ColibriConference colibriConference = conference.getColibriConference();
+
         if (participant != null && colibriConference != null)
         {
             // Check if this conference is valid
@@ -479,8 +481,8 @@ public class MeetExtensionsHandler
             if (StringUtils.isNullOrEmpty(conferenceId))
             {
                 logger.error(
-                    "Unable to send DisplayNameChanged event" +
-                            " - no conference id");
+                        "Unable to send DisplayNameChanged event"
+                            + " - no conference id");
                 return;
             }
 
@@ -494,7 +496,6 @@ public class MeetExtensionsHandler
                     newDisplayName = ((Nick) pe).getName();
                     break;
                 }
-
             }
 
             if ((oldDisplayName == null && newDisplayName != null)
@@ -503,23 +504,22 @@ public class MeetExtensionsHandler
             {
                 participant.setDisplayName(newDisplayName);
 
-                // Prevent NPE when adding to event hashtable
-                if (newDisplayName == null)
-                {
-                    newDisplayName = "";
-                }
                 EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
                 if (eventAdmin != null)
                 {
+                    // Prevent NPE when adding to event hashtable
+                    if (newDisplayName == null)
+                    {
+                        newDisplayName = "";
+                    }
                     eventAdmin.sendEvent(
-                        EventFactory.endpointDisplayNameChanged(
-                            conferenceId,
-                            participant.getEndpointId(),
-                            newDisplayName));
+                            EventFactory.endpointDisplayNameChanged(
+                                    conferenceId,
+                                    participant.getEndpointId(),
+                                    newDisplayName));
                 }
             }
         }
-
     }
 
     /**
@@ -529,20 +529,23 @@ public class MeetExtensionsHandler
      */
     private IQ createErrorResponse(IQ request, XMPPError error)
     {
-        if (!(request.getType() == IQ.Type.GET
-                || request.getType() == IQ.Type.SET))
+        IQ.Type requestType = request.getType();
+        if (!(requestType == IQ.Type.GET || requestType == IQ.Type.SET))
         {
             throw new IllegalArgumentException(
-                "IQ must be of type 'set' or 'get'. Original IQ: "
+                    "IQ must be of type 'set' or 'get'. Original IQ: "
                         + request.toXML());
         }
-        final IQ result = new IQ()
-        {
-            public String getChildElementXML()
+
+        final IQ result
+            = new IQ()
             {
-                return "";
-            }
-        };
+                @Override
+                public String getChildElementXML()
+                {
+                    return "";
+                }
+            };
         result.setType(IQ.Type.ERROR);
         result.setPacketID(request.getPacketID());
         result.setFrom(request.getTo());

@@ -44,13 +44,14 @@ import java.util.*;
 public class ColibriConferenceImpl
     implements ColibriConference
 {
-    private final static net.java.sip.communicator.util.Logger logger
-            = Logger.getLogger(ColibriConferenceImpl.class);
+    private final static Logger logger
+        = Logger.getLogger(ColibriConferenceImpl.class);
 
     /**
      * The instance of XMPP connection.
      */
     private final XmppConnection connection;
+
     /**
      * XMPP address of videobridge component.
      */
@@ -138,7 +139,7 @@ public class ColibriConferenceImpl
         if (!StringUtils.isNullOrEmpty(conferenceState.getID()))
         {
             throw new IllegalStateException(
-                "Can not change the bridge on active conference");
+                "Cannot change the bridge on active conference");
         }
         this.jitsiVideobridge = videobridgeJid;
     }
