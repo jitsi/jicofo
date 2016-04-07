@@ -277,31 +277,34 @@ public class ChannelAllocator implements Runnable
     {
         List<ContentPacketExtension> contents = new ArrayList<>();
 
+        JitsiMeetConfig config = meetConference.getConfig();
+
         boolean disableIce = !newParticipant.hasIceSupport();
         boolean useDtls = newParticipant.hasDtlsSupport();
+        boolean useRtx
+            = config.isRtxEnabled() && newParticipant.hasRtxSupport();
 
         if (newParticipant.hasAudioSupport())
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.AUDIO, disableIce, useDtls));
+                            MediaType.AUDIO, disableIce, useDtls, useRtx));
         }
 
         if (newParticipant.hasVideoSupport())
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.VIDEO, disableIce, useDtls));
+                            MediaType.VIDEO, disableIce, useDtls, useRtx));
         }
 
-        JitsiMeetConfig config = meetConference.getConfig();
         // Is SCTP enabled ?
         boolean openSctp = Boolean.TRUE.equals(config.openSctp());
         if (openSctp && newParticipant.hasSctpSupport())
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.DATA, disableIce, useDtls));
+                            MediaType.DATA, disableIce, useDtls, useRtx));
         }
 
         ColibriConferenceIQ peerChannels = allocateChannels(contents);
