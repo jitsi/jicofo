@@ -116,17 +116,17 @@ public class ColibriConferenceImpl
      * @param operationName the name of the operation that will not happen and
      * should be mentioned in the warning message.
      *
-     * @return <tt>true</tt> if this instance has not been disposed yet or
+     * @return <tt>true</tt> if this instance has been disposed already or
      * <tt>false</tt> otherwise.
      */
-    private boolean assertNotDisposed(String operationName)
+    private boolean checkIfDisposed(String operationName)
     {
         if (disposed)
         {
             logger.warn("Not doing " + operationName + " - instance disposed");
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /**
@@ -198,7 +198,7 @@ public class ColibriConferenceImpl
             synchronized (syncRoot)
             {
                 // Only if not in 'disposed' state
-                if (!assertNotDisposed("createColibriChannels"))
+                if (checkIfDisposed("createColibriChannels"))
                     return null;
 
                 acquireCreateConferenceSemaphore(endpointName);
@@ -363,7 +363,7 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             // Only if not in 'disposed' state
-            if (!assertNotDisposed("expireChannels"))
+            if (checkIfDisposed("expireChannels"))
                 return;
 
             colibriBuilder.reset();
@@ -394,7 +394,7 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             // Only if not in 'disposed' state
-            if (!assertNotDisposed("updateRtpDescription"))
+            if (checkIfDisposed("updateRtpDescription"))
                 return;
 
             colibriBuilder.reset();
@@ -424,7 +424,7 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
-            if (!assertNotDisposed("updateTransportInfo"))
+            if (checkIfDisposed("updateTransportInfo"))
                 return;
 
             colibriBuilder.reset();
@@ -454,7 +454,7 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
-            if (!assertNotDisposed("updateSourcesInfo"))
+            if (checkIfDisposed("updateSourcesInfo"))
                 return;
 
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
@@ -507,7 +507,7 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
-            if (!assertNotDisposed("updateBundleTransportInfo"))
+            if (checkIfDisposed("updateBundleTransportInfo"))
                 return;
 
             colibriBuilder.reset();
@@ -536,7 +536,7 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
-            if (!assertNotDisposed("expireConference"))
+            if (checkIfDisposed("expireConference"))
                 return;
 
             colibriBuilder.reset();
@@ -593,7 +593,7 @@ public class ColibriConferenceImpl
     public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
                                    boolean mute)
     {
-        if (!assertNotDisposed("muteParticipant"))
+        if (checkIfDisposed("muteParticipant"))
             return false;
 
         ColibriConferenceIQ request = new ColibriConferenceIQ();
@@ -685,7 +685,7 @@ public class ColibriConferenceImpl
 
         synchronized (syncRoot)
         {
-            if (!assertNotDisposed("updateChannelsInfo"))
+            if (checkIfDisposed("updateChannelsInfo"))
                 return;
 
             colibriBuilder.reset();
