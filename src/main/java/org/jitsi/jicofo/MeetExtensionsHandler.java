@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo;
 
+import java.util.*;
+
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.rayo.*;
@@ -379,47 +381,50 @@ public class MeetExtensionsHandler
         }
 
         Participant participant = conference.findParticipantForRoomJid(jid);
-        if (participant != null)
+
+        if (participant == null)
         {
-            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-            if (eventAdmin != null)
+            logger.info("Ignoring log request from an unknown JID: " + jid);
+            return;
+        }
+
+        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+
+        if (eventAdmin == null)
+            return;
+
+        if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
+        {
+            String content = LogUtil.getContent(log);
+
+            if (content != null)
             {
-                if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
+                ColibriConference colibriConference
+                    = conference.getColibriConference();
+
+                if (colibriConference != null)
                 {
-                    String content = LogUtil.getContent(log);
-                    if (content != null)
-                    {
-                        ColibriConference colibriConference
-                            = conference.getColibriConference();
-                        if (colibriConference != null)
-                        {
-                            Event event =
-                                EventFactory.peerConnectionStats(
-                                    colibriConference.getConferenceId(),
-                                    participant.getEndpointId(),
-                                    content);
-                            if (event != null)
-                                eventAdmin.sendEvent(event);
-                        }
-                        else
-                        {
-                            logger.warn(
-                                    "Unhandled log request"
-                                        + "- no valid Colibri conference");
-                        }
-                    }
+                    Event event
+                        = EventFactory.peerConnectionStats(
+                                colibriConference.getConferenceId(),
+                                participant.getEndpointId(),
+                                content);
+
+                    if (event != null)
+                        eventAdmin.sendEvent(event);
                 }
                 else
                 {
-                    if (logger.isInfoEnabled())
-                        logger.info("Ignoring log request with an unknown ID:"
-                                            + log.getID());
+                    logger.warn(
+                            "Unhandled log request"
+                                + " - no valid Colibri conference");
                 }
             }
         }
-        else
+        else if (logger.isInfoEnabled())
         {
-            logger.info("Ignoring log request from an unknown JID: " + jid);
+            logger.info(
+                    "Ignoring log request with an unknown ID:" + log.getID());
         }
     }
 
@@ -498,9 +503,7 @@ public class MeetExtensionsHandler
                 }
             }
 
-            if ((oldDisplayName == null && newDisplayName != null)
-                || (oldDisplayName != null
-                        && !oldDisplayName.equals(newDisplayName)))
+            if (!Objects.equals(oldDisplayName, newDisplayName))
             {
                 participant.setDisplayName(newDisplayName);
 

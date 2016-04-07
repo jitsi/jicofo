@@ -47,7 +47,7 @@ public abstract class AbstractOperationSetJingle
     /**
      * The list of active Jingle sessions.
      */
-    protected Map<String, JingleSession> sessions = new HashMap<>();
+    protected final Map<String, JingleSession> sessions = new HashMap<>();
 
     /**
      * Implementing classes should return our JID here.
