@@ -129,7 +129,10 @@ public class JitsiMeetRecording
 
         if (services.getJibriDetector() != null)
         {
-            recorder = new JibriRecorder(meetConference, xmppOpSet);
+            recorder = new JibriRecorder(
+                    meetConference, xmppOpSet,
+                    FocusBundleActivator.getSharedThreadPool(),
+                    meetConference.getGlobalConfig());
             return recorder;
         }
 

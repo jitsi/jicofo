@@ -30,6 +30,12 @@ import org.osgi.framework.*;
 public class JitsiMeetGlobalConfig
 {
     /**
+     * The logger instance used by this class.
+     */
+    private final static Logger logger
+        = Logger.getLogger(JitsiMeetGlobalConfig.class);
+
+    /**
      * The name of configuration property that sets {@link #maxSSRCsPerUser}.
      */
     private final static String MAX_SSRC_PER_USER_CONFIG_PNAME
@@ -39,6 +45,25 @@ public class JitsiMeetGlobalConfig
      * The default value for {@link #maxSSRCsPerUser}.
      */
     private final static int DEFAULT_MAX_SSRC_PER_USER = 20;
+
+    /**
+     * The name of the config property which specifies how long we're going to
+     * wait for Jibri to start recording from the time it accepted START request
+     */
+    private static final String PENDING_TIMEOUT_PROP_NAME
+        = "org.jitsi.jicofo.jibri.PENDING_TIMEOUT";
+
+    /**
+     * The default value for {@link #PENDING_TIMEOUT_PROP_NAME}.
+     */
+    private static final int DEFAULT_PENDING_TIMEOUT = 30;
+
+    /**
+     * Tells how many seconds we're going to wait for the Jibri to start
+     * recording. If set to <tt>-1</tt> it means that these timeouts are
+     * disabled in the current session.
+     */
+    private int jibriPendingTimeout;
 
     /**
      * Maximal amount of SSRCs per media that can be advertised by
@@ -103,7 +128,22 @@ public class JitsiMeetGlobalConfig
     {
         this.maxSSRCsPerUser
             = configService.getInt(
-                MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
+                    MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
+
+        jibriPendingTimeout
+            = configService.getInt(
+                    PENDING_TIMEOUT_PROP_NAME, DEFAULT_PENDING_TIMEOUT);
+
+        if (jibriPendingTimeout > 0)
+        {
+            logger.info(
+                    "Jibri requests in PENDING state will be timed out after: "
+                        + jibriPendingTimeout + " seconds");
+        }
+        else
+        {
+            logger.warn("Jibri PENDING timeouts are disabled");
+        }
     }
 
     /**
@@ -127,5 +167,18 @@ public class JitsiMeetGlobalConfig
     public int getMaxSSRCsPerUser()
     {
         return maxSSRCsPerUser;
+    }
+
+    /**
+     * Tells how many seconds we're going to wait for the Jibri to start
+     * recording. If set to <tt>-1</tt> it means that these timeouts are
+     * disabled in the current session.
+     *
+     * @return <tt>int</tt> which is the number of seconds we wait for the Jibri
+     *         to start recording after it accepted our request.
+     */
+    public int getJibriPendingTimeout()
+    {
+        return jibriPendingTimeout;
     }
 }

@@ -48,9 +48,10 @@ public class JitsiMeetConfig
 
     /**
      * The name of adaptive simulcast configuration property. Pass 'true' to
-     * enable or 'false' to disable.
+     * disable or 'false' to enable.
      */
-    public static final String ADAPTIVE_SIMULCAST_PNAME = "adaptiveSimulcast";
+    public static final String DISABLE_ADAPTIVE_SIMULCAST_PNAME
+        = "disableAdaptiveSimulcast";
 
     /**
      * The name the configuration property used to configure videobridge
@@ -101,6 +102,11 @@ public class JitsiMeetConfig
      * The name of the start muted property for video.
      */
     public static final String START_VIDEO_MUTED = "startVideoMuted";
+
+    /**
+     * The name of the "disableRtx" property.
+     */
+    public static final String DISABLE_RTX_PNAME = "disableRtx";
 
     private final Map<String, String> properties;
 
@@ -167,7 +173,8 @@ public class JitsiMeetConfig
      */
     public Boolean isAdaptiveSimulcastEnabled()
     {
-        return getBoolean(ADAPTIVE_SIMULCAST_PNAME);
+        Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
+        return disabled == null ? null : !disabled;
     }
 
     /**
@@ -178,6 +185,16 @@ public class JitsiMeetConfig
     {
         String mode = properties.get(SIMULCAST_MODE_PNAME);
         return SimulcastMode.fromString(mode);
+    }
+
+    /**
+     * @return {@code true} iff RTX is enabled in this {@link JitsiMeetConfig}.
+     */
+    public boolean isRtxEnabled()
+    {
+        String disableRtxStr = properties.get(DISABLE_RTX_PNAME);
+        return StringUtils.isNullOrEmpty(disableRtxStr)
+            || !Boolean.parseBoolean(disableRtxStr);
     }
 
     /**

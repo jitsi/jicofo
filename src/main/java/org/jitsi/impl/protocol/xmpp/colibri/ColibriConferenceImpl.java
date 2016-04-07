@@ -214,6 +214,8 @@ public class ColibriConferenceImpl
             if (logger.isDebugEnabled())
                 logger.debug(Thread.currentThread() + " sending alloc request");
 
+            logRequest("Channel allocate request", allocateRequest);
+
             // FIXME retry allocation on timeout ?
             Packet response = sendAllocRequest(endpointName, allocateRequest);
 
