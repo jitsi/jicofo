@@ -740,13 +740,13 @@ public class JitsiMeetConference
     }
 
     /**
-     * Expires channels for given participant unless there are some
+     * Expires channels for given {@link Participant} unless there are some
      * circumstances that prevents us from doing it.
      *
      * @param colibriConference <tt>ColibriConference</tt> instance that owns
      *        the channels to be expired.
-     * @param participant the <tt>Participant</tt> for whom Colibri channels are
-     *        to be expired.
+     * @param participant the <tt>Participant</tt> whose Colibri channels are to
+     *        be expired.
      */
     void expireParticipantChannels(ColibriConference colibriConference,
                                    Participant       participant)
@@ -1559,8 +1559,10 @@ public class JitsiMeetConference
     }
 
     /**
-     * Sets <tt>startMuted</tt> property.
-     * @param startMuted the new value to be set.
+     * Sets the value of the <tt>startMuted</tt> property of this instance.
+     *
+     * @param startMuted the new value to set on this instance. The specified
+     * array is copied.
      */
     public void setStartMuted(boolean[] startMuted)
     {

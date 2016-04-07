@@ -739,8 +739,8 @@ public class Participant
     }
 
     /**
-     * Returns MUC JID of this <tt>Participant</tt>
-     * @return full MUC address eg. "room1@muc.server.net/nickname"
+     * Returns the MUC JID of this <tt>Participant</tt>.
+     * @return full MUC address e.g. "room1@muc.server.net/nickname"
      */
     public String getMucJid()
     {

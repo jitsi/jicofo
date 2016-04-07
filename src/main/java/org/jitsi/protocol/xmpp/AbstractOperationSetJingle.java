@@ -38,13 +38,14 @@ public abstract class AbstractOperationSetJingle
     implements OperationSetJingle
 {
     /**
-     * The logger.
+     * The {@code Logger} used by the class {@code AbstractOperationSetJingle}
+     * and its instances to print debug-related information.
      */
     private static final Logger logger
         = Logger.getLogger(AbstractOperationSetJingle.class);
 
     /**
-     * The list of active Jingle session.
+     * The list of active Jingle sessions.
      */
     protected Map<String, JingleSession> sessions = new HashMap<>();
 
@@ -65,7 +66,7 @@ public abstract class AbstractOperationSetJingle
     /**
      * Finds Jingle session for given session identifier.
      *
-     * @param sid the identifier of the session for which we're looking for.
+     * @param sid the identifier of the session which we're looking for.
      *
      * @return Jingle session for given session identifier or <tt>null</tt>
      *         if no such session exists.
@@ -168,16 +169,17 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Checks based on supplied <tt>reply</tt> IQ value whether or not given
-     * <tt>JingleSession</tt> has been accepted by the client.
+     * Determines whether a specific {@limk JingleSession} has been accepted by
+     * the client judging by a specific {@code reply} {@link IQ} (received in
+     * reply to an invite IQ sent withing the specified {@code JingleSession}).
      *
      * @param session <tt>JingleSession</tt> instance for which we're evaluating
      * the response value.
      * @param reply <tt>IQ</tt> response to Jingle invite IQ or <tt>null</tt> in
      * case of timeout.
      *
-     * @return <tt>true</tt> if invite IQ for which we're evaluating the value
-     * of response packet is considered accepted or <tt>false</tt> otherwise.
+     * @return <tt>true</tt> if the invite IQ to which {@code reply} replies is
+     * considered accepted; <tt>false</tt>, otherwise.
      */
     private boolean wasInviteAccepted(JingleSession session, IQ reply)
     {
@@ -253,7 +255,7 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * The logic for processing received JingleIQs.
+     * The logic for processing received <tt>JingleIQ</tt>s.
      *
      * @param iq the <tt>JingleIQ</tt> to process.
      */
