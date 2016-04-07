@@ -83,6 +83,12 @@ public class MockMediaStream
     }
 
     @Override
+    public RetransmissionRequester getRetransmissionRequester()
+    {
+        return null;
+    }
+
+    @Override
     public Map<Byte, RTPExtension> getActiveRTPExtensions()
     {
         return null;
