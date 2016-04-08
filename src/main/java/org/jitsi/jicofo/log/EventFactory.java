@@ -156,7 +156,7 @@ public class EventFactory
             String endpointId,
             String displayName)
     {
-        Dictionary properties = new Hashtable(3);
+        Dictionary<String, Object> properties = new Hashtable<>(3);
         properties.put(CONFERENCE_ID_KEY, conferenceId);
         properties.put(ENDPOINT_ID_KEY, endpointId);
         properties.put(DISPLAY_NAME_KEY, displayName);
@@ -302,7 +302,7 @@ public class EventFactory
             String roomJid,
             String focusId)
     {
-        Dictionary properties = new Hashtable(2);
+        Dictionary<String, Object> properties = new Hashtable<>(2);
 
         properties.put(ROOM_JID_KEY, roomJid);
         properties.put(FOCUS_ID_KEY, focusId);
@@ -325,7 +325,7 @@ public class EventFactory
             String focus,
             String bridgeJid)
     {
-        Dictionary properties = new Hashtable(3);
+        Dictionary<String, Object> properties = new Hashtable<>(4);
         properties.put(CONFERENCE_ID_KEY, conferenceId);
         properties.put(ROOM_JID_KEY, roomJid);
         properties.put(FOCUS_ID_KEY, focus);
@@ -349,8 +349,7 @@ public class EventFactory
             String sessionId,  String              userIdentity,
             String machineUid, Map<String, String> properties )
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(4);
+        Dictionary<String, Object> eventProps = new Hashtable<>(4);
 
         eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
         eventProps.put(USER_IDENTITY_KEY, userIdentity);
@@ -372,8 +371,7 @@ public class EventFactory
      */
     public static Event authSessionDestroyed(String sessionId)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(1);
+        Dictionary<String, Object> eventProps = new Hashtable<>(1);
 
         eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
 
@@ -393,8 +391,7 @@ public class EventFactory
                                               String focusId,
                                               String endpointId)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(2);
+        Dictionary<String, Object> eventProps = new Hashtable<>(2);
 
         eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
         eventProps.put(FOCUS_ID_KEY, focusId);
@@ -413,8 +410,7 @@ public class EventFactory
      */
     public static Event focusCreated(String focusId, String roomName)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(2);
+        Dictionary<String, Object> eventProps = new Hashtable<>(2);
 
         eventProps.put(FOCUS_ID_KEY, focusId);
         eventProps.put(ROOM_JID_KEY, roomName);
@@ -432,8 +428,7 @@ public class EventFactory
      */
     public static Event focusDestroyed(String focusId, String roomName)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(2);
+        Dictionary<String, Object> eventProps = new Hashtable<>(2);
 
         eventProps.put(FOCUS_ID_KEY, focusId);
         eventProps.put(ROOM_JID_KEY, roomName);
