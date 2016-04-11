@@ -108,6 +108,11 @@ public class JitsiMeetConfig
      */
     public static final String DISABLE_RTX_PNAME = "disableRtx";
 
+    /**
+     * The name of the "enableFec" property.
+     */
+    public static final String ENABLE_FEC_PNAME = "enableFec";
+
     private final Map<String, String> properties;
 
     /**
@@ -195,6 +200,16 @@ public class JitsiMeetConfig
         String disableRtxStr = properties.get(DISABLE_RTX_PNAME);
         return StringUtils.isNullOrEmpty(disableRtxStr)
             || !Boolean.parseBoolean(disableRtxStr);
+    }
+
+    /**
+     * @return {@code true} iff FEC is enabled in this {@link JitsiMeetConfig}.
+     */
+    public boolean isFecEnabled()
+    {
+        String enableFec = properties.get(ENABLE_FEC_PNAME);
+        return !StringUtils.isNullOrEmpty(enableFec)
+            && Boolean.parseBoolean(enableFec);
     }
 
     /**

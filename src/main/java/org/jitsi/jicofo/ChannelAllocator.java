@@ -283,19 +283,20 @@ public class ChannelAllocator implements Runnable
         boolean useDtls = newParticipant.hasDtlsSupport();
         boolean useRtx
             = config.isRtxEnabled() && newParticipant.hasRtxSupport();
+        boolean useFec = config.isFecEnabled();
 
         if (newParticipant.hasAudioSupport())
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.AUDIO, disableIce, useDtls, useRtx));
+                            MediaType.AUDIO, disableIce, useDtls, useRtx, useFec));
         }
 
         if (newParticipant.hasVideoSupport())
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.VIDEO, disableIce, useDtls, useRtx));
+                            MediaType.VIDEO, disableIce, useDtls, useRtx, useFec));
         }
 
         // Is SCTP enabled ?
@@ -304,7 +305,7 @@ public class ChannelAllocator implements Runnable
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.DATA, disableIce, useDtls, useRtx));
+                            MediaType.DATA, disableIce, useDtls, useRtx, useFec));
         }
 
         ColibriConferenceIQ peerChannels = allocateChannels(contents);
