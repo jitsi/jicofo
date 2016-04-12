@@ -220,6 +220,8 @@ public class ColibriConferenceImpl
             // FIXME retry allocation on timeout ?
             Packet response = sendAllocRequest(endpointName, allocateRequest);
 
+            logResponse("Channel allocate response", response);
+
             if (logger.isDebugEnabled())
                 logger.debug(
                     Thread.currentThread() +
@@ -345,6 +347,18 @@ public class ColibriConferenceImpl
             }
             return false;
         }
+    }
+
+    private void logResponse(String message, Packet response)
+    {
+        if (!logger.isDebugEnabled())
+            return;
+
+        String responseXml = response != null ? response.toXML() : "TIMEOUT";
+
+        responseXml = responseXml.replace(">",">\n");
+
+        logger.debug(message + "\n" + responseXml);
     }
 
     private void logRequest(String message, IQ iq)
