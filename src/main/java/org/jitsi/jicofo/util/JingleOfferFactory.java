@@ -50,7 +50,7 @@ public class JingleOfferFactory
      */
     public static ContentPacketExtension createContentForMedia(
             MediaType mediaType, boolean disableIce,
-            boolean useDtls, boolean useRtx)
+            boolean useDtls, boolean useRtx, boolean useFec)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -67,7 +67,7 @@ public class JingleOfferFactory
         }
         else if (mediaType == MediaType.VIDEO)
         {
-            addVideoToContent(content, useRtx);
+            addVideoToContent(content, useRtx, useFec);
         }
         else if (mediaType == MediaType.DATA)
         {
@@ -115,7 +115,7 @@ public class JingleOfferFactory
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
     private static void addVideoToContent(ContentPacketExtension content,
-                                          boolean useRtx)
+                                          boolean useRtx, boolean useFec)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -187,11 +187,14 @@ public class JingleOfferFactory
                 createRtcpFbPacketExtension("goog-remb", null));
         }
 
-        // a=rtpmap:116 red/90000
-        //addPayloadTypeExtension(rtpDesc, 116, Constants.RED, 90000);
+        if (useFec)
+        {
+            // a=rtpmap:116 red/90000
+            addPayloadTypeExtension(rtpDesc, 116, Constants.RED, 90000);
 
-        // a=rtpmap:117 ulpfec/90000
-        //addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
+            // a=rtpmap:117 ulpfec/90000
+            addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
+        }
 
         content.addChildExtension(rtpDesc);
     }
