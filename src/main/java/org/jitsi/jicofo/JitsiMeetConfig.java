@@ -108,6 +108,16 @@ public class JitsiMeetConfig
      */
     public static final String DISABLE_RTX_PNAME = "disableRtx";
 
+    /**
+     * The name of the "minBitrate" property.
+     */
+    public static final String MIN_BITRATE_PNAME = "minBitrate";
+
+    /**
+     * The name of the "startBitrate" property.
+     */
+    public static final String START_BITRATE_PNAME = "startBitrate";
+
     private final Map<String, String> properties;
 
     /**
@@ -261,5 +271,23 @@ public class JitsiMeetConfig
     public Integer getVideoMuted()
     {
         return getInt(START_VIDEO_MUTED);
+    }
+
+    /**
+     * @return the "min bitrate" which should be included in offers.
+     */
+    public int getMinBitrate()
+    {
+        Integer minBitrate = getInt(MIN_BITRATE_PNAME);
+        return minBitrate == null ? -1 : minBitrate;
+    }
+
+    /**
+     * @return the "start bitrate" which should be included in offers.
+     */
+    public int getStartBitrate()
+    {
+        Integer startBitrate = getInt(START_BITRATE_PNAME);
+        return startBitrate == null ? -1 : startBitrate;
     }
 }

@@ -44,13 +44,42 @@ public class JingleOfferFactory
      * should be indicated in the offer.
      * @param useDtls whether to add a DTLS element under the transport
      * elements in the offer.
+     * @param useRtx whether RTX should be included in the offer.
+     *
+     * @return <tt>ContentPacketExtension</tt> for given media type that will be
+     *         used in initial conference offer.
+     */
+    public static ContentPacketExtension createContentForMedia(
+        MediaType mediaType, boolean disableIce,
+        boolean useDtls, boolean useRtx)
+    {
+        return createContentForMedia(
+            mediaType, disableIce, useDtls, useRtx, -1, -1);
+    }
+
+    /**
+     * Creates <tt>ContentPacketExtension</tt> for given media type that will be
+     * included in initial conference offer.
+     *
+     * @param mediaType the media type for which new offer content will
+     * be created.
+     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     * should be indicated in the offer.
+     * @param useDtls whether to add a DTLS element under the transport
+     * elements in the offer.
+     * @param useRtx whether RTX should be included in the offer.
+     * @param minBitrate the value to set to the "x-google-min-bitrate" fmtp
+     * line for video, or -1 to not add such a line.
+     * @param startBitrate the value to set to the "x-google-start-bitrate" fmtp
+     * line for video, or -1 to not add such a line.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
             MediaType mediaType, boolean disableIce,
-            boolean useDtls, boolean useRtx)
+            boolean useDtls, boolean useRtx,
+            int minBitrate, int startBitrate)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -67,7 +96,7 @@ public class JingleOfferFactory
         }
         else if (mediaType == MediaType.VIDEO)
         {
-            addVideoToContent(content, useRtx);
+            addVideoToContent(content, useRtx, minBitrate, startBitrate);
         }
         else if (mediaType == MediaType.DATA)
         {
@@ -115,7 +144,9 @@ public class JingleOfferFactory
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
     private static void addVideoToContent(ContentPacketExtension content,
-                                          boolean useRtx)
+                                          boolean useRtx,
+                                          int minBitrate,
+                                          int startBitrate)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -157,6 +188,18 @@ public class JingleOfferFactory
         // a=rtcp-fb:100 goog-remb
         vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
 
+        if (minBitrate != -1)
+        {
+            addParameterExtension(
+                vp8, "x-google-min-bitrate", String.valueOf(minBitrate));
+        }
+
+        if (startBitrate != -1)
+        {
+            addParameterExtension(
+                vp8, "x-google-start-bitrate", String.valueOf(startBitrate));
+        }
+
         if (useRtx)
         {
             // a=rtpmap:96 rtx/90000
@@ -164,11 +207,7 @@ public class JingleOfferFactory
                 = addPayloadTypeExtension(rtpDesc, 96, Constants.RTX, 90000);
 
             // a=fmtp:96 apt=100
-            ParameterPacketExtension rtxApt
-                = new ParameterPacketExtension();
-            rtxApt.setName("apt");
-            rtxApt.setValue(String.valueOf(vp8pt));
-            rtx.addParameter(rtxApt);
+            addParameterExtension(rtx, "apt", String.valueOf(vp8pt));
 
             // Chrome doesn't have these when it creates an offer, but they were
             // observed in a hangouts conference. Not sure whether they have any
@@ -194,6 +233,27 @@ public class JingleOfferFactory
         //addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
 
         content.addChildExtension(rtpDesc);
+    }
+
+    /**
+     * Adds a {@link ParameterPacketExtension} with a given name and value
+     * to a given {@link PayloadTypePacketExtension}.
+     * @param ptExt the extension to add to.
+     * @param name the name of the parameter to add.
+     * @param value the value of the parameter to add.
+     * @return the added extension.
+     */
+    private static ParameterPacketExtension addParameterExtension(
+        PayloadTypePacketExtension ptExt,
+                                              String name, String value)
+    {
+        ParameterPacketExtension parameterPacketExtension
+            = new ParameterPacketExtension();
+        parameterPacketExtension.setName(name);
+        parameterPacketExtension.setValue(value);
+        ptExt.addParameter(parameterPacketExtension);
+
+        return parameterPacketExtension;
     }
 
     /**
@@ -268,16 +328,10 @@ public class JingleOfferFactory
         opus.setChannels(2);
 
         // fmtp:111 minptime=10
-        ParameterPacketExtension opusMinptime
-            = new ParameterPacketExtension();
-        opusMinptime.setName("minptime");
-        opusMinptime.setValue("10");
-        opus.addParameter(opusMinptime);
-        ParameterPacketExtension opusFec
-                = new ParameterPacketExtension();
-        opusFec.setName("useinbandfec");
-        opusFec.setValue("1");
-        opus.addParameter(opusFec);
+        addParameterExtension(opus, "minptime", "10");
+
+        // fmtp:111 useinbandfec=1
+        addParameterExtension(opus, "useinbandfec", "1");
 
         // a=rtpmap:103 ISAC/16000
         addPayloadTypeExtension(rtpDesc, 103, "ISAC", 16000);

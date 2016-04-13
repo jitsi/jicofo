@@ -295,7 +295,9 @@ public class ChannelAllocator implements Runnable
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.VIDEO, disableIce, useDtls, useRtx));
+                            MediaType.VIDEO, disableIce, useDtls, useRtx,
+                            config.getMinBitrate(),
+                            config.getStartBitrate()));
         }
 
         // Is SCTP enabled ?
