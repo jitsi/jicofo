@@ -1169,6 +1169,14 @@ public class JitsiMeetConference
         ssrcsToRemove = removedSSRCs;
         ssrcGroupsToRemove = removedGroups;
 
+        // We remove all ssrc params from SourcePacketExtension as we want
+        // the client to simply remove all lines corresponding to given SSRC and
+        // not care about parameter's values we send.
+        // Some params might get out of sync for various reasons like for
+        // example Chrome coming up with 'default' value for missing 'mslabel'
+        // or when we'll be doing lip-sync stream merge
+        SSRCSignaling.deleteSSRCParams(ssrcsToRemove);
+
         // Updates SSRC Groups on the bridge
         ColibriConference colibriConference = this.colibriConference;
         // We may hit null here during conference restart, but that's not

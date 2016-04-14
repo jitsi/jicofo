@@ -24,6 +24,8 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
+import org.jivesoftware.smack.packet.*;
+
 import java.util.*;
 
 /**
@@ -52,6 +54,37 @@ public class SSRCSignaling
         {
             dstParam.setValue(srcParam.getValue());
         }
+    }
+
+    /**
+     * Call will remove all {@link ParameterPacketExtension}s from all
+     * <tt>SourcePacketExtension</tt>s stored in given <tt>MediaSSRCMap</tt>.
+     *
+     * @param ssrcMap the <tt>MediaSSRCMap</tt> which contains the SSRC packet
+     * extensions to be stripped out of their parameters.
+     */
+    public static void deleteSSRCParams(MediaSSRCMap ssrcMap)
+    {
+        for (String media : ssrcMap.getMediaTypes())
+        {
+            for (SourcePacketExtension ssrc : ssrcMap.getSSRCsForMedia(media))
+            {
+                deleteSSRCParams(ssrc);
+            }
+        }
+    }
+
+    /**
+     * Removes all child <tt>ParameterPacketExtension</tt>s from given
+     * <tt>SourcePacketExtension</tt>.
+     *
+     * @param ssrcPe the instance of <tt>SourcePacketExtension</tt> which will
+     * be stripped off all parameters.
+     */
+    public static void deleteSSRCParams(SourcePacketExtension ssrcPe)
+    {
+        List<? extends PacketExtension> peList = ssrcPe.getChildExtensions();
+        peList.removeAll(ssrcPe.getParameters());
     }
 
     /**
