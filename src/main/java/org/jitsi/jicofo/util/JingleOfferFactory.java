@@ -35,11 +35,9 @@ public class JingleOfferFactory
     private JingleOfferFactory(){ }
 
     /**
-     * Creates <tt>ContentPacketExtension</tt> for given media type that will be
-     * included in initial conference offer.
+     * Creates a {@link ContentPacketExtension} for the audio media type that
+     * will be included in initial conference offer.
      *
-     * @param mediaType the media type for which new offer content will
-     * be created.
      * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
      * should be indicated in the offer.
      * @param useDtls whether to add a DTLS element under the transport
@@ -48,11 +46,56 @@ public class JingleOfferFactory
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
-    public static ContentPacketExtension createContentForMedia(
-        MediaType mediaType, boolean disableIce, boolean useDtls)
+    public static ContentPacketExtension createAudioContent(
+        boolean disableIce, boolean useDtls)
     {
         return createContentForMedia(
-            mediaType, disableIce, useDtls, false, -1, -1);
+            MediaType.AUDIO, disableIce, useDtls, false, -1, -1);
+    }
+
+    /**
+     * Creates a {@link ContentPacketExtension} for the data media type that
+     * will be included in initial conference offer.
+     *
+     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     * should be indicated in the offer.
+     * @param useDtls whether to add a DTLS element under the transport
+     * elements in the offer.
+     *
+     * @return <tt>ContentPacketExtension</tt> for given media type that will be
+     *         used in initial conference offer.
+     */
+    public static ContentPacketExtension createDataContent(
+        boolean disableIce, boolean useDtls)
+    {
+        return createContentForMedia(
+            MediaType.DATA, disableIce, useDtls, false, -1, -1);
+    }
+
+    /**
+     * Creates a {@link ContentPacketExtension} for the video media type that
+     * will be included in initial conference offer.
+     *
+     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     * should be indicated in the offer.
+     * @param useDtls whether to add a DTLS element under the transport
+     * elements in the offer.
+     * @param useRtx whether RTX should be included in the offer.
+     * @param minBitrate the value to set to the "x-google-min-bitrate" fmtp
+     * line for video, or -1 to not add such a line.
+     * @param startBitrate the value to set to the "x-google-start-bitrate" fmtp
+     * line for video, or -1 to not add such a line.
+     *
+     * @return <tt>ContentPacketExtension</tt> for given media type that will be
+     *         used in initial conference offer.
+     */
+    public static ContentPacketExtension createVideoContent(
+            boolean disableIce, boolean useDtls, boolean useRtx,
+            int minBitrate, int startBitrate)
+    {
+        return createContentForMedia(
+                MediaType.VIDEO, disableIce, useDtls, useRtx,
+                minBitrate, startBitrate);
     }
 
     /**
