@@ -313,17 +313,12 @@ public class ColibriThreadingTest
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(
-                MediaType.AUDIO, false, true, false));
+        contents.add(JingleOfferFactory.createAudioContent(false, true));
 
         contents.add(
-            JingleOfferFactory.createContentForMedia(
-                MediaType.VIDEO, false, true, false));
+            JingleOfferFactory.createVideoContent(false, true, false, -1, -1));
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(
-                MediaType.DATA, false, true, false));
+        contents.add(JingleOfferFactory.createDataContent(false, true));
 
         return contents;
     }

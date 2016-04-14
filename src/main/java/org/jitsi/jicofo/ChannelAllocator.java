@@ -28,7 +28,6 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import java.util.*;
@@ -287,15 +286,16 @@ public class ChannelAllocator implements Runnable
         if (newParticipant.hasAudioSupport())
         {
             contents.add(
-                    JingleOfferFactory.createContentForMedia(
-                            MediaType.AUDIO, disableIce, useDtls, useRtx));
+                    JingleOfferFactory.createAudioContent(disableIce, useDtls));
         }
 
         if (newParticipant.hasVideoSupport())
         {
             contents.add(
-                    JingleOfferFactory.createContentForMedia(
-                            MediaType.VIDEO, disableIce, useDtls, useRtx));
+                    JingleOfferFactory.createVideoContent(
+                            disableIce, useDtls, useRtx,
+                            config.getMinBitrate(),
+                            config.getStartBitrate()));
         }
 
         // Is SCTP enabled ?
@@ -303,8 +303,7 @@ public class ChannelAllocator implements Runnable
         if (openSctp && newParticipant.hasSctpSupport())
         {
             contents.add(
-                    JingleOfferFactory.createContentForMedia(
-                            MediaType.DATA, disableIce, useDtls, useRtx));
+                    JingleOfferFactory.createDataContent(disableIce, useDtls));
         }
 
         ColibriConferenceIQ peerChannels = allocateChannels(contents);
