@@ -44,17 +44,15 @@ public class JingleOfferFactory
      * should be indicated in the offer.
      * @param useDtls whether to add a DTLS element under the transport
      * elements in the offer.
-     * @param useRtx whether RTX should be included in the offer.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createContentForMedia(
-        MediaType mediaType, boolean disableIce,
-        boolean useDtls, boolean useRtx)
+        MediaType mediaType, boolean disableIce, boolean useDtls)
     {
         return createContentForMedia(
-            mediaType, disableIce, useDtls, useRtx, -1, -1);
+            mediaType, disableIce, useDtls, false, -1, -1);
     }
 
     /**

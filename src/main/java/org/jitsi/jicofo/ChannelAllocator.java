@@ -288,7 +288,7 @@ public class ChannelAllocator implements Runnable
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.AUDIO, disableIce, useDtls, useRtx));
+                            MediaType.AUDIO, disableIce, useDtls));
         }
 
         if (newParticipant.hasVideoSupport())
@@ -306,7 +306,7 @@ public class ChannelAllocator implements Runnable
         {
             contents.add(
                     JingleOfferFactory.createContentForMedia(
-                            MediaType.DATA, disableIce, useDtls, useRtx));
+                            MediaType.DATA, disableIce, useDtls));
         }
 
         ColibriConferenceIQ peerChannels = allocateChannels(contents);
