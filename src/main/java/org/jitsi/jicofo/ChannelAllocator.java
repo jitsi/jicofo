@@ -299,7 +299,7 @@ public class ChannelAllocator implements Runnable
         }
 
         // Is SCTP enabled ?
-        boolean openSctp = Boolean.TRUE.equals(config.openSctp());
+        boolean openSctp = config.openSctp() == null || config.openSctp();
         if (openSctp && newParticipant.hasSctpSupport())
         {
             contents.add(
