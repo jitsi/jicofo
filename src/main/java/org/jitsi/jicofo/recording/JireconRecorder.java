@@ -23,6 +23,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.Colibri
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -142,7 +143,8 @@ public class JireconRecorder
             }
             else
             {
-                logger.error("Unexpected response: " + reply.toXML());
+                logger.error(
+                        "Unexpected response: " + IQUtils.responseToXML(reply));
             }
         }
         else if (isRecording() && doRecord.equals(State.OFF))

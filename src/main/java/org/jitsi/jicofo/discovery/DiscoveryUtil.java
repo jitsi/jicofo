@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -180,8 +181,7 @@ public class DiscoveryUtil
                 logger.error(
                         "Failed to discover version, req: " + versionIq.toXML()
                             + ", response: "
-                            + (response != null ?
-                            response.toXML() : "null(timeout)"));
+                            + IQUtils.responseToXML(response));
             }
         }
         return null;

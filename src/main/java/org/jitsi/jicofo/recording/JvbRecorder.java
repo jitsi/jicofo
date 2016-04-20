@@ -22,6 +22,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.Colibri
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -101,8 +102,7 @@ public class JvbRecorder
         Packet reply
             = xmpp.getXmppConnection()
                     .sendPacketAndGetReply(toggleRecordingIq);
-        logger.info("REC reply received: "
-            + (reply != null ? reply.toXML() : "timeout"));
+        logger.info("REC reply received: " + IQUtils.responseToXML(reply));
         if (reply instanceof ColibriConferenceIQ)
         {
             ColibriConferenceIQ colibriReply = (ColibriConferenceIQ) reply;
@@ -123,8 +123,8 @@ public class JvbRecorder
         else
         {
             logger.error(
-                conferenceId
-                    + " unexpected response received: " + reply.toXML());
+                    conferenceId + " unexpected response received: "
+                        + IQUtils.responseToXML(reply));
         }
         return true;
     }

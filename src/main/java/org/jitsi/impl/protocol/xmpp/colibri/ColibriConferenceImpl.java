@@ -28,6 +28,7 @@ import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -354,7 +355,7 @@ public class ColibriConferenceImpl
         if (!logger.isDebugEnabled())
             return;
 
-        String responseXml = response != null ? response.toXML() : "TIMEOUT";
+        String responseXml = IQUtils.responseToXML(response);
 
         responseXml = responseXml.replace(">",">\n");
 

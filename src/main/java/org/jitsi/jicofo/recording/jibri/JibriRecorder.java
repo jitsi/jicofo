@@ -27,6 +27,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -289,7 +290,8 @@ public class JibriRecorder
                 = (IQ) xmpp.getXmppConnection()
                         .sendPacketAndGetReply(startIq);
 
-            logger.debug("Start response: " + startReply.toXML());
+            logger.debug(
+                    "Start response: " + IQUtils.responseToXML(startReply));
 
             if (startReply == null)
             {
@@ -492,9 +494,7 @@ public class JibriRecorder
             = (IQ) xmpp.getXmppConnection()
                     .sendPacketAndGetReply(stopRequest);
 
-        logger.debug(
-                "Stop response: "
-                    + (stopReply != null ? stopReply.toXML() : "timeout"));
+        logger.debug("Stop response: " + IQUtils.responseToXML(stopReply));
 
         if (stopReply == null)
         {

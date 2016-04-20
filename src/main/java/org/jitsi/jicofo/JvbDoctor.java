@@ -29,6 +29,7 @@ import org.jitsi.jicofo.osgi.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -472,9 +473,7 @@ public class JvbDoctor
 
                 logger.debug(
                         "Health check response from: " + bridgeJid + ": "
-                            + (response == null
-                                ? "timeout"
-                                : response.toXML()));
+                            + IQUtils.responseToXML(response));
 
                 if (!(response instanceof IQ))
                 {
