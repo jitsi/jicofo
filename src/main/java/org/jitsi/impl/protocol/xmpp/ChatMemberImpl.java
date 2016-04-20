@@ -198,9 +198,19 @@ public class ChatMemberImpl
      *
      * @param presence the instance of <tt>Presence</tt> packet extension sent
      *                 by this chat member.
+     *
+     * @throws IllegalArgumentException if given <tt>Presence</tt> does not
+     *         belong to this <tt>ChatMemberImpl</tt>.
      */
     void processPresence(Presence presence)
     {
+        if (!address.equals(presence.getFrom()))
+        {
+            throw new IllegalArgumentException(
+                    String.format("Presence for another member: %s, my jid: %s",
+                            presence.getFrom(), address));
+        }
+
         this.presence = presence;
 
         VideoMutedExtension videoMutedExt
@@ -220,5 +230,15 @@ public class ChatMemberImpl
                 videoMuted = newStatus;
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return String.format(
+                "ChatMember[%s, jid: %s]@%s", address, memberJid, hashCode());
     }
 }

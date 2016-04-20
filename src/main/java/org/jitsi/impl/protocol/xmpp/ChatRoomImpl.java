@@ -917,17 +917,17 @@ public class ChatRoomImpl
         implements ParticipantStatusListener
     {
         @Override
-        public void joined(String participant)
+        public void joined(String mucJid)
         {
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
                 {
-                    logger.debug("Joined " + participant + " room: " + roomName);
+                    logger.debug("Joined " + mucJid + " room: " + roomName);
                 }
                 //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
 
-                ChatMemberImpl member = addMember(participant);
+                ChatMemberImpl member = addMember(mucJid);
                 if (member == null)
                 {
                     logger.error("member is NULL");
@@ -945,14 +945,22 @@ public class ChatRoomImpl
                     return;
                 }
 
-                // Try to process presence cached in the roster to init fields
-                // like video muted
+                // Process presence cached in the roster to init fields
+                // like video muted etc.
                 Roster roster = connection.getRoster();
-                Presence cachedPresence
-                    = roster.getPresence(member.getContactAddress());
+                Presence cachedPresence = roster.getPresenceResource(mucJid);
                 if (cachedPresence != null)
                 {
+                    logger.debug(
+                            String.format(
+                                    "Initial presence for: %s, P: %s",
+                                    mucJid, cachedPresence.toXML()));
+
                     member.processPresence(cachedPresence);
+                }
+                else
+                {
+                    logger.error("No initial presence for: " + mucJid);
                 }
 
                 // Trigger participant "joined"
