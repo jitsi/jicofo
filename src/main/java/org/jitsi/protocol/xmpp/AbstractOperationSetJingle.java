@@ -294,7 +294,6 @@ public abstract class AbstractOperationSetJingle
         switch (action)
         {
         case SESSION_ACCEPT:
-            logger.info(session.getAddress() + " real jid: " + iq.getFrom());
             requestHandler.onSessionAccept(session, iq.getContentList());
             break;
         case TRANSPORT_ACCEPT:
