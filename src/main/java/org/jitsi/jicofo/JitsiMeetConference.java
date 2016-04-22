@@ -1317,6 +1317,15 @@ public class JitsiMeetConference
     }
 
     /**
+     * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this
+     * <tt>JitsiMeetConference</tt> instance.
+     */
+    public OperationSetJingle getJingle()
+    {
+        return jingle;
+    }
+
+    /**
      * Returns {@link JitsiMeetServices} instance used in this conference.
      */
     public JitsiMeetServices getServices()

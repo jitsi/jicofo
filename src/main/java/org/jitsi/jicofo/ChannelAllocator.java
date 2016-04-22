@@ -122,12 +122,6 @@ public class ChannelAllocator implements Runnable
                 OperationSetJitsiMeetTools.class);
     }
 
-    private OperationSetJingle getJingle()
-    {
-        return meetConference.getXmppProvider().getOperationSet(
-                OperationSetJingle.class);
-    }
-
     /**
      * Entry point for <tt>ChannelAllocator</tt> task.
      */
@@ -220,10 +214,11 @@ public class ChannelAllocator implements Runnable
         }
         else
         {
+            OperationSetJingle jingle = meetConference.getJingle();
             boolean ack;
             if (!reInvite)
             {
-                ack = getJingle().initiateSession(
+                ack = jingle.initiateSession(
                         newParticipant.hasBundleSupport(),
                         address,
                         offer,
@@ -232,7 +227,7 @@ public class ChannelAllocator implements Runnable
             }
             else
             {
-                ack = getJingle().replaceTransport(
+                ack = jingle.replaceTransport(
                         newParticipant.hasBundleSupport(),
                         newParticipant.getJingleSession(),
                         offer,
