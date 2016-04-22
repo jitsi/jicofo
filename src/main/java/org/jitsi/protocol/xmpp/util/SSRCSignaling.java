@@ -88,6 +88,31 @@ public class SSRCSignaling
     }
 
     /**
+     * Finds the first SSRC in the list with a valid stream ID('msid').
+     * The 'default' stream id is not considered a valid one.
+     *
+     * @param ssrcs the list of <tt>SourcePacketExtension</tt> to be searched.
+     *
+     * @return the first <tt>SourcePacketExtension</tt> with a valid media
+     *         stream id or <tt>null</tt> if there aren't any such streams
+     *         in the list.
+     */
+    public static SourcePacketExtension getFirstWithMSID(
+            List<SourcePacketExtension> ssrcs)
+    {
+        for (SourcePacketExtension ssrc : ssrcs)
+        {
+            String videoStreamId = getStreamId(ssrc);
+            if (videoStreamId != null
+                    && !"default".equalsIgnoreCase(videoStreamId))
+            {
+                return ssrc;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Obtains <tt>ParameterPacketExtension</tt> for given name(if it exists).
      * @param ssrc the <tt>SourcePacketExtension</tt> to be searched for
      *             parameter
@@ -171,41 +196,44 @@ public class SSRCSignaling
      *
      * @return <tt>true</tt> if streams were merged.
      */
-    public static boolean mergeAudioIntoVideo(MediaSSRCMap peerSSRCs)
+    public static boolean mergeVideoIntoAudio(MediaSSRCMap peerSSRCs)
     {
         List<SourcePacketExtension> audioSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.AUDIO.toString());
 
-        if (audioSSRCs.isEmpty())
+        // We want to sync video stream with the first valid audio stream
+        SourcePacketExtension audioSSRC = getFirstWithMSID(audioSSRCs);
+        // Nothing to sync to
+        if (audioSSRC == null)
             return false;
 
+        // Find first video SSRC with non-empty stream ID and different
+        // than 'default' which is sometimes used when unspecified
         List<SourcePacketExtension> videoSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.VIDEO.toString());
 
-        if (videoSSRCs.isEmpty())
+        SourcePacketExtension videoSSRC = getFirstWithMSID(videoSSRCs);
+        // No video to sync
+        if (videoSSRC == null)
             return false;
 
-        SourcePacketExtension audioSSRC = audioSSRCs.get(0);
-        SourcePacketExtension videoSSRC = videoSSRCs.get(0);
-
         // Will merge stream by modifying msid and copying cname and label
+        String audioStreamId = getStreamId(audioSSRC);
+        String videoTrackId = getTrackId(videoSSRC);
+        ParameterPacketExtension videoMsid = getParam(videoSSRC, "msid");
 
-        String videoStreamId = getStreamId(videoSSRC);
-        String audioTrackId = getTrackId(audioSSRC);
-        ParameterPacketExtension audioMsid = getParam(audioSSRC, "msid");
-
-        if ( StringUtils.isNullOrEmpty(videoStreamId)
-             || StringUtils.isNullOrEmpty(audioTrackId)
-             ||  audioMsid == null )
+        if ( StringUtils.isNullOrEmpty(audioStreamId)
+             || StringUtils.isNullOrEmpty(videoTrackId)
+             ||  videoMsid == null )
         {
             return false;
         }
 
         // Copy cname and label
-        copyParamAttr(audioSSRC, videoSSRC, "cname");
-        copyParamAttr(audioSSRC, videoSSRC, "mslabel");
+        copyParamAttr(videoSSRC, audioSSRC, "cname");
+        copyParamAttr(videoSSRC, audioSSRC, "mslabel");
 
-        audioMsid.setValue(videoStreamId + " " + audioTrackId);
+        videoMsid.setValue(audioStreamId + " " + videoTrackId);
 
         return true;
     }
