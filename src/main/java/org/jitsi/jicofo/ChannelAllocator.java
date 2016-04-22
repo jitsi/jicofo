@@ -28,6 +28,7 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 
 import java.util.*;
@@ -487,10 +488,19 @@ public class ChannelAllocator implements Runnable
     {
         boolean useBundle = newParticipant.hasBundleSupport();
 
+        MediaSSRCMap conferenceSSRCs
+            = meetConference.getAllSSRCs(
+                    reInvite ? newParticipant : null);
+
+        MediaSSRCGroupMap conferenceSSRCGroups
+            = meetConference.getAllSSRCGroups(
+                    reInvite ? newParticipant : null);
+
         for (ContentPacketExtension cpe : contents)
         {
+            String contentName = cpe.getName();
             ColibriConferenceIQ.Content colibriContent
-                = peerChannels.getContent(cpe.getName());
+                = peerChannels.getContent(contentName);
 
             if (colibriContent == null)
                 continue;
@@ -622,7 +632,6 @@ public class ChannelAllocator implements Runnable
 
                     try
                     {
-                        String contentName = colibriContent.getName();
                         SourcePacketExtension ssrcCopy = ssrcPe.copy();
 
                         // FIXME: not all parameters are used currently
@@ -657,8 +666,7 @@ public class ChannelAllocator implements Runnable
 
                 // Include all peers SSRCs
                 List<SourcePacketExtension> mediaSources
-                    = meetConference.getAllSSRCs(
-                            cpe.getName(), reInvite ? newParticipant : null);
+                    = conferenceSSRCs.getSSRCsForMedia(contentName);
 
                 for (SourcePacketExtension ssrc : mediaSources)
                 {
@@ -673,13 +681,12 @@ public class ChannelAllocator implements Runnable
                 }
 
                 // Include SSRC groups
-                List<SourceGroupPacketExtension> sourceGroups
-                    = meetConference.getAllSSRCGroups(
-                            cpe.getName(), reInvite ? newParticipant : null);
+                List<SSRCGroup> sourceGroups
+                    = conferenceSSRCGroups.getSSRCGroupsForMedia(contentName);
 
-                for(SourceGroupPacketExtension ssrcGroup : sourceGroups)
+                for(SSRCGroup ssrcGroup : sourceGroups)
                 {
-                    rtpDescPe.addChildExtension(ssrcGroup);
+                    rtpDescPe.addChildExtension(ssrcGroup.getPacketExtension());
                 }
             }
         }
