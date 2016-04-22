@@ -429,6 +429,15 @@ public class Participant
     }
 
     /**
+     * Returns <tt>true</tt> if this participant supports 'lip-sync' or
+     * <tt>false</tt> otherwise.
+     */
+    public boolean hasLipSyncSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_LIPSYNC);
+    }
+
+    /**
      * Returns {@code true} iff this participant supports RTX.
      */
     public boolean hasRtxSupport()

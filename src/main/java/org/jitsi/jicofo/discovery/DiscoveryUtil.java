@@ -98,6 +98,14 @@ public class DiscoveryUtil
     public final static String FEATURE_HEALTH_CHECK = HealthCheckIQ.NAMESPACE;
 
     /**
+     * A namespace for our custom "lip-sync" feature. Advertised by the clients
+     * that support all of the functionality required for doing the lip-sync
+     * properly.
+     */
+    public final static String FEATURE_LIPSYNC
+        = "http://jitsi.org/meet/lipsync";
+
+    /**
      * Array constant which can be used to check for Version IQ support.
      */
     public final static String[] VERSION_FEATURES = new String[]
