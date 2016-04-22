@@ -512,6 +512,16 @@ public class Participant
     }
 
     /**
+     * Return a <tt>Boolean</tt> which informs about this participant's video
+     * muted status. The <tt>null</tt> value stands for 'unknown'/not signalled,
+     * <tt>true</tt> for muted and <tt>false</tt> means unmuted.
+     */
+    public Boolean isVideoMuted()
+    {
+        return roomMember.hasVideoMuted();
+    }
+
+    /**
      * Returns the list of SSRC groups of given media type that belong ot this
      * participant.
      * @param media the name of media type("audio","video", ...)
