@@ -263,6 +263,11 @@ public class JitsiMeetConference
             jingle
                 = protocolProviderHandler.getOperationSet(
                         OperationSetJingle.class);
+
+            // Wraps OperationSetJingle in order to introduce
+            // our nasty "lip-sync" hack
+            jingle = new LipSyncHack(this, jingle);
+
             chatOpSet
                 = protocolProviderHandler.getOperationSet(
                         OperationSetMultiUserChat.class);

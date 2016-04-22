@@ -238,6 +238,45 @@ public class SSRCSignaling
         return true;
     }
 
+    /**
+     * Does map the SSRCs found in given Jingle content list on per owner basis.
+     *
+     * @param contents the Jingle contents list that describes media SSRCs.
+     *
+     * @return a <tt>Map<String,MediaSSRCMap></tt> which is the SSRC to owner
+     *         mapping of the SSRCs contained in given Jingle content list.
+     *         An owner comes form the {@link SSRCInfoPacketExtension} included
+     *         as a child of the {@link SourcePacketExtension}.
+     */
+    public static Map<String, MediaSSRCMap> ownerMapping(
+            List<ContentPacketExtension> contents)
+    {
+        Map<String, MediaSSRCMap> ownerMapping = new HashMap<>();
+        for (ContentPacketExtension content : contents)
+        {
+            String media = content.getName();
+            MediaSSRCMap mediaSSRCMap
+                = MediaSSRCMap.getSSRCsFromContent(contents);
+
+            for (SourcePacketExtension ssrc
+                    : mediaSSRCMap.getSSRCsForMedia(media))
+            {
+                String owner = getSSRCOwner(ssrc);
+                MediaSSRCMap ownerMap = ownerMapping.get(owner);
+
+                // Create if not found
+                if (ownerMap == null)
+                {
+                    ownerMap = new MediaSSRCMap();
+                    ownerMapping.put(owner, ownerMap);
+                }
+
+                ownerMap.addSSRC(media, ssrc);
+            }
+        }
+        return ownerMapping;
+    }
+
     public static void setSSRCOwner(SourcePacketExtension ssrcPe, String owner)
     {
         SSRCInfoPacketExtension ssrcInfo

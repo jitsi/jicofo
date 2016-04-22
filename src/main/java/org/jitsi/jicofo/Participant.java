@@ -291,19 +291,11 @@ public class Participant
     }
 
     /**
-     * Returns the {@link MediaSSRCMap} which contains this peer's media SSRCs.
-     */
-    public MediaSSRCMap getSSRCS()
-    {
-        return ssrcs;
-    }
-
-    /**
-     * Returns shallow copy of this peer's media SSRC map.
+     * Returns deep copy of this peer's media SSRC map.
      */
     public MediaSSRCMap getSSRCsCopy()
     {
-        return ssrcs.copyShallow();
+        return ssrcs.copyDeep();
     }
 
     /**
