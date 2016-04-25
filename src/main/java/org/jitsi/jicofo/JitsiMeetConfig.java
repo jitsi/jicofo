@@ -118,6 +118,11 @@ public class JitsiMeetConfig
      */
     public static final String START_BITRATE_PNAME = "startBitrate";
 
+    /**
+     * The default value of the "startBitrate" property.
+     */
+    public static final int START_BITRATE_DEFAULT = 800;
+
     private final Map<String, String> properties;
 
     /**
@@ -288,6 +293,6 @@ public class JitsiMeetConfig
     public int getStartBitrate()
     {
         Integer startBitrate = getInt(START_BITRATE_PNAME);
-        return startBitrate == null ? -1 : startBitrate;
+        return startBitrate == null ? START_BITRATE_DEFAULT : startBitrate;
     }
 }
