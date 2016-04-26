@@ -266,7 +266,10 @@ public class JitsiMeetConference
 
             // Wraps OperationSetJingle in order to introduce
             // our nasty "lip-sync" hack
-            jingle = new LipSyncHack(this, jingle);
+            if (getGlobalConfig().isLipSyncEnabled())
+            {
+                jingle = new LipSyncHack(this, jingle);
+            }
 
             chatOpSet
                 = protocolProviderHandler.getOperationSet(
