@@ -263,6 +263,14 @@ public class JitsiMeetConference
             jingle
                 = protocolProviderHandler.getOperationSet(
                         OperationSetJingle.class);
+
+            // Wraps OperationSetJingle in order to introduce
+            // our nasty "lip-sync" hack
+            if (getGlobalConfig().isLipSyncEnabled())
+            {
+                jingle = new LipSyncHack(this, jingle);
+            }
+
             chatOpSet
                 = protocolProviderHandler.getOperationSet(
                         OperationSetMultiUserChat.class);
@@ -883,9 +891,12 @@ public class JitsiMeetConference
         participant.addSSRCsFromContent(answer);
         participant.addSSRCGroupsFromContent(answer);
 
+        MediaSSRCMap peerSSRCs = participant.getSSRCsCopy();
+        MediaSSRCGroupMap peerGroupsMap = participant.getSSRCGroupsCopy();
+
         logger.info(
                 "Received SSRCs from " + peerJingleSessionAddress + " "
-                    + participant.getSSRCS());
+                    + peerSSRCs);
 
         // Update channel info
         if (colibriConference != null)
@@ -893,39 +904,14 @@ public class JitsiMeetConference
             colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
-                    participant.getSSRCsCopy(),
-                    participant.getSSRCGroupsCopy(),
+                    peerSSRCs,
+                    peerGroupsMap,
                     participant.getBundleTransport(),
                     participant.getTransportMap());
         }
 
-        for (Participant peerToNotify : participants)
-        {
-            JingleSession jingleSessionToNotify
-                = peerToNotify.getJingleSession();
-
-            if (jingleSessionToNotify == null)
-            {
-                logger.warn(
-                        "No jingle session yet for "
-                            + peerToNotify.getChatMember().getContactAddress());
-
-                peerToNotify.scheduleSSRCsToAdd(participant.getSSRCS());
-                peerToNotify.scheduleSSRCGroupsToAdd(
-                        participant.getSSRCGroups());
-
-                continue;
-            }
-
-            // Skip origin
-            if (peerJingleSession.equals(jingleSessionToNotify))
-                continue;
-
-            jingle.sendAddSourceIQ(
-                    participant.getSSRCS(),
-                    participant.getSSRCGroups(),
-                    jingleSessionToNotify);
-        }
+        // Loop over current participant and send 'source-add' notification
+        propagateNewSSRCs(participant, peerSSRCs, peerGroupsMap);
 
         // Notify the peer itself since it is now stable
         if (participant.hasSsrcsToAdd())
@@ -947,6 +933,46 @@ public class JitsiMeetConference
             participant.clearSsrcsToRemove();
         }
     }
+
+    /**
+     * Advertises new SSRCs across all conference participants by using
+     * 'source-add' Jingle notification.
+     *
+     * @param ssrcOwner the <tt>Participant</tt> who owns the SSRCs.
+     * @param ssrcsToAdd the <tt>MediaSSRCMap</tt> with the SSRCs to advertise.
+     * @param ssrcGroupsToAdd the <tt>MediaSSRCGroupMap</tt> with SSRC groups
+     *        to advertise.
+     */
+    private void propagateNewSSRCs(Participant          ssrcOwner,
+                                   MediaSSRCMap         ssrcsToAdd,
+                                   MediaSSRCGroupMap    ssrcGroupsToAdd)
+    {
+        for (Participant peerToNotify : participants)
+        {
+            // Skip origin
+            if (ssrcOwner == peerToNotify)
+                continue;
+
+            JingleSession jingleSessionToNotify
+                = peerToNotify.getJingleSession();
+            if (jingleSessionToNotify == null)
+            {
+                logger.warn(
+                        "No jingle session yet for "
+                            + peerToNotify.getChatMember().getContactAddress());
+
+                peerToNotify.scheduleSSRCsToAdd(ssrcsToAdd);
+
+                peerToNotify.scheduleSSRCGroupsToAdd(ssrcGroupsToAdd);
+
+                continue;
+            }
+
+            jingle.sendAddSourceIQ(
+                    ssrcsToAdd, ssrcGroupsToAdd, jingleSessionToNotify);
+        }
+    }
+
 
     /**
      * Callback called when we receive 'transport-info' from conference
@@ -1082,28 +1108,7 @@ public class JitsiMeetConference
                     participant.getColibriChannelsInfo());
         }
 
-        for (Participant peerToNotify : participants)
-        {
-            if (peerToNotify == participant)
-                continue;
-
-            JingleSession peerJingleSession = peerToNotify.getJingleSession();
-            if (peerJingleSession == null)
-            {
-                logger.warn(
-                        "Add source: no call for "
-                            + peerToNotify.getChatMember().getContactAddress());
-
-                peerToNotify.scheduleSSRCsToAdd(ssrcsToAdd);
-
-                peerToNotify.scheduleSSRCGroupsToAdd(ssrcGroupsToAdd);
-
-                continue;
-            }
-
-            jingle.sendAddSourceIQ(
-                    ssrcsToAdd, ssrcGroupsToAdd, peerJingleSession);
-        }
+        propagateNewSSRCs(participant, ssrcsToAdd, ssrcGroupsToAdd);
     }
 
     /**
@@ -1216,20 +1221,17 @@ public class JitsiMeetConference
     }
 
     /**
-     * Gathers the list of all SSRCs of given media type that exist in current
-     * conference state.
+     * Gathers the list of all SSRCs that exist in the current conference state.
      *
-     * @param media the media type of SSRCs that are being returned.
      * @param except optional <tt>Participant</tt> instance whose SSRCs will be
      *               excluded from the list
      *
-     * @return the list of all SSRCs of given media type that exist in current
-     *         conference state.
+     * @return <tt>MediaSSRCMap</tt> of all SSRCs of given media type that exist
+     * in the current conference state.
      */
-    List<SourcePacketExtension> getAllSSRCs(String         media,
-                                            Participant    except)
+    MediaSSRCMap getAllSSRCs(Participant except)
     {
-        List<SourcePacketExtension> mediaSSRCs = new ArrayList<>();
+        MediaSSRCMap mediaSSRCs = new MediaSSRCMap();
 
         for (Participant peer : participants)
         {
@@ -1237,21 +1239,15 @@ public class JitsiMeetConference
             if (peer == except)
                 continue;
 
-            List<SourcePacketExtension> peerSSRC
-                = peer.getSSRCS().getSSRCsForMedia(media);
-
-            if (peerSSRC != null)
-                mediaSSRCs.addAll(peerSSRC);
+            mediaSSRCs.add(peer.getSSRCsCopy());
         }
 
         return mediaSSRCs;
     }
 
     /**
-     * Gathers the list of all SSRC groups of given media type that exist in
-     * current conference state.
-     *
-     * @param media the media type of SSRC groups that are being returned.
+     * Gathers the list of all SSRC groups that exist in the current conference
+     * state.
      *
      * @param except optional <tt>Participant</tt> instance whose SSRC groups
      *               will be excluded from the list
@@ -1259,10 +1255,9 @@ public class JitsiMeetConference
      * @return the list of all SSRC groups of given media type that exist in
      *         current conference state.
      */
-    List<SourceGroupPacketExtension> getAllSSRCGroups(String         media,
-                                                      Participant    except)
+    MediaSSRCGroupMap getAllSSRCGroups(Participant except)
     {
-        List<SourceGroupPacketExtension> ssrcGroups = new ArrayList<>();
+        MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
 
         for (Participant peer : participants)
         {
@@ -1270,19 +1265,7 @@ public class JitsiMeetConference
             if (peer == except)
                 continue;
 
-            List<SSRCGroup> peerSSRCGroups = peer.getSSRCGroupsForMedia(media);
-
-            for (SSRCGroup ssrcGroup : peerSSRCGroups)
-            {
-                try
-                {
-                    ssrcGroups.add(ssrcGroup.getExtensionCopy());
-                }
-                catch (Exception e)
-                {
-                    logger.error("Error copying source group extension", e);
-                }
-            }
+            ssrcGroups.add(peer.getSSRCGroupsCopy());
         }
 
         return ssrcGroups;
@@ -1339,6 +1322,15 @@ public class JitsiMeetConference
     {
 
         return roomName + "/" + focusUserName;
+    }
+
+    /**
+     * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this
+     * <tt>JitsiMeetConference</tt> instance.
+     */
+    public OperationSetJingle getJingle()
+    {
+        return jingle;
     }
 
     /**

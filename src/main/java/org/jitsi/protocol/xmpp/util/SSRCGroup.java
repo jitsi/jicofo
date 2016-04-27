@@ -114,6 +114,15 @@ public class SSRCGroup
     }
 
     /**
+     * Returns the underlying <tt>SourceGroupPacketExtension</tt> wrapped by
+     * this <tt>SSRCGroup</tt> instance.
+     */
+    public SourceGroupPacketExtension getPacketExtension()
+    {
+        return group;
+    }
+
+    /**
      * Returns full copy of this <tt>SSRCGroup</tt>.
      */
     public SSRCGroup copy()

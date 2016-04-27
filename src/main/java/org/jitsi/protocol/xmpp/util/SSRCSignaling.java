@@ -88,6 +88,31 @@ public class SSRCSignaling
     }
 
     /**
+     * Finds the first SSRC in the list with a valid stream ID('msid').
+     * The 'default' stream id is not considered a valid one.
+     *
+     * @param ssrcs the list of <tt>SourcePacketExtension</tt> to be searched.
+     *
+     * @return the first <tt>SourcePacketExtension</tt> with a valid media
+     *         stream id or <tt>null</tt> if there aren't any such streams
+     *         in the list.
+     */
+    public static SourcePacketExtension getFirstWithMSID(
+            List<SourcePacketExtension> ssrcs)
+    {
+        for (SourcePacketExtension ssrc : ssrcs)
+        {
+            String streamId = getStreamId(ssrc);
+            if (streamId != null
+                    && !"default".equalsIgnoreCase(streamId))
+            {
+                return ssrc;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Obtains <tt>ParameterPacketExtension</tt> for given name(if it exists).
      * @param ssrc the <tt>SourcePacketExtension</tt> to be searched for
      *             parameter
@@ -164,50 +189,95 @@ public class SSRCSignaling
     }
 
     /**
-     * Merges first audio SSRC into the first video stream described by
-     * <tt>MediaSSRCMap</tt>.
+     * Merges the first valid video stream into the first valid audio stream
+     * described in <tt>MediaSSRCMap</tt>. A valid media stream is the one that
+     * has well defined "stream ID" as in the description of
+     * {@link #getFirstWithMSID(List)} method.
      *
      * @param peerSSRCs the map of media SSRC to be modified.
      *
-     * @return <tt>true</tt> if streams were merged.
+     * @return <tt>true</tt> if the streams have been merged or <tt>false</tt>
+     * otherwise.
      */
-    public static boolean mergeAudioIntoVideo(MediaSSRCMap peerSSRCs)
+    public static boolean mergeVideoIntoAudio(MediaSSRCMap peerSSRCs)
     {
         List<SourcePacketExtension> audioSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.AUDIO.toString());
 
-        if (audioSSRCs.isEmpty())
+        // We want to sync video stream with the first valid audio stream
+        SourcePacketExtension audioSSRC = getFirstWithMSID(audioSSRCs);
+        // Nothing to sync to
+        if (audioSSRC == null)
             return false;
 
+        // Find first video SSRC with non-empty stream ID and different
+        // than 'default' which is sometimes used when unspecified
         List<SourcePacketExtension> videoSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.VIDEO.toString());
 
-        if (videoSSRCs.isEmpty())
+        SourcePacketExtension videoSSRC = getFirstWithMSID(videoSSRCs);
+        // No video to sync
+        if (videoSSRC == null)
             return false;
 
-        SourcePacketExtension audioSSRC = audioSSRCs.get(0);
-        SourcePacketExtension videoSSRC = videoSSRCs.get(0);
-
         // Will merge stream by modifying msid and copying cname and label
+        String audioStreamId = getStreamId(audioSSRC);
+        String videoTrackId = getTrackId(videoSSRC);
+        ParameterPacketExtension videoMsid = getParam(videoSSRC, "msid");
 
-        String videoStreamId = getStreamId(videoSSRC);
-        String audioTrackId = getTrackId(audioSSRC);
-        ParameterPacketExtension audioMsid = getParam(audioSSRC, "msid");
-
-        if ( StringUtils.isNullOrEmpty(videoStreamId)
-             || StringUtils.isNullOrEmpty(audioTrackId)
-             ||  audioMsid == null )
+        if ( StringUtils.isNullOrEmpty(audioStreamId)
+             || StringUtils.isNullOrEmpty(videoTrackId)
+             ||  videoMsid == null )
         {
             return false;
         }
 
         // Copy cname and label
-        copyParamAttr(audioSSRC, videoSSRC, "cname");
-        copyParamAttr(audioSSRC, videoSSRC, "mslabel");
+        copyParamAttr(videoSSRC, audioSSRC, "cname");
+        copyParamAttr(videoSSRC, audioSSRC, "mslabel");
 
-        audioMsid.setValue(videoStreamId + " " + audioTrackId);
+        videoMsid.setValue(audioStreamId + " " + videoTrackId);
 
         return true;
+    }
+
+    /**
+     * Does map the SSRCs found in given Jingle content list on per owner basis.
+     *
+     * @param contents the Jingle contents list that describes media SSRCs.
+     *
+     * @return a <tt>Map<String,MediaSSRCMap></tt> which is the SSRC to owner
+     *         mapping of the SSRCs contained in given Jingle content list.
+     *         An owner comes form the {@link SSRCInfoPacketExtension} included
+     *         as a child of the {@link SourcePacketExtension}.
+     */
+    public static Map<String, MediaSSRCMap> ownerMapping(
+            List<ContentPacketExtension> contents)
+    {
+        Map<String, MediaSSRCMap> ownerMapping = new HashMap<>();
+        for (ContentPacketExtension content : contents)
+        {
+            String media = content.getName();
+            MediaSSRCMap mediaSSRCMap
+                = MediaSSRCMap.getSSRCsFromContent(contents);
+
+            for (SourcePacketExtension ssrc
+                    : mediaSSRCMap.getSSRCsForMedia(media))
+            {
+                String owner = getSSRCOwner(ssrc);
+                MediaSSRCMap ownerMap = ownerMapping.get(owner);
+
+                // Create if not found
+                if (ownerMap == null)
+                {
+                    ownerMap = new MediaSSRCMap();
+                    ownerMapping.put(owner, ownerMap);
+                }
+
+                ownerMap.addSSRC(media, ssrc);
+            }
+        }
+        return ownerMapping;
     }
 
     public static void setSSRCOwner(SourcePacketExtension ssrcPe, String owner)

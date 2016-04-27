@@ -168,7 +168,7 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Determines whether a specific {@limk JingleSession} has been accepted by
+     * Determines whether a specific {@link JingleSession} has been accepted by
      * the client judging by a specific {@code reply} {@link IQ} (received in
      * reply to an invite IQ sent withing the specified {@code JingleSession}).
      *
@@ -294,7 +294,6 @@ public abstract class AbstractOperationSetJingle
         switch (action)
         {
         case SESSION_ACCEPT:
-            logger.info(session.getAddress() + " real jid: " + iq.getFrom());
             requestHandler.onSessionAccept(session, iq.getContentList());
             break;
         case TRANSPORT_ACCEPT:

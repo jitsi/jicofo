@@ -36,6 +36,12 @@ public class JitsiMeetGlobalConfig
         = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
+     * The name of configuration property that enables the {@link LipSyncHack}.
+     */
+    private final static String ENABLE_LIPSYNC_CONFIG_PNAME
+        = "org.jitsi.jicofo.ENABLE_LIPSYNC";
+
+    /**
      * The name of configuration property that sets {@link #maxSSRCsPerUser}.
      */
     private final static String MAX_SSRC_PER_USER_CONFIG_PNAME
@@ -57,6 +63,11 @@ public class JitsiMeetGlobalConfig
      * The default value for {@link #PENDING_TIMEOUT_PROP_NAME}.
      */
     private static final int DEFAULT_PENDING_TIMEOUT = 30;
+
+    /**
+     * If set to <tt>true</tt> enables {@link LipSyncHack}.
+     */
+    private boolean isLipSyncEnabled;
 
     /**
      * Tells how many seconds we're going to wait for the Jibri to start
@@ -144,6 +155,12 @@ public class JitsiMeetGlobalConfig
         {
             logger.warn("Jibri PENDING timeouts are disabled");
         }
+
+        isLipSyncEnabled
+            = configService.getBoolean(ENABLE_LIPSYNC_CONFIG_PNAME, false);
+
+        if (isLipSyncEnabled)
+            logger.info("Lip-sync hack is enabled !");
     }
 
     /**
@@ -167,6 +184,14 @@ public class JitsiMeetGlobalConfig
     public int getMaxSSRCsPerUser()
     {
         return maxSSRCsPerUser;
+    }
+
+    /**
+     * Returns <tt>true</tt> if {@link LipSyncHack} should be enabled.
+     */
+    public boolean isLipSyncEnabled()
+    {
+        return isLipSyncEnabled;
     }
 
     /**
