@@ -242,7 +242,8 @@ public class MediaSSRCMap
      */
     public boolean remove(String media, SourcePacketExtension ssrc)
     {
-        return getSSRCsForMedia(media).remove(ssrc);
+        SourcePacketExtension toBeRemoved = findSSRC(media, ssrc.getSSRC());
+        return toBeRemoved != null && getSSRCsForMedia(media).remove(ssrc);
     }
 
     /**
