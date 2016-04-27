@@ -102,9 +102,9 @@ public class SSRCSignaling
     {
         for (SourcePacketExtension ssrc : ssrcs)
         {
-            String videoStreamId = getStreamId(ssrc);
-            if (videoStreamId != null
-                    && !"default".equalsIgnoreCase(videoStreamId))
+            String streamId = getStreamId(ssrc);
+            if (streamId != null
+                    && !"default".equalsIgnoreCase(streamId))
             {
                 return ssrc;
             }
@@ -189,12 +189,15 @@ public class SSRCSignaling
     }
 
     /**
-     * Merges first audio SSRC into the first video stream described by
-     * <tt>MediaSSRCMap</tt>.
+     * Merges the first valid video stream into the first valid audio stream
+     * described in <tt>MediaSSRCMap</tt>. A valid media stream is the one that
+     * has well defined "stream ID" as in the description of
+     * {@link #getFirstWithMSID(List)} method.
      *
      * @param peerSSRCs the map of media SSRC to be modified.
      *
-     * @return <tt>true</tt> if streams were merged.
+     * @return <tt>true</tt> if the streams have been merged or <tt>false</tt>
+     * otherwise.
      */
     public static boolean mergeVideoIntoAudio(MediaSSRCMap peerSSRCs)
     {
