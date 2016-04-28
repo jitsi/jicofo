@@ -282,7 +282,8 @@ public class ChannelAllocator implements Runnable
         if (newParticipant.hasAudioSupport())
         {
             contents.add(
-                    JingleOfferFactory.createAudioContent(disableIce, useDtls));
+                    JingleOfferFactory.createAudioContent(
+                            disableIce, useDtls, config.stereoEnabled()));
         }
 
         if (newParticipant.hasVideoSupport())

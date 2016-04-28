@@ -47,10 +47,10 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public static ContentPacketExtension createAudioContent(
-        boolean disableIce, boolean useDtls)
+        boolean disableIce, boolean useDtls, boolean stereo)
     {
         return createContentForMedia(
-            MediaType.AUDIO, disableIce, useDtls, false, -1, -1);
+            MediaType.AUDIO, disableIce, useDtls, false, -1, -1, stereo);
     }
 
     /**
@@ -69,7 +69,7 @@ public class JingleOfferFactory
         boolean disableIce, boolean useDtls)
     {
         return createContentForMedia(
-            MediaType.DATA, disableIce, useDtls, false, -1, -1);
+            MediaType.DATA, disableIce, useDtls, false, -1, -1, false);
     }
 
     /**
@@ -95,7 +95,7 @@ public class JingleOfferFactory
     {
         return createContentForMedia(
                 MediaType.VIDEO, disableIce, useDtls, useRtx,
-                minBitrate, startBitrate);
+                minBitrate, startBitrate, false);
     }
 
     /**
@@ -120,7 +120,7 @@ public class JingleOfferFactory
     public static ContentPacketExtension createContentForMedia(
             MediaType mediaType, boolean disableIce,
             boolean useDtls, boolean useRtx,
-            int minBitrate, int startBitrate)
+            int minBitrate, int startBitrate, boolean stereo)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -133,7 +133,7 @@ public class JingleOfferFactory
         // to construct the offer
         if (mediaType == MediaType.AUDIO)
         {
-            addAudioToContent(content);
+            addAudioToContent(content, stereo);
         }
         else if (mediaType == MediaType.VIDEO)
         {
@@ -345,7 +345,8 @@ public class JingleOfferFactory
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
-    private static void addAudioToContent(ContentPacketExtension content)
+    private static void addAudioToContent(ContentPacketExtension content,
+                                          boolean stereo)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -370,6 +371,12 @@ public class JingleOfferFactory
 
         // fmtp:111 minptime=10
         addParameterExtension(opus, "minptime", "10");
+
+        if (stereo)
+        {
+            // fmtp: 111 stereo=1
+            addParameterExtension(opus, "stereo", "1");
+        }
 
         // fmtp:111 useinbandfec=1
         addParameterExtension(opus, "useinbandfec", "1");
