@@ -115,12 +115,12 @@ public class ApiHandler
                         entry.getKey(), String.valueOf(entry.getValue())));
         }
 
-        post.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF8"));
+        post.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
 
         logger.info("Sending post: " + jsonMap);
 
         HttpResponse response = null;
-        
+
         try
         {
             response = client.execute(post);
@@ -171,29 +171,29 @@ public class ApiHandler
         HttpGet get = new HttpGet(baseUrl + "/conference/" + conferenceId);
 
         HttpResponse response = null;
-        
+
         try
         {
             response = client.execute(get);
-    
+
             int statusCode = response.getStatusLine().getStatusCode();
-    
+
             if (200 == statusCode || 201 == statusCode)
             {
                 // OK
                 Conference conference
                     = readConferenceResponse(null, response);
-    
+
                 return new ApiResult(statusCode, conference);
             }
             else
             {
                 ErrorResponse error = readErrorResponse(response);
-    
+
                 return new ApiResult(statusCode, error);
             }
         }
-        finally 
+        finally
         {
             if (response != null && response.getEntity() != null)
             {
