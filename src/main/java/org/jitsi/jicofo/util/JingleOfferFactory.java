@@ -29,6 +29,9 @@ import java.net.*;
  * by Jitsi Meet conference focus.
  *
  * @author Pawel Domas
+ * @author George Politis
+ * @author Boris Grozev
+ * @author Lyubomir Marinov
  */
 public class JingleOfferFactory
 {
@@ -49,8 +52,13 @@ public class JingleOfferFactory
     public static ContentPacketExtension createAudioContent(
         boolean disableIce, boolean useDtls, boolean stereo)
     {
-        return createContentForMedia(
-            MediaType.AUDIO, disableIce, useDtls, false, -1, -1, stereo);
+        ContentPacketExtension content
+            = createContentPacketExtension(
+                    MediaType.AUDIO, disableIce, useDtls);
+
+        addAudioToContent(content, stereo);
+
+        return content;
     }
 
     /**
@@ -68,8 +76,13 @@ public class JingleOfferFactory
     public static ContentPacketExtension createDataContent(
         boolean disableIce, boolean useDtls)
     {
-        return createContentForMedia(
-            MediaType.DATA, disableIce, useDtls, false, -1, -1, false);
+        ContentPacketExtension content
+            = createContentPacketExtension(
+                    MediaType.DATA, disableIce, useDtls);
+
+        addDataToContent(content);
+
+        return content;
     }
 
     /**
@@ -93,34 +106,30 @@ public class JingleOfferFactory
             boolean disableIce, boolean useDtls, boolean useRtx,
             int minBitrate, int startBitrate)
     {
-        return createContentForMedia(
-                MediaType.VIDEO, disableIce, useDtls, useRtx,
-                minBitrate, startBitrate, false);
+        ContentPacketExtension videoContentPe
+            = createContentPacketExtension(
+                    MediaType.VIDEO, disableIce, useDtls);
+
+        addVideoToContent(videoContentPe, useRtx, minBitrate, startBitrate);
+
+        return videoContentPe;
     }
 
     /**
-     * Creates <tt>ContentPacketExtension</tt> for given media type that will be
-     * included in initial conference offer.
+     * Creates <tt>ContentPacketExtension</tt> initialized with type of
+     * the media and basic transport information based on given parameters.
+     * The creator attribute is set to "initiator" and "senders" to "both".
      *
-     * @param mediaType the media type for which new offer content will
-     * be created.
-     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
-     * should be indicated in the offer.
-     * @param useDtls whether to add a DTLS element under the transport
-     * elements in the offer.
-     * @param useRtx whether RTX should be included in the offer.
-     * @param minBitrate the value to set to the "x-google-min-bitrate" fmtp
-     * line for video, or -1 to not add such a line.
-     * @param startBitrate the value to set to the "x-google-start-bitrate" fmtp
-     * line for video, or -1 to not add such a line.
+     * @param mediaType the <tt>MediaType</tt> for the content
+     * @param disableIce <tt>true</tt> if ICE transport should be disabled
+     * @param useDtls <tt>true</tt> if DTLS should be used on top of ICE
+     * transport(will have effect only if <tt>disableIce</tt></tt> is
+     * <tt>false</tt>)
      *
-     * @return <tt>ContentPacketExtension</tt> for given media type that will be
-     *         used in initial conference offer.
+     * @return new, parametrized instance of <tt>ContentPacketExtension</tt>.
      */
-    public static ContentPacketExtension createContentForMedia(
-            MediaType mediaType, boolean disableIce,
-            boolean useDtls, boolean useRtx,
-            int minBitrate, int startBitrate, boolean stereo)
+    private static ContentPacketExtension createContentPacketExtension(
+            MediaType mediaType, boolean disableIce, boolean useDtls)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -129,45 +138,16 @@ public class JingleOfferFactory
 
         content.setSenders(ContentPacketExtension.SendersEnum.both);
 
-        // FIXME: re-use Format and EncodingConfiguration
-        // to construct the offer
-        if (mediaType == MediaType.AUDIO)
-        {
-            addAudioToContent(content, stereo);
-        }
-        else if (mediaType == MediaType.VIDEO)
-        {
-            addVideoToContent(content, useRtx, minBitrate, startBitrate);
-        }
-        else if (mediaType == MediaType.DATA)
-        {
-            //SctpMapExtension sctpMap = new SctpMapExtension();
-            //sctpMap.setPort(5000);
-            //sctpMap.setProtocol(SctpMapExtension.Protocol.WEBRTC_CHANNEL);
-            //sctpMap.setStreams(1024);
-            //content.addChildExtension(sctpMap);
-
-            RtpDescriptionPacketExtension rdpe
-                = new RtpDescriptionPacketExtension();
-            rdpe.setMedia("application");
-
-            content.addChildExtension(rdpe);
-        }
-        else
-        {
-            throw new IllegalArgumentException("mediaType");
-        }
-
-        // DTLS-SRTP
-        //setDtlsEncryptionOnContent(mediaType, content, null);
-
         if (!disableIce)
         {
             IceUdpTransportPacketExtension iceUdpTransportPacketExtension
-                    = new IceUdpTransportPacketExtension();
+                = new IceUdpTransportPacketExtension();
+
             if (useDtls)
+            {
                 iceUdpTransportPacketExtension
-                        .addChildExtension(new DtlsFingerprintPacketExtension());
+                    .addChildExtension(new DtlsFingerprintPacketExtension());
+            }
 
             content.addChildExtension(iceUdpTransportPacketExtension);
         }
@@ -393,5 +373,25 @@ public class JingleOfferFactory
         // a=maxptime:60
         rtpDesc.setAttribute("maxptime", "60");
         content.addChildExtension(rtpDesc);
+    }
+
+    /**
+     * Adds the data-related extensions for an offer to a
+     * {@link ContentPacketExtension}.
+     * @param content the {@link ContentPacketExtension} to add extensions to.
+     */
+    private static void addDataToContent(ContentPacketExtension content)
+    {
+        //SctpMapExtension sctpMap = new SctpMapExtension();
+        //sctpMap.setPort(5000);
+        //sctpMap.setProtocol(SctpMapExtension.Protocol.WEBRTC_CHANNEL);
+        //sctpMap.setStreams(1024);
+        //content.addChildExtension(sctpMap);
+
+        RtpDescriptionPacketExtension rdpe
+            = new RtpDescriptionPacketExtension();
+        rdpe.setMedia("application");
+
+        content.addChildExtension(rdpe);
     }
 }
