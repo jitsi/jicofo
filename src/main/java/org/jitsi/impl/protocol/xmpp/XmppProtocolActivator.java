@@ -18,9 +18,11 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
 
@@ -51,6 +53,8 @@ public class XmppProtocolActivator
         // FIXME: make sure that we're using interoperability layer
         AbstractSmackInteroperabilityLayer.setImplementationClass(
             SmackV3InteroperabilityLayer.class);
+        AbstractSmackInteroperabilityLayer smackInterOp
+            = AbstractSmackInteroperabilityLayer.getInstance();
 
         // Constructors called to register extension providers
         new ConferenceIqProvider();
@@ -59,11 +63,22 @@ public class XmppProtocolActivator
         // HealthChecks
         HealthCheckIQProvider.registerIQProvider();
         // Jibri IQs
-        AbstractSmackInteroperabilityLayer.getInstance().addIQProvider(
+        smackInterOp.addIQProvider(
                 JibriIq.ELEMENT_NAME,
                 JibriIq.NAMESPACE,
                 new JibriIqProvider());
         JibriStatusPacketExt.registerExtensionProvider();
+        // User info
+        smackInterOp.addExtensionProvider(
+                UserInfoPacketExt.ELEMENT_NAME,
+                UserInfoPacketExt.NAMESPACE,
+                new DefaultPacketExtensionProvider<>(UserInfoPacketExt.class));
+        // <videomuted> element from jitsi-meet presence
+        smackInterOp.addExtensionProvider(
+                VideoMutedExtension.ELEMENT_NAME,
+                VideoMutedExtension.NAMESPACE,
+                new DefaultPacketExtensionProvider<>(
+                        VideoMutedExtension.class));
 
         // Override original Smack Version IQ class
         AbstractSmackInteroperabilityLayer.getInstance()

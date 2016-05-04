@@ -621,6 +621,7 @@ public class JitsiMeetConference
      *
      * @return <tt>true</tt> if given <tt>member</tt> represents the SIP gateway
      */
+    // FIXME remove once Jigasi is a "robot"
     boolean isSipGateway(ChatRoomMember member)
     {
         Participant participant = findParticipantForChatMember(member);
