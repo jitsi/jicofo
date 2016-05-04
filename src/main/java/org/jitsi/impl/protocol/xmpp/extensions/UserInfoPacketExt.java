@@ -37,7 +37,7 @@ public class UserInfoPacketExt
     /**
      * Name space of start muted packet extension.
      */
-    public static final String NAMESPACE = "http://jitsi.org/jitmeet";
+    public static final String NAMESPACE = "http://jitsi.org/jitmeet/userinfo";
 
     /**
      * The name of the "robot" attribute which indicates whether or not given
