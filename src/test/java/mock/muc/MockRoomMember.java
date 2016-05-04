@@ -157,6 +157,12 @@ public class MockRoomMember
     }
 
     @Override
+    public boolean isRobot()
+    {
+        return false;
+    }
+
+    @Override
     public Presence getPresence()
     {
         // FIXME: not implemented

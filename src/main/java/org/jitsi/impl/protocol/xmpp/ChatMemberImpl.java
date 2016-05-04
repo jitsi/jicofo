@@ -20,10 +20,12 @@ package org.jitsi.impl.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
-
 import net.java.sip.communicator.service.protocol.globalstatus.*;
 import net.java.sip.communicator.util.*;
+
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.*;
+
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
 
@@ -72,6 +74,11 @@ public class ChatMemberImpl
      * <tt>ChatMemberImpl</tt>.
      */
     private Presence presence;
+
+    /**
+     * Indicates whether or not this MUC member is a robot.
+     */
+    private boolean robot = false;
 
     private ChatRoomMemberRole role;
 
@@ -194,6 +201,15 @@ public class ChatMemberImpl
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isRobot()
+    {
+        return robot;
+    }
+
+    /**
      * Does presence processing.
      *
      * @param presence the instance of <tt>Presence</tt> packet extension sent
@@ -228,6 +244,22 @@ public class ChatMemberImpl
                     getContactAddress() + " video muted: " + newStatus);
 
                 videoMuted = newStatus;
+            }
+        }
+
+        UserInfoPacketExt userInfoPacketExt
+            = (UserInfoPacketExt)
+                presence.getExtension(
+                        UserInfoPacketExt.ELEMENT_NAME,
+                        UserInfoPacketExt.NAMESPACE);
+        if (userInfoPacketExt != null)
+        {
+            Boolean newStatus = userInfoPacketExt.isRobot();
+            if (newStatus != null && this.robot != newStatus)
+            {
+                logger.debug(getContactAddress() +" robot: " + robot);
+
+                this.robot = newStatus;
             }
         }
     }
