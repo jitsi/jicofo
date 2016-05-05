@@ -28,7 +28,7 @@
     <property name="java.doc" value="${doc}/api"/>
     <property name="junit.reports" value="junit-reports"/>
 
-    <condition property="label" value="1">
+    <condition property="label" value="build.SVN">
         <not>
             <isset property="label"/>
         </not>
@@ -107,7 +107,7 @@
         </copy>
     </target>
 
-    <target name="compile">
+    <target name="compile" depends="version">
         <mkdir dir="${output}" />
         <javac
             classpathref="compile.classpath"
@@ -211,6 +211,15 @@
         name="rebuild"
         depends="clean,make"
         description="Clean and make the project." />
+
+    <!-- Jicofo Version -->
+    <target name="version">
+        <!-- set the build id according to the cruisecontrol property -->
+        <replaceregexp file="${src}/org/jitsi/jicofo/version/CurrentVersionImpl.java"
+                       match="NIGHTLY_BUILD_ID = (.+)"
+                       replace="NIGHTLY_BUILD_ID = &quot;${label}&quot;;"
+                       byline="true"/>
+    </target>
 
     <!-- JAVADOC -->
     <target name="javadoc"

@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo;
 
+import java.util.*;
+
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.rayo.*;
@@ -26,6 +28,8 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.*;
@@ -174,13 +178,28 @@ public class MeetExtensionsHandler
             return;
         }
 
+        JitsiMeetRecording recordingHandler = conference.getRecording();
+        if (recordingHandler == null)
+        {
+            logger.error(
+                    "JitsiMeetRecording is null for iq: " + colibriIQ.toXML());
+
+            // Internal server error
+            smackXmpp.getXmppConnection().sendPacket(
+                    IQ.createErrorResponse(
+                            colibriIQ,
+                            new XMPPError(
+                                    XMPPError.Condition.interna_server_error)));
+            return;
+        }
+
         State recordingState =
-            conference.modifyRecordingState(
-                colibriIQ.getFrom(),
-                recording.getToken(),
-                recording.getState(),
-                recording.getDirectory(),
-                colibriIQ.getTo());
+            recordingHandler.modifyRecordingState(
+                    colibriIQ.getFrom(),
+                    recording.getToken(),
+                    recording.getState(),
+                    recording.getDirectory(),
+                    colibriIQ.getTo());
 
         ColibriConferenceIQ response = new ColibriConferenceIQ();
 
@@ -201,19 +220,9 @@ public class MeetExtensionsHandler
         return packet instanceof MuteIq;
     }
 
-    private String getRoomNameFromMucJid(String mucJid)
-    {
-        int atIndex = mucJid.indexOf("@");
-        int slashIndex = mucJid.indexOf("/");
-        if (atIndex == -1 || slashIndex == -1)
-            return null;
-
-        return mucJid.substring(0, slashIndex);
-    }
-
     private JitsiMeetConference getConferenceForMucJid(String mucJid)
     {
-        String roomName = getRoomNameFromMucJid(mucJid);
+        String roomName = MucUtil.extractRoomNameFromMucJid(mucJid);
         if (roomName == null)
         {
             return null;
@@ -329,10 +338,19 @@ public class MeetExtensionsHandler
         IQ reply
             = (IQ) smackXmpp.getXmppConnection().sendPacketAndGetReply(dialIq);
 
-        // Send Jigasi response back to the client
-        reply.setFrom(null);
-        reply.setTo(from);
-        reply.setPacketID(originalPacketId);
+        if (reply != null)
+        {
+            // Send Jigasi response back to the client
+            reply.setFrom(null);
+            reply.setTo(from);
+            reply.setPacketID(originalPacketId);
+        }
+        else
+        {
+            reply = createErrorResponse(
+                    dialIq,
+                    new XMPPError(XMPPError.Condition.remote_server_timeout));
+        }
 
         smackXmpp.getXmppConnection().sendPacket(reply);
     }
@@ -372,36 +390,50 @@ public class MeetExtensionsHandler
         }
 
         Participant participant = conference.findParticipantForRoomJid(jid);
-        if (participant != null)
+
+        if (participant == null)
         {
-            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-            if (eventAdmin != null)
+            logger.info("Ignoring log request from an unknown JID: " + jid);
+            return;
+        }
+
+        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+
+        if (eventAdmin == null)
+            return;
+
+        if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
+        {
+            String content = LogUtil.getContent(log);
+
+            if (content != null)
             {
-                if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
+                ColibriConference colibriConference
+                    = conference.getColibriConference();
+
+                if (colibriConference != null)
                 {
-                    String content = LogUtil.getContent(log);
-                    if (content != null)
-                    {
-                        Event event =
-                            EventFactory.peerConnectionStats(
-                                conference.getColibriConference().getConferenceId(),
+                    Event event
+                        = EventFactory.peerConnectionStats(
+                                colibriConference.getConferenceId(),
                                 participant.getEndpointId(),
                                 content);
-                        if (event != null)
-                            eventAdmin.sendEvent(event);
-                    }
+
+                    if (event != null)
+                        eventAdmin.sendEvent(event);
                 }
                 else
                 {
-                    if (logger.isInfoEnabled())
-                        logger.info("Ignoring log request with an unknown ID:"
-                                            + log.getID());
+                    logger.warn(
+                            "Unhandled log request"
+                                + " - no valid Colibri conference");
                 }
             }
         }
-        else
+        else if (logger.isInfoEnabled())
         {
-            logger.info("Ignoring log request from an unknown JID: " + jid);
+            logger.info(
+                    "Ignoring log request with an unknown ID:" + log.getID());
         }
     }
 
@@ -423,46 +455,48 @@ public class MeetExtensionsHandler
         }
 
         String from = presence.getFrom();
-
         JitsiMeetConference conference = getConferenceForMucJid(from);
 
         if (conference == null)
         {
-            logger.debug("Room not found for JID: " + from);
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Room not found for JID: " + from);
+            }
             return;
         }
 
-        ChatRoomMemberRole role
-            = conference.getRoleForMucJid(presence.getFrom());
+        ChatRoomMemberRole role = conference.getRoleForMucJid(from);
 
-        if(role != null &&
-            role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+        if (role != null && role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
         {
             StartMutedPacketExtension ext
-                = (StartMutedPacketExtension) presence.getExtension(
-                    StartMutedPacketExtension.ELEMENT_NAME,
-                    StartMutedPacketExtension.NAMESPACE);
-            if(ext != null)
+                = (StartMutedPacketExtension)
+                    presence.getExtension(
+                            StartMutedPacketExtension.ELEMENT_NAME,
+                            StartMutedPacketExtension.NAMESPACE);
+
+            if (ext != null)
             {
-                boolean[] startMuted = new boolean[2];
-                startMuted[0] = ext.getAudioMuted();
-                startMuted[1] = ext.getVideoMuted();
+                boolean[] startMuted
+                    = { ext.getAudioMuted(), ext.getVideoMuted() };
+
                 conference.setStartMuted(startMuted);
             }
         }
 
-        Participant participant
-                = conference.findParticipantForRoomJid(presence.getFrom());
-        if (participant != null)
+        Participant participant = conference.findParticipantForRoomJid(from);
+        ColibriConference colibriConference = conference.getColibriConference();
+
+        if (participant != null && colibriConference != null)
         {
             // Check if this conference is valid
-            String conferenceId
-                = conference.getColibriConference().getConferenceId();
+            String conferenceId = colibriConference.getConferenceId();
             if (StringUtils.isNullOrEmpty(conferenceId))
             {
                 logger.error(
-                    "Unable to send DisplayNameChanged event" +
-                            " - no conference id");
+                        "Unable to send DisplayNameChanged event"
+                            + " - no conference id");
                 return;
             }
 
@@ -476,32 +510,28 @@ public class MeetExtensionsHandler
                     newDisplayName = ((Nick) pe).getName();
                     break;
                 }
-
             }
 
-            if ((oldDisplayName == null && newDisplayName != null)
-                || (oldDisplayName != null
-                        && !oldDisplayName.equals(newDisplayName)))
+            if (!Objects.equals(oldDisplayName, newDisplayName))
             {
                 participant.setDisplayName(newDisplayName);
 
-                // Prevent NPE when adding to event hashtable
-                if (newDisplayName == null)
-                {
-                    newDisplayName = "";
-                }
                 EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
                 if (eventAdmin != null)
                 {
+                    // Prevent NPE when adding to event hashtable
+                    if (newDisplayName == null)
+                    {
+                        newDisplayName = "";
+                    }
                     eventAdmin.sendEvent(
-                        EventFactory.endpointDisplayNameChanged(
-                            conferenceId,
-                            participant.getEndpointId(),
-                            newDisplayName));
+                            EventFactory.endpointDisplayNameChanged(
+                                    conferenceId,
+                                    participant.getEndpointId(),
+                                    newDisplayName));
                 }
             }
         }
-
     }
 
     /**
@@ -511,20 +541,23 @@ public class MeetExtensionsHandler
      */
     private IQ createErrorResponse(IQ request, XMPPError error)
     {
-        if (!(request.getType() == IQ.Type.GET
-                || request.getType() == IQ.Type.SET))
+        IQ.Type requestType = request.getType();
+        if (!(requestType == IQ.Type.GET || requestType == IQ.Type.SET))
         {
             throw new IllegalArgumentException(
-                "IQ must be of type 'set' or 'get'. Original IQ: "
+                    "IQ must be of type 'set' or 'get'. Original IQ: "
                         + request.toXML());
         }
-        final IQ result = new IQ()
-        {
-            public String getChildElementXML()
+
+        final IQ result
+            = new IQ()
             {
-                return "";
-            }
-        };
+                @Override
+                public String getChildElementXML()
+                {
+                    return "";
+                }
+            };
         result.setType(IQ.Type.ERROR);
         result.setPacketID(request.getPacketID());
         result.setFrom(request.getTo());

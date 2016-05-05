@@ -19,8 +19,6 @@ package org.jitsi.jicofo.osgi;
 
 import org.jitsi.meet.*;
 
-import java.util.*;
-
 /**
  * Jicofo OSGi bundles description.
  *
@@ -81,6 +79,7 @@ public class JicofoBundleConfig
             },
             {
                 "net/java/sip/communicator/util/UtilActivator",
+                "org/jitsi/eventadmin/Activator",
                 //"net/java/sip/communicator/impl/fileaccess/FileAccessActivator"
             },
             {
@@ -124,7 +123,7 @@ public class JicofoBundleConfig
                 //"net/java/sip/communicator/impl/certificate/CertificateVerificationActivator"
             },
             {
-                //"net/java/sip/communicator/impl/version/VersionActivator"
+                "org/jitsi/jicofo/version/VersionActivator"
             },
             {
                 "net/java/sip/communicator/service/protocol/ProtocolProviderActivator"
@@ -137,10 +136,11 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/eventadmin/Activator"
+                "org/jitsi/jicofo/log/Activator"
             },
             {
-                "org/jitsi/jicofo/log/Activator"
+                "org/jitsi/jicofo/JvbDoctor",
+                "org/jitsi/jicofo/VersionBroadcaster"
             }
         };
 

@@ -60,9 +60,23 @@ public class DefaultJingleRequestHandler
     }
 
     @Override
+    public void onTransportAccept(JingleSession jingleSession,
+                                  List<ContentPacketExtension> contents)
+    {
+        logger.warn("Ignored Jingle 'transport-accept'");
+    }
+
+    @Override
     public void onTransportInfo(JingleSession jingleSession,
                                 List<ContentPacketExtension> contents)
     {
         logger.warn("Ignored Jingle 'transport-info'");
+    }
+
+    @Override
+    public void onTransportReject(JingleSession jingleSession,
+                                  JingleIQ      rejectIQ)
+    {
+        logger.warn("Ignored Jingle 'transport-reject'");
     }
 }

@@ -71,9 +71,8 @@ public class ColibriTest
         JitsiMeetConfig config
             = new JitsiMeetConfig(new HashMap<String,String>());
 
-        TestConference testConference = new TestConference();
-
-        testConference.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConference
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConference.getFocusProtocolProvider();
@@ -92,14 +91,11 @@ public class ColibriTest
             = new ArrayList<ContentPacketExtension>();
 
         ContentPacketExtension audio
-            = JingleOfferFactory.createContentForMedia(
-                    MediaType.AUDIO, false, true);
+            = JingleOfferFactory.createAudioContent(false, true, false);
         ContentPacketExtension video
-            = JingleOfferFactory.createContentForMedia(
-                    MediaType.VIDEO, false, true);
+            = JingleOfferFactory.createVideoContent(false, true, false, -1, -1);
         ContentPacketExtension data
-            = JingleOfferFactory.createContentForMedia(
-                    MediaType.DATA, false, true);
+            = JingleOfferFactory.createDataContent(false, true);
 
         contents.add(audio);
         contents.add(video);

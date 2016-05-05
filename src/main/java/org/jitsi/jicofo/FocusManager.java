@@ -24,11 +24,13 @@ import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
+
 import org.jivesoftware.smack.provider.*;
+
+import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -164,7 +166,10 @@ public class FocusManager
      * Starts this manager for given <tt>hostName</tt>.
      */
     public void start()
+        throws Exception
     {
+        BundleContext bundleContext = FocusBundleActivator.bundleContext;
+
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
@@ -179,15 +184,16 @@ public class FocusManager
         protocolProviderHandler.start(
             hostName, focusUserDomain, focusUserPassword, focusUserName);
 
-        jitsiMeetServices = new JitsiMeetServices(
-            protocolProviderHandler.getOperationSet(
-                OperationSetSubscription.class));
+        jitsiMeetServices
+            = new JitsiMeetServices(
+                    protocolProviderHandler,
+                    focusUserDomain);
+        jitsiMeetServices.start(bundleContext);
 
         String statsPubSubNode
             = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-
         componentsDiscovery.start(
             xmppDomain, statsPubSubNode, protocolProviderHandler);
 
@@ -195,13 +201,15 @@ public class FocusManager
 
         ProviderManager
             .getInstance()
-                .addExtensionProvider(LogPacketExtension.LOG_ELEM_NAME,
-                    LogPacketExtension.NAMESPACE,
-                    new LogExtensionProvider());
+                .addExtensionProvider(
+                        LogPacketExtension.LOG_ELEM_NAME,
+                        LogPacketExtension.NAMESPACE,
+                        new LogExtensionProvider());
 
-        FocusBundleActivator
-            .bundleContext.registerService(
-                JitsiMeetServices.class, jitsiMeetServices, null);
+        bundleContext.registerService(
+                JitsiMeetServices.class,
+                jitsiMeetServices,
+                null);
 
         protocolProviderHandler.addRegistrationListener(this);
         protocolProviderHandler.register();
@@ -219,6 +227,19 @@ public class FocusManager
             componentsDiscovery.stop();
             componentsDiscovery = null;
         }
+
+        if (jitsiMeetServices != null)
+        {
+            try
+            {
+                jitsiMeetServices.stop(FocusBundleActivator.bundleContext);
+            }
+            catch (Exception e)
+            {
+                logger.error("Error when trying to stop JitsiMeetServices", e);
+            }
+        }
+
         meetExtensionsHandler.dispose();
 
         protocolProviderHandler.stop();
@@ -293,14 +314,14 @@ public class FocusManager
         }
 
         logger.info("Created new focus for " + room + "@" + focusUserDomain
-                        + " conferences count: " + conferences.size()
-                        + " options:" + options.toString());
+            + " conferences count: " + conferences.size()
+            + " options:" + options.toString());
 
         // Send focus created event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
         {
-            eventAdmin.sendEvent(
+          eventAdmin.sendEvent(
                 EventFactory.focusCreated(
                     conference.getId(), conference.getRoomName()));
         }
@@ -600,7 +621,8 @@ public class FocusManager
                 }
                 catch (InterruptedException e)
                 {
-                    Thread.currentThread().interrupt();
+                    // Continue to check the enabled flag
+                    // if we're still supposed to run
                 }
 
                 if (!enabled)

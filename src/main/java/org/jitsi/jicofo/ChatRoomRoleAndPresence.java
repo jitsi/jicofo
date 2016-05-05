@@ -21,6 +21,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
@@ -89,14 +90,9 @@ public class ChatRoomRoleAndPresence
     public ChatRoomRoleAndPresence(JitsiMeetConference conference,
                                    ChatRoom chatRoom)
     {
-        if (conference == null)
-        {
-            throw new NullPointerException("conference");
-        }
-        if (chatRoom == null)
-        {
-            throw new NullPointerException("chatRoom");
-        }
+        Assert.notNull(conference, "conference");
+        Assert.notNull(chatRoom, "chatRoom");
+
         this.conference = conference;
         this.chatRoom = chatRoom;
     }
@@ -235,6 +231,8 @@ public class ChatRoomRoleAndPresence
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             if (conference.isFocusMember(member)
+                || ((XmppChatMember) member).isRobot()
+                // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
             {
                 continue;

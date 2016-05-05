@@ -53,8 +53,8 @@ public class LeakingRoomsTest
         String roomName = "testLeaks@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConf
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
                 = testConf.getFocusProtocolProvider();

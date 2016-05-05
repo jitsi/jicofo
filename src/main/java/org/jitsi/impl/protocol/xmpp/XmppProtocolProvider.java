@@ -18,8 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
@@ -113,13 +111,6 @@ public class XmppProtocolProvider
     public XmppProtocolProvider(AccountID accountID)
     {
         this.jabberAccountID = (JabberAccountID) accountID;
-
-        // <videomuted> element from jitsi-meet presence
-        ProviderManager.getInstance().addExtensionProvider(
-                VideoMutedExtension.ELEMENT_NAME,
-                VideoMutedExtension.NAMESPACE,
-                new DefaultPacketExtensionProvider<>(
-                        VideoMutedExtension.class));
 
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
@@ -620,7 +611,9 @@ public class XmppProtocolProvider
             connection.sendPacket(packet);
 
             //FIXME: retry allocation on timeout
-            Packet response = packetCollector.nextResult(20000);
+            Packet response
+                = packetCollector.nextResult(
+                        SmackConfiguration.getPacketReplyTimeout());
 
             packetCollector.cancel();
 

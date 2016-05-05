@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
@@ -293,10 +294,8 @@ public class OpSetSubscriptionImpl
          */
         public Subscription(String node, SubscriptionListener listener)
         {
-            if (node == null)
-                throw new NullPointerException("node");
-            if (listener == null)
-                throw new NullPointerException("listener");
+            Assert.notNull(node, "node");
+            Assert.notNull(listener, "listener");
 
             this.node = node;
             this.listeners.add(listener);

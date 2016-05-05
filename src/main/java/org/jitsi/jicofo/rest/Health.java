@@ -24,8 +24,10 @@ import javax.servlet.http.*;
 
 import org.eclipse.jetty.server.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
+import org.json.simple.*;
 
 /**
  * Checks the health of {@link FocusManager}.
@@ -40,6 +42,12 @@ public class Health
      */
     private static final Map<String,String> JITSI_MEET_CONFIG
         = Collections.emptyMap();
+
+    /**
+     * The name of the parameter that triggers known bridges listing in health
+     * check response;
+     */
+    private static final String LIST_JVB_PARAM_NAME = "list_jvb";
 
     /**
      * The {@code Logger} utilized by the {@code Health} class to print
@@ -137,7 +145,41 @@ public class Health
 
         try
         {
+            // At this point the health check has passed - now eventually list
+            // JVBs known to this Jicofo instance
+            String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
+
+            if (Boolean.parseBoolean(listJvbParam))
+            {
+                JitsiMeetServices services
+                    = focusManager.getJitsiMeetServices();
+
+                Assert.notNull(services, "services");
+
+                BridgeSelector bridgeSelector = services.getBridgeSelector();
+
+                Assert.notNull(bridgeSelector, "bridgeSelector");
+
+                List<String> activeJVBs = bridgeSelector.listActiveJVBs();
+
+                // ABORT here if the list is empty
+                if (activeJVBs.isEmpty())
+                {
+                    logger.debug(
+                        "The health check failed - 0 active JVB instances !");
+
+                    status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                    response.setStatus(status);
+                    return;
+                }
+
+                JSONObject jsonRoot = new JSONObject();
+                jsonRoot.put("jvbs", activeJVBs);
+                response.getWriter().append(jsonRoot.toJSONString());
+            }
+
             check(focusManager);
+
             status = HttpServletResponse.SC_OK;
         }
         catch (Exception ex)

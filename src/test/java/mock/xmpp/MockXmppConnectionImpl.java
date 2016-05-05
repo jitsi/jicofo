@@ -17,6 +17,7 @@
  */
 package mock.xmpp;
 
+import org.jitsi.assertions.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
@@ -101,10 +102,7 @@ public class MockXmppConnectionImpl
 
     public Packet readNextPacket(String myJid, String packetId, long timeout)
     {
-        if (StringUtils.isNullOrEmpty(myJid))
-        {
-            throw new IllegalArgumentException("JID: " + myJid);
-        }
+        Assert.notNullNorEmpty(myJid, "JID: " + myJid);
 
         logger.debug(
             "Read packet request for JID: " + myJid

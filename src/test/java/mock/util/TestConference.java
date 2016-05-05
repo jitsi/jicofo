@@ -21,10 +21,11 @@ import mock.*;
 import mock.jvb.*;
 import mock.muc.*;
 
-import net.java.sip.communicator.util.*;
-
 import org.jitsi.jicofo.*;
+import org.jitsi.osgi.*;
 import org.jitsi.videobridge.simulcast.*;
+
+import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -33,68 +34,106 @@ import java.util.*;
  */
 public class TestConference
 {
+    private final BundleContext bc;
+
     private String serverName;
 
     private String roomName;
 
+    private final OSGIServiceRef<JitsiMeetServices> meetServicesRef;
+
     private String mockBridgeJid;
 
-    private FocusManager focusManager;
+    private final OSGIServiceRef<FocusManager> focusManagerRef;
 
     private MockProtocolProvider focusProtocolProvider;
 
     private JitsiMeetConference conference;
 
-    private JitsiMeetServices meetServices;
-
     private MockVideobridge mockBridge;
 
     private MockMultiUserChat chat;
 
-    public void allocateMockConference(OSGiHandler osgi,
-                                       String serverName, String roomName)
+    static public TestConference allocate(
+        BundleContext ctx, String serverName, String roomName)
+        throws Exception
+    {
+        TestConference newConf = new TestConference(ctx);
+
+        newConf.createJvbAndConference(serverName, roomName);
+
+        return newConf;
+    }
+
+    static public TestConference allocate(
+        BundleContext ctx, String serverName, String roomName,
+        MockVideobridge mockBridge)
+        throws Exception
+    {
+        TestConference newConf = new TestConference(ctx);
+
+        newConf.createConferenceRoom(serverName, roomName, mockBridge);
+
+        return newConf;
+    }
+
+    public TestConference(BundleContext osgi)
+    {
+        this.bc = osgi;
+        this.meetServicesRef
+            = new OSGIServiceRef<>(osgi, JitsiMeetServices.class);
+        this.focusManagerRef = new OSGIServiceRef<>(osgi, FocusManager.class);
+    }
+
+    private void createJvbAndConference(String serverName, String roomName)
+        throws Exception
+    {
+        this.mockBridgeJid = "mockjvb." + serverName;
+
+        MockVideobridge mockBridge
+            = new MockVideobridge(
+                    bc,
+                    getFocusProtocolProvider().getMockXmppConnection(),
+                    mockBridgeJid);
+
+        mockBridge.start();
+
+        meetServicesRef.get().getBridgeSelector().addJvbAddress(mockBridgeJid);
+
+        createConferenceRoom(serverName, roomName, mockBridge);
+    }
+
+    private void createConferenceRoom(String serverName, String roomName,
+                                      MockVideobridge mockJvb)
         throws Exception
     {
         this.serverName = serverName;
         this.roomName = roomName;
-        this.mockBridgeJid = "mockjvb." + serverName;
-
-        this.focusManager
-            = ServiceUtils.getService(osgi.bc, FocusManager.class);
-
-        this.meetServices
-            = ServiceUtils.getService(FocusBundleActivator.bundleContext,
-                                          JitsiMeetServices.class);
-
-        meetServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
+        this.mockBridge = mockJvb;
+        this.mockBridgeJid = mockJvb.getBridgeJid();
 
         HashMap<String,String> properties = new HashMap<>();
 
         properties.put(JitsiMeetConfig.SIMULCAST_MODE_PNAME, "rewriting");
 
-        focusManager.conferenceRequest(roomName, properties);
+        focusManagerRef.get().conferenceRequest(roomName, properties);
 
-        this.conference = focusManager.getConference(roomName);
-
-        this.focusProtocolProvider
-            = (MockProtocolProvider) conference.getXmppProvider();
-
-        this.mockBridge
-            = new MockVideobridge(
-                    osgi.bc,
-                    focusProtocolProvider.getMockXmppConnection(),
-                    mockBridgeJid);
-
-        mockBridge.start();
+        this.conference = focusManagerRef.get().getConference(roomName);
 
         MockMultiUserChatOpSet mucOpSet
-            = focusProtocolProvider.getMockChatOpSet();
+            = getFocusProtocolProvider().getMockChatOpSet();
 
         this.chat = (MockMultiUserChat) mucOpSet.findRoom(roomName);
     }
 
     public MockProtocolProvider getFocusProtocolProvider()
     {
+        if (focusProtocolProvider == null)
+        {
+            focusProtocolProvider
+                = (MockProtocolProvider) focusManagerRef
+                        .get().getProtocolProvider();
+        }
         return focusProtocolProvider;
     }
 
@@ -106,6 +145,16 @@ public class TestConference
     public void addParticipant(MockParticipant user)
     {
         user.join(chat);
+    }
+
+    public MockParticipant addParticipant()
+    {
+        MockParticipant newParticipant
+            = new MockParticipant(StringGenerator.nextRandomStr());
+
+        newParticipant.join(chat);
+
+        return newParticipant;
     }
 
     public ConferenceUtility getConferenceUtility()
@@ -134,5 +183,10 @@ public class TestConference
     public int getParticipantCount()
     {
         return conference.getParticipantCount();
+    }
+
+    public String getRoomName()
+    {
+        return roomName;
     }
 }

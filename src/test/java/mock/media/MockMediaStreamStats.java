@@ -280,4 +280,10 @@ public class MockMediaStreamStats
     {
 
     }
+
+    @Override
+    public long getSendingBitrate()
+    {
+        return 0;
+    }
 }

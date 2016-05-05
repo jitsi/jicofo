@@ -20,10 +20,12 @@ package org.jitsi.impl.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
-
 import net.java.sip.communicator.service.protocol.globalstatus.*;
 import net.java.sip.communicator.util.*;
+
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.*;
+
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
 
@@ -61,6 +63,23 @@ public class ChatMemberImpl
      */
     private final String address;
 
+    /**
+     * Caches real JID of the participant if we're able to see it(not the MUC
+     * address stored in {@link ChatMemberImpl#address}).
+     */
+    private String memberJid = null;
+
+    /**
+     * Stores the last <tt>Presence</tt> processed by this
+     * <tt>ChatMemberImpl</tt>.
+     */
+    private Presence presence;
+
+    /**
+     * Indicates whether or not this MUC member is a robot.
+     */
+    private boolean robot = false;
+
     private ChatRoomMemberRole role;
 
     /**
@@ -81,6 +100,15 @@ public class ChatMemberImpl
     public ChatRoom getChatRoom()
     {
         return chatRoom;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Presence getPresence()
+    {
+        return presence;
     }
 
     @Override
@@ -153,7 +181,11 @@ public class ChatMemberImpl
     @Override
     public String getJabberID()
     {
-        return chatRoom.getMemberJid(address);
+        if (memberJid == null)
+        {
+            memberJid = chatRoom.getMemberJid(address);
+        }
+        return memberJid;
     }
 
     @Override
@@ -169,13 +201,34 @@ public class ChatMemberImpl
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isRobot()
+    {
+        return robot;
+    }
+
+    /**
      * Does presence processing.
      *
      * @param presence the instance of <tt>Presence</tt> packet extension sent
      *                 by this chat member.
+     *
+     * @throws IllegalArgumentException if given <tt>Presence</tt> does not
+     *         belong to this <tt>ChatMemberImpl</tt>.
      */
     void processPresence(Presence presence)
     {
+        if (!address.equals(presence.getFrom()))
+        {
+            throw new IllegalArgumentException(
+                    String.format("Presence for another member: %s, my jid: %s",
+                            presence.getFrom(), address));
+        }
+
+        this.presence = presence;
+
         VideoMutedExtension videoMutedExt
             = (VideoMutedExtension)
                 presence.getExtension(
@@ -193,5 +246,31 @@ public class ChatMemberImpl
                 videoMuted = newStatus;
             }
         }
+
+        UserInfoPacketExt userInfoPacketExt
+            = (UserInfoPacketExt)
+                presence.getExtension(
+                        UserInfoPacketExt.ELEMENT_NAME,
+                        UserInfoPacketExt.NAMESPACE);
+        if (userInfoPacketExt != null)
+        {
+            Boolean newStatus = userInfoPacketExt.isRobot();
+            if (newStatus != null && this.robot != newStatus)
+            {
+                logger.debug(getContactAddress() +" robot: " + robot);
+
+                this.robot = newStatus;
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return String.format(
+                "ChatMember[%s, jid: %s]@%s", address, memberJid, hashCode());
     }
 }
