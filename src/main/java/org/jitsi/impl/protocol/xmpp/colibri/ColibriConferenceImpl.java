@@ -185,6 +185,7 @@ public class ColibriConferenceImpl
             colibriBuilder.setAdaptiveSimulcast(
                 config.isAdaptiveSimulcastEnabled());
             colibriBuilder.setSimulcastMode(config.getSimulcastMode());
+            colibriBuilder.setAudioPacketDelay(config.getAudioPacketDelay());
         }
     }
 
