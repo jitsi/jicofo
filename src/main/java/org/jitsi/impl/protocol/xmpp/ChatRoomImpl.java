@@ -55,6 +55,12 @@ public class ChatRoomImpl
     private final OperationSetMultiUserChatImpl opSet;
 
     /**
+     * Caches early presence packets triggered by Smack, before there was member
+     * joined event.
+     */
+    private Map<String, Presence> presenceCache = new HashMap<>();
+
+    /**
      * Chat room name.
      */
     private final String roomName;
@@ -947,20 +953,10 @@ public class ChatRoomImpl
 
                 // Process presence cached in the roster to init fields
                 // like video muted etc.
-                Roster roster = connection.getRoster();
-                Presence cachedPresence = roster.getPresenceResource(mucJid);
+                Presence cachedPresence = presenceCache.get(mucJid);
                 if (cachedPresence != null)
                 {
-                    logger.debug(
-                            String.format(
-                                    "Initial presence for: %s, P: %s",
-                                    mucJid, cachedPresence.toXML()));
-
                     member.processPresence(cachedPresence);
-                }
-                else
-                {
-                    logger.error("No initial presence for: " + mucJid);
                 }
 
                 // Trigger participant "joined"
@@ -1008,6 +1004,9 @@ public class ChatRoomImpl
                         "Member left event for non-existing participant: "
                                     + participant);
                 }
+
+                // Clear cached Presence
+                presenceCache.remove(participant);
             }
         }
 
@@ -1258,8 +1257,15 @@ public class ChatRoomImpl
             }
             else
             {
-                logger.warn(
-                    "Presence for not existing member: " + presence.toXML());
+                // We want to cache that Presence for "on member joined" event
+                if (presence.getType().equals(Presence.Type.available))
+                {
+                    logger.warn(
+                            "Presence for not existing member: "
+                                + presence.toXML());
+
+                    presenceCache.put(presence.getFrom(), presence);
+                }
             }
         }
     }
