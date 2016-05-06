@@ -266,8 +266,9 @@ public class JitsiMeetConference
 
             // Wraps OperationSetJingle in order to introduce
             // our nasty "lip-sync" hack
-            if (getGlobalConfig().isLipSyncEnabled())
+            if (Boolean.TRUE.equals(getConfig().isLipSyncEnabled()))
             {
+                logger.info("Lip-sync enabled in " + getRoomName());
                 jingle = new LipSyncHack(this, jingle);
             }
 

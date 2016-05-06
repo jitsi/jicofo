@@ -69,6 +69,11 @@ public class JitsiMeetConfig
     public static final String CHANNEL_LAST_N_PNAME = "channelLastN";
 
     /**
+     * The name of the property that enables the {@link LipSyncHack}.
+     */
+    public static final String ENABLE_LIPSYNC = "enableLipSync";
+
+    /**
      * The name of the property that specifies JID of the bridge which should be
      * used instead of any bridges elected by <tt>BridgeSelector</tt>.
      * The property is meant to be used in a test that aims to run a conference
@@ -188,6 +193,15 @@ public class JitsiMeetConfig
     {
         Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
         return disabled == null ? null : !disabled;
+    }
+
+    /**
+     * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
+     * (can be <tt>null</tt>).
+     */
+    public Boolean isLipSyncEnabled()
+    {
+        return getBoolean(ENABLE_LIPSYNC);
     }
 
     /**
