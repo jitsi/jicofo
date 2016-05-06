@@ -150,7 +150,7 @@ public class LipSyncHack implements OperationSetJingle
         // FIXME switch to debug level after some more testing
         logger.info(String.format(
                 "Lips-sync From %s to %s, lip-sync: %s, video muted: %s",
-                participantJid, ownerJid, supportsLipSync, isVideoMuted));
+                ownerJid, participantJid, supportsLipSync, isVideoMuted));
 
         return supportsLipSync && Boolean.FALSE.equals(isVideoMuted);
     }
