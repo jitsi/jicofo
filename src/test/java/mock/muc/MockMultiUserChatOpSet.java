@@ -141,4 +141,9 @@ public class MockMultiUserChatOpSet
     {
         return false;
     }
+
+    static public void cleanMucSharing()
+    {
+        mucDomainSharing.clear();
+    }
 }

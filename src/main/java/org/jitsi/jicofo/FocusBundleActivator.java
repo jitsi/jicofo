@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.caps.*;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.osgi.*;
 
@@ -84,7 +85,10 @@ public class FocusBundleActivator
 
         EntityCapsManager.setBundleContext(context);
 
-        sharedThreadPool = Executors.newScheduledThreadPool(SHARED_POOL_SIZE);
+        // Make threads daemon, so that they won't prevent from doing shutdown
+        sharedThreadPool
+            = Executors.newScheduledThreadPool(
+                    SHARED_POOL_SIZE, new DaemonThreadFactory());
 
         eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 

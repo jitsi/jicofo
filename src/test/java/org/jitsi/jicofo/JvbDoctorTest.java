@@ -45,7 +45,7 @@ import static org.mockito.Mockito.*;
 @RunWith(JUnit4.class)
 public class JvbDoctorTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     private static final int HEALTH_CHECK_INT = 300;
 
@@ -94,8 +94,7 @@ public class JvbDoctorTest
         assertNotNull(focusPps);
 
         MockVideobridge mockBridge
-            = new MockVideobridge(
-                osgi.bc, focusPps.getMockXmppConnection(), jvb1);
+            = new MockVideobridge(focusPps.getMockXmppConnection(), jvb1);
 
         // Make sure that jvb advertises health-check support
         MockSetSimpleCapsOpSet mockCaps = focusPps.getMockCapsOpSet();
@@ -108,7 +107,7 @@ public class JvbDoctorTest
         // Make mock JVB return error response to health-check IQ
         mockBridge.setReturnHealthError(true);
 
-        mockBridge.start();
+        mockBridge.start(osgi.bc);
 
         JitsiMeetServices meetServices
             = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
@@ -159,10 +158,14 @@ public class JvbDoctorTest
 
         // Make sure conferences are now terminated, since we have no secondary
         // bridge
-        for (TestConference testConf : testConfs)
-        {
-            assertNull(
-                focusManager.getConference(testConf.getRoomName()));
-        }
+        // FIXME with ICE-restart conference is not destroyed, we should make
+        // sure here that it is restarted on a new bridge instead
+        //for (TestConference testConf : testConfs)
+        //{
+        //    assertNull(
+        //        focusManager.getConference(testConf.getRoomName()));
+        //}
+
+        mockBridge.stop(osgi.bc);
     }
 }

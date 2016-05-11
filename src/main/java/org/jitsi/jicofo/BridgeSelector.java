@@ -524,16 +524,14 @@ public class BridgeSelector
     {
         logger.debug("Propagating new bridge added event: " + bridge.jid);
 
-        eventAdmin.sendEvent(
-            BridgeEvent.createBridgeUp(bridge.jid));
+        eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.jid));
     }
 
     private void notifyBridgeDown(BridgeState bridge)
     {
         logger.debug("Propagating bridge went down event: " + bridge.jid);
 
-        eventAdmin.sendEvent(
-            BridgeEvent.createBridgeDown(bridge.jid));
+        eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.jid));
     }
 
     /**

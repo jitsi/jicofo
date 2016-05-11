@@ -92,15 +92,20 @@ public class TestConference
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    bc,
                     getFocusProtocolProvider().getMockXmppConnection(),
                     mockBridgeJid);
 
-        mockBridge.start();
+        mockBridge.start(bc);
 
         meetServicesRef.get().getBridgeSelector().addJvbAddress(mockBridgeJid);
 
         createConferenceRoom(serverName, roomName, mockBridge);
+    }
+
+    public void stop()
+        throws Exception
+    {
+        mockBridge.stop(bc);
     }
 
     private void createConferenceRoom(String serverName, String roomName,

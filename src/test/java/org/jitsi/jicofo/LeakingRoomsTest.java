@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     @BeforeClass
     public static void setUpClass()
@@ -116,5 +116,7 @@ public class LeakingRoomsTest
         assertEquals(0, testConf.getParticipantCount());
 
         //assertEquals(0, testConf.getMockVideoBridge().getChannelsCount());
+
+        testConf.stop();
     }
 }
