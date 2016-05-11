@@ -34,7 +34,6 @@ public class DaemonThreadFactory
     public Thread newThread(Runnable r)
     {
         Thread t = Executors.defaultThreadFactory().newThread(r);
-        // The check is to avoid IllegalStateException if it's already set
         if (!t.isDaemon())
         {
             t.setDaemon(true);
