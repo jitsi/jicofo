@@ -44,12 +44,11 @@ public class XmppProtocolActivator
 
     static BundleContext bundleContext;
 
-    @Override
-    public void start(BundleContext bundleContext)
-        throws Exception
+    /**
+     * Registers PacketExtension providers used by Jicofo
+     */
+    static public void registerXMppExtensions()
     {
-        XmppProtocolActivator.bundleContext = bundleContext;
-
         // FIXME: make sure that we're using interoperability layer
         AbstractSmackInteroperabilityLayer.setImplementationClass(
             SmackV3InteroperabilityLayer.class);
@@ -64,9 +63,7 @@ public class XmppProtocolActivator
         HealthCheckIQProvider.registerIQProvider();
         // Jibri IQs
         smackInterOp.addIQProvider(
-                JibriIq.ELEMENT_NAME,
-                JibriIq.NAMESPACE,
-                new JibriIqProvider());
+                JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, new JibriIqProvider());
         JibriStatusPacketExt.registerExtensionProvider();
         // User info
         smackInterOp.addExtensionProvider(
@@ -85,11 +82,20 @@ public class XmppProtocolActivator
             .addIQProvider(
                     "query", "jabber:iq:version",
                     org.jitsi.jicofo.discovery.Version.class);
+    }
+
+    @Override
+    public void start(BundleContext bundleContext)
+        throws Exception
+    {
+        XmppProtocolActivator.bundleContext = bundleContext;
+
+        registerXMppExtensions();
 
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(
                     bundleContext, ProtocolNames.JABBER);
-        Hashtable<String, String> hashtable = new Hashtable<String, String>();
+        Hashtable<String, String> hashtable = new Hashtable<>();
 
         // Register XMPP
         hashtable.put(ProtocolProviderFactory.PROTOCOL,
