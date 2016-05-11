@@ -47,7 +47,7 @@ public class XmppProtocolActivator
     /**
      * Registers PacketExtension providers used by Jicofo
      */
-    static public void registerXMppExtensions()
+    static public void registerXmppExtensions()
     {
         // FIXME: make sure that we're using interoperability layer
         AbstractSmackInteroperabilityLayer.setImplementationClass(
@@ -90,7 +90,7 @@ public class XmppProtocolActivator
     {
         XmppProtocolActivator.bundleContext = bundleContext;
 
-        registerXMppExtensions();
+        registerXmppExtensions();
 
         XmppProviderFactory focusFactory
             = new XmppProviderFactory(

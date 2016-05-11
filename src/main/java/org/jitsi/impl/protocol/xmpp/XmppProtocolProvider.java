@@ -32,7 +32,6 @@ import org.jitsi.util.Logger;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.provider.*;
 import org.jivesoftware.smackx.packet.*;
 
 import java.util.*;
@@ -417,8 +416,7 @@ public class XmppProtocolProvider
     {
         if (connectionAdapter == null)
         {
-            connectionAdapter
-                = new XmppConnectionAdapter(connection);
+            connectionAdapter = new XmppConnectionAdapter(connection);
         }
         return connectionAdapter;
     }

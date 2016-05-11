@@ -50,7 +50,7 @@ public class MockActivator
         AbstractSmackInteroperabilityLayer.setImplementationClass(
             SmackV3InteroperabilityLayer.class);
 
-        XmppProtocolActivator.registerXMppExtensions();
+        XmppProtocolActivator.registerXmppExtensions();
 
         sipFactory
             = new MockProtocolProviderFactory(
