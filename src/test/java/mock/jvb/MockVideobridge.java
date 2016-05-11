@@ -38,7 +38,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockVideobridge
-    implements PacketFilter, PacketListener
+    implements PacketFilter, PacketListener, BundleActivator
 {
     /**
      * The logger
@@ -56,29 +56,34 @@ public class MockVideobridge
 
     private boolean returnHealthError = false;
 
-    public MockVideobridge(BundleContext bc,
-                           MockXmppConnection connection,
+    private VideobridgeBundleActivator jvbActivator;
+
+    public MockVideobridge(MockXmppConnection connection,
                            String bridgeJid)
     {
         this.connection = connection;
         this.bridgeJid = bridgeJid;
-
-        VideobridgeBundleActivator activator = new VideobridgeBundleActivator();
-        try
-        {
-            activator.start(bc);
-        }
-        catch (Exception e)
-        {
-            logger.error(e, e);
-        }
-
-        bridge = ServiceUtils.getService(bc, Videobridge.class);
     }
 
-    public void start()
+    public void start(BundleContext bc)
+        throws Exception
     {
+        this.jvbActivator = new VideobridgeBundleActivator();
+
+        jvbActivator.start(bc);
+
+        bridge = ServiceUtils.getService(bc, Videobridge.class);
+
         connection.addPacketHandler(this, this);
+    }
+
+    @Override
+    public void stop(BundleContext bundleContext)
+        throws Exception
+    {
+        connection.removePacketHandler(this);
+
+        jvbActivator.stop(bundleContext);
     }
 
     @Override

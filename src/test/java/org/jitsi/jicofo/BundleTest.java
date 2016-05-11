@@ -48,7 +48,7 @@ public class BundleTest
      */
     private final static Logger logger = Logger.getLogger(BundleTest.class);
 
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     @BeforeClass
     public static void setUpClass()
@@ -110,6 +110,8 @@ public class BundleTest
 
         user1.leave();
         user2.leave();
+
+        testConference.stop();
     }
 
     static void validateSessionInit(JingleIQ sessionInit, boolean isBundle)

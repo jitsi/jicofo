@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     private static String jvbPreConfigured = "config.jvb.test.domain.net";
     private static String jvb1Jid = "jvb1.test.domain.net";

@@ -42,9 +42,37 @@ public class OSGiHandler
 
     private MockMainMethodActivator mockMain;
 
+    private static OSGiHandler instance = new OSGiHandler();
+
+    private boolean deadlocked;
+
+    private OSGiHandler() { }
+
+    public static OSGiHandler getInstance()
+    {
+        return instance;
+    }
+
+    public void setDeadlocked(boolean deadlocked)
+    {
+        this.deadlocked = deadlocked;
+        if (deadlocked)        {
+
+            ((FailureAwareBundleContext)bc)
+                .setFailureMessage("OSGi stack is blocked by a deadlock");
+        }
+        else
+        {
+            ((FailureAwareBundleContext)bc).setFailureMessage(null);
+        }
+    }
+
     public void init()
         throws Exception
     {
+        if (deadlocked)
+            throw new RuntimeException("Running on deadlocked stack");
+
         System.setProperty(FocusManager.HOSTNAME_PNAME, "test.domain.net");
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, "focusdomain");
@@ -56,7 +84,7 @@ public class OSGiHandler
             public void start(BundleContext bundleContext)
                 throws Exception
             {
-                bc = bundleContext;
+                bc = new FailureAwareBundleContext(bundleContext);
                 synchronized (syncRoot)
                 {
                     syncRoot.notifyAll();
@@ -104,6 +132,9 @@ public class OSGiHandler
     public void shutdown()
         throws Exception
     {
+        if (deadlocked)
+            return;
+
         if (bc != null)
         {
             if (mockMain != null)
@@ -118,4 +149,13 @@ public class OSGiHandler
             throw new RuntimeException("Failed to stop OSGI");
     }
 
+    public BundleContext bc()
+    {
+        return bc;
+    }
+
+    public boolean isDeadlocked()
+    {
+        return deadlocked;
+    }
 }
