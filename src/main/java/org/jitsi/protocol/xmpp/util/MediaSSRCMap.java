@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * The map of media <tt>SourcePacketExtension</tt> encapsulates various
@@ -66,7 +67,9 @@ public class MediaSSRCMap
         List<SourcePacketExtension> ssrcList = ssrcs.get(media);
         if (ssrcList == null)
         {
-            ssrcList = new ArrayList<>();
+            // Prevent concurrent modification exception,
+            // when removing duplicates
+            ssrcList = new CopyOnWriteArrayList<>();
             ssrcs.put(media, ssrcList);
         }
         return ssrcList;
