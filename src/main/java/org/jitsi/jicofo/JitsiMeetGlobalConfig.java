@@ -62,7 +62,7 @@ public class JitsiMeetGlobalConfig
     /**
      * The default value for {@link #PENDING_TIMEOUT_PROP_NAME}.
      */
-    private static final int DEFAULT_PENDING_TIMEOUT = 30;
+    private static final int DEFAULT_PENDING_TIMEOUT = 90;
 
     /**
      * If set to <tt>true</tt> enables {@link LipSyncHack}.
