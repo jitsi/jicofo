@@ -4,6 +4,7 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.rtp.*;
 
 import java.awt.*;
+import java.util.*;
 
 /**
  *
@@ -285,5 +286,17 @@ public class MockMediaStreamStats
     public long getSendingBitrate()
     {
         return 0;
+    }
+
+    @Override
+    public Collection<? extends MediaStreamSSRCStats> getReceivedStats()
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends MediaStreamSSRCStats> getSentStats()
+    {
+        return null;
     }
 }
