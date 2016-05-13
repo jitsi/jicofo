@@ -131,9 +131,7 @@ public class JibriRecorder
 
         jibriDetector.addJibriListener(this);
 
-        setJibriStatus(
-                jibriDetector.selectJibri() != null ?
-                    JibriIq.Status.OFF : JibriIq.Status.UNDEFINED);
+        updateJibriAvailability();
     }
 
     /**
@@ -538,9 +536,18 @@ public class JibriRecorder
      */
     private void updateJibriAvailability()
     {
-        setJibriStatus(
-            jibriDetector.selectJibri() != null
-                ? JibriIq.Status.OFF : JibriIq.Status.UNDEFINED);
+        if (jibriDetector.selectJibri() != null)
+        {
+            setJibriStatus(JibriIq.Status.OFF);
+        }
+        else if (jibriDetector.isAnyJibriConnected())
+        {
+            setJibriStatus(JibriIq.Status.BUSY);
+        }
+        else
+        {
+            setJibriStatus(JibriIq.Status.UNDEFINED);
+        }
     }
 
     @Override
