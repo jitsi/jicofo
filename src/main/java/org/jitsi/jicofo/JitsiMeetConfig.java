@@ -124,6 +124,11 @@ public class JitsiMeetConfig
     public static final String STEREO_PNAME = "stereo";
 
     /**
+     * The name of the rtp level relay type property.
+     */
+    public static final String RTP_LEVEL_RELAY_TYPE_PNAME = "rtpLevelRelayType";
+
+    /**
      * The default value of the "startBitrate" property.
      */
     public static final int START_BITRATE_DEFAULT = 800;
@@ -308,5 +313,14 @@ public class JitsiMeetConfig
     {
         Boolean stereo = getBoolean(STEREO_PNAME);
         return stereo != null && stereo;
+    }
+
+    /**
+     * Returns the value of the rtp level relay type property.
+     * @return the value of the rtp level relay type property.
+     */
+    public String getRtpLevelRelayType()
+    {
+        return properties.get(RTP_LEVEL_RELAY_TYPE_PNAME);
     }
 }
