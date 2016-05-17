@@ -135,6 +135,11 @@ public class JitsiMeetConfig
      */
     public static final String USE_ROOM_AS_SHARED_DOC_NAME
             = "useRoomAsSharedDocumentName";
+    /**
+     * The name of the rtp level relay type property.
+     */
+    public static final String RTP_LEVEL_RELAY_TYPE_PNAME = "rtpLevelRelayType";
+
 
     /**
      * The default value of the "startBitrate" property.
@@ -341,5 +346,14 @@ public class JitsiMeetConfig
     {
         Boolean useRoom = getBoolean(USE_ROOM_AS_SHARED_DOC_NAME);
         return (useRoom != null) && useRoom;
+    }
+
+    /**
+     * Returns the value of the rtp level relay type property.
+     * @return the value of the rtp level relay type property.
+     */
+    public String getRtpLevelRelayType()
+    {
+        return properties.get(RTP_LEVEL_RELAY_TYPE_PNAME);
     }
 }
