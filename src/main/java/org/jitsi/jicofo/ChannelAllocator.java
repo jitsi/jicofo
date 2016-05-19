@@ -352,7 +352,9 @@ public class ChannelAllocator implements Runnable
 
                 // Check for enforced bridge
 
-                if (!StringUtils.isNullOrEmpty(config.getEnforcedVideobridge()))
+                String enforcedVideoBridge = config.getEnforcedVideobridge();
+                if (!StringUtils.isNullOrEmpty(enforcedVideoBridge)
+                    && bridgeSelector.isJvbOnTheList(enforcedVideoBridge))
                 {
                     bridge = config.getEnforcedVideobridge();
                     logger.info(
