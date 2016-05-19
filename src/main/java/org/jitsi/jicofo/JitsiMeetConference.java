@@ -285,15 +285,6 @@ public class JitsiMeetConference
 
             recording = new JitsiMeetRecording(this, services);
 
-            // Set pre-configured videobridge
-            String preConfiguredBridge = config.getPreConfiguredVideobridge();
-
-            if (!StringUtils.isNullOrEmpty(preConfiguredBridge))
-            {
-                services.getBridgeSelector()
-                    .setPreConfiguredBridge(preConfiguredBridge);
-            }
-
             // Set pre-configured SIP gateway
             //if (config.getPreConfiguredSipGateway() != null)
             //{

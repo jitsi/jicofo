@@ -54,13 +54,6 @@ public class JitsiMeetConfig
         = "disableAdaptiveSimulcast";
 
     /**
-     * The name the configuration property used to configure videobridge
-     * instance. It will be used when all auto-detected instances fail(or if we
-     * fail to detect any bridges at all).
-     */
-    public static final String BRIDGE_PNAME = "bridge";
-
-    /**
      * The name of channel last N configuration property. Should be non-negative
      * number. Pass <tt>-1</tt> to disable last N functionality.
      */
@@ -149,15 +142,6 @@ public class JitsiMeetConfig
     public String getEnforcedVideobridge()
     {
         return properties.get(ENFORCED_BRIDGE);
-    }
-
-    /**
-     * Returns pre-configured JVB address or <tt>null</tt> if no bridge was
-     * passed in the config.
-     */
-    public String getPreConfiguredVideobridge()
-    {
-        return properties.get(BRIDGE_PNAME);
     }
 
     /**
