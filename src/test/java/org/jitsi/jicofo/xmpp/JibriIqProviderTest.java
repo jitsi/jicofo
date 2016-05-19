@@ -72,7 +72,7 @@ public class JibriIqProviderTest
         String iqXml =
             "<iq to='t' from='f'>" +
                 "<jibri xmlns='http://jitsi.org/protocol/jibri'" +
-                "       status='error'>" +
+                "       status='failed'>" +
                 "<error xmlns='urn:ietf:params:xml:ns:xmpp-stanzas' " +
                 "       type='wait' code='504'>" +
                 "<remote-server-timeout" +
@@ -86,7 +86,7 @@ public class JibriIqProviderTest
 
         assertNotNull(jibriIq);
 
-        assertEquals(JibriIq.Status.ERROR, jibriIq.getStatus());
+        assertEquals(JibriIq.Status.FAILED, jibriIq.getStatus());
 
         XMPPError error = jibriIq.getError();
         assertNotNull(error);

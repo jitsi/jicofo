@@ -428,15 +428,15 @@ public class JibriRecorder
             logger.info("Updating status from Jibri: " + iq.toXML()
                 + " for " + roomName);
 
-            // We stop either on "off" or on "error"
+            // We stop either on "off" or on "failed"
             if ((JibriIq.Status.OFF.equals(status) ||
-                JibriIq.Status.ERROR.equals(status))
+                JibriIq.Status.FAILED.equals(status))
                 && recorderComponentJid != null/* This means we're recording */)
             {
                 logger.info("Recording stopped for: " + roomName);
                 // Make sure that there is XMPPError for ERROR status
                 XMPPError error = iq.getError();
-                if (JibriIq.Status.ERROR.equals(status) && error == null)
+                if (JibriIq.Status.FAILED.equals(status) && error == null)
                 {
                     error = new XMPPError(
                             XMPPError.Condition.interna_server_error,
@@ -543,7 +543,7 @@ public class JibriRecorder
      *
      * @param error if the recording stopped because of an error it should be
      * passed as an argument here which will result in stopping with
-     * the {@link JibriIq.Status#ERROR} status passed to the application.
+     * the {@link JibriIq.Status#FAILED} status passed to the application.
      */
     private void recordingStopped(XMPPError error)
     {
@@ -551,7 +551,7 @@ public class JibriRecorder
         // First we'll send an error and then follow with availability status
         if (error != null)
         {
-            setJibriStatus(JibriIq.Status.ERROR, error);
+            setJibriStatus(JibriIq.Status.FAILED, error);
         }
         // Update based on availability
         updateJibriAvailability();
