@@ -254,4 +254,10 @@ public class MockMediaStream
     public void stop()
     {
     }
+
+    @Override
+    public TransformEngineChain getTransformEngineChain()
+    {
+        return null;
+    }
 }
