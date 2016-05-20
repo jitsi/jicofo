@@ -236,7 +236,7 @@ public class PubSubBridgeSelectorTest
             .handleEvent(BridgeEvent.createBridgeUp(jvb1Jid));
 
         // Now make the bridge return health-check failure
-        jvb1.setReturnHealthError(true);
+        jvb1.setReturnServerError(true);
 
         // Here we verify that first there was HEALTH_CHECK_FAILED event
         // send by JvbDoctor
@@ -249,7 +249,7 @@ public class PubSubBridgeSelectorTest
             .handleEvent(BridgeEvent.createBridgeDown(jvb1Jid));
 
         // Now we fix back the bridge and send some PubSub stats
-        jvb1.setReturnHealthError(false);
+        jvb1.setReturnServerError(false);
 
         triggerJvbStats(jvb1Jid, 1);
         triggerJvbStats(jvb1Jid, 0);

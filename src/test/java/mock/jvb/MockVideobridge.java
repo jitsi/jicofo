@@ -54,7 +54,7 @@ public class MockVideobridge
 
     private XMPPError.Condition error;
 
-    private boolean returnHealthError = false;
+    private boolean returnServerError = false;
 
     private VideobridgeBundleActivator jvbActivator;
 
@@ -149,20 +149,20 @@ public class MockVideobridge
     private IQ processImpl(IQ p)
         throws Exception
     {
-        if (p instanceof ColibriConferenceIQ)
+        if (isReturnServerError())
+        {
+            return
+                IQ.createErrorResponse(
+                    p,
+                    new XMPPError(
+                        XMPPError.Condition.interna_server_error));
+        }
+        else if (p instanceof ColibriConferenceIQ)
         {
             return
                 bridge.handleColibriConferenceIQ(
                         (ColibriConferenceIQ) p,
                         Videobridge.OPTION_ALLOW_ANY_FOCUS);
-        }
-        else if (isReturnHealthError())
-        {
-            return
-                IQ.createErrorResponse(
-                        p,
-                        new XMPPError(
-                                XMPPError.Condition.interna_server_error));
         }
         else
         {
@@ -242,13 +242,13 @@ public class MockVideobridge
         return error;
     }
 
-    public boolean isReturnHealthError()
+    public boolean isReturnServerError()
     {
-        return returnHealthError;
+        return returnServerError;
     }
 
-    public void setReturnHealthError(boolean returnHealthError)
+    public void setReturnServerError(boolean returnServerError)
     {
-        this.returnHealthError = returnHealthError;
+        this.returnServerError = returnServerError;
     }
 }
