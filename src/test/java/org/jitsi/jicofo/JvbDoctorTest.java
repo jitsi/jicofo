@@ -28,9 +28,12 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 
+import org.jitsi.jicofo.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+
+import java.util.concurrent.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -105,7 +108,7 @@ public class JvbDoctorTest
         mockCaps.addChildNode(jvbNode);
 
         // Make mock JVB return error response to health-check IQ
-        mockBridge.setReturnHealthError(true);
+        mockBridge.setReturnServerError(true);
 
         mockBridge.start(osgi.bc);
 
@@ -168,6 +171,26 @@ public class JvbDoctorTest
 
             // No jvb currently in use
             assertNull(testConf.getConferenceUtility().getJvbConferenceId());
+        }
+
+        // Bridge is now healthy again
+        mockBridge.setReturnServerError(false);
+        selector.addJvbAddress(jvb1);
+
+        // Wait for all test conferences to restart
+        ConferenceRoomListener confRoomListener = new ConferenceRoomListener();
+        confRoomListener.await(
+            osgi.bc(), testConfs.length, 5, TimeUnit.SECONDS);
+
+        for (TestConference testConf : testConfs)
+        {
+            JitsiMeetConference conference
+                = focusManager.getConference(testConf.getRoomName());
+
+            assertNotNull(conference);
+
+            assertNotNull(
+                testConf.getConferenceUtility().getJvbConferenceId());
         }
 
         mockBridge.stop(osgi.bc);

@@ -303,7 +303,13 @@ public class JitsiMeetConference
             // Register for bridge events
             eventHandlerRegistration
                 = EventUtil.registerEventHandler(
-                    osgiCtx, new String[] { BridgeEvent.BRIDGE_DOWN }, this);
+                        osgiCtx,
+                        new String[]
+                        {
+                            BridgeEvent.BRIDGE_UP,
+                            BridgeEvent.BRIDGE_DOWN
+                        },
+                        this);
         }
         catch(Exception e)
         {
@@ -1440,13 +1446,43 @@ public class JitsiMeetConference
     @Override
     public void handleEvent(Event event)
     {
+        if (!(event instanceof BridgeEvent))
+        {
+            logger.error("Unexpected event type: " + event);
+            return;
+        }
+
+        BridgeEvent bridgeEvent = (BridgeEvent) event;
+        String bridgeJid = bridgeEvent.getBridgeJid();
         switch (event.getTopic())
         {
         case BridgeEvent.BRIDGE_DOWN:
-            BridgeEvent bridgeEvent = (BridgeEvent) event;
-
-            onBridgeDown(bridgeEvent.getBridgeJid());
+            onBridgeDown(bridgeJid);
             break;
+        case BridgeEvent.BRIDGE_UP:
+            onBridgeUp(bridgeJid);
+            break;
+        }
+    }
+
+    private void onBridgeUp(String bridgeJid)
+    {
+        // Check if we're not shutting down
+        if (!started)
+            return;
+
+        // Check if our Colibri conference has been disposed
+        synchronized (colibriConfSyncRoot)
+        {
+            if (colibriConference == null)
+            {
+                logger.info(
+                        "New bridge available: " + bridgeJid
+                            + " will try to restart: " + getRoomName());
+
+                // Trigger restart
+                restartConference();
+            }
         }
     }
 
@@ -1505,14 +1541,19 @@ public class JitsiMeetConference
             ChannelAllocator         channelAllocator,
             OperationFailedException exc)
     {
-        // Notify users about bridge is down event
-        if (ChannelAllocator.BRIDGE_FAILURE_ERR_CODE == exc.getErrorCode()
-                && chatRoom != null)
+        if (ChannelAllocator.BRIDGE_FAILURE_ERR_CODE == exc.getErrorCode())
         {
-            if (meetTools != null)
+            // Notify users about bridge is down event
+            if (meetTools != null && chatRoom != null)
             {
                 meetTools.sendPresenceExtension(
                         chatRoom, new BridgeIsDownPacketExt());
+            }
+            // Dispose the conference. This way we'll know there is no
+            // conference active and we can restart on new bridge
+            synchronized (colibriConfSyncRoot)
+            {
+                disposeConference();
             }
         }
     }
