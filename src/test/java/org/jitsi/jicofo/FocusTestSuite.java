@@ -35,6 +35,7 @@ import org.junit.runners.*;
         AuthEventsTest.class,
         ConferenceJsonTest.class,
         ConferenceIqProviderTest.class,
+        JibriIqProviderTest.class,
         JireconIqProviderTest.class,
         JvbDoctorTest.class,
         MuteIqProviderTest.class,

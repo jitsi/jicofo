@@ -129,6 +129,16 @@ public class JibriDetector
     }
 
     /**
+     * Checks whether or not there are any Jibri instances connected.
+     * @return <tt>true</tt> if there are any Jibri instances currently
+     * connected to the brewery room or <tt>false</tt> otherwise.
+     */
+    public boolean isAnyJibriConnected()
+    {
+        return jibris.size() > 0;
+    }
+
+    /**
      * Initializes this instance.
      */
     public void init()
