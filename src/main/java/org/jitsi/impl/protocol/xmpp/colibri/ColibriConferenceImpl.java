@@ -113,7 +113,8 @@ public class ColibriConferenceImpl
 
     /**
      * Checks if this instance has been disposed already and if so prints
-     * a warning message.
+     * a warning message. It will also cancel execution in case
+     * {@link #jitsiVideobridge} is null or empty.
      *
      * @param operationName the name of the operation that will not happen and
      * should be mentioned in the warning message.
@@ -127,6 +128,11 @@ public class ColibriConferenceImpl
         {
             logger.warn("Not doing " + operationName + " - instance disposed");
             return true;
+        }
+        if (StringUtils.isNullOrEmpty(jitsiVideobridge))
+        {
+            logger.error(
+                "Not doing " + operationName + " - bridge not initialized");
         }
         return false;
     }
