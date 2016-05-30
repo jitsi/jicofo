@@ -28,6 +28,8 @@ import net.java.sip.communicator.service.protocol.jabber.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 
+import org.jivesoftware.smack.*;
+
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -89,6 +91,8 @@ public class XmppProtocolActivator
         throws Exception
     {
         XmppProtocolActivator.bundleContext = bundleContext;
+
+        SmackConfiguration.setPacketReplyTimeout(15000);
 
         registerXmppExtensions();
 
