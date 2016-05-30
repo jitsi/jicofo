@@ -133,6 +133,7 @@ public class ColibriConferenceImpl
         {
             logger.error(
                 "Not doing " + operationName + " - bridge not initialized");
+            return true;
         }
         return false;
     }
