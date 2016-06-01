@@ -568,6 +568,8 @@ public class JitsiMeetConference
             }
         }
 
+        System.err.println("test");
+
         if(!startMuted[1])
         {
             Integer startVideoMuted = this.config.getVideoMuted();
