@@ -47,6 +47,15 @@ public class JitsiMeetConfig
     public static final String ADAPTIVE_LAST_N_PNAME = "adaptiveLastN";
 
     /**
+     * The name of the property which specifies the packet delay for the audio
+     * channels used in the conference.
+     *
+     * *NOTE* It is meant to be used for automated testing of
+     * the {@link LipSyncHack} only !
+     */
+    public static final String AUDIO_PACKET_DELAY = "audioPacketDelay";
+
+    /**
      * The name of adaptive simulcast configuration property. Pass 'true' to
      * disable or 'false' to enable.
      */
@@ -58,6 +67,11 @@ public class JitsiMeetConfig
      * number. Pass <tt>-1</tt> to disable last N functionality.
      */
     public static final String CHANNEL_LAST_N_PNAME = "channelLastN";
+
+    /**
+     * The name of the property that enables the {@link LipSyncHack}.
+     */
+    public static final String ENABLE_LIPSYNC = "enableLipSync";
 
     /**
      * The name of the property that specifies JID of the bridge which should be
@@ -179,6 +193,24 @@ public class JitsiMeetConfig
     {
         Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
         return disabled == null ? null : !disabled;
+    }
+
+    /**
+     * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
+     * (can be <tt>null</tt>).
+     */
+    public Boolean isLipSyncEnabled()
+    {
+        return getBoolean(ENABLE_LIPSYNC);
+    }
+
+    /**
+     * Returns an <tt>Integer</tt> value of the {@link #AUDIO_PACKET_DELAY}
+     * config property(can be <tt>null</tt>).
+     */
+    public Integer getAudioPacketDelay()
+    {
+        return getInt(AUDIO_PACKET_DELAY);
     }
 
     /**
