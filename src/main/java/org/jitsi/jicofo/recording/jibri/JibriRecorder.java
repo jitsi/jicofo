@@ -17,21 +17,30 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.RecordingStatus;
+import net.java.sip.communicator.service.protocol.ChatRoomMemberRole;
+import net.java.sip.communicator.service.protocol.OperationSetJitsiMeetTools;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.util.Logger;
+import org.jitsi.assertions.Assert;
+import org.jitsi.jicofo.JitsiMeetConference;
+import org.jitsi.jicofo.JitsiMeetGlobalConfig;
+import org.jitsi.jicofo.recording.Recorder;
+import org.jitsi.protocol.xmpp.ChatRoom2;
+import org.jitsi.protocol.xmpp.OperationSetDirectSmackXmpp;
+import org.jitsi.protocol.xmpp.XmppChatMember;
+import org.jitsi.protocol.xmpp.util.MucUtil;
+import org.jitsi.xmpp.util.IQUtils;
+import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.packet.IQ;
+import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.XMPPError;
 
-import org.jitsi.assertions.*;
-import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.recording.*;
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.xmpp.util.*;
-
-import org.jivesoftware.smack.packet.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handles conference recording through Jibri.
@@ -186,6 +195,52 @@ public class JibriRecorder
     }
 
     /**
+     * Sends an IQ to the given Jibri instance and asks it to start recording.
+     */
+    synchronized public XMPPError startJibri(
+        final String jibriJid,
+        final String roomName,
+        final String streamId
+    ) throws SmackException.NoResponseException {
+        JibriIq startIq = new JibriIq();
+        startIq.setTo(jibriJid);
+        startIq.setType(IQ.Type.SET);
+        startIq.setAction(JibriIq.Action.START);
+
+        startIq.setStreamId(streamId);
+
+        // Insert name of the room into Jibri START IQ
+        startIq.setRoom(roomName);
+
+        logger.debug("Starting Jibri recording: " + startIq.toXML());
+
+        final IQ startReply = (IQ) xmpp.getXmppConnection()
+            .sendPacketAndGetReply(startIq);
+
+        if (startReply == null)
+        {
+            throw new SmackException.NoResponseException();
+        }
+
+        logger.debug(
+                "Start response: " + IQUtils.responseToXML(startReply));
+
+        if (IQ.Type.RESULT.equals(startReply.getType()))
+        {
+            // Store Jibri JID
+            recorderComponentJid = jibriJid;
+            // We're now in PENDING state(waiting for Jibri ON update)
+            setJibriStatus(JibriIq.Status.PENDING);
+            // We will not wait forever for the Jibri to start
+            schedulePendingTimeout();
+
+            return null;
+        }
+
+        return startReply.getError();
+    }
+
+    /**
      * <tt>JibriIq</tt> processing.
      *
      * {@inheritDoc}
@@ -263,7 +318,7 @@ public class JibriRecorder
             recorderComponentJid == null)
         {
             // Check if we have Jibri available
-            String jibriJid = jibriDetector.selectJibri();
+            final String jibriJid = jibriDetector.selectJibri();
             if (jibriJid == null)
             {
                 sendErrorResponse(
@@ -271,54 +326,23 @@ public class JibriRecorder
                 return;
             }
 
-            JibriIq startIq = new JibriIq();
-            startIq.setTo(jibriJid);
-            startIq.setType(IQ.Type.SET);
-            startIq.setAction(JibriIq.Action.START);
+            final String roomName = MucUtil.extractName(senderMucJid);
 
-            startIq.setStreamId(iq.getStreamId());
-
-            // Insert name of the room into Jibri START IQ
-            String roomName = MucUtil.extractName(senderMucJid);
-            startIq.setRoom(roomName);
-
-            logger.debug("Starting Jibri recording: " + startIq.toXML());
-
-            IQ startReply
-                = (IQ) xmpp.getXmppConnection()
-                        .sendPacketAndGetReply(startIq);
-
-            logger.debug(
-                    "Start response: " + IQUtils.responseToXML(startReply));
-
-            if (startReply == null)
+            try
             {
+                final XMPPError err = startJibri(jibriJid, roomName, iq.getStreamId());
+                if (err == null) {
+                    // ACK the original request
+                    sendResultResponse(iq);
+                }
+                else
+                {
+                    sendPacket(IQ.createErrorResponse(iq, new XMPPError(
+                            XMPPError.Condition.interna_server_error)));
+                }
+            } catch (final SmackException.NoResponseException e) {
                 sendErrorResponse(
                         iq, XMPPError.Condition.request_timeout, null);
-                return;
-            }
-
-            if (IQ.Type.RESULT.equals(startReply.getType()))
-            {
-                // Store Jibri JID
-                recorderComponentJid = jibriJid;
-                // We're now in PENDING state(waiting for Jibri ON update)
-                setJibriStatus(JibriIq.Status.PENDING);
-                // We will not wait forever for the Jibri to start
-                schedulePendingTimeout();
-                // ACK the original request
-                sendResultResponse(iq);
-                return;
-            }
-            else
-            {
-                XMPPError error = startReply.getError();
-                if (error == null)
-                {
-                    error = new XMPPError(
-                            XMPPError.Condition.interna_server_error);
-                }
-                sendPacket(IQ.createErrorResponse(iq, error));
                 return;
             }
         }
