@@ -212,7 +212,10 @@ public class JibriRecorder
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(roomName);
 
-        logger.debug("Starting Jibri recording: " + startIq.toXML());
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("Starting Jibri recording: " + startIq.toXML());
+        }
 
         final IQ startReply = (IQ) xmpp.getXmppConnection()
             .sendPacketAndGetReply(startIq);
@@ -222,8 +225,11 @@ public class JibriRecorder
             throw new SmackException.NoResponseException();
         }
 
-        logger.debug(
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(
                 "Start response: " + IQUtils.responseToXML(startReply));
+        }
 
         if (IQ.Type.RESULT.equals(startReply.getType()))
         {
@@ -300,8 +306,11 @@ public class JibriRecorder
 
         String senderMucJid = sender.getContactAddress();
 
-        logger.debug(
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(
                 "Jibri request from " + senderMucJid + " iq: " + iq.toXML());
+        }
 
         // verifyModeratorRole sends 'not_allowed' error on false
         if (!verifyModeratorRole(iq))
@@ -330,8 +339,10 @@ public class JibriRecorder
 
             try
             {
-                final XMPPError err = startJibri(jibriJid, roomName, iq.getStreamId());
-                if (err == null) {
+                final XMPPError err = startJibri(
+                    jibriJid, roomName, iq.getStreamId());
+                if (err == null)
+                {
                     // ACK the original request
                     sendResultResponse(iq);
                 }
@@ -340,7 +351,9 @@ public class JibriRecorder
                     sendPacket(IQ.createErrorResponse(iq, new XMPPError(
                             XMPPError.Condition.interna_server_error)));
                 }
-            } catch (final SmackException.NoResponseException e) {
+            }
+            catch (final SmackException.NoResponseException e)
+            {
                 sendErrorResponse(
                         iq, XMPPError.Condition.request_timeout, null);
                 return;
