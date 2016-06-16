@@ -197,7 +197,7 @@ public class JibriRecorder
     /**
      * Sends an IQ to the given Jibri instance and asks it to start recording.
      */
-    synchronized public XMPPError startJibri(
+    synchronized private XMPPError startJibri(
         final String jibriJid,
         final String roomName,
         final String streamId
