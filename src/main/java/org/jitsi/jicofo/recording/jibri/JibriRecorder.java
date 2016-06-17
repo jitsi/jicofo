@@ -340,8 +340,8 @@ public class JibriRecorder
                 }
                 else
                 {
-                    sendPacket(IQ.createErrorResponse(iq, new XMPPError(
-                            XMPPError.Condition.interna_server_error)));
+                    sendErrorResponse(
+                            iq, XMPPError.Condition.interna_server_error, null);
                 }
             }
             catch (final SmackException.NoResponseException e)
