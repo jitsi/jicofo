@@ -17,30 +17,22 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.RecordingStatus;
-import net.java.sip.communicator.service.protocol.ChatRoomMemberRole;
-import net.java.sip.communicator.service.protocol.OperationSetJitsiMeetTools;
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.util.Logger;
-import org.jitsi.assertions.Assert;
-import org.jitsi.jicofo.JitsiMeetConference;
-import org.jitsi.jicofo.JitsiMeetGlobalConfig;
-import org.jitsi.jicofo.recording.Recorder;
-import org.jitsi.protocol.xmpp.ChatRoom2;
-import org.jitsi.protocol.xmpp.OperationSetDirectSmackXmpp;
-import org.jitsi.protocol.xmpp.XmppChatMember;
-import org.jitsi.protocol.xmpp.util.MucUtil;
-import org.jitsi.xmpp.util.IQUtils;
-import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.XMPPError;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.util.*;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import org.jitsi.assertions.*;
+import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.recording.*;
+import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.xmpp.util.*;
+
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
+
+import java.util.concurrent.*;
 
 /**
  * Handles conference recording through Jibri.
