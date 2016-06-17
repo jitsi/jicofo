@@ -189,11 +189,11 @@ public class JibriRecorder
     /**
      * Sends an IQ to the given Jibri instance and asks it to start recording.
      */
-    synchronized private XMPPError startJibri(
-        final String jibriJid,
-        final String roomName,
-        final String streamId
-    ) throws SmackException.NoResponseException {
+    synchronized private XMPPError startJibri(final String    jibriJid,
+                                              final String    roomName,
+                                              final String    streamId)
+    throws SmackException.NoResponseException
+    {
         JibriIq startIq = new JibriIq();
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.SET);
@@ -209,8 +209,8 @@ public class JibriRecorder
             logger.debug("Starting Jibri recording: " + startIq.toXML());
         }
 
-        final IQ startReply = (IQ) xmpp.getXmppConnection()
-            .sendPacketAndGetReply(startIq);
+        final IQ startReply
+            = (IQ) xmpp.getXmppConnection().sendPacketAndGetReply(startIq);
 
         if (startReply == null)
         {
@@ -332,7 +332,7 @@ public class JibriRecorder
             try
             {
                 final XMPPError err = startJibri(
-                    jibriJid, roomName, iq.getStreamId());
+                        jibriJid, roomName, iq.getStreamId());
                 if (err == null)
                 {
                     // ACK the original request
