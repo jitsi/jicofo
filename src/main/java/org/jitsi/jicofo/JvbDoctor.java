@@ -376,22 +376,23 @@ public class JvbDoctor
             {
                 // Check if that bridge comes with health check support
                 List<String> jvbFeatures = capsOpSet.getFeatures(bridgeJid);
-                if (jvbFeatures == null)
+                if (jvbFeatures != null)
+                {
+                    hasHealthCheckSupport
+                        = DiscoveryUtil.checkFeatureSupport(
+                                HEALTH_CHECK_FEATURES, jvbFeatures);
+                    if (!hasHealthCheckSupport)
+                    {
+                        logger.warn(
+                                bridgeJid + " does not support health checks!");
+                    }
+                }
+                else
                 {
                     logger.warn(
-                        "Failed to check for health check support on "
-                            + bridgeJid);
-                    return;
+                           "Failed to check for health check support on "
+                               + bridgeJid);
                 }
-                if (!DiscoveryUtil.checkFeatureSupport(
-                    HEALTH_CHECK_FEATURES,
-                    jvbFeatures))
-                {
-                    logger.warn(bridgeJid + " does not support health checks!");
-                    hasHealthCheckSupport = false;
-                }
-                // This JVB supports health checks
-                hasHealthCheckSupport = true;
             }
         }
 
