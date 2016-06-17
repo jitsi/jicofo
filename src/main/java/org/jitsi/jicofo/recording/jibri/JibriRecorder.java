@@ -189,9 +189,9 @@ public class JibriRecorder
     /**
      * Sends an IQ to the given Jibri instance and asks it to start recording.
      */
-    synchronized private XMPPError startJibri(final String    jibriJid,
-                                              final String    roomName,
-                                              final String    streamId)
+    private XMPPError startJibri(final String    jibriJid,
+                                 final String    roomName,
+                                 final String    streamId)
     throws SmackException.NoResponseException
     {
         JibriIq startIq = new JibriIq();
