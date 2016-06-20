@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ShutdownTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     static String shutdownJid = "shutdown.server.net";
 
@@ -152,6 +152,8 @@ public class ShutdownTest
         conf1User2.leave();
 
         assertTrue(shutdownService.shutdownStarted);
+
+        conf1.stop();
     }
 
     class TestShutdownService

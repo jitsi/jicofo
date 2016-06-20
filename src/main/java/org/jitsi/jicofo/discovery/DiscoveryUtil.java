@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -95,6 +96,14 @@ public class DiscoveryUtil
      * Heath checks feature namespace.
      */
     public final static String FEATURE_HEALTH_CHECK = HealthCheckIQ.NAMESPACE;
+
+    /**
+     * A namespace for our custom "lip-sync" feature. Advertised by the clients
+     * that support all of the functionality required for doing the lip-sync
+     * properly.
+     */
+    public final static String FEATURE_LIPSYNC
+        = "http://jitsi.org/meet/lipsync";
 
     /**
      * Array constant which can be used to check for Version IQ support.
@@ -180,8 +189,7 @@ public class DiscoveryUtil
                 logger.error(
                         "Failed to discover version, req: " + versionIq.toXML()
                             + ", response: "
-                            + (response != null ?
-                            response.toXML() : "null(timeout)"));
+                            + IQUtils.responseToXML(response));
             }
         }
         return null;

@@ -24,6 +24,8 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.xmpp.util.*;
+
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.*;
@@ -51,6 +53,12 @@ public class ChatRoomImpl
      * Parent MUC operation set.
      */
     private final OperationSetMultiUserChatImpl opSet;
+
+    /**
+     * Caches early presence packets triggered by Smack, before there was member
+     * joined event.
+     */
+    private Map<String, Presence> presenceCache = new HashMap<>();
 
     /**
      * Chat room name.
@@ -674,13 +682,13 @@ public class ChatRoomImpl
                 = provider.getConnectionAdapter();
 
         IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
-        if (reply.getType() != IQ.Type.RESULT)
+        if (reply == null || reply.getType() != IQ.Type.RESULT)
         {
             // FIXME: we should have checked exceptions for all operations in
             // ChatRoom interface which are expected to fail.
             // OperationFailedException maybe ?
             throw new RuntimeException(
-                    "Failed to grant owner: " + reply.getError());
+                    "Failed to grant owner: " + IQUtils.responseToXML(reply));
         }
     }
 
@@ -915,17 +923,17 @@ public class ChatRoomImpl
         implements ParticipantStatusListener
     {
         @Override
-        public void joined(String participant)
+        public void joined(String mucJid)
         {
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
                 {
-                    logger.debug("Joined " + participant + " room: " + roomName);
+                    logger.debug("Joined " + mucJid + " room: " + roomName);
                 }
                 //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
 
-                ChatMemberImpl member = addMember(participant);
+                ChatMemberImpl member = addMember(mucJid);
                 if (member == null)
                 {
                     logger.error("member is NULL");
@@ -943,11 +951,9 @@ public class ChatRoomImpl
                     return;
                 }
 
-                // Try to process presence cached in the roster to init fields
-                // like video muted
-                Roster roster = connection.getRoster();
-                Presence cachedPresence
-                    = roster.getPresence(member.getContactAddress());
+                // Process presence cached in the roster to init fields
+                // like video muted etc.
+                Presence cachedPresence = presenceCache.get(mucJid);
                 if (cachedPresence != null)
                 {
                     member.processPresence(cachedPresence);
@@ -998,6 +1004,9 @@ public class ChatRoomImpl
                         "Member left event for non-existing participant: "
                                     + participant);
                 }
+
+                // Clear cached Presence
+                presenceCache.remove(participant);
             }
         }
 
@@ -1248,8 +1257,15 @@ public class ChatRoomImpl
             }
             else
             {
-                logger.warn(
-                    "Presence for not existing member: " + presence.toXML());
+                // We want to cache that Presence for "on member joined" event
+                if (presence.getType().equals(Presence.Type.available))
+                {
+                    logger.warn(
+                            "Presence for not existing member: "
+                                + presence.toXML());
+
+                    presenceCache.put(presence.getFrom(), presence);
+                }
             }
         }
     }

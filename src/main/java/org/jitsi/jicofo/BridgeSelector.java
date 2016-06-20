@@ -100,12 +100,6 @@ public class BridgeSelector
     private EventAdmin eventAdmin;
 
     /**
-     * Pre-configured JVB used as last chance option even if no bridge has been
-     * auto-detected on startup.
-     */
-    private String preConfiguredBridge;
-
-    /**
      * The map of Pub-Sub nodes to videobridge JIDs.
      */
     private final Map<String, String> pubSubToBridge = new HashMap<>();
@@ -434,33 +428,6 @@ public class BridgeSelector
     }
 
     /**
-     * Returns the JID of pre-configured Jitsi Videobridge instance.
-     */
-    synchronized public String getPreConfiguredBridge()
-    {
-        return preConfiguredBridge;
-    }
-
-    /**
-     * Sets the JID of pre-configured JVB instance which will be used when all
-     * auto-detected bridges are down.
-     * @param preConfiguredBridge XMPP address of pre-configured JVB component.
-     *
-     * @throws NullPointerException if <tt>preConfiguredBridge</tt> is
-     *         <tt>null</tt>.
-     */
-    synchronized public void setPreConfiguredBridge(String preConfiguredBridge)
-    {
-        Assert.notNull(preConfiguredBridge, "preConfiguredBridge");
-
-        logger.info("Configuring default bridge: " + preConfiguredBridge);
-
-        addJvbAddress(preConfiguredBridge);
-
-        this.preConfiguredBridge = preConfiguredBridge;
-    }
-
-    /**
      * The time since last bridge failure we will wait before it gets another
      * chance.
      *
@@ -524,16 +491,14 @@ public class BridgeSelector
     {
         logger.debug("Propagating new bridge added event: " + bridge.jid);
 
-        eventAdmin.sendEvent(
-            BridgeEvent.createBridgeUp(bridge.jid));
+        eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.jid));
     }
 
     private void notifyBridgeDown(BridgeState bridge)
     {
         logger.debug("Propagating bridge went down event: " + bridge.jid);
 
-        eventAdmin.sendEvent(
-            BridgeEvent.createBridgeDown(bridge.jid));
+        eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.jid));
     }
 
     /**

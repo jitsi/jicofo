@@ -231,6 +231,8 @@ public class ChatRoomRoleAndPresence
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             if (conference.isFocusMember(member)
+                || ((XmppChatMember) member).isRobot()
+                // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
             {
                 continue;

@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * The map of media <tt>SourcePacketExtension</tt> encapsulates various
@@ -66,7 +67,9 @@ public class MediaSSRCMap
         List<SourcePacketExtension> ssrcList = ssrcs.get(media);
         if (ssrcList == null)
         {
-            ssrcList = new ArrayList<>();
+            // Prevent concurrent modification exception,
+            // when removing duplicates
+            ssrcList = new CopyOnWriteArrayList<>();
             ssrcs.put(media, ssrcList);
         }
         return ssrcList;
@@ -123,6 +126,35 @@ public class MediaSSRCMap
     }
 
     /**
+     * Creates a deep copy of this <tt>MediaSSRCMap</tt>.
+     *
+     * @return a new instance of <tt>MediaSSRCMap</tt> which contains copies of
+     *         <tt>SourcePacketExtension</tt> stored in this map.
+     */
+    public MediaSSRCMap copyDeep()
+    {
+        Map<String, List<SourcePacketExtension>> mapCopy = new HashMap<>();
+
+        for (String media : ssrcs.keySet())
+        {
+            List<SourcePacketExtension> mediaSSRCs
+                = ssrcs.get(media);
+
+            List<SourcePacketExtension> SSRCsCopy
+                = new ArrayList<>(mediaSSRCs.size());
+
+            for (SourcePacketExtension ssrc : mediaSSRCs)
+            {
+                SSRCsCopy.add(ssrc.copy());
+            }
+
+            mapCopy.put(media, SSRCsCopy);
+        }
+
+        return new MediaSSRCMap(mapCopy);
+    }
+
+    /**
      * Looks for SSRC in this map.
      *
      * @param media the name of media type of the SSRC we're looking for.
@@ -139,6 +171,27 @@ public class MediaSSRCMap
         for (SourcePacketExtension ssrc : getSSRCsForMedia(media))
         {
             if (ssrcValue == ssrc.getSSRC())
+                return ssrc;
+        }
+        return null;
+    }
+
+    /**
+     * Finds SSRC for given owner.
+     *
+     * @param media the media type of the SSRC we'll be looking for.
+     * @param owner the MUC JID  of the SSRC owner.
+     *
+     * @return <tt>SourcePacketExtension</tt> for given media type and owner or
+     *         <tt>null</tt> if not found.
+     */
+    public SourcePacketExtension findSSRCforOwner(String media, String owner)
+    {
+        List<SourcePacketExtension> mediaSSRCs = getSSRCsForMedia(media);
+        for (SourcePacketExtension ssrc : mediaSSRCs)
+        {
+            String ssrcOwner = SSRCSignaling.getSSRCOwner(ssrc);
+            if (ssrcOwner != null && ssrcOwner.equals(owner))
                 return ssrc;
         }
         return null;
@@ -181,25 +234,19 @@ public class MediaSSRCMap
     }
 
     /**
-     * Returns shallow copy of this map. <tt>SourcePacketExtension</tt>
-     * instances are not copied, but referenced from both copy and this
-     * instance.
+     * Removes given SSRC from this map.
+     *
+     * @param media the media type of the SSRC to be removed.
+     * @param ssrc the <tt>SourcePacketExtension</tt> to be removed from this
+     *        <tt>MediaSSRCMap</tt>.
+     *
+     * @return <tt>true</tt> if the SSRC has been actually removed which means
+     *         that it was in the map before the operation took place.
      */
-    public MediaSSRCMap copyShallow()
+    public boolean remove(String media, SourcePacketExtension ssrc)
     {
-        Map<String, List<SourcePacketExtension>> mapCopy = new HashMap<>();
-
-        for (Map.Entry<String, List<SourcePacketExtension>> e
-                : ssrcs.entrySet())
-        {
-            String media = e.getKey();
-            List<SourcePacketExtension> listCopy
-                = new ArrayList<>(e.getValue());
-
-            mapCopy.put(media, listCopy);
-        }
-
-        return new MediaSSRCMap(mapCopy);
+        SourcePacketExtension toBeRemoved = findSSRC(media, ssrc.getSSRC());
+        return toBeRemoved != null && getSSRCsForMedia(media).remove(ssrc);
     }
 
     /**

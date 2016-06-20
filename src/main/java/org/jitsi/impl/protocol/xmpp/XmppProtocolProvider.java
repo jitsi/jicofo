@@ -18,8 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
@@ -34,7 +32,6 @@ import org.jitsi.util.Logger;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.provider.*;
 import org.jivesoftware.smackx.packet.*;
 
 import java.util.*;
@@ -113,13 +110,6 @@ public class XmppProtocolProvider
     public XmppProtocolProvider(AccountID accountID)
     {
         this.jabberAccountID = (JabberAccountID) accountID;
-
-        // <videomuted> element from jitsi-meet presence
-        ProviderManager.getInstance().addExtensionProvider(
-                VideoMutedExtension.ELEMENT_NAME,
-                VideoMutedExtension.NAMESPACE,
-                new DefaultPacketExtensionProvider<>(
-                        VideoMutedExtension.class));
 
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
@@ -426,8 +416,7 @@ public class XmppProtocolProvider
     {
         if (connectionAdapter == null)
         {
-            connectionAdapter
-                = new XmppConnectionAdapter(connection);
+            connectionAdapter = new XmppConnectionAdapter(connection);
         }
         return connectionAdapter;
     }

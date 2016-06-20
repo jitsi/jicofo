@@ -47,6 +47,15 @@ public class JitsiMeetConfig
     public static final String ADAPTIVE_LAST_N_PNAME = "adaptiveLastN";
 
     /**
+     * The name of the property which specifies the packet delay for the audio
+     * channels used in the conference.
+     *
+     * *NOTE* It is meant to be used for automated testing of
+     * the {@link LipSyncHack} only !
+     */
+    public static final String AUDIO_PACKET_DELAY = "audioPacketDelay";
+
+    /**
      * The name of adaptive simulcast configuration property. Pass 'true' to
      * disable or 'false' to enable.
      */
@@ -54,17 +63,15 @@ public class JitsiMeetConfig
         = "disableAdaptiveSimulcast";
 
     /**
-     * The name the configuration property used to configure videobridge
-     * instance. It will be used when all auto-detected instances fail(or if we
-     * fail to detect any bridges at all).
-     */
-    public static final String BRIDGE_PNAME = "bridge";
-
-    /**
      * The name of channel last N configuration property. Should be non-negative
      * number. Pass <tt>-1</tt> to disable last N functionality.
      */
     public static final String CHANNEL_LAST_N_PNAME = "channelLastN";
+
+    /**
+     * The name of the property that enables the {@link LipSyncHack}.
+     */
+    public static final String ENABLE_LIPSYNC = "enableLipSync";
 
     /**
      * The name of the property that specifies JID of the bridge which should be
@@ -108,6 +115,26 @@ public class JitsiMeetConfig
      */
     public static final String DISABLE_RTX_PNAME = "disableRtx";
 
+    /**
+     * The name of the "minBitrate" property.
+     */
+    public static final String MIN_BITRATE_PNAME = "minBitrate";
+
+    /**
+     * The name of the "startBitrate" property.
+     */
+    public static final String START_BITRATE_PNAME = "startBitrate";
+
+    /**
+     * The name of the "stereo" property.
+     */
+    public static final String STEREO_PNAME = "stereo";
+
+    /**
+     * The default value of the "startBitrate" property.
+     */
+    public static final int START_BITRATE_DEFAULT = 800;
+
     private final Map<String, String> properties;
 
     /**
@@ -129,15 +156,6 @@ public class JitsiMeetConfig
     public String getEnforcedVideobridge()
     {
         return properties.get(ENFORCED_BRIDGE);
-    }
-
-    /**
-     * Returns pre-configured JVB address or <tt>null</tt> if no bridge was
-     * passed in the config.
-     */
-    public String getPreConfiguredVideobridge()
-    {
-        return properties.get(BRIDGE_PNAME);
     }
 
     /**
@@ -175,6 +193,24 @@ public class JitsiMeetConfig
     {
         Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
         return disabled == null ? null : !disabled;
+    }
+
+    /**
+     * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
+     * (can be <tt>null</tt>).
+     */
+    public Boolean isLipSyncEnabled()
+    {
+        return getBoolean(ENABLE_LIPSYNC);
+    }
+
+    /**
+     * Returns an <tt>Integer</tt> value of the {@link #AUDIO_PACKET_DELAY}
+     * config property(can be <tt>null</tt>).
+     */
+    public Integer getAudioPacketDelay()
+    {
+        return getInt(AUDIO_PACKET_DELAY);
     }
 
     /**
@@ -261,5 +297,32 @@ public class JitsiMeetConfig
     public Integer getVideoMuted()
     {
         return getInt(START_VIDEO_MUTED);
+    }
+
+    /**
+     * @return the "min bitrate" which should be included in offers.
+     */
+    public int getMinBitrate()
+    {
+        Integer minBitrate = getInt(MIN_BITRATE_PNAME);
+        return minBitrate == null ? -1 : minBitrate;
+    }
+
+    /**
+     * @return the "start bitrate" which should be included in offers.
+     */
+    public int getStartBitrate()
+    {
+        Integer startBitrate = getInt(START_BITRATE_PNAME);
+        return startBitrate == null ? START_BITRATE_DEFAULT : startBitrate;
+    }
+
+    /**
+     * @return {@code true} iff stereo is enabled in this configuration.
+     */
+    public boolean stereoEnabled()
+    {
+        Boolean stereo = getBoolean(STEREO_PNAME);
+        return stereo != null && stereo;
     }
 }

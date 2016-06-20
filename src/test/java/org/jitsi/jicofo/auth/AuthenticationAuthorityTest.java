@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class AuthenticationAuthorityTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     // This is called inside of the tests here
     //@BeforeClass

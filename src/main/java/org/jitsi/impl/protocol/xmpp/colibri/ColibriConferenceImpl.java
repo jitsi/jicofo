@@ -28,6 +28,7 @@ import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -112,7 +113,8 @@ public class ColibriConferenceImpl
 
     /**
      * Checks if this instance has been disposed already and if so prints
-     * a warning message.
+     * a warning message. It will also cancel execution in case
+     * {@link #jitsiVideobridge} is null or empty.
      *
      * @param operationName the name of the operation that will not happen and
      * should be mentioned in the warning message.
@@ -125,6 +127,12 @@ public class ColibriConferenceImpl
         if (disposed)
         {
             logger.warn("Not doing " + operationName + " - instance disposed");
+            return true;
+        }
+        if (StringUtils.isNullOrEmpty(jitsiVideobridge))
+        {
+            logger.error(
+                "Not doing " + operationName + " - bridge not initialized");
             return true;
         }
         return false;
@@ -178,6 +186,7 @@ public class ColibriConferenceImpl
             colibriBuilder.setAdaptiveSimulcast(
                 config.isAdaptiveSimulcastEnabled());
             colibriBuilder.setSimulcastMode(config.getSimulcastMode());
+            colibriBuilder.setAudioPacketDelay(config.getAudioPacketDelay());
         }
     }
 
@@ -354,7 +363,7 @@ public class ColibriConferenceImpl
         if (!logger.isDebugEnabled())
             return;
 
-        String responseXml = response != null ? response.toXML() : "TIMEOUT";
+        String responseXml = IQUtils.responseToXML(response);
 
         responseXml = responseXml.replace(">",">\n");
 

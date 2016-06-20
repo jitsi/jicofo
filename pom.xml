@@ -73,7 +73,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.0-20160307.212517-27</version>
+      <version>1.0-20160420.185019-32</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -103,7 +103,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-protocol-jabber</artifactId>
-      <version>2.9-20160406.213445-14</version>
+      <version>2.9-20160519.122058-17</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -123,7 +123,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>libjitsi</artifactId>
-      <version>1.0-20160406.222401-133</version>
+      <version>1.0-20160512.161146-162</version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
@@ -152,7 +152,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.0-20160222.224750-84</version>
+      <version>1.0-20160509.151912-151</version>
       <scope>test</scope>
     </dependency>
     <dependency>

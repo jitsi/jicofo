@@ -338,10 +338,19 @@ public class MeetExtensionsHandler
         IQ reply
             = (IQ) smackXmpp.getXmppConnection().sendPacketAndGetReply(dialIq);
 
-        // Send Jigasi response back to the client
-        reply.setFrom(null);
-        reply.setTo(from);
-        reply.setPacketID(originalPacketId);
+        if (reply != null)
+        {
+            // Send Jigasi response back to the client
+            reply.setFrom(null);
+            reply.setTo(from);
+            reply.setPacketID(originalPacketId);
+        }
+        else
+        {
+            reply = createErrorResponse(
+                    dialIq,
+                    new XMPPError(XMPPError.Condition.remote_server_timeout));
+        }
 
         smackXmpp.getXmppConnection().sendPacket(reply);
     }

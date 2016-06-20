@@ -50,13 +50,13 @@ public class JitsiMeetGlobalConfig
      * The name of the config property which specifies how long we're going to
      * wait for Jibri to start recording from the time it accepted START request
      */
-    private static final String PENDING_TIMEOUT_PROP_NAME
+    private static final String JIBRI_PENDING_TIMEOUT_PROP_NAME
         = "org.jitsi.jicofo.jibri.PENDING_TIMEOUT";
 
     /**
-     * The default value for {@link #PENDING_TIMEOUT_PROP_NAME}.
+     * The default value for {@link #JIBRI_PENDING_TIMEOUT_PROP_NAME}.
      */
-    private static final int DEFAULT_PENDING_TIMEOUT = 30;
+    private static final int JIBRI_DEFAULT_PENDING_TIMEOUT = 90;
 
     /**
      * Tells how many seconds we're going to wait for the Jibri to start
@@ -132,7 +132,8 @@ public class JitsiMeetGlobalConfig
 
         jibriPendingTimeout
             = configService.getInt(
-                    PENDING_TIMEOUT_PROP_NAME, DEFAULT_PENDING_TIMEOUT);
+                    JIBRI_PENDING_TIMEOUT_PROP_NAME,
+                    JIBRI_DEFAULT_PENDING_TIMEOUT);
 
         if (jibriPendingTimeout > 0)
         {

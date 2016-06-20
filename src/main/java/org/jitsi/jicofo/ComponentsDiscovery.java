@@ -631,6 +631,19 @@ public class ComponentsDiscovery
         {
             synchronized (this)
             {
+                // JVB unavailable ?
+                if ("service-unavailable".equals(payload.getElementName()))
+                {
+                    logger.info(
+                            "Service unavailable through PubSub for " + itemId);
+
+                    if (bridgesMap.remove(itemId) != null)
+                    {
+                        bridgeWentOffline(itemId);
+                    }
+                    return;
+                }
+
                 // Potential bridge JID may be carried in item ID
                 verifyJvbJid(itemId);
 

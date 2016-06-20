@@ -133,13 +133,13 @@ public class MockRoomMember
     @Override
     public String toString()
     {
-        return "Member@" + hashCode() + "[" + name + "]";
+        return "Member@" + hashCode() + "[" + address +"]";
     }
 
     @Override
     public String getJabberID()
     {
-        return null;
+        return address;
     }
 
     @Override
@@ -154,6 +154,12 @@ public class MockRoomMember
     {
         // FIXME: not implemented
         return null;
+    }
+
+    @Override
+    public boolean isRobot()
+    {
+        return false;
     }
 
     @Override

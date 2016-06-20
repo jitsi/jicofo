@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     @BeforeClass
     public static void setUpClass()
@@ -98,5 +98,7 @@ public class RolesTest
 
             users[i].leave();
         }
+
+        testConference.stop();
     }
 }

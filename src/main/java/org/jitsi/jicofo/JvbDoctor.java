@@ -29,6 +29,7 @@ import org.jitsi.jicofo.osgi.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -375,22 +376,23 @@ public class JvbDoctor
             {
                 // Check if that bridge comes with health check support
                 List<String> jvbFeatures = capsOpSet.getFeatures(bridgeJid);
-                if (jvbFeatures == null)
+                if (jvbFeatures != null)
+                {
+                    hasHealthCheckSupport
+                        = DiscoveryUtil.checkFeatureSupport(
+                                HEALTH_CHECK_FEATURES, jvbFeatures);
+                    if (!hasHealthCheckSupport)
+                    {
+                        logger.warn(
+                                bridgeJid + " does not support health checks!");
+                    }
+                }
+                else
                 {
                     logger.warn(
-                        "Failed to check for health check support on "
-                            + bridgeJid);
-                    return;
+                           "Failed to check for health check support on "
+                               + bridgeJid);
                 }
-                if (!DiscoveryUtil.checkFeatureSupport(
-                    HEALTH_CHECK_FEATURES,
-                    jvbFeatures))
-                {
-                    logger.warn(bridgeJid + " does not support health checks!");
-                    hasHealthCheckSupport = false;
-                }
-                // This JVB supports health checks
-                hasHealthCheckSupport = true;
             }
         }
 
@@ -472,9 +474,7 @@ public class JvbDoctor
 
                 logger.debug(
                         "Health check response from: " + bridgeJid + ": "
-                            + (response == null
-                                ? "timeout"
-                                : response.toXML()));
+                            + IQUtils.responseToXML(response));
 
                 if (!(response instanceof IQ))
                 {
