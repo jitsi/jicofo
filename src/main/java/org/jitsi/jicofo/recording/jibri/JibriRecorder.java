@@ -53,6 +53,11 @@ public class JibriRecorder
     static private final Logger logger = Logger.getLogger(JibriRecorder.class);
 
     /**
+     * The number of times to retry connecting to a Jibri.
+     */
+    static private final int NUM_RETRIES = 3;
+
+    /**
      * Recorded <tt>JitsiMeetConference</tt>.
      */
     private final JitsiMeetConference conference;
@@ -189,20 +194,32 @@ public class JibriRecorder
     /**
      * Sends an IQ to the given Jibri instance and asks it to start recording.
      */
-    private XMPPError startJibri(final String    jibriJid,
-                                 final String    roomName,
-                                 final String    streamId)
-    throws SmackException.NoResponseException
-    {
+    synchronized private XMPPError startJibri(
+        final String jibriJid
+    ) throws SmackException.NoResponseException {
+        return startJibri(jibriJid, "");
+    }
+
+    /**
+     * Sends an IQ to the given Jibri instance and asks it to start recording.
+     */
+    synchronized private XMPPError startJibri(
+        final String jibriJid,
+        final String streamId
+    ) throws SmackException.NoResponseException {
         JibriIq startIq = new JibriIq();
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.SET);
         startIq.setAction(JibriIq.Action.START);
 
-        startIq.setStreamId(streamId);
+        if (streamId != "")
+        {
+            startIq.setStreamId(streamId);
+        }
 
         // Insert name of the room into Jibri START IQ
-        startIq.setRoom(roomName);
+        startIq.setRoom(conference.getRoomName());
+
 
         if (logger.isDebugEnabled())
         {
@@ -323,31 +340,34 @@ public class JibriRecorder
             if (jibriJid == null)
             {
                 sendErrorResponse(
-                    iq, XMPPError.Condition.service_unavailable, null);
+                        iq, XMPPError.Condition.service_unavailable, null);
                 return;
             }
 
-            final String roomName = MucUtil.extractName(senderMucJid);
-
-            try
+            XMPPError err = null;
+            for (int i = 0; i < NUM_RETRIES; i++)
             {
-                final XMPPError err = startJibri(
-                        jibriJid, roomName, iq.getStreamId());
+                try
+                {
+                    err = startJibri(jibriJid, iq.getStreamId());
+                }
+                catch (final SmackException.NoResponseException e)
+                {
+                    err = new XMPPError(XMPPError.Condition.request_timeout);
+                }
+
                 if (err == null)
                 {
                     // ACK the original request
                     sendResultResponse(iq);
+                    break;
                 }
-                else
-                {
-                    sendErrorResponse(
-                            iq, XMPPError.Condition.interna_server_error, null);
-                }
+                // Mask the original error in the IQ response.
+                err = new XMPPError(XMPPError.Condition.interna_server_error);
             }
-            catch (final SmackException.NoResponseException e)
+            if (err != null)
             {
-                sendErrorResponse(
-                        iq, XMPPError.Condition.request_timeout, null);
+                sendPacket(IQ.createErrorResponse(iq, err));
                 return;
             }
         }
@@ -619,13 +639,44 @@ public class JibriRecorder
     }
 
     @Override
-    synchronized public void onJibriOffline(String jibriJid)
+    synchronized public void onJibriOffline(final String jibriJid)
     {
         if (jibriJid.equals(recorderComponentJid))
         {
             logger.warn("Our recorder went offline: " + recorderComponentJid);
 
-            recordingStopped(null);
+            // Check if we have Jibri available
+            final String newJibriJid = jibriDetector.selectJibri();
+            if (newJibriJid == null)
+            {
+                recordingStopped(null);
+                return;
+            }
+
+            XMPPError err = null;
+            for (int i = 0; i < NUM_RETRIES; i++)
+            {
+                try
+                {
+                    err = startJibri(newJibriJid);
+                }
+                catch (final SmackException.NoResponseException e)
+                {
+                    err = new XMPPError(XMPPError.Condition.request_timeout);
+                }
+
+                if (err == null) {
+                    break;
+                }
+
+                // Mask the original error in the IQ response.
+                err = new XMPPError(
+                        XMPPError.Condition.interna_server_error);
+            }
+            if (err != null)
+            {
+                recordingStopped(null);
+            }
         }
     }
 
