@@ -152,6 +152,13 @@ public class AuthBundleActivator
 
             handlers.add(new ShibbolethHandler(shibbolethAuthAuthority));
         }
+        // OAuth2
+        if (authAuthority instanceof OAuth2Authority)
+        {
+            OAuth2Authority oAuth2Authority = (OAuth2Authority) authAuthority;
+
+            handlers.add(new OAuth2Handler(oAuth2Authority));
+        }
 
         // FIXME While Shibboleth is optional, the health checks of Jicofo (over
         // REST) are mandatory at the time of this writing. Make the latter
@@ -170,7 +177,8 @@ public class AuthBundleActivator
     {
         Server server = super.initializeServer(bundleContext);
 
-        if (authAuthority instanceof ShibbolethAuthAuthority)
+        if (authAuthority instanceof ShibbolethAuthAuthority ||
+            authAuthority instanceof OAuth2Authority)
         {
             // AJP
             Ajp13SocketConnector ajp13SocketConnector
@@ -220,6 +228,10 @@ public class AuthBundleActivator
             {
                 authAuthority
                     = new ExternalJWTAuthority(loginUrl.substring(8));
+            }
+            else if (loginUrl.toUpperCase().startsWith("OAUTH2:"))
+            {
+                authAuthority = new OAuth2Authority();
             }
             else
             {
@@ -284,7 +296,8 @@ public class AuthBundleActivator
         {
             // Shibboleth works the same as every other web-based Single Sign-on
             // (SSO) system so it requires the Jetty HTTP server.
-            b = (authAuthority instanceof ShibbolethAuthAuthority);
+            b = (authAuthority instanceof ShibbolethAuthAuthority) ||
+                (authAuthority instanceof OAuth2Authority);
 
             // FIXME While Shibboleth is optional, the health checks of Jicofo
             // (over REST) are mandatory at the time of this writing. Make the
