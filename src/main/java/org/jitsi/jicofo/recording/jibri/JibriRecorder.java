@@ -48,6 +48,11 @@ public class JibriRecorder
     implements JibriListener
 {
     /**
+     * The number of retries when starting a Jibri fails.
+     */
+    static private final int Retries = 3;
+
+    /**
      * The logger.
      */
     static private final Logger logger = Logger.getLogger(JibriRecorder.class);
@@ -296,7 +301,7 @@ public class JibriRecorder
         if (JibriIq.Action.UNDEFINED.equals(action))
             return;
 
-        String senderMucJid = sender.getContactAddress();
+        final String senderMucJid = sender.getContactAddress();
 
         if (logger.isDebugEnabled())
         {
@@ -318,37 +323,47 @@ public class JibriRecorder
             JibriIq.Status.OFF.equals(jibriStatus) &&
             recorderComponentJid == null)
         {
-            // Check if we have Jibri available
-            final String jibriJid = jibriDetector.selectJibri();
-            if (jibriJid == null)
-            {
-                sendErrorResponse(
-                    iq, XMPPError.Condition.service_unavailable, null);
-                return;
-            }
-
             final String roomName = MucUtil.extractName(senderMucJid);
 
-            try
+            XMPPError err = null;
+            for (int i = 0; i < JibriRecorder.Retries; i++)
             {
-                final XMPPError err = startJibri(
-                        jibriJid, roomName, iq.getStreamId());
-                if (err == null)
-                {
-                    // ACK the original request
-                    sendResultResponse(iq);
-                }
-                else
+                // Check if we have Jibri available
+                final String jibriJid = jibriDetector.selectJibri();
+                if (jibriJid == null)
                 {
                     sendErrorResponse(
-                            iq, XMPPError.Condition.interna_server_error, null);
+                            iq, XMPPError.Condition.service_unavailable, null);
+                    return;
+                }
+
+                try
+                {
+                    err = startJibri(
+                            jibriJid, roomName, iq.getStreamId());
+                    if (err != null)
+                    {
+                        continue;
+                    }
+                    break;
+                }
+                catch (final SmackException.NoResponseException e)
+                {
+                    err = new XMPPError(
+                            XMPPError.Condition.request_timeout);
+                    continue;
                 }
             }
-            catch (final SmackException.NoResponseException e)
+
+            if (err == null)
+            {
+                // ACK the original request
+                sendResultResponse(iq);
+            }
+            else
             {
                 sendErrorResponse(
-                        iq, XMPPError.Condition.request_timeout, null);
-                return;
+                        iq, XMPPError.Condition.interna_server_error, null);
             }
         }
         // stop ?
