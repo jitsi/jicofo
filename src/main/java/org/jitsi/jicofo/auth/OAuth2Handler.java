@@ -177,14 +177,14 @@ public class OAuth2Handler
         // Close this window or redirect ?
         boolean close = "true".equalsIgnoreCase(stateMap.get("close"));
 
-        responseWriter.println("<html><head><head/><body>");
+        /*responseWriter.println("<html><head><head/><body>");
         responseWriter.println("<h1>Hello " + displayName + "!<h1/>");
         if (!close)
         {
             responseWriter.println(
                 "<h2>You should be redirected back to the conference soon..." +
                     "<h2/>");
-        }
+        }*/
 
         String sessionId = "dgdfg";
         // Store session-id script
@@ -215,9 +215,9 @@ public class OAuth2Handler
             script += " window.location.href='../"+room+"';\n";
         }
 
-        responseWriter.println(script +"})();\n</script>\n");
+        //responseWriter.println(script +"})();\n</script>\n");
 
-        responseWriter.println("</body></html>");
+        //responseWriter.println("</body></html>");
 
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
