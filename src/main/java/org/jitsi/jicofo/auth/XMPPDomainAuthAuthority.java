@@ -38,8 +38,22 @@ public class XMPPDomainAuthAuthority
      */
     private final String domain;
 
-    public XMPPDomainAuthAuthority(String domain)
+    /**
+     * Creates new instance of <tt>XMPPDomainAuthAuthority</tt>.
+     *
+     * @param disableAutoLogin disables auto login feature. Authentication
+     * sessions are destroyed immediately when the conference ends.
+     * @param authenticationLifetime specifies how long authentication sessions
+     * will be stored in Jicofo's memory. Interval in milliseconds.
+     * @param domain a string with XMPP domain name for which users will be
+     *               considered authenticated.
+     */
+    public XMPPDomainAuthAuthority(boolean    disableAutoLogin,
+                                   long       authenticationLifetime,
+                                   String     domain)
     {
+        super(disableAutoLogin, authenticationLifetime);
+
         this.domain = domain;
     }
 
