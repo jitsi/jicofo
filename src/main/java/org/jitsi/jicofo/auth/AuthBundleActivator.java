@@ -216,6 +216,11 @@ public class AuthBundleActivator
                             disableAutoLogin,
                             authenticationLifetime, loginUrl.substring(5));
             }
+            else if (loginUrl.toUpperCase().startsWith("EXT_JWT:"))
+            {
+                authAuthority
+                    = new ExternalJWTAuthority(loginUrl.substring(8));
+            }
             else
             {
                 String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
