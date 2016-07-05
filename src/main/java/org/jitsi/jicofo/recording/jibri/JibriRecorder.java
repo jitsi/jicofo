@@ -668,6 +668,7 @@ public class JibriRecorder
                         break;
                     }
                     // Mask the original error in the IQ response.
+                    logger.info("Masking Jibri error, would have sent " + err.getCondition());
                     err = new XMPPError(XMPPError.Condition.interna_server_error);
                 }
                 if (err != null && iq != null)
