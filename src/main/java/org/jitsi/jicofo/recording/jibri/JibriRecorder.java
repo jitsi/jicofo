@@ -212,7 +212,7 @@ public class JibriRecorder
         startIq.setType(IQ.Type.SET);
         startIq.setAction(JibriIq.Action.START);
 
-        if (streamId != "")
+        if ("".equals(streamId))
         {
             startIq.setStreamId(streamId);
         }
@@ -374,7 +374,6 @@ public class JibriRecorder
                     if (err != null)
                     {
                         sendPacket(IQ.createErrorResponse(iq, err));
-                        return;
                     }
                 }
             });
