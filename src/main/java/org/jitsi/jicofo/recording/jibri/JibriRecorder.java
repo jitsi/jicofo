@@ -344,39 +344,7 @@ public class JibriRecorder
                 return;
             }
 
-            scheduledExecutor.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    XMPPError err = null;
-                    for (int i = 0; i < NUM_RETRIES; i++)
-                    {
-                        try
-                        {
-                            err = startJibri(jibriJid, iq.getStreamId());
-                        }
-                        catch (final SmackException.NoResponseException e)
-                        {
-                            err = new XMPPError(XMPPError.Condition.request_timeout);
-                        }
-
-                        if (err == null)
-                        {
-                            // ACK the original request
-                            sendResultResponse(iq);
-                            break;
-                        }
-                        // Mask the original error in the IQ response.
-                        err = new XMPPError(XMPPError.Condition.interna_server_error);
-
-                    }
-                    if (err != null)
-                    {
-                        sendPacket(IQ.createErrorResponse(iq, err));
-                    }
-                }
-            });
+            scheduleRetryStartJibri(jibriJid, iq);
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
@@ -660,31 +628,58 @@ public class JibriRecorder
                 return;
             }
 
-            XMPPError err = null;
-            for (int i = 0; i < NUM_RETRIES; i++)
-            {
-                try
-                {
-                    err = startJibri(newJibriJid);
-                }
-                catch (final SmackException.NoResponseException e)
-                {
-                    err = new XMPPError(XMPPError.Condition.request_timeout);
-                }
-
-                if (err == null) {
-                    break;
-                }
-
-                // Mask the original error in the IQ response.
-                err = new XMPPError(
-                        XMPPError.Condition.interna_server_error);
-            }
-            if (err != null)
-            {
-                recordingStopped(null);
-            }
+            scheduleRetryStartJibri(newJibriJid);
         }
+    }
+
+    private void scheduleRetryStartJibri(final String jibriJid) {
+        scheduleRetryStartJibri(jibriJid, null);
+    }
+
+    private void scheduleRetryStartJibri(final String jibriJid, final JibriIq iq) {
+        scheduledExecutor.submit(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                XMPPError err = null;
+                for (int i = 0; i < NUM_RETRIES; i++)
+                {
+                    try
+                    {
+                        if (iq == null)
+                        {
+                            err = startJibri(jibriJid);
+                        }
+                        else
+                        {
+                            err = startJibri(jibriJid, iq.getStreamId());
+                        }
+                    }
+                    catch (final SmackException.NoResponseException e)
+                    {
+                        err = new XMPPError(XMPPError.Condition.request_timeout);
+                    }
+
+                    if (err == null && iq != null)
+                    {
+                        // ACK the original request
+                        sendResultResponse(iq);
+                        break;
+                    }
+                    // Mask the original error in the IQ response.
+                    err = new XMPPError(XMPPError.Condition.interna_server_error);
+                }
+                if (err != null && iq != null)
+                {
+                    sendPacket(IQ.createErrorResponse(iq, err));
+                }
+                else if (err != null)
+                {
+                    recordingStopped(null);
+                }
+            }
+        });
     }
 
     /**
