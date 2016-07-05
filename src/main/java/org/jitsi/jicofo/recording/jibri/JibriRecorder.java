@@ -306,7 +306,7 @@ public class JibriRecorder
         }
     }
 
-    private void processJibriIqFromMeet(JibriIq iq, XmppChatMember sender)
+    private void processJibriIqFromMeet(final JibriIq iq, final XmppChatMember sender)
     {
         JibriIq.Action action = iq.getAction();
 
@@ -344,32 +344,40 @@ public class JibriRecorder
                 return;
             }
 
-            XMPPError err = null;
-            for (int i = 0; i < NUM_RETRIES; i++)
+            scheduledExecutor.submit(new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    err = startJibri(jibriJid, iq.getStreamId());
-                }
-                catch (final SmackException.NoResponseException e)
-                {
-                    err = new XMPPError(XMPPError.Condition.request_timeout);
-                }
+                    XMPPError err = null;
+                    for (int i = 0; i < NUM_RETRIES; i++)
+                    {
+                        try
+                        {
+                            err = startJibri(jibriJid, iq.getStreamId());
+                        }
+                        catch (final SmackException.NoResponseException e)
+                        {
+                            err = new XMPPError(XMPPError.Condition.request_timeout);
+                        }
 
-                if (err == null)
-                {
-                    // ACK the original request
-                    sendResultResponse(iq);
-                    break;
+                        if (err == null)
+                        {
+                            // ACK the original request
+                            sendResultResponse(iq);
+                            break;
+                        }
+                        // Mask the original error in the IQ response.
+                        err = new XMPPError(XMPPError.Condition.interna_server_error);
+
+                    }
+                    if (err != null)
+                    {
+                        sendPacket(IQ.createErrorResponse(iq, err));
+                        return;
+                    }
                 }
-                // Mask the original error in the IQ response.
-                err = new XMPPError(XMPPError.Condition.interna_server_error);
-            }
-            if (err != null)
-            {
-                sendPacket(IQ.createErrorResponse(iq, err));
-                return;
-            }
+            });
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
