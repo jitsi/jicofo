@@ -94,6 +94,11 @@ public class JibriRecorder
     private ScheduledFuture<?> pendingTimeoutTask;
 
     /**
+     * The stream ID received in the first Start IQ.
+     */
+    private String streamID;
+
+    /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
      *        instance.
@@ -197,25 +202,11 @@ public class JibriRecorder
     synchronized private XMPPError startJibri(
         final String jibriJid
     ) throws SmackException.NoResponseException {
-        return startJibri(jibriJid, "");
-    }
-
-    /**
-     * Sends an IQ to the given Jibri instance and asks it to start recording.
-     */
-    synchronized private XMPPError startJibri(
-        final String jibriJid,
-        final String streamId
-    ) throws SmackException.NoResponseException {
         JibriIq startIq = new JibriIq();
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.SET);
         startIq.setAction(JibriIq.Action.START);
-
-        if ("".equals(streamId))
-        {
-            startIq.setStreamId(streamId);
-        }
+        startIq.setStreamId(this.streamID);
 
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(conference.getRoomName());
@@ -308,6 +299,11 @@ public class JibriRecorder
 
     private void processJibriIqFromMeet(final JibriIq iq, final XmppChatMember sender)
     {
+        if (this.streamID == null)
+        {
+            this.streamID = iq.getStreamId();
+        }
+
         JibriIq.Action action = iq.getAction();
 
         if (JibriIq.Action.UNDEFINED.equals(action))
@@ -648,14 +644,7 @@ public class JibriRecorder
                 {
                     try
                     {
-                        if (iq == null)
-                        {
-                            err = startJibri(jibriJid);
-                        }
-                        else
-                        {
-                            err = startJibri(jibriJid, iq.getStreamId());
-                        }
+                        err = startJibri(jibriJid);
                     }
                     catch (final SmackException.NoResponseException e)
                     {
@@ -669,7 +658,10 @@ public class JibriRecorder
                         break;
                     }
                     // Mask the original error in the IQ response.
-                    logger.info("Masking Jibri error, would have sent " + err.getCondition());
+                    if (err != null)
+                    {
+                        logger.info("Masking Jibri error, would have sent " + err.getCondition());
+                    }
                     err = new XMPPError(XMPPError.Condition.interna_server_error);
                 }
                 if (err != null && iq != null)
