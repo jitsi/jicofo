@@ -345,6 +345,7 @@ public class JibriRecorder
             }
 
             scheduleRetryStartJibri(jibriJid, iq);
+            return;
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
