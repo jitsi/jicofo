@@ -1305,7 +1305,7 @@ public class JitsiMeetConference
         return protocolProviderHandler.getProtocolProvider();
     }
 
-    ChatRoomMember findMember(String from)
+    public XmppChatMember findMember(String from)
     {
         return chatRoom == null ? null : chatRoom.findChatMember(from);
     }

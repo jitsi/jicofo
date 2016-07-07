@@ -291,8 +291,7 @@ public class JibriRecorder
                 return;
             }
 
-            XmppChatMember chatMember
-                = conference.getChatRoom().findChatMember(from);
+            XmppChatMember chatMember = conference.findMember(from);
             if (chatMember == null)
             {
                 logger.error("ERROR chat member not found for: " + from);
