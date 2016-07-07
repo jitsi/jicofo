@@ -186,6 +186,11 @@ public class JibriRecorder
         return false;
     }
 
+    private String getRoomName()
+    {
+        return conference.getRoomName();
+    }
+
     /**
      * Accepts only {@link JibriIq}
      * {@inheritDoc}
@@ -209,7 +214,7 @@ public class JibriRecorder
         startIq.setStreamId(this.streamID);
 
         // Insert name of the room into Jibri START IQ
-        startIq.setRoom(conference.getRoomName());
+        startIq.setRoom(getRoomName());
 
 
         if (logger.isDebugEnabled())
@@ -276,11 +281,12 @@ public class JibriRecorder
                 return;
             }
 
-            if (!conference.getRoomName().equals(roomName))
+            String actualRoomName = getRoomName();
+            if (!actualRoomName.equals(roomName))
             {
                 logger.debug(
                         "Ignored packet from: " + roomName
-                            + ", my room: " + conference.getRoomName()
+                            + ", my room: " + actualRoomName
                             + " p: " + packet.toXML());
                 return;
             }
@@ -444,7 +450,7 @@ public class JibriRecorder
         JibriIq.Status status = iq.getStatus();
         if (!JibriIq.Status.UNDEFINED.equals(status))
         {
-            String roomName = conference.getRoomName();
+            String roomName = getRoomName();
 
             logger.info("Updating status from Jibri: " + iq.toXML()
                 + " for " + roomName);
@@ -499,7 +505,7 @@ public class JibriRecorder
 
         logger.info(
             "Publish new Jibri status: " + recordingStatus.toXML() +
-            " in: " + conference.getRoomName());
+            " in: " + getRoomName());
 
         ChatRoom2 chatRoom2 = conference.getChatRoom();
 
@@ -540,8 +546,7 @@ public class JibriRecorder
         if (IQ.Type.RESULT.equals(stopReply.getType()))
         {
             logger.info(
-                    "Recording stopped on user request in "
-                        + conference.getRoomName());
+                    "Recording stopped on user request in " + getRoomName());
             recordingStopped(null);
             return null;
         }
@@ -694,8 +699,7 @@ public class JibriRecorder
 
                 if (JibriIq.Status.PENDING.equals(jibriStatus))
                 {
-                    logger.warn(
-                        "Jibri pending timeout! " + conference.getRoomName());
+                    logger.error("Jibri pending timeout! " + getRoomName());
                     XMPPError error
                         = new XMPPError(
                                 XMPPError.Condition.remote_server_timeout);
