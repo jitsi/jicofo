@@ -20,16 +20,16 @@ package org.jitsi.jicofo.recording.jibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.util.*;
 import org.jitsi.xmpp.util.*;
 
-import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;
@@ -42,6 +42,7 @@ import java.util.concurrent.*;
  * start/stop the recording.
  *
  * @author Pawel Domas
+ * @author Sam Whited
  */
 public class JibriRecorder
     extends Recorder
@@ -94,9 +95,24 @@ public class JibriRecorder
     private ScheduledFuture<?> pendingTimeoutTask;
 
     /**
+     * Counts retry attempts.
+     * FIXME it makes sense to retry as long as there are Jibris available, but
+     * currently if one Jibri will not go offline, but keep returning some error
+     * JibriDetector may keep selecting it infinitely, as we do not blacklist
+     * such instances yet
+     */
+    private int retryAttempt = 0;
+
+    /**
      * The stream ID received in the first Start IQ.
      */
     private String streamID;
+
+    /**
+     * Stores reference to the reply timeout task, so that it can be cancelled
+     * once becomes irrelevant.
+     */
+    private Future<?> timeoutTrigger;
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
@@ -198,16 +214,21 @@ public class JibriRecorder
     @Override
     public boolean accept(Packet packet)
     {
-        return packet instanceof JibriIq;
+        return packet instanceof JibriIq ||
+            (packet instanceof IQ &&
+                recorderComponentJid != null &&
+                recorderComponentJid.equals(packet.getFrom()));
     }
 
     /**
      * Sends an IQ to the given Jibri instance and asks it to start recording.
      */
-    synchronized private XMPPError startJibri(
-        final String jibriJid
-    ) throws SmackException.NoResponseException {
-        JibriIq startIq = new JibriIq();
+    private void startJibri(final String jibriJid)
+    {
+        logger.info("Starting Jibri " + jibriJid + " for stream ID: "
+            + this.streamID + " in room: " + getRoomName());
+
+        final JibriIq startIq = new JibriIq();
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.SET);
         startIq.setAction(JibriIq.Action.START);
@@ -216,39 +237,60 @@ public class JibriRecorder
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(getRoomName());
 
-
         if (logger.isDebugEnabled())
         {
             logger.debug("Starting Jibri recording: " + startIq.toXML());
         }
 
-        final IQ startReply
-            = (IQ) xmpp.getXmppConnection().sendPacketAndGetReply(startIq);
+        // Store Jibri JID to make the packet filter accept the response
+        recorderComponentJid = jibriJid;
 
-        if (startReply == null)
+        // We're now in PENDING state(waiting for Jibri ON update)
+        // Setting PENDING status also blocks from accepting
+        // new start requests
+        setJibriStatus(JibriIq.Status.PENDING);
+
+        // We will not wait forever for the Jibri to start. This method can be
+        // run multiple times on retry, so we want to restart the pending
+        // timeout each time.
+        reschedulePendingTimeout();
+
+        // Clear the old timeout trigger if any
+        cancelTimeoutTrigger();
+        // Send start IQ on separate thread to not block, the packet processor
+        // thread and still be able to detect eventual timeout. The response is
+        // processed in processPacket().
+        timeoutTrigger = scheduledExecutor.submit(new Runnable()
         {
-            throw new SmackException.NoResponseException();
-        }
+            @Override
+            public void run()
+            {
+                final IQ startReply
+                    = (IQ) xmpp.getXmppConnection()
+                    .sendPacketAndGetReply(startIq);
+                if (startReply == null)
+                {
+                    synchronized (JibriRecorder.this)
+                    {
+                        // Trigger request timeout
+                        logger.info(
+                            "Will trigger timeout in room: " + getRoomName());
+                        processError(new XMPPError(
+                                XMPPError.Condition.request_timeout));
+                    }
+                }
+                //else the response will be handled in processPacket()
+            }
+        });
+    }
 
-        if (logger.isDebugEnabled())
+    private void cancelTimeoutTrigger()
+    {
+        if (timeoutTrigger != null)
         {
-            logger.debug(
-                "Start response: " + IQUtils.responseToXML(startReply));
+            timeoutTrigger.cancel(false);
+            timeoutTrigger = null;
         }
-
-        if (IQ.Type.RESULT.equals(startReply.getType()))
-        {
-            // Store Jibri JID
-            recorderComponentJid = jibriJid;
-            // We're now in PENDING state(waiting for Jibri ON update)
-            setJibriStatus(JibriIq.Status.PENDING);
-            // We will not wait forever for the Jibri to start
-            schedulePendingTimeout();
-
-            return null;
-        }
-
-        return startReply.getError();
     }
 
     /**
@@ -259,56 +301,67 @@ public class JibriRecorder
     @Override
     synchronized public void processPacket(Packet packet)
     {
-        JibriIq iq = (JibriIq) packet;
+        IQ iq = (IQ) packet;
 
         String from = iq.getFrom();
 
-        if (logger.isDebugEnabled())
-            logger.debug("Got Jibri packet: " + packet.toXML());
-
-        if (recorderComponentJid != null &&
-            (from.equals(recorderComponentJid) ||
-
-            (from +"/").startsWith(recorderComponentJid)))
+        if (iq instanceof JibriIq)
         {
-            processJibriIqFromJibri(iq);
+            JibriIq jibriIq = (JibriIq) iq;
+
+            if (logger.isDebugEnabled())
+                logger.debug("Got Jibri packet: " + packet.toXML());
+
+            if (recorderComponentJid != null &&
+                (from.equals(recorderComponentJid) ||
+
+                    (from + "/").startsWith(recorderComponentJid)))
+            {
+                processJibriIqFromJibri(jibriIq);
+            }
+            else
+            {
+                String roomName = MucUtil.extractRoomNameFromMucJid(from);
+                if (roomName == null)
+                {
+                    return;
+                }
+
+                String actualRoomName = getRoomName();
+                if (!actualRoomName.equals(roomName))
+                {
+                    logger.debug(
+                            "Ignored packet from: " + roomName
+                                + ", my room: " + actualRoomName
+                                + " p: " + packet.toXML());
+                    return;
+                }
+
+                XmppChatMember chatMember = conference.findMember(from);
+                if (chatMember == null)
+                {
+                    logger.error("ERROR chat member not found for: " + from
+                            + " in " + roomName);
+                    return;
+                }
+
+                processJibriIqFromMeet(jibriIq, chatMember);
+            }
         }
         else
         {
-            String roomName = MucUtil.extractRoomNameFromMucJid(from);
-            if (roomName == null)
+            // We're processing Jibri response, probably an error
+            logger.debug("Response from Jibri: " + iq.toXML());
+            if (IQ.Type.ERROR.equals(iq.getType()))
             {
-                return;
+                processError(iq.getError());
             }
-
-            String actualRoomName = getRoomName();
-            if (!actualRoomName.equals(roomName))
-            {
-                logger.debug(
-                        "Ignored packet from: " + roomName
-                            + ", my room: " + actualRoomName
-                            + " p: " + packet.toXML());
-                return;
-            }
-
-            XmppChatMember chatMember = conference.findMember(from);
-            if (chatMember == null)
-            {
-                logger.error("ERROR chat member not found for: " + from);
-                return;
-            }
-
-            processJibriIqFromMeet(iq, chatMember);
         }
     }
 
-    private void processJibriIqFromMeet(final JibriIq iq, final XmppChatMember sender)
+    private void processJibriIqFromMeet(final JibriIq           iq,
+                                        final XmppChatMember    sender)
     {
-        if (this.streamID == null)
-        {
-            this.streamID = iq.getStreamId();
-        }
-
         JibriIq.Action action = iq.getAction();
 
         if (JibriIq.Action.UNDEFINED.equals(action))
@@ -336,17 +389,27 @@ public class JibriRecorder
             JibriIq.Status.OFF.equals(jibriStatus) &&
             recorderComponentJid == null)
         {
-            // Check if we have Jibri available
-            final String jibriJid = jibriDetector.selectJibri();
-            if (jibriJid == null)
+            // Store stream ID
+            streamID = iq.getStreamId();
+            // Proceed if not empty
+            if (!StringUtils.isNullOrEmpty(streamID))
             {
-                sendErrorResponse(
-                        iq, XMPPError.Condition.service_unavailable, null);
+                // ACK the request immediately to simplify the flow,
+                // any error will be passed with the FAILED state
+                sendResultResponse(iq);
+                // Try starting Jibri on separate thread with retries
+                tryStartRestartJibri(null);
                 return;
             }
-
-            scheduleRetryStartJibri(jibriJid, iq);
-            return;
+            else
+            {
+                // Bad request - no stream ID
+                sendErrorResponse(
+                        iq,
+                        XMPPError.Condition.bad_request,
+                        "Stream ID is empty or undefined");
+                return;
+            }
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
@@ -373,16 +436,35 @@ public class JibriRecorder
                 + "' in state: '" + jibriStatus + "'");
     }
 
+    private void processError(XMPPError error)
+    {
+        if (recorderComponentJid != null)
+        {
+            logger.info(recorderComponentJid + " failed for room "
+                    + getRoomName() + " with "
+                    + (error != null ? error.toXML() : "null"));
+
+            tryStartRestartJibri(error);
+        }
+        else
+        {
+            logger.warn("Triggered error while not recording: " + error.toXML()
+                    + " in: " + getRoomName());
+        }
+    }
+
     /**
-     * Method schedules {@link PendingStatusTimeout} which will clear recording
-     * state after {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}.
+     * Method schedules/reschedules {@link PendingStatusTimeout} which will
+     * clear recording state after
+     * {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}.
      */
-    private void schedulePendingTimeout()
+    private void reschedulePendingTimeout()
     {
         if (pendingTimeoutTask != null)
         {
-            logger.error("Pending timeout scheduled already!?");
-            return;
+            logger.info("Rescheduling pending timeout task for room: "
+                    + getRoomName());
+            pendingTimeoutTask.cancel(false);
         }
 
         int pendingTimeout = globalConfig.getJibriPendingTimeout();
@@ -459,8 +541,7 @@ public class JibriRecorder
                 JibriIq.Status.FAILED.equals(status))
                 && recorderComponentJid != null/* This means we're recording */)
             {
-                logger.info("Recording stopped for: " + roomName);
-                // Make sure that there is XMPPError for ERROR status
+                // Make sure that there is XMPPError for eventual ERROR status
                 XMPPError error = iq.getError();
                 if (JibriIq.Status.FAILED.equals(status) && error == null)
                 {
@@ -468,7 +549,7 @@ public class JibriRecorder
                             XMPPError.Condition.interna_server_error,
                             "Unknown error");
                 }
-                recordingStopped(error);
+                processError(error);
             }
             else
             {
@@ -476,7 +557,7 @@ public class JibriRecorder
             }
         }
 
-        sendPacket(IQ.createResultIQ(iq));
+        sendResultResponse(iq);
     }
 
     private void setJibriStatus(JibriIq.Status newStatus)
@@ -494,6 +575,12 @@ public class JibriRecorder
         {
             pendingTimeoutTask.cancel(false);
             pendingTimeoutTask = null;
+        }
+
+        if (JibriIq.Status.ON.equals(newStatus))
+        {
+            // Reset retry counter
+            retryAttempt = 0;
         }
 
         RecordingStatus recordingStatus = new RecordingStatus();
@@ -572,7 +659,10 @@ public class JibriRecorder
      */
     private void recordingStopped(XMPPError error)
     {
+        logger.info("Recording stopped for: " + getRoomName());
         recorderComponentJid = null;
+        retryAttempt = 0;
+        cancelTimeoutTrigger();
         // First we'll send an error and then follow with availability status
         if (error != null)
         {
@@ -619,65 +709,55 @@ public class JibriRecorder
     {
         if (jibriJid.equals(recorderComponentJid))
         {
-            logger.warn("Our recorder went offline: " + recorderComponentJid);
+            logger.warn("Jibri went offline: " + recorderComponentJid
+                        + " for room: " + getRoomName());
 
-            // Check if we have Jibri available
-            final String newJibriJid = jibriDetector.selectJibri();
-            if (newJibriJid == null)
-            {
-                recordingStopped(null);
-                return;
-            }
-
-            scheduleRetryStartJibri(newJibriJid);
+            tryStartRestartJibri(
+                    new XMPPError(
+                            XMPPError.Condition.remote_server_error,
+                            "Jibri disconnected unexpectedly"));
+        }
+        else if (recorderComponentJid == null)
+        {
+            updateJibriAvailability();
         }
     }
 
-    private void scheduleRetryStartJibri(final String jibriJid) {
-        scheduleRetryStartJibri(jibriJid, null);
-    }
-
-    private void scheduleRetryStartJibri(final String jibriJid, final JibriIq iq) {
-        scheduledExecutor.submit(new Runnable()
+    /**
+     * Will try to start Jibri recording if {@link #retryAttempt} <
+     * {@link #NUM_RETRIES}. If retry limit is exceeded then will fail with
+     * the given <tt>error</tt>. If <tt>error</tt> is <tt>null</tt> either
+     * "service unavailable"(no Jibri available) or "retry limit exceeded"
+     * will be used.
+     * @param error optional <tt>XMPPError</tt> to fail with if the retry count
+     * limit has been exceeded or there are no more Jibris to try with.
+     */
+    private void tryStartRestartJibri(XMPPError error)
+    {
+        if (retryAttempt++ < NUM_RETRIES)
         {
-            @Override
-            public void run()
+            final String newJibriJid = jibriDetector.selectJibri();
+            if (newJibriJid != null)
             {
-                XMPPError err = null;
-                for (int i = 0; i < NUM_RETRIES; i++)
-                {
-                    try
-                    {
-                        err = startJibri(jibriJid);
-                    }
-                    catch (final SmackException.NoResponseException e)
-                    {
-                        err = new XMPPError(XMPPError.Condition.request_timeout);
-                    }
-
-                    if (err == null && iq != null)
-                    {
-                        // ACK the original request
-                        sendResultResponse(iq);
-                        break;
-                    }
-                    // Mask the original error in the IQ response.
-                    if (err != null)
-                    {
-                        logger.info("Masking Jibri error, would have sent " + err.getCondition());
-                    }
-                    err = new XMPPError(XMPPError.Condition.interna_server_error);
-                }
-                if (err != null && iq != null)
-                {
-                    sendPacket(IQ.createErrorResponse(iq, err));
-                }
-                else if (err != null)
-                {
-                    recordingStopped(null);
-                }
+                startJibri(newJibriJid);
+                return;
             }
-        });
+            else if (error == null)
+            {
+                // Classify this failure as 'service not available'
+                error = new XMPPError(XMPPError.Condition.service_unavailable);
+            }
+        }
+        if (error == null)
+        {
+            error = new XMPPError(
+                    XMPPError.Condition.interna_server_error,
+                    "Retry limit exceeded");
+        }
+        // No more retries, stop either with the error passed as an argument
+        // or with one defined here in this method, which will provide more
+        // details about the reason
+        recordingStopped(error);
     }
 
     /**
