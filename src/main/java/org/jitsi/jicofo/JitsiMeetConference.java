@@ -1475,7 +1475,8 @@ public class JitsiMeetConference
         // Check if our Colibri conference has been disposed
         synchronized (colibriConfSyncRoot)
         {
-            if (colibriConference == null)
+            if (colibriConference == null && chatRoom != null
+                    && checkAtLeastTwoParticipants())
             {
                 logger.info(
                         "New bridge available: " + bridgeJid
