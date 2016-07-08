@@ -115,6 +115,26 @@ public class JibriRecorder
     private Future<?> timeoutTrigger;
 
     /**
+     * Returns <tt>true> if given <tt>status</tt> precedes the <tt>RETRYING</tt>
+     * status or <tt>false</tt> otherwise.
+     */
+    static private boolean isPreRetryStatus(JibriIq.Status status)
+    {
+        return JibriIq.Status.ON.equals(status)
+            || JibriIq.Status.RETRYING.equals(status);
+    }
+
+    /**
+     * Returns <tt>true</tt> if given <tt>status</tt> indicates that Jibri is in
+     * the middle of starting of the recording process.
+     */
+    static private boolean isStartingStatus(JibriIq.Status status)
+    {
+        return JibriIq.Status.PENDING.equals(status)
+            || JibriIq.Status.RETRYING.equals(status);
+    }
+
+    /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
      *        instance.
@@ -248,7 +268,8 @@ public class JibriRecorder
         // We're now in PENDING state(waiting for Jibri ON update)
         // Setting PENDING status also blocks from accepting
         // new start requests
-        setJibriStatus(JibriIq.Status.PENDING);
+        setJibriStatus(isPreRetryStatus(jibriStatus)
+                ? JibriIq.Status.RETRYING : JibriIq.Status.PENDING);
 
         // We will not wait forever for the Jibri to start. This method can be
         // run multiple times on retry, so we want to restart the pending
@@ -415,7 +436,7 @@ public class JibriRecorder
         else if (JibriIq.Action.STOP.equals(action) &&
             recorderComponentJid != null &&
             (JibriIq.Status.ON.equals(jibriStatus) ||
-             JibriIq.Status.PENDING.equals(jibriStatus)))
+                isStartingStatus(jibriStatus)))
         {
             XMPPError error = sendStopIQ();
             sendPacket(
@@ -776,7 +797,7 @@ public class JibriRecorder
                 // cancelling itself on status change from PENDING
                 pendingTimeoutTask = null;
 
-                if (JibriIq.Status.PENDING.equals(jibriStatus))
+                if (isStartingStatus(jibriStatus))
                 {
                     logger.error("Jibri pending timeout! " + getRoomName());
                     XMPPError error
