@@ -483,6 +483,12 @@ public class JitsiMeetConference
         colibriConference.setName(roomName);
 
         bridgeHasFailed = false;
+
+        if (recording == null)
+        {
+            recording = new JitsiMeetRecording(this, services);
+            recording.init();
+        }
     }
 
     /**
@@ -657,10 +663,10 @@ public class JitsiMeetConference
         // We dispose the recorder here as the recording session is usually
         // bound to Colibri conference instance which will be invalid once we
         // dispose/expire the conference on the bridge
-        // FIXME re-init recorder after ICE restart
         if (recording != null)
         {
             recording.dispose();
+            recording = null;
         }
 
         if (colibriConference != null)
@@ -1305,7 +1311,7 @@ public class JitsiMeetConference
         return protocolProviderHandler.getProtocolProvider();
     }
 
-    ChatRoomMember findMember(String from)
+    public XmppChatMember findMember(String from)
     {
         return chatRoom == null ? null : chatRoom.findChatMember(from);
     }
@@ -1475,7 +1481,8 @@ public class JitsiMeetConference
         // Check if our Colibri conference has been disposed
         synchronized (colibriConfSyncRoot)
         {
-            if (colibriConference == null)
+            if (colibriConference == null && chatRoom != null
+                    && checkAtLeastTwoParticipants())
             {
                 logger.info(
                         "New bridge available: " + bridgeJid
