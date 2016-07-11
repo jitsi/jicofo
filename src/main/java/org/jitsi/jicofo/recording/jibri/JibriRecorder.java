@@ -291,7 +291,7 @@ public class JibriRecorder
                         // Trigger request timeout
                         logger.info(
                             "Will trigger timeout in room: " + getRoomName());
-                        processError(new XMPPError(
+                        processJibriError(new XMPPError(
                                 XMPPError.Condition.request_timeout));
                     }
                 }
