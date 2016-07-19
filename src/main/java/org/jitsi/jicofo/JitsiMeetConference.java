@@ -1647,7 +1647,8 @@ public class JitsiMeetConference
     }
 
     /**
-     * Creates the shared document name.
+     * Creates the shared document name by either using the conference room name
+     * or a random string, depending on configuration.
      *
      * @return the shared document name.
      */
