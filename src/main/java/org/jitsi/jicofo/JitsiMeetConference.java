@@ -231,11 +231,11 @@ public class JitsiMeetConference
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
-        this.etherpadName = createSharedDocumentName();
         this.protocolProviderHandler = protocolProviderHandler;
         this.listener = listener;
         this.config = config;
         this.globalConfig = globalConfig;
+        this.etherpadName = createSharedDocumentName();
     }
 
     /**
