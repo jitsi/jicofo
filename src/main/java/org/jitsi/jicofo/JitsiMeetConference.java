@@ -231,11 +231,11 @@ public class JitsiMeetConference
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
-        this.etherpadName = UUID.randomUUID().toString().replaceAll("-", "");
         this.protocolProviderHandler = protocolProviderHandler;
         this.listener = listener;
         this.config = config;
         this.globalConfig = globalConfig;
+        this.etherpadName = createSharedDocumentName();
     }
 
     /**
@@ -1644,5 +1644,24 @@ public class JitsiMeetConference
     public void setStartMuted(boolean[] startMuted)
     {
         this.startMuted = startMuted;
+    }
+
+    /**
+     * Creates the shared document name by either using the conference room name
+     * or a random string, depending on configuration.
+     *
+     * @return the shared document name.
+     */
+    private String createSharedDocumentName()
+    {
+        String sharedDocumentName;
+        if (this.config.useRoomAsSharedDocName())
+            sharedDocumentName
+                = MucUtil.extractName(this.roomName.toLowerCase());
+        else
+           sharedDocumentName
+                   = UUID.randomUUID().toString().replaceAll("-", "");
+
+        return sharedDocumentName;
     }
 }
