@@ -231,7 +231,7 @@ public class JitsiMeetConference
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
-        this.etherpadName = UUID.randomUUID().toString().replaceAll("-", "");
+        this.etherpadName = createSharedDocumentName();
         this.protocolProviderHandler = protocolProviderHandler;
         this.listener = listener;
         this.config = config;
@@ -1644,5 +1644,22 @@ public class JitsiMeetConference
     public void setStartMuted(boolean[] startMuted)
     {
         this.startMuted = startMuted;
+    }
+
+    /**
+     * Creates the shared document name.
+     *
+     * @return the shared document name.
+     */
+    private String createSharedDocumentName()
+    {
+        String sharedDocumentName;
+        if (this.config.useRoomAsSharedDocName())
+            sharedDocumentName = this.roomName.toLowerCase();
+        else
+           sharedDocumentName
+                   = UUID.randomUUID().toString().replaceAll("-", "");
+
+        return sharedDocumentName;
     }
 }

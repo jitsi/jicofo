@@ -131,6 +131,12 @@ public class JitsiMeetConfig
     public static final String STEREO_PNAME = "stereo";
 
     /**
+     * The name of the "useRoomAsSharedDocumentName" config property.
+     */
+    public static final String USE_ROOM_AS_SHARED_DOC_NAME
+            = "useRoomAsSharedDocumentName";
+
+    /**
      * The default value of the "startBitrate" property.
      */
     public static final int START_BITRATE_DEFAULT = 800;
@@ -324,5 +330,16 @@ public class JitsiMeetConfig
     {
         Boolean stereo = getBoolean(STEREO_PNAME);
         return stereo != null && stereo;
+    }
+
+    /**
+     * Return a <tt>boolean</tt> value of the
+     * {@link #USE_ROOM_AS_SHARED_DOC_NAME} property. Indicates if the room name
+     * should be used as a shared document name.
+     */
+    public boolean useRoomAsSharedDocName()
+    {
+        Boolean useRoom = getBoolean(USE_ROOM_AS_SHARED_DOC_NAME);
+        return (useRoom != null) && useRoom;
     }
 }
