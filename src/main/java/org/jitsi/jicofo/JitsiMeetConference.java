@@ -1656,7 +1656,8 @@ public class JitsiMeetConference
     {
         String sharedDocumentName;
         if (this.config.useRoomAsSharedDocName())
-            sharedDocumentName = this.roomName.toLowerCase();
+            sharedDocumentName
+                = MucUtil.extractName(this.roomName.toLowerCase());
         else
            sharedDocumentName
                    = UUID.randomUUID().toString().replaceAll("-", "");
