@@ -348,10 +348,12 @@ public class JibriRecorder
                 String actualRoomName = getRoomName();
                 if (!actualRoomName.equals(roomName))
                 {
-                    logger.warn(
-                            "Ignored packet from: " + roomName
+                    if (logger.isDebugEnabled())
+                    {
+                        logger.debug("Ignored packet from: " + roomName
                                 + ", my room: " + actualRoomName
                                 + " p: " + packet.toXML());
+                    }
                     return;
                 }
 
