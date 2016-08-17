@@ -24,6 +24,7 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.device.*;
 import org.jitsi.service.neomedia.format.*;
 import org.jitsi.service.neomedia.rtp.*;
+import org.jitsi.service.neomedia.stats.*;
 
 import java.net.*;
 import java.util.*;
@@ -125,7 +126,7 @@ public class MockMediaStream
     }
 
     @Override
-    public MediaStreamStats getMediaStreamStats()
+    public MediaStreamStats2 getMediaStreamStats()
     {
         return streamStats;
     }
