@@ -1,7 +1,7 @@
 package mock.media;
 
-import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.rtp.*;
+import org.jitsi.service.neomedia.stats.*;
 
 import java.awt.*;
 import java.util.*;
@@ -10,7 +10,7 @@ import java.util.*;
  *
  */
 public class MockMediaStreamStats
-    implements MediaStreamStats
+    implements MediaStreamStats2
 {
     @Override
     public double getDownloadJitterMs()
@@ -289,13 +289,37 @@ public class MockMediaStreamStats
     }
 
     @Override
-    public Collection<? extends MediaStreamSSRCStats> getReceivedStats()
+    public ReceiveTrackStats getReceiveStats()
     {
         return null;
     }
 
     @Override
-    public Collection<? extends MediaStreamSSRCStats> getSentStats()
+    public SendTrackStats getSendStats()
+    {
+        return null;
+    }
+
+    @Override
+    public ReceiveTrackStats getReceiveStats(long ssrc)
+    {
+        return null;
+    }
+
+    @Override
+    public SendTrackStats getSendStats(long ssrc)
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends SendTrackStats> getAllSendStats()
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends ReceiveTrackStats> getAllReceiveStats()
     {
         return null;
     }
