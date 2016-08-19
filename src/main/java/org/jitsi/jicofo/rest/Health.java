@@ -33,6 +33,7 @@ import org.json.simple.*;
  * Checks the health of {@link FocusManager}.
  *
  * @author Lyubomir Marinov
+ * @author Pawel Domas
  */
 public class Health
 {
@@ -165,7 +166,7 @@ public class Health
                 // ABORT here if the list is empty
                 if (activeJVBs.isEmpty())
                 {
-                    logger.debug(
+                    logger.error(
                         "The health check failed - 0 active JVB instances !");
 
                     status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
@@ -184,8 +185,7 @@ public class Health
         }
         catch (Exception ex)
         {
-            if (logger.isDebugEnabled())
-                logger.debug("Health check of Jicofo failed!", ex);
+            logger.error("Health check of Jicofo failed!", ex);
 
             if (ex instanceof IOException)
                 throw (IOException) ex;
