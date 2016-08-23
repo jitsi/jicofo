@@ -99,20 +99,17 @@ public class ChannelAllocator implements Runnable
      * @param startMuted an array which must have the size of 2 where the first
      * value stands for "start audio muted" and the second one for "video
      * muted". This is to be included in client's offer.
-     * @param reInvite <tt>true</tt> if the offer will be a 're-invite' one or
-     * <tt>false</tt> otherwise.
      */
     public ChannelAllocator(JitsiMeetConference    meetConference,
                             ColibriConference      colibriConference,
                             Participant            newParticipant,
-                            boolean[]              startMuted,
-                            boolean                reInvite)
+                            boolean[]              startMuted)
     {
         this.meetConference = meetConference;
         this.colibriConference = colibriConference;
         this.newParticipant = newParticipant;
         this.startMuted = startMuted;
-        this.reInvite = reInvite;
+        this.reInvite = newParticipant.getJingleSession() != null;
     }
 
     private OperationSetJitsiMeetTools getMeetTools()
@@ -207,8 +204,7 @@ public class ChannelAllocator implements Runnable
         {
             OperationSetJingle jingle = meetConference.getJingle();
             boolean ack;
-            JingleSession jingleSession = newParticipant.getJingleSession();
-            if (!reInvite || jingleSession == null)
+            if (!reInvite)
             {
                 ack = jingle.initiateSession(
                         newParticipant.hasBundleSupport(),
@@ -221,7 +217,7 @@ public class ChannelAllocator implements Runnable
             {
                 ack = jingle.replaceTransport(
                         newParticipant.hasBundleSupport(),
-                        jingleSession,
+                        newParticipant.getJingleSession(),
                         offer,
                         startMuted);
             }
