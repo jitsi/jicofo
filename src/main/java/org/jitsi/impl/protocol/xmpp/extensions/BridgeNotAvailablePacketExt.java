@@ -29,10 +29,12 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 public class BridgeNotAvailablePacketExt
     extends AbstractPacketExtension
 {
-    private final static String ELEMENT_NAME = "bridgeNotAvailable";
+    public final static String ELEMENT_NAME = "bridgeNotAvailable";
+
+    public final static String NAMESPACE = ConferenceIq.NAMESPACE;
 
     public BridgeNotAvailablePacketExt()
     {
-        super("", ELEMENT_NAME);
+        super(NAMESPACE, ELEMENT_NAME);
     }
 }
