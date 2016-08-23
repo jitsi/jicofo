@@ -1624,6 +1624,7 @@ public class JitsiMeetConference
         if (ChannelAllocator.NO_BRIDGE_AVAILABLE_ERR_CODE == exc.getErrorCode())
         {
             // Notify users that there are no bridges available
+            ChatRoom chatRoom = this.chatRoom;
             if (meetTools != null && chatRoom != null)
             {
                 meetTools.sendPresenceExtension(
@@ -1697,6 +1698,15 @@ public class JitsiMeetConference
                             roomName,
                             getId(),
                             videobridgeJid));
+        }
+
+        // Remove "bridge not available" from Jicofo's presence
+        // There is no check if it was ever added, but should be harmless
+        ChatRoom chatRoom = this.chatRoom;
+        if (meetTools != null && chatRoom != null)
+        {
+            meetTools.removePresenceExtension(
+                    chatRoom, new BridgeNotAvailablePacketExt());
         }
 
         if (recording != null)

@@ -864,7 +864,8 @@ public class ChatRoomImpl
         return null;
     }
 
-    public void sendPresenceExtension(PacketExtension extension)
+    public void setPresenceExtension(PacketExtension extension,
+                                     boolean         remove)
     {
         if (lastPresenceSent == null)
         {
@@ -884,8 +885,11 @@ public class ChatRoomImpl
             lastPresenceSent.removeExtension(old);
         }
 
-        // Add new
-        lastPresenceSent.addExtension(extension);
+        if (!remove)
+        {
+            // Add new
+            lastPresenceSent.addExtension(extension);
+        }
 
         XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
         if (connection == null)
