@@ -1621,13 +1621,13 @@ public class JitsiMeetConference
             ChannelAllocator         channelAllocator,
             OperationFailedException exc)
     {
-        if (ChannelAllocator.BRIDGE_FAILURE_ERR_CODE == exc.getErrorCode())
+        if (ChannelAllocator.NO_BRIDGE_AVAILABLE_ERR_CODE == exc.getErrorCode())
         {
-            // Notify users about bridge is down event
+            // Notify users that there are no bridges available
             if (meetTools != null && chatRoom != null)
             {
                 meetTools.sendPresenceExtension(
-                        chatRoom, new BridgeIsDownPacketExt());
+                        chatRoom, new BridgeNotAvailablePacketExt());
             }
             // Dispose the conference. This way we'll know there is no
             // conference active and we can restart on new bridge
