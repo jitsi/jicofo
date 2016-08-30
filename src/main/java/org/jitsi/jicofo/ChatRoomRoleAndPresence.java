@@ -304,8 +304,13 @@ public class ChatRoomRoleAndPresence
     @Override
     public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
     {
-        logger.info(
-            "Focus role: " + evt.getNewRole() + " init: " + evt.isInitial());
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(
+                    "Focus role: " + evt.getNewRole()
+                        + " init: " + evt.isInitial()
+                        + " room: " + conference.getRoomName());
+        }
 
         focusRole = evt.getNewRole();
         if (!verifyFocusRole())
