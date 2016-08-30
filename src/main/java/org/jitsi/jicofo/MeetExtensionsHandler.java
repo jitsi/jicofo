@@ -467,8 +467,14 @@ public class MeetExtensionsHandler
         }
 
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
+        if (role == null)
+        {
+            logger.warn("Failed to get user's role for: " + from
+                      + " - Jicofo is no longer in the MUC ?");
+            return;
+        }
 
-        if (role != null && role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+        if (role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
         {
             StartMutedPacketExtension ext
                 = (StartMutedPacketExtension)
