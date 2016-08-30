@@ -36,6 +36,12 @@ public class JitsiMeetGlobalConfig
         = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
+     * The name of configuration property that disable auto owner role granting.
+     */
+    private final static String DISABLE_AUTO_OWNER_PNAME
+        = "org.jitsi.jicofo.DISABLE_AUTO_OWNER";
+
+    /**
      * The name of configuration property that sets {@link #maxSSRCsPerUser}.
      */
     private final static String MAX_SSRC_PER_USER_CONFIG_PNAME
@@ -57,6 +63,13 @@ public class JitsiMeetGlobalConfig
      * The default value for {@link #JIBRI_PENDING_TIMEOUT_PROP_NAME}.
      */
     private static final int JIBRI_DEFAULT_PENDING_TIMEOUT = 90;
+
+    /**
+     * Flag indicates whether auto owner feature is active. First participant to
+     * join the room will become conference owner. When the owner leaves the
+     * room next participant be selected as new owner.
+     */
+    private boolean autoOwner = true;
 
     /**
      * Tells how many seconds we're going to wait for the Jibri to start
@@ -126,6 +139,14 @@ public class JitsiMeetGlobalConfig
      */
     private void init(ConfigurationService configService)
     {
+        if (FocusBundleActivator.getConfigService()
+                .getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
+        {
+            autoOwner = false;
+        }
+
+        logger.info("Automatically grant 'owner' role: " + autoOwner);
+
         this.maxSSRCsPerUser
             = configService.getInt(
                     MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
@@ -181,5 +202,18 @@ public class JitsiMeetGlobalConfig
     public int getJibriPendingTimeout()
     {
         return jibriPendingTimeout;
+    }
+
+    /**
+     * Indicates whether auto owner feature is active. First participant to join
+     * the room will become conference owner. When the owner leaves the room
+     * next participant will be selected as the new owner.
+     *
+     * @return <tt>true</tt> if the auto-owner feature is enabled or
+     * <tt>false</tt> otherwise.
+     */
+    public boolean isAutoOwnerEnabled()
+    {
+        return this.autoOwner;
     }
 }
