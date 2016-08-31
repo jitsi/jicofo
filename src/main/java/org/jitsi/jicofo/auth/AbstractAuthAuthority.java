@@ -195,12 +195,15 @@ public abstract class AbstractAuthAuthority
      */
     private UUID createNonExistingUUID()
     {
-        UUID uuid = UUID.randomUUID();
-        while (authenticationSessions.containsKey(uuid.toString()))
+        synchronized (syncRoot)
         {
-            uuid = UUID.randomUUID();
+            UUID uuid = UUID.randomUUID();
+            while (authenticationSessions.containsKey(uuid.toString()))
+            {
+                uuid = UUID.randomUUID();
+            }
+            return uuid;
         }
-        return uuid;
     }
 
     /**
