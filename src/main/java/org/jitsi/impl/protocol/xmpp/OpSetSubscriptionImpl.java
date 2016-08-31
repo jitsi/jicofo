@@ -78,8 +78,7 @@ public class OpSetSubscriptionImpl
     /**
      * The map of Subscriptions
      */
-    private Map<String, Subscription> subscriptionsMap
-        = new HashMap<String, Subscription>();
+    private final Map<String, Subscription> subscriptionsMap = new HashMap<>();
 
     /**
      * Parent XMPP provider used to handle the protocol.
@@ -177,11 +176,21 @@ public class OpSetSubscriptionImpl
     public synchronized void subscribe(String               node,
                                        SubscriptionListener listener)
     {
-        Subscription subscription = subscriptionsMap.get(node);
-        if (subscription == null)
+        boolean created = false;
+        Subscription subscription;
+        synchronized (subscriptionsMap)
         {
-            subscription = new Subscription(node, listener);
-            subscriptionsMap.put(node, subscription);
+            subscription = subscriptionsMap.get(node);
+            if (subscription == null)
+            {
+                subscription = new Subscription(node, listener);
+                subscriptionsMap.put(node, subscription);
+                created = true;
+            }
+        }
+
+        if (created)
+        {
             subscription.subscribe();
         }
         else
@@ -197,18 +206,22 @@ public class OpSetSubscriptionImpl
     public synchronized void unSubscribe(String               node,
                                          SubscriptionListener listener)
     {
-        Subscription subscription = subscriptionsMap.get(node);
-        if (subscription != null)
+        synchronized (subscriptionsMap)
         {
-            if (!subscription.removeListener(listener))
+            Subscription subscription = subscriptionsMap.get(node);
+
+            if (subscription != null)
             {
-                subscription.unSubscribe();
-                subscriptionsMap.remove(node);
+                if (!subscription.removeListener(listener))
+                {
+                    subscription.unSubscribe();
+                    subscriptionsMap.remove(node);
+                }
             }
-        }
-        else
-        {
-            logger.warn("No PubSub subscription for " + node);
+            else
+            {
+                logger.warn("No PubSub subscription for " + node);
+            }
         }
     }
 
