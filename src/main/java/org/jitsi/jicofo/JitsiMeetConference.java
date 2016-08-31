@@ -846,6 +846,9 @@ public class JitsiMeetConference
 
     public ChatRoomMemberRole getRoleForMucJid(String mucJid)
     {
+        if (chatRoom == null)
+            return null;
+
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             if (member.getContactAddress().equals(mucJid))
