@@ -75,7 +75,7 @@ public class ComponentsDiscovery
     /**
      * Map of component features.
      */
-    private Map<String, List<String>> itemMap = new HashMap<>();
+    private Map<String, List<String>> itemMap = new ConcurrentHashMap<>();
 
     /**
      * Timer which runs re-discovery task.
