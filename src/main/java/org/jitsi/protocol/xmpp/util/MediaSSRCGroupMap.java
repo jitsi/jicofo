@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class maps lists of SSRC groups to media types and encapsulates various
@@ -33,14 +34,14 @@ public class MediaSSRCGroupMap
     /**
      * Map backend.
      */
-    private final Map<String, List<SSRCGroup>> groupMap;
+    private final ConcurrentHashMap<String, List<SSRCGroup>> groupMap;
 
     /**
      * Creates new instance of <tt>MediaSSRCGroupMap</tt>.
      */
     public MediaSSRCGroupMap()
     {
-        this(new HashMap<String, List<SSRCGroup>>());
+        this(new ConcurrentHashMap<String, List<SSRCGroup>>());
     }
 
     /**
@@ -48,7 +49,7 @@ public class MediaSSRCGroupMap
      * @param map the map with predefined values that will be used by new
      *            instance.
      */
-    private MediaSSRCGroupMap(Map<String, List<SSRCGroup>> map)
+    private MediaSSRCGroupMap(ConcurrentHashMap<String, List<SSRCGroup>> map)
     {
         this.groupMap = map;
     }
@@ -207,7 +208,8 @@ public class MediaSSRCGroupMap
      */
     public MediaSSRCGroupMap copy()
     {
-        Map<String, List<SSRCGroup>> mapCopy = new HashMap<>();
+        ConcurrentHashMap<String, List<SSRCGroup>> mapCopy
+            = new ConcurrentHashMap<>();
 
         for (String media : groupMap.keySet())
         {
