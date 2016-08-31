@@ -73,6 +73,12 @@ public class MockMultiUserChat
     }
 
     @Override
+    public String getLocalMucJid()
+    {
+        return me != null ? me.getContactAddress() : null;
+    }
+
+    @Override
     public String getName()
     {
         return roomName;

@@ -37,4 +37,10 @@ public interface ChatRoom2
      *         <tt>null</tt> if not found.
      */
     XmppChatMember findChatMember(String mucJid);
+
+    /**
+     * Returns the MUC address of our chat member.
+     * @return our full MUC JID for example: room@conference.server.net/nickname
+     */
+    String getLocalMucJid();
 }
