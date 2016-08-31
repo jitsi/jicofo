@@ -33,6 +33,7 @@ import org.jivesoftware.smack.provider.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -121,9 +122,17 @@ public class FocusManager
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
+     *
+     * Note that access to this field is almost always protected by a lock on
+     * {@code this}. However, {@link #getConferenceCount()} executes
+     * {@link Map#size(Object)} on it, which wouldn't be safe with a
+     * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
+     * I've chosen this solution, because I don't know whether the cleaner
+     * solution of synchronizing on {@code #this} in
+     * {@link #getConferenceCount()} is safe.
      */
-    private Map<String, JitsiMeetConference> conferences
-        = new HashMap<String, JitsiMeetConference>();
+    private final Map<String, JitsiMeetConference> conferences
+        = new ConcurrentHashMap<>();
 
     // Convert to list when needed
     /**
