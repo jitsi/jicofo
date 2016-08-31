@@ -49,12 +49,6 @@ public class ChatRoomRoleAndPresence
         = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
-     * The name of configuration property that disable auto owner role granting.
-     */
-    private final static String DISABLE_AUTO_OWNER_PNAME
-        = "org.jitsi.jicofo.DISABLE_AUTO_OWNER";
-
-    /**
      * The {@link JitsiMeetConference} for which this instance is handling MUC
      * related stuff.
      */
@@ -78,9 +72,9 @@ public class ChatRoomRoleAndPresence
     /**
      * Flag indicates whether auto owner feature is active. First participant to
      * join the room will become conference owner. When the owner leaves the
-     * room next participant be selected as new owner.
+     * room next participant will be selected as new owner.
      */
-    private boolean autoOwner = true;
+    private boolean autoOwner;
 
     /**
      * Current owner(other than the focus itself) of Jitsi Meet conference.
@@ -102,14 +96,7 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
-        if (FocusBundleActivator.getConfigService()
-                .getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
-        {
-            autoOwner = false;
-        }
-
-        logger.info(
-            "Auto owner feature " + (autoOwner ? "enabled" : "disabled"));
+        autoOwner = conference.getGlobalConfig().isAutoOwnerEnabled();
 
         authAuthority = ServiceUtils.getService(
                 FocusBundleActivator.bundleContext,
@@ -304,8 +291,13 @@ public class ChatRoomRoleAndPresence
     @Override
     public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
     {
-        logger.info(
-            "Focus role: " + evt.getNewRole() + " init: " + evt.isInitial());
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(
+                    "Focus role: " + evt.getNewRole()
+                        + " init: " + evt.isInitial()
+                        + " room: " + conference.getRoomName());
+        }
 
         focusRole = evt.getNewRole();
         if (!verifyFocusRole())
