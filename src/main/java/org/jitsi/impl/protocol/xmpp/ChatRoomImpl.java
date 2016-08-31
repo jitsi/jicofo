@@ -901,21 +901,25 @@ public class ChatRoomImpl
     {
         ChatMemberImpl newMember;
 
-        if (members.containsKey(participant))
+        synchronized (members)
         {
-            logger.error(participant + " already in " + roomName);
-            return null;
+            if (members.containsKey(participant))
+            {
+                logger.error(participant + " already in " + roomName);
+                return null;
+            }
+
+            if(!participant.equals(myMucAddress))
+            {
+                participantNumber++;
+            }
+
+            newMember
+                = new ChatMemberImpl(participant, ChatRoomImpl.this,
+                        participantNumber);
+
+            members.put(participant, newMember);
         }
-
-        if(!participant.equals(myMucAddress))
-        {
-            participantNumber++;
-        }
-
-        newMember = new ChatMemberImpl(participant, ChatRoomImpl.this,
-            participantNumber);
-
-        members.put(participant, newMember);
 
         return newMember;
     }
@@ -984,14 +988,17 @@ public class ChatRoomImpl
 
         private ChatMemberImpl removeMember(String participant)
         {
-            ChatMemberImpl removed = members.remove(participant);
+            synchronized (members)
+            {
+                ChatMemberImpl removed = members.remove(participant);
 
-            if (removed == null)
-                logger.error(participant + " not in " + roomName);
+                if (removed == null)
+                    logger.error(participant + " not in " + roomName);
 
-            participantNumber--;
+                participantNumber--;
 
-            return removed;
+                return removed;
+            }
         }
 
         @Override
