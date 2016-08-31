@@ -66,8 +66,7 @@ public class RESTReservations
     /**
      * Active conferences known to our side.
      */
-    private Map<String, Conference> conferenceMap
-            = new HashMap<String,Conference>();
+    private final Map<String, Conference> conferenceMap = new HashMap<>();
 
     /**
      * Utility class that deals with API REST request processing.
@@ -217,7 +216,7 @@ public class RESTReservations
     /**
      * Deletes conference for given <tt>mucRoomName</tt> through the API.
      */
-    Result deleteConference(String mucRoomName)
+    private synchronized Result deleteConference(String mucRoomName)
     {
         Conference conference = conferenceMap.get(mucRoomName);
         if (conference != null)
@@ -283,7 +282,7 @@ public class RESTReservations
      * @return <tt>Conference</tt> for given <tt>id</tt> or <tt>null</tt>
      *         if not found.
      */
-    private Conference findConferenceForId(Number id)
+    private synchronized Conference findConferenceForId(Number id)
     {
         for (Conference conference : conferenceMap.values())
         {
