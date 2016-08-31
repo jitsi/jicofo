@@ -28,6 +28,7 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class provides template implementation of {@link OperationSetJingle}.
@@ -47,7 +48,8 @@ public abstract class AbstractOperationSetJingle
     /**
      * The list of active Jingle sessions.
      */
-    protected final Map<String, JingleSession> sessions = new HashMap<>();
+    protected final Map<String, JingleSession> sessions
+        = new ConcurrentHashMap<>();
 
     /**
      * Implementing classes should return our JID here.
