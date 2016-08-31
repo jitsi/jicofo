@@ -32,9 +32,9 @@ import org.jitsi.jicofo.reservation.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 
+import org.jitsi.util.*;
 import org.osgi.framework.*;
 
 import java.text.*;
@@ -620,6 +620,21 @@ public class JitsiMeetConference
     boolean isFocusMember(ChatRoomMember member)
     {
         return member.getName().equals(focusUserName);
+    }
+
+    /**
+     * Checks if given MUC jid belongs to the focus user.
+     *
+     * @param mucJid the full MUC address to check.
+     *
+     * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
+     *         participant or <tt>false</tt> otherwise.
+     */
+    boolean isFocusMember(String mucJid)
+    {
+        ChatRoom2 chatRoom = this.chatRoom;
+        return !StringUtils.isNullOrEmpty(mucJid)
+                && chatRoom != null && mucJid.equals(chatRoom.getLocalMucJid());
     }
 
     /**

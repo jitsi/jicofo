@@ -532,6 +532,12 @@ public class ChatRoomImpl
     }
 
     @Override
+    public String getLocalMucJid()
+    {
+        return myMucAddress;
+    }
+
+    @Override
     public int getMembersCount()
     {
         return muc.getOccupantsCount();
