@@ -41,7 +41,7 @@ public class MediaSSRCMap
      */
     public MediaSSRCMap()
     {
-        this(new HashMap<String, List<SourcePacketExtension>>());
+        this(new ConcurrentHashMap<String, List<SourcePacketExtension>>());
     }
 
     /**
@@ -50,7 +50,8 @@ public class MediaSSRCMap
      *
      * @param ssrcs initial map of media SSRCs.
      */
-    private MediaSSRCMap(Map<String, List<SourcePacketExtension>> ssrcs)
+    private MediaSSRCMap(
+            ConcurrentHashMap<String, List<SourcePacketExtension>> ssrcs)
     {
         this.ssrcs = ssrcs;
     }
@@ -133,7 +134,8 @@ public class MediaSSRCMap
      */
     public MediaSSRCMap copyDeep()
     {
-        Map<String, List<SourcePacketExtension>> mapCopy = new HashMap<>();
+        ConcurrentHashMap<String, List<SourcePacketExtension>> mapCopy
+            = new ConcurrentHashMap<>();
 
         for (String media : ssrcs.keySet())
         {
@@ -279,7 +281,8 @@ public class MediaSSRCMap
     public static MediaSSRCMap getSSRCsFromContent(
         List<ContentPacketExtension> contents)
     {
-        Map<String, List<SourcePacketExtension>> ssrcMap = new HashMap<>();
+        ConcurrentHashMap<String, List<SourcePacketExtension>> ssrcMap
+            = new ConcurrentHashMap<>();
 
         for (ContentPacketExtension content : contents)
         {
