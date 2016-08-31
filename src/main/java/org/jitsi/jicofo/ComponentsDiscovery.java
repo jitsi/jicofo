@@ -269,7 +269,7 @@ public class ComponentsDiscovery
 
                 meetServices.newNodeDiscovered(node, features, version);
             }
-            else if (itemMap.containsKey(node))
+            else
             {
                 // Check if there are changes in feature list
                 if (!DiscoveryUtil.areTheSame(itemMap.get(node), features))
@@ -286,7 +286,7 @@ public class ComponentsDiscovery
         }
 
         // Find disconnected nodes
-        List<String> offlineNodes = new ArrayList<String>(itemMap.keySet());
+        List<String> offlineNodes = new ArrayList<>(itemMap.keySet());
 
         offlineNodes.removeAll(onlineNodes);
         itemMap.keySet().removeAll(offlineNodes);
