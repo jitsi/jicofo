@@ -67,17 +67,6 @@ public class MockMediaStream
     }
 
     @Override
-    public void configureSSRCRewriting(
-            Set<Integer> ssrcGroup,
-            Integer ssrcTargetPrimary,
-            Map<Integer, Byte> ssrc2fec,
-            Map<Integer, Byte> ssrc2red,
-            Map<Integer, Integer> rtxGroups,
-            Integer ssrcTargetRTX)
-    {
-    }
-
-    @Override
     public RawPacketCache getPacketCache()
     {
         return null;
