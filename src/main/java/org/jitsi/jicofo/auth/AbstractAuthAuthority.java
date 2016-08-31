@@ -83,8 +83,8 @@ public abstract class AbstractAuthAuthority
     /**
      * The map of user JIDs to {@link AuthenticationSession}.
      */
-    private Map<String, AuthenticationSession> authenticationSessions
-            = new HashMap<String, AuthenticationSession>();
+    private final Map<String, AuthenticationSession> authenticationSessions
+            = new ConcurrentHashMap<>();
 
     /**
      * The list of registered {@link AuthenticationListener}s.
