@@ -28,6 +28,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class represent Jitsi Meet conference participant. Stores information about
@@ -112,7 +113,7 @@ public class Participant
      * returns <tt>false</tt>.
      */
     private Map<String, IceUdpTransportPacketExtension> transportMap
-        = new HashMap<>();
+        = new ConcurrentHashMap<>();
 
     /**
      * The list of XMPP features supported by this participant. 
@@ -719,7 +720,7 @@ public class Participant
     public void clearTransportInfo()
     {
         bundleTransport = null;
-        transportMap = new HashMap<>();
+        transportMap = new ConcurrentHashMap<>();
     }
 
     /**
