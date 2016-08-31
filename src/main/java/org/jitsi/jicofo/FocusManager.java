@@ -33,6 +33,7 @@ import org.jivesoftware.smack.provider.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -122,8 +123,8 @@ public class FocusManager
     /**
      * Jitsi Meet conferences mapped by MUC room names.
      */
-    private Map<String, JitsiMeetConference> conferences
-        = new HashMap<String, JitsiMeetConference>();
+    private final Map<String, JitsiMeetConference> conferences
+        = new ConcurrentHashMap<>();
 
     // Convert to list when needed
     /**
