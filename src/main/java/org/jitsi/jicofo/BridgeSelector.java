@@ -31,6 +31,7 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -91,7 +92,8 @@ public class BridgeSelector
     /**
      * The map of bridge JID to <tt>BridgeState</tt>.
      */
-    private final Map<String, BridgeState> bridges = new HashMap<>();
+    private final Map<String, BridgeState> bridges
+        = new ConcurrentHashMap<>();
 
     /**
      * The <tt>EventAdmin</tt> used by this instance to fire/send
@@ -102,7 +104,7 @@ public class BridgeSelector
     /**
      * The map of Pub-Sub nodes to videobridge JIDs.
      */
-    private final Map<String, String> pubSubToBridge = new HashMap<>();
+    private final Map<String, String> pubSubToBridge = new ConcurrentHashMap<>();
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -231,8 +233,11 @@ public class BridgeSelector
      */
     private List<BridgeState> getPrioritizedBridgesList()
     {
-        ArrayList<BridgeState> bridgeList = new ArrayList<>(bridges.values());
-
+        ArrayList<BridgeState> bridgeList;
+        synchronized (this)
+        {
+            bridgeList = new ArrayList<>(bridges.values());
+        }
         Collections.sort(bridgeList);
 
         Iterator<BridgeState> bridgesIter = bridgeList.iterator();
