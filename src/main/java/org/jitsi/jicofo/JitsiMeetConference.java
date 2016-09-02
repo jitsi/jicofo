@@ -196,6 +196,12 @@ public class JitsiMeetConference
     private long idleTimestamp = -1;
 
     /**
+     * A timeout task which will terminate media session of the user who is
+     * sitting alone in the room for too long.
+     */
+    private Future<?> singleParticipantTout;
+
+    /**
      * If the first element is <tt>true</tt> the participant
      * will start audio muted. if the second element is <tt>true</tt> the
      * participant will start video muted.
@@ -212,6 +218,12 @@ public class JitsiMeetConference
      * Bridge <tt>EventHandler</tt> registration.
      */
     private ServiceRegistration<EventHandler> eventHandlerRegistration;
+
+    /**
+     * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
+     * by this <tt>JitsiMeetConference</tt> instance.
+     */
+    private ScheduledExecutorService executor;
 
     /**
      * Creates new instance of {@link JitsiMeetConference}.
@@ -285,6 +297,10 @@ public class JitsiMeetConference
                         OperationSetJitsiMeetTools.class);
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
+
+            executor
+                = ServiceUtils.getService(
+                        osgiCtx, ScheduledExecutorService.class);
 
             services
                 = ServiceUtils.getService(osgiCtx, JitsiMeetServices.class);
@@ -448,6 +464,9 @@ public class JitsiMeetConference
             {
                 return;
             }
+
+            // Cancel single participant timeout when someone joins ?
+            cancelSinglePeerTimeout();
 
             synchronized (colibriConfSyncRoot)
             {
@@ -695,6 +714,9 @@ public class JitsiMeetConference
             recording = null;
         }
 
+        // If the conference is being disposed the timeout is not needed anymore
+        cancelSinglePeerTimeout();
+
         if (colibriConference != null)
         {
             // We will not expire channels if the bridge is faulty or
@@ -754,7 +776,11 @@ public class JitsiMeetConference
                             + " terminated already or never started ?");
             }
 
-            if (participants.size() == 0)
+            if (participants.size() == 1)
+            {
+                rescheduleSinglePeerTimeout();
+            }
+            else if (participants.size() == 0)
             {
                 stop();
             }
@@ -1694,5 +1720,82 @@ public class JitsiMeetConference
                    = UUID.randomUUID().toString().replaceAll("-", "");
 
         return sharedDocumentName;
+    }
+
+    /**
+     * (Re)schedules {@link SinglePersonTimeout}.
+     */
+    private void rescheduleSinglePeerTimeout()
+    {
+        if (this.executor != null)
+        {
+            cancelSinglePeerTimeout();
+
+            long timeout = 5000;
+
+            this.singleParticipantTout
+                = this.executor.schedule(
+                        new SinglePersonTimeout(),
+                        timeout, TimeUnit.MILLISECONDS);
+
+            logger.debug(
+                    "Scheduled single person timeout for " + getRoomName());
+        }
+    }
+
+    /**
+     * Cancels {@link SinglePersonTimeout}.
+     */
+    private void cancelSinglePeerTimeout()
+    {
+        if (executor != null && singleParticipantTout != null)
+        {
+            // This log is printed also when it's executed by the timeout thread
+            // itself
+            logger.debug(
+                "Cancelling single person timeout in room: " + getRoomName());
+
+            singleParticipantTout.cancel(false);
+            singleParticipantTout = null;
+        }
+    }
+
+    /**
+     * The task is scheduled with some delay when we end up with single
+     * <tt>Participant</tt> in the room to terminate it's media session. There
+     * is no point in streaming media to the videobridge and using
+     * the bandwidth when nobody is receiving it.
+     */
+    private class SinglePersonTimeout
+        implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    Participant p = participants.get(0);
+                    logger.info(
+                            "Timing out single participant: " + p.getMucJid());
+
+                    terminateParticipant(
+                            p, Reason.EXPIRED, "Idle session timeout");
+
+                    synchronized (colibriConfSyncRoot)
+                    {
+                        disposeConference();
+                    }
+                }
+                else
+                {
+                    logger.error(
+                        "Should never execute if more than 1 participant ? "
+                            + getRoomName());
+                }
+                singleParticipantTout = null;
+            }
+        }
     }
 }
