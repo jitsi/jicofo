@@ -545,7 +545,7 @@ public abstract class AbstractOperationSetJingle
         {
             if (session.getRequestHandler() == requestHandler)
             {
-                terminateSession(session, Reason.GONE);
+                terminateSession(session, Reason.GONE, null);
             }
         }
     }
@@ -557,9 +557,12 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> to terminate.
      * @param reason one of {@link Reason} enum that indicates why the session
      *               is being ended or <tt>null</tt> to omit.
+     * {@inheritDoc}
      */
     @Override
-    public void terminateSession(JingleSession session, Reason reason)
+    public void terminateSession(JingleSession    session,
+                                 Reason           reason,
+                                 String           message)
     {
         logger.info("Terminate session: " + session.getAddress());
 
@@ -571,7 +574,8 @@ public abstract class AbstractOperationSetJingle
                     getOurJID(),
                     session.getAddress(),
                     session.getSessionID(),
-                    reason, null);
+                    reason,
+                    message);
 
         getConnection().sendPacket(terminate);
 

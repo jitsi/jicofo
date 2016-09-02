@@ -111,8 +111,10 @@ public interface OperationSetJingle
      * @param session the <tt>JingleSession</tt> to be terminated.
      * @param reason optional <tt>Reason</tt> specifying the reason of session
      *               termination.
+     * @param message optional text message providing more details about
+     *                the reason for terminating the session.
      */
-    void terminateSession(JingleSession session, Reason reason);
+    void terminateSession(JingleSession session, Reason reason, String message);
 
     /**
      * Terminates all active Jingle Sessions associated with given

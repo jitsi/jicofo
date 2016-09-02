@@ -748,7 +748,7 @@ public class JitsiMeetConference
             {
                 logger.info("Hanging up member " + contactAddress);
 
-                jingle.terminateSession(peerJingleSession, Reason.GONE);
+                jingle.terminateSession(peerJingleSession, Reason.GONE, null);
 
                 removeSSRCs(
                         peerJingleSession,
