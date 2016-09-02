@@ -743,35 +743,45 @@ public class JitsiMeetConference
         Participant leftPeer = findParticipantForChatMember(chatRoomMember);
         if (leftPeer != null)
         {
-            JingleSession peerJingleSession = leftPeer.getJingleSession();
-            if (peerJingleSession != null)
-            {
-                logger.info("Hanging up member " + contactAddress);
-
-                jingle.terminateSession(peerJingleSession, Reason.GONE, null);
-
-                removeSSRCs(
-                        peerJingleSession,
-                        leftPeer.getSSRCsCopy(),
-                        leftPeer.getSSRCGroupsCopy(),
-                        false /* no JVB update - will expire */);
-
-                expireParticipantChannels(colibriConference, leftPeer);
-            }
-
-            boolean removed = participants.remove(leftPeer);
-            logger.info(
-                    "Removed participant: " + removed + ", " + contactAddress);
+            terminateParticipant(leftPeer, Reason.GONE, null);
         }
         else
         {
-            logger.error("Member not found for " + contactAddress);
+            logger.warn(
+                    "Participant not found for " + contactAddress
+                        + " terminated already or never started ?");
         }
 
         if (participants.size() == 0)
         {
             stop();
         }
+    }
+
+    private void terminateParticipant(Participant    participant,
+                                      Reason         reason,
+                                      String         message)
+    {
+        String contactAddress = participant.getMucJid();
+        JingleSession peerJingleSession = participant.getJingleSession();
+        if (peerJingleSession != null)
+        {
+            logger.info("Terminating: " + contactAddress);
+
+            jingle.terminateSession(peerJingleSession, reason, message);
+
+            removeSSRCs(
+                    peerJingleSession,
+                    participant.getSSRCsCopy(),
+                    participant.getSSRCGroupsCopy(),
+                    false /* no JVB update - will expire */);
+
+            expireParticipantChannels(colibriConference, participant);
+        }
+
+        boolean removed = participants.remove(participant);
+        logger.info(
+            "Removed participant: " + removed + ", " + contactAddress);
     }
 
     /**
