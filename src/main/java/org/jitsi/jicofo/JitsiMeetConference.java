@@ -163,6 +163,11 @@ public class JitsiMeetConference
     private final List<Participant> participants = new CopyOnWriteArrayList<>();
 
     /**
+     * This lock is used to synchronise write access to {@link #participants}.
+     */
+    private final Object participantLock = new Object();
+
+    /**
      * Takes care of conference recording.
      */
     private JitsiMeetRecording recording;
@@ -427,45 +432,51 @@ public class JitsiMeetConference
      */
     protected void onMemberJoined(final ChatRoomMember chatRoomMember)
     {
-        logger.info(
-            "Member " + chatRoomMember.getContactAddress() + " joined.");
-
-        if (!isFocusMember(chatRoomMember))
+        synchronized (participantLock)
         {
-            idleTimestamp = -1;
-        }
+            logger.info(
+                    "Member "
+                        + chatRoomMember.getContactAddress() + " joined.");
 
-        // Are we ready to start ?
-        if (!checkAtLeastTwoParticipants())
-        {
-            return;
-        }
-
-        synchronized (colibriConfSyncRoot)
-        {
-            if (colibriConference == null)
+            if (!isFocusMember(chatRoomMember))
             {
-                initNewColibriConference();
+                idleTimestamp = -1;
             }
-        }
 
-        // Invite all not invited yet
-        if (participants.size() == 0)
-        {
-            for (final ChatRoomMember member : chatRoom.getMembers())
+            // Are we ready to start ?
+            if (!checkAtLeastTwoParticipants())
             {
-                final boolean[] startMuted
-                    = hasToStartMuted(
+                return;
+            }
+
+            synchronized (colibriConfSyncRoot)
+            {
+                if (colibriConference == null)
+                {
+                    initNewColibriConference();
+                }
+            }
+
+            // Invite all not invited yet
+            if (participants.size() == 0)
+            {
+                for (final ChatRoomMember member : chatRoom.getMembers())
+                {
+                    final boolean[] startMuted
+                        = hasToStartMuted(
                             member, member == chatRoomMember /* justJoined */);
 
-                inviteChatMember(member, startMuted, colibriConference);
+                    inviteChatMember(member, startMuted, colibriConference);
+                }
             }
-        }
-        // Only the one who has just joined
-        else
-        {
-            final boolean[] startMuted = hasToStartMuted(chatRoomMember, true);
-            inviteChatMember(chatRoomMember, startMuted, colibriConference);
+            // Only the one who has just joined
+            else
+            {
+                final boolean[] startMuted
+                    = hasToStartMuted(chatRoomMember, true);
+
+                inviteChatMember(chatRoomMember, startMuted, colibriConference);
+            }
         }
     }
 
@@ -708,24 +719,13 @@ public class JitsiMeetConference
      */
     protected void onMemberKicked(ChatRoomMember chatRoomMember)
     {
-        logger.info(
-            "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
-        /*
-        FIXME: terminate will have no effect, as peer's MUC address
-         will be no longer active.
-        Participant session = findParticipantForChatMember(chatRoomMember);
-        if (session != null)
+        synchronized (participantLock)
         {
-            jingle.terminateSession(
-                session.getJingleSession(), Reason.EXPIRED);
-        }
-        else
-        {
-            logger.warn("No active session with "
-                            + chatRoomMember.getContactAddress());
-        }*/
+            logger.info(
+                "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
 
-        onMemberLeft(chatRoomMember);
+            onMemberLeft(chatRoomMember);
+        }
     }
 
     /**
@@ -736,25 +736,28 @@ public class JitsiMeetConference
      */
     protected void onMemberLeft(ChatRoomMember chatRoomMember)
     {
-        String contactAddress = chatRoomMember.getContactAddress();
-
-        logger.info("Member " + contactAddress + " is leaving");
-
-        Participant leftPeer = findParticipantForChatMember(chatRoomMember);
-        if (leftPeer != null)
+        synchronized (participantLock)
         {
-            terminateParticipant(leftPeer, Reason.GONE, null);
-        }
-        else
-        {
-            logger.warn(
-                    "Participant not found for " + contactAddress
-                        + " terminated already or never started ?");
-        }
+            String contactAddress = chatRoomMember.getContactAddress();
 
-        if (participants.size() == 0)
-        {
-            stop();
+            logger.info("Member " + contactAddress + " is leaving");
+
+            Participant leftPeer = findParticipantForChatMember(chatRoomMember);
+            if (leftPeer != null)
+            {
+                terminateParticipant(leftPeer, Reason.GONE, null);
+            }
+            else
+            {
+                logger.warn(
+                        "Participant not found for " + contactAddress
+                            + " terminated already or never started ?");
+            }
+
+            if (participants.size() == 0)
+            {
+                stop();
+            }
         }
     }
 
