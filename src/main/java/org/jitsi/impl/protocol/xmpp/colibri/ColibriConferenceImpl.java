@@ -245,9 +245,22 @@ public class ColibriConferenceImpl
             }
             else if (response.getError() != null)
             {
-                throw new OperationFailedException(
-                    "Failed to allocate colibri channels: " + response.toXML(),
-                    OperationFailedException.GENERAL_ERROR);
+                XMPPError error = response.getError();
+                if (XMPPError.Condition
+                        .bad_request.toString().equals(error.getCondition()))
+                {
+                    throw new OperationFailedException(
+                        "Failed to allocate colibri channels - bad request: "
+                            + response.toXML(),
+                        OperationFailedException.ILLEGAL_ARGUMENT);
+                }
+                else
+                {
+                    throw new OperationFailedException(
+                        "Failed to allocate colibri channels: "
+                            + response.toXML(),
+                        OperationFailedException.GENERAL_ERROR);
+                }
             }
             else if (!(response instanceof ColibriConferenceIQ))
             {
