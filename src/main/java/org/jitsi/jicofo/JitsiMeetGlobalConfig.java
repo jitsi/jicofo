@@ -48,9 +48,21 @@ public class JitsiMeetGlobalConfig
         = "org.jitsi.jicofo.MAX_SSRC_PER_USER";
 
     /**
+     * The name of configuration property that sets
+     * {@link #singleParticipantTimeout}.
+     */
+    private final static String SINGLE_PARTICIPANT_TIMEOUT_CONFIG_PNAME
+        = "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT";
+
+    /**
      * The default value for {@link #maxSSRCsPerUser}.
      */
     private final static int DEFAULT_MAX_SSRC_PER_USER = 20;
+
+    /**
+     * The default value for {@link #singleParticipantTimeout}.
+     */
+    private final static long DEFAULT_SINGLE_PARTICIPANT_TIMEOUT = 20000;
 
     /**
      * The name of the config property which specifies how long we're going to
@@ -83,6 +95,16 @@ public class JitsiMeetGlobalConfig
      * conference participant.
      */
     private int maxSSRCsPerUser;
+
+    /**
+     * Tells how long participant's media session will be kept alive once it
+     * remains the only person in the room - which means that nobody is
+     * receiving his/her media. This participant could be timed out immediately
+     * as well, but we don't want to reallocate channels when the other peer is
+     * only reloading his/her page. The value is amount of time measured in
+     * milliseconds.
+     */
+    private long singleParticipantTimeout;
 
     /**
      * OSGi service registration instance.
@@ -166,6 +188,15 @@ public class JitsiMeetGlobalConfig
         {
             logger.warn("Jibri PENDING timeouts are disabled");
         }
+
+        singleParticipantTimeout
+            = configService.getLong(
+                    SINGLE_PARTICIPANT_TIMEOUT_CONFIG_PNAME,
+                    DEFAULT_SINGLE_PARTICIPANT_TIMEOUT);
+
+        logger.info(
+                "Lonely participants will be \"terminated\" after "
+                    + singleParticipantTimeout +" milliseconds");
     }
 
     /**
@@ -189,6 +220,16 @@ public class JitsiMeetGlobalConfig
     public int getMaxSSRCsPerUser()
     {
         return maxSSRCsPerUser;
+    }
+
+    /**
+     * Gets the value for "single participant timeout".
+     * @return the value in milliseconds.
+     * @see #singleParticipantTimeout
+     */
+    public long getSingleParticipantTimeout()
+    {
+        return singleParticipantTimeout;
     }
 
     /**

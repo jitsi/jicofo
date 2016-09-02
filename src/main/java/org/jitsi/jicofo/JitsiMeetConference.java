@@ -1731,7 +1731,7 @@ public class JitsiMeetConference
         {
             cancelSinglePeerTimeout();
 
-            long timeout = 5000;
+            long timeout = globalConfig.getSingleParticipantTimeout();
 
             this.singleParticipantTout
                 = this.executor.schedule(
