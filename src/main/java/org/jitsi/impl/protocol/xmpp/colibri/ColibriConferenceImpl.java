@@ -84,6 +84,20 @@ public class ColibriConferenceImpl
         = new ConferenceCreationSemaphore();
 
     /**
+     * The error code produced by the allocator thread which is to be passed to
+     * the waiting threads, so that they will throw
+     * {@link OperationFailedException} consistent with the allocator thread.
+     */
+    private int allocChannelsErrorCode = -1;
+
+    /**
+     * The error message produced by the allocator thread which is to be passed
+     * to the waiting threads, so that they will throw
+     * {@link OperationFailedException} consistent with the allocator thread.
+     */
+    private String allocChannelsErrorMsg = null;
+
+    /**
      * Utility used for building Colibri queries.
      */
     private final ColibriBuilder colibriBuilder
@@ -236,26 +250,9 @@ public class ColibriConferenceImpl
                     Thread.currentThread() +
                         " - have alloc response? " + (response != null));
 
-            if (response == null)
-            {
-                throw new OperationFailedException(
-                    "Failed to allocate colibri channels: response is null."
-                        + " Maybe the response timed out.",
-                    OperationFailedException.NETWORK_FAILURE);
-            }
-            else if (response.getError() != null)
-            {
-                throw new OperationFailedException(
-                    "Failed to allocate colibri channels: " + response.toXML(),
-                    OperationFailedException.GENERAL_ERROR);
-            }
-            else if (!(response instanceof ColibriConferenceIQ))
-            {
-                throw new OperationFailedException(
-                    "Failed to allocate colibri channels: response is not a"
-                        + " colibri conference",
-                    OperationFailedException.GENERAL_ERROR);
-            }
+            // Verify the response and throw OperationFailedException
+            // if it's not a success
+            maybeThrowOperationFailed(response);
 
             boolean conferenceExisted = getConferenceId() != null;
 
@@ -290,6 +287,71 @@ public class ColibriConferenceImpl
         {
             releaseCreateConferenceSemaphore(endpointName);
         }
+    }
+
+    /**
+     * Verifies the JVB's response to allocate channel request and sets
+     * {@link #allocChannelsErrorCode} and {@link #allocChannelsErrorMsg}.
+     *
+     * @param response the packet received from JVB(null == timeout) as
+     *                 a response to Colibri allocate channels request.
+     *
+     * @throws OperationFailedException with error code set to:
+     * <li>{@link OperationFailedException#NETWORK_FAILURE}</li> in case of
+     * a timeout.
+     * <li>{@link OperationFailedException#ILLEGAL_ARGUMENT}</li> in case of
+     * "bad request" response returned by the JVB
+     * <li>{@link OperationFailedException#GENERAL_ERROR}</li> in case of other
+     * error that may indicate that the JVB instance is faulty.
+     *
+     */
+    private void maybeThrowOperationFailed(Packet response)
+        throws OperationFailedException
+    {
+        if (response == null)
+        {
+            allocChannelsErrorCode
+                = OperationFailedException.NETWORK_FAILURE;
+            allocChannelsErrorMsg
+                = "Failed to allocate colibri channels: response is null."
+                + " Maybe the response timed out.";
+        }
+        else if (response.getError() != null)
+        {
+            XMPPError error = response.getError();
+            if (XMPPError.Condition
+                    .bad_request.toString().equals(error.getCondition()))
+            {
+                allocChannelsErrorCode
+                    = OperationFailedException.ILLEGAL_ARGUMENT;
+                allocChannelsErrorMsg
+                    = "Failed to allocate colibri channels - bad request: "
+                            + response.toXML();
+            }
+            else
+            {
+                allocChannelsErrorCode = OperationFailedException.GENERAL_ERROR;
+                allocChannelsErrorMsg
+                    = "Failed to allocate colibri channels: "
+                            + response.toXML();
+            }
+        }
+        else if (!(response instanceof ColibriConferenceIQ))
+        {
+            allocChannelsErrorCode = OperationFailedException.GENERAL_ERROR;
+            allocChannelsErrorMsg
+                = "Failed to allocate colibri channels: response is not a"
+                        + " colibri conference";
+        }
+        else
+        {
+            allocChannelsErrorCode = -1;
+            allocChannelsErrorMsg = null;
+        }
+
+        if (allocChannelsErrorCode != -1)
+            throw new OperationFailedException(
+                    allocChannelsErrorMsg, allocChannelsErrorCode);
     }
 
     /**
@@ -834,9 +896,10 @@ public class ColibriConferenceImpl
                     if (conferenceState.getID() == null)
                     {
                         throw new OperationFailedException(
-                            "Creator thread has failed to " +
-                                "allocate channels on: " + jvbInUse,
-                            OperationFailedException.GENERAL_ERROR);
+                            "Creator thread has failed to "
+                                + "allocate channels on: " + jvbInUse
+                                + ", msg: " + allocChannelsErrorMsg,
+                            allocChannelsErrorCode);
                     }
 
                     if (logger.isDebugEnabled())

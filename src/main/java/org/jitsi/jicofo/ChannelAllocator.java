@@ -416,7 +416,16 @@ public class ChannelAllocator implements Runnable
                         "Failed to allocate channels using bridge: " + jvb,
                         exc);
 
-                bridgeSelector.updateBridgeOperationalStatus(jvb, false);
+                // ILLEGAL_ARGUMENT == BAD_REQUEST(XMPP)
+                // It usually means that Jicofo's conference state got out of
+                // sync with the one of the bridge. The easiest thing to do here
+                // is to restart the conference. It does not mean that
+                // the bridge is faulty though.
+                if (OperationFailedException.ILLEGAL_ARGUMENT
+                        != exc.getErrorCode())
+                {
+                    bridgeSelector.updateBridgeOperationalStatus(jvb, false);
+                }
 
                 // Check if the conference is in progress
                 if (!StringUtils.isNullOrEmpty(
