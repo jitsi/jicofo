@@ -511,14 +511,20 @@ public class ChatRoomImpl
     @Override
     public List<ChatRoomMember> getMembers()
     {
-        return new ArrayList<ChatRoomMember>(members.values());
+        synchronized (members)
+        {
+            return new ArrayList<ChatRoomMember>(members.values());
+        }
     }
 
     @Override
     public XmppChatMember findChatMember(String mucJid)
     {
-        ArrayList<ChatMemberImpl> copy
-            = new ArrayList<ChatMemberImpl>(members.values());
+        ArrayList<ChatMemberImpl> copy;
+        synchronized (members)
+        {
+            copy = new ArrayList<>(members.values());
+        }
 
         for (ChatMemberImpl member : copy)
         {
