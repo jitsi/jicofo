@@ -1283,6 +1283,9 @@ public class ChatRoomImpl
                             "Presence for not existing member: "
                                 + presence.toXML());
 
+                    // Note that this access to #presenceCache is not protected
+                    // by a lock on #members (as opposed to the other places
+                    // where #precenceCache is accessed).
                     presenceCache.put(presence.getFrom(), presence);
                 }
             }
