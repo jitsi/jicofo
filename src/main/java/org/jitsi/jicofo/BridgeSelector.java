@@ -231,8 +231,11 @@ public class BridgeSelector
      */
     private List<BridgeState> getPrioritizedBridgesList()
     {
-        ArrayList<BridgeState> bridgeList = new ArrayList<>(bridges.values());
-
+        ArrayList<BridgeState> bridgeList;
+        synchronized (this)
+        {
+            bridgeList = new ArrayList<>(bridges.values());
+        }
         Collections.sort(bridgeList);
 
         Iterator<BridgeState> bridgesIter = bridgeList.iterator();
@@ -463,7 +466,7 @@ public class BridgeSelector
      * Returns the number of JVBs known to this bridge selector. Not all of them
      * have to be operational.
      */
-    public int getKnownBridgesCount()
+    synchronized public int getKnownBridgesCount()
     {
         return bridges.size();
     }
