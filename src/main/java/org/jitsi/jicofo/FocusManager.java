@@ -125,7 +125,7 @@ public class FocusManager
      *
      * Note that access to this field is almost always protected by a lock on
      * {@code this}. However, {@link #getConferenceCount()} executes
-     * {@link Map#size(Object)} on it, which wouldn't be safe with a
+     * {@link Map#size()} on it, which wouldn't be safe with a
      * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
      * I've chosen this solution, because I don't know whether the cleaner
      * solution of synchronizing on {@code #this} in
