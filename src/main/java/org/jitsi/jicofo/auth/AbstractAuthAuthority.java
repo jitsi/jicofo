@@ -83,8 +83,8 @@ public abstract class AbstractAuthAuthority
     /**
      * The map of user JIDs to {@link AuthenticationSession}.
      */
-    private Map<String, AuthenticationSession> authenticationSessions
-            = new HashMap<String, AuthenticationSession>();
+    private final Map<String, AuthenticationSession> authenticationSessions
+            = new ConcurrentHashMap<>();
 
     /**
      * The list of registered {@link AuthenticationListener}s.
@@ -195,12 +195,15 @@ public abstract class AbstractAuthAuthority
      */
     private UUID createNonExistingUUID()
     {
-        UUID uuid = UUID.randomUUID();
-        while (authenticationSessions.containsKey(uuid.toString()))
+        synchronized (syncRoot)
         {
-            uuid = UUID.randomUUID();
+            UUID uuid = UUID.randomUUID();
+            while (authenticationSessions.containsKey(uuid.toString()))
+            {
+                uuid = UUID.randomUUID();
+            }
+            return uuid;
         }
-        return uuid;
     }
 
     /**

@@ -58,7 +58,8 @@ public class ChatRoomImpl
      * Caches early presence packets triggered by Smack, before there was member
      * joined event.
      */
-    private Map<String, Presence> presenceCache = new HashMap<>();
+    private final Map<String, Presence> presenceCache
+        = new ConcurrentHashMap<>();
 
     /**
      * Chat room name.
@@ -511,14 +512,20 @@ public class ChatRoomImpl
     @Override
     public List<ChatRoomMember> getMembers()
     {
-        return new ArrayList<ChatRoomMember>(members.values());
+        synchronized (members)
+        {
+            return new ArrayList<ChatRoomMember>(members.values());
+        }
     }
 
     @Override
     public XmppChatMember findChatMember(String mucJid)
     {
-        ArrayList<ChatMemberImpl> copy
-            = new ArrayList<ChatMemberImpl>(members.values());
+        ArrayList<ChatMemberImpl> copy;
+        synchronized (members)
+        {
+            copy = new ArrayList<>(members.values());
+        }
 
         for (ChatMemberImpl member : copy)
         {
@@ -895,21 +902,25 @@ public class ChatRoomImpl
     {
         ChatMemberImpl newMember;
 
-        if (members.containsKey(participant))
+        synchronized (members)
         {
-            logger.error(participant + " already in " + roomName);
-            return null;
+            if (members.containsKey(participant))
+            {
+                logger.error(participant + " already in " + roomName);
+                return null;
+            }
+
+            if(!participant.equals(myMucAddress))
+            {
+                participantNumber++;
+            }
+
+            newMember
+                = new ChatMemberImpl(participant, ChatRoomImpl.this,
+                        participantNumber);
+
+            members.put(participant, newMember);
         }
-
-        if(!participant.equals(myMucAddress))
-        {
-            participantNumber++;
-        }
-
-        newMember = new ChatMemberImpl(participant, ChatRoomImpl.this,
-            participantNumber);
-
-        members.put(participant, newMember);
 
         return newMember;
     }
@@ -978,14 +989,17 @@ public class ChatRoomImpl
 
         private ChatMemberImpl removeMember(String participant)
         {
-            ChatMemberImpl removed = members.remove(participant);
+            synchronized (members)
+            {
+                ChatMemberImpl removed = members.remove(participant);
 
-            if (removed == null)
-                logger.error(participant + " not in " + roomName);
+                if (removed == null)
+                    logger.error(participant + " not in " + roomName);
 
-            participantNumber--;
+                participantNumber--;
 
-            return removed;
+                return removed;
+            }
         }
 
         @Override
