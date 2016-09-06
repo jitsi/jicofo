@@ -82,9 +82,17 @@ public abstract class AbstractAuthAuthority
 
     /**
      * The map of user JIDs to {@link AuthenticationSession}.
+     *
+     * Note that access to this field is almost always protected by a lock on
+     * {@link #syncRoot}. However, {@link #getSession(String)} executes
+     * {@link Map#get(Object)} on it, which wouldn't be safe with a
+     * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
+     * I've chosen this solution, because I don't know whether the cleaner
+     * solution of synchronizing on {@link #syncRoot} in
+     * {@link #getSession(String)} is safe.
      */
-    private Map<String, AuthenticationSession> authenticationSessions
-            = new HashMap<String, AuthenticationSession>();
+    private final Map<String, AuthenticationSession> authenticationSessions
+            = new ConcurrentHashMap<>();
 
     /**
      * The list of registered {@link AuthenticationListener}s.
