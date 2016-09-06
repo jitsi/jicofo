@@ -1209,6 +1209,7 @@ public class ChatRoomImpl
          */
         private void processOwnPresence(Presence presence)
         {
+            System.out.println("????????? " + presence);
             MUCUser mucUser = getMUCUserExtension(presence);
 
             if (mucUser != null)
@@ -1252,6 +1253,7 @@ public class ChatRoomImpl
          */
         private void processOtherPresence(Presence presence)
         {
+            System.out.println("????????? --- " + presence);
             ChatMemberImpl chatMember
                 = (ChatMemberImpl) findChatMember(presence.getFrom());
 
