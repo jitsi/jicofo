@@ -163,6 +163,11 @@ public class JitsiMeetConference
     private final List<Participant> participants = new CopyOnWriteArrayList<>();
 
     /**
+     * This lock is used to synchronise write access to {@link #participants}.
+     */
+    private final Object participantLock = new Object();
+
+    /**
      * Takes care of conference recording.
      */
     private JitsiMeetRecording recording;
@@ -191,6 +196,12 @@ public class JitsiMeetConference
     private long idleTimestamp = -1;
 
     /**
+     * A timeout task which will terminate media session of the user who is
+     * sitting alone in the room for too long.
+     */
+    private Future<?> singleParticipantTout;
+
+    /**
      * If the first element is <tt>true</tt> the participant
      * will start audio muted. if the second element is <tt>true</tt> the
      * participant will start video muted.
@@ -207,6 +218,12 @@ public class JitsiMeetConference
      * Bridge <tt>EventHandler</tt> registration.
      */
     private ServiceRegistration<EventHandler> eventHandlerRegistration;
+
+    /**
+     * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
+     * by this <tt>JitsiMeetConference</tt> instance.
+     */
+    private ScheduledExecutorService executor;
 
     /**
      * Creates new instance of {@link JitsiMeetConference}.
@@ -281,6 +298,10 @@ public class JitsiMeetConference
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
+            executor
+                = ServiceUtils.getService(
+                        osgiCtx, ScheduledExecutorService.class);
+
             services
                 = ServiceUtils.getService(osgiCtx, JitsiMeetServices.class);
 
@@ -314,7 +335,7 @@ public class JitsiMeetConference
         }
         catch(Exception e)
         {
-            this.stop();
+            stop();
 
             throw e;
         }
@@ -427,45 +448,54 @@ public class JitsiMeetConference
      */
     protected void onMemberJoined(final ChatRoomMember chatRoomMember)
     {
-        logger.info(
-            "Member " + chatRoomMember.getContactAddress() + " joined.");
-
-        if (!isFocusMember(chatRoomMember))
+        synchronized (participantLock)
         {
-            idleTimestamp = -1;
-        }
+            logger.info(
+                    "Member "
+                        + chatRoomMember.getContactAddress() + " joined.");
 
-        // Are we ready to start ?
-        if (!checkAtLeastTwoParticipants())
-        {
-            return;
-        }
-
-        synchronized (colibriConfSyncRoot)
-        {
-            if (colibriConference == null)
+            if (!isFocusMember(chatRoomMember))
             {
-                initNewColibriConference();
+                idleTimestamp = -1;
             }
-        }
 
-        // Invite all not invited yet
-        if (participants.size() == 0)
-        {
-            for (final ChatRoomMember member : chatRoom.getMembers())
+            // Are we ready to start ?
+            if (!checkAtLeastTwoParticipants())
             {
-                final boolean[] startMuted
-                    = hasToStartMuted(
+                return;
+            }
+
+            // Cancel single participant timeout when someone joins ?
+            cancelSinglePeerTimeout();
+
+            synchronized (colibriConfSyncRoot)
+            {
+                if (colibriConference == null)
+                {
+                    initNewColibriConference();
+                }
+            }
+
+            // Invite all not invited yet
+            if (participants.size() == 0)
+            {
+                for (final ChatRoomMember member : chatRoom.getMembers())
+                {
+                    final boolean[] startMuted
+                        = hasToStartMuted(
                             member, member == chatRoomMember /* justJoined */);
 
-                inviteChatMember(member, startMuted, colibriConference);
+                    inviteChatMember(member, startMuted, colibriConference);
+                }
             }
-        }
-        // Only the one who has just joined
-        else
-        {
-            final boolean[] startMuted = hasToStartMuted(chatRoomMember, true);
-            inviteChatMember(chatRoomMember, startMuted, colibriConference);
+            // Only the one who has just joined
+            else
+            {
+                final boolean[] startMuted
+                    = hasToStartMuted(chatRoomMember, true);
+
+                inviteChatMember(chatRoomMember, startMuted, colibriConference);
+            }
         }
     }
 
@@ -568,7 +598,7 @@ public class JitsiMeetConference
 
         if(!startMuted[0])
         {
-            Integer startAudioMuted = this.config.getAudioMuted();
+            Integer startAudioMuted = config.getAudioMuted();
             if(startAudioMuted != null)
             {
                 startMuted[0] = (participantNumber > startAudioMuted);
@@ -577,7 +607,7 @@ public class JitsiMeetConference
 
         if(!startMuted[1])
         {
-            Integer startVideoMuted = this.config.getVideoMuted();
+            Integer startVideoMuted = config.getVideoMuted();
             if(startVideoMuted != null)
             {
                 startMuted[1] = (participantNumber > startVideoMuted);
@@ -684,6 +714,9 @@ public class JitsiMeetConference
             recording = null;
         }
 
+        // If the conference is being disposed the timeout is not needed anymore
+        cancelSinglePeerTimeout();
+
         if (colibriConference != null)
         {
             // We will not expire channels if the bridge is faulty or
@@ -708,24 +741,13 @@ public class JitsiMeetConference
      */
     protected void onMemberKicked(ChatRoomMember chatRoomMember)
     {
-        logger.info(
-            "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
-        /*
-        FIXME: terminate will have no effect, as peer's MUC address
-         will be no longer active.
-        Participant session = findParticipantForChatMember(chatRoomMember);
-        if (session != null)
+        synchronized (participantLock)
         {
-            jingle.terminateSession(
-                session.getJingleSession(), Reason.EXPIRED);
-        }
-        else
-        {
-            logger.warn("No active session with "
-                            + chatRoomMember.getContactAddress());
-        }*/
+            logger.info(
+                "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
 
-        onMemberLeft(chatRoomMember);
+            onMemberLeft(chatRoomMember);
+        }
     }
 
     /**
@@ -736,42 +758,59 @@ public class JitsiMeetConference
      */
     protected void onMemberLeft(ChatRoomMember chatRoomMember)
     {
-        String contactAddress = chatRoomMember.getContactAddress();
-
-        logger.info("Member " + contactAddress + " is leaving");
-
-        Participant leftPeer = findParticipantForChatMember(chatRoomMember);
-        if (leftPeer != null)
+        synchronized (participantLock)
         {
-            JingleSession peerJingleSession = leftPeer.getJingleSession();
-            if (peerJingleSession != null)
+            String contactAddress = chatRoomMember.getContactAddress();
+
+            logger.info("Member " + contactAddress + " is leaving");
+
+            Participant leftPeer = findParticipantForChatMember(chatRoomMember);
+            if (leftPeer != null)
             {
-                logger.info("Hanging up member " + contactAddress);
-
-                jingle.terminateSession(peerJingleSession, Reason.GONE);
-
-                removeSSRCs(
-                        peerJingleSession,
-                        leftPeer.getSSRCsCopy(),
-                        leftPeer.getSSRCGroupsCopy(),
-                        false /* no JVB update - will expire */);
-
-                expireParticipantChannels(colibriConference, leftPeer);
+                terminateParticipant(leftPeer, Reason.GONE, null);
+            }
+            else
+            {
+                logger.warn(
+                        "Participant not found for " + contactAddress
+                            + " terminated already or never started ?");
             }
 
-            boolean removed = participants.remove(leftPeer);
-            logger.info(
-                    "Removed participant: " + removed + ", " + contactAddress);
+            if (participants.size() == 1)
+            {
+                rescheduleSinglePeerTimeout();
+            }
+            else if (participants.size() == 0)
+            {
+                stop();
+            }
         }
-        else
+    }
+
+    private void terminateParticipant(Participant    participant,
+                                      Reason         reason,
+                                      String         message)
+    {
+        String contactAddress = participant.getMucJid();
+        JingleSession peerJingleSession = participant.getJingleSession();
+        if (peerJingleSession != null)
         {
-            logger.error("Member not found for " + contactAddress);
+            logger.info("Terminating: " + contactAddress);
+
+            jingle.terminateSession(peerJingleSession, reason, message);
+
+            removeSSRCs(
+                    peerJingleSession,
+                    participant.getSSRCsCopy(),
+                    participant.getSSRCGroupsCopy(),
+                    false /* no JVB update - will expire */);
+
+            expireParticipantChannels(colibriConference, participant);
         }
 
-        if (participants.size() == 0)
-        {
-            stop();
-        }
+        boolean removed = participants.remove(participant);
+        logger.info(
+            "Removed participant: " + removed + ", " + contactAddress);
     }
 
     /**
@@ -1673,13 +1712,90 @@ public class JitsiMeetConference
     private String createSharedDocumentName()
     {
         String sharedDocumentName;
-        if (this.config.useRoomAsSharedDocName())
+        if (config.useRoomAsSharedDocName())
             sharedDocumentName
-                = MucUtil.extractName(this.roomName.toLowerCase());
+                = MucUtil.extractName(roomName.toLowerCase());
         else
            sharedDocumentName
                    = UUID.randomUUID().toString().replaceAll("-", "");
 
         return sharedDocumentName;
+    }
+
+    /**
+     * (Re)schedules {@link SinglePersonTimeout}.
+     */
+    private void rescheduleSinglePeerTimeout()
+    {
+        if (executor != null)
+        {
+            cancelSinglePeerTimeout();
+
+            long timeout = globalConfig.getSingleParticipantTimeout();
+
+            singleParticipantTout
+                = executor.schedule(
+                        new SinglePersonTimeout(),
+                        timeout, TimeUnit.MILLISECONDS);
+
+            logger.debug(
+                    "Scheduled single person timeout for " + getRoomName());
+        }
+    }
+
+    /**
+     * Cancels {@link SinglePersonTimeout}.
+     */
+    private void cancelSinglePeerTimeout()
+    {
+        if (executor != null && singleParticipantTout != null)
+        {
+            // This log is printed also when it's executed by the timeout thread
+            // itself
+            logger.debug(
+                "Cancelling single person timeout in room: " + getRoomName());
+
+            singleParticipantTout.cancel(false);
+            singleParticipantTout = null;
+        }
+    }
+
+    /**
+     * The task is scheduled with some delay when we end up with single
+     * <tt>Participant</tt> in the room to terminate it's media session. There
+     * is no point in streaming media to the videobridge and using
+     * the bandwidth when nobody is receiving it.
+     */
+    private class SinglePersonTimeout
+        implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    Participant p = participants.get(0);
+                    logger.info(
+                            "Timing out single participant: " + p.getMucJid());
+
+                    terminateParticipant(
+                            p, Reason.EXPIRED, "Idle session timeout");
+
+                    synchronized (colibriConfSyncRoot)
+                    {
+                        disposeConference();
+                    }
+                }
+                else
+                {
+                    logger.error(
+                        "Should never execute if more than 1 participant ? "
+                            + getRoomName());
+                }
+                singleParticipantTout = null;
+            }
+        }
     }
 }
