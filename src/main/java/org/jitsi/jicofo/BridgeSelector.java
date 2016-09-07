@@ -231,8 +231,11 @@ public class BridgeSelector
      */
     private List<BridgeState> getPrioritizedBridgesList()
     {
-        ArrayList<BridgeState> bridgeList = new ArrayList<>(bridges.values());
-
+        ArrayList<BridgeState> bridgeList;
+        synchronized (this)
+        {
+            bridgeList = new ArrayList<>(bridges.values());
+        }
         Collections.sort(bridgeList);
 
         Iterator<BridgeState> bridgesIter = bridgeList.iterator();
@@ -290,7 +293,7 @@ public class BridgeSelector
      *
      * @return <tt>BridgeState</tt> for given pub-sub node name.
      */
-    private BridgeState findBridgeForNode(String pubSubNode)
+    private synchronized BridgeState findBridgeForNode(String pubSubNode)
     {
         String bridgeJid = pubSubToBridge.get(pubSubNode);
         if (bridgeJid != null)
@@ -308,7 +311,7 @@ public class BridgeSelector
      *
      * @return name of pub-sub node mapped for given videobridge JID.
      */
-    private String findNodeForBridge(String bridgeJid)
+    private synchronized String findNodeForBridge(String bridgeJid)
     {
         for (Map.Entry<String, String> psNodeToBridge
             : pubSubToBridge.entrySet())
@@ -463,7 +466,7 @@ public class BridgeSelector
      * Returns the number of JVBs known to this bridge selector. Not all of them
      * have to be operational.
      */
-    public int getKnownBridgesCount()
+    synchronized public int getKnownBridgesCount()
     {
         return bridges.size();
     }

@@ -33,6 +33,7 @@ import org.jivesoftware.smack.provider.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -117,13 +118,21 @@ public class FocusManager
     /**
      * The thread that expires {@link JitsiMeetConference}s.
      */
-    private FocusExpireThread expireThread = new FocusExpireThread();
+    private final FocusExpireThread expireThread = new FocusExpireThread();
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
+     *
+     * Note that access to this field is almost always protected by a lock on
+     * {@code this}. However, {@link #getConferenceCount()} executes
+     * {@link Map#size()} on it, which wouldn't be safe with a
+     * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
+     * I've chosen this solution, because I don't know whether the cleaner
+     * solution of synchronizing on {@code #this} in
+     * {@link #getConferenceCount()} is safe.
      */
-    private Map<String, JitsiMeetConference> conferences
-        = new HashMap<String, JitsiMeetConference>();
+    private final Map<String, JitsiMeetConference> conferences
+        = new ConcurrentHashMap<>();
 
     // Convert to list when needed
     /**
@@ -287,7 +296,8 @@ public class FocusManager
      *
      * @throws Exception if any error occurs.
      */
-    private void createConference(String room, Map<String, String> properties)
+    private synchronized void createConference(
+            String room, Map<String, String> properties)
         throws Exception
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
@@ -436,7 +446,7 @@ public class FocusManager
         maybeDoShutdown();
     }
 
-    private void maybeDoShutdown()
+    private synchronized void maybeDoShutdown()
     {
         if (shutdownInProgress && conferences.isEmpty())
         {
@@ -633,8 +643,7 @@ public class FocusManager
                     ArrayList<JitsiMeetConference> conferenceCopy;
                     synchronized (FocusManager.this)
                     {
-                        conferenceCopy = new ArrayList<JitsiMeetConference>(
-                            conferences.values());
+                        conferenceCopy = new ArrayList<>(conferences.values());
                     }
 
                     // Loop over conferences
