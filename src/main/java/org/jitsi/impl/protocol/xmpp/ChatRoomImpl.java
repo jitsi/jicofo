@@ -157,28 +157,24 @@ public class ChatRoomImpl
             public void run() {
                 cleanOfflineParticipants();
             }
-        }, 0, 5, TimeUnit.SECONDS);
+        }, 0, 2, TimeUnit.SECONDS);
     }
 
     private void cleanOfflineParticipants() {
-        System.out.println("?????????????? !!!");
-
-        ArrayList<ChatMemberImpl> copy  = new ArrayList<ChatMemberImpl>(members.values());
         long currentTime = System.currentTimeMillis();
 
-        for (ChatMemberImpl member : copy)
+        // бегаем без синхронизации
+        for (ChatMemberImpl member : members.values())
         {
             long lastPresenceTime = member.getPresenceTime();
             if (lastPresenceTime == 0) {
                 continue;
             }
 
-            if (currentTime - lastPresenceTime > 5000L)
+            if (currentTime - lastPresenceTime > TimeUnit.SECONDS.toMillis(10))
             {
                 logger.info("This participant died: " + member);
                 this.memberListener.left(member.getContactAddress());
-            } else {
-                System.out.println("?????????????? ok");
             }
         }
     }
