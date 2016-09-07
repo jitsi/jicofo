@@ -335,7 +335,7 @@ public class JitsiMeetConference
         }
         catch(Exception e)
         {
-            this.stop();
+            stop();
 
             throw e;
         }
@@ -598,7 +598,7 @@ public class JitsiMeetConference
 
         if(!startMuted[0])
         {
-            Integer startAudioMuted = this.config.getAudioMuted();
+            Integer startAudioMuted = config.getAudioMuted();
             if(startAudioMuted != null)
             {
                 startMuted[0] = (participantNumber > startAudioMuted);
@@ -607,7 +607,7 @@ public class JitsiMeetConference
 
         if(!startMuted[1])
         {
-            Integer startVideoMuted = this.config.getVideoMuted();
+            Integer startVideoMuted = config.getVideoMuted();
             if(startVideoMuted != null)
             {
                 startMuted[1] = (participantNumber > startVideoMuted);
@@ -1712,9 +1712,9 @@ public class JitsiMeetConference
     private String createSharedDocumentName()
     {
         String sharedDocumentName;
-        if (this.config.useRoomAsSharedDocName())
+        if (config.useRoomAsSharedDocName())
             sharedDocumentName
-                = MucUtil.extractName(this.roomName.toLowerCase());
+                = MucUtil.extractName(roomName.toLowerCase());
         else
            sharedDocumentName
                    = UUID.randomUUID().toString().replaceAll("-", "");
@@ -1727,14 +1727,14 @@ public class JitsiMeetConference
      */
     private void rescheduleSinglePeerTimeout()
     {
-        if (this.executor != null)
+        if (executor != null)
         {
             cancelSinglePeerTimeout();
 
             long timeout = globalConfig.getSingleParticipantTimeout();
 
-            this.singleParticipantTout
-                = this.executor.schedule(
+            singleParticipantTout
+                = executor.schedule(
                         new SinglePersonTimeout(),
                         timeout, TimeUnit.MILLISECONDS);
 
