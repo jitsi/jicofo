@@ -127,6 +127,8 @@ public class ChatRoomImpl
      */
     private Integer participantNumber = 0;
 
+    private final ScheduledExecutorService offlineCleaner;
+
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
@@ -148,6 +150,37 @@ public class ChatRoomImpl
 
         this.participantListener = new ParticipantListener();
         muc.addParticipantListener(participantListener);
+
+        this.offlineCleaner = Executors.newScheduledThreadPool(1);
+        this.offlineCleaner.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                cleanOfflineParticipants();
+            }
+        }, 0, 5, TimeUnit.SECONDS);
+    }
+
+    private void cleanOfflineParticipants() {
+        System.out.println("?????????????? !!!");
+
+        ArrayList<ChatMemberImpl> copy  = new ArrayList<ChatMemberImpl>(members.values());
+        long currentTime = System.currentTimeMillis();
+
+        for (ChatMemberImpl member : copy)
+        {
+            long lastPresenceTime = member.getPresenceTime();
+            if (lastPresenceTime == 0) {
+                continue;
+            }
+
+            if (currentTime - lastPresenceTime > 5000L)
+            {
+                logger.info("This participant died: " + member);
+                this.memberListener.left(member.getContactAddress());
+            } else {
+                System.out.println("?????????????? ok");
+            }
+        }
     }
 
     @Override
@@ -756,6 +789,8 @@ public class ChatRoomImpl
     @Override
     public boolean destroy(String reason, String alternateAddress)
     {
+        this.offlineCleaner.shutdownNow();
+
         try
         {
             muc.destroy(reason, alternateAddress);
@@ -1209,7 +1244,6 @@ public class ChatRoomImpl
          */
         private void processOwnPresence(Presence presence)
         {
-            System.out.println("????????? " + presence);
             MUCUser mucUser = getMUCUserExtension(presence);
 
             if (mucUser != null)
@@ -1253,7 +1287,6 @@ public class ChatRoomImpl
          */
         private void processOtherPresence(Presence presence)
         {
-            System.out.println("????????? --- " + presence);
             ChatMemberImpl chatMember
                 = (ChatMemberImpl) findChatMember(presence.getFrom());
 

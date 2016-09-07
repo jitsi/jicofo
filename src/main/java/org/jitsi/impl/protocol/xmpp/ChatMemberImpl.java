@@ -76,6 +76,11 @@ public class ChatMemberImpl
     private Presence presence;
 
     /**
+     * Last time when received presence from participant
+     */
+    private long presenceTime = 0;
+
+    /**
      * Indicates whether or not this MUC member is a robot.
      */
     private boolean robot = false;
@@ -109,6 +114,11 @@ public class ChatMemberImpl
     public Presence getPresence()
     {
         return presence;
+    }
+
+    @Override
+    public long getPresenceTime() {
+        return presenceTime;
     }
 
     @Override
@@ -228,6 +238,7 @@ public class ChatMemberImpl
         }
 
         this.presence = presence;
+        this.presenceTime = System.currentTimeMillis();
 
         VideoMutedExtension videoMutedExt
             = (VideoMutedExtension)
