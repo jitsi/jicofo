@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     @BeforeClass
     public static void setUpClass()
@@ -53,8 +53,8 @@ public class LeakingRoomsTest
         String roomName = "testLeaks@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConf = new TestConference();
-        testConf.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConf
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
                 = testConf.getFocusProtocolProvider();
@@ -116,5 +116,7 @@ public class LeakingRoomsTest
         assertEquals(0, testConf.getParticipantCount());
 
         //assertEquals(0, testConf.getMockVideoBridge().getChannelsCount());
+
+        testConf.stop();
     }
 }

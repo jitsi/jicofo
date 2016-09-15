@@ -1,15 +1,16 @@
 package mock.media;
 
-import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.rtp.*;
+import org.jitsi.service.neomedia.stats.*;
 
 import java.awt.*;
+import java.util.*;
 
 /**
  *
  */
 public class MockMediaStreamStats
-    implements MediaStreamStats
+    implements MediaStreamStats2
 {
     @Override
     public double getDownloadJitterMs()
@@ -279,5 +280,47 @@ public class MockMediaStreamStats
     public void addRembListener(REMBListener rembListener)
     {
 
+    }
+
+    @Override
+    public long getSendingBitrate()
+    {
+        return 0;
+    }
+
+    @Override
+    public ReceiveTrackStats getReceiveStats()
+    {
+        return null;
+    }
+
+    @Override
+    public SendTrackStats getSendStats()
+    {
+        return null;
+    }
+
+    @Override
+    public ReceiveTrackStats getReceiveStats(long ssrc)
+    {
+        return null;
+    }
+
+    @Override
+    public SendTrackStats getSendStats(long ssrc)
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends SendTrackStats> getAllSendStats()
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends ReceiveTrackStats> getAllReceiveStats()
+    {
+        return null;
     }
 }

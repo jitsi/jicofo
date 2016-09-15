@@ -21,6 +21,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
@@ -48,12 +49,6 @@ public class ChatRoomRoleAndPresence
         = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
-     * The name of configuration property that disable auto owner role granting.
-     */
-    private final static String DISABLE_AUTO_OWNER_PNAME
-        = "org.jitsi.jicofo.DISABLE_AUTO_OWNER";
-
-    /**
      * The {@link JitsiMeetConference} for which this instance is handling MUC
      * related stuff.
      */
@@ -77,9 +72,9 @@ public class ChatRoomRoleAndPresence
     /**
      * Flag indicates whether auto owner feature is active. First participant to
      * join the room will become conference owner. When the owner leaves the
-     * room next participant be selected as new owner.
+     * room next participant will be selected as new owner.
      */
-    private boolean autoOwner = true;
+    private boolean autoOwner;
 
     /**
      * Current owner(other than the focus itself) of Jitsi Meet conference.
@@ -89,14 +84,9 @@ public class ChatRoomRoleAndPresence
     public ChatRoomRoleAndPresence(JitsiMeetConference conference,
                                    ChatRoom chatRoom)
     {
-        if (conference == null)
-        {
-            throw new NullPointerException("conference");
-        }
-        if (chatRoom == null)
-        {
-            throw new NullPointerException("chatRoom");
-        }
+        Assert.notNull(conference, "conference");
+        Assert.notNull(chatRoom, "chatRoom");
+
         this.conference = conference;
         this.chatRoom = chatRoom;
     }
@@ -106,14 +96,7 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
-        if (FocusBundleActivator.getConfigService()
-                .getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
-        {
-            autoOwner = false;
-        }
-
-        logger.info(
-            "Auto owner feature " + (autoOwner ? "enabled" : "disabled"));
+        autoOwner = conference.getGlobalConfig().isAutoOwnerEnabled();
 
         authAuthority = ServiceUtils.getService(
                 FocusBundleActivator.bundleContext,
@@ -235,6 +218,8 @@ public class ChatRoomRoleAndPresence
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             if (conference.isFocusMember(member)
+                || ((XmppChatMember) member).isRobot()
+                // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
             {
                 continue;
@@ -306,8 +291,13 @@ public class ChatRoomRoleAndPresence
     @Override
     public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
     {
-        logger.info(
-            "Focus role: " + evt.getNewRole() + " init: " + evt.isInitial());
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(
+                    "Focus role: " + evt.getNewRole()
+                        + " init: " + evt.isInitial()
+                        + " room: " + conference.getRoomName());
+        }
 
         focusRole = evt.getNewRole();
         if (!verifyFocusRole())

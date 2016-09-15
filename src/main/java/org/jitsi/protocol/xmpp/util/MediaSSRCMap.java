@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * The map of media <tt>SourcePacketExtension</tt> encapsulates various
@@ -33,15 +34,14 @@ public class MediaSSRCMap
     /**
      * The media SSRC map storage.
      */
-    private Map<String, List<SourcePacketExtension>> ssrcs
-        = new HashMap<String, List<SourcePacketExtension>>();
+    private final Map<String, List<SourcePacketExtension>> ssrcs;
 
     /**
      * Creates new empty instance of <tt>MediaSSRCMap</tt>.
      */
     public MediaSSRCMap()
     {
-        ssrcs = new HashMap<String, List<SourcePacketExtension>>();
+        this(new HashMap<String, List<SourcePacketExtension>>());
     }
 
     /**
@@ -67,7 +67,9 @@ public class MediaSSRCMap
         List<SourcePacketExtension> ssrcList = ssrcs.get(media);
         if (ssrcList == null)
         {
-            ssrcList = new ArrayList<SourcePacketExtension>();
+            // Prevent concurrent modification exception,
+            // when removing duplicates
+            ssrcList = new CopyOnWriteArrayList<>();
             ssrcs.put(media, ssrcList);
         }
         return ssrcList;
@@ -88,9 +90,10 @@ public class MediaSSRCMap
      */
     public void add(MediaSSRCMap mapToMerge)
     {
-        for (String media : mapToMerge.ssrcs.keySet())
+        for (Map.Entry<String, List<SourcePacketExtension>> e
+                : mapToMerge.ssrcs.entrySet())
         {
-            addSSRCs(media, mapToMerge.ssrcs.get(media));
+            addSSRCs(e.getKey(), e.getValue());
         }
     }
 
@@ -123,6 +126,35 @@ public class MediaSSRCMap
     }
 
     /**
+     * Creates a deep copy of this <tt>MediaSSRCMap</tt>.
+     *
+     * @return a new instance of <tt>MediaSSRCMap</tt> which contains copies of
+     *         <tt>SourcePacketExtension</tt> stored in this map.
+     */
+    public MediaSSRCMap copyDeep()
+    {
+        Map<String, List<SourcePacketExtension>> mapCopy = new HashMap<>();
+
+        for (String media : ssrcs.keySet())
+        {
+            List<SourcePacketExtension> mediaSSRCs
+                = ssrcs.get(media);
+
+            List<SourcePacketExtension> SSRCsCopy
+                = new ArrayList<>(mediaSSRCs.size());
+
+            for (SourcePacketExtension ssrc : mediaSSRCs)
+            {
+                SSRCsCopy.add(ssrc.copy());
+            }
+
+            mapCopy.put(media, SSRCsCopy);
+        }
+
+        return new MediaSSRCMap(mapCopy);
+    }
+
+    /**
      * Looks for SSRC in this map.
      *
      * @param media the name of media type of the SSRC we're looking for.
@@ -145,6 +177,27 @@ public class MediaSSRCMap
     }
 
     /**
+     * Finds SSRC for given owner.
+     *
+     * @param media the media type of the SSRC we'll be looking for.
+     * @param owner the MUC JID  of the SSRC owner.
+     *
+     * @return <tt>SourcePacketExtension</tt> for given media type and owner or
+     *         <tt>null</tt> if not found.
+     */
+    public SourcePacketExtension findSSRCforOwner(String media, String owner)
+    {
+        List<SourcePacketExtension> mediaSSRCs = getSSRCsForMedia(media);
+        for (SourcePacketExtension ssrc : mediaSSRCs)
+        {
+            String ssrcOwner = SSRCSignaling.getSSRCOwner(ssrc);
+            if (ssrcOwner != null && ssrcOwner.equals(owner))
+                return ssrc;
+        }
+        return null;
+    }
+
+    /**
      * Removes SSRCs contained in given map from this instance.
      *
      * @param mapToRemove the map that contains media SSRCs to be removed from
@@ -158,11 +211,8 @@ public class MediaSSRCMap
         // FIXME: fix duplication
         for (String media : mapToRemove.ssrcs.keySet())
         {
-            List<SourcePacketExtension> ssrcList
-                = getSSRCsForMedia(media);
-
-            List<SourcePacketExtension> toBeRemoved
-                = new ArrayList<SourcePacketExtension>();
+            List<SourcePacketExtension> ssrcList = getSSRCsForMedia(media);
+            List<SourcePacketExtension> toBeRemoved = new ArrayList<>();
 
             for (SourcePacketExtension ssrcToCheck
                     : mapToRemove.ssrcs.get(media))
@@ -184,25 +234,19 @@ public class MediaSSRCMap
     }
 
     /**
-     * Returns shallow copy of this map. <tt>SourcePacketExtension</tt>
-     * instances are not copied, but referenced from both copy and this
-     * instance.
+     * Removes given SSRC from this map.
+     *
+     * @param media the media type of the SSRC to be removed.
+     * @param ssrc the <tt>SourcePacketExtension</tt> to be removed from this
+     *        <tt>MediaSSRCMap</tt>.
+     *
+     * @return <tt>true</tt> if the SSRC has been actually removed which means
+     *         that it was in the map before the operation took place.
      */
-    public MediaSSRCMap copyShallow()
+    public boolean remove(String media, SourcePacketExtension ssrc)
     {
-        Map<String, List<SourcePacketExtension>> mapCopy
-            = new HashMap<String, List<SourcePacketExtension>>();
-
-        for (String media : ssrcs.keySet())
-        {
-            List<SourcePacketExtension> listCopy
-                = new ArrayList<SourcePacketExtension>(
-                ssrcs.get(media));
-
-            mapCopy.put(media, listCopy);
-        }
-
-        return new MediaSSRCMap(mapCopy);
+        SourcePacketExtension toBeRemoved = findSSRC(media, ssrc.getSSRC());
+        return toBeRemoved != null && getSSRCsForMedia(media).remove(ssrc);
     }
 
     /**
@@ -235,14 +279,13 @@ public class MediaSSRCMap
     public static MediaSSRCMap getSSRCsFromContent(
         List<ContentPacketExtension> contents)
     {
-        Map<String, List<SourcePacketExtension>> ssrcMap
-            = new HashMap<String, List<SourcePacketExtension>>();
+        Map<String, List<SourcePacketExtension>> ssrcMap = new HashMap<>();
 
         for (ContentPacketExtension content : contents)
         {
             RtpDescriptionPacketExtension rtpDesc
                 = content.getFirstChildOfType(
-                RtpDescriptionPacketExtension.class);
+                        RtpDescriptionPacketExtension.class);
 
             List<SourcePacketExtension> ssrcPe;
             String media;
@@ -276,6 +319,19 @@ public class MediaSSRCMap
             str.append(ssrc.getSSRC()).append(" ");
         }
         return str.toString();
+    }
+
+    /**
+     * Returns a map of Colibri content's names to lists of
+     * <tt>SourcePacketExtension</tt> which reflect the state of this
+     * <tt>MediaSSRCMap</tt>.
+     *
+     * @return <tt>Map<String, List<SourcePacketExtension></tt> which reflects
+     *         the state of this <tt>MediaSSRCMap</tt>.
+     */
+    public Map<String, List<SourcePacketExtension>> toMap()
+    {
+        return Collections.unmodifiableMap(ssrcs);
     }
 
     @Override

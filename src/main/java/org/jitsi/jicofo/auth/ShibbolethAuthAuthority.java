@@ -86,20 +86,31 @@ public class ShibbolethAuthAuthority
     /**
      * Creates new instance of <tt>ShibbolethAuthAuthority</tt> with default
      * login and logout URL locations.
+     * @param disableAutoLogin disables auto login feature. Authentication
+     * sessions are destroyed immediately when the conference ends.
+     * @param authenticationLifetime specifies how long authentication sessions
+     * will be stored in Jicofo's memory. Interval in milliseconds.
+
      */
-    public ShibbolethAuthAuthority()
+    public ShibbolethAuthAuthority(boolean    disableAutoLogin,
+                                   long       authenticationLifetime)
     {
-        this(DEFAULT_URL_CONST, DEFAULT_URL_CONST);
+        this(disableAutoLogin, authenticationLifetime,
+            DEFAULT_URL_CONST, DEFAULT_URL_CONST);
     }
 
     /**
      * Creates new instance of {@link ShibbolethAuthAuthority}.
      * @param loginUrlPattern the pattern used for constructing external
      *        authentication URLs. See {@link #loginUrlPattern} for more info.
+     *
      */
-    public ShibbolethAuthAuthority(String loginUrlPattern,
-                                   String logoutUrlPattern)
+    public ShibbolethAuthAuthority(boolean    disableAutoLogin,
+                                   long       authenticationLifetime,
+                                   String     loginUrlPattern,
+                                   String     logoutUrlPattern)
     {
+        super(disableAutoLogin, authenticationLifetime);
         // Override authenticate URL ?
         if (!StringUtils.isNullOrEmpty(loginUrlPattern)
                 && !DEFAULT_URL_CONST.equals(loginUrlPattern))

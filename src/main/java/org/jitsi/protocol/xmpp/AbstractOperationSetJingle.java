@@ -24,9 +24,11 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
+
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class provides template implementation of {@link OperationSetJingle}.
@@ -37,15 +39,17 @@ public abstract class AbstractOperationSetJingle
     implements OperationSetJingle
 {
     /**
-     * The logger.
+     * The {@code Logger} used by the class {@code AbstractOperationSetJingle}
+     * and its instances to print debug-related information.
      */
     private static final Logger logger
         = Logger.getLogger(AbstractOperationSetJingle.class);
 
     /**
-     * The list of active Jingle session.
+     * The list of active Jingle sessions.
      */
-    protected Map<String, JingleSession> sessions = new HashMap<>();
+    protected final Map<String, JingleSession> sessions
+        = new ConcurrentHashMap<>();
 
     /**
      * Implementing classes should return our JID here.
@@ -64,7 +68,7 @@ public abstract class AbstractOperationSetJingle
     /**
      * Finds Jingle session for given session identifier.
      *
-     * @param sid the identifier of the session for which we're looking for.
+     * @param sid the identifier of the session which we're looking for.
      *
      * @return Jingle session for given session identifier or <tt>null</tt>
      *         if no such session exists.
@@ -90,11 +94,11 @@ public abstract class AbstractOperationSetJingle
      * participant will start video muted.
      */
     @Override
-    public boolean initiateSession(boolean useBundle,
-                                String address,
-                                List<ContentPacketExtension> contents,
-                                JingleRequestHandler requestHandler,
-                                boolean[] startMuted)
+    public boolean initiateSession(boolean                      useBundle,
+                                   String                       address,
+                                   List<ContentPacketExtension> contents,
+                                   JingleRequestHandler         requestHandler,
+                                   boolean[]                    startMuted)
     {
         logger.info("INVITE PEER: " + address);
 
@@ -104,11 +108,37 @@ public abstract class AbstractOperationSetJingle
         sessions.put(sid, session);
 
         JingleIQ inviteIQ
+            = createInviteIQ(sid, useBundle, address, contents, startMuted);
+
+        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+
+        return wasInviteAccepted(session, reply);
+    }
+
+    /**
+     * Creates Jingle 'session-initiate' IQ for given parameters.
+     *
+     * @param sessionId Jingle session ID
+     * @param useBundle <tt>true</tt> if bundled transport is being used or
+     * <tt>false</tt> otherwise
+     * @param address the XMPP address where the IQ will be sent
+     * @param contents the list of Jingle contents which describes the actual
+     * offer
+     * @param startMuted an array where the first value stands for "start with
+     * audio muted" and the seconds one for "start video muted"
+     *
+     * @return New instance of <tt>JingleIQ</tt> filled up with the details
+     * provided as parameters.
+     */
+    private JingleIQ createInviteIQ(String                          sessionId,
+                                    boolean                         useBundle,
+                                    String                          address,
+                                    List<ContentPacketExtension>    contents,
+                                    boolean[]                       startMuted)
+    {
+        JingleIQ inviteIQ
             = JinglePacketFactory.createSessionInitiate(
-                    getOurJID(),
-                    address,
-                    sid,
-                    contents);
+                    getOurJID(), address, sessionId, contents);
 
         if (useBundle)
         {
@@ -125,6 +155,8 @@ public abstract class AbstractOperationSetJingle
             }
         }
 
+        // FIXME Move this to a place where offer's contents are created or
+        // convert the array to a list of extra PacketExtensions
         if(startMuted[0] || startMuted[1])
         {
             StartMutedPacketExtension startMutedExt
@@ -134,8 +166,24 @@ public abstract class AbstractOperationSetJingle
             inviteIQ.addExtension(startMutedExt);
         }
 
-        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+        return inviteIQ;
+    }
 
+    /**
+     * Determines whether a specific {@link JingleSession} has been accepted by
+     * the client judging by a specific {@code reply} {@link IQ} (received in
+     * reply to an invite IQ sent withing the specified {@code JingleSession}).
+     *
+     * @param session <tt>JingleSession</tt> instance for which we're evaluating
+     * the response value.
+     * @param reply <tt>IQ</tt> response to Jingle invite IQ or <tt>null</tt> in
+     * case of timeout.
+     *
+     * @return <tt>true</tt> if the invite IQ to which {@code reply} replies is
+     * considered accepted; <tt>false</tt>, otherwise.
+     */
+    private boolean wasInviteAccepted(JingleSession session, IQ reply)
+    {
         if (reply == null)
         {
             // XXX By the time the acknowledgement timeout occurs, we may have
@@ -153,7 +201,9 @@ public abstract class AbstractOperationSetJingle
             else
             {
                 logger.error(
-                        "Timeout waiting for session-accept from " + address);
+                        "Timeout waiting for RESULT response to "
+                            + "'session-initiate' request from "
+                            + session.getAddress());
                 return false;
             }
         }
@@ -164,14 +214,49 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Failed to send session-initiate to " + address
-                        + ", error: " + reply.getError());
+                    "Failed to send 'session-initiate' to "
+                        + session.getAddress() + ", error: "
+                        + reply.getError());
             return false;
         }
     }
 
     /**
-     * The logic for processing received JingleIQs.
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean replaceTransport(boolean                         useBundle,
+                                    JingleSession                   session,
+                                    List<ContentPacketExtension>    contents,
+                                    boolean[]                       startMuted)
+    {
+        String address = session.getAddress();
+
+        logger.info("RE-INVITE PEER: " + address);
+
+        if (!sessions.containsValue(session))
+        {
+            throw new IllegalStateException(
+                    "Session does not exist for: " + address);
+        }
+
+        // Reset 'accepted' flag on the session
+        session.setAccepted(false);
+
+        JingleIQ inviteIQ
+            =  createInviteIQ(
+                    session.getSessionID(), useBundle, address,
+                    contents, startMuted);
+
+        inviteIQ.setAction(JingleAction.TRANSPORT_REPLACE);
+
+        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+
+        return wasInviteAccepted(session, reply);
+    }
+
+    /**
+     * The logic for processing received <tt>JingleIQ</tt>s.
      *
      * @param iq the <tt>JingleIQ</tt> to process.
      */
@@ -211,11 +296,16 @@ public abstract class AbstractOperationSetJingle
         switch (action)
         {
         case SESSION_ACCEPT:
-            logger.info(session.getAddress() + " real jid: " + iq.getFrom());
             requestHandler.onSessionAccept(session, iq.getContentList());
+            break;
+        case TRANSPORT_ACCEPT:
+            requestHandler.onTransportAccept(session, iq.getContentList());
             break;
         case TRANSPORT_INFO:
             requestHandler.onTransportInfo(session, iq.getContentList());
+            break;
+        case TRANSPORT_REJECT:
+            requestHandler.onTransportReject(session, iq);
             break;
         case ADDSOURCE:
         case SOURCEADD:
@@ -241,9 +331,9 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendAddSourceIQ(MediaSSRCMap ssrcs,
-                                MediaSSRCGroupMap ssrcGroupMap,
-                                JingleSession session)
+    public void sendAddSourceIQ(MediaSSRCMap         ssrcs,
+                                MediaSSRCGroupMap    ssrcGroupMap,
+                                JingleSession        session)
     {
         JingleIQ addSourceIq = new JingleIQ();
 
@@ -269,8 +359,7 @@ public abstract class AbstractOperationSetJingle
             {
                 try
                 {
-                    rtpDesc.addChildExtension(
-                        ssrc.copy());
+                    rtpDesc.addChildExtension(ssrc.copy());
                 }
                 catch (Exception e)
                 {
@@ -348,9 +437,9 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendRemoveSourceIQ(MediaSSRCMap ssrcs,
-                                   MediaSSRCGroupMap ssrcGroupMap,
-                                   JingleSession session)
+    public void sendRemoveSourceIQ(MediaSSRCMap         ssrcs,
+                                   MediaSSRCGroupMap    ssrcGroupMap,
+                                   JingleSession        session)
     {
         JingleIQ removeSourceIq = new JingleIQ();
 
@@ -375,8 +464,7 @@ public abstract class AbstractOperationSetJingle
             {
                 try
                 {
-                    rtpDesc.addChildExtension(
-                        ssrc.copy());
+                    rtpDesc.addChildExtension(ssrc.copy());
                 }
                 catch (Exception e)
                 {

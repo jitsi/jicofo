@@ -19,6 +19,8 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jivesoftware.smack.packet.*;
+
 /**
  * XMPP extended interface of {@link ChatRoomMember}.
  *
@@ -39,9 +41,25 @@ public interface XmppChatMember
     int getJoinOrderNumber();
 
     /**
+     * Obtains the last MUC <tt>Presence</tt> seen for this chat member.
+     * @return the last {@link Presence} packet received for this
+     *         <tt>XmppChatMember</tt> or <tt>null</tt> if we haven't received
+     *         it yet.
+     */
+    Presence getPresence();
+
+    /**
      * Check for video muted status.
      * @return <tt>true</tt> if the user has video muted, <tt>false</tt> when
      *         video is not muted or <tt>null</tt> if the status is unknown.
      */
     Boolean hasVideoMuted();
+
+    /**
+     * Tells if this <tt>XmppChatMember</tt> is a robot(SIP gateway,
+     * recorder component etc.).
+     * @return <tt>true</tt> if this MUC member is a robot or <tt>false</tt>
+     * otherwise.
+     */
+    boolean isRobot();
 }

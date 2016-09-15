@@ -18,12 +18,12 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.caps.*;
-import net.java.sip.communicator.util.*;
-
-import org.jitsi.service.configuration.*;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.util.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.osgi.*;
+
 import org.osgi.framework.*;
 
 import java.util.concurrent.*;
@@ -49,7 +49,12 @@ public class FocusBundleActivator
     /**
      * {@link ConfigurationService} instance cached by the activator.
      */
-    private static ConfigurationService configService;
+    private static OSGIServiceRef<ConfigurationService> configServiceRef;
+
+    /**
+     * {@link EventAdmin} service reference.
+     */
+    private static OSGIServiceRef<EventAdmin> eventAdminRef;
 
     /**
      * Shared thread pool available through OSGi for other components that do
@@ -61,6 +66,11 @@ public class FocusBundleActivator
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
      */
     private FocusManager focusManager;
+
+    /**
+     * <tt>FocusManager</tt> service registration.
+     */
+    private ServiceRegistration<FocusManager> focusMangerRegistration;
 
     /**
      * Global configuration of Jitsi COnference FOcus
@@ -75,7 +85,15 @@ public class FocusBundleActivator
 
         EntityCapsManager.setBundleContext(context);
 
-        sharedThreadPool = Executors.newScheduledThreadPool(SHARED_POOL_SIZE);
+        // Make threads daemon, so that they won't prevent from doing shutdown
+        sharedThreadPool
+            = Executors.newScheduledThreadPool(
+                    SHARED_POOL_SIZE, new DaemonThreadFactory());
+
+        eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
+
+        configServiceRef
+            = new OSGIServiceRef<>(context, ConfigurationService.class);
 
         context.registerService(
             ExecutorService.class, sharedThreadPool, null);
@@ -85,17 +103,31 @@ public class FocusBundleActivator
         globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
 
         focusManager = new FocusManager();
-        context.registerService(FocusManager.class, focusManager, null);
+        focusManager.start();
+        focusMangerRegistration
+            = context.registerService(FocusManager.class, focusManager, null);
     }
 
     @Override
     public void stop(BundleContext context)
         throws Exception
     {
+        if (focusMangerRegistration != null)
+        {
+            focusMangerRegistration.unregister();
+            focusMangerRegistration = null;
+        }
+        if (focusManager != null)
+        {
+            focusManager.stop();
+            focusManager = null;
+        }
+
         sharedThreadPool.shutdownNow();
         sharedThreadPool = null;
 
-        configService = null;
+        configServiceRef = null;
+        eventAdminRef = null;
 
         EntityCapsManager.setBundleContext(null);
 
@@ -111,12 +143,7 @@ public class FocusBundleActivator
      */
     public static ConfigurationService getConfigService()
     {
-        if (configService == null)
-        {
-            configService = ServiceUtils.getService(
-                bundleContext, ConfigurationService.class);
-        }
-        return configService;
+        return configServiceRef.get();
     }
 
     /**
@@ -125,12 +152,7 @@ public class FocusBundleActivator
      */
     public static EventAdmin getEventAdmin()
     {
-        if (bundleContext != null)
-        {
-            return ServiceUtils2.getService(bundleContext,
-                                            EventAdmin.class);
-        }
-        return null;
+        return eventAdminRef.get();
     }
 
     /**

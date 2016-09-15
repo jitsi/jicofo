@@ -18,9 +18,9 @@
 package org.jitsi.impl.reservation.rest;
 
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
-import org.jitsi.util.*;
 import org.json.simple.parser.*;
 
 import java.io.*;
@@ -80,10 +80,8 @@ public class RESTReservations
      */
     public RESTReservations(String baseUrl)
     {
-        if (StringUtils.isNullOrEmpty(baseUrl))
-        {
-            throw new NullPointerException("baseUrl");
-        }
+        Assert.notNullNorEmpty(baseUrl, "baseUrl: " + baseUrl);
+
         this.api = new ApiHandler(baseUrl);
     }
 
@@ -98,8 +96,8 @@ public class RESTReservations
     {
         if (this.focusManager != null)
             throw new IllegalStateException("already started");
-        if (focusManager == null)
-            throw new NullPointerException("focusManager");
+
+        Assert.notNull(focusManager, "focusManager");
 
         this.focusManager = focusManager;
         focusManager.setFocusAllocationListener(this);

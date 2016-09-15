@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.log;
 
+import org.jitsi.eventadmin.*;
 import org.jitsi.influxdb.*;
 import org.jitsi.util.*;
-import org.jitsi.eventadmin.*;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -38,8 +38,7 @@ public class EventFactory
     /**
      * The logger instance used by this class.
      */
-    private final static Logger logger
-            = Logger.getLogger(EventFactory.class);
+    private final static Logger logger = Logger.getLogger(EventFactory.class);
 
     /**
      * The name of the key for additional authentication properties.
@@ -96,43 +95,50 @@ public class EventFactory
      * The name of the topic of a "conference room" event.
      */
     public static final String CONFERENCE_ROOM_TOPIC
-            = "org/jitsi/jicofo/CONFERENCE_ROOM_CREATED";
+        = "org/jitsi/jicofo/CONFERENCE_ROOM_CREATED";
 
     /**
      * The name of the topic of a "peer connection stats" event.
      */
     public static final String PEER_CONNECTION_STATS_TOPIC
-            = "org/jitsi/jicofo/PEER_CONNECTION_STATS";
+        = "org/jitsi/jicofo/PEER_CONNECTION_STATS";
 
     /**
      * The name of the topic of an "authentication session created" event.
      */
     public static final String AUTH_SESSION_CREATED_TOPIC
-            = "org/jitsi/jicofo/AUTH_SESSION_CREATED";
+        = "org/jitsi/jicofo/AUTH_SESSION_CREATED";
 
     /**
      * The name of the topic of an "authentication session destroyed" event.
      */
     public static final String AUTH_SESSION_DESTROYED_TOPIC
-            = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
+        = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
 
     /**
      * The name of the topic of an "endpoint authenticated" event.
      */
     public static final String ENDPOINT_AUTHENTICATED_TOPIC
-            = "org/jitsi/jicofo/ENDPOINT_AUTHENTICATED";
+        = "org/jitsi/jicofo/ENDPOINT_AUTHENTICATED";
 
     /**
      * The name of the topic of a "focus instance created" event.
      */
     public static final String FOCUS_CREATED_TOPIC
-            = "org/jitsi/jicofo/FOCUS_CREATED";
+        = "org/jitsi/jicofo/FOCUS_CREATED";
+
+    /**
+     * The name of the topic of a "focus joined MUC room" event which is fired
+     * just after Jicofo joins the MUC room.
+     */
+    public static final String FOCUS_JOINED_ROOM_TOPIC
+        = "org/jitsi/jicofo/FOCUS_JOINED_ROOM";
 
     /**
      * The name of the topic of a "focus instance destroyed" event.
      */
     public static final String FOCUS_DESTROYED_TOPIC
-            = "org/jitsi/jicofo/FOCUS_DESTROYED";
+        = "org/jitsi/jicofo/FOCUS_DESTROYED";
 
     /**
      * Creates a new "endpoint display name changed" <tt>Event</tt>, which
@@ -149,11 +155,13 @@ public class EventFactory
             String endpointId,
             String displayName)
     {
-        Dictionary properties = new Hashtable(3);
-        properties.put(CONFERENCE_ID_KEY, conferenceId);
-        properties.put(ENDPOINT_ID_KEY, endpointId);
-        properties.put(DISPLAY_NAME_KEY, displayName);
-        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC, properties);
+        Dictionary<String, Object> props = new Hashtable<>(3);
+
+        props.put(CONFERENCE_ID_KEY, conferenceId);
+        props.put(ENDPOINT_ID_KEY, endpointId);
+        props.put(DISPLAY_NAME_KEY, displayName);
+
+        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC, props);
     }
 
     /**
@@ -182,15 +190,19 @@ public class EventFactory
             return null;
         }
 
-        InfluxDBEvent influxDBEvent = new InfluxDBEvent("peer_connection_stats",
-                                LoggingHandler.PEER_CONNECTION_STATS_COLUMNS,
-                                values);
+        InfluxDBEvent influxDBEvent
+            = new InfluxDBEvent(
+                    "peer_connection_stats",
+                    LoggingHandler.PEER_CONNECTION_STATS_COLUMNS,
+                    values);
 
         // We specifically add a "time" column
         influxDBEvent.setUseLocalTime(false);
 
-        return new Event(
-                PEER_CONNECTION_STATS_TOPIC, makeProperties(influxDBEvent));
+        return
+            new Event(
+                    PEER_CONNECTION_STATS_TOPIC,
+                    makeProperties(influxDBEvent));
     }
 
     /**
@@ -238,7 +250,7 @@ public class EventFactory
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = (JSONObject) parser.parse(statsStr);
 
-        List<Object[]> values = new LinkedList<Object[]>();
+        List<Object[]> values = new LinkedList<>();
         JSONArray timestamps = (JSONArray) jsonObject.get("timestamps");
         JSONObject stats = (JSONObject) jsonObject.get("stats");
 
@@ -283,6 +295,25 @@ public class EventFactory
         return values.toArray();
     }
 
+    /**
+     * Creates new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
+     *
+     * @param roomJid the full address of MUC room.
+     * @param focusId focus instance identifier.
+     *
+     * @return new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
+     */
+    public static Event focusJoinedRoom(
+            String roomJid,
+            String focusId)
+    {
+        Dictionary<String, Object> props = new Hashtable<>(2);
+
+        props.put(ROOM_JID_KEY, roomJid);
+        props.put(FOCUS_ID_KEY, focusId);
+
+        return new Event(FOCUS_JOINED_ROOM_TOPIC, props);
+    }
 
     /**
      * Creates a new "room conference" <tt>Event</tt> which binds a COLIBRI
@@ -299,12 +330,14 @@ public class EventFactory
             String focus,
             String bridgeJid)
     {
-        Dictionary properties = new Hashtable(3);
-        properties.put(CONFERENCE_ID_KEY, conferenceId);
-        properties.put(ROOM_JID_KEY, roomJid);
-        properties.put(FOCUS_ID_KEY, focus);
-        properties.put(BRIDGE_JID_KEY, bridgeJid);
-        return new Event(CONFERENCE_ROOM_TOPIC, properties);
+        Dictionary<String, Object> props = new Hashtable<>(4);
+
+        props.put(CONFERENCE_ID_KEY, conferenceId);
+        props.put(ROOM_JID_KEY, roomJid);
+        props.put(FOCUS_ID_KEY, focus);
+        props.put(BRIDGE_JID_KEY, bridgeJid);
+
+        return new Event(CONFERENCE_ROOM_TOPIC, props);
     }
 
     /**
@@ -323,18 +356,14 @@ public class EventFactory
             String sessionId,  String              userIdentity,
             String machineUid, Map<String, String> properties )
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(4);
+        Dictionary<String, Object> props = new Hashtable<>(4);
 
-        eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
-        eventProps.put(USER_IDENTITY_KEY, userIdentity);
-        eventProps.put(MACHINE_UID_KEY, machineUid);
+        props.put(AUTH_SESSION_ID_KEY, sessionId);
+        props.put(USER_IDENTITY_KEY, userIdentity);
+        props.put(MACHINE_UID_KEY, machineUid);
+        props.put(AUTH_PROPERTIES_KEY, mergeProperties(properties));
 
-        String mergedProperties = mergeProperties(properties);
-
-        eventProps.put(AUTH_PROPERTIES_KEY, mergedProperties);
-
-        return new Event(AUTH_SESSION_CREATED_TOPIC, eventProps);
+        return new Event(AUTH_SESSION_CREATED_TOPIC, props);
     }
 
     /**
@@ -346,12 +375,11 @@ public class EventFactory
      */
     public static Event authSessionDestroyed(String sessionId)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(1);
+        Dictionary<String, Object> props = new Hashtable<>(1);
 
-        eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
+        props.put(AUTH_SESSION_ID_KEY, sessionId);
 
-        return new Event(AUTH_SESSION_DESTROYED_TOPIC, eventProps);
+        return new Event(AUTH_SESSION_DESTROYED_TOPIC, props);
     }
 
     /**
@@ -367,14 +395,13 @@ public class EventFactory
                                               String focusId,
                                               String endpointId)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(2);
+        Dictionary<String, Object> props = new Hashtable<>(3);
 
-        eventProps.put(AUTH_SESSION_ID_KEY, sessionId);
-        eventProps.put(FOCUS_ID_KEY, focusId);
-        eventProps.put(ENDPOINT_ID_KEY, endpointId);
+        props.put(AUTH_SESSION_ID_KEY, sessionId);
+        props.put(FOCUS_ID_KEY, focusId);
+        props.put(ENDPOINT_ID_KEY, endpointId);
 
-        return new Event(ENDPOINT_AUTHENTICATED_TOPIC, eventProps);
+        return new Event(ENDPOINT_AUTHENTICATED_TOPIC, props);
     }
 
     /**
@@ -387,13 +414,12 @@ public class EventFactory
      */
     public static Event focusCreated(String focusId, String roomName)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(2);
+        Dictionary<String, Object> props = new Hashtable<>(2);
 
-        eventProps.put(FOCUS_ID_KEY, focusId);
-        eventProps.put(ROOM_JID_KEY, roomName);
+        props.put(FOCUS_ID_KEY, focusId);
+        props.put(ROOM_JID_KEY, roomName);
 
-        return new Event(FOCUS_CREATED_TOPIC, eventProps);
+        return new Event(FOCUS_CREATED_TOPIC, props);
     }
 
     /**
@@ -406,13 +432,12 @@ public class EventFactory
      */
     public static Event focusDestroyed(String focusId, String roomName)
     {
-        Dictionary<String, String> eventProps
-                = new Hashtable<String, String>(2);
+        Dictionary<String, Object> props = new Hashtable<>(2);
 
-        eventProps.put(FOCUS_ID_KEY, focusId);
-        eventProps.put(ROOM_JID_KEY, roomName);
+        props.put(FOCUS_ID_KEY, focusId);
+        props.put(ROOM_JID_KEY, roomName);
 
-        return new Event(FOCUS_DESTROYED_TOPIC, eventProps);
+        return new Event(FOCUS_DESTROYED_TOPIC, props);
     }
 
     /**
@@ -426,15 +451,15 @@ public class EventFactory
      */
     public static String mergeProperties(Map<String, String> properties)
     {
-        StringBuilder output = new StringBuilder();
+        StringBuilder out = new StringBuilder();
         for (Map.Entry<String, String> entry : properties.entrySet())
         {
-            output.append(entry.getKey())
-                    .append(":")
-                    .append(entry.getValue())
-                    .append("\r\n");
+            out.append(entry.getKey())
+                .append(":")
+                .append(entry.getValue())
+                .append("\r\n");
         }
-        return output.toString();
+        return out.toString();
     }
 
     /**
@@ -449,7 +474,7 @@ public class EventFactory
     public static Map<String, String> splitProperties(String merged)
     {
         String[] entries = merged.split("\r\n");
-        Map<String, String> map = new Hashtable<String, String>(entries.length);
+        Map<String, String> map = new Hashtable<>(entries.length);
         for (String entry : entries)
         {
             if (StringUtils.isNullOrEmpty(entry))

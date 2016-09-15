@@ -17,10 +17,12 @@
  */
 package org.jitsi.jicofo.recording;
 
+import org.jitsi.assertions.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
+
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 
 /**
@@ -36,7 +38,7 @@ public abstract class Recorder
     /**
      * Recorder component XMPP address.
      */
-    protected final String recorderComponentJid;
+    protected String recorderComponentJid;
 
     /**
      * Smack operation set for current XMPP connection.
@@ -47,9 +49,17 @@ public abstract class Recorder
                     OperationSetDirectSmackXmpp xmpp)
     {
         this.recorderComponentJid = recorderComponentJid;
+
+        Assert.notNull(xmpp, "xmpp");
         this.xmpp = xmpp;
         xmpp.addPacketHandler(this, this);
     }
+
+    /**
+     * Method called by {@link org.jitsi.jicofo.JitsiMeetConference} after it
+     * joins the MUC.
+     */
+    public void init() { }
 
     /**
      * Releases resources and stops any future processing.

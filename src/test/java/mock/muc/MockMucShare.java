@@ -103,7 +103,13 @@ public class MockMucShare
         {
             if (chatToNotify != chatRoom)
             {
-                chatToNotify.mockLeave(chatRoomMember.getName());
+                MockRoomMember mockRoomMember
+                    = (MockRoomMember) chatToNotify.findChatMember(
+                            chatRoomMember.getContactAddress());
+                if (mockRoomMember != null)
+                {
+                    chatToNotify.mockLeave(mockRoomMember.getName());
+                }
             }
         }
     }

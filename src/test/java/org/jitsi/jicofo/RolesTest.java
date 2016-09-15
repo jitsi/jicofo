@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     @BeforeClass
     public static void setUpClass()
@@ -62,9 +62,8 @@ public class RolesTest
         String roomName = "testroom@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConference = new TestConference();
-
-        testConference.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConference
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConference.getFocusProtocolProvider();
@@ -99,5 +98,7 @@ public class RolesTest
 
             users[i].leave();
         }
+
+        testConference.stop();
     }
 }

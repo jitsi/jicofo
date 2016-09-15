@@ -53,7 +53,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ColibriThreadingTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     private static MockPeerAllocator findCreator(
             AllocThreadingTestColibriConference    colibriConf,
@@ -93,7 +93,7 @@ public class ColibriThreadingTest
      */
     @Test
     public void testColibriMultiThreading()
-        throws InterruptedException
+        throws Exception
     {
         ProviderListener providerListener
             = new ProviderListener(FocusBundleActivator.bundleContext);
@@ -107,11 +107,10 @@ public class ColibriThreadingTest
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    osgi.bc,
                     mockProvider.getMockXmppConnection(),
                     mockBridgeJid);
 
-        mockBridge.start();
+        mockBridge.start(osgi.bc);
 
         AllocThreadingTestColibriConference colibriConf
             = colibriOpSet.createAllocThreadingConf();
@@ -199,6 +198,8 @@ public class ColibriThreadingTest
         assertEquals(
             allocators.length,
             mockBridge.getChannelCountByContent("data"));
+
+        mockBridge.stop(osgi.bc);
     }
 
     /**
@@ -209,7 +210,7 @@ public class ColibriThreadingTest
      */
     @Test
     public void testCreateFailure()
-        throws InterruptedException
+        throws Exception
     {
         ProviderListener providerListener
             = new ProviderListener(FocusBundleActivator.bundleContext);
@@ -223,11 +224,10 @@ public class ColibriThreadingTest
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    osgi.bc,
                     mockProvider.getMockXmppConnection(),
                     mockBridgeJid);
 
-        mockBridge.start();
+        mockBridge.start(osgi.bc);
 
         AllocThreadingTestColibriConference colibriConf
             = colibriOpSet.createAllocThreadingConf();
@@ -306,6 +306,8 @@ public class ColibriThreadingTest
 
         // No conference created
         assertEquals(0, mockBridge.getConferenceCount());
+
+        mockBridge.stop(osgi.bc);
     }
 
     static List<ContentPacketExtension> createContents()
@@ -313,17 +315,12 @@ public class ColibriThreadingTest
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(
-                MediaType.AUDIO, false, true));
+        contents.add(JingleOfferFactory.createAudioContent(false, true, false));
 
         contents.add(
-            JingleOfferFactory.createContentForMedia(
-                MediaType.VIDEO, false, true));
+            JingleOfferFactory.createVideoContent(false, true, false, -1, -1));
 
-        contents.add(
-            JingleOfferFactory.createContentForMedia(
-                MediaType.DATA, false, true));
+        contents.add(JingleOfferFactory.createDataContent(false, true));
 
         return contents;
     }
