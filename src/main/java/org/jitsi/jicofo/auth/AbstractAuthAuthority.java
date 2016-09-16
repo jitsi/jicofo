@@ -287,7 +287,7 @@ public abstract class AbstractAuthAuthority
      */
     protected AuthenticationSession getSession(String sessionId)
     {
-        return authenticationSessions.get(sessionId);
+        return sessionId != null ? authenticationSessions.get(sessionId) : null;
     }
 
     /**
@@ -320,8 +320,7 @@ public abstract class AbstractAuthAuthority
     {
         synchronized (syncRoot)
         {
-            AuthenticationSession session
-                    = authenticationSessions.get(sessionId);
+            AuthenticationSession session = getSession(sessionId);
 
             if (session == null)
                 return;
