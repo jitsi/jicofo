@@ -557,8 +557,7 @@ public class JitsiMeetConference
         // this on separate thread.
         FocusBundleActivator.getSharedThreadPool().submit(
                 new ChannelAllocator(
-                        this, colibriConference, newParticipant,
-                        startMuted, false /* re-invite */));
+                        this, colibriConference, newParticipant, startMuted));
     }
 
     /**
@@ -1587,8 +1586,7 @@ public class JitsiMeetConference
             // this on separate thread.
             FocusBundleActivator.getSharedThreadPool().submit(
                     new ChannelAllocator(
-                            this, colibriConference,
-                            p, startMuted, true /* re-invite */));
+                            this, colibriConference, p, startMuted));
         }
     }
 
