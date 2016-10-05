@@ -20,7 +20,6 @@ package org.jitsi.jicofo.recording.jibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
@@ -49,9 +48,11 @@ public class JibriRecorder
     implements JibriListener
 {
     /**
-     * The logger.
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    static private final Logger logger = Logger.getLogger(JibriRecorder.class);
+    static private final Logger classLogger
+        = Logger.getLogger(JibriRecorder.class);
 
     /**
      * The number of times to retry connecting to a Jibri.
@@ -87,6 +88,13 @@ public class JibriRecorder
      * The global config used by this instance.
      */
     private final JitsiMeetGlobalConfig globalConfig;
+
+    /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
 
     /**
      * Meet tools instance used to inject packet extensions to Jicofo's MUC
@@ -164,6 +172,8 @@ public class JibriRecorder
             = protocolService.getOperationSet(OperationSetJitsiMeetTools.class);
 
         jibriDetector = conference.getServices().getJibriDetector();
+
+        logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     /**

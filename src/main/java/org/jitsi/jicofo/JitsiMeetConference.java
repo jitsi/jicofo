@@ -22,7 +22,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
@@ -35,11 +34,13 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.eventadmin.*;
 
 import org.jitsi.util.*;
+import org.jitsi.util.Logger;
 import org.osgi.framework.*;
 
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 /**
  * Class represents the focus of Jitsi Meet conference. Responsibilities:
@@ -58,9 +59,9 @@ public class JitsiMeetConference
                EventHandler
 {
     /**
-     * The logger instance used by this class.
+     * The classLogger instance used by this class.
      */
-    private final static Logger logger
+    private final static Logger classLogger
         = Logger.getLogger(JitsiMeetConference.class);
 
     /**
@@ -90,6 +91,13 @@ public class JitsiMeetConference
      * {@link ConferenceListener} that will be notified about conference events.
      */
     private final ConferenceListener listener;
+
+    /**
+     * The logger for this instance. Uses the logging level either the one of
+     * {@link #classLogger} or the one passed to the constructor, whichever
+     * is higher.
+     */
+    private final Logger logger = Logger.getLogger(classLogger, null);
 
     /**
      * The instance of conference configuration.
@@ -234,13 +242,16 @@ public class JitsiMeetConference
      *        events.
      * @param config the conference configuration instance.
      * @param globalConfig an instance of the global config service.
+     * @param logLevel (optional) the logging level to be used by this instance.
+     *        See {@link #logger} for more details.
      */
     public JitsiMeetConference(String                   roomName,
                                String                   focusUserName,
                                ProtocolProviderHandler  protocolProviderHandler,
                                ConferenceListener       listener,
                                JitsiMeetConfig          config,
-                               JitsiMeetGlobalConfig    globalConfig)
+                               JitsiMeetGlobalConfig    globalConfig,
+                               Level                    logLevel)
     {
         Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
         Assert.notNull(config, "config");
@@ -253,6 +264,9 @@ public class JitsiMeetConference
         this.config = config;
         this.globalConfig = globalConfig;
         this.etherpadName = createSharedDocumentName();
+
+        if (logLevel != null)
+            logger.setLevel(logLevel);
     }
 
     /**
@@ -546,6 +560,7 @@ public class JitsiMeetConference
 
         newParticipant
             = new Participant(
+                    this,
                     (XmppChatMember) chatRoomMember,
                     globalConfig.getMaxSSRCsPerUser());
 
@@ -1639,6 +1654,14 @@ public class JitsiMeetConference
     public JitsiMeetConfig getConfig()
     {
         return config;
+    }
+
+    /**
+     * Returns the <tt>Logger</tt> used by this instance.
+     */
+    public Logger getLogger()
+    {
+        return logger;
     }
 
     /**

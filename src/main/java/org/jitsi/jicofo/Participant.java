@@ -20,12 +20,12 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.util.*;
 
 import java.util.*;
 
@@ -38,9 +38,11 @@ import java.util.*;
 public class Participant
 {
     /**
-     * The logger
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    private final static Logger logger = Logger.getLogger(Participant.class);
+    private final static Logger classLogger
+        = Logger.getLogger(Participant.class);
 
     /**
      * MUC chat member of this participant.
@@ -56,6 +58,13 @@ public class Participant
      * Information about Colibri channels allocated for this peer(if any).
      */
     private ColibriConferenceIQ colibriChannelsInfo;
+
+    /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
 
     /**
      * The map of the most recently received RTP description for each Colibri
@@ -156,12 +165,16 @@ public class Participant
      * @param maxSSRCCount how many unique SSRCs per media this participant
      *                     instance will be allowed to advertise.
      */
-    public Participant(XmppChatMember roomMember, int maxSSRCCount)
+    public Participant(JitsiMeetConference    conference,
+                       XmppChatMember         roomMember,
+                       int                    maxSSRCCount)
     {
+        Assert.notNull(conference, "conference");
         Assert.notNull(roomMember, "roomMember");
 
         this.roomMember = roomMember;
         this.maxSSRCCount = maxSSRCCount;
+        this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     /**

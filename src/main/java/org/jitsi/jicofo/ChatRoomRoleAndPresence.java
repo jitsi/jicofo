@@ -20,12 +20,13 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
+
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.log.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jitsi.util.Logger;
 import org.jitsi.eventadmin.*;
 
 /**
@@ -43,9 +44,10 @@ public class ChatRoomRoleAndPresence
                AuthenticationListener
 {
     /**
-     * The logger
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    private static final Logger logger
+    private static final Logger classLogger
         = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
@@ -77,6 +79,13 @@ public class ChatRoomRoleAndPresence
     private boolean autoOwner;
 
     /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
+
+    /**
      * Current owner(other than the focus itself) of Jitsi Meet conference.
      */
     private ChatRoomMember owner;
@@ -89,6 +98,7 @@ public class ChatRoomRoleAndPresence
 
         this.conference = conference;
         this.chatRoom = chatRoom;
+        this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     /**

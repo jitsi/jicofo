@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet
           .SSRCInfoPacketExtension;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -65,9 +64,11 @@ import java.util.*;
 public class LipSyncHack implements OperationSetJingle
 {
     /**
-     * The logger used in <tt>LipSyncHack</tt>.
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    static private final Logger logger = Logger.getLogger(LipSyncHack.class);
+    static private final Logger classLogger
+        = Logger.getLogger(LipSyncHack.class);
 
     /**
      * Parent conference for which this instance is doing stream merging.
@@ -80,6 +81,13 @@ public class LipSyncHack implements OperationSetJingle
     private final OperationSetJingle jingleImpl;
 
     /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
+
+    /**
      * Creates new instance of <tt>LipSyncHack</tt> for given conference.
      *
      * @param conference parent <tt>JitsiMeetConference</tt> for which this
@@ -90,8 +98,12 @@ public class LipSyncHack implements OperationSetJingle
     public LipSyncHack(JitsiMeetConference    conference,
                        OperationSetJingle     jingleImpl)
     {
+        Objects.requireNonNull(conference, "conference");
+        Objects.requireNonNull(jingleImpl, "jingleImpl");
+
         this.conference = conference;
         this.jingleImpl = jingleImpl;
+        this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     private MediaSSRCMap getParticipantSSRCMap(String mucJid)
