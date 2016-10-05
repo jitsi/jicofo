@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet
           .SSRCInfoPacketExtension;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -65,9 +64,11 @@ import java.util.*;
 public class LipSyncHack implements OperationSetJingle
 {
     /**
-     * The logger used in <tt>LipSyncHack</tt>.
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    static private final Logger logger = Logger.getLogger(LipSyncHack.class);
+    static private final Logger classLogger
+        = Logger.getLogger(LipSyncHack.class);
 
     /**
      * Parent conference for which this instance is doing stream merging.
@@ -80,6 +81,13 @@ public class LipSyncHack implements OperationSetJingle
     private final OperationSetJingle jingleImpl;
 
     /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
+
+    /**
      * Creates new instance of <tt>LipSyncHack</tt> for given conference.
      *
      * @param conference parent <tt>JitsiMeetConference</tt> for which this
@@ -90,8 +98,12 @@ public class LipSyncHack implements OperationSetJingle
     public LipSyncHack(JitsiMeetConference    conference,
                        OperationSetJingle     jingleImpl)
     {
+        Objects.requireNonNull(conference, "conference");
+        Objects.requireNonNull(jingleImpl, "jingleImpl");
+
         this.conference = conference;
         this.jingleImpl = jingleImpl;
+        this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     private MediaSSRCMap getParticipantSSRCMap(String mucJid)
@@ -133,16 +145,21 @@ public class LipSyncHack implements OperationSetJingle
             = conference.findParticipantForRoomJid(ownerJid);
         if (streamsOwner == null)
         {
-            logger.error(
-                    "Stream owner not a participant or not found for jid: "
-                        + ownerJid);
+            // Do not log that error for the JVB
+            if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
+                logger.error(
+                        "Stream owner not a participant or not found for jid: "
+                            + ownerJid);
             return false;
         }
 
+        // FIXME: we do not know if the JVBs to which the SSRCs belong should
+        // be merged, as the 'streamsOwner' will always be null. This could be
+        // detected based on JVB version if we need to merge them at any point
+        // in the future.
         boolean supportsLipSync = participant.hasLipSyncSupport();
 
-        // FIXME switch to debug level after some more testing
-        logger.info(String.format(
+        logger.debug(String.format(
                 "Lips-sync From %s to %s, lip-sync: %s",
                 ownerJid, participantJid, supportsLipSync));
 
@@ -158,10 +175,17 @@ public class LipSyncHack implements OperationSetJingle
         {
             merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
         }
-        // FIXME switch to debug level after some more testing
-        logger.info(
-               (merged ? "Merging" : "Not merging")
-                    + " A/V streams from " + owner +" to " + participant);
+
+        String logMsg
+            = (merged ? "Merging" : "Not merging")
+                    + " A/V streams from " + owner +" to " + participant;
+
+        // The stream is merged most of the time and it's not that interesting.
+        // FIXME JVBs SSRCs are not merged currently, but maybe should be ?
+        if (merged || SSRCSignaling.SSRC_OWNER_JVB.equals(owner))
+            logger.debug(logMsg);
+        else
+            logger.info(logMsg);
     }
 
     /**

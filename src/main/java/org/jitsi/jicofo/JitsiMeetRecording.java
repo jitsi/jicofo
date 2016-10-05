@@ -37,9 +37,10 @@ import org.jivesoftware.smack.packet.*;
 public class JitsiMeetRecording
 {
     /**
-     * The logger used by MeetRecording class.
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    private final static Logger logger
+    private final static Logger classLogger
         = Logger.getLogger(JitsiMeetRecording.class);
 
     /**
@@ -71,6 +72,12 @@ public class JitsiMeetRecording
      */
     private final OperationSetDirectSmackXmpp xmppOpSet;
 
+    /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
 
     /**
      * Creates new instance of <tt>JitsiMeetRecording</tt>.
@@ -87,6 +94,8 @@ public class JitsiMeetRecording
         this.xmppOpSet
             = meetConference.getXmppProvider().getOperationSet(
                     OperationSetDirectSmackXmpp.class);
+
+        logger = Logger.getLogger(classLogger, meetConference.getLogger());
     }
 
     /**
@@ -141,13 +150,13 @@ public class JitsiMeetRecording
         {
             recorder
                 = new JireconRecorder(
-                        meetConference.getFocusJid(),
+                        meetConference,
                         services.getJireconRecorder(), xmppOpSet);
             return recorder;
         }
         else
         {
-            logger.warn("No recorder service discovered - using JVB");
+            logger.info("No recorder service discovered - using JVB");
 
             ColibriConference colibriConference
                 = meetConference.getColibriConference();
@@ -165,10 +174,7 @@ public class JitsiMeetRecording
 
             recorder
                 = new JvbRecorder(
-                        colibriConference.getConferenceId(),
-                        videobridge,
-                        colibriConference.getName(),
-                        xmppOpSet);
+                            meetConference, videobridge, xmppOpSet);
             return recorder;
         }
     }

@@ -49,10 +49,18 @@ public class ChannelAllocator implements Runnable
     final static int BRIDGE_FAILURE_ERR_CODE = 20;
 
     /**
-     * The logger instance used in this class.
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    private final static Logger logger
+    private final static Logger classLogger
         = Logger.getLogger(ChannelAllocator.class);
+
+    /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
 
     /**
      * Parent {@link JitsiMeetConference}.
@@ -113,6 +121,7 @@ public class ChannelAllocator implements Runnable
         this.newParticipant = newParticipant;
         this.startMuted = startMuted;
         this.reInvite = reInvite;
+        this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
     }
 
     private OperationSetJitsiMeetTools getMeetTools()
@@ -652,7 +661,7 @@ public class ChannelAllocator implements Runnable
                         // Mark 'jvb' as SSRC owner
                         SSRCInfoPacketExtension ssrcInfo
                             = new SSRCInfoPacketExtension();
-                        ssrcInfo.setOwner("jvb");
+                        ssrcInfo.setOwner(SSRCSignaling.SSRC_OWNER_JVB);
                         ssrcCopy.addChildExtension(ssrcInfo);
 
                         rtpDescPe.addChildExtension(ssrcCopy);

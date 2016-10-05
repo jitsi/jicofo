@@ -19,6 +19,7 @@ package org.jitsi.jicofo.rest;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
@@ -27,6 +28,7 @@ import org.eclipse.jetty.server.*;
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
+import org.jitsi.util.Logger;
 import org.json.simple.*;
 
 /**
@@ -99,7 +101,10 @@ public class Health
         while (focusManager.getConference(roomName) != null);
 
         // Create a conference with the generated room name.
-        if (!focusManager.conferenceRequest(roomName, JITSI_MEET_CONFIG))
+        if (!focusManager.conferenceRequest(
+                    roomName,
+                    JITSI_MEET_CONFIG,
+                    Level.WARNING /* conference logging level */))
         {
             throw new RuntimeException(
                     "Failed to create conference with room name " + roomName);

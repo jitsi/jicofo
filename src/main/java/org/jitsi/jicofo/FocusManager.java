@@ -21,12 +21,12 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.shutdown.*;
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.util.Logger;
 
 import org.jivesoftware.smack.provider.*;
 
@@ -34,6 +34,7 @@ import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -265,9 +266,36 @@ public class FocusManager
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
+    public boolean conferenceRequest(
+            String                 room,
+            Map<String, String>    properties)
+        throws Exception
+    {
+        return conferenceRequest(
+                room,
+                properties,
+                null /* logging level - not specified which means that the one
+                        from the logging configuration will be used */);
+    }
+
+    /**
+     * Allocates new focus for given MUC room.
+     *
+     * @param room the name of MUC room for which new conference has to be
+     *             allocated.
+     * @param properties configuration properties map included in the request.
+     * @param loggingLevel the logging level which should be used by the new
+     * {@link JitsiMeetConference}
+     *
+     * @return <tt>true</tt> if conference focus is in the room and ready to
+     *         handle session participants.
+     * @throws Exception if for any reason we have failed to create
+     *                   the conference
+     */
     public synchronized boolean conferenceRequest(
-            String room,
-            Map<String, String> properties)
+            String                 room,
+            Map<String, String>    properties,
+            Level                  loggingLevel)
         throws Exception
     {
         if (StringUtils.isNullOrEmpty(room))
@@ -280,7 +308,7 @@ public class FocusManager
             if (shutdownInProgress)
                 return false;
 
-            createConference(room, properties);
+            createConference(room, properties, loggingLevel);
         }
 
         JitsiMeetConference conference = conferences.get(room);
@@ -297,7 +325,7 @@ public class FocusManager
      * @throws Exception if any error occurs.
      */
     private synchronized void createConference(
-            String room, Map<String, String> properties)
+            String room, Map<String, String> properties, Level logLevel)
         throws Exception
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
@@ -309,7 +337,7 @@ public class FocusManager
         JitsiMeetConference conference
             = new JitsiMeetConference(
                     room, focusUserName, protocolProviderHandler,
-                    this, config, globalConfig);
+                    this, config, globalConfig, logLevel);
 
         conferences.put(room, conference);
 
@@ -323,7 +351,9 @@ public class FocusManager
 
         }
 
-        logger.info("Created new focus for " + room + "@" + focusUserDomain
+        if (conference.getLogger().isInfoEnabled())
+            logger.info(
+                    "Created new focus for " + room + "@" + focusUserDomain
                         + " conferences count: " + conferences.size()
                         + " options:" + options.toString());
 
@@ -389,9 +419,10 @@ public class FocusManager
 
         conferences.remove(roomName);
 
-        logger.info(
-            "Disposed conference for room: " + roomName
-            + " conference count: " + conferences.size());
+        if (conference.getLogger().isInfoEnabled())
+            logger.info(
+                    "Disposed conference for room: " + roomName
+                        + " conference count: " + conferences.size());
 
         if (focusAllocListener != null)
         {
@@ -657,9 +688,10 @@ public class FocusManager
                         }
                         if (System.currentTimeMillis() - idleStamp > timeout)
                         {
-                            logger.info(
-                                "Focus idle timeout for "
-                                    + conference.getRoomName());
+                            if (conference.getLogger().isInfoEnabled())
+                                logger.info(
+                                        "Focus idle timeout for "
+                                            + conference.getRoomName());
 
                             conference.stop();
                         }
