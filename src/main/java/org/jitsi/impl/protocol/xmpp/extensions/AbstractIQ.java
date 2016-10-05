@@ -124,6 +124,7 @@ public abstract class AbstractIQ
     {
         if (!StringUtils.isNullOrEmpty(value))
         {
+            value = org.jivesoftware.smack.util.StringUtils.escapeForXML(value);
             out.append(name).append("='").append(value).append("' ");
         }
     }
