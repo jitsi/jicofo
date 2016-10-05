@@ -174,8 +174,9 @@ public class LipSyncHack implements OperationSetJingle
             = (merged ? "Merging" : "Not merging")
                     + " A/V streams from " + owner +" to " + participant;
 
-        // The stream is merged most of the time and it's not that interesting
-        if (merged)
+        // The stream is merged most of the time and it's not that interesting.
+        // FIXME JVBs SSRCs are not merged currently, but maybe should be ?
+        if (merged || SSRCSignaling.SSRC_OWNER_JVB.equals(owner))
             logger.debug(logMsg);
         else
             logger.info(logMsg);
