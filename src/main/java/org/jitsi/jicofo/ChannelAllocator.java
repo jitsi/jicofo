@@ -661,7 +661,7 @@ public class ChannelAllocator implements Runnable
                         // Mark 'jvb' as SSRC owner
                         SSRCInfoPacketExtension ssrcInfo
                             = new SSRCInfoPacketExtension();
-                        ssrcInfo.setOwner("jvb");
+                        ssrcInfo.setOwner(SSRCSignaling.SSRC_OWNER_JVB);
                         ssrcCopy.addChildExtension(ssrcInfo);
 
                         rtpDescPe.addChildExtension(ssrcCopy);

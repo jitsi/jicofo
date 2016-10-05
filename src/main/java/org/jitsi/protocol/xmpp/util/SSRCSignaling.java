@@ -36,6 +36,12 @@ import java.util.*;
 public class SSRCSignaling
 {
     /**
+     * The constant value used as owner attribute value of
+     * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
+     */
+    public static final String SSRC_OWNER_JVB = "jvb";
+
+    /**
      * Copies value of "<parameter>" SSRC child element. The parameter to be
      * copied must exist in both source and destination SSRCs.
      * @param dst target <tt>SourcePacketExtension</tt> to which we want copy
