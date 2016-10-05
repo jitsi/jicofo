@@ -153,8 +153,7 @@ public class LipSyncHack implements OperationSetJingle
 
         boolean supportsLipSync = participant.hasLipSyncSupport();
 
-        // FIXME switch to debug level after some more testing
-        logger.info(String.format(
+        logger.debug(String.format(
                 "Lips-sync From %s to %s, lip-sync: %s",
                 ownerJid, participantJid, supportsLipSync));
 
@@ -170,10 +169,16 @@ public class LipSyncHack implements OperationSetJingle
         {
             merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
         }
-        // FIXME switch to debug level after some more testing
-        logger.info(
-               (merged ? "Merging" : "Not merging")
-                    + " A/V streams from " + owner +" to " + participant);
+
+        String logMsg
+            = (merged ? "Merging" : "Not merging")
+                    + " A/V streams from " + owner +" to " + participant;
+
+        // The stream is merged most of the time and it's not that interesting
+        if (merged)
+            logger.debug(logMsg);
+        else
+            logger.info(logMsg);
     }
 
     /**
