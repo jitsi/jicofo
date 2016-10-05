@@ -145,12 +145,18 @@ public class LipSyncHack implements OperationSetJingle
             = conference.findParticipantForRoomJid(ownerJid);
         if (streamsOwner == null)
         {
-            logger.error(
-                    "Stream owner not a participant or not found for jid: "
-                        + ownerJid);
+            // Do not log that error for the JVB
+            if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
+                logger.error(
+                        "Stream owner not a participant or not found for jid: "
+                            + ownerJid);
             return false;
         }
 
+        // FIXME: we do not know if the JVBs to which the SSRCs belong should
+        // be merged, as the 'streamsOwner' will always be null. This could be
+        // detected based on JVB version if we need to merge them at any point
+        // in the future.
         boolean supportsLipSync = participant.hasLipSyncSupport();
 
         logger.debug(String.format(
