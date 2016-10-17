@@ -20,17 +20,21 @@ package org.jitsi.impl.protocol.xmpp.extensions;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 
 /**
- * Packet extension sent in focus MUC presence to notify users about JVB failure.
+ * Packet extension sent in focus MUC presence to notify users about the fact
+ * that there are currently no JVBs available either because all of them has
+ * failed to allocate channels or none were ever available.
  *
  * @author Pawel Domas
  */
-public class BridgeIsDownPacketExt
+public class BridgeNotAvailablePacketExt
     extends AbstractPacketExtension
 {
-    private final static String ELEMENT_NAME = "bridgeIsDown";
+    public final static String ELEMENT_NAME = "bridgeNotAvailable";
 
-    public BridgeIsDownPacketExt()
+    public final static String NAMESPACE = ConferenceIq.NAMESPACE;
+
+    public BridgeNotAvailablePacketExt()
     {
-        super("", ELEMENT_NAME);
+        super(NAMESPACE, ELEMENT_NAME);
     }
 }

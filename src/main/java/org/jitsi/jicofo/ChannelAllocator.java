@@ -46,7 +46,7 @@ public class ChannelAllocator implements Runnable
      * working videobridge bridges.
      * FIXME: consider moving to OperationFailedException ?
      */
-    final static int BRIDGE_FAILURE_ERR_CODE = 20;
+    final static int NO_BRIDGE_AVAILABLE_ERR_CODE = 20;
 
     /**
      * The class logger which can be used to override logging level inherited
@@ -371,7 +371,7 @@ public class ChannelAllocator implements Runnable
                 {
                     throw new OperationFailedException(
                         "Failed to allocate channels - no bridge configured",
-                        BRIDGE_FAILURE_ERR_CODE);
+                        NO_BRIDGE_AVAILABLE_ERR_CODE);
                 }
 
                 colibriConference.setJitsiVideobridge(bridge);
@@ -472,7 +472,7 @@ public class ChannelAllocator implements Runnable
                         throw new OperationFailedException(
                                 "Failed to allocate channels "
                                     + "- all bridges are faulty",
-                                BRIDGE_FAILURE_ERR_CODE);
+                                NO_BRIDGE_AVAILABLE_ERR_CODE);
                     }
                 }
             }
