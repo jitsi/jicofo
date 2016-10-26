@@ -197,10 +197,35 @@ public class JibriRecorder
     @Override
     public void dispose()
     {
-        XMPPError error = sendStopIQ();
-        if (error != null)
+        /**
+         * When sendStopIQ() succeeds without any errors it will reset the state
+         * to "recording stopped", but in case something goes wrong the decision
+         * must be made outside of that method.
+         */
+        boolean stoppedGracefully;
+        try
         {
-            logger.error("Error when sending stop request: " + error.toXML());
+            XMPPError error = sendStopIQ();
+            if (error != null)
+            {
+                logger.error(
+                    "An error response to the stop request: " + error.toXML());
+            }
+            stoppedGracefully = error == null;
+        }
+        catch (OperationFailedException e)
+        {
+            logger.error("Failed to send stop IQ - XMPP disconnected", e);
+            stoppedGracefully = false;
+        }
+
+        if (!stoppedGracefully) {
+            // The instance is going down which means that
+            // the JitsiMeetConference is being disposed. We don't want any
+            // updates to be sent, but it makes sense to reset the state
+            // (and that's what recordingSopped() will do).
+            recordingStopped(
+                null, false /* do not send any status updates */);
         }
 
         jibriDetector.removeJibriListener(this);
@@ -255,8 +280,12 @@ public class JibriRecorder
      */
     private void startJibri(final String jibriJid)
     {
-        logger.info("Starting Jibri " + jibriJid + " for stream ID: "
-            + streamID + " in room: " + getRoomName());
+        final String roomName = getRoomName();
+
+        logger.info(
+                "Starting Jibri " + jibriJid
+                    + " for stream ID: " + streamID
+                    + " in room: " + roomName);
 
         final JibriIq startIq = new JibriIq();
         startIq.setTo(jibriJid);
@@ -265,7 +294,7 @@ public class JibriRecorder
         startIq.setStreamId(streamID);
 
         // Insert name of the room into Jibri START IQ
-        startIq.setRoom(getRoomName());
+        startIq.setRoom(roomName);
 
         // Store Jibri JID to make the packet filter accept the response
         recorderComponentJid = jibriJid;
@@ -291,21 +320,33 @@ public class JibriRecorder
             @Override
             public void run()
             {
-                final IQ startReply
-                    = (IQ) xmpp.getXmppConnection()
-                    .sendPacketAndGetReply(startIq);
-                if (startReply == null)
+                try
                 {
-                    synchronized (JibriRecorder.this)
+                    IQ startReply
+                        = (IQ) xmpp.getXmppConnection()
+                                   .sendPacketAndGetReply(startIq);
+                    if (startReply == null)
                     {
-                        // Trigger request timeout
-                        logger.info(
-                            "Will trigger timeout in room: " + getRoomName());
-                        processJibriError(new XMPPError(
-                                XMPPError.Condition.request_timeout));
+                        synchronized (JibriRecorder.this)
+                        {
+                            // Trigger request timeout
+                            logger.info(
+                                "Will trigger timeout in room: " + roomName);
+                            processJibriError(
+                                new XMPPError(
+                                        XMPPError.Condition.request_timeout));
+                        }
                     }
+                    //else the response will be handled in processPacket()
                 }
-                //else the response will be handled in processPacket()
+                catch (OperationFailedException e)
+                {
+                    logger.error(
+                            "Failed to start recording in " + roomName
+                                + " - XMPP connection is broken");
+                    recordingStopped(
+                            null, false /* do not send status updates */);
+                }
             }
         });
     }
@@ -446,11 +487,21 @@ public class JibriRecorder
         {
             // XXX FIXME: this is synchronous and will probably block the smack
             // thread that executes processPacket().
-            XMPPError error = sendStopIQ();
-            sendPacket(
-                error == null
-                    ? IQ.createResultIQ(iq)
-                    : IQ.createErrorResponse(iq, error));
+            try
+            {
+                XMPPError error = sendStopIQ();
+                sendPacket(
+                    error == null
+                        ? IQ.createResultIQ(iq)
+                        : IQ.createErrorResponse(iq, error));
+            }
+            catch (OperationFailedException e)
+            {
+                // XXX the XMPP connection is broken
+                // This instance shall be disposed soon after
+                logger.error("Failed to send stop IQ - XMPP disconnected", e);
+                recordingStopped(null, false /* do not send status update */);
+            }
             return;
         }
 
@@ -637,9 +688,20 @@ public class JibriRecorder
     }
 
     /**
-     * Sends a "stop" command to jibri.
+     * Sends a "stop" command to the current Jibri(if any). If the operation is
+     * accepted by Jibri (with a RESULT response) then the instance state will
+     * be adjusted to stopped and new recording availability status will be
+     * sent. Otherwise the decision whether the instance should go to
+     * the stopped state has to be taken outside of this method based on
+     * the result returned/Exception thrown.
+     *
+     * @return XMPPError if Jibri replies with an error or <tt>null</tt> if
+     * the recording was stopped gracefully.
+     *
+     * @throws OperationFailedException if the XMPP connection is broken.
      */
     private XMPPError sendStopIQ()
+        throws OperationFailedException
     {
         if (recorderComponentJid == null)
             return null;
@@ -653,8 +715,9 @@ public class JibriRecorder
         logger.debug("Trying to stop: " + stopRequest.toXML());
 
         IQ stopReply
-            = (IQ) xmpp.getXmppConnection()
-                    .sendPacketAndGetReply(stopRequest);
+            = (IQ) xmpp
+                .getXmppConnection()
+                .sendPacketAndGetReply(stopRequest);
 
         logger.debug("Stop response: " + IQUtils.responseToXML(stopReply));
 
@@ -693,6 +756,22 @@ public class JibriRecorder
      */
     private void recordingStopped(XMPPError error)
     {
+        recordingStopped(error, true /* send recording status update */);
+    }
+
+    /**
+     * Methods clears {@link #recorderComponentJid} which means we're no longer
+     * recording nor in contact with any Jibri instance.
+     * Refreshes recording status in the room based on Jibri availability.
+     *
+     * @param error if the recording stopped because of an error it should be
+     * passed as an argument here which will result in stopping with
+     * the {@link JibriIq.Status#FAILED} status passed to the application.
+     * @param updateStatus <tt>true</tt> if the Jibri availability status
+     * broadcast should follow the transition to the stopped state.
+     */
+    private void recordingStopped(XMPPError error, boolean updateStatus)
+    {
         logger.info("Recording stopped for: " + getRoomName());
         recorderComponentJid = null;
         retryAttempt = 0;
@@ -703,7 +782,8 @@ public class JibriRecorder
             setJibriStatus(JibriIq.Status.FAILED, error);
         }
         // Update based on availability
-        updateJibriAvailability();
+        if (updateStatus)
+            updateJibriAvailability();
     }
 
     /**

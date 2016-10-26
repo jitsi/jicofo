@@ -148,8 +148,12 @@ public class ChannelAllocator implements Runnable
 
     /**
      * Method does feature discovery and channel allocation for participant.
+     *
+     * @throws OperationFailedException if the XMPP connection is broken.
+     * The thread should end it's work.
      */
     private void discoverFeaturesAndInvite()
+        throws OperationFailedException
     {
         String address = newParticipant.getMucJid();
 
@@ -219,6 +223,7 @@ public class ChannelAllocator implements Runnable
             JingleSession jingleSession = newParticipant.getJingleSession();
             if (!reInvite || jingleSession == null)
             {
+                // will throw OperationFailedExc if XMPP connection is broken
                 ack = jingle.initiateSession(
                         newParticipant.hasBundleSupport(),
                         address,
@@ -228,6 +233,7 @@ public class ChannelAllocator implements Runnable
             }
             else
             {
+                // will throw OperationFailedExc if XMPP connection is broken
                 ack = jingle.replaceTransport(
                         newParticipant.hasBundleSupport(),
                         jingleSession,

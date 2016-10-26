@@ -245,24 +245,14 @@ public class ChatRoomRoleAndPresence
             else
             {
                 // Elect new owner
-                try
+                if (grantOwner(((XmppChatMember)member).getJabberID()))
                 {
-                    chatRoom.grantOwnership(
-                            ((XmppChatMember)member).getJabberID());
-
                     logger.info(
-                            "Granted owner to " + member.getContactAddress());
+                        "Granted owner to " + member.getContactAddress());
 
                     owner = member;
-                    break;
                 }
-                catch (RuntimeException e)
-                {
-                    logger.error(
-                        "Failed to grant owner status to " + member.getName()
-                            , e);
-                }
-                //break; FIXME: should cancel event if exception occurs ?
+                break;
             }
         }
     }
@@ -336,6 +326,21 @@ public class ChatRoomRoleAndPresence
         }
     }
 
+    private boolean grantOwner(String jid)
+    {
+        try
+        {
+            chatRoom.grantOwnership(jid);
+            return true;
+        }
+        catch(RuntimeException e)
+        {
+            logger.error(
+                "Failed to grant owner status to " + jid , e);
+        }
+        return false;
+    }
+
     private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
         XmppChatMember xmppMember = (XmppChatMember) member;
@@ -350,7 +355,7 @@ public class ChatRoomRoleAndPresence
             String authSessionId = authAuthority.getSessionForJid(jabberId);
             if (authSessionId != null)
             {
-                chatRoom.grantOwnership(jabberId);
+                grantOwner(jabberId);
 
                 // Notify that this member has been authenticated using
                 // given session

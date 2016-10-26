@@ -589,24 +589,40 @@ public class XmppProtocolProvider
             this.connection = connection;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public void sendPacket(Packet packet)
         {
+            Objects.requireNonNull(packet, "packet");
+
             if (connection.isConnected())
                 connection.sendPacket(packet);
             else
-                logger.warn(
+                logger.error(
                     "No connection - unable to send packet: " + packet.toXML());
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public Packet sendPacketAndGetReply(Packet packet)
+            throws OperationFailedException
         {
+            Objects.requireNonNull(packet, "packet");
+
             PacketCollector packetCollector
                 = connection.createPacketCollector(
                         new PacketIDFilter(packet.getPacketID()));
 
-            connection.sendPacket(packet);
+            if (connection.isConnected())
+                connection.sendPacket(packet);
+            else
+                throw new OperationFailedException(
+                    "No connection - unable to send packet: " + packet.toXML(),
+                    OperationFailedException.PROVIDER_NOT_REGISTERED);
 
             //FIXME: retry allocation on timeout
             Packet response

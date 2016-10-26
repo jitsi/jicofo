@@ -176,9 +176,21 @@ public class DiscoveryUtil
             versionIq.setType(IQ.Type.GET);
             versionIq.setTo(jid);
 
-            Packet response
-                = xmppOpSet.getXmppConnection()
+            Packet response;
+            try
+            {
+                response
+                    = xmppOpSet
+                        .getXmppConnection()
                         .sendPacketAndGetReply(versionIq);
+            }
+            catch (OperationFailedException e)
+            {
+                logger.error(
+                    "Failed to discover component version - XMPP disconnected",
+                    e);
+                return null;
+            }
 
             if (response instanceof Version)
             {

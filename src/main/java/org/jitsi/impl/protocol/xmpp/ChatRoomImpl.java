@@ -693,14 +693,24 @@ public class ChatRoomImpl
         XmppConnection connection
                 = provider.getConnectionAdapter();
 
-        IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
-        if (reply == null || reply.getType() != IQ.Type.RESULT)
+        try
         {
-            // FIXME: we should have checked exceptions for all operations in
-            // ChatRoom interface which are expected to fail.
-            // OperationFailedException maybe ?
-            throw new RuntimeException(
+            IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
+            if (reply == null || reply.getType() != IQ.Type.RESULT)
+            {
+                // FIXME: we should have checked exceptions for all operations
+                // in ChatRoom interface which are expected to fail.
+                // OperationFailedException maybe ?
+                throw new RuntimeException(
                     "Failed to grant owner: " + IQUtils.responseToXML(reply));
+            }
+        }
+        catch (OperationFailedException e)
+        {
+            // XXX FIXME unable to throw OperationFailedException, because of
+            // the ChatRoom interface
+            throw new RuntimeException(
+                "Failed to grant owner - XMPP disconnected", e);
         }
     }
 

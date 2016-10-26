@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet
           .SSRCInfoPacketExtension;
+import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -243,6 +244,7 @@ public class LipSyncHack implements OperationSetJingle
             List<ContentPacketExtension>    contents,
             JingleRequestHandler            requestHandler,
             boolean[]                       startMuted)
+        throws OperationFailedException
     {
         processAllParticipantsSSRCs(contents, address);
 
@@ -262,6 +264,7 @@ public class LipSyncHack implements OperationSetJingle
             JingleSession                   session,
             List<ContentPacketExtension>    contents,
             boolean[]                       startMuted)
+        throws OperationFailedException
     {
         processAllParticipantsSSRCs(contents, session.getAddress());
 

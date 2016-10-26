@@ -20,6 +20,7 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
+import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
@@ -92,6 +93,7 @@ public abstract class AbstractOperationSetJingle
      * @param startMuted if the first element is <tt>true</tt> the participant
      * will start audio muted. if the second element is <tt>true</tt> the
      * participant will start video muted.
+     * {@inheritDoc}
      */
     @Override
     public boolean initiateSession(boolean                      useBundle,
@@ -99,6 +101,7 @@ public abstract class AbstractOperationSetJingle
                                    List<ContentPacketExtension> contents,
                                    JingleRequestHandler         requestHandler,
                                    boolean[]                    startMuted)
+        throws OperationFailedException
     {
         logger.info("INVITE PEER: " + address);
 
@@ -229,6 +232,7 @@ public abstract class AbstractOperationSetJingle
                                     JingleSession                   session,
                                     List<ContentPacketExtension>    contents,
                                     boolean[]                       startMuted)
+        throws OperationFailedException
     {
         String address = session.getAddress();
 

@@ -51,13 +51,18 @@ public interface OperationSetJingle
      *
      * @return <tt>true</tt> if have have received RESULT response to
      *         session-initiate IQ.
+     *
+     * @throws OperationFailedException with
+     * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} if the operation
+     * fails, because the XMPP connection is broken.
      */
     boolean initiateSession(
             boolean useBundle,
             String address,
             List<ContentPacketExtension> contents,
             JingleRequestHandler requestHandler,
-            boolean[] startMuted);
+            boolean[] startMuted)
+        throws OperationFailedException;
 
     /**
      * Sends 'transport-replace' IQ to the client.
@@ -71,11 +76,16 @@ public interface OperationSetJingle
      * audio muted" and the seconds one for "start video muted"
      *
      * @return <tt>true</tt> if have have received RESULT response to the IQ.
+     *
+     * @throws OperationFailedException with
+     * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} if the operation
+     * fails, because the XMPP connection is broken.
      */
     boolean replaceTransport(boolean                         useBundle,
                              JingleSession                   session,
                              List<ContentPacketExtension>    contents,
-                             boolean[]                       startMuted);
+                             boolean[]                       startMuted)
+        throws OperationFailedException;
 
     /**
      * Sends 'source-add' proprietary notification.

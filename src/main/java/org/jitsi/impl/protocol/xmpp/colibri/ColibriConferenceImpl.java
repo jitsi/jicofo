@@ -397,9 +397,13 @@ public class ColibriConferenceImpl
      *
      * @return <tt>Packet</tt> which is JVB response or <tt>null</tt> if
      *         the request timed out.
+     *
+     * @throws OperationFailedException see throws description of
+     * {@link XmppConnection#sendPacketAndGetReply(Packet)}.
      */
     protected Packet sendAllocRequest(String endpointName,
                                       ColibriConferenceIQ request)
+        throws OperationFailedException
     {
         return connection.sendPacketAndGetReply(request);
     }
