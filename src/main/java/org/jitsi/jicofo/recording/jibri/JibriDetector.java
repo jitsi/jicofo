@@ -222,14 +222,14 @@ public class JibriDetector
             chatRoom = null;
 
             logger.info("Left JIBRI room: " + jibriBrewery);
+        }
 
-            // Clean up the list of Jibris
-            List<Jibri> jibrisCopy = new ArrayList<>(jibris);
-            jibris.clear();
-            for (Jibri jibri : jibrisCopy)
-            {
-                notifyJibriOffline(jibri.mucJid);
-            }
+        // Clean up the list of Jibris
+        List<Jibri> jibrisCopy = new ArrayList<>(jibris);
+        jibris.clear();
+        for (Jibri jibri : jibrisCopy)
+        {
+            notifyJibriOffline(jibri.mucJid);
         }
     }
 
