@@ -197,6 +197,12 @@ public class JibriRecorder
     @Override
     public void dispose()
     {
+        /**
+         * When sendStopIQ() succeeds without any errors it will reset the state
+         * to "recording stopped", but in case something goes wrong the decision
+         * must be made outside of that method.
+         */
+        boolean stoppedGracefully;
         try
         {
             XMPPError error = sendStopIQ();
@@ -205,11 +211,21 @@ public class JibriRecorder
                 logger.error(
                     "An error response to the stop request: " + error.toXML());
             }
+            stoppedGracefully = error == null;
         }
         catch (OperationFailedException e)
         {
             logger.error("Failed to send stop IQ - XMPP disconnected", e);
-            recordingStopped(null, false /* do not send any status updates */);
+            stoppedGracefully = false;
+        }
+
+        if (!stoppedGracefully) {
+            // The instance is going down which means that
+            // the JitsiMeetConference is being disposed. We don't want any
+            // updates to be sent, but it makes sense to reset the state
+            // (and that's what recordingSopped() will do).
+            recordingStopped(
+                null, false /* do not send any status updates */);
         }
 
         jibriDetector.removeJibriListener(this);
@@ -672,7 +688,15 @@ public class JibriRecorder
     }
 
     /**
-     * Sends a "stop" command to jibri.
+     * Sends a "stop" command to the current Jibri(if any). If the operation is
+     * accepted by Jibri (with a RESULT response) then the instance state will
+     * be adjusted to stopped and new recording availability status will be
+     * sent. Otherwise the decision whether the instance should go to
+     * the stopped state has to be taken outside of this method based on
+     * the result returned/Exception thrown.
+     *
+     * @return XMPPError if Jibri replies with an error or <tt>null</tt> if
+     * the recording was stopped gracefully.
      *
      * @throws OperationFailedException if the XMPP connection is broken.
      */
