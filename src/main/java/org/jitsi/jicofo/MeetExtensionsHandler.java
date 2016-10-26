@@ -335,24 +335,33 @@ public class MeetExtensionsHandler
         dialIq.setTo(jigasiJid);
         dialIq.setPacketID(IQ.nextID());
 
-        IQ reply
-            = (IQ) smackXmpp.getXmppConnection().sendPacketAndGetReply(dialIq);
-
-        if (reply != null)
+        try
         {
-            // Send Jigasi response back to the client
-            reply.setFrom(null);
-            reply.setTo(from);
-            reply.setPacketID(originalPacketId);
+            IQ reply
+                = (IQ) smackXmpp
+                    .getXmppConnection()
+                    .sendPacketAndGetReply(dialIq);
+            if (reply != null)
+            {
+                // Send Jigasi response back to the client
+                reply.setFrom(null);
+                reply.setTo(from);
+                reply.setPacketID(originalPacketId);
+            }
+            else
+            {
+                reply
+                    = createErrorResponse(
+                        dialIq,
+                        new XMPPError(
+                                XMPPError.Condition.remote_server_timeout));
+            }
+            smackXmpp.getXmppConnection().sendPacket(reply);
         }
-        else
+        catch (OperationFailedException e)
         {
-            reply = createErrorResponse(
-                    dialIq,
-                    new XMPPError(XMPPError.Condition.remote_server_timeout));
+            logger.error("Failed to send DialIq - XMPP disconnected", e);
         }
-
-        smackXmpp.getXmppConnection().sendPacket(reply);
     }
 
     private boolean acceptMessage(Packet packet)

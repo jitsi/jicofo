@@ -20,6 +20,7 @@ package org.jitsi.jicofo.recording;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 
+import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
@@ -117,9 +118,20 @@ public class JvbRecorder
             new ColibriConferenceIQ.Recording(
                 !isRecording ? State.ON : State.OFF, token));
 
-        Packet reply
-            = xmpp.getXmppConnection()
+        Packet reply;
+        try
+        {
+            reply
+                = xmpp
+                    .getXmppConnection()
                     .sendPacketAndGetReply(toggleRecordingIq);
+        }
+        catch (OperationFailedException e)
+        {
+            logger.error("Failed to send recording IQ", e);
+            return false;
+        }
+
         logger.info("REC reply received: " + IQUtils.responseToXML(reply));
         if (reply instanceof ColibriConferenceIQ)
         {

@@ -19,6 +19,7 @@ package org.jitsi.jicofo.recording;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
+import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
@@ -138,8 +139,18 @@ public class JireconRecorder
             recording.setAction(JireconIq.Action.START);
             recording.setOutput(path);
 
-            Packet reply
-                = xmpp.getXmppConnection().sendPacketAndGetReply(recording);
+            Packet reply;
+            try
+            {
+                reply
+                    = xmpp.getXmppConnection().sendPacketAndGetReply(recording);
+            }
+            catch (OperationFailedException e)
+            {
+                logger.error("XMPP disconnected", e);
+                return false;
+            }
+
             if (reply instanceof JireconIq)
             {
                 JireconIq recResponse = (JireconIq) reply;

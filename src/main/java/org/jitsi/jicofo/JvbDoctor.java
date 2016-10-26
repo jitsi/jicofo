@@ -404,7 +404,13 @@ public class JvbDoctor
             return healthIq;
         }
 
+        /**
+         * Performs a health check.
+         * @throws OperationFailedException when XMPP got disconnected -
+         * the task should terminate.
+         */
         private void doHealthCheck()
+            throws OperationFailedException
         {
             // If XMPP is currently not connected skip the health-check
             if (!protocolProvider.isRegistered())
