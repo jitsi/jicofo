@@ -142,7 +142,8 @@ public class Health
 
     /**
      * Gets a JSON representation of the health (status) of a specific
-     * {@link FocusManager}.
+     * {@link FocusManager}. The method is synchronized so anything other than
+     * the health check itself (which is cached) needs to return very quickly.
      *
      * @param focusManager the {@code FocusManager} to get the health (status)
      * of in the form of a JSON representation
@@ -154,7 +155,7 @@ public class Health
      * @throws IOException
      * @throws ServletException
      */
-    static void getJSON(
+    static synchronized void getJSON(
             FocusManager focusManager,
             Request baseRequest,
             HttpServletRequest request,
