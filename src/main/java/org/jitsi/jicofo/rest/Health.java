@@ -167,7 +167,7 @@ public class Health
         try
         {
             // Callers may ask us to return the list of healthy bridges that
-            //{@link JvbDoctor} maintains
+            // Jicofo knows about.
             String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
 
             if (Boolean.parseBoolean(listJvbParam))
@@ -242,14 +242,13 @@ public class Health
     }
 
     /**
-     * Returns a list of currently healthy JVBs as reported by our
-     * {@link org.jitsi.jicofo.JvbDoctor}.
+     * Returns a list of currently healthy JVBs known to Jicofo and
+     * kept alive by our {@link org.jitsi.jicofo.JvbDoctor}.
      * @param focusManager our current context
      * @return the list of healthy bridges currently known to this focus.
      */
     private static List<String> listBridges(FocusManager focusManager)
     {
-        int status;
         JitsiMeetServices services
             = focusManager.getJitsiMeetServices();
 
