@@ -65,6 +65,21 @@ public class Health
     private static final Random RANDOM = new Random();
 
     /**
+     * The result from the last health check we ran.
+     */
+    private static int cachedStatus = -1;
+
+    /**
+     * The time when we ran our last health check.
+     */
+    private static long cachedStatusTimestamp = -1;
+
+    /**
+     * The maximum number of millis that we cache results for.
+     */
+    private static final int STATUS_CACHE_INTERVAL = 1000;
+
+    /**
      * Checks the health (status) of a specific {@link FocusManager}.
      *
      * @param focusManager the {@code FocusManager} to check the health (status)
@@ -127,7 +142,8 @@ public class Health
 
     /**
      * Gets a JSON representation of the health (status) of a specific
-     * {@link FocusManager}.
+     * {@link FocusManager}. The method is synchronized so anything other than
+     * the health check itself (which is cached) needs to return very quickly.
      *
      * @param focusManager the {@code FocusManager} to get the health (status)
      * of in the form of a JSON representation
@@ -139,7 +155,7 @@ public class Health
      * @throws IOException
      * @throws ServletException
      */
-    static void getJSON(
+    static synchronized void getJSON(
             FocusManager focusManager,
             Request baseRequest,
             HttpServletRequest request,
@@ -151,22 +167,15 @@ public class Health
 
         try
         {
-            // At this point the health check has passed - now eventually list
-            // JVBs known to this Jicofo instance
+            // Callers may ask us to return the list of healthy bridges that
+            // Jicofo knows about.
             String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
 
             if (Boolean.parseBoolean(listJvbParam))
             {
-                JitsiMeetServices services
-                    = focusManager.getJitsiMeetServices();
-
-                Assert.notNull(services, "services");
-
-                BridgeSelector bridgeSelector = services.getBridgeSelector();
-
-                Assert.notNull(bridgeSelector, "bridgeSelector");
-
-                List<String> activeJVBs = bridgeSelector.listActiveJVBs();
+                //caller asked that we check for active bridges.
+                // we fail in case we don't
+                List<String> activeJVBs = listBridges(focusManager);
 
                 // ABORT here if the list is empty
                 if (activeJVBs.isEmpty())
@@ -178,15 +187,29 @@ public class Health
                     response.setStatus(status);
                     return;
                 }
-
-                JSONObject jsonRoot = new JSONObject();
-                jsonRoot.put("jvbs", activeJVBs);
-                response.getWriter().append(jsonRoot.toJSONString());
+                else
+                {
+                    JSONObject jsonRoot = new JSONObject();
+                    jsonRoot.put("jvbs", activeJVBs);
+                    response.getWriter().append(jsonRoot.toJSONString());
+                }
             }
 
-            check(focusManager);
+            //now check Jicofo's health .. unless if we just did that in which
+            //case we return the cached result.
+            if(System.currentTimeMillis() - cachedStatusTimestamp
+                    < STATUS_CACHE_INTERVAL
+                && cachedStatus > 0)
+            {
+                //return a cached result
+                status = cachedStatus;
+            }
+            else
+            {
+                check(focusManager);
 
-            status = HttpServletResponse.SC_OK;
+                status = cacheStatus(HttpServletResponse.SC_OK);
+            }
         }
         catch (Exception ex)
         {
@@ -197,9 +220,45 @@ public class Health
             else if (ex instanceof ServletException)
                 throw (ServletException) ex;
             else
-                status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                status
+                    = cacheStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
         response.setStatus(status);
+    }
+
+    /**
+     * Records the specified status and the current time so that we can readily
+     * return it if people ask us again in the next second or so.
+     *
+     * @param status the health check response status code we'd like to cache
+     * @return the <tt>status</tt> param for convenience reasons;
+     */
+    private static int cacheStatus(int status)
+    {
+        Health.cachedStatus = status;
+        Health.cachedStatusTimestamp = System.currentTimeMillis();
+
+        return status;
+    }
+
+    /**
+     * Returns a list of currently healthy JVBs known to Jicofo and
+     * kept alive by our {@link org.jitsi.jicofo.JvbDoctor}.
+     * @param focusManager our current context
+     * @return the list of healthy bridges currently known to this focus.
+     */
+    private static List<String> listBridges(FocusManager focusManager)
+    {
+        JitsiMeetServices services
+            = focusManager.getJitsiMeetServices();
+
+        Assert.notNull(services, "services");
+        BridgeSelector bridgeSelector = services.getBridgeSelector();
+        Assert.notNull(bridgeSelector, "bridgeSelector");
+
+        List<String> activeJVBs = bridgeSelector.listActiveJVBs();
+
+        return activeJVBs;
     }
 }
