@@ -73,7 +73,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>1.0-20160420.185019-32</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
