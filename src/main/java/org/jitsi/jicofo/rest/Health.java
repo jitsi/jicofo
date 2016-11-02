@@ -19,18 +19,23 @@ package org.jitsi.jicofo.rest;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
 import org.eclipse.jetty.server.*;
 
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
+import org.jitsi.util.Logger;
+import org.json.simple.*;
 
 /**
  * Checks the health of {@link FocusManager}.
  *
  * @author Lyubomir Marinov
+ * @author Pawel Domas
  */
 public class Health
 {
@@ -40,6 +45,12 @@ public class Health
      */
     private static final Map<String,String> JITSI_MEET_CONFIG
         = Collections.emptyMap();
+
+    /**
+     * The name of the parameter that triggers known bridges listing in health
+     * check response;
+     */
+    private static final String LIST_JVB_PARAM_NAME = "list_jvb";
 
     /**
      * The {@code Logger} utilized by the {@code Health} class to print
@@ -52,6 +63,21 @@ public class Health
      * {@link FocusManager} such as room names.
      */
     private static final Random RANDOM = new Random();
+
+    /**
+     * The result from the last health check we ran.
+     */
+    private static int cachedStatus = -1;
+
+    /**
+     * The time when we ran our last health check.
+     */
+    private static long cachedStatusTimestamp = -1;
+
+    /**
+     * The maximum number of millis that we cache results for.
+     */
+    private static final int STATUS_CACHE_INTERVAL = 1000;
 
     /**
      * Checks the health (status) of a specific {@link FocusManager}.
@@ -90,7 +116,10 @@ public class Health
         while (focusManager.getConference(roomName) != null);
 
         // Create a conference with the generated room name.
-        if (!focusManager.conferenceRequest(roomName, JITSI_MEET_CONFIG))
+        if (!focusManager.conferenceRequest(
+                    roomName,
+                    JITSI_MEET_CONFIG,
+                    Level.WARNING /* conference logging level */))
         {
             throw new RuntimeException(
                     "Failed to create conference with room name " + roomName);
@@ -113,7 +142,8 @@ public class Health
 
     /**
      * Gets a JSON representation of the health (status) of a specific
-     * {@link FocusManager}.
+     * {@link FocusManager}. The method is synchronized so anything other than
+     * the health check itself (which is cached) needs to return very quickly.
      *
      * @param focusManager the {@code FocusManager} to get the health (status)
      * of in the form of a JSON representation
@@ -125,7 +155,7 @@ public class Health
      * @throws IOException
      * @throws ServletException
      */
-    static void getJSON(
+    static synchronized void getJSON(
             FocusManager focusManager,
             Request baseRequest,
             HttpServletRequest request,
@@ -137,22 +167,98 @@ public class Health
 
         try
         {
-            check(focusManager);
-            status = HttpServletResponse.SC_OK;
+            // Callers may ask us to return the list of healthy bridges that
+            // Jicofo knows about.
+            String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
+
+            if (Boolean.parseBoolean(listJvbParam))
+            {
+                //caller asked that we check for active bridges.
+                // we fail in case we don't
+                List<String> activeJVBs = listBridges(focusManager);
+
+                // ABORT here if the list is empty
+                if (activeJVBs.isEmpty())
+                {
+                    logger.error(
+                        "The health check failed - 0 active JVB instances !");
+
+                    status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                    response.setStatus(status);
+                    return;
+                }
+                else
+                {
+                    JSONObject jsonRoot = new JSONObject();
+                    jsonRoot.put("jvbs", activeJVBs);
+                    response.getWriter().append(jsonRoot.toJSONString());
+                }
+            }
+
+            //now check Jicofo's health .. unless if we just did that in which
+            //case we return the cached result.
+            if(System.currentTimeMillis() - cachedStatusTimestamp
+                    < STATUS_CACHE_INTERVAL
+                && cachedStatus > 0)
+            {
+                //return a cached result
+                status = cachedStatus;
+            }
+            else
+            {
+                check(focusManager);
+
+                status = cacheStatus(HttpServletResponse.SC_OK);
+            }
         }
         catch (Exception ex)
         {
-            if (logger.isDebugEnabled())
-                logger.debug("Health check of Jicofo failed!", ex);
+            logger.error("Health check of Jicofo failed!", ex);
 
             if (ex instanceof IOException)
                 throw (IOException) ex;
             else if (ex instanceof ServletException)
                 throw (ServletException) ex;
             else
-                status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                status
+                    = cacheStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
         response.setStatus(status);
+    }
+
+    /**
+     * Records the specified status and the current time so that we can readily
+     * return it if people ask us again in the next second or so.
+     *
+     * @param status the health check response status code we'd like to cache
+     * @return the <tt>status</tt> param for convenience reasons;
+     */
+    private static int cacheStatus(int status)
+    {
+        Health.cachedStatus = status;
+        Health.cachedStatusTimestamp = System.currentTimeMillis();
+
+        return status;
+    }
+
+    /**
+     * Returns a list of currently healthy JVBs known to Jicofo and
+     * kept alive by our {@link org.jitsi.jicofo.JvbDoctor}.
+     * @param focusManager our current context
+     * @return the list of healthy bridges currently known to this focus.
+     */
+    private static List<String> listBridges(FocusManager focusManager)
+    {
+        JitsiMeetServices services
+            = focusManager.getJitsiMeetServices();
+
+        Assert.notNull(services, "services");
+        BridgeSelector bridgeSelector = services.getBridgeSelector();
+        Assert.notNull(bridgeSelector, "bridgeSelector");
+
+        List<String> activeJVBs = bridgeSelector.listActiveJVBs();
+
+        return activeJVBs;
     }
 }

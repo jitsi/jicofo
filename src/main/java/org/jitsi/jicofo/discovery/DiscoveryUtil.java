@@ -15,11 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.util;
+package org.jitsi.jicofo.discovery;
 
+import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
+import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
+
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.xmpp.util.*;
+
+import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 
@@ -66,6 +72,12 @@ public class DiscoveryUtil
             = "urn:xmpp:jingle:transports:dtls-sctp:1";
 
     /**
+     * RTX (RFC4588) support.
+     */
+    public final static String FEATURE_RTX
+        = "urn:ietf:rfc:4588";
+
+    /**
      * The Jingle DTLS feature name (XEP-0320).
      */
     public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
@@ -79,6 +91,27 @@ public class DiscoveryUtil
      * RTP bundle feature name. 
      */
     public final static String FEATURE_RTP_BUNDLE = "urn:ietf:rfc:5888";
+
+    /**
+     * Heath checks feature namespace.
+     */
+    public final static String FEATURE_HEALTH_CHECK = HealthCheckIQ.NAMESPACE;
+
+    /**
+     * A namespace for our custom "lip-sync" feature. Advertised by the clients
+     * that support all of the functionality required for doing the lip-sync
+     * properly.
+     */
+    public final static String FEATURE_LIPSYNC
+        = "http://jitsi.org/meet/lipsync";
+
+    /**
+     * Array constant which can be used to check for Version IQ support.
+     */
+    public final static String[] VERSION_FEATURES = new String[]
+        {
+            ProtocolProviderServiceJabberImpl.URN_XMPP_IQ_VERSION
+        };
 
     /**
      * Gets the list of features supported by participant. If we fail to 
@@ -117,6 +150,61 @@ public class DiscoveryUtil
         }
 
         return participantFeatures;
+    }
+
+    /**
+     * Discovers version of given <tt>jid</tt>.
+     *
+     * @param xmppOpSet the direct smack operation set which will be used to
+     *                  send the query.
+     * @param jid       the JID to which version query wil be sent.
+     * @param features  the list of <tt>jid</tt> feature which will be used to
+     *                  determine support for the version IQ.
+     *
+     * @return {@link Version} if given <tt>jid</tt> supports version IQ and if
+     *         we the query was successful or <tt>null</tt> otherwise.
+     */
+    static public Version discoverVersion(
+            OperationSetDirectSmackXmpp    xmppOpSet,
+            String                               jid,
+            List<String>                    features )
+    {
+        // If the bridge supports version IQ query it's version
+        if (DiscoveryUtil.checkFeatureSupport(VERSION_FEATURES, features))
+        {
+            Version versionIq = new Version();
+            versionIq.setType(IQ.Type.GET);
+            versionIq.setTo(jid);
+
+            Packet response;
+            try
+            {
+                response
+                    = xmppOpSet
+                        .getXmppConnection()
+                        .sendPacketAndGetReply(versionIq);
+            }
+            catch (OperationFailedException e)
+            {
+                logger.error(
+                    "Failed to discover component version - XMPP disconnected",
+                    e);
+                return null;
+            }
+
+            if (response instanceof Version)
+            {
+                return  (Version) response;
+            }
+            else
+            {
+                logger.error(
+                        "Failed to discover version, req: " + versionIq.toXML()
+                            + ", response: "
+                            + IQUtils.responseToXML(response));
+            }
+        }
+        return null;
     }
 
     /**

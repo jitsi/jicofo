@@ -20,11 +20,12 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
-import org.jitsi.jicofo.util.*;
+import org.jitsi.assertions.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.util.*;
 
 import java.util.*;
 
@@ -37,9 +38,11 @@ import java.util.*;
 public class Participant
 {
     /**
-     * The logger
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    private final static Logger logger = Logger.getLogger(Participant.class);
+    private final static Logger classLogger
+        = Logger.getLogger(Participant.class);
 
     /**
      * MUC chat member of this participant.
@@ -57,14 +60,27 @@ public class Participant
     private ColibriConferenceIQ colibriChannelsInfo;
 
     /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
+
+    /**
+     * The map of the most recently received RTP description for each Colibri
+     * content.
+     */
+    private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
+
+    /**
      * Peer's media SSRCs.
      */
-    private MediaSSRCMap ssrcs = new MediaSSRCMap();
+    private final MediaSSRCMap ssrcs = new MediaSSRCMap();
 
     /**
      * Peer's media SSRC groups.
      */
-    private MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
+    private final MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
 
     /**
      * SSRCs received from other peers scheduled for later addition, because
@@ -94,9 +110,23 @@ public class Participant
     private MediaSSRCGroupMap ssrcGroupsToRemove = new MediaSSRCGroupMap();
 
     /**
+     * Stores information about bundled transport if {@link #hasBundleSupport()}
+     * returns <tt>true</tt>.
+     */
+    private IceUdpTransportPacketExtension bundleTransport;
+
+    /**
+     * Maps ICE transport information to the name of Colibri content. This is
+     * "non-bundled" transport which is used when {@link #hasBundleSupport()}
+     * returns <tt>false</tt>.
+     */
+    private Map<String, IceUdpTransportPacketExtension> transportMap
+        = new HashMap<>();
+
+    /**
      * The list of XMPP features supported by this participant. 
      */
-    private List<String> supportedFeatures = new ArrayList<String>();
+    private List<String> supportedFeatures = new ArrayList<>();
 
     /**
      * Tells how many unique SSRCs per media participant is allowed to advertise
@@ -109,7 +139,7 @@ public class Participant
     private boolean mutedStatus;
 
     /**
-     *
+     * Participant's display name.
      */
     private String displayName = null;
 
@@ -135,14 +165,16 @@ public class Participant
      * @param maxSSRCCount how many unique SSRCs per media this participant
      *                     instance will be allowed to advertise.
      */
-    public Participant(XmppChatMember roomMember, int maxSSRCCount)
+    public Participant(JitsiMeetConference    conference,
+                       XmppChatMember         roomMember,
+                       int                    maxSSRCCount)
     {
-        if (roomMember == null)
-        {
-            throw new NullPointerException("roomMember");
-        }
+        Assert.notNull(conference, "conference");
+        Assert.notNull(roomMember, "roomMember");
+
         this.roomMember = roomMember;
         this.maxSSRCCount = maxSSRCCount;
+        this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     /**
@@ -170,6 +202,41 @@ public class Participant
     public XmppChatMember getChatMember()
     {
         return roomMember;
+    }
+
+    /**
+     * Returns currently stored map of RTP description to Colibri content name.
+     * @return a <tt>Map<String,RtpDescriptionPacketExtension></tt> which maps
+     *         the RTP descriptions to the corresponding Colibri content names.
+     */
+    public Map<String, RtpDescriptionPacketExtension> getRtpDescriptionMap()
+    {
+        return rtpDescriptionMap;
+    }
+
+    /**
+     * Extracts and stores RTP description for each content type from given
+     * Jingle contents.
+     * @param jingleContents the list of Jingle content packet extension from
+     *        <tt>Participant</tt>'s answer.
+     */
+    public void setRTPDescription(List<ContentPacketExtension> jingleContents)
+    {
+        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
+
+        for (ContentPacketExtension content : jingleContents)
+        {
+            RtpDescriptionPacketExtension rtpDesc
+                = content.getFirstChildOfType(
+                        RtpDescriptionPacketExtension.class);
+
+            if (rtpDesc != null)
+            {
+                rtpDescMap.put(content.getName(), rtpDesc);
+            }
+        }
+
+        this.rtpDescriptionMap = rtpDescMap;
     }
 
     /**
@@ -207,8 +274,8 @@ public class Participant
                             + " signalled by " + getEndpointId());
                     continue;
                 }
-                else if (
-                    ssrcs.getSSRCsForMedia(mediaType).size() >= maxSSRCCount)
+                else if (ssrcs.getSSRCsForMedia(mediaType).size()
+                        >= maxSSRCCount)
                 {
                     logger.warn(
                         "SSRC limit of " + maxSSRCCount + " exceeded by "
@@ -237,19 +304,11 @@ public class Participant
     }
 
     /**
-     * Returns the {@link MediaSSRCMap} which contains this peer's media SSRCs.
-     */
-    public MediaSSRCMap getSSRCS()
-    {
-        return ssrcs;
-    }
-
-    /**
-     * Returns shallow copy of this peer's media SSRC map.
+     * Returns deep copy of this peer's media SSRC map.
      */
     public MediaSSRCMap getSSRCsCopy()
     {
-        return ssrcs.copyShallow();
+        return ssrcs.copyDeep();
     }
 
     /**
@@ -375,6 +434,23 @@ public class Participant
     }
 
     /**
+     * Returns <tt>true</tt> if this participant supports 'lip-sync' or
+     * <tt>false</tt> otherwise.
+     */
+    public boolean hasLipSyncSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_LIPSYNC);
+    }
+
+    /**
+     * Returns {@code true} iff this participant supports RTX.
+     */
+    public boolean hasRtxSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_RTX);
+    }
+
+    /**
      * FIXME: we need to remove "is SIP gateway code", but there are still 
      * situations where we need to know whether given peer is a human or not.
      * For example when we close browser window and only SIP gateway stays
@@ -384,8 +460,7 @@ public class Participant
      */
     public boolean isSipGateway()
     {
-        return supportedFeatures.contains(
-                "http://jitsi.org/protocol/jigasi");
+        return supportedFeatures.contains("http://jitsi.org/protocol/jigasi");
     }
 
     /**
@@ -427,10 +502,7 @@ public class Participant
      */
     public void setSupportedFeatures(List<String> supportedFeatures)
     {
-        if (supportedFeatures == null)
-        {
-            throw new NullPointerException("supportedFeatures");
-        }
+        Assert.notNull(supportedFeatures, "supportedFeatures");
 
         this.supportedFeatures = supportedFeatures;
     }
@@ -451,6 +523,16 @@ public class Participant
     public boolean isMuted()
     {
         return mutedStatus;
+    }
+
+    /**
+     * Return a <tt>Boolean</tt> which informs about this participant's video
+     * muted status. The <tt>null</tt> value stands for 'unknown'/not signalled,
+     * <tt>true</tt> for muted and <tt>false</tt> means unmuted.
+     */
+    public Boolean isVideoMuted()
+    {
+        return roomMember.hasVideoMuted();
     }
 
     /**
@@ -539,6 +621,121 @@ public class Participant
     }
 
     /**
+     * Extracts and stores transport information from given map of Jingle
+     * content. Depending on the {@link #hasBundleSupport()} either 'bundle' or
+     * 'non-bundle' transport information will be stored. If we already have the
+     * transport information it will be merged into the currently stored one
+     * with {@link TransportSignaling#mergeTransportExtension}.
+     *
+     * @param contents the list of <tt>ContentPacketExtension</tt> from one of
+     * jingle message which can potentially contain transport info like
+     * 'session-accept', 'transport-info', 'transport-accept' etc.
+     */
+    public void addTransportFromJingle(List<ContentPacketExtension> contents)
+    {
+        if (hasBundleSupport())
+        {
+            // Select first transport
+            IceUdpTransportPacketExtension transport = null;
+            for (ContentPacketExtension cpe : contents)
+            {
+                IceUdpTransportPacketExtension contentTransport
+                    = cpe.getFirstChildOfType(
+                            IceUdpTransportPacketExtension.class);
+                if (contentTransport != null)
+                {
+                    transport = contentTransport;
+                    break;
+                }
+            }
+            if (transport == null)
+            {
+                logger.error(
+                    "No valid transport supplied in transport-update from "
+                        + getChatMember().getContactAddress());
+                return;
+            }
+
+            if (!transport.isRtcpMux())
+            {
+                transport.addChildExtension(new RtcpmuxPacketExtension());
+            }
+
+            if (bundleTransport == null)
+            {
+                bundleTransport = transport;
+            }
+            else
+            {
+                TransportSignaling.mergeTransportExtension(
+                        bundleTransport, transport);
+            }
+        }
+        else
+        {
+            for (ContentPacketExtension cpe : contents)
+            {
+                IceUdpTransportPacketExtension srcTransport
+                    = cpe.getFirstChildOfType(
+                            IceUdpTransportPacketExtension.class);
+
+                if (srcTransport != null)
+                {
+                    String contentName = cpe.getName().toLowerCase();
+                    IceUdpTransportPacketExtension dstTransport
+                        = transportMap.get(contentName);
+
+                    if (dstTransport == null)
+                    {
+                        transportMap.put(contentName, srcTransport);
+                    }
+                    else
+                    {
+                        TransportSignaling.mergeTransportExtension(
+                                dstTransport, srcTransport);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns 'bundled' transport information stored for this
+     * <tt>Participant</tt>.
+     * @return <tt>IceUdpTransportPacketExtension</tt> which describes 'bundled'
+     *         transport of this participant or <tt>null</tt> either if it's not
+     *         available yet or if 'non-bundled' transport is being used.
+     */
+    public IceUdpTransportPacketExtension getBundleTransport()
+    {
+        return bundleTransport;
+    }
+
+    /**
+     * Returns 'non-bundled' transport information stored for this
+     * <tt>Participant</tt>.
+     *
+     * @return a map of <tt>IceUdpTransportPacketExtension</tt> to Colibri
+     * content name which describes 'non-bundled' transport of this participant
+     * or <tt>null</tt> either if it's not available yet or if 'bundled'
+     * transport is being used.
+     */
+    public Map<String, IceUdpTransportPacketExtension> getTransportMap()
+    {
+        return transportMap;
+    }
+
+    /**
+     * Clears any ICE transport information currently stored for this
+     * participant.
+     */
+    public void clearTransportInfo()
+    {
+        bundleTransport = null;
+        transportMap = new HashMap<>();
+    }
+
+    /**
      * Returns the endpoint ID for this participant in the videobridge(Colibri)
      * context.
      */
@@ -565,4 +762,12 @@ public class Participant
         this.displayName = displayName;
     }
 
+    /**
+     * Returns the MUC JID of this <tt>Participant</tt>.
+     * @return full MUC address e.g. "room1@muc.server.net/nickname"
+     */
+    public String getMucJid()
+    {
+        return roomMember.getContactAddress();
+    }
 }

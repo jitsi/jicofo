@@ -18,9 +18,9 @@
 package org.jitsi.impl.reservation.rest;
 
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
-import org.jitsi.util.*;
 import org.json.simple.parser.*;
 
 import java.io.*;
@@ -66,8 +66,7 @@ public class RESTReservations
     /**
      * Active conferences known to our side.
      */
-    private Map<String, Conference> conferenceMap
-            = new HashMap<String,Conference>();
+    private final Map<String, Conference> conferenceMap = new HashMap<>();
 
     /**
      * Utility class that deals with API REST request processing.
@@ -80,10 +79,8 @@ public class RESTReservations
      */
     public RESTReservations(String baseUrl)
     {
-        if (StringUtils.isNullOrEmpty(baseUrl))
-        {
-            throw new NullPointerException("baseUrl");
-        }
+        Assert.notNullNorEmpty(baseUrl, "baseUrl: " + baseUrl);
+
         this.api = new ApiHandler(baseUrl);
     }
 
@@ -98,8 +95,8 @@ public class RESTReservations
     {
         if (this.focusManager != null)
             throw new IllegalStateException("already started");
-        if (focusManager == null)
-            throw new NullPointerException("focusManager");
+
+        Assert.notNull(focusManager, "focusManager");
 
         this.focusManager = focusManager;
         focusManager.setFocusAllocationListener(this);
@@ -219,7 +216,7 @@ public class RESTReservations
     /**
      * Deletes conference for given <tt>mucRoomName</tt> through the API.
      */
-    Result deleteConference(String mucRoomName)
+    private synchronized Result deleteConference(String mucRoomName)
     {
         Conference conference = conferenceMap.get(mucRoomName);
         if (conference != null)
@@ -285,7 +282,7 @@ public class RESTReservations
      * @return <tt>Conference</tt> for given <tt>id</tt> or <tt>null</tt>
      *         if not found.
      */
-    private Conference findConferenceForId(Number id)
+    private synchronized Conference findConferenceForId(Number id)
     {
         for (Conference conference : conferenceMap.values())
         {

@@ -17,6 +17,8 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jitsi.assertions.*;
+
 /**
  * Class describes Jingle session.
  *
@@ -62,10 +64,8 @@ public class JingleSession
     public JingleSession(String sid, String address,
                          JingleRequestHandler requestHandler)
     {
-        if (requestHandler == null)
-        {
-            throw new NullPointerException("requestHandler");
-        }
+        Assert.notNull(requestHandler, "requestHandler");
+
         this.sid = sid;
         this.address = address;
         this.requestHandler = requestHandler;

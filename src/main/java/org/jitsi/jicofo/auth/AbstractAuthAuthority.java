@@ -23,7 +23,6 @@ import java.util.concurrent.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.log.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
@@ -44,19 +43,6 @@ public abstract class AbstractAuthAuthority
      */
     private final static Logger logger
         = Logger.getLogger(AbstractAuthAuthority.class);
-
-    /**
-     * Name of configuration property that controls authentication session
-     * lifetime.
-     */
-    private final static String AUTHENTICATION_LIFETIME_PNAME
-            = "org.jitsi.jicofo.auth.AUTH_LIFETIME";
-
-    /**
-     * Default lifetime of authentication session(24H).
-     */
-    private final static long DEFAULT_AUTHENTICATION_LIFETIME
-        = 24 * 60 * 60 * 1000;
 
     /**
      * Interval at which we check for authentication sessions expiration.
@@ -96,9 +82,17 @@ public abstract class AbstractAuthAuthority
 
     /**
      * The map of user JIDs to {@link AuthenticationSession}.
+     *
+     * Note that access to this field is almost always protected by a lock on
+     * {@link #syncRoot}. However, {@link #getSession(String)} executes
+     * {@link Map#get(Object)} on it, which wouldn't be safe with a
+     * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
+     * I've chosen this solution, because I don't know whether the cleaner
+     * solution of synchronizing on {@link #syncRoot} in
+     * {@link #getSession(String)} is safe.
      */
-    private Map<String, AuthenticationSession> authenticationSessions
-            = new HashMap<String, AuthenticationSession>();
+    private final Map<String, AuthenticationSession> authenticationSessions
+            = new ConcurrentHashMap<>();
 
     /**
      * The list of registered {@link AuthenticationListener}s.
@@ -108,25 +102,24 @@ public abstract class AbstractAuthAuthority
 
     /**
      * Creates new instance of <tt>AbstractAuthAuthority</tt>.
+     *
+     * @param disableAutoLogin disables auto login feature. Authentication
+     * sessions are destroyed immediately when the conference ends.
+     * @param authenticationLifetime specifies how long authentication sessions
+     * will be stored in Jicofo's memory. Interval in milliseconds.
      */
-    public AbstractAuthAuthority()
+    public AbstractAuthAuthority(boolean disableAutoLogin,
+                                 long authenticationLifetime)
     {
-        ConfigurationService cfg = FocusBundleActivator.getConfigService();
+        this.disableAutoLogin = disableAutoLogin;
+        this.authenticationLifetime = authenticationLifetime;
 
-        authenticationLifetime
-            = cfg.getLong(
-                    AUTHENTICATION_LIFETIME_PNAME,
-                    DEFAULT_AUTHENTICATION_LIFETIME);
-        logger.info("Authentication lifetime: " + authenticationLifetime);
-
-        disableAutoLogin
-            = cfg.getBoolean(
-                    AuthBundleActivator.DISABLE_AUTOLOGIN_PNAME,
-                    false);
         if (disableAutoLogin)
         {
             logger.info("Auto login disabled");
         }
+
+        logger.info("Authentication lifetime: " + authenticationLifetime);
     }
 
     /**
@@ -210,12 +203,15 @@ public abstract class AbstractAuthAuthority
      */
     private UUID createNonExistingUUID()
     {
-        UUID uuid = UUID.randomUUID();
-        while (authenticationSessions.containsKey(uuid.toString()))
+        synchronized (syncRoot)
         {
-            uuid = UUID.randomUUID();
+            UUID uuid = UUID.randomUUID();
+            while (authenticationSessions.containsKey(uuid.toString()))
+            {
+                uuid = UUID.randomUUID();
+            }
+            return uuid;
         }
-        return uuid;
     }
 
     /**
@@ -291,7 +287,7 @@ public abstract class AbstractAuthAuthority
      */
     protected AuthenticationSession getSession(String sessionId)
     {
-        return authenticationSessions.get(sessionId);
+        return sessionId != null ? authenticationSessions.get(sessionId) : null;
     }
 
     /**
@@ -324,8 +320,7 @@ public abstract class AbstractAuthAuthority
     {
         synchronized (syncRoot)
         {
-            AuthenticationSession session
-                    = authenticationSessions.get(sessionId);
+            AuthenticationSession session = getSession(sessionId);
 
             if (session == null)
                 return;

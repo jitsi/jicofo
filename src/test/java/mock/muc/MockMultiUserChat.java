@@ -73,6 +73,12 @@ public class MockMultiUserChat
     }
 
     @Override
+    public String getLocalMucJid()
+    {
+        return me != null ? me.getContactAddress() : null;
+    }
+
+    @Override
     public String getName()
     {
         return roomName;
@@ -173,6 +179,14 @@ public class MockMultiUserChat
     {
         synchronized (members)
         {
+            String name = member.getName();
+            if (findMember(member.getName()) != null)
+            {
+                throw new IllegalArgumentException(
+                        "The member with name: " + name
+                            + " is in the room already");
+            }
+
             members.add(member);
 
             fireMemberPresenceEvent(
@@ -258,7 +272,7 @@ public class MockMultiUserChat
     @Override
     public ChatRoomMemberRole getUserRole()
     {
-        return null;
+        return ChatRoomMemberRole.OWNER;
     }
 
     @Override
@@ -463,24 +477,23 @@ public class MockMultiUserChat
     }
 
     @Override
-    public void grantModerator(String nickname)
+    public void grantModerator(String address)
     {
-        MockRoomMember member = findMember(nickname);
+        grantRole(address, ChatRoomMemberRole.MODERATOR);
+    }
+
+    private void grantRole(String address, ChatRoomMemberRole newRole)
+    {
+        MockRoomMember member = findMember(MucUtil.extractNickname(address));
         if (member == null)
         {
-            logger.error("Member not found for nickname: " + nickname);
-            return;
-        }
-
-        if (ChatRoomMemberRole.MODERATOR.compareTo(member.getRole()) >= 0)
-        {
-            // No action required
+            logger.error("Member not found for nickname: " + address);
             return;
         }
 
         ChatRoomMemberRole oldRole = member.getRole();
 
-        member.setRole(ChatRoomMemberRole.MODERATOR);
+        member.setRole(newRole);
 
         fireMemberRoleEvent(member, oldRole);
     }
@@ -498,7 +511,7 @@ public class MockMultiUserChat
     @Override
     public void grantOwnership(String address)
     {
-
+        grantRole(address, ChatRoomMemberRole.OWNER);
     }
 
     @Override

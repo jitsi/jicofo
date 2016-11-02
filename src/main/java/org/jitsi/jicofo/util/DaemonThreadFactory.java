@@ -15,22 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp.extensions;
+package org.jitsi.jicofo.util;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
+import java.util.concurrent.*;
 
 /**
- * Packet extension sent in focus MUC presence to notify users about JVB failure.
+ * A thread factory that creates daemon threads.
  *
  * @author Pawel Domas
  */
-public class BridgeIsDownPacketExt
-    extends AbstractPacketExtension
+public class DaemonThreadFactory
+    implements ThreadFactory
 {
-    private final static String ELEMENT_NAME = "bridgeIsDown";
-
-    public BridgeIsDownPacketExt()
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Thread newThread(Runnable r)
     {
-        super("", ELEMENT_NAME);
+        Thread t = Executors.defaultThreadFactory().newThread(r);
+        if (!t.isDaemon())
+        {
+            t.setDaemon(true);
+        }
+        return t;
     }
 }

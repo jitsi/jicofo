@@ -44,7 +44,14 @@ public class OperationSetMeetToolsImpl
     public void sendPresenceExtension(ChatRoom chatRoom,
                                       PacketExtension extension)
     {
-        ((ChatRoomImpl)chatRoom).sendPresenceExtension(extension);
+        ((ChatRoomImpl)chatRoom).setPresenceExtension(extension, false);
+    }
+
+    @Override
+    public void removePresenceExtension(ChatRoom chatRoom,
+                                        PacketExtension extension)
+    {
+        ((ChatRoomImpl)chatRoom).setPresenceExtension(extension, true);
     }
 
     @Override

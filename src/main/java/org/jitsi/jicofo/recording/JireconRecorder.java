@@ -19,12 +19,16 @@ package org.jitsi.jicofo.recording;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
+import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
+
+import java.util.*;
 
 /**
  * Class implements {@link Recorder} using Jirecon recorder container.
@@ -35,9 +39,10 @@ public class JireconRecorder
     extends Recorder
 {
     /**
-     * The logger.
+     * The class logger which can be used to override logging level inherited
+     * from {@link JitsiMeetConference}.
      */
-    private final static Logger logger
+    private final static Logger classLogger
         = Logger.getLogger(JireconRecorder.class);
 
     /**
@@ -46,6 +51,13 @@ public class JireconRecorder
      */
     static final String MEDIA_RECORDING_TOKEN_PNAME
         = "org.jitsi.videobridge.MEDIA_RECORDING_TOKEN";
+
+    /**
+     * The logger for this instance. Uses the logging level either of the
+     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
+     * whichever is higher.
+     */
+    private final Logger logger;
 
     /**
      * FIXME: not sure about that
@@ -70,21 +82,25 @@ public class JireconRecorder
 
     /**
      * Creates new instance of <tt>JireconRecorder</tt>.
-     * @param mucRoomJid focus room jid in form of
-     *                   "room_name@muc_component/focus_nickname".
+     * @param conference the parent conference for which this instance will be
+     * handling the recording.
      * @param recorderComponentJid recorder component address.
      * @param xmpp {@link OperationSetDirectSmackXmpp} instance for current
      *             XMPP connection.
      */
-    public JireconRecorder(String mucRoomJid, String recorderComponentJid,
+    public JireconRecorder(JitsiMeetConference conference,
+                           String recorderComponentJid,
                            OperationSetDirectSmackXmpp xmpp)
     {
         super(recorderComponentJid, xmpp);
 
-        this.mucRoomJid = mucRoomJid;
+        Objects.requireNonNull(conference, "conference");
+
+        this.mucRoomJid = conference.getFocusJid();
         this.token
             = FocusBundleActivator.getConfigService()
                     .getString(MEDIA_RECORDING_TOKEN_PNAME);
+        this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
     /**
@@ -123,8 +139,18 @@ public class JireconRecorder
             recording.setAction(JireconIq.Action.START);
             recording.setOutput(path);
 
-            Packet reply
-                = xmpp.getXmppConnection().sendPacketAndGetReply(recording);
+            Packet reply;
+            try
+            {
+                reply
+                    = xmpp.getXmppConnection().sendPacketAndGetReply(recording);
+            }
+            catch (OperationFailedException e)
+            {
+                logger.error("XMPP disconnected", e);
+                return false;
+            }
+
             if (reply instanceof JireconIq)
             {
                 JireconIq recResponse = (JireconIq) reply;
@@ -142,7 +168,8 @@ public class JireconRecorder
             }
             else
             {
-                logger.error("Unexpected response: " + reply.toXML());
+                logger.error(
+                        "Unexpected response: " + IQUtils.responseToXML(reply));
             }
         }
         else if (isRecording() && doRecord.equals(State.OFF))

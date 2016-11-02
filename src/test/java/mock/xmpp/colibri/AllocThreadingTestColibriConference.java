@@ -234,6 +234,7 @@ public class AllocThreadingTestColibriConference
     @Override
     protected Packet sendAllocRequest(String endpointName,
                                       ColibriConferenceIQ request)
+        throws OperationFailedException
     {
         boolean isCreator = confCreator.equals(endpointName);
         synchronized (createConferenceSync)

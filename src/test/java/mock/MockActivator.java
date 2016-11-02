@@ -17,9 +17,11 @@
  */
 package mock;
 
+import mock.muc.*;
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -47,6 +49,8 @@ public class MockActivator
         // FIXME: make sure that we're using interoperability layer
         AbstractSmackInteroperabilityLayer.setImplementationClass(
             SmackV3InteroperabilityLayer.class);
+
+        XmppProtocolActivator.registerXmppExtensions();
 
         sipFactory
             = new MockProtocolProviderFactory(
@@ -88,5 +92,7 @@ public class MockActivator
 
         if (sipRegistration != null)
             sipRegistration.unregister();
+
+        MockMultiUserChatOpSet.cleanMucSharing();
     }
 }

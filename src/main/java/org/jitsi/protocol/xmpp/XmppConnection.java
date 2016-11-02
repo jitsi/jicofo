@@ -17,6 +17,8 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import net.java.sip.communicator.service.protocol.*;
+
 import org.jivesoftware.smack.packet.*;
 
 /**
@@ -28,6 +30,10 @@ public interface XmppConnection
 {
     /**
      * Sends given XMPP packet through this connection.
+     * XXX The method will silently fail to send the packet if the XMPP
+     * connection is broken(not connected). Use this method only if such
+     * behaviour is desired, otherwise {@link #sendPacketAndGetReply(Packet)}
+     * should be used instead.
      *
      * @param packet the packet to be sent.
      */
@@ -40,6 +46,11 @@ public interface XmppConnection
      *
      * @return the response packet received within the time limit
      *         or <tt>null</tt> if no response was collected.
+     *
+     * @throws OperationFailedException with
+     * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} error code if
+     * the packet could not be sent, because the XMPP connection is broken.
      */
-    Packet sendPacketAndGetReply(Packet packet);
+    Packet sendPacketAndGetReply(Packet packet)
+        throws OperationFailedException;
 }

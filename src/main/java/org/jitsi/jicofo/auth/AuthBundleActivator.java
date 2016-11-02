@@ -68,6 +68,19 @@ public class AuthBundleActivator
         = AUTH_PNAME + ".DISABLE_AUTOLOGIN";
 
     /**
+     * Name of configuration property that controls authentication session
+     * lifetime.
+     */
+    private final static String AUTHENTICATION_LIFETIME_PNAME
+        = "org.jitsi.jicofo.auth.AUTH_LIFETIME";
+
+    /**
+     * Default lifetime of authentication session(24H).
+     */
+    private final static long DEFAULT_AUTHENTICATION_LIFETIME
+        = 24 * 60 * 60 * 1000;
+
+    /**
      * The {@code Logger} used by the {@code AuthBundleActivator} class and its
      * instances to print debug information.
      */
@@ -184,6 +197,13 @@ public class AuthBundleActivator
                     bundleContext,
                     ConfigurationService.class);
         String loginUrl = cfg.getString(LOGIN_URL_PNAME);
+        long authenticationLifetime
+            = cfg.getLong(
+                    AUTHENTICATION_LIFETIME_PNAME,
+                    DEFAULT_AUTHENTICATION_LIFETIME);
+        boolean disableAutoLogin
+            = cfg.getBoolean(
+                    DISABLE_AUTOLOGIN_PNAME, false);
 
         if (!StringUtils.isNullOrEmpty(loginUrl))
         {
@@ -192,14 +212,23 @@ public class AuthBundleActivator
             if (loginUrl.toUpperCase().startsWith("XMPP:"))
             {
                 authAuthority
-                    = new XMPPDomainAuthAuthority(loginUrl.substring(5));
+                    = new XMPPDomainAuthAuthority(
+                            disableAutoLogin,
+                            authenticationLifetime, loginUrl.substring(5));
+            }
+            else if (loginUrl.toUpperCase().startsWith("EXT_JWT:"))
+            {
+                authAuthority
+                    = new ExternalJWTAuthority(loginUrl.substring(8));
             }
             else
             {
                 String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
 
                 authAuthority
-                    = new ShibbolethAuthAuthority(loginUrl, logoutUrl);
+                    = new ShibbolethAuthAuthority(
+                            disableAutoLogin,
+                            authenticationLifetime, loginUrl, logoutUrl);
             }
         }
 

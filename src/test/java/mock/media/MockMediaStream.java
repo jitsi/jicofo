@@ -24,6 +24,7 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.device.*;
 import org.jitsi.service.neomedia.format.*;
 import org.jitsi.service.neomedia.rtp.*;
+import org.jitsi.service.neomedia.stats.*;
 
 import java.net.*;
 import java.util.*;
@@ -66,18 +67,13 @@ public class MockMediaStream
     }
 
     @Override
-    public void configureSSRCRewriting(
-            Set<Integer> ssrcGroup,
-            Integer ssrcTargetPrimary,
-            Map<Integer, Byte> ssrc2fec,
-            Map<Integer, Byte> ssrc2red,
-            Map<Integer, Integer> rtxGroups,
-            Integer ssrcTargetRTX)
+    public RawPacketCache getPacketCache()
     {
+        return null;
     }
 
     @Override
-    public RawPacketCache getPacketCache()
+    public RetransmissionRequester getRetransmissionRequester()
     {
         return null;
     }
@@ -119,7 +115,7 @@ public class MockMediaStream
     }
 
     @Override
-    public MediaStreamStats getMediaStreamStats()
+    public MediaStreamStats2 getMediaStreamStats()
     {
         return streamStats;
     }
@@ -175,6 +171,13 @@ public class MockMediaStream
     @Override
     public void injectPacket(RawPacket pkt, boolean data, TransformEngine after)
     {
+    }
+
+    @Override
+    public boolean isKeyFrame(byte[] buf, int off, int len)
+    {
+        // TODO move to AbstractMediaStream.
+        return false;
     }
 
     @Override

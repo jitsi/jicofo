@@ -44,9 +44,8 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static String jvbPreConfigured = "config.jvb.test.domain.net";
     private static String jvb1Jid = "jvb1.test.domain.net";
     private static String jvb2Jid = "jvb2.test.domain.net";
     private static String jvb3Jid = "jvb3.test.domain.net";
@@ -118,9 +117,6 @@ public class BridgeSelectorTest
         createMockJvbNodes(meetServices, mockProvider);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
-
-        // Set pre-configured bridge
-        selector.setPreConfiguredBridge(jvbPreConfigured);
 
         // Check pub-sub nodes mapping
         assertEquals(jvb1Jid,
@@ -195,13 +191,9 @@ public class BridgeSelectorTest
 
         assertEquals(jvb2Jid, selector.selectVideobridge());
 
-        // TEST pre-configured bridge
+        // TEST all bridges down
         selector.updateBridgeOperationalStatus(jvb2Jid, false);
         selector.updateBridgeOperationalStatus(jvb3Jid, false);
-        // Use pre-configured bridge if all others are down
-        assertEquals(jvbPreConfigured, selector.selectVideobridge());
-        // Pre-configured one is down
-        selector.updateBridgeOperationalStatus(jvbPreConfigured, false);
         assertEquals(null, selector.selectVideobridge());
 
         // Now bridges are up and select based on conference count
@@ -209,23 +201,18 @@ public class BridgeSelectorTest
         selector.updateBridgeOperationalStatus(jvb1Jid, true);
         selector.updateBridgeOperationalStatus(jvb2Jid, true);
         selector.updateBridgeOperationalStatus(jvb3Jid, true);
-        selector.updateBridgeOperationalStatus(jvbPreConfigured, true);
 
         mockSubscriptions.fireSubscriptionNotification(
-                jvbPreConfigured, itemId, createJvbStats(1));
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb1PubSubNode, itemId, createJvbStats(0));
+                jvb1PubSubNode, itemId, createJvbStats(1));
         mockSubscriptions.fireSubscriptionNotification(
                 jvb2PubSubNode, itemId, createJvbStats(0));
         mockSubscriptions.fireSubscriptionNotification(
                 jvb3PubSubNode, itemId, createJvbStats(0));
 
-        // Pre-configured one should not be in front
-        assertNotEquals(jvbPreConfigured, selector.selectVideobridge());
+        // JVB 1 should not be in front
+        assertNotEquals(jvb1PubSubNode, selector.selectVideobridge());
 
         // JVB 2 least occupied
-        mockSubscriptions.fireSubscriptionNotification(
-                jvbPreConfigured, itemId, createJvbStats(1));
         mockSubscriptions.fireSubscriptionNotification(
                 jvb1PubSubNode, itemId, createJvbStats(1));
         mockSubscriptions.fireSubscriptionNotification(

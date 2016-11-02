@@ -21,16 +21,20 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.shutdown.*;
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.jicofo.log.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.util.Logger;
+
 import org.jivesoftware.smack.provider.*;
 
+import org.osgi.framework.*;
+
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.logging.*;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -115,13 +119,21 @@ public class FocusManager
     /**
      * The thread that expires {@link JitsiMeetConference}s.
      */
-    private FocusExpireThread expireThread = new FocusExpireThread();
+    private final FocusExpireThread expireThread = new FocusExpireThread();
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
+     *
+     * Note that access to this field is almost always protected by a lock on
+     * {@code this}. However, {@link #getConferenceCount()} executes
+     * {@link Map#size()} on it, which wouldn't be safe with a
+     * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
+     * I've chosen this solution, because I don't know whether the cleaner
+     * solution of synchronizing on {@code #this} in
+     * {@link #getConferenceCount()} is safe.
      */
-    private Map<String, JitsiMeetConference> conferences
-        = new HashMap<String, JitsiMeetConference>();
+    private final Map<String, JitsiMeetConference> conferences
+        = new ConcurrentHashMap<>();
 
     // Convert to list when needed
     /**
@@ -164,7 +176,10 @@ public class FocusManager
      * Starts this manager for given <tt>hostName</tt>.
      */
     public void start()
+        throws Exception
     {
+        BundleContext bundleContext = FocusBundleActivator.bundleContext;
+
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
@@ -179,15 +194,16 @@ public class FocusManager
         protocolProviderHandler.start(
             hostName, focusUserDomain, focusUserPassword, focusUserName);
 
-        jitsiMeetServices = new JitsiMeetServices(
-            protocolProviderHandler.getOperationSet(
-                OperationSetSubscription.class));
+        jitsiMeetServices
+            = new JitsiMeetServices(
+                    protocolProviderHandler,
+                    focusUserDomain);
+        jitsiMeetServices.start(bundleContext);
 
         String statsPubSubNode
             = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-
         componentsDiscovery.start(
             xmppDomain, statsPubSubNode, protocolProviderHandler);
 
@@ -195,13 +211,15 @@ public class FocusManager
 
         ProviderManager
             .getInstance()
-                .addExtensionProvider(LogPacketExtension.LOG_ELEM_NAME,
-                    LogPacketExtension.NAMESPACE,
-                    new LogExtensionProvider());
+                .addExtensionProvider(
+                        LogPacketExtension.LOG_ELEM_NAME,
+                        LogPacketExtension.NAMESPACE,
+                        new LogExtensionProvider());
 
-        FocusBundleActivator
-            .bundleContext.registerService(
-                JitsiMeetServices.class, jitsiMeetServices, null);
+        bundleContext.registerService(
+                JitsiMeetServices.class,
+                jitsiMeetServices,
+                null);
 
         protocolProviderHandler.addRegistrationListener(this);
         protocolProviderHandler.register();
@@ -220,6 +238,18 @@ public class FocusManager
             componentsDiscovery = null;
         }
 
+        if (jitsiMeetServices != null)
+        {
+            try
+            {
+                jitsiMeetServices.stop(FocusBundleActivator.bundleContext);
+            }
+            catch (Exception e)
+            {
+                logger.error("Error when trying to stop JitsiMeetServices", e);
+            }
+        }
+
         meetExtensionsHandler.dispose();
 
         protocolProviderHandler.stop();
@@ -236,9 +266,36 @@ public class FocusManager
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
+    public boolean conferenceRequest(
+            String                 room,
+            Map<String, String>    properties)
+        throws Exception
+    {
+        return conferenceRequest(
+                room,
+                properties,
+                null /* logging level - not specified which means that the one
+                        from the logging configuration will be used */);
+    }
+
+    /**
+     * Allocates new focus for given MUC room.
+     *
+     * @param room the name of MUC room for which new conference has to be
+     *             allocated.
+     * @param properties configuration properties map included in the request.
+     * @param loggingLevel the logging level which should be used by the new
+     * {@link JitsiMeetConference}
+     *
+     * @return <tt>true</tt> if conference focus is in the room and ready to
+     *         handle session participants.
+     * @throws Exception if for any reason we have failed to create
+     *                   the conference
+     */
     public synchronized boolean conferenceRequest(
-            String room,
-            Map<String, String> properties)
+            String                 room,
+            Map<String, String>    properties,
+            Level                  loggingLevel)
         throws Exception
     {
         if (StringUtils.isNullOrEmpty(room))
@@ -251,7 +308,7 @@ public class FocusManager
             if (shutdownInProgress)
                 return false;
 
-            createConference(room, properties);
+            createConference(room, properties, loggingLevel);
         }
 
         JitsiMeetConference conference = conferences.get(room);
@@ -267,7 +324,8 @@ public class FocusManager
      *
      * @throws Exception if any error occurs.
      */
-    private void createConference(String room, Map<String, String> properties)
+    private synchronized void createConference(
+            String room, Map<String, String> properties, Level logLevel)
         throws Exception
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
@@ -279,7 +337,7 @@ public class FocusManager
         JitsiMeetConference conference
             = new JitsiMeetConference(
                     room, focusUserName, protocolProviderHandler,
-                    this, config, globalConfig);
+                    this, config, globalConfig, logLevel);
 
         conferences.put(room, conference);
 
@@ -293,7 +351,9 @@ public class FocusManager
 
         }
 
-        logger.info("Created new focus for " + room + "@" + focusUserDomain
+        if (conference.getLogger().isInfoEnabled())
+            logger.info(
+                    "Created new focus for " + room + "@" + focusUserDomain
                         + " conferences count: " + conferences.size()
                         + " options:" + options.toString());
 
@@ -359,9 +419,10 @@ public class FocusManager
 
         conferences.remove(roomName);
 
-        logger.info(
-            "Disposed conference for room: " + roomName
-            + " conference count: " + conferences.size());
+        if (conference.getLogger().isInfoEnabled())
+            logger.info(
+                    "Disposed conference for room: " + roomName
+                        + " conference count: " + conferences.size());
 
         if (focusAllocListener != null)
         {
@@ -416,7 +477,7 @@ public class FocusManager
         maybeDoShutdown();
     }
 
-    private void maybeDoShutdown()
+    private synchronized void maybeDoShutdown()
     {
         if (shutdownInProgress && conferences.isEmpty())
         {
@@ -601,7 +662,8 @@ public class FocusManager
                 }
                 catch (InterruptedException e)
                 {
-                    Thread.currentThread().interrupt();
+                    // Continue to check the enabled flag
+                    // if we're still supposed to run
                 }
 
                 if (!enabled)
@@ -612,8 +674,7 @@ public class FocusManager
                     ArrayList<JitsiMeetConference> conferenceCopy;
                     synchronized (FocusManager.this)
                     {
-                        conferenceCopy = new ArrayList<JitsiMeetConference>(
-                            conferences.values());
+                        conferenceCopy = new ArrayList<>(conferences.values());
                     }
 
                     // Loop over conferences
@@ -627,9 +688,10 @@ public class FocusManager
                         }
                         if (System.currentTimeMillis() - idleStamp > timeout)
                         {
-                            logger.info(
-                                "Focus idle timeout for "
-                                    + conference.getRoomName());
+                            if (conference.getLogger().isInfoEnabled())
+                                logger.info(
+                                        "Focus idle timeout for "
+                                            + conference.getRoomName());
 
                             conference.stop();
                         }

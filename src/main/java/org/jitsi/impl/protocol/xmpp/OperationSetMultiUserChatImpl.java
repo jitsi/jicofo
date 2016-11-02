@@ -40,8 +40,7 @@ public class OperationSetMultiUserChatImpl
     /**
      * The map of active chat rooms mapped by their names.
      */
-    private final Map<String, ChatRoomImpl> rooms
-        = new HashMap<String, ChatRoomImpl>();
+    private final Map<String, ChatRoomImpl> rooms = new HashMap<>();
 
     /**
      * Creates new instance of {@link OperationSetMultiUserChatImpl}.
@@ -60,7 +59,10 @@ public class OperationSetMultiUserChatImpl
     public List<String> getExistingChatRooms()
         throws OperationFailedException, OperationNotSupportedException
     {
-        return new ArrayList<String>(rooms.keySet());
+        synchronized (rooms)
+        {
+            return new ArrayList<>(rooms.keySet());
+        }
     }
 
     /**
@@ -93,18 +95,21 @@ public class OperationSetMultiUserChatImpl
     {
         roomName = roomName.toLowerCase();
 
-        if (rooms.containsKey(roomName))
+        synchronized (rooms)
         {
-            throw new OperationFailedException(
-                "Room '" + roomName + "' exists",
-                OperationFailedException.GENERAL_ERROR);
+            if (rooms.containsKey(roomName))
+            {
+                throw new OperationFailedException(
+                    "Room '" + roomName + "' exists",
+                    OperationFailedException.GENERAL_ERROR);
+            }
+
+            ChatRoomImpl newRoom = new ChatRoomImpl(this, roomName);
+
+            rooms.put(roomName, newRoom);
+
+            return newRoom;
         }
-
-        ChatRoomImpl newRoom = new ChatRoomImpl(this, roomName);
-
-        rooms.put(roomName, newRoom);
-
-        return newRoom;
     }
 
     /**
@@ -116,12 +121,16 @@ public class OperationSetMultiUserChatImpl
     {
         roomName = roomName.toLowerCase();
 
-        ChatRoom room = rooms.get(roomName);
-        if (room == null)
+        synchronized (rooms)
         {
-            room = createChatRoom(roomName, null);
+            ChatRoom room = rooms.get(roomName);
+
+            if (room == null)
+            {
+                room = createChatRoom(roomName, null);
+            }
+            return room;
         }
-        return room;
     }
 
     /**
@@ -170,6 +179,9 @@ public class OperationSetMultiUserChatImpl
 
     public void removeRoom(ChatRoomImpl chatRoom)
     {
-        rooms.remove(chatRoom.getName());
+        synchronized (rooms)
+        {
+            rooms.remove(chatRoom.getName());
+        }
     }
 }

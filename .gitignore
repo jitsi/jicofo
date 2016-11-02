@@ -5,3 +5,6 @@
 /junit-reports/
 *.swp
 /target/
+.classpath
+.project
+.settings/

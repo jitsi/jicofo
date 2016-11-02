@@ -62,4 +62,23 @@ public class MucUtil
         }
         return mucJid.substring(slashIdx + 1);
     }
+
+    /**
+     * Extracts full room address from MUC participant's address.
+     *
+     * @param mucMemberJid peer's full MUC address:
+     *                     {room_name}@{muc.server.net}/{nick}
+     *
+     * @return full MUC room address address extracted from peer's MUC address:
+     *         {room_name}@{muc.server.net}/{nick}
+     */
+    public static String extractRoomNameFromMucJid(String mucMemberJid)
+    {
+        int atIndex = mucMemberJid.indexOf("@");
+        int slashIndex = mucMemberJid.indexOf("/");
+        if (atIndex == -1 || slashIndex == -1)
+            return null;
+
+        return mucMemberJid.substring(0, slashIndex);
+    }
 }

@@ -48,7 +48,7 @@ public class BundleTest
      */
     private final static Logger logger = Logger.getLogger(BundleTest.class);
 
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     @BeforeClass
     public static void setUpClass()
@@ -74,8 +74,8 @@ public class BundleTest
         String roomName = "testroom@conference.pawel.jitsi.net";
         String serverName = "test-server";
 
-        TestConference testConference = new TestConference();
-        testConference.allocateMockConference(osgi, serverName, roomName);
+        TestConference testConference
+            = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps
             = testConference.getFocusProtocolProvider();
@@ -110,6 +110,8 @@ public class BundleTest
 
         user1.leave();
         user2.leave();
+
+        testConference.stop();
     }
 
     static void validateSessionInit(JingleIQ sessionInit, boolean isBundle)

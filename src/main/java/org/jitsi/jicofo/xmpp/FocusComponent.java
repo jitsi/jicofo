@@ -77,15 +77,6 @@ public class FocusComponent
     private final String focusAuthJid;
 
     /**
-     * Optional password for focus user authentication. If authenticated login
-     * is used we expect focus user to have admin privileges, so that it has
-     * explicit moderator rights. Also in this case focus component will always
-     * return 'ready=true' status, so that users don't have to wait for
-     * the focus to create the room. If focus is authenticated and is not
-     * an admin then will refuse to join MUC room.
-     */
-
-    /**
      * The manager object that creates and expires
      * {@link org.jitsi.jicofo.JitsiMeetConference}s.
      */
@@ -159,8 +150,6 @@ public class FocusComponent
         focusManager = ServiceUtils.getService(bc, FocusManager.class);
         reservationSystem
             = ServiceUtils.getService(bc, ReservationSystem.class);
-
-        focusManager.start();
     }
 
     /**
@@ -178,8 +167,6 @@ public class FocusComponent
     public void stop(BundleContext bundleContext)
         throws Exception
     {
-        focusManager.stop();
-
         authAuthority = null;
         focusManager = null;
         reservationSystem = null;
@@ -211,7 +198,7 @@ public class FocusComponent
     }
 
     @Override
-    protected IQ handleIQGet(IQ iq)
+    protected IQ handleIQGetImpl(IQ iq)
         throws Exception
     {
         try
@@ -250,7 +237,7 @@ public class FocusComponent
             }
             else
             {
-                return super.handleIQGet(iq);
+                return super.handleIQGetImpl(iq);
             }
         }
         catch (Exception e)
@@ -271,10 +258,9 @@ public class FocusComponent
      * <tt>feature-not-implemented</tt>
      * @throws Exception to reply with <tt>internal-server-error</tt> to the
      * specified request
-     * @see AbstractComponent#handleIQSet(IQ)
      */
     @Override
-    public IQ handleIQSet(IQ iq)
+    public IQ handleIQSetImpl(IQ iq)
         throws Exception
     {
         try
@@ -345,7 +331,7 @@ public class FocusComponent
             }
             else
             {
-                return super.handleIQSet(iq);
+                return super.handleIQSetImpl(iq);
             }
         }
         catch (Exception e)

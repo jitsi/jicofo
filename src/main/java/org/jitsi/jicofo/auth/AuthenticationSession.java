@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.auth;
 
+import org.jitsi.assertions.*;
+
 /**
  * Class represents stores information about single user's authentication
  * session.
@@ -74,12 +76,9 @@ public class AuthenticationSession
     public AuthenticationSession(String machineUID, String sessionId, String
             userIdentity, String roomName)
     {
-        if (machineUID == null)
-            throw new NullPointerException("machineUID");
-        if (sessionId == null)
-            throw new NullPointerException("sessionId");
-        if (userIdentity == null)
-            throw new NullPointerException("userIdentity");
+        Assert.notNull(machineUID, "machineUID");
+        Assert.notNull(sessionId, "sessionId");
+        Assert.notNull(userIdentity, "userIdentity");
 
         this.machineUID = machineUID;
         this.sessionId = sessionId;

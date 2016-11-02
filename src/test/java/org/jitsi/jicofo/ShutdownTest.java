@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ShutdownTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     static String shutdownJid = "shutdown.server.net";
 
@@ -81,9 +81,9 @@ public class ShutdownTest
         FocusComponent focusComponent
             = MockMainMethodActivator.getFocusComponent();
 
-        TestConference conf1 = new TestConference();
-
-        conf1.allocateMockConference(osgi, serverName, roomName);
+        TestConference conf1
+            = TestConference.allocate(
+                    osgi.bc, serverName, roomName);
 
         MockParticipant conf1User1 = new MockParticipant("C1U1");
         MockParticipant conf1User2 = new MockParticipant("C1U2");
@@ -99,7 +99,7 @@ public class ShutdownTest
 
         gracefulShutdownIQ.setFrom("randomJid1234");
 
-        IQ result = focusComponent.handleIQSet(
+        IQ result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));
 
         assertEquals(IQ.Type.error, result.getType());
@@ -109,7 +109,7 @@ public class ShutdownTest
         // Now use authorized JID
         gracefulShutdownIQ.setFrom(shutdownJid);
 
-        result = focusComponent.handleIQSet(
+        result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));
 
         assertEquals(IQ.Type.result, result.getType());
@@ -118,7 +118,7 @@ public class ShutdownTest
         ConferenceIq newConferenceIQ = new ConferenceIq();
         newConferenceIQ.setRoom("newRoom1");
 
-        result = focusComponent.handleIQSet(
+        result = focusComponent.handleIQSetImpl(
             IQUtils.convert(newConferenceIQ));
 
         assertEquals(IQ.Type.error, result.getType());
@@ -133,7 +133,7 @@ public class ShutdownTest
         ConferenceIq activeConfRequest = new ConferenceIq();
         activeConfRequest.setRoom(roomName);
 
-        result = focusComponent.handleIQSet(
+        result = focusComponent.handleIQSetImpl(
             IQUtils.convert(activeConfRequest));
 
         assertEquals(IQ.Type.result, result.getType());
@@ -152,6 +152,8 @@ public class ShutdownTest
         conf1User2.leave();
 
         assertTrue(shutdownService.shutdownStarted);
+
+        conf1.stop();
     }
 
     class TestShutdownService
