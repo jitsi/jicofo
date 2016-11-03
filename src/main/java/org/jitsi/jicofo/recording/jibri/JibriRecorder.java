@@ -22,8 +22,10 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.assertions.*;
+import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.*;
+import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
@@ -45,7 +47,6 @@ import java.util.concurrent.*;
  */
 public class JibriRecorder
     extends Recorder
-    implements JibriListener
 {
     /**
      * The class logger which can be used to override logging level inherited
@@ -106,6 +107,12 @@ public class JibriRecorder
      * Jibri detector which notifies about Jibri status changes.
      */
     private final JibriDetector jibriDetector;
+
+    /**
+     * Helper class that registers for {@link JibriEvent}s in the OSGi context
+     * obtained from the {@link FocusBundleActivator}.
+     */
+    private final JibriEventHandler jibriEventHandler = new JibriEventHandler();
 
     /**
      * Current Jibri recording status.
@@ -186,7 +193,14 @@ public class JibriRecorder
     {
         super.init();
 
-        jibriDetector.addJibriListener(this);
+        try
+        {
+            jibriEventHandler.start(FocusBundleActivator.bundleContext);
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to start Jibri event handler: " + e, e);
+        }
 
         updateJibriAvailability();
     }
@@ -197,6 +211,15 @@ public class JibriRecorder
     @Override
     public void dispose()
     {
+        try
+        {
+            jibriEventHandler.stop(FocusBundleActivator.bundleContext);
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to stop Jibri event handler: " + e, e);
+        }
+
         /**
          * When sendStopIQ() succeeds without any errors it will reset the state
          * to "recording stopped", but in case something goes wrong the decision
@@ -227,8 +250,6 @@ public class JibriRecorder
             recordingStopped(
                 null, false /* do not send any status updates */);
         }
-
-        jibriDetector.removeJibriListener(this);
 
         super.dispose();
     }
@@ -806,8 +827,9 @@ public class JibriRecorder
         }
     }
 
-    @Override
-    synchronized public void onJibriStatusChanged(String jibriJid, boolean idle)
+    // FIXME jibriJid and idle are not really used ?
+    synchronized private void onJibriStatusChanged(String    jibriJid,
+                                                   boolean   idle)
     {
         // We listen to status updates coming from our Jibri through IQs
         // if recording is in progress(recorder JID is not null),
@@ -818,8 +840,7 @@ public class JibriRecorder
         }
     }
 
-    @Override
-    synchronized public void onJibriOffline(final String jibriJid)
+    synchronized private void onJibriOffline(final String jibriJid)
     {
         if (jibriJid.equals(recorderComponentJid))
         {
@@ -898,6 +919,46 @@ public class JibriRecorder
                                 XMPPError.Condition.remote_server_timeout);
                     recordingStopped(error);
                 }
+            }
+        }
+    }
+
+    /**
+     * Helper class handles registration for the {@link JibriEvent}s.
+     */
+    private class JibriEventHandler
+        extends EventHandlerActivator
+    {
+
+        private JibriEventHandler()
+        {
+            super(new String[]{
+                    JibriEvent.STATUS_CHANGED, JibriEvent.WENT_OFFLINE});
+        }
+
+        @Override
+        public void handleEvent(Event event)
+        {
+            if (!JibriEvent.isJibriEvent(event))
+            {
+                logger.error("Invalid event: " + event);
+                return;
+            }
+
+            final JibriEvent jibriEvent = (JibriEvent) event;
+            final String topic = jibriEvent.getTopic();
+            switch (topic)
+            {
+                case JibriEvent.STATUS_CHANGED:
+                    onJibriStatusChanged(
+                            jibriEvent.getJibriJid(), jibriEvent.isIdle());
+                    break;
+                case JibriEvent.WENT_OFFLINE:
+                    onJibriOffline(jibriEvent.getJibriJid());
+                    break;
+                default:
+                    logger.error("Invalid topic: " + topic);
+
             }
         }
     }
