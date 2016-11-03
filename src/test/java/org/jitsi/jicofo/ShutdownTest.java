@@ -99,7 +99,7 @@ public class ShutdownTest
 
         gracefulShutdownIQ.setFrom("randomJid1234");
 
-        IQ result = focusComponent.handleIQSet(
+        IQ result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));
 
         assertEquals(IQ.Type.error, result.getType());
@@ -109,7 +109,7 @@ public class ShutdownTest
         // Now use authorized JID
         gracefulShutdownIQ.setFrom(shutdownJid);
 
-        result = focusComponent.handleIQSet(
+        result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));
 
         assertEquals(IQ.Type.result, result.getType());
@@ -118,7 +118,7 @@ public class ShutdownTest
         ConferenceIq newConferenceIQ = new ConferenceIq();
         newConferenceIQ.setRoom("newRoom1");
 
-        result = focusComponent.handleIQSet(
+        result = focusComponent.handleIQSetImpl(
             IQUtils.convert(newConferenceIQ));
 
         assertEquals(IQ.Type.error, result.getType());
@@ -133,7 +133,7 @@ public class ShutdownTest
         ConferenceIq activeConfRequest = new ConferenceIq();
         activeConfRequest.setRoom(roomName);
 
-        result = focusComponent.handleIQSet(
+        result = focusComponent.handleIQSetImpl(
             IQUtils.convert(activeConfRequest));
 
         assertEquals(IQ.Type.result, result.getType());

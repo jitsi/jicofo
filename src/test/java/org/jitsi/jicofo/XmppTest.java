@@ -68,7 +68,7 @@ public class XmppTest
         conferenceIq.setRoom(roomName);
 
         IQ result
-            = focusComponent.handleIQSet(
+            = focusComponent.handleIQSetImpl(
                 IQUtils.convert(conferenceIq));
 
         assertNotNull(result);

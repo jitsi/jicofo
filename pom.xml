@@ -73,7 +73,8 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.0-20160420.185019-32</version>
+      <!-- FIXME the version to be update through the force push once jicoco PR is merged -->
+      <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
