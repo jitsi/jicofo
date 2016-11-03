@@ -116,7 +116,7 @@ public class JibriDetector
      * @return XMPP address of idle Jibri instance or <tt>null</tt> if there are
      *         no Jibris available currently.
      */
-    synchronized public String selectJibri()
+    public String selectJibri()
     {
         for (Jibri jibri : jibris)
         {
