@@ -198,7 +198,7 @@ public class FocusComponent
     }
 
     @Override
-    protected IQ handleIQGet(IQ iq)
+    protected IQ handleIQGetImpl(IQ iq)
         throws Exception
     {
         try
@@ -237,7 +237,7 @@ public class FocusComponent
             }
             else
             {
-                return super.handleIQGet(iq);
+                return super.handleIQGetImpl(iq);
             }
         }
         catch (Exception e)
@@ -258,10 +258,9 @@ public class FocusComponent
      * <tt>feature-not-implemented</tt>
      * @throws Exception to reply with <tt>internal-server-error</tt> to the
      * specified request
-     * @see AbstractComponent#handleIQSet(IQ)
      */
     @Override
-    public IQ handleIQSet(IQ iq)
+    public IQ handleIQSetImpl(IQ iq)
         throws Exception
     {
         try
@@ -332,7 +331,7 @@ public class FocusComponent
             }
             else
             {
-                return super.handleIQSet(iq);
+                return super.handleIQSetImpl(iq);
             }
         }
         catch (Exception e)
