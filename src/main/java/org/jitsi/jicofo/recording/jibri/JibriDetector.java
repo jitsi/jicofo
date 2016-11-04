@@ -23,7 +23,9 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.assertions.*;
+import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 
@@ -35,7 +37,8 @@ import java.util.concurrent.*;
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
  * the current session. Does that by joining "brewery" room where Jibris connect
- * to and publish their's status in MUC presence.
+ * to and publish their's status in MUC presence. It emits {@link JibriEvent}s
+ * to reflect current Jibri's status.
  *
  * @author Pawel Domas
  */
@@ -67,6 +70,12 @@ public class JibriDetector
     private final ProtocolProviderHandler protocolProvider;
 
     /**
+     * The reference to the <tt>EventAdmin</tt> service which is used to send
+     * {@link JibriEvent}s.
+     */
+    private final OSGIServiceRef<EventAdmin> eventAdminRef;
+
+    /**
      * The <tt>ChatRoom</tt> instance for Jibri brewery.
      */
     private ChatRoom chatRoom;
@@ -75,12 +84,6 @@ public class JibriDetector
      * The list of all currently known jibri instances.
      */
     private final List<Jibri> jibris = new CopyOnWriteArrayList<>();
-
-    /**
-     * The list of {@link JibriListener}.
-     */
-    private final List<JibriListener> jibriListeners
-        = new CopyOnWriteArrayList<>();
 
     /**
      * Loads the name of Jibri brewery MUC room from the configuration.
@@ -108,6 +111,9 @@ public class JibriDetector
 
         this.protocolProvider = protocolProvider;
         this.jibriBrewery = jibriBreweryName;
+        this.eventAdminRef
+            = new OSGIServiceRef<>(
+                    FocusBundleActivator.bundleContext, EventAdmin.class);
     }
 
     /**
@@ -116,7 +122,7 @@ public class JibriDetector
      * @return XMPP address of idle Jibri instance or <tt>null</tt> if there are
      *         no Jibris available currently.
      */
-    synchronized public String selectJibri()
+    public String selectJibri()
     {
         for (Jibri jibri : jibris)
         {
@@ -344,45 +350,32 @@ public class JibriDetector
         return null;
     }
 
-    /**
-     * Adds <tt>JibriListener</tt> that will be notified about Jibri status
-     * updates.
-     * @param l {@link JibriListener} instance which will be added to Jibri
-     *        listeners list.
-     */
-    public void addJibriListener(JibriListener l)
-    {
-        jibriListeners.add(l);
-    }
-
-    /**
-     * Removes given <tt>JibriListener</tt> from Jibri listeners list.
-     * @param l {@link JibriListener} instance which will be removed from Jibri
-     *        listeners list.
-     */
-    public void removeJibriListener(JibriListener l)
-    {
-        jibriListeners.remove(l);
-    }
-
     private void notifyJibriStatus(String jibriJid, boolean available)
     {
         logger.info("Jibri " + jibriJid +" available: " + available);
 
-        for (JibriListener l : jibriListeners)
+        EventAdmin eventAdmin = eventAdminRef.get();
+        if (eventAdmin != null)
         {
-            l.onJibriStatusChanged(jibriJid, available);
+            eventAdmin.postEvent(
+                    JibriEvent.newStatusChangedEvent(
+                            jibriJid, available));
         }
+        else
+            logger.error("No EventAdmin !");
     }
 
     private void notifyJibriOffline(String jid)
     {
         logger.info("Jibri " + jid +" went offline");
 
-        for (JibriListener l : jibriListeners)
+        EventAdmin eventAdmin = eventAdminRef.get();
+        if (eventAdmin != null)
         {
-            l.onJibriOffline(jid);
+            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid));
         }
+        else
+            logger.error("No EventAdmin !");
     }
 
     /**
