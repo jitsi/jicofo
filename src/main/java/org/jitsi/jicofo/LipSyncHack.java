@@ -99,11 +99,9 @@ public class LipSyncHack implements OperationSetJingle
     public LipSyncHack(JitsiMeetConference    conference,
                        OperationSetJingle     jingleImpl)
     {
-        Objects.requireNonNull(conference, "conference");
-        Objects.requireNonNull(jingleImpl, "jingleImpl");
+        this.conference = Objects.requireNonNull(conference, "conference");
+        this.jingleImpl = Objects.requireNonNull(jingleImpl, "jingleImpl");
 
-        this.conference = conference;
-        this.jingleImpl = jingleImpl;
         this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
