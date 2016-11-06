@@ -311,10 +311,9 @@ public class OpSetSubscriptionImpl
          */
         public Subscription(String node, SubscriptionListener listener)
         {
-            Assert.notNull(node, "node");
-            Assert.notNull(listener, "listener");
+            Objects.requireNonNull(listener, "listener");
+            this.node = Objects.requireNonNull(node, "node");
 
-            this.node = node;
             this.listeners.add(listener);
             this.retryStrategy
                 = new RetryStrategy(

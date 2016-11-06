@@ -253,10 +253,7 @@ public class Health
         JitsiMeetServices services
             = focusManager.getJitsiMeetServices();
 
-        Assert.notNull(services, "services");
         BridgeSelector bridgeSelector = services.getBridgeSelector();
-        Assert.notNull(bridgeSelector, "bridgeSelector");
-
         List<String> activeJVBs = bridgeSelector.listActiveJVBs();
 
         return activeJVBs;

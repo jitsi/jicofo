@@ -178,13 +178,14 @@ public class JitsiMeetServices
     {
         super(new String[] { BridgeEvent.HEALTH_CHECK_FAILED });
 
-        Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
+        Objects.requireNonNull(
+            protocolProviderHandler, "protocolProviderHandler");
 
         OperationSetSubscription subscriptionOpSet
             = protocolProviderHandler.getOperationSet(
                     OperationSetSubscription.class);
 
-        Assert.notNull(subscriptionOpSet, "subscriptionOpSet");
+        Objects.requireNonNull(subscriptionOpSet, "subscriptionOpSet");
 
         this.jicofoUserDomain = jicofoUserDomain;
         this.protocolProvider = protocolProviderHandler;

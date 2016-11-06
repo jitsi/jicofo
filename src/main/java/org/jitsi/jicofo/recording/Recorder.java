@@ -25,6 +25,10 @@ import org.jivesoftware.smack.filter.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 
+
+
+import java.util.*;
+
 /**
  * Abstract class used by {@link org.jitsi.jicofo.JitsiMeetConference} for
  * controlling recording functionality.
@@ -50,8 +54,7 @@ public abstract class Recorder
     {
         this.recorderComponentJid = recorderComponentJid;
 
-        Assert.notNull(xmpp, "xmpp");
-        this.xmpp = xmpp;
+        this.xmpp = Objects.requireNonNull(xmpp, "xmpp");
         xmpp.addPacketHandler(this, this);
     }
 

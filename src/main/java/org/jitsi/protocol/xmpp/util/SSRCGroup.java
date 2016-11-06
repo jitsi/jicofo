@@ -78,9 +78,7 @@ public class SSRCGroup
      */
     public SSRCGroup(SourceGroupPacketExtension group)
     {
-        Assert.notNull(group, "group");
-
-        this.group = group;
+        this.group = Objects.requireNonNull(group, "group");
     }
 
     /**

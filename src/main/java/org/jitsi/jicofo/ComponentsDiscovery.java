@@ -122,9 +122,8 @@ public class ComponentsDiscovery
      */
     public ComponentsDiscovery(JitsiMeetServices meetServices)
     {
-        Assert.notNull(meetServices, "meetServices");
-
-        this.meetServices = meetServices;
+        this.meetServices
+            = Objects.requireNonNull(meetServices, "meetServices");
     }
 
     /**
@@ -149,11 +148,11 @@ public class ComponentsDiscovery
             throw new IllegalStateException("Already started");
         }
 
-        Assert.notNull(xmppDomain, "xmppDomain");
-        Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
+        this.xmppDomain = Objects.requireNonNull(xmppDomain, "xmppDomain");
+        this.protocolProviderHandler
+            = Objects.requireNonNull(
+                    protocolProviderHandler, "protocolProviderHandler");
 
-        this.xmppDomain = xmppDomain;
-        this.protocolProviderHandler = protocolProviderHandler;
         this.statsPubSubNode = statsPubSubNode;
 
         this.capsOpSet
@@ -433,11 +432,9 @@ public class ComponentsDiscovery
                                       OperationSetSimpleCaps capsOpSet,
                                       ScheduledExecutorService executor)
         {
-            Assert.notNull(executor, "executor");
-
             this.subOpSet = subscriptionOpSet;
             this.capsOpSet = capsOpSet;
-            this.executor = executor;
+            this.executor = Objects.requireNonNull(executor, "executor");
         }
 
         /**

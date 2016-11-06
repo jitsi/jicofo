@@ -29,6 +29,8 @@ import org.jitsi.util.*;
 import org.jitsi.util.Logger;
 import org.jitsi.eventadmin.*;
 
+import java.util.*;
+
 /**
  * Class handled MUC roles and presence for the focus in particular:
  * - ensures that focus has owner role after MUC room is joined
@@ -93,11 +95,9 @@ public class ChatRoomRoleAndPresence
     public ChatRoomRoleAndPresence(JitsiMeetConference conference,
                                    ChatRoom chatRoom)
     {
-        Assert.notNull(conference, "conference");
-        Assert.notNull(chatRoom, "chatRoom");
+        this.conference = Objects.requireNonNull(conference, "conference");
+        this.chatRoom = Objects.requireNonNull(chatRoom, "chatRoom");
 
-        this.conference = conference;
-        this.chatRoom = chatRoom;
         this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 

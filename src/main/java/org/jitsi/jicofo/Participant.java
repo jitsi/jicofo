@@ -169,10 +169,9 @@ public class Participant
                        XmppChatMember         roomMember,
                        int                    maxSSRCCount)
     {
-        Assert.notNull(conference, "conference");
-        Assert.notNull(roomMember, "roomMember");
+        Objects.requireNonNull(conference, "conference");
 
-        this.roomMember = roomMember;
+        this.roomMember = Objects.requireNonNull(roomMember, "roomMember");
         this.maxSSRCCount = maxSSRCCount;
         this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
@@ -502,9 +501,8 @@ public class Participant
      */
     public void setSupportedFeatures(List<String> supportedFeatures)
     {
-        Assert.notNull(supportedFeatures, "supportedFeatures");
-
-        this.supportedFeatures = supportedFeatures;
+        this.supportedFeatures
+            = Objects.requireNonNull(supportedFeatures, "supportedFeatures");
     }
 
     /**
