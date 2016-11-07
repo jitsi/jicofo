@@ -33,6 +33,7 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -165,13 +166,10 @@ public class JibriRecorder
     {
         super(null, xmpp);
 
-        this.conference = conference;
-        this.scheduledExecutor = scheduledExecutor;
-        this.globalConfig = globalConfig;
-
-        Assert.notNull(conference, "conference");
-        Assert.notNull(globalConfig, "globalConfig");
-        Assert.notNull(scheduledExecutor, "scheduledExecutor");
+        this.conference = Objects.requireNonNull(conference, "conference");
+        this.scheduledExecutor
+            = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
+        this.globalConfig = Objects.requireNonNull(globalConfig, "globalConfig");
 
         ProtocolProviderService protocolService = conference.getXmppProvider();
 

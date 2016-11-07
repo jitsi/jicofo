@@ -96,9 +96,8 @@ public class RESTReservations
         if (this.focusManager != null)
             throw new IllegalStateException("already started");
 
-        Assert.notNull(focusManager, "focusManager");
+        this.focusManager = Objects.requireNonNull(focusManager, "focusManager");
 
-        this.focusManager = focusManager;
         focusManager.setFocusAllocationListener(this);
 
         confDurationGuard = new Timer("ConferenceDuartionGuard");

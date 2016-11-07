@@ -184,7 +184,7 @@ public class JvbDoctor
         protocolProvider
             = ServiceUtils.getService(osgiBc, ProtocolProviderService.class);
 
-        Assert.notNull(protocolProvider, "protocolProvider");
+        Objects.requireNonNull(protocolProvider, "protocolProvider");
 
         // Assert XMPP protocol used.
         if (!ProtocolNames.JABBER.equals(protocolProvider.getProtocolName()))
@@ -197,13 +197,13 @@ public class JvbDoctor
             = protocolProvider.getOperationSet(
                     OperationSetDirectSmackXmpp.class);
 
-        Assert.notNull(xmppOpSet, "xmppOpSet");
+        Objects.requireNonNull(xmppOpSet, "xmppOpSet");
 
         capsOpSet
             = protocolProvider.getOperationSet(
                     OperationSetSimpleCaps.class);
 
-        Assert.notNull(capsOpSet, "capsOpSet");
+        Objects.requireNonNull(capsOpSet, "capsOpSet");
 
         super.start(bundleContext);
     }

@@ -253,15 +253,15 @@ public class JitsiMeetConference
                                JitsiMeetGlobalConfig    globalConfig,
                                Level                    logLevel)
     {
-        Assert.notNull(protocolProviderHandler, "protocolProviderHandler");
-        Assert.notNull(config, "config");
+        this.protocolProviderHandler
+            = Objects.requireNonNull(
+                    protocolProviderHandler, "protocolProviderHandler");
+        this.config = Objects.requireNonNull(config, "config");
 
         this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
         this.roomName = roomName;
         this.focusUserName = focusUserName;
-        this.protocolProviderHandler = protocolProviderHandler;
         this.listener = listener;
-        this.config = config;
         this.globalConfig = globalConfig;
         this.etherpadName = createSharedDocumentName();
 

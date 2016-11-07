@@ -106,10 +106,10 @@ public class JibriDetector
     public JibriDetector(ProtocolProviderHandler protocolProvider,
                          String jibriBreweryName)
     {
-        Assert.notNull(protocolProvider, "protocolProvider");
+        this.protocolProvider
+            = Objects.requireNonNull(protocolProvider, "protocolProvider");
         Assert.notNullNorEmpty(jibriBreweryName, "jibriBreweryName");
 
-        this.protocolProvider = protocolProvider;
         this.jibriBrewery = jibriBreweryName;
         this.eventAdminRef
             = new OSGIServiceRef<>(
@@ -203,7 +203,7 @@ public class JibriDetector
                 = protocolProvider.getOperationSet(
                         OperationSetMultiUserChat.class);
 
-            Assert.notNull(muc, "OperationSetMultiUserChat");
+            Objects.requireNonNull(muc, "OperationSetMultiUserChat");
 
             chatRoom = muc.createChatRoom(jibriBrewery, null);
             chatRoom.addMemberPresenceListener(this);

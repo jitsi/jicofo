@@ -112,9 +112,8 @@ public class BridgeSelector
      */
     public BridgeSelector(OperationSetSubscription subscriptionOpSet)
     {
-        Assert.notNull(subscriptionOpSet, "subscriptionOpSet");
-
-        this.subscriptionOpSet = subscriptionOpSet;
+        this.subscriptionOpSet
+            = Objects.requireNonNull(subscriptionOpSet, "subscriptionOpSet");
     }
 
     /**

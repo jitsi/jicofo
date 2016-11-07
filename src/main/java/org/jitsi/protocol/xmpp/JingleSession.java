@@ -19,6 +19,8 @@ package org.jitsi.protocol.xmpp;
 
 import org.jitsi.assertions.*;
 
+import java.util.*;
+
 /**
  * Class describes Jingle session.
  *
@@ -64,11 +66,11 @@ public class JingleSession
     public JingleSession(String sid, String address,
                          JingleRequestHandler requestHandler)
     {
-        Assert.notNull(requestHandler, "requestHandler");
 
         this.sid = sid;
         this.address = address;
-        this.requestHandler = requestHandler;
+        this.requestHandler
+            = Objects.requireNonNull(requestHandler, "requestHandler");
     }
 
     /**

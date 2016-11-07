@@ -251,12 +251,12 @@ public class Health
     private static List<String> listBridges(FocusManager focusManager)
     {
         JitsiMeetServices services
-            = focusManager.getJitsiMeetServices();
+            = Objects.requireNonNull(
+                    focusManager.getJitsiMeetServices(), "services");
 
-        Assert.notNull(services, "services");
-        BridgeSelector bridgeSelector = services.getBridgeSelector();
-        Assert.notNull(bridgeSelector, "bridgeSelector");
-
+        BridgeSelector bridgeSelector
+            = Objects.requireNonNull(
+                    services.getBridgeSelector(), "bridgeSelector");
         List<String> activeJVBs = bridgeSelector.listActiveJVBs();
 
         return activeJVBs;

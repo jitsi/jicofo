@@ -30,6 +30,8 @@ import org.jitsi.service.version.*;
 
 import org.osgi.framework.*;
 
+import java.util.*;
+
 /**
  * The class listens for "focus joined room" and "conference created" events
  * and adds the info about all conference components versions to Jicofo's MUC
@@ -83,17 +85,17 @@ public class VersionBroadcaster
         focusManager
             = ServiceUtils.getService(bundleContext, FocusManager.class);
 
-        Assert.notNull(focusManager, "focusManager");
+        Objects.requireNonNull(focusManager, "focusManager");
 
         versionService
             = ServiceUtils.getService(bundleContext, VersionService.class);
 
-        Assert.notNull(versionService, "versionService");
+        Objects.requireNonNull(versionService, "versionService");
 
         meetTools
             = focusManager.getOperationSet(OperationSetJitsiMeetTools.class);
 
-        Assert.notNull(meetTools, "meetTools");
+        Objects.requireNonNull(meetTools, "meetTools");
 
         super.start(bundleContext);
     }
