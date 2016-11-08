@@ -63,9 +63,9 @@ public class ChannelAllocator implements Runnable
     private final Logger logger;
 
     /**
-     * Parent {@link JitsiMeetConference}.
+     * Parent {@link JitsiMeetConferenceImpl}.
      */
-    private final JitsiMeetConference meetConference;
+    private final JitsiMeetConferenceImpl meetConference;
 
     /**
      * <tt>ColibriConference</tt> instance used by this thread to allocate
@@ -110,11 +110,11 @@ public class ChannelAllocator implements Runnable
      * @param reInvite <tt>true</tt> if the offer will be a 're-invite' one or
      * <tt>false</tt> otherwise.
      */
-    public ChannelAllocator(JitsiMeetConference    meetConference,
-                            ColibriConference      colibriConference,
-                            Participant            newParticipant,
-                            boolean[]              startMuted,
-                            boolean                reInvite)
+    public ChannelAllocator(JitsiMeetConferenceImpl    meetConference,
+                            ColibriConference          colibriConference,
+                            Participant                newParticipant,
+                            boolean[]                  startMuted,
+                            boolean                    reInvite)
     {
         this.meetConference = meetConference;
         this.colibriConference = colibriConference;
@@ -122,12 +122,6 @@ public class ChannelAllocator implements Runnable
         this.startMuted = startMuted;
         this.reInvite = reInvite;
         this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
-    }
-
-    private OperationSetJitsiMeetTools getMeetTools()
-    {
-        return meetConference.getXmppProvider().getOperationSet(
-                OperationSetJitsiMeetTools.class);
     }
 
     /**

@@ -52,10 +52,10 @@ public class ChatRoomRoleAndPresence
         = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
-     * The {@link JitsiMeetConference} for which this instance is handling MUC
-     * related stuff.
+     * The {@link JitsiMeetConferenceImpl} for which this instance is handling
+     * MUC related stuff.
      */
-    private final JitsiMeetConference conference;
+    private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
@@ -91,7 +91,7 @@ public class ChatRoomRoleAndPresence
      */
     private ChatRoomMember owner;
 
-    public ChatRoomRoleAndPresence(JitsiMeetConference conference,
+    public ChatRoomRoleAndPresence(JitsiMeetConferenceImpl conference,
                                    ChatRoom chatRoom)
     {
         this.conference = Objects.requireNonNull(conference, "conference");

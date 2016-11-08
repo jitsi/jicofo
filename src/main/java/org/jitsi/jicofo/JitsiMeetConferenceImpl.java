@@ -52,7 +52,8 @@ import java.util.logging.*;
  * @author Pawel Domas
  */
 public class JitsiMeetConferenceImpl
-    implements RegistrationStateChangeListener,
+    implements JitsiMeetConference,
+               RegistrationStateChangeListener,
                JingleRequestHandler,
                EventHandler
 {
@@ -86,9 +87,10 @@ public class JitsiMeetConferenceImpl
     private final String roomName;
 
     /**
-     * {@link ConferenceListener} that will be notified about conference events.
+     * {@link ConferenceListener} that will be notified
+     * about conference events.
      */
-    private final ConferenceListener listener;
+    private final JitsiMeetConferenceImpl.ConferenceListener listener;
 
     /**
      * The logger for this instance. Uses the logging level either the one of
@@ -899,7 +901,7 @@ public class JitsiMeetConferenceImpl
         return null;
     }
 
-    Participant findParticipantForRoomJid(String roomJid)
+    public Participant findParticipantForRoomJid(String roomJid)
     {
         for (Participant participant : participants)
         {
@@ -1714,13 +1716,13 @@ public class JitsiMeetConferenceImpl
     /**
      * The interface used to listen for conference events.
      */
-    public interface ConferenceListener
+    interface ConferenceListener
     {
         /**
          * Event fired when conference has ended.
          * @param conference the conference instance that has ended.
          */
-        void conferenceEnded(JitsiMeetConference conference);
+        void conferenceEnded(JitsiMeetConferenceImpl conference);
     }
 
     /**
