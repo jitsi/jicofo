@@ -155,6 +155,21 @@ public class MediaSSRCMap
     }
 
     /**
+     * Looks for SSRC with given stream ID("msid") and media type.
+     *
+     * @param media the name of the SSRC media type
+     * @param streamId the stream ID("msid") for which SSRC is to be found.
+     *
+     * @return <tt>SourcePacketExtension</tt> of given media type and stream id
+     * or <tt>null</tt> if not such SSRC exists in this <tt>MediaSSRCMap</tt>.
+     */
+    public SourcePacketExtension findByStreamId(String media, String streamId)
+    {
+        return SSRCSignaling.findFirstWithMSID(
+            getSSRCsForMedia(media), streamId /* msid */);
+    }
+
+    /**
      * Looks for SSRC in this map.
      *
      * @param media the name of media type of the SSRC we're looking for.
