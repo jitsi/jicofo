@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.log;
+package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
 import org.junit.*;
@@ -61,16 +61,16 @@ public class AuthEventsTest
         assertEquals(EventFactory.AUTH_SESSION_CREATED_TOPIC, event.getTopic());
 
         assertEquals(sessionID, event.getProperty(
-                LoggingHandler.AUTHENTICATION_SESSION_COLUMNS[0]));
+                EventFactory.AUTH_SESSION_ID_KEY));
 
         assertEquals(userId, event.getProperty(
-                LoggingHandler.AUTHENTICATION_SESSION_COLUMNS[1]));
+                EventFactory.USER_IDENTITY_KEY));
 
         assertEquals(machineUID, event.getProperty(
-                LoggingHandler.AUTHENTICATION_SESSION_COLUMNS[2]));
+                EventFactory.MACHINE_UID_KEY));
 
         String propertiesMerged = (String) event.getProperty(
-                LoggingHandler.AUTHENTICATION_SESSION_COLUMNS[3]);
+                EventFactory.AUTH_PROPERTIES_KEY);
 
         Map<String, String> propertiesSplit =
             EventFactory.splitProperties(propertiesMerged);

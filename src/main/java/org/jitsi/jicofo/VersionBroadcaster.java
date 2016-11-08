@@ -24,7 +24,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.osgi.*;
 import org.jitsi.service.version.*;
 

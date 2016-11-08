@@ -22,7 +22,7 @@ import java.util.concurrent.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;

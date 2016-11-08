@@ -18,7 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.junit.runner.*;

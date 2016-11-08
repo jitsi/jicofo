@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.util;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.osgi.*;
 import org.osgi.framework.*;
 

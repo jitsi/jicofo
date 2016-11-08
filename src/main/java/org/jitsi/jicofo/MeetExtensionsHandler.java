@@ -26,7 +26,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -35,7 +35,6 @@ import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.Message; //disambiguation
 import org.jivesoftware.smack.provider.*;
 import org.jivesoftware.smackx.packet.*;
 
@@ -120,7 +119,6 @@ public class MeetExtensionsHandler
         return acceptMuteIq(packet)
                 || acceptColibriIQ(packet)
                 || acceptRayoIq(packet)
-                || acceptMessage(packet)
                 || acceptPresence(packet);
     }
 
@@ -144,10 +142,6 @@ public class MeetExtensionsHandler
         else if (packet instanceof RayoIqProvider.DialIq)
         {
             handleRayoIQ((RayoIqProvider.DialIq) packet);
-        }
-        else if (packet instanceof Message)
-        {
-            handleMessage((Message) packet);
         }
         else if (packet instanceof Presence)
         {
@@ -361,88 +355,6 @@ public class MeetExtensionsHandler
         catch (OperationFailedException e)
         {
             logger.error("Failed to send DialIq - XMPP disconnected", e);
-        }
-    }
-
-    private boolean acceptMessage(Packet packet)
-    {
-        if (packet != null && packet instanceof Message)
-        {
-            for (PacketExtension pe : packet.getExtensions())
-                if (pe instanceof LogPacketExtension)
-                    return true;
-        }
-        return false;
-    }
-
-    /**
-     * Handles "message" stanzas.
-     */
-    private void handleMessage(Message message)
-    {
-        for (PacketExtension ext : message.getExtensions())
-            if (ext instanceof LogPacketExtension)
-                handleLogRequest((LogPacketExtension) ext, message.getFrom());
-    }
-
-    /**
-     * Handles XEP-0337 "log" extensions.
-     */
-    private void handleLogRequest(LogPacketExtension log, String jid)
-    {
-        JitsiMeetConference conference = getConferenceForMucJid(jid);
-
-        if (conference == null)
-        {
-            logger.debug("Room not found for JID: " + jid);
-            return;
-        }
-
-        Participant participant = conference.findParticipantForRoomJid(jid);
-
-        if (participant == null)
-        {
-            logger.info("Ignoring log request from an unknown JID: " + jid);
-            return;
-        }
-
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-
-        if (eventAdmin == null)
-            return;
-
-        if (LogUtil.LOG_ID_PC_STATS.equals(log.getID()))
-        {
-            String content = LogUtil.getContent(log);
-
-            if (content != null)
-            {
-                ColibriConference colibriConference
-                    = conference.getColibriConference();
-
-                if (colibriConference != null)
-                {
-                    Event event
-                        = EventFactory.peerConnectionStats(
-                                colibriConference.getConferenceId(),
-                                participant.getEndpointId(),
-                                content);
-
-                    if (event != null)
-                        eventAdmin.sendEvent(event);
-                }
-                else
-                {
-                    logger.warn(
-                            "Unhandled log request"
-                                + " - no valid Colibri conference");
-                }
-            }
-        }
-        else if (logger.isInfoEnabled())
-        {
-            logger.info(
-                    "Ignoring log request with an unknown ID:" + log.getID());
         }
     }
 
