@@ -15,13 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.log;
+package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.influxdb.*;
 import org.jitsi.util.*;
-import org.json.simple.*;
-import org.json.simple.parser.*;
 
 import java.util.*;
 
@@ -35,11 +33,6 @@ import java.util.*;
 public class EventFactory
     extends AbstractEventFactory
 {
-    /**
-     * The logger instance used by this class.
-     */
-    private final static Logger logger = Logger.getLogger(EventFactory.class);
-
     /**
      * The name of the key for additional authentication properties.
      */
@@ -96,12 +89,6 @@ public class EventFactory
      */
     public static final String CONFERENCE_ROOM_TOPIC
         = "org/jitsi/jicofo/CONFERENCE_ROOM_CREATED";
-
-    /**
-     * The name of the topic of a "peer connection stats" event.
-     */
-    public static final String PEER_CONNECTION_STATS_TOPIC
-        = "org/jitsi/jicofo/PEER_CONNECTION_STATS";
 
     /**
      * The name of the topic of an "authentication session created" event.
@@ -162,137 +149,6 @@ public class EventFactory
         props.put(DISPLAY_NAME_KEY, displayName);
 
         return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC, props);
-    }
-
-    /**
-     * Creates an Event after parsing <tt>stats</tt> as JSON in the format
-     * used in Jitsi Meet.
-     *
-     * @param conferenceId the ID of the conference.
-     * @param endpointId the ID of the endpoint.
-     * @param stats the string representation of
-     * @return
-     */
-    public static Event peerConnectionStats(
-            String conferenceId,
-            String endpointId,
-            String stats)
-    {
-        Object[] values;
-
-        try
-        {
-            values = parsePeerConnectionStats(conferenceId, endpointId, stats);
-        }
-        catch (Exception e)
-        {
-            logger.warn("Failed to parse PeerConnection stats JSON: " + e);
-            return null;
-        }
-
-        InfluxDBEvent influxDBEvent
-            = new InfluxDBEvent(
-                    "peer_connection_stats",
-                    LoggingHandler.PEER_CONNECTION_STATS_COLUMNS,
-                    values);
-
-        // We specifically add a "time" column
-        influxDBEvent.setUseLocalTime(false);
-
-        return
-            new Event(
-                    PEER_CONNECTION_STATS_TOPIC,
-                    makeProperties(influxDBEvent));
-    }
-
-    /**
-     * Parses <tt>statsStr</tt> as JSON in the format used by Jitsi Meet, and
-     * returns an Object[][] containing the values to be used in an
-     * <tt>Event</tt> for the given JSON.
-     * @param conferenceId the value to use for the conference_id field.
-     * @param endpointId the value to use for the endpoint_id field.
-     * @param statsStr the PeerConnection JSON string.
-     * @return an Object[][] containing the values to be used in an
-     * <tt>Event</tt> for the given JSON.
-     * @throws Exception if parsing fails for any reason.
-     */
-    private static Object[] parsePeerConnectionStats(
-            String conferenceId,
-            String endpointId,
-            String statsStr)
-        throws Exception
-    {
-        // An example JSON in the format that we expect:
-        // {
-        //   "timestamps": [1, 2, 3],
-        //   "stats": {
-        //      "group1": {
-        //          "type": "some string",
-        //          "stat1": ["some", "values", ""]
-        //          "stat2": ["some", "more", "values"]
-        //      },
-        //      "bweforvideo": {
-        //          "type":"VideoBwe",
-        //          "googActualEncBitrate": ["12","34","56"],
-        //          "googAvailableSendBandwidth": ["78", "90", "12"]
-        //      }
-        //   }
-        // }
-
-        // time: 1
-        // conference_id: blabla
-        // endpoint_id: blabla
-        // value: [
-        //     ["group1", "some string", {"stat1": "some", "stat2": "some"}],
-        //     ["bweforvideo", "VideoBwe", {"googActualEncBitrate": "12", "googAvailableSendBandwidth": "78"}]
-        // ]
-
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject = (JSONObject) parser.parse(statsStr);
-
-        List<Object[]> values = new LinkedList<>();
-        JSONArray timestamps = (JSONArray) jsonObject.get("timestamps");
-        JSONObject stats = (JSONObject) jsonObject.get("stats");
-
-        for (int i = 0; i < timestamps.size(); i++)
-        {
-            long timestamp = (Long) timestamps.get(i);
-
-            JSONArray value = new JSONArray();
-            for (Object groupName : stats.keySet())
-            {
-                JSONArray groupValue = new JSONArray();
-                JSONObject group = (JSONObject) stats.get(groupName);
-                Object type = group.get("type");
-
-                groupValue.add(groupName);
-                groupValue.add(type);
-
-                JSONObject s = new JSONObject();
-                for (Object statName : group.keySet())
-                {
-                    if ("type".equals(statName))
-                        continue;
-
-                    JSONArray statValues = (JSONArray) group.get(statName);
-                    s.put(statName, statValues.get(i));
-                }
-                groupValue.add(s);
-
-                value.add(groupValue);
-            }
-            Object[] point
-                = new Object[LoggingHandler.PEER_CONNECTION_STATS_COLUMNS.length];
-
-            point[0] = timestamp;
-            point[1] = conferenceId;
-            point[2] = endpointId;
-            point[3] = value.toJSONString();
-
-            values.add(point);
-        }
-
-        return values.toArray();
     }
 
     /**
@@ -442,7 +298,7 @@ public class EventFactory
 
     /**
      * Merges authentication properties into single String transmitted in the
-     * log event. After each key name there is colon appended and key/value
+     * event event. After each key name there is colon appended and key/value
      * pairs are separated with CRLF(\r\n).
      *
      * @param properties the map of authentication properties.

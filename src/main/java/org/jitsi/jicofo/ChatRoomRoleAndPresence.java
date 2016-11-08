@@ -23,7 +23,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 import org.jitsi.util.Logger;

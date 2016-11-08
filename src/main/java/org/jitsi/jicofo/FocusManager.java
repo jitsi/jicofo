@@ -22,13 +22,11 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.shutdown.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.jicofo.log.*;
+import org.jitsi.jicofo.event.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.util.Logger;
-
-import org.jivesoftware.smack.provider.*;
 
 import org.osgi.framework.*;
 
@@ -208,13 +206,6 @@ public class FocusManager
             xmppDomain, statsPubSubNode, protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
-
-        ProviderManager
-            .getInstance()
-                .addExtensionProvider(
-                        LogPacketExtension.LOG_ELEM_NAME,
-                        LogPacketExtension.NAMESPACE,
-                        new LogExtensionProvider());
 
         bundleContext.registerService(
                 JitsiMeetServices.class,
