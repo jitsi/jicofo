@@ -22,7 +22,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.util.Logger;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;

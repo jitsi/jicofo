@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;

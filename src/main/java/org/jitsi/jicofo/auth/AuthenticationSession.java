@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.auth;
 
-import org.jitsi.assertions.*;
-
 import java.util.*;
 
 /**

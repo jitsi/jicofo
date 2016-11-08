@@ -19,7 +19,6 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 

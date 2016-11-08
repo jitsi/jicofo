@@ -23,7 +23,6 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.reservation.*;

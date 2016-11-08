@@ -21,7 +21,6 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;

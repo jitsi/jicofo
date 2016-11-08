@@ -25,7 +25,6 @@ import javax.servlet.http.*;
 
 import org.eclipse.jetty.server.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
 import org.jitsi.util.Logger;

@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
