@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -265,21 +264,42 @@ public class Participant
                     ssrcPe, roomMember.getContactAddress());
 
                 long ssrcValue = ssrcPe.getSSRC();
+                String streamId = SSRCSignaling.getStreamId(ssrcPe);
 
+                // Check for duplicates
                 if (ssrcs.findSSRC(mediaType, ssrcValue) != null)
                 {
-                    logger.warn(
-                        "Detected duplicated SSRC " + ssrcValue
-                            + " signalled by " + getEndpointId());
+                    logAddSSRCError(
+                        "Detected duplicated"/* SSRC[mediaType]... */,
+                        false /* log as warning */,
+                        ssrcValue, mediaType, getEndpointId());
+
+                    // Continue adding other valid SSRCs...
                     continue;
                 }
+                // Check for duplicated 'msid'
+                else if (streamId != null
+                    && ssrcs.findByStreamId(mediaType, streamId) != null)
+                {
+                    logAddSSRCError(
+                        "Detected duplicated stream id: "
+                            + streamId + "," /* SSRC[mediaType]... */,
+                        true /* log as error */,
+                        ssrcValue, mediaType, getEndpointId());
+
+                    // Continue adding other valid SSRCs...
+                    continue;
+                }
+                // Check for SSRC limit exceeded
                 else if (ssrcs.getSSRCsForMedia(mediaType).size()
                         >= maxSSRCCount)
                 {
-                    logger.warn(
-                        "SSRC limit of " + maxSSRCCount + " exceeded by "
-                            + getEndpointId() + " - dropping "
-                            + mediaType + " SSRC: " + ssrcValue);
+                    logAddSSRCError(
+                        "Hit the limit of " + maxSSRCCount+ " - dropping:",
+                        true /* log as error */,
+                        ssrcValue, mediaType, getEndpointId());
+
+                    // Abort - can't add any more SSRCs.
                     break;
                 }
 
@@ -290,6 +310,26 @@ public class Participant
         }
 
         return addedSSRCs;
+    }
+
+    private void logAddSSRCError(String     msg,
+                                 boolean    isError,
+                                 long       ssrc,
+                                 String     mediaType, String endpointId)
+    {
+        String addSsrcErrorMsg
+            = String.format(
+                    "%s SSRC: %d[%s], signalled by %s",
+                    msg, ssrc, mediaType, endpointId);
+
+        if (isError)
+        {
+            logger.error(addSsrcErrorMsg);
+        }
+        else
+        {
+            logger.warn(addSsrcErrorMsg);
+        }
     }
 
     /**
