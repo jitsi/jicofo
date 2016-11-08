@@ -51,7 +51,7 @@ import java.util.logging.*;
  *
  * @author Pawel Domas
  */
-public class JitsiMeetConference
+public class JitsiMeetConferenceImpl
     implements RegistrationStateChangeListener,
                JingleRequestHandler,
                EventHandler
@@ -60,7 +60,7 @@ public class JitsiMeetConference
      * The classLogger instance used by this class.
      */
     private final static Logger classLogger
-        = Logger.getLogger(JitsiMeetConference.class);
+        = Logger.getLogger(JitsiMeetConferenceImpl.class);
 
     /**
      * Format used to print the date into the focus identifier string.
@@ -232,7 +232,7 @@ public class JitsiMeetConference
     private ScheduledExecutorService executor;
 
     /**
-     * Creates new instance of {@link JitsiMeetConference}.
+     * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
      * @param focusUserName focus user login.
@@ -243,13 +243,13 @@ public class JitsiMeetConference
      * @param logLevel (optional) the logging level to be used by this instance.
      *        See {@link #logger} for more details.
      */
-    public JitsiMeetConference(String                   roomName,
-                               String                   focusUserName,
-                               ProtocolProviderHandler  protocolProviderHandler,
-                               ConferenceListener       listener,
-                               JitsiMeetConfig          config,
-                               JitsiMeetGlobalConfig    globalConfig,
-                               Level                    logLevel)
+    public JitsiMeetConferenceImpl(String                   roomName,
+                                   String                   focusUserName,
+                                   ProtocolProviderHandler  protocolProviderHandler,
+                                   ConferenceListener       listener,
+                                   JitsiMeetConfig          config,
+                                   JitsiMeetGlobalConfig    globalConfig,
+                                   Level                    logLevel)
     {
         this.protocolProviderHandler
             = Objects.requireNonNull(
