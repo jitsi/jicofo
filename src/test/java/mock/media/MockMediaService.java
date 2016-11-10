@@ -92,12 +92,19 @@ public class MockMediaService
                                          MediaType mediaType,
                                          SrtpControl srtpControl)
     {
-        return createMockStream();
+        return createMockStream(mediaType);
     }
 
-    private MockMediaStream createMockStream()
+    private MockMediaStream createMockStream(MediaType mediaType)
     {
-        return new MockMediaStream();
+        if (MediaType.VIDEO.equals(mediaType))
+        {
+            return new MockVideoMediaStream();
+        }
+        else
+        {
+            return new MockMediaStream();
+        }
     }
 
     @Override
