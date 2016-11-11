@@ -148,6 +148,7 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->  
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>ice4j</artifactId>
