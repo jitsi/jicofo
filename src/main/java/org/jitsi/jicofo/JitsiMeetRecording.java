@@ -51,10 +51,10 @@ public class JitsiMeetRecording
     private RecordingState earlyRecordingState = null;
 
     /**
-     * The <tt>JitsiMeetConference</tt> for which this instance is dealing with
-     * all the recording related stuff.
+     * The <tt>JitsiMeetConferenceImpl</tt> for which this instance is dealing
+     * with all the recording related stuff.
      */
-    private final JitsiMeetConference meetConference;
+    private final JitsiMeetConferenceImpl meetConference;
 
     /**
      * Recording functionality implementation backend.
@@ -81,12 +81,12 @@ public class JitsiMeetRecording
 
     /**
      * Creates new instance of <tt>JitsiMeetRecording</tt>.
-     * @param meetConference parent <tt>JitsiMeetConference</tt> for which this
-     *        instance will be taking care of the recording.
+     * @param meetConference parent <tt>JitsiMeetConferenceImpl</tt> for which
+     *        this instance will be taking care of the recording.
      * @param meetServices <tt>JitsiMeetServices</tt> instance which provides
      *        the info about recorder components availability.
      */
-    public JitsiMeetRecording(JitsiMeetConference meetConference,
+    public JitsiMeetRecording(JitsiMeetConferenceImpl meetConference,
                               JitsiMeetServices meetServices)
     {
         this.meetConference = meetConference;

@@ -17,8 +17,6 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import org.jitsi.assertions.*;
-
 import java.util.*;
 
 /**

@@ -164,7 +164,7 @@ public class MeetExtensionsHandler
     {
         ColibriConferenceIQ.Recording recording = colibriIQ.getRecording();
         String from = colibriIQ.getFrom();
-        JitsiMeetConference conference
+        JitsiMeetConferenceImpl conference
             = getConferenceForMucJid(colibriIQ.getFrom());
         if (conference == null)
         {
@@ -214,14 +214,14 @@ public class MeetExtensionsHandler
         return packet instanceof MuteIq;
     }
 
-    private JitsiMeetConference getConferenceForMucJid(String mucJid)
+    private JitsiMeetConferenceImpl getConferenceForMucJid(String mucJid)
     {
         String roomName = MucUtil.extractRoomNameFromMucJid(mucJid);
         if (roomName == null)
         {
             return null;
         }
-        return focusManager.getConference(roomName);
+        return (JitsiMeetConferenceImpl) focusManager.getConference(roomName);
     }
 
     private void handleMuteIq(MuteIq muteIq)
@@ -233,7 +233,7 @@ public class MeetExtensionsHandler
             return;
 
         String from = muteIq.getFrom();
-        JitsiMeetConference conference = getConferenceForMucJid(from);
+        JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
         if (conference == null)
         {
             logger.debug("Mute error: room not found for JID: " + from);
@@ -276,7 +276,7 @@ public class MeetExtensionsHandler
     {
         String from = dialIq.getFrom();
 
-        JitsiMeetConference conference = getConferenceForMucJid(from);
+        JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
 
         if (conference == null)
         {
@@ -376,7 +376,7 @@ public class MeetExtensionsHandler
         }
 
         String from = presence.getFrom();
-        JitsiMeetConference conference = getConferenceForMucJid(from);
+        JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
 
         if (conference == null)
         {

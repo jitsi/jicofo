@@ -31,6 +31,9 @@ import java.util.*;
 /**
  * Class gathers utility method related to SSRC signaling.
  *
+ * TODO it feels like this utility thing is a candidate for SSRC class wrapping
+ * <tt>SourcePacketExtension</tt>
+ *
  * @author Pawel Domas
  */
 public class SSRCSignaling
@@ -115,6 +118,32 @@ public class SSRCSignaling
                 return ssrc;
             }
         }
+        return null;
+    }
+
+    /**
+     * Searches the list of SSRCs for a one that matches given "msid".
+     *
+     * @param ssrcs the list of <tt>SourcePacketExtension</tt> to be searched.
+     * @param msid the stream ID("msid") of the SSRC to be found.
+     *
+     * @return <tt>SourcePacketExtension</tt> or <tt>null</tt> if not found.
+     */
+    public static SourcePacketExtension findFirstWithMSID(
+            List<SourcePacketExtension>    ssrcs,
+            String                         msid)
+    {
+        // Avoid NPE
+        if (msid == null)
+            return null;
+
+        for (SourcePacketExtension ssrc : ssrcs)
+        {
+            if (msid.equalsIgnoreCase(getStreamId(ssrc)))
+                return ssrc;
+        }
+
+        // Not found
         return null;
     }
 

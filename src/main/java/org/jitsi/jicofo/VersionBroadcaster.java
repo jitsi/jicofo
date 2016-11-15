@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
@@ -133,7 +132,8 @@ public class VersionBroadcaster
 
         String roomJid = (String) event.getProperty(EventFactory.ROOM_JID_KEY);
 
-        JitsiMeetConference conference = focusManager.getConference(roomJid);
+        JitsiMeetConferenceImpl conference
+            = (JitsiMeetConferenceImpl) focusManager.getConference(roomJid);
         if (conference == null)
         {
             logger.error("Conference is null");

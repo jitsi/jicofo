@@ -88,7 +88,7 @@ public class JireconRecorder
      * @param xmpp {@link OperationSetDirectSmackXmpp} instance for current
      *             XMPP connection.
      */
-    public JireconRecorder(JitsiMeetConference conference,
+    public JireconRecorder(JitsiMeetConferenceImpl conference,
                            String recorderComponentJid,
                            OperationSetDirectSmackXmpp xmpp)
     {

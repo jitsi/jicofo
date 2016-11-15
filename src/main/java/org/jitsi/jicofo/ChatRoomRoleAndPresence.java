@@ -21,7 +21,6 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
@@ -53,10 +52,10 @@ public class ChatRoomRoleAndPresence
         = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
-     * The {@link JitsiMeetConference} for which this instance is handling MUC
-     * related stuff.
+     * The {@link JitsiMeetConferenceImpl} for which this instance is handling
+     * MUC related stuff.
      */
-    private final JitsiMeetConference conference;
+    private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
@@ -92,7 +91,7 @@ public class ChatRoomRoleAndPresence
      */
     private ChatRoomMember owner;
 
-    public ChatRoomRoleAndPresence(JitsiMeetConference conference,
+    public ChatRoomRoleAndPresence(JitsiMeetConferenceImpl conference,
                                    ChatRoom chatRoom)
     {
         this.conference = Objects.requireNonNull(conference, "conference");

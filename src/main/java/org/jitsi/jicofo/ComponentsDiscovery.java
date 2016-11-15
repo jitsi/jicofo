@@ -21,7 +21,6 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;

@@ -41,7 +41,7 @@ import java.util.logging.*;
  * @author Pawel Domas
  */
 public class FocusManager
-    implements JitsiMeetConference.ConferenceListener,
+    implements JitsiMeetConferenceImpl.ConferenceListener,
                RegistrationStateChangeListener
 {
     /**
@@ -130,7 +130,7 @@ public class FocusManager
      * solution of synchronizing on {@code #this} in
      * {@link #getConferenceCount()} is safe.
      */
-    private final Map<String, JitsiMeetConference> conferences
+    private final Map<String, JitsiMeetConferenceImpl> conferences
         = new ConcurrentHashMap<>();
 
     // Convert to list when needed
@@ -302,7 +302,7 @@ public class FocusManager
             createConference(room, properties, loggingLevel);
         }
 
-        JitsiMeetConference conference = conferences.get(room);
+        JitsiMeetConferenceImpl conference = conferences.get(room);
 
         return conference.isInTheRoom();
     }
@@ -325,8 +325,8 @@ public class FocusManager
             = JitsiMeetGlobalConfig.getGlobalConfig(
                 FocusBundleActivator.bundleContext);
 
-        JitsiMeetConference conference
-            = new JitsiMeetConference(
+        JitsiMeetConferenceImpl conference
+            = new JitsiMeetConferenceImpl(
                     room, focusUserName, protocolProviderHandler,
                     this, config, globalConfig, logLevel);
 
@@ -389,7 +389,8 @@ public class FocusManager
     {
         roomName = roomName.toLowerCase();
 
-        JitsiMeetConference conference = getConference(roomName);
+        JitsiMeetConferenceImpl conference
+            = (JitsiMeetConferenceImpl) getConference(roomName);
         if (conference == null)
         {
             logger.error(
@@ -404,7 +405,7 @@ public class FocusManager
      * {@inheritDoc}
      */
     @Override
-    public synchronized void conferenceEnded(JitsiMeetConference conference)
+    public synchronized void conferenceEnded(JitsiMeetConferenceImpl conference)
     {
         String roomName = conference.getRoomName();
 
@@ -662,14 +663,14 @@ public class FocusManager
 
                 try
                 {
-                    ArrayList<JitsiMeetConference> conferenceCopy;
+                    ArrayList<JitsiMeetConferenceImpl> conferenceCopy;
                     synchronized (FocusManager.this)
                     {
                         conferenceCopy = new ArrayList<>(conferences.values());
                     }
 
                     // Loop over conferences
-                    for (JitsiMeetConference conference : conferenceCopy)
+                    for (JitsiMeetConferenceImpl conference : conferenceCopy)
                     {
                         long idleStamp = conference.getIdleTimestamp();
                         // Is active ?

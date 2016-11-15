@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.recording;
 
-import org.jitsi.assertions.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;

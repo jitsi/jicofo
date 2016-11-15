@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.*;
@@ -82,9 +81,9 @@ public class JibriRecorder
     }
 
     /**
-     * Recorded <tt>JitsiMeetConference</tt>.
+     * Recorded <tt>JitsiMeetConferenceImpl</tt>.
      */
-    private final JitsiMeetConference conference;
+    private final JitsiMeetConferenceImpl conference;
 
     /**
      * The global config used by this instance.
@@ -159,10 +158,10 @@ public class JibriRecorder
      * @param globalConfig the global config that provides some values required
      *                     by <tt>JibriRecorder</tt> to work.
      */
-    public JibriRecorder(JitsiMeetConference         conference,
-                         OperationSetDirectSmackXmpp xmpp,
-                         ScheduledExecutorService    scheduledExecutor,
-                         JitsiMeetGlobalConfig       globalConfig)
+    public JibriRecorder(JitsiMeetConferenceImpl         conference,
+                         OperationSetDirectSmackXmpp     xmpp,
+                         ScheduledExecutorService        scheduledExecutor,
+                         JitsiMeetGlobalConfig           globalConfig)
     {
         super(null, xmpp);
 
