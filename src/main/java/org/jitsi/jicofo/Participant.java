@@ -277,19 +277,20 @@ public class Participant
                     // Continue adding other valid SSRCs...
                     continue;
                 }
+                // FIXME disabled until SSRC groups are not taken into account
                 // Check for duplicated 'msid'
-                else if (streamId != null
-                    && ssrcs.findByStreamId(mediaType, streamId) != null)
-                {
-                    logAddSSRCError(
-                        "Detected duplicated stream id: "
-                            + streamId + "," /* SSRC[mediaType]... */,
-                        true /* log as error */,
-                        ssrcValue, mediaType, getEndpointId());
+                //else if (streamId != null
+                //    && ssrcs.findByStreamId(mediaType, streamId) != null)
+                //{
+                //    logAddSSRCError(
+                //        "Detected duplicated stream id: "
+                //            + streamId + "," /* SSRC[mediaType]... */,
+                //        true /* log as error */,
+                //        ssrcValue, mediaType, getEndpointId());
 
                     // Continue adding other valid SSRCs...
-                    continue;
-                }
+                //    continue;
+                //}
                 // Check for SSRC limit exceeded
                 else if (ssrcs.getSSRCsForMedia(mediaType).size()
                         >= maxSSRCCount)
