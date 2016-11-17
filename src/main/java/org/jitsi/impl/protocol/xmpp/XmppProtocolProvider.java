@@ -240,7 +240,15 @@ public class XmppProtocolProvider
         }
         catch (XMPPException e)
         {
-            logger.error("Failed to connect: " + e.getMessage(), e);
+            logger.error("Failed to connect/login: " + e.getMessage(), e);
+            // If the connect part succeeded, but login failed we don't want to
+            // rely on Smack's built-in retries, as it will be handled by
+            // the RetryStrategy
+            connection.removeConnectionListener(connListener);
+            if (connection.isConnected())
+            {
+                connection.disconnect();
+            }
             return true;
         }
     }
