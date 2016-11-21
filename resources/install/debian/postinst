@@ -18,22 +18,29 @@ case "$1" in
             fi
         fi
 
-        JICOFO_JAVA_SYS_PROPS_EXIST="true"
-        # let's check whether there is a setting in the $CONFIG
-        # for home folder and logging props file
-        if [ ! -n "$JAVA_SYS_PROPS" ]; then
-            JICOFO_JAVA_SYS_PROPS_EXIST="false"
+        # debconf hostname question
+        . /usr/share/debconf/confmodule
+
+        # try to get host from jitsi-videobridge
+        db_get jitsi-videobridge/jvb-hostname
+        if [ -z "$RET" ] ; then
+            # server hostname
+            db_set jitsi-videobridge/jvb-hostname "localhost"
+            db_input critical jitsi-videobridge/jvb-hostname || true
+            db_go
         fi
+        JVB_HOSTNAME="$RET"
 
         # generate config on new install
-        if [ "$OLDCONFIG" = "false" ]; then
-
-            # try to get host from jitsi-videobridge
-            . /etc/jitsi/videobridge/config
+        if [ "$OLDCONFIG" = "false" ] || [ "$JVB_HOSTNAME" != "$JICOFO_HOSTNAME" ]; then
 
             JICOFO_HOSTNAME="$JVB_HOSTNAME"
-            # 8-chars random secret, alternative to pwgen 8
-            JICOFO_SECRET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+
+            # generate secret only for new installs
+            if [ "$OLDCONFIG" = "false" ]; then
+                # 8-chars random secret, alternative to pwgen 8
+                JICOFO_SECRET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+            fi
             JICOFO_PORT=5347
             JICOFO_AUTH_DOMAIN="auth.$JICOFO_HOSTNAME"
             JICOFO_AUTH_USER="focus"
@@ -55,7 +62,7 @@ case "$1" in
             echo >> $CONFIG
             echo '# sets the XMPP domain name to use for XMPP user logins' >> $CONFIG
             echo "JICOFO_AUTH_DOMAIN=$JICOFO_AUTH_DOMAIN" >> $CONFIG
-            echo >> $CONFIG 
+            echo >> $CONFIG
             echo '# sets the username to use for XMPP user logins' >> $CONFIG
             echo "JICOFO_AUTH_USER=$JICOFO_AUTH_USER" >> $CONFIG
             echo >> $CONFIG
@@ -64,8 +71,24 @@ case "$1" in
             echo >> $CONFIG
             echo '# extra options to pass to the jicofo daemon' >> $CONFIG
             echo "JICOFO_OPTS=\"\"" >> $CONFIG
+            echo >> $CONFIG
+            echo '# adds java system props that are passed to jicofo (default are for home and logging config file)' >> $CONFIG
+            echo "JAVA_SYS_PROPS=\"-Dnet.java.sip.communicator.SC_HOME_DIR_LOCATION=/etc/jitsi\
+ -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=jicofo\
+ -Dnet.java.sip.communicator.SC_LOG_DIR_LOCATION=/var/log/jitsi\
+ -Djava.util.logging.config.file=/etc/jitsi/jicofo/logging.properties\"" >> $CONFIG
 
         fi
+
+        # Store values, so we can use it if we are configuring other packages on the same machine
+        # we are currently doing this on every upgrade in order to be able to succesfully upgrade
+        # from old packages, otherwise we can do it only on new configuraiton or reconfiguration
+        db_set jicofo/jicofo-authuser "$JICOFO_AUTH_USER"
+        db_set jicofo/jicofo-authpassword "$JICOFO_AUTH_PASSWORD"
+        db_set jicofo/jicofosecret "$JICOFO_SECRET"
+
+        # and we're done with debconf
+        db_stop
 
         OLD_JITSI_CONFIG="/usr/share/jicofo/.sip-communicator/sip-communicator.properties"
         NEW_JITSI_CONFIG="/etc/jitsi/jicofo/sip-communicator.properties"
@@ -77,17 +100,6 @@ case "$1" in
             # if sip-communicator.properties file is missing create it
             # as jicofo will search for it and if cannot create it will fail starting
             touch $NEW_JITSI_CONFIG
-        fi
-
-        # let's check whether there is a setting in the $CONFIG
-        # for home folder and logging props file, if missing add it
-        if [ "$JICOFO_JAVA_SYS_PROPS_EXIST" = "false" ]; then
-            echo >> $CONFIG
-            echo '# adds java system props that are passed to jicofo (default are for home and logging config file)' >> $CONFIG
-            echo "JAVA_SYS_PROPS=\"-Dnet.java.sip.communicator.SC_HOME_DIR_LOCATION=/etc/jitsi\
- -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=jicofo\
- -Dnet.java.sip.communicator.SC_LOG_DIR_LOCATION=/var/log/jitsi\
- -Djava.util.logging.config.file=/etc/jitsi/jicofo/logging.properties\"" >> $CONFIG
         fi
 
         # we don't want to start the daemon as root
