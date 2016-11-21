@@ -125,6 +125,12 @@
       <artifactId>libjitsi</artifactId>
       <version>1.0-20161020.193142-197</version>
     </dependency>
+    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->  
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>ice4j</artifactId>
+      <version>1.1-20161005.095034-20</version>
+    </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.core</artifactId>
@@ -147,13 +153,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-    </dependency>
-    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->  
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>ice4j</artifactId>
-      <version>1.1-20161005.095034-20</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
