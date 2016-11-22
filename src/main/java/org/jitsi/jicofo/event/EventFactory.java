@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.influxdb.*;
 import org.jitsi.util.*;
 
 import java.util.*;
