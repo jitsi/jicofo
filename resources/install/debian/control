@@ -9,7 +9,6 @@ Homepage: https://jitsi.org/meet
 
 Package: jicofo
 Architecture: any
-Pre-Depends: jitsi-videobridge
 Depends: ${misc:Depends}, default-jre-headless
 Description: JItsi Meet COnference FOcus
  Jicofo is a conference focus for Jitsi Meet application.
