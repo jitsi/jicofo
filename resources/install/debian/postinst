@@ -134,6 +134,11 @@ case "$1" in
         fi
 
         # die logz
+        if [ ! -d /var/log/jitsi ]; then
+            mkdir -p /var/log/jitsi
+            chown $OWNER:$GROUP /var/log/jitsi
+            chmod 770 /var/log/jitsi
+        fi
         ls /var/log/jitsi/jicofo* 1>/dev/null 2>&1 && chown -f -R $OWNER:$GROUP /var/log/jitsi/jicofo*
         ls /var/log/jitsi/jicofo* 1>/dev/null 2>&1 && chmod -f -R 640 /var/log/jitsi/jicofo*
 
