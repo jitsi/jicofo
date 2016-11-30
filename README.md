@@ -116,7 +116,7 @@ from anonymous domain. Here's what has to be configured:
 
  a) Enable authentication on your main domain:<br/>
  ```
- VirtualHost jitsi-meet.example.com
+ VirtualHost "jitsi-meet.example.com"
      authentication = "internal_plain"
  ```
  b) Add new virtual host with anonymous login method for quests:<br/>
