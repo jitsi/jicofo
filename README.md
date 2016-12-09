@@ -18,6 +18,13 @@ To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick
 
 [quick install]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md
 
+Download
+====
+
+You can download Debian/Ubuntu binaries:
+* [stable](https://download.jitsi.org/stable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianStableRepository))
+* [nightly](https://download.jitsi.org/unstable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianNightlyRepository))
+
 Old JavaScript client side focus replacement
 =====
 
