@@ -8,7 +8,7 @@ subscribed to those stats.
 Current algorithm is based on number of conferences only, but all [stats]
 published by the bridge are available and this can be improved easily.
 
-[stats]: https://github.com/jitsi/jitsi-videobridge/blob/master/src/org/jitsi/videobridge/stats/VideobridgeStatistics.java
+[stats]: https://github.com/jitsi/jitsi-videobridge/blob/master/src/main/java/org/jitsi/videobridge/stats/VideobridgeStatistics.java
 
 #Load balancing configuration
 
