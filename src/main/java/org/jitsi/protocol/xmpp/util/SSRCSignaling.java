@@ -53,7 +53,7 @@ public class SSRCSignaling
      *            copy parameter value.
      * @param name the name of the parameter to copy.
      */
-    public static void copyParamAttr( SourcePacketExtension    dst,
+    private static void copyParamAttr( SourcePacketExtension    dst,
                                       SourcePacketExtension    src,
                                       String                  name)
     {
@@ -90,7 +90,7 @@ public class SSRCSignaling
      * @param ssrcPe the instance of <tt>SourcePacketExtension</tt> which will
      * be stripped off all parameters.
      */
-    public static void deleteSSRCParams(SourcePacketExtension ssrcPe)
+    private static void deleteSSRCParams(SourcePacketExtension ssrcPe)
     {
         List<? extends PacketExtension> peList = ssrcPe.getChildExtensions();
         peList.removeAll(ssrcPe.getParameters());
@@ -112,8 +112,7 @@ public class SSRCSignaling
         for (SourcePacketExtension ssrc : ssrcs)
         {
             String streamId = getStreamId(ssrc);
-            if (streamId != null
-                    && !"default".equalsIgnoreCase(streamId))
+            if (streamId != null && !"default".equalsIgnoreCase(streamId))
             {
                 return ssrc;
             }
@@ -121,30 +120,19 @@ public class SSRCSignaling
         return null;
     }
 
-    /**
-     * Searches the list of SSRCs for a one that matches given "msid".
-     *
-     * @param ssrcs the list of <tt>SourcePacketExtension</tt> to be searched.
-     * @param msid the stream ID("msid") of the SSRC to be found.
-     *
-     * @return <tt>SourcePacketExtension</tt> or <tt>null</tt> if not found.
-     */
-    public static SourcePacketExtension findFirstWithMSID(
-            List<SourcePacketExtension>    ssrcs,
-            String                         msid)
+    private static List<SourcePacketExtension> getAllWithMSID(
+        List<SourcePacketExtension> ssrcs)
     {
-        // Avoid NPE
-        if (msid == null)
-            return null;
-
+        ArrayList<SourcePacketExtension> result = new ArrayList<>(ssrcs.size());
         for (SourcePacketExtension ssrc : ssrcs)
         {
-            if (msid.equalsIgnoreCase(getStreamId(ssrc)))
-                return ssrc;
+            String streamId = getStreamId(ssrc);
+            if (streamId != null && !"default".equalsIgnoreCase(streamId))
+            {
+                result.add(ssrc);
+            }
         }
-
-        // Not found
-        return null;
+        return result;
     }
 
     /**
@@ -155,7 +143,7 @@ public class SSRCSignaling
      * @return <tt>ParameterPacketExtension</tt> instance for given
      *         <tt>name</tt> or <tt>null</tt> if not found.
      */
-    public static ParameterPacketExtension getParam( SourcePacketExtension ssrc,
+    private static ParameterPacketExtension getParam(SourcePacketExtension ssrc,
                                                      String                name)
     {
         for(ParameterPacketExtension param : ssrc.getParameters())
@@ -187,7 +175,7 @@ public class SSRCSignaling
      *             which we want to obtain WebRTC stream ID.
      * @return WebRTC stream ID that is the first part of "msid" SSRC parameter.
      */
-    public static String getStreamId(SourcePacketExtension ssrc)
+    private static String getStreamId(SourcePacketExtension ssrc)
     {
         ParameterPacketExtension msid = getParam(ssrc, "msid");
 
@@ -195,7 +183,14 @@ public class SSRCSignaling
             return null;
 
         String[] streamAndTrack = msid.getValue().split(" ");
-        return streamAndTrack.length == 2 ? streamAndTrack[0] : null;
+        String streamId = streamAndTrack.length == 2 ? streamAndTrack[0] : null;
+        if (streamId != null) {
+            streamId = streamId.trim();
+            if (streamId.isEmpty()) {
+                streamId = null;
+            }
+        }
+        return streamId;
     }
 
     /**
@@ -204,7 +199,7 @@ public class SSRCSignaling
      *             which we want to obtain WebRTC stream ID.
      * @return WebRTC track ID that is the second part of "msid" SSRC parameter.
      */
-    public static String getTrackId(SourcePacketExtension ssrc)
+    private static String getTrackId(SourcePacketExtension ssrc)
     {
         ParameterPacketExtension msid = getParam(ssrc, "msid");
 
@@ -212,7 +207,14 @@ public class SSRCSignaling
             return null;
 
         String[] streamAndTrack = msid.getValue().split(" ");
-        return streamAndTrack.length == 2 ? streamAndTrack[1] : null;
+        String trackId = streamAndTrack.length == 2 ? streamAndTrack[1] : null;
+        if (trackId != null) {
+            trackId = trackId.trim();
+            if (trackId.isEmpty()) {
+                trackId = null;
+            }
+        }
+        return trackId;
     }
 
     public static String getVideoType(SourcePacketExtension ssrcPe)
@@ -245,35 +247,42 @@ public class SSRCSignaling
         if (audioSSRC == null)
             return false;
 
+        String audioStreamId = getStreamId(audioSSRC);
+        if (audioStreamId == null)
+        {
+            // No valid audio stream
+            return false;
+        }
+
         // Find first video SSRC with non-empty stream ID and different
         // than 'default' which is sometimes used when unspecified
         List<SourcePacketExtension> videoSSRCs
             = peerSSRCs.getSSRCsForMedia(MediaType.VIDEO.toString());
 
-        SourcePacketExtension videoSSRC = getFirstWithMSID(videoSSRCs);
-        // No video to sync
-        if (videoSSRC == null)
-            return false;
-
-        // Will merge stream by modifying msid and copying cname and label
-        String audioStreamId = getStreamId(audioSSRC);
-        String videoTrackId = getTrackId(videoSSRC);
-        ParameterPacketExtension videoMsid = getParam(videoSSRC, "msid");
-
-        if ( StringUtils.isNullOrEmpty(audioStreamId)
-             || StringUtils.isNullOrEmpty(videoTrackId)
-             ||  videoMsid == null )
+        boolean merged = false;
+        // There are multiple video SSRCs in simulcast
+        // FIXME this will not work with more than 1 video stream
+        //       per participant, as it will merge them into single stream
+        videoSSRCs = getAllWithMSID(videoSSRCs);
+        // Will merge video stream SSRCs by modifying their msid and copying
+        // cname and label
+        for (SourcePacketExtension videoSSRC : videoSSRCs)
         {
-            return false;
+            // Note that videoMsid is never null
+            // (it's checked in getAllWithMSID)
+            ParameterPacketExtension videoMsid = getParam(videoSSRC, "msid");
+            String videoTrackId = getTrackId(videoSSRC);
+            if (videoTrackId != null)
+            {
+                // Copy cname and label
+                copyParamAttr(videoSSRC, audioSSRC, "cname");
+                copyParamAttr(videoSSRC, audioSSRC, "mslabel");
+
+                videoMsid.setValue(audioStreamId + " " + videoTrackId);
+                merged = true;
+            }
         }
-
-        // Copy cname and label
-        copyParamAttr(videoSSRC, audioSSRC, "cname");
-        copyParamAttr(videoSSRC, audioSSRC, "mslabel");
-
-        videoMsid.setValue(audioStreamId + " " + videoTrackId);
-
-        return true;
+        return merged;
     }
 
     /**

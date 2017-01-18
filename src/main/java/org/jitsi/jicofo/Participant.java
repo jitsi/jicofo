@@ -264,7 +264,6 @@ public class Participant
                     ssrcPe, roomMember.getContactAddress());
 
                 long ssrcValue = ssrcPe.getSSRC();
-                String streamId = SSRCSignaling.getStreamId(ssrcPe);
 
                 // Check for duplicates
                 if (ssrcs.findSSRC(mediaType, ssrcValue) != null)
