@@ -271,19 +271,49 @@ public class MockMediaStreamStats
     }
 
     @Override
-    public void addNackListener(NACKListener nackListener)
+    public void addRTCPPacketListener(RTCPPacketListener listener)
     {
 
     }
 
     @Override
-    public void addRembListener(REMBListener rembListener)
+    public void removeRTCPPacketListener(RTCPPacketListener listener)
     {
 
     }
 
     @Override
     public long getSendingBitrate()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getPacketsMissingFromCache()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getBytesRetransmitted()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getBytesNotRetransmitted()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getPacketsRetransmitted()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getPacketsNotRetransmitted()
     {
         return 0;
     }

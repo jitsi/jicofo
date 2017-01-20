@@ -22,8 +22,10 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.util.*;
 
+import net.java.sip.communicator.util.Logger;
+import org.jitsi.impl.neomedia.rtp.*;
+import org.jitsi.util.*;
 import org.jitsi.videobridge.*;
-import org.jitsi.videobridge.simulcast.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
@@ -170,7 +172,7 @@ public class MockVideobridge
         }
     }
 
-    public List<SimulcastStream> getSimulcastLayers(
+    public List<RTPEncodingDesc> getSimulcastLayers(
             String confId, String channelId)
     {
         Conference conference = bridge.getConference(confId, null);
@@ -178,13 +180,16 @@ public class MockVideobridge
         VideoChannel videoChannel
             = (VideoChannel) videoContent.getChannel(channelId);
 
-        SimulcastStream[] layers
-            = videoChannel
-                    .getTransformEngine()
-                            .getSimulcastEngine()
-                                    .getSimulcastReceiver()
-                                            .getSimulcastStreams();
-        if (layers == null)
+        MediaStreamTrackDesc[] tracks = videoChannel
+            .getStream()
+            .getMediaStreamTrackReceiver()
+            .getMediaStreamTracks();
+
+        if (ArrayUtils.isNullOrEmpty(tracks))
+            return new ArrayList<>();
+
+        RTPEncodingDesc[] layers = tracks[0].getRTPEncodings();
+        if (ArrayUtils.isNullOrEmpty(layers))
             return new ArrayList<>();
 
         return Arrays.asList(layers);

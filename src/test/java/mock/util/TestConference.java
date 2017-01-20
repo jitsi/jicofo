@@ -21,9 +21,9 @@ import mock.*;
 import mock.jvb.*;
 import mock.muc.*;
 
+import org.jitsi.impl.neomedia.rtp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
-import org.jitsi.videobridge.simulcast.*;
 
 import org.osgi.framework.*;
 
@@ -173,12 +173,12 @@ public class TestConference
         String conferenceId = confUtility.getJvbConferenceId();
         String videoChannelId
             = confUtility.getParticipantVideoChannelId(peerJid);
-        List<SimulcastStream> layers
+        List<RTPEncodingDesc> layers
             = mockBridge.getSimulcastLayers(conferenceId, videoChannelId);
 
         long[] ssrcs = new long[layers.size()];
         int idx = 0;
-        for (SimulcastStream layer : layers)
+        for (RTPEncodingDesc layer : layers)
         {
             ssrcs[idx++] = layer.getPrimarySSRC();
         }

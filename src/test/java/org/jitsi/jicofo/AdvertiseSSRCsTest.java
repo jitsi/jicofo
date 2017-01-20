@@ -458,6 +458,6 @@ public class AdvertiseSSRCsTest
         long[] simulcastLayersSSRCs
             = testConference.getSimulcastLayersSSRCs(peer.getMyJid());
 
-        assertEquals(0, simulcastLayersSSRCs.length);
+        assertEquals(1, simulcastLayersSSRCs.length);
     }
 }

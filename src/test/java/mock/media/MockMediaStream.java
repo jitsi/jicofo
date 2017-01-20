@@ -67,12 +67,6 @@ public class MockMediaStream
     }
 
     @Override
-    public RawPacketCache getPacketCache()
-    {
-        return null;
-    }
-
-    @Override
     public RetransmissionRequester getRetransmissionRequester()
     {
         return null;
