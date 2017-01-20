@@ -123,7 +123,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>libjitsi</artifactId>
-      <version>1.0-20161020.193142-197</version>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
     <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->  
     <dependency>
@@ -157,7 +157,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.0-20161109.171239-250</version>
+      <version>1.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
