@@ -101,10 +101,4 @@ public class MockVideoMediaStream
     {
 
     }
-
-    @Override
-    public BandwidthEstimator getOrCreateBandwidthEstimator()
-    {
-        return mock(BandwidthEstimator.class);
-    }
 }
