@@ -149,11 +149,11 @@ public class RESTReservations
 
                     // Conference already exists(check if we have it locally)
                     conference = findConferenceForId(conflictId);
-                    
+
                     logger.info(
                         "Conference '" + mucRoomName + "' already "
                             + "allocated, id: " + conflictId);
-                    
+
                     // do GET conflict conference
                     if (conference == null)
                     {
@@ -197,6 +197,14 @@ public class RESTReservations
             }
         }
 
+        // If there is no authAuthority, creator is null
+        if (creator == null)
+        {
+            logger.warn(
+                "Room " + mucRoomName + " was created without a creator");
+            return new Result(RESULT_OK);
+        }
+
         // Verify owner == creator
         if (creator.equals(conference.getOwner()))
         {
@@ -207,7 +215,6 @@ public class RESTReservations
             logger.error(
                 "Room " + mucRoomName + ", conflict : "
                         + creator + " != " + conference.getOwner());
-            
             return new Result(RESULT_CONFLICT);
         }
     }
