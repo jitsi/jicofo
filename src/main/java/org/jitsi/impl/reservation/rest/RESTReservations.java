@@ -201,7 +201,7 @@ public class RESTReservations
         if (creator == null)
         {
             logger.warn(
-                "Room " + mucRoomName + " was created without a creator"
+                "Room " + mucRoomName + " was created without a creator");
             return new Result(RESULT_OK);
         }
 
