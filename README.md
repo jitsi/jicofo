@@ -23,6 +23,7 @@ Download
 
 You can download Debian/Ubuntu binaries:
 * [stable](https://download.jitsi.org/stable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianStableRepository))
+* [testing](https://download.jitsi.org/testing/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianTestingRepository))
 * [nightly](https://download.jitsi.org/unstable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianNightlyRepository))
 
 Old JavaScript client side focus replacement
