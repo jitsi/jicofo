@@ -168,6 +168,12 @@ public class MockMediaStream
     }
 
     @Override
+    public boolean isKeyFrame(RawPacket pkt)
+    {
+        return false;
+    }
+
+    @Override
     public boolean isKeyFrame(byte[] buf, int off, int len)
     {
         // TODO move to AbstractMediaStream.
