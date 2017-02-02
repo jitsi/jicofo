@@ -289,36 +289,6 @@ public class MockMediaStreamStats
     }
 
     @Override
-    public long getPacketsMissingFromCache()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getBytesRetransmitted()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getBytesNotRetransmitted()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getPacketsRetransmitted()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getPacketsNotRetransmitted()
-    {
-        return 0;
-    }
-
-    @Override
     public ReceiveTrackStats getReceiveStats()
     {
         return null;
