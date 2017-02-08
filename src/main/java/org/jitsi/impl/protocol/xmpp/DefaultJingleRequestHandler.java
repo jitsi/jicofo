@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 
@@ -39,31 +40,39 @@ public class DefaultJingleRequestHandler
         = Logger.getLogger(DefaultJingleRequestHandler.class);
 
     @Override
-    public void onAddSource(JingleSession jingleSession,
-                            List<ContentPacketExtension> contents)
+    public XMPPError onAddSource(JingleSession jingleSession,
+                                 List<ContentPacketExtension> contents)
     {
         logger.warn("Ignored Jingle 'source-add'");
+
+        return null;
     }
 
     @Override
-    public void onRemoveSource(JingleSession jingleSession,
+    public XMPPError onRemoveSource(JingleSession jingleSession,
                                List<ContentPacketExtension> contents)
     {
         logger.warn("Ignored Jingle 'source-remove'");
+
+        return null;
     }
 
     @Override
-    public void onSessionAccept(JingleSession jingleSession,
+    public XMPPError onSessionAccept(JingleSession jingleSession,
                                 List<ContentPacketExtension> answer)
     {
         logger.warn("Ignored Jingle 'session-accept'");
+
+        return null;
     }
 
     @Override
-    public void onTransportAccept(JingleSession jingleSession,
+    public XMPPError onTransportAccept(JingleSession jingleSession,
                                   List<ContentPacketExtension> contents)
     {
         logger.warn("Ignored Jingle 'transport-accept'");
+
+        return null;
     }
 
     @Override

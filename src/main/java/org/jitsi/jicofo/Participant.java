@@ -238,101 +238,6 @@ public class Participant
     }
 
     /**
-     * Imports media SSRCs from given list of <tt>ContentPacketExtension</tt>.
-     *
-     * @param contents the list that contains peer's media contents.
-     *
-     * @return <tt>MediaSSRCMap</tt> tha contains only the SSRCs that were
-     *        actually added to this participant(which were not duplicated).
-     */
-    public MediaSSRCMap addSSRCsFromContent(
-            List<ContentPacketExtension> contents)
-    {
-        // Configure SSRC owner in 'ssrc-info' with user's MUC Jid
-        MediaSSRCMap ssrcsToAdd = MediaSSRCMap.getSSRCsFromContent(contents);
-
-        MediaSSRCMap addedSSRCs = new MediaSSRCMap();
-
-        for (String mediaType : ssrcsToAdd.getMediaTypes())
-        {
-            List<SourcePacketExtension> mediaSsrcs
-                = ssrcsToAdd.getSSRCsForMedia(mediaType);
-
-            for (SourcePacketExtension ssrcPe : mediaSsrcs)
-            {
-                SSRCSignaling.setSSRCOwner(
-                    ssrcPe, roomMember.getContactAddress());
-
-                long ssrcValue = ssrcPe.getSSRC();
-
-                // Check for duplicates
-                if (ssrcs.findSSRC(mediaType, ssrcValue) != null)
-                {
-                    logAddSSRCError(
-                        "Detected duplicated"/* SSRC[mediaType]... */,
-                        false /* log as warning */,
-                        ssrcValue, mediaType, getEndpointId());
-
-                    // Continue adding other valid SSRCs...
-                    continue;
-                }
-                // FIXME disabled until SSRC groups are not taken into account
-                // Check for duplicated 'msid'
-                //else if (streamId != null
-                //    && ssrcs.findByStreamId(mediaType, streamId) != null)
-                //{
-                //    logAddSSRCError(
-                //        "Detected duplicated stream id: "
-                //            + streamId + "," /* SSRC[mediaType]... */,
-                //        true /* log as error */,
-                //        ssrcValue, mediaType, getEndpointId());
-
-                    // Continue adding other valid SSRCs...
-                //    continue;
-                //}
-                // Check for SSRC limit exceeded
-                else if (ssrcs.getSSRCsForMedia(mediaType).size()
-                        >= maxSSRCCount)
-                {
-                    logAddSSRCError(
-                        "Hit the limit of " + maxSSRCCount+ " - dropping:",
-                        true /* log as error */,
-                        ssrcValue, mediaType, getEndpointId());
-
-                    // Abort - can't add any more SSRCs.
-                    break;
-                }
-
-                ssrcs.addSSRC(mediaType, ssrcPe.copy());
-
-                addedSSRCs.addSSRC(mediaType, ssrcPe);
-            }
-        }
-
-        return addedSSRCs;
-    }
-
-    private void logAddSSRCError(String     msg,
-                                 boolean    isError,
-                                 long       ssrc,
-                                 String     mediaType, String endpointId)
-    {
-        String addSsrcErrorMsg
-            = String.format(
-                    "%s SSRC: %d[%s], signalled by %s",
-                    msg, ssrc, mediaType, endpointId);
-
-        if (isError)
-        {
-            logger.error(addSsrcErrorMsg);
-        }
-        else
-        {
-            logger.warn(addSsrcErrorMsg);
-        }
-    }
-
-    /**
      * Removes given media SSRCs from this peer state.
      * @param ssrcMap the SSRC map that contains the SSRCs to be removed.
      * @return <tt>MediaSSRCMap</tt> which contains SSRCs removed from this map.
@@ -594,19 +499,54 @@ public class Participant
     }
 
     /**
-     * Adds SSRC groups for media described in given Jingle content list.
+     * Adds SSRCs and SSRC groups for media described in given Jingle content
+     * list.
      * @param contents the list of <tt>ContentPacketExtension</tt> that
-     *                 describes media SSRC groups.
-     * @return <tt>MediaSSRCGroupMap</tt> with <tt>SSRCGroup</tt>s
-     *         which were added to this participant.
+     *                 describes media SSRCs and SSRC groups.
+     * @return an array of two objects where first one is <tt>MediaSSRCMap</tt>
+     * contains the SSRCs that have been added and the second one is
+     * <tt>MediaSSRCGroupMap</tt> with <tt>SSRCGroup</tt>s added to this
+     * participant.
+     *
+     * @throws InvalidSSRCsException if there a critical problem has been found
+     * with SSRC and SSRC groups. This <tt>Participant</tt>'s state remains
+     * unchanged (no SSRCs or groups were added/removed).
      */
-    public MediaSSRCGroupMap addSSRCGroupsFromContent(
+    public Object[] addSSRCsAndGroupsFromContent(
             List<ContentPacketExtension> contents)
+        throws InvalidSSRCsException
     {
-        MediaSSRCGroupMap addedSsrcGroups
+        SSRCValidator validator
+            = new SSRCValidator(
+                    getEndpointId(),
+                    this.ssrcs, this.ssrcGroups, maxSSRCCount, this.logger);
+
+        MediaSSRCMap ssrcsToAdd
+            = MediaSSRCMap.getSSRCsFromContent(contents);
+        MediaSSRCGroupMap groupsToAdd
             = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
 
-        return ssrcGroups.add(addedSsrcGroups.copy());
+        Object[] added
+            = validator.tryAddSSRCsAndGroups(ssrcsToAdd, groupsToAdd);
+        MediaSSRCMap addedSSRCs = (MediaSSRCMap) added[0];
+        MediaSSRCGroupMap addedGroups = (MediaSSRCGroupMap) added[1];
+
+        // Mark as SSRC owner
+        String roomJid = roomMember.getContactAddress();
+        for (String mediaType : addedSSRCs.getMediaTypes())
+        {
+            List<SourcePacketExtension> ssrcs
+                = addedSSRCs.getSSRCsForMedia(mediaType);
+            for (SourcePacketExtension ssrc : ssrcs)
+            {
+                SSRCSignaling.setSSRCOwner(ssrc, roomJid);
+            }
+        }
+
+        this.ssrcs.add(addedSSRCs);
+        this.ssrcGroups.add(addedGroups);
+
+        return added;
     }
 
     /**

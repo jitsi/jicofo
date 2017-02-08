@@ -175,7 +175,7 @@ public class SSRCSignaling
      *             which we want to obtain WebRTC stream ID.
      * @return WebRTC stream ID that is the first part of "msid" SSRC parameter.
      */
-    private static String getStreamId(SourcePacketExtension ssrc)
+    public static String getStreamId(SourcePacketExtension ssrc)
     {
         ParameterPacketExtension msid = getParam(ssrc, "msid");
 

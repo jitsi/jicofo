@@ -103,6 +103,15 @@ public class SSRCGroup
     }
 
     /**
+     * Returns the SSRC contained in this group.
+     * @return the internal list that stores <tt>SourcePacketExtension</tt>
+     */
+    public List<SourcePacketExtension> getSources()
+    {
+        return group.getSources();
+    }
+
+    /**
      * Returns deep copy of underlying <tt>SourceGroupPacketExtension</tt>.
      */
     public SourceGroupPacketExtension getExtensionCopy()
@@ -175,5 +184,23 @@ public class SSRCGroup
     public boolean isEmpty()
     {
         return this.group.getSources().isEmpty();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder ssrcs = new StringBuilder();
+        for (SourcePacketExtension ssrc : this.group.getSources())
+        {
+            // FIXME do not print for the last element
+            ssrcs.append(ssrc.getSSRC()).append(", ");
+        }
+        return "SSRCGroup[" + this.group.getSemantics() + ", " + ssrcs
+            + "]@" + Integer.toHexString(hashCode());
+    }
+
+    public String getSemantics()
+    {
+        return group.getSemantics();
     }
 }

@@ -177,6 +177,24 @@ public class MediaSSRCMap
     }
 
     /**
+     * Looks for given SSRC number and returns type of the media for the first
+     * match found.
+     * @param ssrcValue the SSRC number to be found
+     * @return type of the media of the SSRC identified by the given number or
+     * <tt>null</tt> if not found.
+     */
+    public String findSSRCsMediaType(long ssrcValue)
+    {
+        Set<String> mediaTypes = getMediaTypes();
+        for (String mediaType : mediaTypes)
+        {
+            if (findSSRC(mediaType, ssrcValue) != null)
+                return mediaType;
+        }
+        return null;
+    }
+
+    /**
      * Finds SSRC for given owner.
      *
      * @param media the media type of the SSRC we'll be looking for.
