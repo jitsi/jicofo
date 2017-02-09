@@ -128,26 +128,56 @@ public class MediaSSRCGroupMap
      * map instance.
      * @param ssrcGroups the <tt>MediaSSRCGroupMap</tt> that will be added to
      *                   this map instance.
-     * @return returns that map that contains only those groups that were
-     *         actually added.
      */
-    public MediaSSRCGroupMap add(MediaSSRCGroupMap ssrcGroups)
+    public void add(MediaSSRCGroupMap ssrcGroups)
     {
-        MediaSSRCGroupMap addedGroups = new MediaSSRCGroupMap();
         for (String media : ssrcGroups.getMediaTypes())
         {
             List<SSRCGroup> groups = ssrcGroups.getSSRCGroupsForMedia(media);
             for (SSRCGroup group : groups)
             {
-                if (!group.isEmpty())
-                {
-                    addSSRCGroup(media, group);
-
-                    addedGroups.addSSRCGroup(media, group);
-                }
+                addSSRCGroup(media, group);
             }
         }
-        return addedGroups;
+    }
+
+    /**
+     * Checks whether or not this map contains given <tt>{@link SSRCGroup}</tt>.
+     * @param mediaType the type of the media fo the group to be found.
+     * @param toFind the <tt>SSRCGroup</tt> to be found.
+     * @return <tt>true</tt> if the given <tt>SSRCGroup</tt> exists in the map
+     * already or <tt>false</tt> otherwise. A group is considered equal when it
+     * has the same semantics and SSRCs stored. The order of SSRCs appearing in
+     * the group is important as well.
+     */
+    public boolean containsGroup(String mediaType, SSRCGroup toFind)
+    {
+        List<SourcePacketExtension> comparedSSRCs = toFind.getSources();
+
+        List<SSRCGroup> groups = this.getSSRCGroupsForMedia(mediaType);
+        for (SSRCGroup group : groups)
+        {
+            if (!toFind.getSemantics().equals(toFind.getSemantics()))
+                continue;
+
+            List<SourcePacketExtension> groupSSRCs = group.getSources();
+            if (groupSSRCs.size() != comparedSSRCs.size())
+                continue;
+
+            boolean theSame = true;
+            for (int i=0; i<comparedSSRCs.size(); i++)
+            {
+                if (groupSSRCs.get(i).getSSRC()
+                    != comparedSSRCs.get(i).getSSRC())
+                {
+                    theSame = false;
+                    break;
+                }
+            }
+            if (theSame)
+                return true;
+        }
+        return false;
     }
 
     /**

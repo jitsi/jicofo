@@ -279,14 +279,6 @@ public abstract class AbstractOperationSetJingle
 
             return;
         }
-        // Ack all "set" requests.
-        if(iq.getType() == IQ.Type.SET)
-        {
-            IQ ack = IQ.createResultIQ(iq);
-
-            getConnection().sendPacket(ack);
-        }
-
         if (session == null)
         {
             logger.error(
@@ -297,13 +289,15 @@ public abstract class AbstractOperationSetJingle
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
 
+        XMPPError error = null;
+
         switch (action)
         {
         case SESSION_ACCEPT:
-            requestHandler.onSessionAccept(session, iq.getContentList());
+            error = requestHandler.onSessionAccept(session, iq.getContentList());
             break;
         case TRANSPORT_ACCEPT:
-            requestHandler.onTransportAccept(session, iq.getContentList());
+            error = requestHandler.onTransportAccept(session, iq.getContentList());
             break;
         case TRANSPORT_INFO:
             requestHandler.onTransportInfo(session, iq.getContentList());
@@ -313,14 +307,26 @@ public abstract class AbstractOperationSetJingle
             break;
         case ADDSOURCE:
         case SOURCEADD:
-            requestHandler.onAddSource(session, iq.getContentList());
+            error = requestHandler.onAddSource(session, iq.getContentList());
             break;
         case REMOVESOURCE:
         case SOURCEREMOVE:
-            requestHandler.onRemoveSource(session, iq.getContentList());
+            error = requestHandler.onRemoveSource(session, iq.getContentList());
             break;
         default:
             logger.warn("unsupported action " + action);
+        }
+
+        // FIXME IQ type is not taken into account
+        if (error == null)
+        {
+            IQ ack = IQ.createResultIQ(iq);
+            getConnection().sendPacket(ack);
+        }
+        else
+        {
+            IQ errorResponse = IQ.createErrorResponse(iq, error);
+            getConnection().sendPacket(errorResponse);
         }
     }
 

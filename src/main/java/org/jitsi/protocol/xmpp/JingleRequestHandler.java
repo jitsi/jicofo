@@ -19,6 +19,8 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
+import org.jivesoftware.smack.packet.*;
+
 import java.util.*;
 
 /**
@@ -38,8 +40,11 @@ public interface JingleRequestHandler
      *                 .jabber.extensions.colibri.SourcePacketExtension} inside
      *                 of <tt>RtpDescriptionPacketExtension</tt> or in the
      *                 <tt>ContentPacketExtension</tt> directly.
+     *
+     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * the original request or <tt>null</tt> if the processing was successful.
      */
-    void onAddSource(JingleSession jingleSession,
+    XMPPError onAddSource(JingleSession jingleSession,
                      List<ContentPacketExtension> contents);
 
     /**
@@ -52,17 +57,23 @@ public interface JingleRequestHandler
      *                 .jabber.extensions.colibri.SourcePacketExtension} inside
      *                 of <tt>RtpDescriptionPacketExtension</tt> or in the
      *                 <tt>ContentPacketExtension</tt> directly.
+     *
+     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * the original request or <tt>null</tt> if the processing was successful.
      */
-    void onRemoveSource(JingleSession jingleSession,
-                        List<ContentPacketExtension> contents);
+    XMPPError onRemoveSource(JingleSession jingleSession,
+                             List<ContentPacketExtension> contents);
 
     /**
      * Callback fired when 'session-accept' is received from the client.
      *
      * @param jingleSession the session that has received the notification.
      * @param answer content list that describe peer media offer.
+     *
+     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * the original request or <tt>null</tt> if the processing was successful.
      */
-    void onSessionAccept(JingleSession jingleSession,
+    XMPPError onSessionAccept(JingleSession jingleSession,
                          List<ContentPacketExtension> answer);
 
     /**
@@ -79,8 +90,11 @@ public interface JingleRequestHandler
      *
      * @param jingleSession the session that has received the notification
      * @param contents content list that contains media transport description
+     *
+     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * the original request or <tt>null</tt> if the processing was successful.
      */
-    void onTransportAccept(JingleSession jingleSession,
+    XMPPError onTransportAccept(JingleSession jingleSession,
                            List<ContentPacketExtension> contents);
 
     /**

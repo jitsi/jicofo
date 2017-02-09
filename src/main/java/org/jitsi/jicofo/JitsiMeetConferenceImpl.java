@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -33,6 +34,8 @@ import org.jitsi.eventadmin.*;
 
 import org.jitsi.util.*;
 import org.jitsi.util.Logger;
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 
 import java.text.*;
@@ -935,18 +938,19 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onSessionAccept( JingleSession peerJingleSession,
+    public XMPPError onSessionAccept( JingleSession peerJingleSession,
                                  List<ContentPacketExtension> answer)
     {
         Participant participant
             = findParticipantForJingleSession(peerJingleSession);
-        String peerJingleSessionAddress = peerJingleSession.getAddress();
+        String peerAddress = peerJingleSession.getAddress();
 
         if (participant == null)
         {
-            logger.error(
-                    "No participant found for: " + peerJingleSessionAddress);
-            return;
+            String errorMsg
+                = "No participant found for: " + peerAddress;
+            logger.error(errorMsg);
+            return new XMPPError(XMPPError.Condition.item_not_found, errorMsg);
         }
 
         if (participant.getJingleSession() != null)
@@ -954,7 +958,7 @@ public class JitsiMeetConferenceImpl
             //FIXME: we should reject it ?
             logger.error(
                     "Reassigning jingle session for participant: "
-                        + peerJingleSessionAddress);
+                        + peerAddress);
         }
 
         // XXX We will be acting on the received session-accept bellow.
@@ -970,15 +974,25 @@ public class JitsiMeetConferenceImpl
         // Extract and store various session information in the Participant
         participant.setRTPDescription(answer);
         participant.addTransportFromJingle(answer);
-        participant.addSSRCsFromContent(answer);
-        participant.addSSRCGroupsFromContent(answer);
+
+        try
+        {
+            participant.addSSRCsAndGroupsFromContent(answer);
+        }
+        catch (InvalidSSRCsException e)
+        {
+            logger.error(
+                "Error processing session accept from: "
+                    + peerAddress +": " + e.getMessage());
+
+            return new XMPPError(
+                XMPPError.Condition.bad_request, e.getMessage());
+        }
 
         MediaSSRCMap peerSSRCs = participant.getSSRCsCopy();
         MediaSSRCGroupMap peerGroupsMap = participant.getSSRCGroupsCopy();
 
-        logger.info(
-                "Received SSRCs from " + peerJingleSessionAddress + " "
-                    + peerSSRCs);
+        logger.info("Received SSRCs from " + peerAddress + " " + peerSSRCs);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
@@ -1017,6 +1031,8 @@ public class JitsiMeetConferenceImpl
 
             participant.clearSsrcsToRemove();
         }
+
+        return null;
     }
 
     /**
@@ -1112,7 +1128,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportAccept(JingleSession                   jingleSession,
+    public XMPPError onTransportAccept(JingleSession              jingleSession,
                                   List<ContentPacketExtension>    contents)
     {
         jingleSession.setAccepted(true);
@@ -1122,6 +1138,8 @@ public class JitsiMeetConferenceImpl
         // We basically do the same processing as with transport-info by just
         // forwarding transport/rtp information to the bridge
         onTransportInfo(jingleSession, contents);
+
+        return null;
     }
 
     /**
@@ -1158,27 +1176,39 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onAddSource(JingleSession jingleSession,
-                            List<ContentPacketExtension> contents)
+    public XMPPError onAddSource(JingleSession jingleSession,
+                                 List<ContentPacketExtension> contents)
     {
-        Participant participant = findParticipantForJingleSession(jingleSession);
+        String address = jingleSession.getAddress();
+        Participant participant
+            = findParticipantForJingleSession(jingleSession);
         if (participant == null)
         {
-            logger.error("Add-source: no peer state for "
-                             + jingleSession.getAddress());
-            return;
+            String errorMsg = "Add-source: no peer state for " + address;
+            logger.error(errorMsg);
+            return new XMPPError(XMPPError.Condition.item_not_found, errorMsg);
         }
 
-        MediaSSRCMap ssrcsToAdd
-            = participant.addSSRCsFromContent(contents);
+        Object[] added;
+        try
+        {
+            added = participant.addSSRCsAndGroupsFromContent(contents);
+        }
+        catch (InvalidSSRCsException e)
+        {
+            logger.error(
+                "Error adding SSRCs from: " + address + ": " + e.getMessage());
+            return new XMPPError(
+                XMPPError.Condition.bad_request, e.getMessage());
+        }
 
-        MediaSSRCGroupMap ssrcGroupsToAdd
-            = participant.addSSRCGroupsFromContent(contents);
+        MediaSSRCMap ssrcsToAdd = (MediaSSRCMap) added[0];
+        MediaSSRCGroupMap ssrcGroupsToAdd = (MediaSSRCGroupMap) added[1];
 
         if (ssrcsToAdd.isEmpty() && ssrcGroupsToAdd.isEmpty())
         {
             logger.warn("Not sending source-add, notification would be empty");
-            return;
+            return null;
         }
 
         // Updates SSRC Groups on the bridge
@@ -1194,6 +1224,8 @@ public class JitsiMeetConferenceImpl
         }
 
         propagateNewSSRCs(participant, ssrcsToAdd, ssrcGroupsToAdd);
+
+        return null;
     }
 
     /**
@@ -1205,7 +1237,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onRemoveSource(JingleSession sourceJingleSession,
+    public XMPPError onRemoveSource(JingleSession sourceJingleSession,
                                List<ContentPacketExtension> contents)
     {
         MediaSSRCMap ssrcsToRemove
@@ -1216,6 +1248,8 @@ public class JitsiMeetConferenceImpl
 
         removeSSRCs(
                 sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove, true);
+
+        return null;
     }
 
     /**
