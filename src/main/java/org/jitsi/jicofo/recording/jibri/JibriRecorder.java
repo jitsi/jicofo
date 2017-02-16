@@ -357,11 +357,13 @@ public class JibriRecorder
                     }
                     //else the response will be handled in processPacket()
                 }
-                catch (OperationFailedException e)
+                catch (Throwable t)
                 {
                     logger.error(
-                            "Failed to start recording in " + roomName
-                                + " - XMPP connection is broken");
+                        "Failed to start recording in " + roomName
+                            + (t instanceof OperationFailedException ?
+                                " - XMPP connection is broken"
+                                : ""), t);
                     recordingStopped(
                             null, false /* do not send status updates */);
                 }

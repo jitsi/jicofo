@@ -134,7 +134,7 @@ public class ChannelAllocator implements Runnable
         {
             discoverFeaturesAndInvite();
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
             logger.error("Exception on participant invite", e);
         }

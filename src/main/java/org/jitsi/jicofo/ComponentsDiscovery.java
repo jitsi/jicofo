@@ -478,7 +478,7 @@ public class ComponentsDiscovery
                         {
                             validateBridges();
                         }
-                        catch (Exception e)
+                        catch (Throwable e)
                         {
                             logger.error(e, e);
                         }
