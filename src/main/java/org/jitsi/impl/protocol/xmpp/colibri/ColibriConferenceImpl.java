@@ -196,7 +196,6 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             colibriBuilder.setChannelLastN(config.getChannelLastN());
-            colibriBuilder.setAdaptiveLastN(config.isAdaptiveLastNEnabled());
             colibriBuilder.setAdaptiveSimulcast(
                 config.isAdaptiveSimulcastEnabled());
             colibriBuilder.setSimulcastMode(config.getSimulcastMode());
