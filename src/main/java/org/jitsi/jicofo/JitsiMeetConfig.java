@@ -41,12 +41,6 @@ public class JitsiMeetConfig
         = Logger.getLogger(JitsiMeetConfig.class);
 
     /**
-     * The name of adaptive last N configuration property. Pass 'true' to enable
-     * or 'false' to disable.
-     */
-    public static final String ADAPTIVE_LAST_N_PNAME = "adaptiveLastN";
-
-    /**
      * The name of the property which specifies the packet delay for the audio
      * channels used in the conference.
      *
@@ -180,15 +174,6 @@ public class JitsiMeetConfig
     public Integer getChannelLastN()
     {
         return getInt(CHANNEL_LAST_N_PNAME);
-    }
-
-    /**
-     * Returns a boolean value of adaptive last N property or <tt>null</tt>
-     * if it has not been specified.
-     */
-    public Boolean isAdaptiveLastNEnabled()
-    {
-        return getBoolean(ADAPTIVE_LAST_N_PNAME);
     }
 
     /**
