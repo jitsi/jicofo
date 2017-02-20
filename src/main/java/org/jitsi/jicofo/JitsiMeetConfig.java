@@ -76,12 +76,6 @@ public class JitsiMeetConfig
     public static final String OPEN_SCTP_PNAME = "openSctp";
 
     /**
-     * The name of adaptive simulcast configuration property. Pass 'true' to
-     * enable or 'false' to disable.
-     */
-    public static final String SIMULCAST_MODE_PNAME = "simulcastMode";
-
-    /**
      * The name of the configuration property used to configure Jigasi(SIP
      * gateway) instance.
      */
@@ -185,16 +179,6 @@ public class JitsiMeetConfig
     public Integer getAudioPacketDelay()
     {
         return getInt(AUDIO_PACKET_DELAY);
-    }
-
-    /**
-     * Returns a boolean value of adaptive simulcast property or <tt>null</tt>
-     * if it has not been specified.
-     */
-    public SimulcastMode getSimulcastMode()
-    {
-        String mode = properties.get(SIMULCAST_MODE_PNAME);
-        return SimulcastMode.fromString(mode);
     }
 
     /**
