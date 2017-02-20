@@ -50,13 +50,6 @@ public class JitsiMeetConfig
     public static final String AUDIO_PACKET_DELAY = "audioPacketDelay";
 
     /**
-     * The name of adaptive simulcast configuration property. Pass 'true' to
-     * disable or 'false' to enable.
-     */
-    public static final String DISABLE_ADAPTIVE_SIMULCAST_PNAME
-        = "disableAdaptiveSimulcast";
-
-    /**
      * The name of channel last N configuration property. Should be non-negative
      * number. Pass <tt>-1</tt> to disable last N functionality.
      */
@@ -174,16 +167,6 @@ public class JitsiMeetConfig
     public Integer getChannelLastN()
     {
         return getInt(CHANNEL_LAST_N_PNAME);
-    }
-
-    /**
-     * Returns a boolean value of adaptive simulcast property or <tt>null</tt>
-     * if it has not been specified.
-     */
-    public Boolean isAdaptiveSimulcastEnabled()
-    {
-        Boolean disabled = getBoolean(DISABLE_ADAPTIVE_SIMULCAST_PNAME);
-        return disabled == null || !disabled;
     }
 
     /**
