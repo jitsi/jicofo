@@ -304,6 +304,27 @@ public class FocusManager
 
         JitsiMeetConferenceImpl conference = conferences.get(room);
 
+        //properties could be updated
+        if (conference.getColibriConference() != null)
+        {
+            JitsiMeetConfig config = new JitsiMeetConfig(properties);
+            conference.getColibriConference().setConfig(config);
+
+            StringBuilder options = new StringBuilder();
+            for (Map.Entry<String, String> option : properties.entrySet())
+            {
+                options.append("\n    ")
+                       .append(option.getKey())
+                       .append(": ")
+                       .append(option.getValue());
+
+            }
+
+            logger.info("The updated options for room " + room + "@" + focusUserDomain
+                    + " conferences count: " + conferences.size()
+                    + " options:" + options.toString());
+        }
+
         return conference.isInTheRoom();
     }
 

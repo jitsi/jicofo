@@ -197,7 +197,27 @@ public class ColibriConferenceImpl
         {
             colibriBuilder.setChannelLastN(config.getChannelLastN());
             colibriBuilder.setSimulcastMode(config.getSimulcastMode());
+
             colibriBuilder.setAudioPacketDelay(config.getAudioPacketDelay());
+            // rtp level relay type used with the colibri channels allocated
+            // for this conference
+            RTPLevelRelayType rtpRelayType = RTPLevelRelayType.TRANSLATOR;
+            try
+            {
+                if (!StringUtils.isNullOrEmpty(config.getRtpLevelRelayType()))
+                    rtpRelayType = RTPLevelRelayType.parseRTPLevelRelayType
+                            (config.getRtpLevelRelayType());
+            }
+            catch (IllegalArgumentException e)
+            {
+                logger.error(
+                        "Failed to parse rtpLevelRelayType JitsiMeet config," +
+                                " use rtp-level-relay-type translator for " +
+                                getName());
+            }
+            colibriBuilder.setRTPLevelRelayType(rtpRelayType);
+            logger.info
+                    ("setConfig: rtpRelayType = " + rtpRelayType.toString());
         }
     }
 
