@@ -664,7 +664,7 @@ public class BridgeSelector
          * If not set we consider it highly occupied,
          * because no stats we have been fetched so far.
          */
-        private int videoStreamCount = Integer.MAX_VALUE;
+        private Integer videoStreamCount = null;
 
         /**
          * Accumulates video stream count changes coming from
@@ -746,7 +746,8 @@ public class BridgeSelector
          */
         public int getVideoStreamCount()
         {
-            return videoStreamCount;
+            return videoStreamCount != null
+                ? videoStreamCount : Integer.MAX_VALUE;
         }
 
         /**
@@ -842,9 +843,15 @@ public class BridgeSelector
 
         private int getEstimatedVideoStreamCount()
         {
-            return videoStreamCountDiff != null
-                ? videoStreamCount + videoStreamCountDiff
-                : videoStreamCount;
+            int videoStreamEstimate
+                = videoStreamCount != null ? videoStreamCount : 0;
+
+            if (videoStreamCountDiff != null)
+            {
+                videoStreamEstimate += videoStreamCountDiff;
+            }
+
+            return videoStreamEstimate;
         }
 
         private void onVideoStreamsAdded(Integer videoStreamCount)
