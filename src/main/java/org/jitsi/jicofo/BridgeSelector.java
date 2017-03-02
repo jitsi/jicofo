@@ -22,13 +22,15 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
+
+import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -40,7 +42,8 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class BridgeSelector
-    implements SubscriptionListener
+    implements SubscriptionListener,
+               EventHandler
 {
     /**
      * The logger.
@@ -76,6 +79,12 @@ public class BridgeSelector
      * Five minutes.
      */
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
+
+    /**
+     * Stores reference to <tt>EventHandler</tt> registration, so that it can be
+     * unregistered on {@link #dispose()}.
+     */
+    private ServiceRegistration<EventHandler> handlerRegistration;
 
     /**
      * The amount of time we will wait after bridge instance failure before it
@@ -504,6 +513,48 @@ public class BridgeSelector
     }
 
     /**
+     * Handles {@link BridgeEvent#VIDEOSTREAMS_ADDED} and
+     * {@link BridgeEvent#VIDEOSTREAMS_REMOVED}.
+     * @param event <tt>BridgeEvent</tt>
+     */
+    @Override
+    public void handleEvent(Event event)
+    {
+        String topic = event.getTopic();
+        BridgeState bridgeState;
+        BridgeEvent bridgeEvent;
+        String bridgeJid;
+
+        if (!BridgeEvent.isBridgeEvent(event))
+        {
+            logger.warn("Received non-bridge event: " + event);
+            return;
+        }
+
+        bridgeEvent = (BridgeEvent) event;
+        bridgeJid = bridgeEvent.getBridgeJid();
+
+        bridgeState = bridges.get(bridgeEvent.getBridgeJid());
+        if (bridgeState == null)
+        {
+            logger.warn("Unable to handle bridge event for: " + bridgeJid);
+            return;
+        }
+
+        switch (topic)
+        {
+        case BridgeEvent.VIDEOSTREAMS_ADDED:
+            bridgeState.onVideoStreamsAdded(bridgeEvent.getVideoStreamCount());
+            break;
+        case BridgeEvent.VIDEOSTREAMS_REMOVED:
+            bridgeState.onVideoStreamsRemoved(
+                bridgeEvent.getVideoStreamCount());
+            break;
+        }
+    }
+
+
+    /**
      * Initializes this instance by loading the config and obtaining required
      * service references.
      */
@@ -546,6 +597,14 @@ public class BridgeSelector
         {
             throw new IllegalStateException("EventAdmin service not found");
         }
+
+        this.handlerRegistration = EventUtil.registerEventHandler(
+            FocusBundleActivator.bundleContext,
+            new String[] {
+                BridgeEvent.VIDEOSTREAMS_ADDED,
+                BridgeEvent.VIDEOSTREAMS_REMOVED
+            },
+            this);
     }
 
     /**
@@ -563,6 +622,18 @@ public class BridgeSelector
         BridgeState bridgeState = bridges.get(bridgeJid);
 
         return bridgeState != null ? bridgeState.version : null;
+    }
+
+    /**
+     * Unregisters any event listeners.
+     */
+    public void dispose()
+    {
+        if (this.handlerRegistration != null)
+        {
+            handlerRegistration.unregister();
+            handlerRegistration = null;
+        }
     }
 
     /**
@@ -594,6 +665,19 @@ public class BridgeSelector
          * because no stats we have been fetched so far.
          */
         private int videoStreamCount = Integer.MAX_VALUE;
+
+        /**
+         * Accumulates video stream count changes coming from
+         * {@link BridgeEvent#VIDEOSTREAMS_ADDED} and
+         * {@link BridgeEvent#VIDEOSTREAMS_REMOVED} in order to estimate video
+         * stream count on the bridge. The value is included in the result
+         * returned by {@link #getEstimatedVideoStreamCount()} if not
+         * <tt>null</tt>.
+         *
+         * Is is set back to <tt>null</tt> when new value from the bridge
+         * arrives.
+         */
+        private Integer videoStreamCountDiff = null;
 
         /**
          * Holds bridge version(if known - not all bridge version are capable of
@@ -675,8 +759,23 @@ public class BridgeSelector
             {
                 logger.info(
                     "Video stream count for: " + jid + ": " + streamCount);
+
+                int estimatedBefore = getEstimatedVideoStreamCount();
+
+                this.videoStreamCount = streamCount;
+
+                if (videoStreamCountDiff != null)
+                {
+                    videoStreamCountDiff = null;
+                    logger.info(
+                        "Reset video stream diff on " + this.jid
+                            + " video channels: " + this.videoChannelCount
+                            + " video streams: " + this.videoStreamCount
+                            + " (estimation error: "
+                            + (estimatedBefore - getEstimatedVideoStreamCount())
+                            + ")");
+                }
             }
-            this.videoStreamCount = streamCount;
         }
 
         public void setIsOperational(boolean isOperational)
@@ -719,7 +818,7 @@ public class BridgeSelector
 
         /**
          * The least value is returned the least the bridge is loaded.
-         *
+         * <p>
          * {@inheritDoc}
          */
         @Override
@@ -729,11 +828,64 @@ public class BridgeSelector
             boolean otherOperational = o.isOperational();
 
             if (meOperational && !otherOperational)
+            {
                 return -1;
+            }
             else if (!meOperational && otherOperational)
+            {
                 return 1;
+            }
 
-            return videoStreamCount - o.videoStreamCount;
+            return this.getEstimatedVideoStreamCount()
+                - o.getEstimatedVideoStreamCount();
+        }
+
+        private int getEstimatedVideoStreamCount()
+        {
+            return videoStreamCountDiff != null
+                ? videoStreamCount + videoStreamCountDiff
+                : videoStreamCount;
+        }
+
+        private void onVideoStreamsAdded(Integer videoStreamCount)
+        {
+            if (videoStreamCount == null)
+            {
+                logger.error("videoStreamCount is null");
+                return;
+            }
+
+            if (videoStreamCountDiff == null)
+            {
+                videoStreamCountDiff = 0;
+            }
+            videoStreamCountDiff += videoStreamCount;
+            logger.info(
+                "Adding " + videoStreamCount + " video streams on " + this.jid
+                    + " video channels: " + this.videoChannelCount
+                    + " video streams: " + this.videoStreamCount
+                    + " diff: " + videoStreamCountDiff
+                    + " (estimated: " + getEstimatedVideoStreamCount() + ")");
+        }
+
+        private void onVideoStreamsRemoved(Integer videoStreamCount)
+        {
+            if (videoStreamCount == null)
+            {
+                logger.error("videoStreamCount is null");
+                return;
+            }
+            if (videoStreamCountDiff == null)
+            {
+                videoStreamCountDiff = 0;
+            }
+            videoStreamCountDiff -= videoStreamCount;
+            logger.info(
+                "Removing " + videoStreamCount + " video streams on " + this.jid
+                    + " video channels: " + this.videoChannelCount
+                    + " video streams: " + this.videoStreamCount
+                    + " diff: " + videoStreamCountDiff
+                    + " (estimated: " + getEstimatedVideoStreamCount() + ")");
         }
     }
 }

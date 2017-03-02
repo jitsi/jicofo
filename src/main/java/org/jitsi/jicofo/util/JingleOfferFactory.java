@@ -23,6 +23,7 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.codec.*;
 
 import java.net.*;
+import java.util.*;
 
 /**
  * Contains factory methods for creating Jingle offer sent in 'session-invite'
@@ -422,5 +423,24 @@ public class JingleOfferFactory
         rdpe.setMedia("application");
 
         content.addChildExtension(rdpe);
+    }
+
+    /**
+     * Check if given offer contains video contents.
+     * @param contents the list of <tt>ContentPacketExtension</tt> describing
+     *        Jingle offer.
+     * @return <tt>true</tt> if given offer has video content.
+     */
+    public static boolean containsVideoContent(
+        List<ContentPacketExtension> contents)
+    {
+        for (ContentPacketExtension content : contents)
+        {
+            if (content.getName().equalsIgnoreCase("video"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

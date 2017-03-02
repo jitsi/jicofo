@@ -22,7 +22,10 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -54,6 +57,12 @@ public class ColibriConferenceImpl
     private final XmppConnection connection;
 
     /**
+     * The {@link EventAdmin} instance used to emit video stream estimation
+     * events.
+     */
+    private final EventAdmin eventAdmin;
+
+    /**
      * XMPP address of videobridge component.
      */
     private String jitsiVideobridge;
@@ -62,6 +71,12 @@ public class ColibriConferenceImpl
      * The {@link ColibriConferenceIQ} that stores the state of whole conference
      */
     private ColibriConferenceIQ conferenceState = new ColibriConferenceIQ();
+
+    /**
+     * Lock used to synchronise access to the fields related with video channels
+     * counting and video stream estimation events.
+     */
+    private final Object stateEstimationSync = new Object();
 
     /**
      * Synchronization root to sync access to {@link #colibriBuilder} and
@@ -116,13 +131,24 @@ public class ColibriConferenceImpl
     private boolean disposed;
 
     /**
-     * Creates new instance of <tt>ColibriConferenceImpl</tt>.
-     * @param connection XMPP connection object that wil be used by new
-     *                   instance.
+     * Counts how many video channels have been allocated in order to be able
+     * to estimate video stream count changes.
      */
-    public ColibriConferenceImpl(XmppConnection connection)
+    private int videoChannels;
+
+    /**
+     * Creates new instance of <tt>ColibriConferenceImpl</tt>.
+     * @param connection XMPP connection object that wil be used by the new
+     *        instance to communicate.
+     * @param eventAdmin {@link EventAdmin} instance which will be used to post
+     *        {@link BridgeEvent#VIDEOSTREAMS_ADDED} and
+     *        {@link BridgeEvent#VIDEOSTREAMS_REMOVED}.
+     */
+    public ColibriConferenceImpl(XmppConnection    connection,
+                                 EventAdmin        eventAdmin)
     {
-        this.connection = connection;
+        this.connection = Objects.requireNonNull(connection, "connection");
+        this.eventAdmin = Objects.requireNonNull(eventAdmin, "eventAdmin");
     }
 
     /**
@@ -213,6 +239,9 @@ public class ColibriConferenceImpl
         throws OperationFailedException
     {
         ColibriConferenceIQ allocateRequest;
+        // How many new video channels will be allocated
+        final int newVideoChannelsCount
+            = JingleOfferFactory.containsVideoContent(contents) ? 1 : 0;
 
         try
         {
@@ -221,6 +250,11 @@ public class ColibriConferenceImpl
                 // Only if not in 'disposed' state
                 if (checkIfDisposed("createColibriChannels"))
                     return null;
+
+                synchronized (stateEstimationSync)
+                {
+                    trackVideoChannelsAdded(newVideoChannelsCount);
+                }
 
                 acquireCreateConferenceSemaphore(endpointName);
 
@@ -279,6 +313,30 @@ public class ColibriConferenceImpl
             return ColibriAnalyser.getResponseContents(
                         (ColibriConferenceIQ) response, contents);
 
+        }
+        catch (Exception e)
+        {
+            try
+            {
+                synchronized (syncRoot)
+                {
+                    // Emit channels expired
+                    if (!checkIfDisposed("post channels expired on Exception"))
+                    {
+                        synchronized (stateEstimationSync)
+                        {
+                            trackVideoStreamsRemoved(newVideoChannelsCount);
+                        }
+                    }
+                }
+            }
+            catch (Exception innerException)
+            {
+                // Log the inner Exception
+                logger.error(innerException.getMessage(), innerException);
+            }
+
+            throw e;
         }
         finally
         {
@@ -465,6 +523,15 @@ public class ColibriConferenceImpl
             logRequest("Expire peer channels", iq);
 
             connection.sendPacket(iq);
+
+            synchronized (stateEstimationSync)
+            {
+                int expiredVideoChannels
+                    = ColibriConferenceIQUtil.getChannelCount(
+                            channelInfo, "video");
+
+                trackVideoStreamsRemoved(expiredVideoChannels);
+            }
         }
     }
 
@@ -823,6 +890,106 @@ public class ColibriConferenceImpl
             logRequest("Sending channel info update: ", iq);
 
             connection.sendPacket(iq);
+        }
+    }
+
+    /**
+     * Calculates how the video stream count will change after given video
+     * channel count modifier is applied to the current value. Video stream
+     * count is expressed as video channel count to the power of two.
+     * E.g.:
+     * current channels = 5
+     * modifier = -2
+     * result = 3 * 3 - 5 * 5 = -16
+     * Read that as "there will be 16 video streams less, after 2 video channels
+     * are removed".
+     *
+     * @param currentChannels how many video channels are there now
+     * @param channelCountDiff how many video channels are to be added/removed
+     *
+     * @return how many video streams will be added/removed when given
+     * <tt>channelCountDiff</tt> is applied to the current value.
+     */
+    static private int calcVideoStreamDiff(int currentChannels,
+                                           int channelCountDiff)
+    {
+        int newChannelCount = currentChannels + channelCountDiff;
+        return (newChannelCount * newChannelCount)
+                    - (currentChannels * currentChannels);
+    }
+
+    /**
+     * Method called when new video channels are about to be allocated, but
+     * before the actual request is sent. It will track the current video
+     * channel count and emit {@link BridgeEvent#VIDEOSTREAMS_ADDED}.
+     *
+     * @param channelsAdded how many new video channels are to be allocated.
+     *
+     * @throws IllegalArgumentException if <tt>channelsAdded</tt> < 0
+     */
+    private void trackVideoChannelsAdded(int channelsAdded)
+    {
+        if (channelsAdded == 0)
+        {
+            return;
+        }
+        else if (channelsAdded < 0)
+        {
+            throw new IllegalArgumentException(
+                "Invalid channel diff on streams added: " + channelsAdded);
+        }
+
+        int streamDiff = calcVideoStreamDiff(videoChannels, channelsAdded);
+        videoChannels += channelsAdded;
+
+        if (streamDiff < 1)
+        {
+            logger.error("Invalid stream diff on streams added: " + streamDiff);
+        }
+        else
+        {
+            eventAdmin.postEvent(
+                BridgeEvent.createVideoStreamsAdded(
+                    jitsiVideobridge, streamDiff));
+        }
+    }
+
+    /**
+     * Method called when video channels are about to be expired, but
+     * before the actual request is sent. It will track the current video
+     * channel count and emit {@link BridgeEvent#VIDEOSTREAMS_REMOVED}.
+     *
+     * @param channelsRemoved how many new video channels are to be expired.
+     *
+     * @throws IllegalArgumentException if <tt>channelsAdded</tt> < 0
+     */
+    private void trackVideoStreamsRemoved(int channelsRemoved)
+    {
+        if (channelsRemoved == 0)
+        {
+            return;
+        }
+        else if (channelsRemoved < 0)
+        {
+            throw new IllegalArgumentException(
+                "Invalid channels diff on streams removed: "
+                    + channelsRemoved);
+        }
+
+        int streamDiff
+            = calcVideoStreamDiff(videoChannels, -channelsRemoved);
+        videoChannels -= channelsRemoved;
+
+        if (streamDiff >= 0)
+        {
+            logger.error(
+                "Invalid streams diff on streams removed: " + streamDiff);
+        }
+        else
+        {
+            eventAdmin.postEvent(
+                BridgeEvent.createVideoStreamsRemoved(
+                    jitsiVideobridge, -streamDiff));
         }
     }
 

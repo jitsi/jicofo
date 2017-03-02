@@ -24,6 +24,7 @@ import mock.xmpp.pubsub.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+import org.jitsi.eventadmin.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 
@@ -42,6 +43,8 @@ public class MockProtocolProvider
 
     private final MockAccountID accountId;
 
+    private final EventAdmin eventAdmin;
+
     private RegistrationState registrationState
         = RegistrationState.UNREGISTERED;
 
@@ -52,9 +55,10 @@ public class MockProtocolProvider
 
     private MockJingleOpSetImpl jingleOpSet;
 
-    public MockProtocolProvider(MockAccountID accountId)
+    public MockProtocolProvider(MockAccountID accountId, EventAdmin eventAdmin)
     {
         this.accountId = accountId;
+        this.eventAdmin = eventAdmin;
     }
 
     @Override
@@ -167,7 +171,7 @@ public class MockProtocolProvider
     {
         addSupportedOperationSet(
             OperationSetColibriConference.class,
-            new MockColibriOpSet(this));
+            new MockColibriOpSet(this, eventAdmin));
     }
 
     public void includeJingleOpSet()
