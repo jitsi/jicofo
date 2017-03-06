@@ -119,8 +119,6 @@ public class TestConference
 
         HashMap<String,String> properties = new HashMap<>();
 
-        properties.put(JitsiMeetConfig.SIMULCAST_MODE_PNAME, "rewriting");
-
         focusManagerRef.get().conferenceRequest(roomName, properties);
 
         this.conference = focusManagerRef.get().getConference(roomName);
