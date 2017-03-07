@@ -236,11 +236,12 @@ public class SSRCValidator
                 List<SourcePacketExtension> groupSSRCs = group.getSources();
                 // NOTE that empty groups are not allowed at this point and
                 // should have been filtered out earlier
+                String groupMSID = null;
 
                 for (SourcePacketExtension ssrc : groupSSRCs)
                 {
                     long ssrcValue = ssrc.getSSRC();
-                    // Is there a corresponding SSRC that sit's in the SSRCs map ?
+                    // Is there a corresponding SSRC that's in the SSRCs map ?
                     SourcePacketExtension ssrcInMedia
                         = this.ssrcs.findSSRC(mediaType, ssrcValue);
                     if (ssrcInMedia == null)
@@ -250,6 +251,27 @@ public class SSRCValidator
                                 + mediaType + " for group: " + group;
                         throw new InvalidSSRCsException(errorMsg);
                     }
+                    // Grouped SSRC needs to have some MSID
+                    String msid = SSRCSignaling.getStreamId(ssrcInMedia);
+                    if (StringUtils.isNullOrEmpty(msid))
+                    {
+                        throw new InvalidSSRCsException(
+                            "Grouped SSRC (" + ssrcValue + ") has no 'msid'");
+                    }
+
+                    // The first SSRC's MSID is used as group's MSID
+                    if (groupMSID == null)
+                    {
+                        groupMSID = msid;
+                    }
+                    // Verify if MSID is the same across all SSRCs which belong
+                    // to the same group
+                    else if (!groupMSID.equals(msid))
+                    {
+                        throw new InvalidSSRCsException(
+                            "MSID mismatch detected in group " + group);
+                    }
+
                     groupedSSRCs.addSSRC(mediaType, ssrc);
                 }
             }

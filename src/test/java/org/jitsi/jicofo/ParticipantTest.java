@@ -265,6 +265,32 @@ public class ParticipantTest
         }
     }
 
+    @Test
+    public void testMSIDMismatchInTheSameGroup()
+    {
+        // Overwrite SSRC 20 with something wrong
+        this.videoSSRCs[1]
+            = createGroupSSRC(20L, "blabla", "wrongStream wrongTrack");
+
+        this.addDefaultVideoSSRCs();
+        this.addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSSRCsAndGroupsFromContent(answerContents);
+            fail("Did not detect MSID mismatch in 10+20 FID group");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                errorMsg.startsWith(
+                    "MSID mismatch detected "
+                        + "in group SSRCGroup[FID, 10, 20, ]"));
+        }
+    }
+
     /**
      * Tests the max SSRC count limit.
      */
