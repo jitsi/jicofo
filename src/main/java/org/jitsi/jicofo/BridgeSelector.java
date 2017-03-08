@@ -644,22 +644,19 @@ public class BridgeSelector
         private final String jid;
 
         /**
-         * If not set we consider it highly occupied,
-         * because no stats we have been fetched so far.
+         * How many conferences are there on the bridge.
          */
-        private int conferenceCount = Integer.MAX_VALUE;
+        private int conferenceCount = 0;
 
         /**
-         * If not set we consider it highly occupied,
-         * because no stats we have been fetched so far.
+         * How many video channels are there on the bridge.
          */
-        private int videoChannelCount = Integer.MAX_VALUE;
+        private int videoChannelCount = 0;
 
         /**
-         * If not set we consider it highly occupied,
-         * because no stats we have been fetched so far.
+         * How many video streams are there on the bridge.
          */
-        private Integer videoStreamCount = null;
+        private int videoStreamCount = 0;
 
         /**
          * Accumulates video stream count changes coming from
@@ -740,8 +737,7 @@ public class BridgeSelector
          */
         public int getVideoStreamCount()
         {
-            return videoStreamCount != null
-                ? videoStreamCount : Integer.MAX_VALUE;
+            return videoStreamCount;
         }
 
         /**
@@ -750,8 +746,7 @@ public class BridgeSelector
          */
         public void setVideoStreamCount(int streamCount)
         {
-            if (this.videoStreamCount == null
-                    || this.videoStreamCount != streamCount)
+            if (this.videoStreamCount != streamCount)
             {
                 logger.info(
                     "Video stream count for: " + jid + ": " + streamCount);
@@ -838,9 +833,7 @@ public class BridgeSelector
 
         private int getEstimatedVideoStreamCount()
         {
-            return videoStreamCount != null
-                ? videoStreamCount + videoStreamCountDiff
-                : videoStreamCountDiff;
+            return videoStreamCount + videoStreamCountDiff;
         }
 
         private void onVideoStreamsChanged(Integer videoStreamCount)
