@@ -53,22 +53,12 @@ public class BridgeEvent
     /**
      * The event is emitted by
      * {@link org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl}
-     * when new video channels are being allocated which results in video stream
-     * count change. It is consumed by {@link BridgeSelector} to estimate
-     * the current video stream count for each JVB.
+     * when new video channels are being allocated/expired which results in
+     * video stream count change. It is consumed by {@link BridgeSelector}
+     * to estimate the current video stream count for each JVB.
      */
-    public static final String VIDEOSTREAMS_ADDED
-        = "org/jitsi/jicofo/JVB/VIDEOSTREAMS_ADDED";
-
-    /**
-     * The event is emitted by
-     * {@link org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl}
-     * when video channels are being expired which results in video stream
-     * count change. It is consumed by {@link BridgeSelector} to estimate
-     * the current video stream count for each JVB.
-     */
-    public static final String VIDEOSTREAMS_REMOVED
-        = "org/jitsi/jicofo/JVB/VIDEOSTREAMS_REMOVED";
+    public static final String VIDEOSTREAMS_CHANGED
+        = "org/jitsi/jicofo/JVB/VIDEOSTREAMS_CHANGE";
 
     /**
      * The key for event property
@@ -127,35 +117,21 @@ public class BridgeEvent
     }
 
     /**
-     * Creates {@link #VIDEOSTREAMS_ADDED} <tt>BridgeEvent</tt>.
+     * Creates {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt>.
+     *
      * @param bridgeJid the JID of the bridge for which the event will be
-     *                  created.
-     * @param videoStreamCount how many video streams are being added.
-     * @return {@link #VIDEOSTREAMS_ADDED} <tt>BridgeEvent</tt> for given
+     *        created.
+     * @param videoStreamCount how many video streams are being added/removed.
+     *
+     * @return {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt> for given
      *         <tt>bridgeJid</tt>.
      */
-    static public BridgeEvent createVideoStreamsAdded(String bridgeJid,
+    static public BridgeEvent createVideoStreamsChanged(String bridgeJid,
                                                       int    videoStreamCount)
     {
         Dictionary<String, Object> dict = initDictionary(bridgeJid);
         dict.put(STREAMS_VIDEO_KEY, videoStreamCount);
-        return new BridgeEvent(VIDEOSTREAMS_ADDED, dict);
-    }
-
-    /**
-     * Creates {@link #VIDEOSTREAMS_REMOVED} <tt>BridgeEvent</tt>.
-     * @param bridgeJid the JID of the bridge for which the event will be
-     *                  created.
-     * @param videoStreamCount how many video streams are being removedd.
-     * @return {@link #VIDEOSTREAMS_REMOVED} <tt>BridgeEvent</tt> for given
-     *         <tt>bridgeJid</tt>.
-     */
-    static public BridgeEvent createVideoStreamsRemoved(String bridgeJid,
-                                                        int    videoStreamCount)
-    {
-        Dictionary<String, Object> dict = initDictionary(bridgeJid);
-        dict.put(STREAMS_VIDEO_KEY, videoStreamCount);
-        return new BridgeEvent(VIDEOSTREAMS_REMOVED, dict);
+        return new BridgeEvent(VIDEOSTREAMS_CHANGED, dict);
     }
 
     /**
@@ -173,8 +149,7 @@ public class BridgeEvent
         case BRIDGE_DOWN:
         case BRIDGE_UP:
         case HEALTH_CHECK_FAILED:
-        case VIDEOSTREAMS_ADDED:
-        case VIDEOSTREAMS_REMOVED:
+        case VIDEOSTREAMS_CHANGED:
             return true;
         default:
             return false;

@@ -513,12 +513,11 @@ public class BridgeSelector
     }
 
     /**
-     * Handles {@link BridgeEvent#VIDEOSTREAMS_ADDED} and
-     * {@link BridgeEvent#VIDEOSTREAMS_REMOVED}.
+     * Handles {@link BridgeEvent#VIDEOSTREAMS_CHANGED}.
      * @param event <tt>BridgeEvent</tt>
      */
     @Override
-    public void handleEvent(Event event)
+    synchronized public void handleEvent(Event event)
     {
         String topic = event.getTopic();
         BridgeState bridgeState;
@@ -543,11 +542,8 @@ public class BridgeSelector
 
         switch (topic)
         {
-        case BridgeEvent.VIDEOSTREAMS_ADDED:
-            bridgeState.onVideoStreamsAdded(bridgeEvent.getVideoStreamCount());
-            break;
-        case BridgeEvent.VIDEOSTREAMS_REMOVED:
-            bridgeState.onVideoStreamsRemoved(
+        case BridgeEvent.VIDEOSTREAMS_CHANGED:
+            bridgeState.onVideoStreamsChanged(
                 bridgeEvent.getVideoStreamCount());
             break;
         }
@@ -601,8 +597,7 @@ public class BridgeSelector
         this.handlerRegistration = EventUtil.registerEventHandler(
             FocusBundleActivator.bundleContext,
             new String[] {
-                BridgeEvent.VIDEOSTREAMS_ADDED,
-                BridgeEvent.VIDEOSTREAMS_REMOVED
+                BridgeEvent.VIDEOSTREAMS_CHANGED
             },
             this);
     }
@@ -668,8 +663,7 @@ public class BridgeSelector
 
         /**
          * Accumulates video stream count changes coming from
-         * {@link BridgeEvent#VIDEOSTREAMS_ADDED} and
-         * {@link BridgeEvent#VIDEOSTREAMS_REMOVED} in order to estimate video
+         * {@link BridgeEvent#VIDEOSTREAMS_CHANGED} in order to estimate video
          * stream count on the bridge. The value is included in the result
          * returned by {@link #getEstimatedVideoStreamCount()} if not
          * <tt>null</tt>.
@@ -677,7 +671,7 @@ public class BridgeSelector
          * Is is set back to <tt>null</tt> when new value from the bridge
          * arrives.
          */
-        private Integer videoStreamCountDiff = null;
+        private int videoStreamCountDiff = 0;
 
         /**
          * Holds bridge version(if known - not all bridge version are capable of
@@ -765,9 +759,9 @@ public class BridgeSelector
 
                 this.videoStreamCount = streamCount;
 
-                if (videoStreamCountDiff != null)
+                if (videoStreamCountDiff != 0)
                 {
-                    videoStreamCountDiff = null;
+                    videoStreamCountDiff = 0;
                     logger.info(
                         "Reset video stream diff on " + this.jid
                             + " video channels: " + this.videoChannelCount
@@ -843,52 +837,29 @@ public class BridgeSelector
 
         private int getEstimatedVideoStreamCount()
         {
-            int videoStreamEstimate
-                = videoStreamCount != null ? videoStreamCount : 0;
-
-            if (videoStreamCountDiff != null)
-            {
-                videoStreamEstimate += videoStreamCountDiff;
-            }
-
-            return videoStreamEstimate;
+            return videoStreamCount != null
+                ? videoStreamCount + videoStreamCountDiff
+                : videoStreamCountDiff;
         }
 
-        private void onVideoStreamsAdded(Integer videoStreamCount)
+        private void onVideoStreamsChanged(Integer videoStreamCount)
         {
             if (videoStreamCount == null)
             {
                 logger.error("videoStreamCount is null");
                 return;
             }
-
-            if (videoStreamCountDiff == null)
+            if (videoStreamCount == 0)
             {
-                videoStreamCountDiff = 0;
+                logger.error("videoStreamCount is 0");
+                return;
             }
+            boolean adding = videoStreamCount > 0;
+
             videoStreamCountDiff += videoStreamCount;
             logger.info(
-                "Adding " + videoStreamCount + " video streams on " + this.jid
-                    + " video channels: " + this.videoChannelCount
-                    + " video streams: " + this.videoStreamCount
-                    + " diff: " + videoStreamCountDiff
-                    + " (estimated: " + getEstimatedVideoStreamCount() + ")");
-        }
-
-        private void onVideoStreamsRemoved(Integer videoStreamCount)
-        {
-            if (videoStreamCount == null)
-            {
-                logger.error("videoStreamCount is null");
-                return;
-            }
-            if (videoStreamCountDiff == null)
-            {
-                videoStreamCountDiff = 0;
-            }
-            videoStreamCountDiff -= videoStreamCount;
-            logger.info(
-                "Removing " + videoStreamCount + " video streams on " + this.jid
+                (adding ? "Adding " : "Removing ") + Math.abs(videoStreamCount)
+                    + " video streams on " + this.jid
                     + " video channels: " + this.videoChannelCount
                     + " video streams: " + this.videoStreamCount
                     + " diff: " + videoStreamCountDiff
