@@ -750,7 +750,8 @@ public class BridgeSelector
          */
         public void setVideoStreamCount(int streamCount)
         {
-            if (this.videoStreamCount != streamCount)
+            if (this.videoStreamCount == null
+                    || this.videoStreamCount != streamCount)
             {
                 logger.info(
                     "Video stream count for: " + jid + ": " + streamCount);
