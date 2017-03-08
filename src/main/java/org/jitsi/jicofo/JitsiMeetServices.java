@@ -393,6 +393,8 @@ public class JitsiMeetServices
             jibriDetector = null;
         }
 
+        bridgeSelector.dispose();
+
         super.stop(bundleContext);
     }
 

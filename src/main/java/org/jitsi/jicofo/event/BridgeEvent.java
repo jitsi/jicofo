@@ -51,9 +51,24 @@ public class BridgeEvent
         = "org/jitsi/jicofo/JVB/UNHEALTHY";
 
     /**
+     * The event is emitted by
+     * {@link org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl}
+     * when new video channels are being allocated/expired which results in
+     * video stream count change. It is consumed by {@link BridgeSelector}
+     * to estimate the current video stream count for each JVB.
+     */
+    public static final String VIDEOSTREAMS_CHANGED
+        = "org/jitsi/jicofo/JVB/VIDEOSTREAMS_CHANGE";
+
+    /**
      * The key for event property
      */
     private final static String JVB_JID_KEY = "bridge.jid";
+
+    /**
+     * The key for video stream count property
+     */
+    private final static String STREAMS_VIDEO_KEY = "bridge.streams.video";
 
     /**
      * Used to init the properties passed to the constructor.
@@ -102,6 +117,24 @@ public class BridgeEvent
     }
 
     /**
+     * Creates {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt>.
+     *
+     * @param bridgeJid the JID of the bridge for which the event will be
+     *        created.
+     * @param videoStreamCount how many video streams are being added/removed.
+     *
+     * @return {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt> for given
+     *         <tt>bridgeJid</tt>.
+     */
+    static public BridgeEvent createVideoStreamsChanged(String bridgeJid,
+                                                      int    videoStreamCount)
+    {
+        Dictionary<String, Object> dict = initDictionary(bridgeJid);
+        dict.put(STREAMS_VIDEO_KEY, videoStreamCount);
+        return new BridgeEvent(VIDEOSTREAMS_CHANGED, dict);
+    }
+
+    /**
      * Checks whether or not given <tt>Event</tt> is a <tt>BridgeEvent</tt>.
      *
      * @param event the <tt>Event</tt> instance to be checked.
@@ -116,10 +149,16 @@ public class BridgeEvent
         case BRIDGE_DOWN:
         case BRIDGE_UP:
         case HEALTH_CHECK_FAILED:
+        case VIDEOSTREAMS_CHANGED:
             return true;
         default:
             return false;
         }
+    }
+
+    private BridgeEvent(String topic, Dictionary<String, Object> dict)
+    {
+        super(topic, dict);
     }
 
     private BridgeEvent(String topic, String bridgeJid)
@@ -139,6 +178,17 @@ public class BridgeEvent
     }
 
     /**
+     * Obtains the value of video stream count associated with the current
+     * <tt>BridgeEvent</tt>.
+     * @return <tt>Integer</tt> or <tt>null</tt> if attribute not present for
+     * given event.
+     */
+    public Integer getVideoStreamCount()
+    {
+        return (Integer) getProperty(STREAMS_VIDEO_KEY);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -148,8 +198,19 @@ public class BridgeEvent
         {
             return false;
         }
+
         BridgeEvent other = (BridgeEvent) obj;
-        return getTopic().equals(other.getTopic()) &&
-            getBridgeJid().equals(other.getBridgeJid());
+        // Verify topic and JID
+        boolean sameTopicAndJid
+            = getTopic().equals(other.getTopic()) &&
+                    getBridgeJid().equals(other.getBridgeJid());
+        if (!sameTopicAndJid)
+        {
+            return false;
+        }
+        // Compare streams added/remove
+        Integer streamCount = this.getVideoStreamCount();
+        Integer otherStreamCount = other.getVideoStreamCount();
+        return Objects.equals(streamCount, otherStreamCount);
     }
 }
