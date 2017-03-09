@@ -275,6 +275,13 @@ public class JingleOfferFactory
             // a=rtcp-fb:96 goog-remb
             rtx.addRtcpFeedbackType(
                 createRtcpFbPacketExtension("goog-remb", null));
+
+            // a=rtpmap:99 rtx/90000
+            PayloadTypePacketExtension rtxH264
+                = addPayloadTypeExtension(rtpDesc, 99, Constants.RTX, 90000);
+
+            // a=fmtp:99 apt=107
+            addParameterExtension(rtxH264, "apt", String.valueOf(h264pt));
         }
 
         // a=rtpmap:116 red/90000
