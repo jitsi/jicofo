@@ -251,6 +251,35 @@ public class JingleOfferFactory
                 h264, "x-google-start-bitrate", String.valueOf(startBitrate));
         }
 
+        // a=rtpmap:101 VP9/90000
+        int vp9pt = 101;
+        PayloadTypePacketExtension vp9
+            = addPayloadTypeExtension(rtpDesc, vp9pt, Constants.VP9, 90000);
+
+        // a=rtcp-fb:101 ccm fir
+        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
+
+        // a=rtcp-fb:101 nack
+        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
+
+        // a=rtcp-fb:101 nack pli
+        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
+
+        // a=rtcp-fb:101 goog-remb
+        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
+
+        if (minBitrate != -1)
+        {
+            addParameterExtension(
+                vp9, "x-google-min-bitrate", String.valueOf(minBitrate));
+        }
+
+        if (startBitrate != -1)
+        {
+            addParameterExtension(
+                vp9, "x-google-start-bitrate", String.valueOf(startBitrate));
+        }
+
         if (useRtx)
         {
             // a=rtpmap:96 rtx/90000
@@ -282,6 +311,13 @@ public class JingleOfferFactory
 
             // a=fmtp:99 apt=107
             addParameterExtension(rtxH264, "apt", String.valueOf(h264pt));
+
+            // a=rtpmap:97 rtx/90000
+            PayloadTypePacketExtension rtxVP9
+                = addPayloadTypeExtension(rtpDesc, 97, Constants.RTX, 90000);
+
+            // a=fmtp:97 apt=101
+            addParameterExtension(rtxVP9, "apt", String.valueOf(vp9pt));
         }
 
         // a=rtpmap:116 red/90000
