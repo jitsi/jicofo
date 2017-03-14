@@ -9,14 +9,12 @@ usage() {
   error_exit "Usage: $0 [-p JICOFO_PORT] [-r] [-f JICOFO_MVN_POM_FILE] [-d JICOFO_HOSTNAME] [-h JICOFO_HOST] [-s JICOFO_SECRET]"
 }
 
-JICOFO_LOGGING_CONFIG_FILE="/etc/jitsi/jicofo/logging.properties"
-JICOFO_CONFIG_FILE="/etc/jitsi/jicofo/config"
+JICOFO_LOGGING_CONFIG_FILE="${PREFIX}/etc/jitsi/jicofo/logging.properties"
+JICOFO_CONFIG_FILE="${PREFIX}/etc/jitsi/jicofo/config"
 JICOFO_HOME_DIR_NAME="jicofo"
-JICOFO_HOME_DIR_LOCATION="/etc/jitsi"
-JICOFO_DATA_LOCATION="${HOME}/.jicofo"
-JICOFO_MVN_REPO_LOCAL="${JICOFO_DATA_LOCATION}/m2"
-JICOFO_LOG_DIR_LOCATION="${JICOFO_DATA_LOCATION}/log"
-JICOFO_ARCHIVE_LOCATION="${JICOFO_DATA_LOCATION}/archive"
+JICOFO_HOME_DIR_LOCATION="${PREFIX}/etc/jitsi"
+JICOFO_MVN_REPO_LOCAL="${PREFIX}/share/jicofo/m2"
+JICOFO_LOG_DIR_LOCATION="${PREFIX}/var/log/jitsi"
 JICOFO_HOSTNAME=
 JICOFO_HOST=
 JICOFO_PORT=
@@ -91,18 +89,6 @@ if [ ! -e "${JICOFO_MVN_POM_FILE}" ]; then
   error_exit "The maven pom file was not found."
 fi
 
-# Archive old logs.
-if [ ! -d "${JICOFO_ARCHIVE_LOCATION}" ] ; then
-  mkdir -p "${JICOFO_ARCHIVE_LOCATION}"
-fi
-
-if [ -d "${JICOFO_LOG_DIR_LOCATION}" ] ; then
-  ARCHIVE_NAME="$(date '+%Y-%m-%d-%H-%M-%S')"
-  mv "${JICOFO_LOG_DIR_LOCATION}" "${JICOFO_ARCHIVE_LOCATION}/${ARCHIVE_NAME}"
-  tar jcvf "${JICOFO_ARCHIVE_LOCATION}/${ARCHIVE_NAME}.tar.bz2" "${JICOFO_ARCHIVE_LOCATION}/${ARCHIVE_NAME}"
-  rm -rf "${JICOFO_ARCHIVE_LOCATION}/${ARCHIVE_NAME}"
-fi
-
 if [ ! -d "${JICOFO_LOG_DIR_LOCATION}" ] ; then
   mkdir "${JICOFO_LOG_DIR_LOCATION}"
 fi
@@ -113,4 +99,4 @@ if [ ! ${JICOFO_MVN_REBUILD} = "" ]; then
 fi
 
 # Execute.
-exec mvn -f "${JICOFO_MVN_POM_FILE}" exec:exec -Dmaven.repo.local="${JICOFO_MVN_REPO_LOCAL}" -Dexec.executable=java -Dexec.args="-cp %classpath ${JICOFO_EXTRA_JVM_PARAMS} -Djava.util.logging.config.file='${JICOFO_LOGGING_CONFIG_FILE}' -Dnet.java.sip.communicator.SC_HOME_DIR_NAME='${JICOFO_HOME_DIR_NAME}' -Dnet.java.sip.communicator.SC_HOME_DIR_LOCATION='${JICOFO_HOME_DIR_LOCATION}' -Dnet.java.sip.communicator.SC_LOG_DIR_LOCATION='${JICOFO_LOG_DIR_LOCATION}' -Djna.nosys=true -Djava.net.preferIPv4Stack='${JICOFO_JAVA_PREFER_IPV4}' org.jitsi.jicofo.Main --domain='${JICOFO_HOSTNAME}' --host='${JICOFO_HOST}' --port='${JICOFO_PORT}' --secret='${JICOFO_SECRET}' --user_domain='${JICOFO_AUTH_DOMAIN}' --user_name='${JICOFO_AUTH_USER}' --user_password='${JICOFO_AUTH_PASSWORD}'" 2>&1 | tee "${JICOFO_LOG_DIR_LOCATION}/jicofo.log"
+exec mvn -f "${JICOFO_MVN_POM_FILE}" exec:exec -Dmaven.repo.local="${JICOFO_MVN_REPO_LOCAL}" -Dexec.executable=java -Dexec.args="-cp %classpath ${JICOFO_EXTRA_JVM_PARAMS} -Djava.util.logging.config.file=\"${JICOFO_LOGGING_CONFIG_FILE}\" -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=\"${JICOFO_HOME_DIR_NAME}\" -Dnet.java.sip.communicator.SC_HOME_DIR_LOCATION=\"${JICOFO_HOME_DIR_LOCATION}\" -Dnet.java.sip.communicator.SC_LOG_DIR_LOCATION=\"${JICOFO_LOG_DIR_LOCATION}\" -Djna.nosys=true -Djava.net.preferIPv4Stack=\"${JICOFO_JAVA_PREFER_IPV4}\" org.jitsi.jicofo.Main --domain=\"${JICOFO_HOSTNAME}\" --host=\"${JICOFO_HOST}\" --port=\"${JICOFO_PORT}\" --secret=\"${JICOFO_SECRET}\" --user_domain=\"${JICOFO_AUTH_DOMAIN}\" --user_name=\"${JICOFO_AUTH_USER}\" --user_password=\"${JICOFO_AUTH_PASSWORD}\""
