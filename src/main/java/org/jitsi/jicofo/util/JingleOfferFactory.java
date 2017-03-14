@@ -411,11 +411,6 @@ public class JingleOfferFactory
         ssrcAudioLevel.setID("1");
         ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
         rtpDesc.addExtmap(ssrcAudioLevel);
-        RTPHdrExtPacketExtension absSendTime
-                = new RTPHdrExtPacketExtension();
-        absSendTime.setID("3");
-        absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
-        rtpDesc.addExtmap(absSendTime);
 
         // a=rtpmap:111 opus/48000/2
         PayloadTypePacketExtension opus
