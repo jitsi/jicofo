@@ -750,22 +750,29 @@ public class BridgeSelector
             {
                 logger.info(
                     "Video stream count for: " + jid + ": " + streamCount);
+            }
 
-                int estimatedBefore = getEstimatedVideoStreamCount();
+            int estimatedBefore = getEstimatedVideoStreamCount();
 
-                this.videoStreamCount = streamCount;
+            this.videoStreamCount = streamCount;
 
-                if (videoStreamCountDiff != 0)
-                {
-                    videoStreamCountDiff = 0;
-                    logger.info(
-                        "Reset video stream diff on " + this.jid
-                            + " video channels: " + this.videoChannelCount
-                            + " video streams: " + this.videoStreamCount
-                            + " (estimation error: "
-                            + (estimatedBefore - getEstimatedVideoStreamCount())
-                            + ")");
-                }
+            // The event for video streams count diff are processed on
+            // a single threaded queue and those will pile up during conference
+            // burst. Because of that "videoStreamCountDiff" must be cleared
+            // even if the was no change to the actual value.
+            // FIXME eventually add a timestamp and reject old events
+            if (videoStreamCountDiff != 0)
+            {
+                videoStreamCountDiff = 0;
+                logger.info(
+                    "Reset video stream diff on " + this.jid
+                        + " video channels: " + this.videoChannelCount
+                        + " video streams: " + this.videoStreamCount
+                        + " (estimation error: "
+                        // FIXME estimation error is often invalid wrong,
+                        // but not enough time to look into it now
+                        + (estimatedBefore - getEstimatedVideoStreamCount())
+                        + ")");
             }
         }
 
