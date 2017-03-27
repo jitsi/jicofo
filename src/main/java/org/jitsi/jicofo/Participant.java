@@ -78,7 +78,6 @@ public class Participant
      */
     private Map<String, MediaDirection> directionMap;
 
-
     /**
      * Peer's media SSRCs.
      */
