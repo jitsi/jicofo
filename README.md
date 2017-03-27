@@ -155,3 +155,12 @@ If you have Jicofo installed from the Debian package this should go directly to
 ```
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```
+
+## Building docker image
+
+```
+docker run -it -v ${PWD}:/app -w /app maven:3-jdk-7-alpine mvn package -DskipTests -Dassembly.skipAssembly=false
+unzip target/jicofo-linux-x64-1.0-SNAPSHOT.zip
+mv jicofo-linux-x64-1.0-SNAPSHOT jicofo
+docker build -t jicofo .
+```
