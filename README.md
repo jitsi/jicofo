@@ -75,12 +75,12 @@ var config = {
 Running Jicofo from distribution package
 =====
 
-1. Build distributon package using ant target for your OS: "dist.lin", "dist.lin64", "dist.macosx", "dist.win" or "dist.win64"
-2. Packge will be placed in 'dist/{os-name}' folder.
+1. Build distribution package using "mvn -U clean package -DskipTests"
+2. Packages (zip files) will be placed in 'target' folder.
 3. Extract distribution package to the folder of your choice.
 4. Assuming Prosody has been configured using "Manual configuration for Prosody" 'jicofo' run script should be executed with following arguments:
 ```
-    ./jicofo.sh --domain=jitsi.exmaple.com --secret=focus_secret --user_domain=auth.jitsi.example.com --user_name=focus --user_password=focuspassword
+    ./jicofo.sh --domain=jitsi.example.com --secret=focus_secret --user_domain=auth.jitsi.example.com --user_name=focus --user_password=focuspassword
 ```
 
 Run arguments descripton
