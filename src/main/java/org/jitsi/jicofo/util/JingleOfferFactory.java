@@ -133,7 +133,7 @@ public class JingleOfferFactory
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
-    public static ContentPacketExtension createAudioContent(
+    public ContentPacketExtension createAudioContent(
         boolean disableIce, boolean useDtls, boolean stereo)
     {
         ContentPacketExtension content
@@ -157,7 +157,7 @@ public class JingleOfferFactory
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
-    public static ContentPacketExtension createDataContent(
+    public ContentPacketExtension createDataContent(
         boolean disableIce, boolean useDtls)
     {
         ContentPacketExtension content
