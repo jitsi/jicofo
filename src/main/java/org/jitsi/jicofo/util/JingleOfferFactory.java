@@ -19,6 +19,8 @@ package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
+import org.jitsi.impl.libjitsi.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.codec.*;
 
@@ -36,6 +38,80 @@ import java.util.*;
  */
 public class JingleOfferFactory
 {
+    /**
+     * The property name of the VP8 payload type to include in the Jingle
+     * session-invite.
+     */
+    public static final String VP8_PT_PNAME = "org.jitsi.jicofo.VP8_PT";
+
+    /**
+     * The property name of the VP8 RTX payload type to include in the Jingle
+     * session-invite.
+     */
+    public static final String VP8_RTX_PT_PNAME = "org.jitsi.jicofo.VP8_RTX_PT";
+
+    /**
+     * The property name of the VP9 payload type to include in the Jingle
+     * session-invite.
+     */
+    public static final String VP9_PT_PNAME = "org.jitsi.jicofo.VP9_PT";
+
+    /**
+     * The property name of the VP9 RTX payload type to include in the Jingle
+     * session-invite.
+     */
+    public static final String VP9_RTX_PT_PNAME
+        = "org.jitsi.jicofo.VP9_RTX_PT";
+
+    /**
+     * The property name of the H264 payload type to include in the Jingle
+     * session-invite.
+     */
+    public static final String H264_PT_PNAME = "org.jitsi.jicofo.H264_PT";
+
+    /**
+     * The property name of the H264 RTX payload type to include in the Jingle
+     * session-invite.
+     */
+    public static final String H264_RTX_PT_PNAME
+        = "org.jitsi.jicofo.H264_RTX_PT";
+
+    /**
+     * The configuration service to be used by this instance.
+     */
+    private static final ConfigurationService cfg
+        = LibJitsiOSGiImpl.getConfigurationService();
+
+    /**
+     * The VP8 payload type to include in the Jingle session-invite.
+     */
+    private static final int VP8_PT = cfg.getInt(VP8_PT_PNAME, 100);
+
+    /**
+     * The VP8 RTX payload type to include in the Jingle session-invite.
+     */
+    private static final int VP8_RTX_PT = cfg.getInt(VP8_RTX_PT_PNAME, 96);
+
+    /**
+     * The VP9 payload type to include in the Jingle session-invite.
+     */
+    private static final int VP9_PT = cfg.getInt(VP9_PT_PNAME, 101);
+
+    /**
+     * The VP9 RTX payload type to include in the Jingle session-invite.
+     */
+    private static final int VP9_RTX_PT = cfg.getInt(VP9_RTX_PT_PNAME, 97);
+
+    /**
+     * The H264 payload type to include in the Jingle session-invite.
+     */
+    private static final int H264_PT = cfg.getInt(H264_PT_PNAME, 107);
+
+    /**
+     * The H264 RTX payload type to include in the Jingle session-invite.
+     */
+    private static final int H264_RTX_PT = cfg.getInt(H264_RTX_PT_PNAME, 99);
+
     private JingleOfferFactory(){ }
 
     /**
@@ -194,9 +270,8 @@ public class JingleOfferFactory
         rtpDesc.addExtmap(absSendTime);
 
         // a=rtpmap:100 VP8/90000
-        int vp8pt = 100;
         PayloadTypePacketExtension vp8
-            = addPayloadTypeExtension(rtpDesc, vp8pt, Constants.VP8, 90000);
+            = addPayloadTypeExtension(rtpDesc, VP8_PT, Constants.VP8, 90000);
 
         // a=rtcp-fb:100 ccm fir
         vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
@@ -223,9 +298,8 @@ public class JingleOfferFactory
         }
 
         // a=rtpmap:107 H264/90000
-        int h264pt = 107;
         PayloadTypePacketExtension h264
-            = addPayloadTypeExtension(rtpDesc, h264pt, Constants.H264, 90000);
+            = addPayloadTypeExtension(rtpDesc, H264_PT, Constants.H264, 90000);
 
         // a=rtcp-fb:107 ccm fir
         h264.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
@@ -252,9 +326,8 @@ public class JingleOfferFactory
         }
 
         // a=rtpmap:101 VP9/90000
-        int vp9pt = 101;
         PayloadTypePacketExtension vp9
-            = addPayloadTypeExtension(rtpDesc, vp9pt, Constants.VP9, 90000);
+            = addPayloadTypeExtension(rtpDesc, VP9_PT, Constants.VP9, 90000);
 
         // a=rtcp-fb:101 ccm fir
         vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
@@ -283,11 +356,11 @@ public class JingleOfferFactory
         if (useRtx)
         {
             // a=rtpmap:96 rtx/90000
-            PayloadTypePacketExtension rtx
-                = addPayloadTypeExtension(rtpDesc, 96, Constants.RTX, 90000);
+            PayloadTypePacketExtension rtx = addPayloadTypeExtension(
+                rtpDesc, VP8_RTX_PT, Constants.RTX, 90000);
 
             // a=fmtp:96 apt=100
-            addParameterExtension(rtx, "apt", String.valueOf(vp8pt));
+            addParameterExtension(rtx, "apt", String.valueOf(VP8_PT));
 
             // Chrome doesn't have these when it creates an offer, but they were
             // observed in a hangouts conference. Not sure whether they have any
@@ -306,18 +379,18 @@ public class JingleOfferFactory
                 createRtcpFbPacketExtension("goog-remb", null));
 
             // a=rtpmap:99 rtx/90000
-            PayloadTypePacketExtension rtxH264
-                = addPayloadTypeExtension(rtpDesc, 99, Constants.RTX, 90000);
+            PayloadTypePacketExtension rtxH264 = addPayloadTypeExtension(
+                rtpDesc, H264_RTX_PT, Constants.RTX, 90000);
 
             // a=fmtp:99 apt=107
-            addParameterExtension(rtxH264, "apt", String.valueOf(h264pt));
+            addParameterExtension(rtxH264, "apt", String.valueOf(H264_PT));
 
             // a=rtpmap:97 rtx/90000
-            PayloadTypePacketExtension rtxVP9
-                = addPayloadTypeExtension(rtpDesc, 97, Constants.RTX, 90000);
+            PayloadTypePacketExtension rtxVP9 = addPayloadTypeExtension(
+                rtpDesc, VP9_RTX_PT, Constants.RTX, 90000);
 
             // a=fmtp:97 apt=101
-            addParameterExtension(rtxVP9, "apt", String.valueOf(vp9pt));
+            addParameterExtension(rtxVP9, "apt", String.valueOf(VP9_PT));
         }
 
         // a=rtpmap:116 red/90000
