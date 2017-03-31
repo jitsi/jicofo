@@ -315,12 +315,15 @@ public class ColibriThreadingTest
         List<ContentPacketExtension> contents
             = new ArrayList<ContentPacketExtension>();
 
-        contents.add(JingleOfferFactory.createAudioContent(false, true, false));
+        JingleOfferFactory jingleOfferFactory
+            = FocusBundleActivator.getJingleOfferFactory();
+
+        contents.add(jingleOfferFactory.createAudioContent(false, true, false));
 
         contents.add(
-            JingleOfferFactory.createVideoContent(false, true, false, -1, -1));
+            jingleOfferFactory.createVideoContent(false, true, false, -1, -1));
 
-        contents.add(JingleOfferFactory.createDataContent(false, true));
+        contents.add(jingleOfferFactory.createDataContent(false, true));
 
         return contents;
     }
