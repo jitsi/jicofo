@@ -98,11 +98,14 @@ public class ParticipantTest
                 new long[] { 50L, 60L }, cname, msid)
         };
 
+        JingleOfferFactory jingleOfferFactory
+            = FocusBundleActivator.getJingleOfferFactory();
+
         ContentPacketExtension audioContents
-            = JingleOfferFactory.createAudioContent(false, true, true);
+            = jingleOfferFactory.createAudioContent(false, true, true);
 
         ContentPacketExtension videoContents
-            = JingleOfferFactory.createVideoContent(false, true, true, 0, 100);
+            = jingleOfferFactory.createVideoContent(false, true, true, 0, 100);
 
         this.audioRtpDescPe = JingleUtils.getRtpDescription(audioContents);
         this.videoRtpDescPe = JingleUtils.getRtpDescription(videoContents);

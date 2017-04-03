@@ -280,17 +280,20 @@ public class ChannelAllocator implements Runnable
         boolean useRtx
             = config.isRtxEnabled() && newParticipant.hasRtxSupport();
 
+        JingleOfferFactory jingleOfferFactory
+            = FocusBundleActivator.getJingleOfferFactory();
+
         if (newParticipant.hasAudioSupport())
         {
             contents.add(
-                    JingleOfferFactory.createAudioContent(
+                    jingleOfferFactory.createAudioContent(
                             disableIce, useDtls, config.stereoEnabled()));
         }
 
         if (newParticipant.hasVideoSupport())
         {
             contents.add(
-                    JingleOfferFactory.createVideoContent(
+                jingleOfferFactory.createVideoContent(
                             disableIce, useDtls, useRtx,
                             config.getMinBitrate(),
                             config.getStartBitrate()));
@@ -301,7 +304,7 @@ public class ChannelAllocator implements Runnable
         if (openSctp && newParticipant.hasSctpSupport())
         {
             contents.add(
-                    JingleOfferFactory.createDataContent(disableIce, useDtls));
+                    jingleOfferFactory.createDataContent(disableIce, useDtls));
         }
 
         ColibriConferenceIQ peerChannels = allocateChannels(contents);

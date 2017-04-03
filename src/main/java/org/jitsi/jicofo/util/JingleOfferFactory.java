@@ -77,42 +77,49 @@ public class JingleOfferFactory
         = "org.jitsi.jicofo.H264_RTX_PT";
 
     /**
-     * The configuration service to be used by this instance.
-     */
-    private static final ConfigurationService cfg
-        = LibJitsiOSGiImpl.getConfigurationService();
-
-    /**
      * The VP8 payload type to include in the Jingle session-invite.
      */
-    private static final int VP8_PT = cfg.getInt(VP8_PT_PNAME, 100);
+    private final int VP8_PT;
 
     /**
      * The VP8 RTX payload type to include in the Jingle session-invite.
      */
-    private static final int VP8_RTX_PT = cfg.getInt(VP8_RTX_PT_PNAME, 96);
+    private final int VP8_RTX_PT;
 
     /**
      * The VP9 payload type to include in the Jingle session-invite.
      */
-    private static final int VP9_PT = cfg.getInt(VP9_PT_PNAME, 101);
+    private final int VP9_PT;
 
     /**
      * The VP9 RTX payload type to include in the Jingle session-invite.
      */
-    private static final int VP9_RTX_PT = cfg.getInt(VP9_RTX_PT_PNAME, 97);
+    private final int VP9_RTX_PT;
 
     /**
      * The H264 payload type to include in the Jingle session-invite.
      */
-    private static final int H264_PT = cfg.getInt(H264_PT_PNAME, 107);
+    private final int H264_PT;
 
     /**
      * The H264 RTX payload type to include in the Jingle session-invite.
      */
-    private static final int H264_RTX_PT = cfg.getInt(H264_RTX_PT_PNAME, 99);
+    private final int H264_RTX_PT;
 
-    private JingleOfferFactory(){ }
+    /**
+     * Ctor.
+     *
+     * @param cfg the {@link ConfigurationService} to pull config options from.
+     */
+    public JingleOfferFactory(ConfigurationService cfg)
+    {
+        VP8_PT = cfg != null ? cfg.getInt(VP8_PT_PNAME, 100) : 100;
+        VP8_RTX_PT = cfg != null ? cfg.getInt(VP8_RTX_PT_PNAME, 96) : 96;
+        VP9_PT = cfg != null ? cfg.getInt(VP9_PT_PNAME, 101) : 101;
+        VP9_RTX_PT = cfg != null ? cfg.getInt(VP9_RTX_PT_PNAME, 97) : 97;
+        H264_PT = cfg != null ? cfg.getInt(H264_PT_PNAME, 107) : 107;
+        H264_RTX_PT = cfg != null ? cfg.getInt(H264_RTX_PT_PNAME, 99) : 99;
+    }
 
     /**
      * Creates a {@link ContentPacketExtension} for the audio media type that
@@ -126,7 +133,7 @@ public class JingleOfferFactory
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
-    public static ContentPacketExtension createAudioContent(
+    public ContentPacketExtension createAudioContent(
         boolean disableIce, boolean useDtls, boolean stereo)
     {
         ContentPacketExtension content
@@ -150,7 +157,7 @@ public class JingleOfferFactory
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
-    public static ContentPacketExtension createDataContent(
+    public ContentPacketExtension createDataContent(
         boolean disableIce, boolean useDtls)
     {
         ContentPacketExtension content
@@ -179,7 +186,7 @@ public class JingleOfferFactory
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
-    public static ContentPacketExtension createVideoContent(
+    public ContentPacketExtension createVideoContent(
             boolean disableIce, boolean useDtls, boolean useRtx,
             int minBitrate, int startBitrate)
     {
@@ -241,7 +248,7 @@ public class JingleOfferFactory
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
-    private static void addVideoToContent(ContentPacketExtension content,
+    private void addVideoToContent(ContentPacketExtension content,
                                           boolean useRtx,
                                           int minBitrate,
                                           int startBitrate)
