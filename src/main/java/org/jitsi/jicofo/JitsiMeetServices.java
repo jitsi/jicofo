@@ -29,6 +29,7 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 import org.osgi.framework.*;
@@ -370,9 +371,9 @@ public class JitsiMeetServices
 
         super.start(bundleContext);
 
+        ConfigurationService config = FocusBundleActivator.getConfigService();
         String jibriBreweryName
-            = JibriDetector.loadBreweryName(
-                    FocusBundleActivator.getConfigService());
+            = config.getString(JibriDetector.JIBRI_ROOM_PNAME);
 
         if (!StringUtils.isNullOrEmpty(jibriBreweryName))
         {
