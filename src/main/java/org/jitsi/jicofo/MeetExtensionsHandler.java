@@ -27,6 +27,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -67,6 +68,11 @@ public class MeetExtensionsHandler
     private OperationSetDirectSmackXmpp smackXmpp;
 
     /**
+     * Process packets in different thread, keeping packets receive order.
+     */
+    private QueuePacketProcessor packetProcessor = null;
+
+    /**
      * Creates new instance of {@link MeetExtensionsHandler}.
      * @param focusManager <tt>FocusManager</tt> that will be used by new
      *                     instance to access active conferences and focus
@@ -98,7 +104,10 @@ public class MeetExtensionsHandler
             = focusManager.getOperationSet(
                     OperationSetDirectSmackXmpp.class);
 
-        smackXmpp.addPacketHandler(this, this);
+        if (this.packetProcessor == null)
+            this.packetProcessor = new QueuePacketProcessor(this);
+
+        smackXmpp.addPacketHandler(this.packetProcessor, this);
     }
 
     /**
@@ -108,7 +117,12 @@ public class MeetExtensionsHandler
     {
         if (smackXmpp != null)
         {
-            smackXmpp.removePacketHandler(this);
+            if (this.packetProcessor != null)
+            {
+                smackXmpp.removePacketHandler(this.packetProcessor);
+                this.packetProcessor.stop();
+                this.packetProcessor = null;
+            }
             smackXmpp = null;
         }
     }

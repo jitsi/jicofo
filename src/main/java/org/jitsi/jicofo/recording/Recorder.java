@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
@@ -48,13 +49,20 @@ public abstract class Recorder
      */
     protected final OperationSetDirectSmackXmpp xmpp;
 
+    /**
+     * Process packets in different thread, keeping packets receive order.
+     */
+    private QueuePacketProcessor packetProcessor = null;
+
     public Recorder(String recorderComponentJid,
                     OperationSetDirectSmackXmpp xmpp)
     {
         this.recorderComponentJid = recorderComponentJid;
 
+        this.packetProcessor = new QueuePacketProcessor(this);
+
         this.xmpp = Objects.requireNonNull(xmpp, "xmpp");
-        xmpp.addPacketHandler(this, this);
+        xmpp.addPacketHandler(this.packetProcessor, this);
     }
 
     /**
@@ -68,7 +76,12 @@ public abstract class Recorder
      */
     public void dispose()
     {
-        xmpp.removePacketHandler(this);
+        if (this.packetProcessor != null)
+        {
+            xmpp.removePacketHandler(this.packetProcessor);
+            this.packetProcessor.stop();
+            this.packetProcessor = null;
+        }
     }
 
     /**
