@@ -816,7 +816,7 @@ public class JibriRecorder
         {
             setJibriStatus(JibriIq.Status.OFF);
         }
-        else if (jibriDetector.isAnyJibriConnected())
+        else if (jibriDetector.isAnyInstanceConnected())
         {
             setJibriStatus(JibriIq.Status.BUSY);
         }

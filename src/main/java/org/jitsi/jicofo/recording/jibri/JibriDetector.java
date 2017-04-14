@@ -18,21 +18,13 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
-
-import org.jivesoftware.smack.packet.*;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
@@ -43,9 +35,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class JibriDetector
-    implements ChatRoomMemberPresenceListener,
-               ChatRoomMemberPropertyChangeListener,
-               RegistrationStateChangeListener
+    extends BaseBrewery<JibriStatusPacketExt>
 {
     /**
      * The logger
@@ -55,46 +45,18 @@ public class JibriDetector
     /**
      * The name of config property which provides the name of the MUC room in
      * which all Jibri instances.
+     * Can be just roomName, then the muc service will be discovered from server
+     * and in case of multiple will use the first one.
+     * Or it can be full room id: roomName@muc-servicename.jabserver.com.
      */
-    private static final String JIBRI_ROOM_PNAME
+    public static final String JIBRI_ROOM_PNAME
         = "org.jitsi.jicofo.jibri.BREWERY";
-
-    /**
-     * The name fo XMPP MUC room where all Jibris gather to brew together.
-     */
-    private final String jibriBrewery;
-
-    /**
-     * The <tt>ProtocolProviderHandler</tt> for Jicofo's XMPP connection.
-     */
-    private final ProtocolProviderHandler protocolProvider;
 
     /**
      * The reference to the <tt>EventAdmin</tt> service which is used to send
      * {@link JibriEvent}s.
      */
     private final OSGIServiceRef<EventAdmin> eventAdminRef;
-
-    /**
-     * The <tt>ChatRoom</tt> instance for Jibri brewery.
-     */
-    private ChatRoom chatRoom;
-
-    /**
-     * The list of all currently known jibri instances.
-     */
-    private final List<Jibri> jibris = new CopyOnWriteArrayList<>();
-
-    /**
-     * Loads the name of Jibri brewery MUC room from the configuration.
-     * @param config the instance of <tt>ConfigurationService</tt> which will be
-     *        used to read the properties required.
-     * @return the name of Jibri brewery or <tt>null</tt> if none configured.
-     */
-    static public String loadBreweryName(ConfigurationService config)
-    {
-        return config.getString(JIBRI_ROOM_PNAME);
-    }
 
     /**
      * Creates new instance of <tt>JibriDetector</tt>
@@ -106,11 +68,12 @@ public class JibriDetector
     public JibriDetector(ProtocolProviderHandler protocolProvider,
                          String jibriBreweryName)
     {
-        this.protocolProvider
-            = Objects.requireNonNull(protocolProvider, "protocolProvider");
-        Assert.notNullNorEmpty(jibriBreweryName, "jibriBreweryName");
+        super(
+            protocolProvider,
+            jibriBreweryName,
+            JibriStatusPacketExt.ELEMENT_NAME,
+            JibriStatusPacketExt.NAMESPACE);
 
-        this.jibriBrewery = jibriBreweryName;
         this.eventAdminRef
             = new OSGIServiceRef<>(
                     FocusBundleActivator.bundleContext, EventAdmin.class);
@@ -124,9 +87,10 @@ public class JibriDetector
      */
     public String selectJibri()
     {
-        for (Jibri jibri : jibris)
+        for (BrewInstance jibri : instances)
         {
-            if (JibriStatusPacketExt.Status.IDLE.equals(jibri.status))
+            if (JibriStatusPacketExt.Status.IDLE.equals(
+                    jibri.status.getStatus()))
             {
                 return jibri.mucJid;
             }
@@ -134,220 +98,44 @@ public class JibriDetector
         return null;
     }
 
-    /**
-     * Checks whether or not there are any Jibri instances connected.
-     * @return <tt>true</tt> if there are any Jibri instances currently
-     * connected to the brewery room or <tt>false</tt> otherwise.
-     */
-    public boolean isAnyJibriConnected()
-    {
-        return jibris.size() > 0;
-    }
-
-    /**
-     * Initializes this instance.
-     */
-    public void init()
-    {
-        protocolProvider.addRegistrationListener(this);
-
-        maybeStart();
-    }
-
-    /**
-     * Starts the whole thing if we have XMPP connection up and running.
-     */
-    private void maybeStart()
-    {
-        if (chatRoom == null
-                && protocolProvider.getProtocolProvider().isRegistered())
-        {
-            start();
-        }
-    }
-
-    /**
-     * Stops and releases allocated resources.
-     */
-    public void dispose()
-    {
-        protocolProvider.removeRegistrationListener(this);
-
-        stop();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    synchronized public void registrationStateChanged(
-        RegistrationStateChangeEvent registrationStateChangeEvent)
+    protected void onInstanceStatusChanged(
+        String mucJid,
+        JibriStatusPacketExt presenceExt)
     {
-        RegistrationState newState = registrationStateChangeEvent.getNewState();
-
-        if (RegistrationState.REGISTERED.equals(newState))
-        {
-            maybeStart();
-        }
-        else if (RegistrationState.UNREGISTERED.equals(newState))
-        {
-            stop();
-        }
-    }
-
-    private void start()
-    {
-        try
-        {
-            OperationSetMultiUserChat muc
-                = protocolProvider.getOperationSet(
-                        OperationSetMultiUserChat.class);
-
-            Objects.requireNonNull(muc, "OperationSetMultiUserChat");
-
-            chatRoom = muc.createChatRoom(jibriBrewery, null);
-            chatRoom.addMemberPresenceListener(this);
-            chatRoom.addMemberPropertyChangeListener(this);
-            chatRoom.join();
-
-            logger.info("Joined JIBRI room: " + jibriBrewery);
-        }
-        catch (OperationFailedException | OperationNotSupportedException e)
-        {
-            logger.error("Failed to create room: " + jibriBrewery, e);
-        }
-    }
-
-    private void stop()
-    {
-        if (chatRoom != null)
-        {
-            chatRoom.removeMemberPresenceListener(this);
-            chatRoom.removeMemberPropertyChangeListener(this);
-            chatRoom.leave();
-            chatRoom = null;
-
-            logger.info("Left JIBRI room: " + jibriBrewery);
-        }
-
-        // Clean up the list of Jibris
-        List<Jibri> jibrisCopy = new ArrayList<>(jibris);
-        jibris.clear();
-        for (Jibri jibri : jibrisCopy)
-        {
-            notifyJibriOffline(jibri.mucJid);
-        }
-    }
-
-    @Override
-    synchronized public void memberPresenceChanged(
-        ChatRoomMemberPresenceChangeEvent presenceEvent)
-    {
-        XmppChatMember chatMember
-            = (XmppChatMember) presenceEvent.getChatRoomMember();
-        String eventType = presenceEvent.getEventType();
-        if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
-        {
-            // Process idle or busy
-            processMemberPresence(chatMember);
-        }
-        else if (ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
-        {
-            // Process offline status
-            onJibriStatusChanged(
-                chatMember.getContactAddress(),
-                JibriStatusPacketExt.Status.UNDEFINED);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void chatRoomPropertyChanged(
-        ChatRoomMemberPropertyChangeEvent memberPropertyEvent)
-    {
-        XmppChatMember member
-            = (XmppChatMember) memberPropertyEvent.getSourceChatRoomMember();
-
-        processMemberPresence(member);
-    }
-
-    private void processMemberPresence(XmppChatMember member)
-    {
-        Presence presence = member.getPresence();
-
-        if (presence == null)
-            return;
-
-        JibriStatusPacketExt jibriStatus
-            = (JibriStatusPacketExt) presence.getExtension(
-                    JibriStatusPacketExt.ELEMENT_NAME,
-                    JibriStatusPacketExt.NAMESPACE);
-
-        if (jibriStatus == null)
-            return;
-
-        onJibriStatusChanged(
-            member.getContactAddress(), jibriStatus.getStatus());
-    }
-
-    private void onJibriStatusChanged(String                      mucJid,
-                                      JibriStatusPacketExt.Status status)
-    {
-        Jibri jibri = findJibri(mucJid);
+        JibriStatusPacketExt.Status status = presenceExt.getStatus();
 
         if (JibriStatusPacketExt.Status.UNDEFINED.equals(status))
         {
-            if (jibri != null)
-            {
-                jibris.remove(jibri);
-
-                logger.info("Removed jibri: " + mucJid);
-
-                notifyJibriOffline(mucJid);
-            }
+            notifyInstanceOffline(mucJid);
+        }
+        else if (JibriStatusPacketExt.Status.IDLE.equals(status))
+        {
+            notifyJibriStatus(mucJid, true);
+        }
+        else if (JibriStatusPacketExt.Status.BUSY.equals(status))
+        {
+            notifyJibriStatus(mucJid, false);
         }
         else
         {
-            if (jibri == null)
-            {
-                jibri = new Jibri(mucJid, status);
-                jibris.add(jibri);
-
-                logger.info("Added jibri: " + mucJid);
-            }
-            else
-            {
-                jibri.status = status;
-            }
-
-            if (JibriStatusPacketExt.Status.IDLE.equals(status))
-            {
-                notifyJibriStatus(jibri.mucJid, true);
-            }
-            else if (JibriStatusPacketExt.Status.BUSY.equals(status))
-            {
-                notifyJibriStatus(jibri.mucJid, false);
-            }
-            else
-            {
-                logger.error(
-                        "Unknown Jibri status: " + status + " for " + mucJid);
-            }
+            logger.error(
+                "Unknown Jibri status: " + status + " for " + mucJid);
         }
     }
 
-    private Jibri findJibri(String mucJid)
+    @Override
+    protected void notifyInstanceOffline(String jid)
     {
-        for (Jibri j : jibris)
+        logger.info("Jibri " + jid +" went offline");
+
+        EventAdmin eventAdmin = eventAdminRef.get();
+        if (eventAdmin != null)
         {
-            if (j.mucJid.equals(mucJid))
-                return j;
+            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid));
         }
-        return null;
+        else
+            logger.error("No EventAdmin !");
     }
 
     private void notifyJibriStatus(String jibriJid, boolean available)
@@ -363,40 +151,5 @@ public class JibriDetector
         }
         else
             logger.error("No EventAdmin !");
-    }
-
-    private void notifyJibriOffline(String jid)
-    {
-        logger.info("Jibri " + jid +" went offline");
-
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid));
-        }
-        else
-            logger.error("No EventAdmin !");
-    }
-
-    /**
-     * Internal structure for storing information about Jibri instances.
-     */
-    private class Jibri
-    {
-        /**
-         * Eg. "room@muc.server.net/nick"
-         */
-        final String mucJid;
-
-        /**
-         * One of {@link JibriStatusPacketExt.Status}
-         */
-        JibriStatusPacketExt.Status status;
-
-        Jibri(String mucJid, JibriStatusPacketExt.Status status)
-        {
-            this.mucJid = mucJid;
-            this.status = status;
-        }
     }
 }

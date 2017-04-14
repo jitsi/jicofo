@@ -26,9 +26,11 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 import org.osgi.framework.*;
@@ -121,6 +123,11 @@ public class JitsiMeetServices
      * Instance of {@link JibriDetector} which manages Jibri instances.
      */
     private JibriDetector jibriDetector;
+
+    /**
+     * Instance of {@link JigasiDetector} which manages Jigasi instances.
+     */
+    private JigasiDetector jigasiDetector;
 
     /**
      * The name of XMPP domain to which Jicofo user logs in.
@@ -329,6 +336,16 @@ public class JitsiMeetServices
     }
 
     /**
+     * Returns {@link JigasiDetector} instance that manages Jigasi pool used by
+     * this Jicofo process or <tt>null</tt> if unavailable in the current
+     * session.
+     */
+    public JigasiDetector getJigasiDetector()
+    {
+        return jigasiDetector;
+    }
+
+    /**
      * Returns the XMPP address of Jirecon recorder component.
      */
     public String getJireconRecorder()
@@ -370,9 +387,9 @@ public class JitsiMeetServices
 
         super.start(bundleContext);
 
+        ConfigurationService config = FocusBundleActivator.getConfigService();
         String jibriBreweryName
-            = JibriDetector.loadBreweryName(
-                    FocusBundleActivator.getConfigService());
+            = config.getString(JibriDetector.JIBRI_ROOM_PNAME);
 
         if (!StringUtils.isNullOrEmpty(jibriBreweryName))
         {
@@ -380,6 +397,16 @@ public class JitsiMeetServices
                 = new JibriDetector(protocolProvider, jibriBreweryName);
 
             jibriDetector.init();
+        }
+
+        String jigasiBreweryName
+            = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
+        if (!StringUtils.isNullOrEmpty(jigasiBreweryName))
+        {
+            jigasiDetector
+                = new JigasiDetector(protocolProvider, jigasiBreweryName);
+
+            jigasiDetector.init();
         }
     }
 
@@ -391,6 +418,12 @@ public class JitsiMeetServices
         {
             jibriDetector.dispose();
             jibriDetector = null;
+        }
+
+        if (jigasiDetector != null)
+        {
+            jigasiDetector.dispose();
+            jigasiDetector = null;
         }
 
         bridgeSelector.dispose();
