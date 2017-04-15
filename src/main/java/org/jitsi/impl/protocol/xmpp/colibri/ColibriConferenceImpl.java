@@ -832,7 +832,8 @@ public class ColibriConferenceImpl
             MediaSSRCMap                                   ssrcs,
             MediaSSRCGroupMap                              ssrcGroups,
             IceUdpTransportPacketExtension                 bundleTransport,
-            Map<String, IceUdpTransportPacketExtension>    transportMap)
+            Map<String, IceUdpTransportPacketExtension>    transportMap,
+            Map<String, MediaDirection>                    directionMap)
     {
         ColibriConferenceIQ iq;
 
@@ -877,6 +878,14 @@ public class ColibriConferenceImpl
             else if (transportMap != null
                     && colibriBuilder.addTransportUpdateReq(
                             transportMap, localChannelsInfo))
+            {
+                send = true;
+            }
+
+            // Media direction.
+            if (directionMap != null
+                    && colibriBuilder.addDirectionUpdateReq(
+                            directionMap, localChannelsInfo))
             {
                 send = true;
             }

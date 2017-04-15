@@ -24,6 +24,7 @@ import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import java.util.*;
@@ -70,6 +71,12 @@ public class Participant
      * content.
      */
     private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
+
+    /**
+     * The map of the most recently received media direction for each Colibri
+     * content.
+     */
+    private Map<String, MediaDirection> directionMap;
 
     /**
      * Peer's media SSRCs.
@@ -200,6 +207,63 @@ public class Participant
     public XmppChatMember getChatMember()
     {
         return roomMember;
+    }
+
+    /**
+     * Returns the currently stored map of media direction to Colibri content
+     * name.
+     *
+     * @return a <tt>Map<String,MediaDirection></tt> which maps the media
+     * direction to the corresponding Colibri content names.
+     */
+    public Map<String, MediaDirection> getDirectionMap()
+    {
+        return directionMap;
+    }
+
+    /**
+     * Extracts and stores media directionfor each content type from given
+     * Jingle contents.
+     * @param jingleContents the list of Jingle content packet extension from
+     *        <tt>Participant</tt>'s answer.
+     */
+    public void setDirection(List<ContentPacketExtension> jingleContents)
+    {
+        Map<String, MediaDirection> directionsMap = new HashMap<>();
+
+        for (ContentPacketExtension content : jingleContents)
+        {
+            ContentPacketExtension.SendersEnum sendersEnum = content.getSenders();
+
+            if (sendersEnum != null)
+            {
+                switch (sendersEnum)
+                {
+                case both:
+                    directionsMap.put(
+                        content.getName(), MediaDirection.SENDRECV);
+                    break;
+                case initiator:
+                    // initiator maps to sendonly, so the COLIBRI channel needs
+                    // to be recvonly.
+                    directionsMap.put(
+                        content.getName(), MediaDirection.RECVONLY);
+                    break;
+                case none:
+                    directionsMap.put(
+                        content.getName(), MediaDirection.INACTIVE);
+                    break;
+                case responder:
+                    // responder maps to recvonly, so the COLIBRI channel needs
+                    // to be sendonly.
+                    directionsMap.put(
+                        content.getName(), MediaDirection.SENDONLY);
+                    break;
+                }
+            }
+        }
+
+        this.directionMap = directionsMap;
     }
 
     /**

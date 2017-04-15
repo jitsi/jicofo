@@ -972,6 +972,7 @@ public class JitsiMeetConferenceImpl
         participant.setJingleSession(peerJingleSession);
 
         // Extract and store various session information in the Participant
+        participant.setDirection(answer);
         participant.setRTPDescription(answer);
         participant.addTransportFromJingle(answer);
 
@@ -1006,7 +1007,8 @@ public class JitsiMeetConferenceImpl
                     peerSSRCs,
                     peerGroupsMap,
                     participant.getBundleTransport(),
-                    participant.getTransportMap());
+                    participant.getTransportMap(),
+                    participant.getDirectionMap());
         }
 
         // Loop over current participant and send 'source-add' notification

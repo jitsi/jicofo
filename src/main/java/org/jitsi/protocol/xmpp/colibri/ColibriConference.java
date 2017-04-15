@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.service.neomedia.*;
 
 import java.util.*;
 
@@ -144,7 +145,8 @@ public interface ColibriConference
             MediaSSRCMap                                   ssrcs,
             MediaSSRCGroupMap                              ssrcGroups,
             IceUdpTransportPacketExtension                 bundleTransport,
-            Map<String, IceUdpTransportPacketExtension>    transportMap);
+            Map<String, IceUdpTransportPacketExtension>    transportMap,
+            Map<String, MediaDirection>                    directionMap);
 
     /**
      * Updates the RTP description for active channels (existing on the bridge).
