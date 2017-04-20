@@ -77,6 +77,13 @@ public class JingleOfferFactory
         = "org.jitsi.jicofo.H264_RTX_PT";
 
     /**
+     * The name of the property which enables the inclusion of the
+     * framemarking RTP header extension in the offer.
+     */
+    public static final String ENABLE_FRAMEMARKING_PNAME
+        = "org.jitsi.jicofo.ENABLE_FRAMEMARKING";
+
+    /**
      * The VP8 payload type to include in the Jingle session-invite.
      */
     private final int VP8_PT;
@@ -107,6 +114,12 @@ public class JingleOfferFactory
     private final int H264_RTX_PT;
 
     /**
+     * Whether to enable the framemarking RTP header extension in created
+     * offers.
+     */
+    private final boolean ENABLE_FRAMEMARKING;
+
+    /**
      * Ctor.
      *
      * @param cfg the {@link ConfigurationService} to pull config options from.
@@ -119,6 +132,8 @@ public class JingleOfferFactory
         VP9_RTX_PT = cfg != null ? cfg.getInt(VP9_RTX_PT_PNAME, 97) : 97;
         H264_PT = cfg != null ? cfg.getInt(H264_PT_PNAME, 107) : 107;
         H264_RTX_PT = cfg != null ? cfg.getInt(H264_RTX_PT_PNAME, 99) : 99;
+        ENABLE_FRAMEMARKING
+            = cfg != null && cfg.getBoolean(ENABLE_FRAMEMARKING_PNAME, false);
     }
 
     /**
@@ -275,6 +290,16 @@ public class JingleOfferFactory
         absSendTime.setID("3");
         absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
         rtpDesc.addExtmap(absSendTime);
+
+        if (ENABLE_FRAMEMARKING)
+        {
+            // a=extmap:9 urn:ietf:params:rtp-hdrext:framemarking
+            RTPHdrExtPacketExtension framemarking
+                = new RTPHdrExtPacketExtension();
+            framemarking.setID("9");
+            framemarking.setURI(URI.create(RTPExtension.FRAME_MARKING_URN));
+            rtpDesc.addExtmap(framemarking);
+        }
 
         // a=rtpmap:100 VP8/90000
         PayloadTypePacketExtension vp8
