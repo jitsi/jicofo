@@ -276,6 +276,13 @@ public class JingleOfferFactory
         absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
         rtpDesc.addExtmap(absSendTime);
 
+        // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+        RTPHdrExtPacketExtension tcc
+            = new RTPHdrExtPacketExtension();
+        tcc.setID("5");
+        tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
+        rtpDesc.addExtmap(tcc);
+
         // a=rtpmap:100 VP8/90000
         PayloadTypePacketExtension vp8
             = addPayloadTypeExtension(rtpDesc, VP8_PT, Constants.VP8, 90000);
@@ -291,6 +298,9 @@ public class JingleOfferFactory
 
         // a=rtcp-fb:100 goog-remb
         vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
+
+        // a=rtcp-fb:100 transport-cc
+        vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("transport-cc", null));
 
         if (minBitrate != -1)
         {
@@ -508,6 +518,9 @@ public class JingleOfferFactory
 
         // fmtp:111 useinbandfec=1
         addParameterExtension(opus, "useinbandfec", "1");
+
+        // a=rtcp-fb:111 transport-cc
+        opus.addRtcpFeedbackType(createRtcpFbPacketExtension("transport-cc", null));
 
         // a=rtpmap:103 ISAC/16000
         addPayloadTypeExtension(rtpDesc, 103, "ISAC", 16000);
