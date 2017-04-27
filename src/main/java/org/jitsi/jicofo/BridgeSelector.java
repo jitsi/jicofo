@@ -81,6 +81,33 @@ public class BridgeSelector
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
 
     /**
+     * Tries to parse an object as an integer, return null on failure.
+     * @param obj the object to parse.
+     */
+    private static Integer getInt(Object obj)
+    {
+        if (obj == null)
+        {
+            return null;
+        }
+        if (obj instanceof Integer)
+        {
+            return (Integer) obj;
+        }
+
+        String str = obj.toString();
+        try
+        {
+            return Integer.valueOf(str);
+        }
+        catch (NumberFormatException e)
+        {
+            logger.error("Error parsing an int: " + obj);
+        }
+        return null;
+    }
+
+    /**
      * Stores reference to <tt>EventHandler</tt> registration, so that it can be
      * unregistered on {@link #dispose()}.
      */
@@ -394,48 +421,30 @@ public class BridgeSelector
                 = (ColibriStatsExtension.Stat) child;
             if ("conferences".equals(stat.getName()))
             {
-                Integer val = getStatisticIntValue(stat);
-                if(val != null)
-                    bridgeState.setConferenceCount(val);
+                Integer conferenceCount = getInt(stat.getValue());
+                if (conferenceCount != null)
+                {
+                    bridgeState.setConferenceCount(conferenceCount);
+                }
             }
             else if ("videochannels".equals(stat.getName()))
             {
-                Integer val = getStatisticIntValue(stat);
-                if(val != null)
-                    bridgeState.setVideoChannelCount(val);
+                Integer videoChannelCount = getInt(stat.getValue());
+                if (videoChannelCount != null)
+                {
+                    bridgeState.setVideoChannelCount(videoChannelCount);
+                }
             }
             else if ("videostreams".equals(stat.getName()))
             {
-                Integer val = getStatisticIntValue(stat);
-                if(val != null)
-                    bridgeState.setVideoStreamCount(val);
+                Integer videoStreamCount = getInt(stat.getValue());
+                if (videoStreamCount != null)
+                {
+                    bridgeState.setVideoStreamCount(videoStreamCount);
+                }
+            }
             }
         }
-    }
-
-    /**
-     * Extracts the statistic integer value from <tt>currentStats</tt> if
-     * available and in correct format.
-     * @param currentStats the current stats
-     */
-    private static Integer getStatisticIntValue(
-        ColibriStatsExtension.Stat currentStats)
-    {
-        Object obj = currentStats.getValue();
-        if (obj == null)
-        {
-            return null;
-        }
-        String str = obj.toString();
-        try
-        {
-            return Integer.valueOf(str);
-        }
-        catch(NumberFormatException e)
-        {
-            logger.error("Error parsing stat item: " + currentStats.toXML());
-        }
-        return null;
     }
 
     /**
