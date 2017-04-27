@@ -443,6 +443,13 @@ public class BridgeSelector
                     bridgeState.setVideoStreamCount(videoStreamCount);
                 }
             }
+            else if ("relay_id".equals(stat.getName()))
+            {
+                Object relayId = stat.getValue();
+                if (relayId != null)
+                {
+                    bridgeState.setRelayId(relayId.toString());
+                }
             }
         }
     }
@@ -668,6 +675,12 @@ public class BridgeSelector
         private int videoStreamCount = 0;
 
         /**
+         * The relay ID advertised by the bridge, or {@code null} if none was
+         * advertised.
+         */
+        private String relayId = null;
+
+        /**
          * Accumulates video stream count changes coming from
          * {@link BridgeEvent#VIDEOSTREAMS_CHANGED} in order to estimate video
          * stream count on the bridge. The value is included in the result
@@ -732,12 +745,30 @@ public class BridgeSelector
         }
 
         /**
+         * @return the relay ID advertised by the bridge, or {@code null} if
+         * none was advertised.
+         */
+        public String getRelayId()
+        {
+            return relayId;
+        }
+
+        /**
          * Sets the number of channels used.
          * @param channelCount the number of channels used.
          */
         public void setVideoChannelCount(int channelCount)
         {
             this.videoChannelCount = channelCount;
+        }
+
+        /**
+         * Sets the relay ID advertised by the bridge.
+         * @param relayId the value to set.
+         */
+        public void setRelayId(String relayId)
+        {
+            this.relayId = relayId;
         }
 
         /**
