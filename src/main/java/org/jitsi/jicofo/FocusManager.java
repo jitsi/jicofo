@@ -97,12 +97,25 @@ public class FocusManager
         = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
 
     /**
+     * The name of the property used to configure a 1-byte identifier of this
+     * Jicofo instance, used for the purpose of generating conference IDs unique
+     * across a set of multiple Jicofo instances.
+     */
+    public static final String JICOFO_SHORT_ID_PNAME
+        = "org.jitsi.jicofo.SHORT_ID";
+
+    /**
      * The name of configuration property used to configure PubSub node to which
      * videobridges are publishing their stats. Is used to discover bridges
      * automatically.
      */
     public static final String SHARED_STATS_PUBSUB_NODE_PNAME
         = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
+
+    /**
+     * The pseudo-random generator which is to be used when generating IDs.
+     */
+    private static final Random RANDOM = new Random();
 
     /**
      * The XMPP domain used by the focus user to register to.
@@ -132,6 +145,11 @@ public class FocusManager
      */
     private final Map<String, JitsiMeetConferenceImpl> conferences
         = new ConcurrentHashMap<>();
+
+    /**
+     * The set of the IDs of conferences in {@link #conferences}.
+     */
+    private final Set<String> conferenceIds = new HashSet<>();
 
     // Convert to list when needed
     /**
@@ -325,12 +343,14 @@ public class FocusManager
             = JitsiMeetGlobalConfig.getGlobalConfig(
                 FocusBundleActivator.bundleContext);
 
+        String id = generateConferenceId();
         JitsiMeetConferenceImpl conference
             = new JitsiMeetConferenceImpl(
                     room, focusUserName, protocolProviderHandler,
-                    this, config, globalConfig, logLevel);
+                    this, config, globalConfig, logLevel, id);
 
         conferences.put(room, conference);
+        conferenceIds.add(id);
 
         StringBuilder options = new StringBuilder();
         for (Map.Entry<String, String> option : properties.entrySet())
@@ -380,6 +400,35 @@ public class FocusManager
     }
 
     /**
+     * Generates a conference ID which is currently not used by an existing
+     * conference in a specific format (6 hexadecimal symbols).
+     * @return the generated ID.
+     */
+    private String generateConferenceId()
+    {
+        // TODO: verify the format
+        String jicofoShortId
+            = FocusBundleActivator.getConfigService()
+                .getString(JICOFO_SHORT_ID_PNAME, "ff");
+
+        String id;
+
+        // TODO extract a separate sync root for #conferences + #conferenceIds
+        synchronized (this)
+        {
+            do
+            {
+                id
+                    = jicofoShortId +
+                        Integer.toHexString(RANDOM.nextInt(0x1_0000));
+            }
+            while (conferenceIds.contains(id));
+        }
+
+        return id;
+    }
+
+    /**
      * Destroys the conference for given room name.
      * @param roomName full MUC room name to destroy.
      * @param reason optional reason string that will be advertised to the
@@ -410,6 +459,7 @@ public class FocusManager
         String roomName = conference.getRoomName();
 
         conferences.remove(roomName);
+        conferenceIds.remove(conference.getId());
 
         if (conference.getLogger().isInfoEnabled())
             logger.info(

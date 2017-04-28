@@ -26,7 +26,6 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.jicofo.reservation.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -34,11 +33,9 @@ import org.jitsi.eventadmin.*;
 
 import org.jitsi.util.*;
 import org.jitsi.util.Logger;
-import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 
-import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -67,20 +64,7 @@ public class JitsiMeetConferenceImpl
         = Logger.getLogger(JitsiMeetConferenceImpl.class);
 
     /**
-     * Format used to print the date into the focus identifier string.
-     * Data contained in the id should never be used for business logic.
-     */
-    private final static SimpleDateFormat ID_DATE_FORMAT
-        = new SimpleDateFormat("yyy-MM-dd_HH:mm:ss");
-
-    /**
-     * Conference focus instance identifier. For now consists of current date
-     * and the {@link #hashCode()}. Included date should not be used for any
-     * calculations/app logic - it's just to have it more meaningful than random
-     * numbers.
-     *
-     * FIXME: It would make sense to retrieve it from {@link ReservationSystem}
-     *        if available.
+     * An identifier of this {@link JitsiMeetConferenceImpl}.
      */
     private final String id;
 
@@ -260,14 +244,15 @@ public class JitsiMeetConferenceImpl
                                    ConferenceListener       listener,
                                    JitsiMeetConfig          config,
                                    JitsiMeetGlobalConfig    globalConfig,
-                                   Level                    logLevel)
+                                   Level                    logLevel,
+                                   String                   id)
     {
         this.protocolProviderHandler
             = Objects.requireNonNull(
                     protocolProviderHandler, "protocolProviderHandler");
         this.config = Objects.requireNonNull(config, "config");
 
-        this.id = ID_DATE_FORMAT.format(new Date()) + "_" + hashCode();
+        this.id = id;
         this.roomName = roomName;
         this.focusUserName = focusUserName;
         this.listener = listener;
@@ -545,6 +530,7 @@ public class JitsiMeetConferenceImpl
     private void initNewColibriConference()
     {
         colibriConference = colibri.createNewConference();
+        colibriConference.setGID(id);
 
         colibriConference.setConfig(config);
 
