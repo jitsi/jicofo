@@ -39,6 +39,7 @@ import java.util.logging.*;
  * and expiring conference focus instances. Manages focus XMPP connection.
  *
  * @author Pawel Domas
+ * @author Boris Grozev
  */
 public class FocusManager
     implements JitsiMeetConferenceImpl.ConferenceListener,
@@ -150,6 +151,12 @@ public class FocusManager
      * The set of the IDs of conferences in {@link #conferences}.
      */
     private final Set<String> conferenceIds = new HashSet<>();
+
+    /**
+     * The object used to synchronize access to {@link #conferences} and
+     * {@link #conferenceIds}.
+     */
+    private final Object conferencesSyncRoot = new Object();
 
     // Convert to list when needed
     /**
@@ -301,7 +308,7 @@ public class FocusManager
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
-    public synchronized boolean conferenceRequest(
+    public boolean conferenceRequest(
             String                 room,
             Map<String, String>    properties,
             Level                  loggingLevel)
@@ -312,28 +319,38 @@ public class FocusManager
 
         room = room.toLowerCase();
 
-        if (!conferences.containsKey(room))
+        JitsiMeetConferenceImpl conference;
+        synchronized (conferencesSyncRoot)
         {
-            if (shutdownInProgress)
-                return false;
+            if (!conferences.containsKey(room))
+            {
+                if (shutdownInProgress)
+                {
+                    return false;
+                }
 
-            createConference(room, properties, loggingLevel);
+                createConference(room, properties, loggingLevel);
+            }
+
+            conference = conferences.get(room);
         }
-
-        JitsiMeetConferenceImpl conference = conferences.get(room);
 
         return conference.isInTheRoom();
     }
 
     /**
      * Makes sure that conference is allocated for given <tt>room</tt>.
+     *
+     * Note: this should only be called by threads which hold the lock on
+     * {@link #conferencesSyncRoot}.
+     *
      * @param room name of the MUC room of Jitsi Meet conference.
      * @param properties configuration properties, see {@link JitsiMeetConfig}
      *                   for the list of valid properties.
      *
      * @throws Exception if any error occurs.
      */
-    private synchronized void createConference(
+    private void createConference(
             String room, Map<String, String> properties, Level logLevel)
         throws Exception
     {
@@ -434,53 +451,64 @@ public class FocusManager
      * @param reason optional reason string that will be advertised to the
      *               users upon exit.
      */
-    public synchronized void destroyConference(String roomName, String reason)
+    public void destroyConference(String roomName, String reason)
     {
         roomName = roomName.toLowerCase();
 
-        JitsiMeetConferenceImpl conference
-            = (JitsiMeetConferenceImpl) getConference(roomName);
-        if (conference == null)
+        synchronized (conferencesSyncRoot)
         {
-            logger.error(
-                "Unable to destroy the conference - not found: " + roomName);
-            return;
-        }
+            JitsiMeetConferenceImpl conference
+                = (JitsiMeetConferenceImpl) getConference(roomName);
+            if (conference == null)
+            {
+                logger.error(
+                    "Unable to destroy the conference - not found: " + roomName);
 
-        conference.destroy(reason);
+                return;
+            }
+
+            // It is unclear whether this needs to execute while holding the
+            // lock or not.
+            conference.destroy(reason);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void conferenceEnded(JitsiMeetConferenceImpl conference)
+    public void conferenceEnded(JitsiMeetConferenceImpl conference)
     {
         String roomName = conference.getRoomName();
 
-        conferences.remove(roomName);
-        conferenceIds.remove(conference.getId());
+        synchronized (conferencesSyncRoot)
+        {
+            conferences.remove(roomName);
+            conferenceIds.remove(conference.getId());
 
-        if (conference.getLogger().isInfoEnabled())
-            logger.info(
+            if (conference.getLogger().isInfoEnabled())
+                logger.info(
                     "Disposed conference for room: " + roomName
                         + " conference count: " + conferences.size());
 
-        if (focusAllocListener != null)
-        {
-            focusAllocListener.onFocusDestroyed(roomName);
-        }
+            // It is not clear whether the code below necessarily needs to
+            // hold the lock or not.
+            if (focusAllocListener != null)
+            {
+                focusAllocListener.onFocusDestroyed(roomName);
+            }
 
-        // Send focus destroyed event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.sendEvent(
-                EventFactory.focusDestroyed(
-                    conference.getId(), conference.getRoomName()));
-        }
+            // Send focus destroyed event
+            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+            if (eventAdmin != null)
+            {
+                eventAdmin.sendEvent(
+                    EventFactory.focusDestroyed(
+                        conference.getId(), conference.getRoomName()));
+            }
 
-        maybeDoShutdown();
+            maybeDoShutdown();
+        }
     }
 
     /**
@@ -496,10 +524,7 @@ public class FocusManager
     {
         roomName = roomName.toLowerCase();
 
-        // Other public methods which read from and/or write to the field
-        // conferences are sychronized (e.g. conferenceEnded, conferenceRequest)
-        // so synchronization is necessary here as well.
-        synchronized (this)
+        synchronized (conferencesSyncRoot)
         {
             return conferences.get(roomName);
         }
@@ -509,7 +534,7 @@ public class FocusManager
      * Enables shutdown mode which means that no new focus instances will
      * be allocated. After conference count drops to zero the process will exit.
      */
-    public synchronized void enableGracefulShutdownMode()
+    public void enableGracefulShutdownMode()
     {
         if (!this.shutdownInProgress)
         {
@@ -519,18 +544,24 @@ public class FocusManager
         maybeDoShutdown();
     }
 
-    private synchronized void maybeDoShutdown()
+    private void maybeDoShutdown()
     {
-        if (shutdownInProgress && conferences.isEmpty())
+        synchronized (conferencesSyncRoot)
         {
-            logger.info("Focus is shutting down NOW");
+            if (shutdownInProgress && conferences.isEmpty())
+            {
+                logger.info("Focus is shutting down NOW");
 
-            ShutdownService shutdownService
-                = ServiceUtils.getService(
-                        FocusBundleActivator.bundleContext,
-                        ShutdownService.class);
+                // It is not clear whether the code below necessarily needs to
+                // hold the lock or not. Presumably it is safe to call it
+                // multiple times.
+                ShutdownService shutdownService
+                    = ServiceUtils.getService(
+                    FocusBundleActivator.bundleContext,
+                    ShutdownService.class);
 
-            shutdownService.beginShutdown();
+                shutdownService.beginShutdown();
+            }
         }
     }
 
@@ -714,7 +745,7 @@ public class FocusManager
                 try
                 {
                     ArrayList<JitsiMeetConferenceImpl> conferenceCopy;
-                    synchronized (FocusManager.this)
+                    synchronized (FocusManager.this.conferencesSyncRoot)
                     {
                         conferenceCopy = new ArrayList<>(conferences.values());
                     }
