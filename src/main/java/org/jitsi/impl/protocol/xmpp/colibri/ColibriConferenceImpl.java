@@ -137,6 +137,11 @@ public class ColibriConferenceImpl
     private int videoChannels;
 
     /**
+     * The global ID of the conference.
+     */
+    private String gid;
+
+    /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by the new
      *        instance to communicate.
@@ -148,6 +153,16 @@ public class ColibriConferenceImpl
     {
         this.connection = Objects.requireNonNull(connection, "connection");
         this.eventAdmin = Objects.requireNonNull(eventAdmin, "eventAdmin");
+    }
+
+    /**
+     * Sets the "global" ID of the conference.
+     * @param gid the value to set.
+     */
+    public void setGID(String gid)
+    {
+        this.gid = gid;
+        conferenceState.setGID(gid);
     }
 
     /**
