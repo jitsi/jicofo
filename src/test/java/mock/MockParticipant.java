@@ -160,7 +160,7 @@ public class MockParticipant
 
         myJid = chat.getName() + "/" + user.getName();
 
-        this.jingle = new UtilityJingleOpSet(myJid, mockConnection, smackOpSet);
+        this.jingle = new UtilityJingleOpSet(myJid, mockConnection);
 
         jingle.init();
 

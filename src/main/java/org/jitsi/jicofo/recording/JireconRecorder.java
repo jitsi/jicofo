@@ -85,14 +85,14 @@ public class JireconRecorder
      * @param conference the parent conference for which this instance will be
      * handling the recording.
      * @param recorderComponentJid recorder component address.
-     * @param xmpp {@link OperationSetDirectSmackXmpp} instance for current
-     *             XMPP connection.
+     * @param connection XMPP connection instance which will be used for
+     * communication.
      */
     public JireconRecorder(JitsiMeetConferenceImpl conference,
                            String recorderComponentJid,
-                           OperationSetDirectSmackXmpp xmpp)
+                           XmppConnection connection)
     {
-        super(recorderComponentJid, xmpp);
+        super(recorderComponentJid, connection);
 
         Objects.requireNonNull(conference, "conference");
 
@@ -142,8 +142,7 @@ public class JireconRecorder
             Packet reply;
             try
             {
-                reply
-                    = xmpp.getXmppConnection().sendPacketAndGetReply(recording);
+                reply = connection.sendPacketAndGetReply(recording);
             }
             catch (OperationFailedException e)
             {
@@ -185,7 +184,7 @@ public class JireconRecorder
             recording.setMucJid(mucRoomJid);
             recording.setAction(JireconIq.Action.STOP);
 
-            xmpp.getXmppConnection().sendPacket(recording);
+            connection.sendPacket(recording);
 
             status = JireconIq.Status.STOPPING;
         }

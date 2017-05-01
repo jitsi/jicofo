@@ -17,10 +17,13 @@
  */
 package org.jitsi.jicofo.util;
 
-import net.java.sip.communicator.util.*;
+import org.jitsi.protocol.xmpp.*;
+
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -28,45 +31,95 @@ import java.util.concurrent.*;
  * to the specified packed listener in a single thread.
  *
  * @author Damian Minkov
+ * @author Pawel Domas
  */
 public class QueuePacketProcessor
-    implements PacketListener
 {
-    /**
-     * The packet listener to the real processing.
-     */
-    private PacketListener packetListener;
-
     /**
      * The single thread executor that will process packets.
      */
     private ExecutorService executor;
 
     /**
+     * The packet filter which will be used to filter packets to be processed by
+     * {@link #packetListener}.
+     */
+    private final PacketFilter packetFilter;
+
+    /**
+     * The packet listener to the real processing.
+     */
+    private PacketListener packetListener;
+
+    /**
+     * The XMPP connection to which {@link #packetListener} will be registered.
+     */
+    private final XmppConnection connection;
+
+    /**
+     * Stores instance of {@link #packetListener} wrapper to be able
+     * to unregister it correctly.
+     */
+    private PacketListener _packetListenerWrap;
+
+    /**
      * Constructs QueuePacketProcessor, taking the PacketListener that will
      * be used to process.
-     * @param packetListener
+     * @param connection the connection instance to which packet listener will
+     * be registered.
+     * @param packetListener target packet processor.
+     * @param packetFilter packet filter used to limit packets acceptable by
+     * the packet listener.
      */
     public QueuePacketProcessor(
-        PacketListener packetListener)
+            XmppConnection    connection,
+            PacketListener    packetListener,
+            PacketFilter      packetFilter)
     {
-        this.packetListener = packetListener;
-
-        this.executor = Executors.newSingleThreadExecutor();
+        this.packetListener
+            = Objects.requireNonNull(packetListener, "packetListener");
+        this.packetFilter
+            = Objects.requireNonNull(packetFilter, "packetFilter");
+        this.connection = Objects.requireNonNull(connection, "connection");
     }
 
-    @Override
-    public void processPacket(final Packet packet)
+    /**
+     * Binds the underling packet listener to the XMPP connection and starts
+     * the executor on which packets will be processed.
+     */
+    public void start()
     {
-        // add the packet to the queue of tasks to process
-        executor.submit(new Runnable()
+        if (executor != null)
+        {
+            throw new IllegalStateException("already started");
+        }
+
+        final ExecutorService theExecutorService
+            = this.executor = Executors.newSingleThreadExecutor();
+
+        this._packetListenerWrap = new PacketListener()
         {
             @Override
-            public void run()
+            public void processPacket(final Packet packet)
             {
-                packetListener.processPacket(packet);
+                // add the packet to the queue of tasks to process
+                theExecutorService.submit(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        // If this instance was stopped executor will change
+                        if (QueuePacketProcessor.this.executor
+                                == theExecutorService)
+                        {
+                            packetListener.processPacket(packet);
+                        }
+                    }
+                });
             }
-        });
+        };
+
+        this.connection.addPacketHandler(_packetListenerWrap, packetFilter);
     }
 
     /**
@@ -74,6 +127,11 @@ public class QueuePacketProcessor
      */
     public void stop()
     {
+        if (executor == null)
+        {
+            throw new IllegalStateException("already stopped");
+        }
+        this.connection.removePacketHandler(_packetListenerWrap);
         this.executor.shutdown();
         this.executor = null;
     }

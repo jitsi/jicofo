@@ -47,7 +47,7 @@ public abstract class Recorder
     /**
      * Smack operation set for current XMPP connection.
      */
-    protected final OperationSetDirectSmackXmpp xmpp;
+    protected final XmppConnection connection;
 
     /**
      * Process packets in different thread, keeping packets receive order.
@@ -55,21 +55,20 @@ public abstract class Recorder
     private QueuePacketProcessor packetProcessor = null;
 
     public Recorder(String recorderComponentJid,
-                    OperationSetDirectSmackXmpp xmpp)
+                    XmppConnection connection)
     {
+        this.connection = Objects.requireNonNull(connection, "connection");
         this.recorderComponentJid = recorderComponentJid;
-
-        this.packetProcessor = new QueuePacketProcessor(this);
-
-        this.xmpp = Objects.requireNonNull(xmpp, "xmpp");
-        xmpp.addPacketHandler(this.packetProcessor, this);
+        this.packetProcessor = new QueuePacketProcessor(connection, this, this);
     }
 
     /**
      * Method called by {@link org.jitsi.jicofo.JitsiMeetConference} after it
      * joins the MUC.
      */
-    public void init() { }
+    public void init() {
+        this.packetProcessor.start();
+    }
 
     /**
      * Releases resources and stops any future processing.
@@ -78,7 +77,6 @@ public abstract class Recorder
     {
         if (this.packetProcessor != null)
         {
-            xmpp.removePacketHandler(this.packetProcessor);
             this.packetProcessor.stop();
             this.packetProcessor = null;
         }

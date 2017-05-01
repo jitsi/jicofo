@@ -19,8 +19,6 @@ package mock.xmpp;
 
 import mock.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 
 /**
  *
@@ -39,19 +37,5 @@ public class MockSmackXmppOpSet
     public XmppConnection getXmppConnection()
     {
         return protocolProvider.getMockXmppConnection();
-    }
-
-    @Override
-    public void addPacketHandler(PacketListener listener, PacketFilter filter)
-    {
-        protocolProvider.getMockXmppConnection()
-            .addPacketHandler(listener, filter);
-    }
-
-    @Override
-    public void removePacketHandler(PacketListener listener)
-    {
-        protocolProvider.getMockXmppConnection()
-            .removePacketHandler(listener);
     }
 }

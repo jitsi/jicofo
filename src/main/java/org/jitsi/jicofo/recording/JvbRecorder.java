@@ -71,14 +71,14 @@ public class JvbRecorder
      * @param conference parent {@link JitsiMeetConference} to be recorded
      *        by this instance.
      * @param videoBridgeComponentJid videobridge component address.
-     * @param xmpp {@link OperationSetDirectSmackXmpp}
-     *              for current XMPP connection.
+     * @param connection the XMPP connection instance which will be used for
+     * communication.
      */
     public JvbRecorder(JitsiMeetConference conference,
                        String videoBridgeComponentJid,
-                       OperationSetDirectSmackXmpp xmpp)
+                       XmppConnection connection)
     {
-        super(videoBridgeComponentJid, xmpp);
+        super(videoBridgeComponentJid, connection);
 
         Objects.requireNonNull(conference, "conference");
 
@@ -121,10 +121,7 @@ public class JvbRecorder
         Packet reply;
         try
         {
-            reply
-                = xmpp
-                    .getXmppConnection()
-                    .sendPacketAndGetReply(toggleRecordingIq);
+            reply = connection.sendPacketAndGetReply(toggleRecordingIq);
         }
         catch (OperationFailedException e)
         {

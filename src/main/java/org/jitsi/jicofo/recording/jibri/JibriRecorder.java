@@ -153,18 +153,17 @@ public class JibriRecorder
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
      *        instance.
-     * @param xmpp XMPP operation set which wil be used to send XMPP queries.
+     * @param connection the connection which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      * @param globalConfig the global config that provides some values required
      *                     by <tt>JibriRecorder</tt> to work.
      */
     public JibriRecorder(JitsiMeetConferenceImpl         conference,
-                         OperationSetDirectSmackXmpp     xmpp,
+                         XmppConnection                  connection,
                          ScheduledExecutorService        scheduledExecutor,
                          JitsiMeetGlobalConfig           globalConfig)
     {
-        super(null, xmpp);
-
+        super(null, connection);
         this.conference = Objects.requireNonNull(conference, "conference");
         this.scheduledExecutor
             = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
@@ -341,8 +340,7 @@ public class JibriRecorder
                 try
                 {
                     IQ startReply
-                        = (IQ) xmpp.getXmppConnection()
-                                   .sendPacketAndGetReply(startIq);
+                        = (IQ) connection.sendPacketAndGetReply(startIq);
                     if (startReply == null)
                     {
                         synchronized (JibriRecorder.this)
@@ -604,7 +602,7 @@ public class JibriRecorder
 
     private void sendPacket(Packet packet)
     {
-        xmpp.getXmppConnection().sendPacket(packet);
+        connection.sendPacket(packet);
     }
 
     private void sendResultResponse(IQ request)
@@ -734,10 +732,7 @@ public class JibriRecorder
 
         logger.debug("Trying to stop: " + stopRequest.toXML());
 
-        IQ stopReply
-            = (IQ) xmpp
-                .getXmppConnection()
-                .sendPacketAndGetReply(stopRequest);
+        IQ stopReply = (IQ) connection.sendPacketAndGetReply(stopRequest);
 
         logger.debug("Stop response: " + IQUtils.responseToXML(stopReply));
 

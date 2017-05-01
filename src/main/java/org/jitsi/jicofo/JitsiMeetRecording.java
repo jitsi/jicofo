@@ -70,7 +70,7 @@ public class JitsiMeetRecording
     /**
      * XMPP "operation set" used to send XMPP requests.
      */
-    private final OperationSetDirectSmackXmpp xmppOpSet;
+    private final XmppConnection connection;
 
     /**
      * The logger for this instance. Uses the logging level either of the
@@ -91,9 +91,7 @@ public class JitsiMeetRecording
     {
         this.meetConference = meetConference;
         this.services = meetServices;
-        this.xmppOpSet
-            = meetConference.getXmppProvider().getOperationSet(
-                    OperationSetDirectSmackXmpp.class);
+        this.connection = meetConference.getXmppConnection();
 
         logger = Logger.getLogger(classLogger, meetConference.getLogger());
     }
@@ -139,7 +137,7 @@ public class JitsiMeetRecording
         if (services.getJibriDetector() != null)
         {
             recorder = new JibriRecorder(
-                    meetConference, xmppOpSet,
+                    meetConference, connection,
                     FocusBundleActivator.getSharedThreadPool(),
                     meetConference.getGlobalConfig());
             return recorder;
@@ -151,7 +149,8 @@ public class JitsiMeetRecording
             recorder
                 = new JireconRecorder(
                         meetConference,
-                        services.getJireconRecorder(), xmppOpSet);
+                        services.getJireconRecorder(),
+                        connection);
             return recorder;
         }
         else
@@ -174,7 +173,7 @@ public class JitsiMeetRecording
 
             recorder
                 = new JvbRecorder(
-                            meetConference, videobridge, xmppOpSet);
+                            meetConference, videobridge, connection);
             return recorder;
         }
     }
@@ -289,7 +288,7 @@ public class JitsiMeetRecording
                             new ColibriConferenceIQ.Recording(
                                     ColibriConferenceIQ.Recording.State.ON));
 
-                    xmppOpSet.getXmppConnection().sendPacket(response);
+                    connection.sendPacket(response);
                 }
             }
         }
