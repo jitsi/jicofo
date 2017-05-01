@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.util.Logger;
-
 import org.jitsi.cmd.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -32,19 +30,11 @@ import org.jitsi.util.*;
  */
 public class Main
 {
-    private static final Logger logger = Logger.getLogger(Main.class);
-
     /**
      * The name of the command-line argument which specifies the XMPP domain
      * to use for the XMPP client connection.
      */
     private static final String DOMAIN_ARG_NAME = "domain";
-
-    /**
-     * The sync root used to hold the main thread until the exit procedure
-     * is not started.
-     */
-    private static final Object exitSynRoot = new Object();
 
     /**
      * The name of the command-line argument which specifies the name of XMPP
