@@ -53,17 +53,17 @@ public class FocusManager
     /**
      * Name of configuration property for focus idle timeout.
      */
-    public static final String IDLE_TIMEOUT_PROP_NAME
+    public static final String IDLE_TIMEOUT_PNAME
         = "org.jitsi.focus.IDLE_TIMEOUT";
 
     /**
      * Default amount of time for which the focus is being kept alive in idle
-     * mode(no peers in the room).
+     * mode (no peers in the room).
      */
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
-     * The name of configuration property that specifies server hostname to
+     * The name of the configuration property that specifies server hostname to
      * which the focus user will connect to.
      */
     public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
@@ -77,7 +77,7 @@ public class FocusManager
         = "org.jitsi.jicofo.XMPP_DOMAIN";
 
     /**
-     * The name of configuration property that specifies XMPP domain of
+     * The name of the configuration property that specifies XMPP domain of
      * the focus user.
      */
     public static final String FOCUS_USER_DOMAIN_PNAME
@@ -91,8 +91,8 @@ public class FocusManager
         = "org.jitsi.jicofo.FOCUS_USER_NAME";
 
     /**
-     * The name of configuration property that specifies login password of the
-     * focus user. If not provided then anonymous login method is used.
+     * The name of the configuration property that specifies login password of
+     * the focus user. If not provided then anonymous login method is used.
      */
     public static final String FOCUS_USER_PASSWORD_PNAME
         = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
@@ -100,15 +100,15 @@ public class FocusManager
     /**
      * The name of the property used to configure a 1-byte identifier of this
      * Jicofo instance, used for the purpose of generating conference IDs unique
-     * across a set of multiple Jicofo instances.
+     * across a set of Jicofo instances.
      */
     public static final String JICOFO_SHORT_ID_PNAME
         = "org.jitsi.jicofo.SHORT_ID";
 
     /**
-     * The name of configuration property used to configure PubSub node to which
-     * videobridges are publishing their stats. Is used to discover bridges
-     * automatically.
+     * The name of the configuration property used to configure the PubSub node
+     * to which videobridges are publishing their stats. It is used to discover
+     * bridges automatically.
      */
     public static final String SHARED_STATS_PUBSUB_NODE_PNAME
         = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
@@ -141,7 +141,7 @@ public class FocusManager
      * {@link Map#size()} on it, which wouldn't be safe with a
      * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
      * I've chosen this solution, because I don't know whether the cleaner
-     * solution of synchronizing on {@code #this} in
+     * solution of synchronizing on {@link #conferencesSyncRoot} in
      * {@link #getConferenceCount()} is safe.
      */
     private final Map<String, JitsiMeetConferenceImpl> conferences
@@ -520,7 +520,7 @@ public class FocusManager
      * @return the {@code JitsiMeetConference} for the specified
      * {@code roomName} or {@code null} if no conference has been allocated yet
      */
-    public JitsiMeetConference getConference(String roomName)
+    public JitsiMeetConferenceImpl getConference(String roomName)
     {
         roomName = roomName.toLowerCase();
 
@@ -654,7 +654,7 @@ public class FocusManager
      * Class takes care of stopping {@link JitsiMeetConference} if there is no
      * active session for too long.
      */
-    class FocusExpireThread
+    private class FocusExpireThread
     {
         private static final long POLL_INTERVAL = 5000;
 
@@ -669,7 +669,7 @@ public class FocusManager
         public FocusExpireThread()
         {
             timeout = FocusBundleActivator.getConfigService()
-                        .getLong(IDLE_TIMEOUT_PROP_NAME, DEFAULT_IDLE_TIMEOUT);
+                        .getLong(IDLE_TIMEOUT_PNAME, DEFAULT_IDLE_TIMEOUT);
         }
 
         void start()
@@ -773,7 +773,7 @@ public class FocusManager
                 catch (Exception ex)
                 {
                     logger.warn(
-                        "Error while checking for timeouted conference", ex);
+                        "Error while checking for timed out conference", ex);
                 }
             }
         }
