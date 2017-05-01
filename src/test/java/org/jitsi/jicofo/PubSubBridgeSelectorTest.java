@@ -26,8 +26,10 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.DaemonThreadFactory;
+import org.jitsi.util.*;
 import org.jitsi.videobridge.stats.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -199,7 +201,7 @@ public class PubSubBridgeSelectorTest
 
     /**
      * If the bridge is restarted and we have health check failed on it, but
-     * before {@link ComponentsDiscovery#ThroughPubSubDiscovery} has timed out
+     * before {@link ComponentsDiscovery.ThroughPubSubDiscovery} has timed out
      * this instance we will not re-discover it through the PubSub.
      */
     // FIXME randomly fails
@@ -209,9 +211,12 @@ public class PubSubBridgeSelectorTest
         System.err.println("Running clearPubSubBridgeStateIssueTest");
 
         // Make sure that jvb advertises features with health-check support
-        MockCapsNode jvbNode
-            = new MockCapsNode(
-                    jvb1Jid, JitsiMeetServices.VIDEOBRIDGE_FEATURES2);
+        String[] features
+            = ArrayUtils.add(
+                    JitsiMeetServices.VIDEOBRIDGE_FEATURES,
+                    String.class,
+                    DiscoveryUtil.FEATURE_HEALTH_CHECK);
+        MockCapsNode jvbNode = new MockCapsNode(jvb1Jid, features);
         capsOpSet.addChildNode(jvbNode);
 
         // Remove all JVBS
