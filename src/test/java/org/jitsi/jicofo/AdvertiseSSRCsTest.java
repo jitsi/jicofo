@@ -172,12 +172,10 @@ public class AdvertiseSSRCsTest
         user2.join(chat);
 
         // Accept invite with all users
-        // Add 2 duplicated SSRCs to user 1 accept
         long u1VideoSSRC = MockParticipant.nextSSRC();
         user1.addLocalVideoSSRC(u1VideoSSRC, null);
 
         long u1VideoSSRC2 = MockParticipant.nextSSRC();
-        user1.addLocalVideoSSRC(u1VideoSSRC2, null);
         user1.addLocalVideoSSRC(u1VideoSSRC2, null);
 
         assertNotNull(user1.acceptInvite(4000));
