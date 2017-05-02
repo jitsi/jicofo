@@ -18,10 +18,14 @@
 package mock.muc;
 
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+
+import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -76,6 +80,19 @@ public class MockMultiUserChat
     public String getLocalMucJid()
     {
         return me != null ? me.getContactAddress() : null;
+    }
+
+    @Override
+    public Collection<PacketExtension> getPresenceExtensions()
+    {
+        throw new RuntimeException("not implemented");
+    }
+
+    @Override
+    public void modifyPresence(
+        Collection<PacketExtension> toRemove, Collection<PacketExtension> toAdd)
+    {
+        throw new RuntimeException("not implemented");
     }
 
     @Override
