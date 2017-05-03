@@ -195,13 +195,14 @@ public class ComponentsDiscovery
             logger.info("Service rediscovery disabled");
         }
 
-        if (!StringUtils.isNullOrEmpty(statsPubSubNode))
+        if (pubSubBridgeDiscovery == null
+                && !StringUtils.isNullOrEmpty(statsPubSubNode))
         {
             OperationSetSubscription subOpSet
                 = protocolProviderHandler.getOperationSet(
                        OperationSetSubscription.class);
 
-            this.pubSubBridgeDiscovery
+            pubSubBridgeDiscovery
                 = new ThroughPubSubDiscovery(
                         subOpSet, capsOpSet,
                         FocusBundleActivator.getSharedThreadPool());
