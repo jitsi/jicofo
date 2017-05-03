@@ -107,10 +107,10 @@ public class ComponentsDiscovery
     private String statsPubSubNode;
 
     /**
-     * XMPP operation set used to send requests by this
+     * The XMPP connection instance used to send requests by this
      * <tt>ComponentsDiscovery</tt> instance.
      */
-    private OperationSetDirectSmackXmpp xmppOpSet;
+    private XmppConnection connection;
 
     /**
      * Creates new instance of <tt>ComponentsDiscovery</tt>.
@@ -157,10 +157,6 @@ public class ComponentsDiscovery
         this.capsOpSet
             = protocolProviderHandler.getOperationSet(
                     OperationSetSimpleCaps.class);
-
-        this.xmppOpSet
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetDirectSmackXmpp.class);
 
         if (protocolProviderHandler.isRegistered())
         {
@@ -260,7 +256,7 @@ public class ComponentsDiscovery
 
                 // Try discovering version
                 Version version
-                    = DiscoveryUtil.discoverVersion(xmppOpSet, node, features);
+                    = DiscoveryUtil.discoverVersion(connection, node, features);
 
                 logger.info(
                         "New component discovered: " + node + ", " + version);
@@ -303,6 +299,10 @@ public class ComponentsDiscovery
 
     private void firstTimeDiscovery()
     {
+        this.connection
+            = Objects.requireNonNull(
+                    protocolProviderHandler.getXmppConnection(), "connection");
+
         discoverServices();
 
         scheduleRediscovery();
@@ -606,7 +606,7 @@ public class ComponentsDiscovery
 
                 Version jvbVersion
                     = DiscoveryUtil.discoverVersion(
-                            xmppOpSet, bridgeJid, jidFeatures);
+                            connection, bridgeJid, jidFeatures);
 
                 meetServices.newBridgeDiscovered(bridgeJid, jvbVersion);
             }

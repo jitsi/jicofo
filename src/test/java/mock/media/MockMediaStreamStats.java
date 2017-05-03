@@ -6,6 +6,8 @@ import org.jitsi.service.neomedia.stats.*;
 import java.awt.*;
 import java.util.*;
 
+import static org.mockito.Mockito.*;
+
 /**
  *
  */
@@ -291,13 +293,13 @@ public class MockMediaStreamStats
     @Override
     public ReceiveTrackStats getReceiveStats()
     {
-        return null;
+        return mock(ReceiveTrackStats.class);
     }
 
     @Override
     public SendTrackStats getSendStats()
     {
-        return null;
+        return mock(SendTrackStats.class);
     }
 
     @Override

@@ -42,22 +42,19 @@ public class UtilityJingleOpSet
 
     private final String jid;
     private final XmppConnection connection;
-    private final OperationSetDirectSmackXmpp smackOpSet;
 
-    private final Queue<JingleIQ> sessionInvites = new LinkedList<JingleIQ>();
+    private final Queue<JingleIQ> sessionInvites = new LinkedList<>();
 
     public UtilityJingleOpSet(String ourJid,
-                              XmppConnection connection,
-                              OperationSetDirectSmackXmpp smackOpSet)
+                              XmppConnection connection)
     {
         this.jid = ourJid;
         this.connection = connection;
-        this.smackOpSet = smackOpSet;
     }
 
     public void init()
     {
-        smackOpSet.addPacketHandler(new PacketListener()
+        connection.addPacketHandler(new PacketListener()
         {
             @Override
             public void processPacket(Packet packet)

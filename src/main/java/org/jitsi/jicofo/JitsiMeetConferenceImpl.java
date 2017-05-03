@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -1407,6 +1406,14 @@ public class JitsiMeetConferenceImpl
     public String getRoomName()
     {
         return roomName;
+    }
+
+    /**
+     * @return {@link XmppConnection} instance for this conference.
+     */
+    XmppConnection getXmppConnection()
+    {
+        return protocolProviderHandler.getXmppConnection();
     }
 
     /**

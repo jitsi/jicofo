@@ -66,7 +66,7 @@ public class MeetExtensionsHandler
     /**
      * Operation set that provider XMPP connection.
      */
-    private OperationSetDirectSmackXmpp smackXmpp;
+    private XmppConnection connection;
 
     /**
      * Process packets in different thread, keeping packets receive order.
@@ -101,14 +101,16 @@ public class MeetExtensionsHandler
      */
     public void init()
     {
-        this.smackXmpp
+        this.connection
             = focusManager.getOperationSet(
-                    OperationSetDirectSmackXmpp.class);
+                    OperationSetDirectSmackXmpp.class).getXmppConnection();
 
         if (this.packetProcessor == null)
-            this.packetProcessor = new QueuePacketProcessor(this);
-
-        smackXmpp.addPacketHandler(this.packetProcessor, this);
+        {
+            this.packetProcessor
+                = new QueuePacketProcessor(connection, this, this);
+            this.packetProcessor.start();
+        }
     }
 
     /**
@@ -116,15 +118,14 @@ public class MeetExtensionsHandler
      */
     public void dispose()
     {
-        if (smackXmpp != null)
+        if (connection != null)
         {
             if (this.packetProcessor != null)
             {
-                smackXmpp.removePacketHandler(this.packetProcessor);
                 this.packetProcessor.stop();
                 this.packetProcessor = null;
             }
-            smackXmpp = null;
+            connection = null;
         }
     }
 
@@ -140,7 +141,7 @@ public class MeetExtensionsHandler
     @Override
     public void processPacket(Packet packet)
     {
-        if (smackXmpp == null)
+        if (connection == null)
         {
             logger.error("Not initialized");
             return;
@@ -194,7 +195,7 @@ public class MeetExtensionsHandler
                     "JitsiMeetRecording is null for iq: " + colibriIQ.toXML());
 
             // Internal server error
-            smackXmpp.getXmppConnection().sendPacket(
+            connection.sendPacket(
                     IQ.createErrorResponse(
                             colibriIQ,
                             new XMPPError(
@@ -221,7 +222,7 @@ public class MeetExtensionsHandler
         response.setRecording(
             new ColibriConferenceIQ.Recording(recordingState));
 
-        smackXmpp.getXmppConnection().sendPacket(response);
+        connection.sendPacket(response);
     }
 
     private boolean acceptMuteIq(Packet packet)
@@ -269,7 +270,7 @@ public class MeetExtensionsHandler
 
                 muteStatusUpdate.setMute(doMute);
 
-                smackXmpp.getXmppConnection().sendPacket(muteStatusUpdate);
+                connection.sendPacket(muteStatusUpdate);
             }
         }
         else
@@ -279,7 +280,7 @@ public class MeetExtensionsHandler
                 new XMPPError(XMPPError.Condition.interna_server_error));
         }
 
-        smackXmpp.getXmppConnection().sendPacket(result);
+        connection.sendPacket(result);
     }
 
     private boolean acceptRayoIq(Packet p)
@@ -307,7 +308,7 @@ public class MeetExtensionsHandler
             IQ error = createErrorResponse(
                 dialIq, new XMPPError(XMPPError.Condition.forbidden));
 
-            smackXmpp.getXmppConnection().sendPacket(error);
+            connection.sendPacket(error);
 
             return;
         }
@@ -318,7 +319,7 @@ public class MeetExtensionsHandler
             IQ error = createErrorResponse(
                 dialIq, new XMPPError(XMPPError.Condition.not_allowed));
 
-            smackXmpp.getXmppConnection().sendPacket(error);
+            connection.sendPacket(error);
 
             return;
         }
@@ -335,7 +336,7 @@ public class MeetExtensionsHandler
             IQ error = createErrorResponse(
                 dialIq, new XMPPError(XMPPError.Condition.service_unavailable));
 
-            smackXmpp.getXmppConnection().sendPacket(error);
+            connection.sendPacket(error);
 
             return;
         }
@@ -349,10 +350,7 @@ public class MeetExtensionsHandler
 
         try
         {
-            IQ reply
-                = (IQ) smackXmpp
-                    .getXmppConnection()
-                    .sendPacketAndGetReply(dialIq);
+            IQ reply = (IQ) connection.sendPacketAndGetReply(dialIq);
             if (reply != null)
             {
                 // Send Jigasi response back to the client
@@ -368,7 +366,7 @@ public class MeetExtensionsHandler
                         new XMPPError(
                                 XMPPError.Condition.remote_server_timeout));
             }
-            smackXmpp.getXmppConnection().sendPacket(reply);
+            connection.sendPacket(reply);
         }
         catch (OperationFailedException e)
         {

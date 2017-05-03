@@ -134,7 +134,7 @@ public class JvbDoctor
     /**
      * XMPP operation set obtained from {@link #protocolProvider}.
      */
-    private OperationSetDirectSmackXmpp xmppOpSet;
+    private XmppConnection connection;
 
     /**
      * Creates new instance of <tt>JvbDoctor</tt>.
@@ -192,11 +192,12 @@ public class JvbDoctor
                     "ProtocolProvider is not an XMPP one");
         }
 
-        xmppOpSet
-            = protocolProvider.getOperationSet(
-                    OperationSetDirectSmackXmpp.class);
-
-        Objects.requireNonNull(xmppOpSet, "xmppOpSet");
+        connection
+            = Objects.requireNonNull(
+                    protocolProvider.getOperationSet(
+                            OperationSetDirectSmackXmpp.class),
+                    "xmppOpSet")
+                 .getXmppConnection();
 
         capsOpSet
             = protocolProvider.getOperationSet(
@@ -420,8 +421,6 @@ public class JvbDoctor
                 return;
             }
 
-            XmppConnection connection;
-
             // Sync on start/stop and bridges state
             synchronized (JvbDoctor.this)
             {
@@ -437,13 +436,12 @@ public class JvbDoctor
                     return;
                 }
 
-                connection = xmppOpSet.getXmppConnection();
-
                 logger.debug("Sending health-check request to: " + bridgeJid);
             }
 
-            Packet response = connection.sendPacketAndGetReply(
-                    newHealthCheckIQ(bridgeJid));
+            Packet response
+                = connection.sendPacketAndGetReply(
+                        newHealthCheckIQ(bridgeJid));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)
@@ -462,8 +460,9 @@ public class JvbDoctor
                     if (!checkTaskStillValid())
                         return;
 
-                    response = connection.sendPacketAndGetReply(
-                            newHealthCheckIQ(bridgeJid));
+                    response
+                        = connection.sendPacketAndGetReply(
+                                newHealthCheckIQ(bridgeJid));
                 }
                 catch (InterruptedException e)
                 {

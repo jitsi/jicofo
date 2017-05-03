@@ -19,9 +19,11 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-
 import net.java.sip.communicator.util.*;
+
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.protocol.xmpp.*;
 
 import org.osgi.framework.*;
 
@@ -199,6 +201,18 @@ public class ProtocolProviderHandler
     public ProtocolProviderService getProtocolProvider()
     {
         return protocolService;
+    }
+
+    /**
+     * Obtains XMPP connection for the underlying XMPP protocol provider
+     * service.
+     * @return {@link XmppConnection} or null if the underlying protocol provider is not registered yet.
+     */
+    public XmppConnection getXmppConnection()
+    {
+        return Objects.requireNonNull(
+                getOperationSet(OperationSetDirectSmackXmpp.class),
+                "OperationSetDirectSmackXmpp").getXmppConnection();
     }
 
     /**

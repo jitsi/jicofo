@@ -428,7 +428,7 @@ public class XmppProtocolProvider
      */
     XmppConnection getConnectionAdapter()
     {
-        if (connectionAdapter == null)
+        if (connectionAdapter == null && connection != null)
         {
             connectionAdapter = new XmppConnectionAdapter(connection);
         }
@@ -600,7 +600,7 @@ public class XmppProtocolProvider
 
         XmppConnectionAdapter(XMPPConnection connection)
         {
-            this.connection = connection;
+            this.connection = Objects.requireNonNull(connection, "connection");
         }
 
         /**
@@ -646,6 +646,25 @@ public class XmppProtocolProvider
             packetCollector.cancel();
 
             return response;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void addPacketHandler(PacketListener listener,
+                                     PacketFilter filter)
+        {
+            connection.addPacketListener(listener, filter);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void removePacketHandler(PacketListener listener)
+        {
+            connection.removePacketListener(listener);
         }
     }
 
