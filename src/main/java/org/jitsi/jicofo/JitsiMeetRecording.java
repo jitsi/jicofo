@@ -21,7 +21,6 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.recording.*;
-import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.util.*;
@@ -133,15 +132,6 @@ public class JitsiMeetRecording
     {
         if (recorder != null)
             return recorder;
-
-        if (services.getJibriDetector() != null)
-        {
-            recorder = new JibriRecorder(
-                    meetConference, connection,
-                    FocusBundleActivator.getSharedThreadPool(),
-                    meetConference.getGlobalConfig());
-            return recorder;
-        }
 
         String recorderService = services.getJireconRecorder();
         if (!StringUtils.isNullOrEmpty(recorderService))
