@@ -253,7 +253,7 @@ public class JitsiMeetServices
     }
 
     /**
-     * Call when components goes offline.
+     * Call when a component goes offline.
      *
      * @param node XMPP address of disconnected XMPP component.
      */

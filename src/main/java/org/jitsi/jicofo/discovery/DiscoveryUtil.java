@@ -251,6 +251,8 @@ public class DiscoveryUtil
      */
     static public boolean areTheSame(List<String> list1, List<String> list2)
     {
-        return list1.size() == list2.size() && list2.containsAll(list1);
+        return list1.size() == list2.size()
+            && list2.containsAll(list1)
+            && list1.containsAll(list2);
     }
 }
