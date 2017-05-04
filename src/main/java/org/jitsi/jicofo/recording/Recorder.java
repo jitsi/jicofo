@@ -34,6 +34,8 @@ import java.util.*;
  * controlling recording functionality.
  *
  * @author Pawel Domas
+ * @deprecated this class is going away soon together with {@link JvbRecorder}
+ * and {@link JireconRecorder}.
  */
 public abstract class Recorder
     implements PacketListener,
