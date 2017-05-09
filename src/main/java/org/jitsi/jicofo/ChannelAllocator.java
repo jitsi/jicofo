@@ -360,7 +360,7 @@ public class ChannelAllocator implements Runnable
                 if (!StringUtils.isNullOrEmpty(enforcedVideoBridge)
                     && bridgeSelector.isJvbOnTheList(enforcedVideoBridge))
                 {
-                    bridge = config.getEnforcedVideobridge();
+                    bridge = enforcedVideoBridge;
                     logger.info(
                             "Will force bridge: " + bridge
                                     + " on: " + meetConference.getRoomName());
@@ -411,7 +411,9 @@ public class ChannelAllocator implements Runnable
                 // null means cancelled, because colibriConference has been
                 // disposed by another thread
                 if (peerChannels == null)
+                {
                     return null;
+                }
 
                 bridgeSelector.updateBridgeOperationalStatus(jvb, true);
 
@@ -422,7 +424,7 @@ public class ChannelAllocator implements Runnable
                 }
                 return peerChannels;
             }
-            catch(OperationFailedException exc)
+            catch (OperationFailedException exc)
             {
                 logger.error(
                         "Failed to allocate channels using bridge: " + jvb,
