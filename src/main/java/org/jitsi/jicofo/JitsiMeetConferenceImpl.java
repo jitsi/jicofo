@@ -260,14 +260,16 @@ public class JitsiMeetConferenceImpl
         this.etherpadName = createSharedDocumentName();
 
         if (logLevel != null)
+        {
             logger.setLevel(logLevel);
+        }
     }
 
     /**
      * Starts conference focus processing, bind listeners and so on...
      *
      * @throws Exception if error occurs during initialization. Instance is
-     *         considered broken in that case. It's stop method will be called
+     *         considered broken in that case. Its stop method will be called
      *         before throwing the exception to perform deinitialization where
      *         possible. {@link ConferenceListener}s will be notified that this
      *         conference has ended.
@@ -563,13 +565,12 @@ public class JitsiMeetConferenceImpl
 
         final String address = chatRoomMember.getContactAddress();
 
-        final Participant newParticipant;
 
         // Peer already connected ?
         if (findParticipantForChatMember(chatRoomMember) != null)
             return;
 
-        newParticipant
+        final Participant newParticipant
             = new Participant(
                     this,
                     (XmppChatMember) chatRoomMember,
@@ -597,41 +598,45 @@ public class JitsiMeetConferenceImpl
      * participant have to start video or audio muted. The first element
      * should be associated with the audio and the second with video.
      */
-    private final boolean[] hasToStartMuted(ChatRoomMember    member,
-                                            boolean           justJoined)
+    private boolean[] hasToStartMuted(ChatRoomMember    member,
+                                      boolean           justJoined)
     {
         final boolean[] startMuted = new boolean[] {false, false};
-        if(this.startMuted != null && this.startMuted[0] && justJoined)
+        if (this.startMuted != null && this.startMuted[0] && justJoined)
+        {
             startMuted[0] = true;
+        }
 
-        if(this.startMuted != null && this.startMuted[1] && justJoined)
+        if (this.startMuted != null && this.startMuted[1] && justJoined)
+        {
             startMuted[1] = true;
+        }
 
-        if(startMuted[0] && startMuted[1])
+        if (startMuted[0] && startMuted[1])
         {
             return startMuted;
         }
 
         int participantNumber = 0;
-        if(member != null && member instanceof XmppChatMember)
+        if (member != null && member instanceof XmppChatMember)
         {
-            participantNumber = ((XmppChatMember)member).getJoinOrderNumber();
+            participantNumber = ((XmppChatMember) member).getJoinOrderNumber();
         }
         else
         {
             participantNumber = participants.size();
         }
 
-        if(!startMuted[0])
+        if (!startMuted[0])
         {
             Integer startAudioMuted = config.getAudioMuted();
-            if(startAudioMuted != null)
+            if (startAudioMuted != null)
             {
                 startMuted[0] = (participantNumber > startAudioMuted);
             }
         }
 
-        if(!startMuted[1])
+        if (!startMuted[1])
         {
             Integer startVideoMuted = config.getVideoMuted();
             if(startVideoMuted != null)
@@ -644,8 +649,8 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Counts the number of non-focus chat room members and returns
-     * <tt>true</tt> if there are at least two of them.
+     * Returns {@code true} if there are at least two non-focus participants in
+     * the room.
      *
      * @return <tt>true</tt> if we have at least two non-focus participants.
      */
@@ -653,13 +658,17 @@ public class JitsiMeetConferenceImpl
     {
         // 2 + 1 focus
         if (chatRoom.getMembersCount() >= (2 + 1))
+        {
             return true;
+        }
 
         int realCount = 0;
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             if (!isFocusMember(member))
+            {
                 realCount++;
+            }
         }
 
         return realCount >= 2;
@@ -1764,18 +1773,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * The interface used to listen for conference events.
-     */
-    interface ConferenceListener
-    {
-        /**
-         * Event fired when conference has ended.
-         * @param conference the conference instance that has ended.
-         */
-        void conferenceEnded(JitsiMeetConferenceImpl conference);
-    }
-
-    /**
      * Sets the value of the <tt>startMuted</tt> property of this instance.
      *
      * @param startMuted the new value to set on this instance. The specified
@@ -1881,4 +1878,17 @@ public class JitsiMeetConferenceImpl
             }
         }
     }
+
+    /**
+     * The interface used to listen for conference events.
+     */
+    interface ConferenceListener
+    {
+        /**
+         * Event fired when conference has ended.
+         * @param conference the conference instance that has ended.
+         */
+        void conferenceEnded(JitsiMeetConferenceImpl conference);
+    }
+
 }
