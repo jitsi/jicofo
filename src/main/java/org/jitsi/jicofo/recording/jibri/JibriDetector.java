@@ -24,7 +24,6 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
-import org.jitsi.service.configuration.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
@@ -44,7 +43,7 @@ public class JibriDetector
 
     /**
      * The name of config property which provides the name of the MUC room in
-     * which all Jibri instances.
+     * which all Jibri instances report their availability status.
      * Can be just roomName, then the muc service will be discovered from server
      * and in case of multiple will use the first one.
      * Or it can be full room id: roomName@muc-servicename.jabserver.com.
@@ -53,10 +52,26 @@ public class JibriDetector
         = "org.jitsi.jicofo.jibri.BREWERY";
 
     /**
+     * The name of config property which provides the name of the MUC room in
+     * which all SIP Jibri instances report their availability status.
+     * Can be just roomName, then the muc service will be discovered from server
+     * and in case of multiple will use the first one.
+     * Or it can be full room id: roomName@muc-servicename.jabserver.com.
+     */
+    public static final String JIBRI_SIP_ROOM_PNAME
+        = "org.jitsi.jicofo.jibri.SIP_BREWERY";
+
+    /**
      * The reference to the <tt>EventAdmin</tt> service which is used to send
      * {@link JibriEvent}s.
      */
     private final OSGIServiceRef<EventAdmin> eventAdminRef;
+
+    /**
+     * Indicates whether this instance detects SIP gateway Jibris or regular
+     * live streaming Jibris.
+     */
+    private final boolean isSIP;
 
     /**
      * Creates new instance of <tt>JibriDetector</tt>
@@ -64,9 +79,12 @@ public class JibriDetector
      *        for Jicofo's XMPP connection.
      * @param jibriBreweryName the name of the Jibri brewery MUC room where all
      *        Jibris will gather.
+     * @param isSIP <tt>true</tt> if this instance will work with SIP gateway
+     *        Jibris or <tt>false</tt> for live streaming Jibris
      */
     public JibriDetector(ProtocolProviderHandler protocolProvider,
-                         String jibriBreweryName)
+                         String jibriBreweryName,
+                         boolean isSIP)
     {
         super(
             protocolProvider,
@@ -77,6 +95,12 @@ public class JibriDetector
         this.eventAdminRef
             = new OSGIServiceRef<>(
                     FocusBundleActivator.bundleContext, EventAdmin.class);
+        this.isSIP = isSIP;
+    }
+
+    private String getLogName()
+    {
+        return isSIP ? "SIP Jibri" : "Jibri";
     }
 
     /**
@@ -127,12 +151,13 @@ public class JibriDetector
     @Override
     protected void notifyInstanceOffline(String jid)
     {
-        logger.info("Jibri " + jid +" went offline");
+        logger.info(getLogName() + ": " + jid + " went offline");
 
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin != null)
         {
-            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid));
+            eventAdmin.postEvent(
+                    JibriEvent.newWentOfflineEvent(jid, this.isSIP));
         }
         else
             logger.error("No EventAdmin !");
@@ -140,14 +165,15 @@ public class JibriDetector
 
     private void notifyJibriStatus(String jibriJid, boolean available)
     {
-        logger.info("Jibri " + jibriJid +" available: " + available);
+        logger.info(
+            getLogName() + ": " + jibriJid + " available: " + available);
 
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin != null)
         {
             eventAdmin.postEvent(
                     JibriEvent.newStatusChangedEvent(
-                            jibriJid, available));
+                            jibriJid, available, isSIP));
         }
         else
             logger.error("No EventAdmin !");
