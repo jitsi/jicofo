@@ -237,7 +237,7 @@ public class MeetExtensionsHandler
         {
             return null;
         }
-        return (JitsiMeetConferenceImpl) focusManager.getConference(roomName);
+        return focusManager.getConference(roomName);
     }
 
     private void handleMuteIq(MuteIq muteIq)
@@ -404,7 +404,9 @@ public class MeetExtensionsHandler
         }
 
         if (conference.isFocusMember(from))
+        {
             return; // Not interested in local presence
+        }
 
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
         if (role == null)

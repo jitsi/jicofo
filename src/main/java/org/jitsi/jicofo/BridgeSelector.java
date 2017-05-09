@@ -640,7 +640,7 @@ public class BridgeSelector
      */
     public void dispose()
     {
-        if (this.handlerRegistration != null)
+        if (handlerRegistration != null)
         {
             handlerRegistration.unregister();
             handlerRegistration = null;

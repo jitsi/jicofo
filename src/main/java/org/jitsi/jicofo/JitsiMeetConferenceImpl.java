@@ -368,7 +368,9 @@ public class JitsiMeetConferenceImpl
     synchronized void stop()
     {
         if (!started)
+        {
             return;
+        }
 
         started = false;
 
@@ -391,10 +393,14 @@ public class JitsiMeetConferenceImpl
         leaveTheRoom();
 
         if (jingle != null)
+        {
             jingle.terminateHandlersSessions(this);
+        }
 
         if (listener != null)
+        {
             listener.conferenceEnded(this);
+        }
     }
 
     /**
@@ -562,14 +568,18 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             if (isFocusMember(chatRoomMember))
+            {
                 return;
+            }
 
             final String address = chatRoomMember.getContactAddress();
 
 
             // Peer already connected ?
             if (findParticipantForChatMember(chatRoomMember) != null)
+            {
                 return;
+            }
 
             final Participant newParticipant
                 = new Participant(
@@ -915,7 +925,9 @@ public class JitsiMeetConferenceImpl
         {
             if (participant.getChatMember().getContactAddress().equals(
                     jingleSession.getAddress()))
+            {
                 return participant;
+            }
         }
         return null;
     }
@@ -925,7 +937,9 @@ public class JitsiMeetConferenceImpl
         for (Participant participant : participants)
         {
             if (participant.getChatMember().equals(chatMember))
+            {
                 return participant;
+            }
         }
         return null;
     }
@@ -945,7 +959,9 @@ public class JitsiMeetConferenceImpl
     public ChatRoomMemberRole getRoleForMucJid(String mucJid)
     {
         if (chatRoom == null)
+        {
             return null;
+        }
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
@@ -990,7 +1006,7 @@ public class JitsiMeetConferenceImpl
         // XXX We will be acting on the received session-accept bellow.
         // Unfortunately, we may have not received an acknowledgment of our
         // session-initiate yet and whatever we do bellow will be torn down when
-        // the acknowledgement timeout occurrs later on. Since we will have
+        // the acknowledgement timeout occurs later on. Since we will have
         // acted on the session-accept by the time the acknowledgement timeout
         // occurs, we may as well ignore the timeout.
         peerJingleSession.setAccepted(true);
@@ -1078,7 +1094,9 @@ public class JitsiMeetConferenceImpl
         {
             // Skip origin
             if (ssrcOwner == peerToNotify)
+            {
                 continue;
+            }
 
             JingleSession jingleSessionToNotify
                 = peerToNotify.getJingleSession();
@@ -1345,7 +1363,9 @@ public class JitsiMeetConferenceImpl
         for (Participant peer : participants)
         {
             if (peer == sourcePeer)
+            {
                 continue;
+            }
 
             JingleSession jingleSessionToNotify = peer.getJingleSession();
             if (jingleSessionToNotify == null)
@@ -1382,7 +1402,9 @@ public class JitsiMeetConferenceImpl
         {
             // We want to exclude this one
             if (peer == except)
+            {
                 continue;
+            }
 
             mediaSSRCs.add(peer.getSSRCsCopy());
         }
@@ -1408,7 +1430,9 @@ public class JitsiMeetConferenceImpl
         {
             // Excluded this participant groups
             if (peer == except)
+            {
                 continue;
+            }
 
             ssrcGroups.add(peer.getSSRCGroupsCopy());
         }
@@ -1542,7 +1566,7 @@ public class JitsiMeetConferenceImpl
         // do not allow unmuting other participants even for the moderator
         if (!doMute && !fromJid.equals(toBeMutedJid))
         {
-            logger.warn("Do not allow unmuting other participants!");
+            logger.warn("Blocking an unmute request (jid not the same).");
             return false;
         }
 
@@ -1616,7 +1640,9 @@ public class JitsiMeetConferenceImpl
     {
         // Check if we're not shutting down
         if (!started)
+        {
             return;
+        }
 
         // Check if our Colibri conference has been disposed
         synchronized (colibriConfSyncRoot)
@@ -1686,7 +1712,7 @@ public class JitsiMeetConferenceImpl
      * the reason for channel allocation failure.
      */
     void onChannelAllocationFailed(
-            ChannelAllocator         channelAllocator,
+            ChannelAllocator channelAllocator,
             OperationFailedException exc)
     {
         if (ChannelAllocator.NO_BRIDGE_AVAILABLE_ERR_CODE == exc.getErrorCode())
@@ -1776,7 +1802,9 @@ public class JitsiMeetConferenceImpl
         }
 
         if (recording != null)
+        {
             recording.onConferenceAllocated();
+        }
     }
 
     /**
@@ -1800,11 +1828,15 @@ public class JitsiMeetConferenceImpl
     {
         String sharedDocumentName;
         if (config.useRoomAsSharedDocName())
+        {
             sharedDocumentName
                 = MucUtil.extractName(roomName.toLowerCase());
+        }
         else
-           sharedDocumentName
-                   = UUID.randomUUID().toString().replaceAll("-", "");
+        {
+            sharedDocumentName
+                = UUID.randomUUID().toString().replaceAll("-", "");
+        }
 
         return sharedDocumentName;
     }
@@ -1849,7 +1881,7 @@ public class JitsiMeetConferenceImpl
 
     /**
      * The task is scheduled with some delay when we end up with single
-     * <tt>Participant</tt> in the room to terminate it's media session. There
+     * <tt>Participant</tt> in the room to terminate its media session. There
      * is no point in streaming media to the videobridge and using
      * the bandwidth when nobody is receiving it.
      */
@@ -1875,7 +1907,7 @@ public class JitsiMeetConferenceImpl
                 else
                 {
                     logger.error(
-                        "Should never execute if more than 1 participant ? "
+                        "Should never execute if more than 1 participant? "
                             + getRoomName());
                 }
                 singleParticipantTout = null;
@@ -1894,5 +1926,4 @@ public class JitsiMeetConferenceImpl
          */
         void conferenceEnded(JitsiMeetConferenceImpl conference);
     }
-
 }
