@@ -584,32 +584,35 @@ public class JitsiMeetConferenceImpl
                                   final boolean[]            startMuted,
                                   final ColibriConference    colibriConference)
     {
-        if (isFocusMember(chatRoomMember))
-            return;
+        synchronized (participantLock)
+        {
+            if (isFocusMember(chatRoomMember))
+                return;
 
-        final String address = chatRoomMember.getContactAddress();
+            final String address = chatRoomMember.getContactAddress();
 
 
-        // Peer already connected ?
-        if (findParticipantForChatMember(chatRoomMember) != null)
-            return;
+            // Peer already connected ?
+            if (findParticipantForChatMember(chatRoomMember) != null)
+                return;
 
-        final Participant newParticipant
-            = new Participant(
-                    this,
-                    (XmppChatMember) chatRoomMember,
-                    globalConfig.getMaxSSRCsPerUser());
+            final Participant newParticipant
+                = new Participant(
+                this,
+                (XmppChatMember) chatRoomMember,
+                globalConfig.getMaxSSRCsPerUser());
 
-        participants.add(newParticipant);
+            participants.add(newParticipant);
 
-        logger.info("Added participant for: " + address);
+            logger.info("Added participant for: " + address);
 
-        // Invite peer takes time because of channel allocation, so schedule
-        // this on separate thread.
-        FocusBundleActivator.getSharedThreadPool().submit(
+            // Invite peer takes time because of channel allocation, so schedule
+            // this on separate thread.
+            FocusBundleActivator.getSharedThreadPool().submit(
                 new ChannelAllocator(
-                        this, colibriConference, newParticipant,
-                        startMuted, false /* re-invite */));
+                    this, colibriConference, newParticipant,
+                    startMuted, false /* re-invite */));
+        }
     }
 
     /**
@@ -854,26 +857,29 @@ public class JitsiMeetConferenceImpl
                                       Reason         reason,
                                       String         message)
     {
-        String contactAddress = participant.getMucJid();
-        JingleSession peerJingleSession = participant.getJingleSession();
-        if (peerJingleSession != null)
+        synchronized (participantLock)
         {
-            logger.info("Terminating: " + contactAddress);
+            String contactAddress = participant.getMucJid();
+            JingleSession peerJingleSession = participant.getJingleSession();
+            if (peerJingleSession != null)
+            {
+                logger.info("Terminating: " + contactAddress);
 
-            jingle.terminateSession(peerJingleSession, reason, message);
+                jingle.terminateSession(peerJingleSession, reason, message);
 
-            removeSSRCs(
+                removeSSRCs(
                     peerJingleSession,
                     participant.getSSRCsCopy(),
                     participant.getSSRCGroupsCopy(),
                     false /* no JVB update - will expire */);
 
-            expireParticipantChannels(colibriConference, participant);
-        }
+                expireParticipantChannels(colibriConference, participant);
+            }
 
-        boolean removed = participants.remove(participant);
-        logger.info(
-            "Removed participant: " + removed + ", " + contactAddress);
+            boolean removed = participants.remove(participant);
+            logger.info(
+                "Removed participant: " + removed + ", " + contactAddress);
+        }
     }
 
     /**
