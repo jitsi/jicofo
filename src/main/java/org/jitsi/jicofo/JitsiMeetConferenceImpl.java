@@ -411,10 +411,7 @@ public class JitsiMeetConferenceImpl
 
         protocolProviderHandler.removeRegistrationListener(this);
 
-        synchronized (colibriConfSyncRoot)
-        {
-            disposeConference();
-        }
+        disposeConference();
 
         leaveTheRoom();
 
@@ -551,25 +548,27 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Initialized new instance of {@link #colibriConference}. Call to this
-     * method must be synchronized on {@link #colibriConfSyncRoot}.
+     * Initializes {@link #colibriConference} with a new instance.
      */
     private void initNewColibriConference()
     {
-        colibriConference = colibri.createNewConference();
-        colibriConference.setGID(id);
-
-        colibriConference.setConfig(config);
-
-        String roomName = MucUtil.extractName(chatRoom.getName());
-        colibriConference.setName(roomName);
-
-        bridgeHasFailed = false;
-
-        if (recording == null)
+        synchronized (colibriConfSyncRoot)
         {
-            recording = new JitsiMeetRecording(this, services);
-            recording.init();
+            colibriConference = colibri.createNewConference();
+            colibriConference.setGID(id);
+
+            colibriConference.setConfig(config);
+
+            String roomName = MucUtil.extractName(chatRoom.getName());
+            colibriConference.setName(roomName);
+
+            bridgeHasFailed = false;
+
+            if (recording == null)
+            {
+                recording = new JitsiMeetRecording(this, services);
+                recording.init();
+            }
         }
     }
 
@@ -761,35 +760,39 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Expires the conference on the bridge and other stuff related to it.
-     * Call must be synchronized on {@link #colibriConfSyncRoot}.
      */
     private void disposeConference()
     {
-        // We dispose the recorder here as the recording session is usually
-        // bound to Colibri conference instance which will be invalid once we
-        // dispose/expire the conference on the bridge
-        if (recording != null)
+        synchronized (colibriConfSyncRoot)
         {
-            recording.dispose();
-            recording = null;
-        }
+            // We dispose the recorder here as the recording session is usually
+            // bound to Colibri conference instance which will be invalid once we
 
-        // If the conference is being disposed the timeout is not needed anymore
-        cancelSinglePeerTimeout();
+            // dispose/expire the conference on the bridge
+            if (recording != null)
+            {
+                recording.dispose();
+                recording = null;
+            }
 
-        if (colibriConference != null)
-        {
-            // We will not expire channels if the bridge is faulty or
-            // when our connection is down
-            if (!bridgeHasFailed && protocolProviderHandler.isRegistered())
+            // If the conference is being disposed the timeout is not needed
+            // anymore
+            cancelSinglePeerTimeout();
+
+            if (colibriConference != null)
             {
-                colibriConference.expireConference();
+                // We will not expire channels if the bridge is faulty or
+                // when our connection is down
+                if (!bridgeHasFailed && protocolProviderHandler.isRegistered())
+                {
+                    colibriConference.expireConference();
+                }
+                else
+                {
+                    colibriConference.dispose();
+                }
+                colibriConference = null;
             }
-            else
-            {
-                colibriConference.dispose();
-            }
-            colibriConference = null;
         }
     }
 
@@ -1714,12 +1717,10 @@ public class JitsiMeetConferenceImpl
                 meetTools.sendPresenceExtension(
                         chatRoom, new BridgeNotAvailablePacketExt());
             }
+
             // Dispose the conference. This way we'll know there is no
             // conference active and we can restart on new bridge
-            synchronized (colibriConfSyncRoot)
-            {
-                disposeConference();
-            }
+            disposeConference();
         }
     }
 
@@ -1888,10 +1889,7 @@ public class JitsiMeetConferenceImpl
                     terminateParticipant(
                             p, Reason.EXPIRED, "Idle session timeout");
 
-                    synchronized (colibriConfSyncRoot)
-                    {
-                        disposeConference();
-                    }
+                    disposeConference();
                 }
                 else
                 {
