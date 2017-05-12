@@ -367,7 +367,10 @@ public class ChannelAllocator implements Runnable
                 }
                 else
                 {
-                    bridge = bridgeSelector.selectVideobridge();
+                    BridgeState bridgeState
+                        = bridgeSelector.selectVideobridge(
+                                meetConference, newParticipant);
+                    bridge = bridgeState == null ? null : bridgeState.getJid();
                 }
 
                 if (StringUtils.isNullOrEmpty(bridge))
@@ -458,7 +461,10 @@ public class ChannelAllocator implements Runnable
                     if (StringUtils.isNullOrEmpty(
                                 config.getEnforcedVideobridge()))
                     {
-                        jvb = bridgeSelector.selectVideobridge();
+                        BridgeState bridgeState
+                            = bridgeSelector.selectVideobridge(
+                                    meetConference, newParticipant);
+                        jvb = bridgeState == null ? null : bridgeState.getJid();
                     }
                     else
                     {

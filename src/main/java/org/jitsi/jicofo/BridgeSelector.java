@@ -243,20 +243,37 @@ public class BridgeSelector
     }
 
     /**
-     * Returns least loaded and *operational* videobridge. By operational it
-     * means that it was not reported by any of conference focuses to fail while
-     * allocating channels.
+     * Selects a bridge to be used for a specific new {@link Participant} of
+     * a specific {@link JitsiMeetConference}.
      *
-     * @return the JID of least loaded videobridge or <tt>null</tt> if there are
-     *         no operational bridges currently available.
+     * @return the selected bridge, represented by its {@link BridgeState}.
+     * @param conference the conference for which a bridge is to be selected.
+     * @param participant the participant for which a bridge is to be selected.
      */
-    synchronized public String selectVideobridge()
+    synchronized public BridgeState selectVideobridge(
+            JitsiMeetConference conference, Participant participant)
     {
         List<BridgeState> bridges = getPrioritizedBridgesList();
         if (bridges.size() == 0)
+        {
             return null;
+        }
 
-        return bridges.get(0).isOperational() ? bridges.get(0).getJid() : null;
+        BridgeState bridge = bridges.get(0);
+        return bridge.isOperational() ? bridge : null;
+    }
+
+    /**
+     *
+     * Selects a bridge to be used for a specific {@link JitsiMeetConference}.
+     *
+     * @param conference the conference for which a bridge is to be selected.
+     * @return the selected bridge, represented by its {@link BridgeState}.
+     */
+    public BridgeState selectVideobridge(
+            JitsiMeetConference conference)
+    {
+        return selectVideobridge(conference, null);
     }
 
     /**
