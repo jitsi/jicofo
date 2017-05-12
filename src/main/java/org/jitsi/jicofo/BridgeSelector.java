@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
-import org.jitsi.assertions.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
@@ -195,7 +194,7 @@ public class BridgeSelector
             logger.warn("No pub-sub node mapped for " + bridgeJid);
         }
 
-        BridgeState newBridge = new BridgeState(bridgeJid, version);
+        BridgeState newBridge = new BridgeState(this, bridgeJid, version);
 
         bridges.put(bridgeJid, newBridge);
 
@@ -257,7 +256,7 @@ public class BridgeSelector
         if (bridges.size() == 0)
             return null;
 
-        return bridges.get(0).isOperational() ? bridges.get(0).jid : null;
+        return bridges.get(0).isOperational() ? bridges.get(0).getJid() : null;
     }
 
     /**
@@ -318,7 +317,7 @@ public class BridgeSelector
     synchronized public String getBridgeForPubSubNode(String pubSubNode)
     {
         BridgeState bridge = findBridgeForNode(pubSubNode);
-        return bridge != null ? bridge.jid : null;
+        return bridge != null ? bridge.getJid() : null;
     }
 
     /**
@@ -508,7 +507,7 @@ public class BridgeSelector
         {
             if (bridge.isOperational())
             {
-                listing.add(bridge.jid);
+                listing.add(bridge.getJid());
             }
         }
         return listing;
@@ -516,16 +515,16 @@ public class BridgeSelector
 
     private void notifyBridgeUp(BridgeState bridge)
     {
-        logger.debug("Propagating new bridge added event: " + bridge.jid);
+        logger.debug("Propagating new bridge added event: " + bridge.getJid());
 
-        eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.jid));
+        eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.getJid()));
     }
 
     private void notifyBridgeDown(BridgeState bridge)
     {
-        logger.debug("Propagating bridge went down event: " + bridge.jid);
+        logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
-        eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.jid));
+        eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.getJid()));
     }
 
     /**
@@ -559,8 +558,7 @@ public class BridgeSelector
         switch (topic)
         {
         case BridgeEvent.VIDEOSTREAMS_CHANGED:
-            bridgeState.onVideoStreamsChanged(
-                bridgeEvent.getVideoStreamCount());
+            bridgeState.onVideoStreamsChanged(bridgeEvent.getVideoStreamCount());
             break;
         }
     }
@@ -632,7 +630,7 @@ public class BridgeSelector
     {
         BridgeState bridgeState = bridges.get(bridgeJid);
 
-        return bridgeState != null ? bridgeState.version : null;
+        return bridgeState != null ? bridgeState.getVersion() : null;
     }
 
     /**
@@ -647,264 +645,4 @@ public class BridgeSelector
         }
     }
 
-    /**
-     * Class holds videobridge state and implements {@link java.lang.Comparable}
-     * interface to find least loaded bridge.
-     */
-    class BridgeState
-        implements Comparable<BridgeState>
-    {
-        /**
-         * Videobridge XMPP address.
-         */
-        private final String jid;
-
-        /**
-         * How many conferences are there on the bridge.
-         */
-        private int conferenceCount = 0;
-
-        /**
-         * How many video channels are there on the bridge.
-         */
-        private int videoChannelCount = 0;
-
-        /**
-         * How many video streams are there on the bridge.
-         */
-        private int videoStreamCount = 0;
-
-        /**
-         * The relay ID advertised by the bridge, or {@code null} if none was
-         * advertised.
-         */
-        private String relayId = null;
-
-        /**
-         * Accumulates video stream count changes coming from
-         * {@link BridgeEvent#VIDEOSTREAMS_CHANGED} in order to estimate video
-         * stream count on the bridge. The value is included in the result
-         * returned by {@link #getEstimatedVideoStreamCount()} if not
-         * <tt>null</tt>.
-         *
-         * Is is set back to <tt>null</tt> when new value from the bridge
-         * arrives.
-         */
-        private int videoStreamCountDiff = 0;
-
-        /**
-         * Holds bridge version(if known - not all bridge version are capable of
-         * reporting it).
-         */
-        private final Version version;
-
-        /**
-         * Stores *operational* status which means it has been successfully used
-         * by the focus to allocate the channels. It is reset to false when
-         * focus fails to allocate channels, but it gets another chance when all
-         * currently working bridges go down and might eventually get elevated
-         * back to *operational* state.
-         */
-        private boolean isOperational = true /* we assume it is operational */;
-
-        /**
-         * The time when this instance has failed.
-         */
-        private long failureTimestamp;
-
-        BridgeState(String bridgeJid, Version version)
-        {
-            Assert.notNullNorEmpty(bridgeJid, "bridgeJid: " + bridgeJid);
-
-            this.jid = bridgeJid;
-            this.version = version;
-        }
-
-        public void setConferenceCount(int conferenceCount)
-        {
-            if (this.conferenceCount != conferenceCount)
-            {
-                logger.info(
-                    "Conference count for: " + jid + ": " + conferenceCount);
-            }
-            this.conferenceCount = conferenceCount;
-        }
-
-        public int getConferenceCount()
-        {
-            return this.conferenceCount;
-        }
-
-        /**
-         * Return the number of channels used.
-         * @return the number of channels used.
-         */
-        public int getVideoChannelCount()
-        {
-            return videoChannelCount;
-        }
-
-        /**
-         * @return the relay ID advertised by the bridge, or {@code null} if
-         * none was advertised.
-         */
-        public String getRelayId()
-        {
-            return relayId;
-        }
-
-        /**
-         * Sets the number of channels used.
-         * @param channelCount the number of channels used.
-         */
-        public void setVideoChannelCount(int channelCount)
-        {
-            this.videoChannelCount = channelCount;
-        }
-
-        /**
-         * Sets the relay ID advertised by the bridge.
-         * @param relayId the value to set.
-         */
-        public void setRelayId(String relayId)
-        {
-            this.relayId = relayId;
-        }
-
-        /**
-         * Returns the number of streams used.
-         * @return the number of streams used.
-         */
-        public int getVideoStreamCount()
-        {
-            return videoStreamCount;
-        }
-
-        /**
-         * Sets the stream count currently used.
-         * @param streamCount the stream count currently used.
-         */
-        public void setVideoStreamCount(int streamCount)
-        {
-            if (this.videoStreamCount != streamCount)
-            {
-                logger.info(
-                    "Video stream count for: " + jid + ": " + streamCount);
-            }
-
-            int estimatedBefore = getEstimatedVideoStreamCount();
-
-            this.videoStreamCount = streamCount;
-
-            // The event for video streams count diff are processed on
-            // a single threaded queue and those will pile up during conference
-            // burst. Because of that "videoStreamCountDiff" must be cleared
-            // even if the was no change to the actual value.
-            // FIXME eventually add a timestamp and reject old events
-            if (videoStreamCountDiff != 0)
-            {
-                videoStreamCountDiff = 0;
-                logger.info(
-                    "Reset video stream diff on " + this.jid
-                        + " video channels: " + this.videoChannelCount
-                        + " video streams: " + this.videoStreamCount
-                        + " (estimation error: "
-                        // FIXME estimation error is often invalid wrong,
-                        // but not enough time to look into it now
-                        + (estimatedBefore - getEstimatedVideoStreamCount())
-                        + ")");
-            }
-        }
-
-        public void setIsOperational(boolean isOperational)
-        {
-            this.isOperational = isOperational;
-
-            if (!isOperational)
-            {
-                // Remember when the bridge has failed
-                failureTimestamp = System.currentTimeMillis();
-            }
-        }
-
-        public boolean isOperational()
-        {
-            // Check if we should give this bridge another try
-            verifyFailureThreshold();
-
-            return isOperational;
-        }
-
-        /**
-         * Verifies if it has been long enough since last bridge failure to give
-         * it another try(reset isOperational flag).
-         */
-        private void verifyFailureThreshold()
-        {
-            if (isOperational)
-            {
-                return;
-            }
-
-            if (System.currentTimeMillis() - failureTimestamp
-                    > getFailureResetThreshold())
-            {
-                logger.info("Resetting operational status for " + jid);
-                isOperational = true;
-            }
-        }
-
-        /**
-         * The least value is returned the least the bridge is loaded.
-         * <p>
-         * {@inheritDoc}
-         */
-        @Override
-        public int compareTo(BridgeState o)
-        {
-            boolean meOperational = isOperational();
-            boolean otherOperational = o.isOperational();
-
-            if (meOperational && !otherOperational)
-            {
-                return -1;
-            }
-            else if (!meOperational && otherOperational)
-            {
-                return 1;
-            }
-
-            return this.getEstimatedVideoStreamCount()
-                - o.getEstimatedVideoStreamCount();
-        }
-
-        private int getEstimatedVideoStreamCount()
-        {
-            return videoStreamCount + videoStreamCountDiff;
-        }
-
-        private void onVideoStreamsChanged(Integer videoStreamCount)
-        {
-            if (videoStreamCount == null)
-            {
-                logger.error("videoStreamCount is null");
-                return;
-            }
-            if (videoStreamCount == 0)
-            {
-                logger.error("videoStreamCount is 0");
-                return;
-            }
-            boolean adding = videoStreamCount > 0;
-
-            videoStreamCountDiff += videoStreamCount;
-            logger.info(
-                (adding ? "Adding " : "Removing ") + Math.abs(videoStreamCount)
-                    + " video streams on " + this.jid
-                    + " video channels: " + this.videoChannelCount
-                    + " video streams: " + this.videoStreamCount
-                    + " diff: " + videoStreamCountDiff
-                    + " (estimated: " + getEstimatedVideoStreamCount() + ")");
-        }
-    }
 }
