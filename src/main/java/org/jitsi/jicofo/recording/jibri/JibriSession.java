@@ -486,9 +486,23 @@ public class JibriSession
      */
     private void tryStartRestartJibri(XMPPError error)
     {
-        if (retryAttempt++ < NUM_RETRIES)
+        boolean doRetry
+            = error == null // on the first time there will be no error
+                || error.getExtension(
+                        "retry", "http://jitsi.org/protocol/jibri") != null;
+
+        logger.debug(
+            "Do retry? " + doRetry
+                + " retries: " + retryAttempt + " limit: " + NUM_RETRIES
+                + " in " + this.roomName);
+
+        if (doRetry && retryAttempt++ < NUM_RETRIES)
         {
             final String newJibriJid = jibriDetector.selectJibri();
+
+            logger.debug(
+                "Selected JIBRI: " + newJibriJid + " in " + this.roomName);
+
             if (newJibriJid != null)
             {
                 startJibri(newJibriJid);
