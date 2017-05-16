@@ -196,7 +196,7 @@ public class BridgeSelectorTest
         // TEST all bridges down
         selector.updateBridgeOperationalStatus(jvb2Jid, false);
         selector.updateBridgeOperationalStatus(jvb3Jid, false);
-        assertEquals(null, selector.selectVideobridge(null).getJid());
+        assertEquals(null, selector.selectVideobridge(null));
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
