@@ -72,7 +72,7 @@ public class ComponentsDiscovery
     private final JitsiMeetServices meetServices;
 
     /**
-     * Map of component features.
+     * Maps a node (XMPP address) to the list of its features.
      */
     private Map<String, List<String>> itemMap = new ConcurrentHashMap<>();
 
@@ -169,8 +169,10 @@ public class ComponentsDiscovery
 
     private void scheduleRediscovery()
     {
-        long interval = FocusBundleActivator.getConfigService()
-            .getLong(REDISCOVERY_INTERVAL_PNAME, DEFAULT_REDISCOVERY_INT);
+        long interval
+            = FocusBundleActivator.getConfigService()
+                    .getLong(
+                        REDISCOVERY_INTERVAL_PNAME, DEFAULT_REDISCOVERY_INT);
 
         if (interval > 0)
         {
@@ -193,13 +195,14 @@ public class ComponentsDiscovery
             logger.info("Service rediscovery disabled");
         }
 
-        if (!StringUtils.isNullOrEmpty(statsPubSubNode))
+        if (pubSubBridgeDiscovery == null
+                && !StringUtils.isNullOrEmpty(statsPubSubNode))
         {
             OperationSetSubscription subOpSet
                 = protocolProviderHandler.getOperationSet(
                        OperationSetSubscription.class);
 
-            this.pubSubBridgeDiscovery
+            pubSubBridgeDiscovery
                 = new ThroughPubSubDiscovery(
                         subOpSet, capsOpSet,
                         FocusBundleActivator.getSharedThreadPool());
@@ -236,7 +239,7 @@ public class ComponentsDiscovery
             return;
         }
 
-        List<String> onlineNodes = new ArrayList<String>();
+        List<String> onlineNodes = new ArrayList<>();
         for (String node : nodes)
         {
             List<String> features = capsOpSet.getFeatures(node);
@@ -247,7 +250,7 @@ public class ComponentsDiscovery
                 continue;
             }
 
-            // Node is considered online when we get it's feature list
+            // Node is considered online when we get its feature list
             onlineNodes.add(node);
 
             if (!itemMap.containsKey(node))
@@ -401,8 +404,7 @@ public class ComponentsDiscovery
          * Maps bridge JID to last received stats timestamp. Used to expire
          * bridge which do not send stats for too long.
          */
-        private final Map<String, Long> bridgesMap
-            = new HashMap<String, Long>();
+        private final Map<String, Long> bridgesMap = new HashMap<>();
 
         /**
          * <tt>ScheduledExecutorService</tt> used to run cyclic task of bridge
@@ -646,7 +648,9 @@ public class ComponentsDiscovery
                 // Trigger PubSub update for the shared node on BridgeSelector
                 BridgeSelector selector = meetServices.getBridgeSelector();
                 if (selector != null)
+                {
                     selector.onSharedNodeUpdate(itemId, payload);
+                }
             }
         }
     }

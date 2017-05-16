@@ -24,7 +24,6 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.meet.*;
 import org.jitsi.service.configuration.*;
@@ -35,7 +34,6 @@ import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.osgi.framework.*;
-import org.xmpp.component.*;
 import org.xmpp.packet.IQ;
 
 /**
@@ -62,7 +60,7 @@ public class FocusComponent
         = "org.jitsi.jicofo.SHUTDOWN_ALLOWED_JID";
 
     /**
-     * The JID from which shutdown request are accepted.
+     * The JID from which shutdown requests are accepted.
      */
     private String shutdownAllowedJid;
 

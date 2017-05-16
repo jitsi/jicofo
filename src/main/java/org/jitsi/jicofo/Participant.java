@@ -44,17 +44,30 @@ public class Participant
         = Logger.getLogger(Participant.class);
 
     /**
+     * Returns the endpoint ID for a participant in the videobridge (Colibri)
+     * context. This method can be used before <tt>Participant</tt> instance is
+     * created for the <tt>ChatRoomMember</tt>.
+     *
+     * @param chatRoomMember XMPP MUC chat room member which represents a
+     *                       <tt>Participant</tt>.
+     */
+    public static String getEndpointId(ChatRoomMember chatRoomMember)
+    {
+        return chatRoomMember.getName(); // XMPP MUC Nickname
+    }
+
+    /**
      * MUC chat member of this participant.
      */
     private final XmppChatMember roomMember;
 
     /**
-     * Jingle session(if any) established with this peer.
+     * Jingle session (if any) established with this peer.
      */
     private JingleSession jingleSession;
 
     /**
-     * Information about Colibri channels allocated for this peer(if any).
+     * Information about Colibri channels allocated for this peer (if any).
      */
     private ColibriConferenceIQ colibriChannelsInfo;
 
@@ -141,19 +154,6 @@ public class Participant
      * Participant's display name.
      */
     private String displayName = null;
-
-    /**
-     * Returns the endpoint ID for a participant in the videobridge(Colibri)
-     * context. This method can be used before <tt>Participant</tt> instance is
-     * created for the <tt>ChatRoomMember</tt>.
-     *
-     * @param chatRoomMember XMPP MUC chat room member which represent a
-     *                       <tt>Participant</tt>.
-     */
-    static public String getEndpointId(ChatRoomMember chatRoomMember)
-    {
-        return chatRoomMember.getName(); // XMPP MUC Nickname
-    }
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -508,7 +508,7 @@ public class Participant
      * <tt>MediaSSRCGroupMap</tt> with <tt>SSRCGroup</tt>s added to this
      * participant.
      *
-     * @throws InvalidSSRCsException if there a critical problem has been found
+     * @throws InvalidSSRCsException if a critical problem has been found
      * with SSRC and SSRC groups. This <tt>Participant</tt>'s state remains
      * unchanged (no SSRCs or groups were added/removed).
      */

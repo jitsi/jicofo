@@ -63,10 +63,10 @@ public class ProtocolProviderHandler
      * instance registration state changes.
      */
     private final List<RegistrationStateChangeListener> regListeners
-        = new CopyOnWriteArrayList<RegistrationStateChangeListener>();
+        = new CopyOnWriteArrayList<>();
 
     /**
-     * Start this instance by created XMPP account using igven parameters.
+     * Start this instance by created XMPP account using the given parameters.
      * @param serverAddress XMPP server address.
      * @param xmppDomain XMPP authentication domain.
      * @param xmppLoginPassword XMPP login(optional).

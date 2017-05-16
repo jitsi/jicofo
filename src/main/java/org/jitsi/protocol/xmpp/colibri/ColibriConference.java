@@ -242,4 +242,9 @@ public interface ColibriConference
      *         <tt>false</tt> otherwise.
      */
     boolean isDisposed();
+
+    /**
+     * Sets the "global" id of the conference.
+     */
+    void setGID(String gid) ;
 }
