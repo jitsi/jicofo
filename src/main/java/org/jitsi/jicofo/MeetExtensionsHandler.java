@@ -435,20 +435,13 @@ public class MeetExtensionsHandler
             }
         }
 
+        // TODO: do we actually still need these events fired now that influxdb
+        // has been removed?
         Participant participant = conference.findParticipantForRoomJid(from);
-        ColibriConference colibriConference = conference.getColibriConference();
-
-        if (participant != null && colibriConference != null)
+        if (participant != null)
         {
             // Check if this conference is valid
-            String conferenceId = colibriConference.getConferenceId();
-            if (StringUtils.isNullOrEmpty(conferenceId))
-            {
-                logger.error(
-                        "Unable to send DisplayNameChanged event"
-                            + " - no conference id");
-                return;
-            }
+            String conferenceId = conference.getId();
 
             // Check for changes to the display name
             String oldDisplayName = participant.getDisplayName();
