@@ -123,8 +123,7 @@ public class JitsiMeetRecording
 
     /**
      * Lazy initializer for {@link #recorder}. If there is Jirecon component
-     * service available then {@link JireconRecorder} is used. Otherwise we fall
-     * back to direct videobridge communication through {@link JvbRecorder}.
+     * service available then {@link JireconRecorder} is used.
      *
      * @return {@link Recorder} implementation used by this instance.
      */
@@ -145,26 +144,8 @@ public class JitsiMeetRecording
         }
         else
         {
-            logger.info("No recorder service discovered - using JVB");
-
-            ColibriConference colibriConference
-                = meetConference.getColibriConference();
-            if(colibriConference == null)
-            {
-                return null;
-            }
-
-            String videobridge = colibriConference.getJitsiVideobridge();
-            if (StringUtils.isNullOrEmpty(videobridge))
-            {
-                //Unable to create JVB recorder, conference not started yet
-                return null;
-            }
-
-            recorder
-                = new JvbRecorder(
-                            meetConference, videobridge, connection);
-            return recorder;
+            logger.info("No recorder service discovered.");
+            return null;
         }
     }
 
