@@ -19,6 +19,10 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jivesoftware.smack.packet.*;
+
+import java.util.*;
+
 /**
  * Extended version of {@link ChatRoom} that adds methods specific to Jicofo.
  *
@@ -43,4 +47,18 @@ public interface ChatRoom2
      * @return our full MUC JID for example: room@conference.server.net/nickname
      */
     String getLocalMucJid();
+
+    /**
+     * @return the list of all our presence {@link PacketExtension}s.
+     */
+    Collection<PacketExtension> getPresenceExtensions();
+
+    /**
+     * Modifies our current MUC presence by adding and/or removing specified
+     * extensions. The extension are compared by instance equality.
+     * @param toRemove the list of extensions to be removed.
+     * @param toAdd the list of extension to be added.
+     */
+    void modifyPresence(Collection<PacketExtension> toRemove,
+                        Collection<PacketExtension> toAdd);
 }

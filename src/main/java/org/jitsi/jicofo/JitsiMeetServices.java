@@ -130,6 +130,12 @@ public class JitsiMeetServices
     private JigasiDetector jigasiDetector;
 
     /**
+     * {@link JibriDetector} which manages Jibri SIP instances
+     * (video SIP gateway).
+     */
+    private JibriDetector sipJibriDetector;
+
+    /**
      * The name of XMPP domain to which Jicofo user logs in.
      */
     private final String jicofoUserDomain;
@@ -316,6 +322,15 @@ public class JitsiMeetServices
     }
 
     /**
+     * Returns Jibri SIP detector if available.
+     * @return {@link JibriDetector} or <tt>null</tt> if not configured.
+     */
+    public JibriDetector getSipJibriDetector()
+    {
+        return sipJibriDetector;
+    }
+
+    /**
      * Sets new XMPP address of the Jirecon jireconRecorder component.
      * @param jireconRecorder the XMPP address to be set as Jirecon recorder
      *                        component address.
@@ -394,7 +409,7 @@ public class JitsiMeetServices
         if (!StringUtils.isNullOrEmpty(jibriBreweryName))
         {
             jibriDetector
-                = new JibriDetector(protocolProvider, jibriBreweryName);
+                = new JibriDetector(protocolProvider, jibriBreweryName, false);
 
             jibriDetector.init();
         }
@@ -407,6 +422,16 @@ public class JitsiMeetServices
                 = new JigasiDetector(protocolProvider, jigasiBreweryName);
 
             jigasiDetector.init();
+        }
+
+        String jibriSipBreweryName
+            = config.getString(JibriDetector.JIBRI_SIP_ROOM_PNAME);
+        if (!StringUtils.isNullOrEmpty(jibriSipBreweryName))
+        {
+            sipJibriDetector
+                = new JibriDetector(
+                        protocolProvider, jibriSipBreweryName, true);
+            sipJibriDetector.init();
         }
     }
 
@@ -424,6 +449,12 @@ public class JitsiMeetServices
         {
             jigasiDetector.dispose();
             jigasiDetector = null;
+        }
+
+        if (sipJibriDetector != null)
+        {
+            sipJibriDetector.dispose();
+            sipJibriDetector = null;
         }
 
         bridgeSelector.dispose();

@@ -55,16 +55,28 @@ public class JibriEvent
     private final static String IS_IDLE_KEY = "jibri.is_idle";
 
     /**
+     * The key for event property which stores a <tt>boolean</tt> telling
+     * whether or not the Jibri instance associated with the event is a video
+     * SIP gateway Jibri (<tt>true</tt>) or a live streaming Jibri
+     * (<tt>false</tt>).
+     */
+    private final static String IS_SIP_KEY = "jibri.is_sip";
+
+    /**
      * Used to init the properties passed to the constructor.
      * @param jibriJid the Jibri JID(XMPP address)
      * @param isIdle a <tt>Boolean</tt> with Jibri's idle status or
      *        <tt>null</tt> if it should not be included.
+     * @param isSIP <tt>true</tt> for video SIP gateway Jibri or <tt>false</tt>
+     *        for live streaming type of Jibri.
      */
     static private Dictionary<String, Object> initDictionary(String    jibriJid,
-                                                             Boolean   isIdle)
+                                                             Boolean   isIdle,
+                                                             boolean   isSIP)
     {
         Dictionary<String, Object> props = new Hashtable<>();
         props.put(JIBRI_JID_KEY, jibriJid);
+        props.put(IS_SIP_KEY, isSIP);
         if (isIdle != null)
             props.put(IS_IDLE_KEY, isIdle);
         return props;
@@ -76,27 +88,32 @@ public class JibriEvent
      * @param jibriJid the JID of the Jibri for which the event will be created.
      * @param isIdle a boolean indicating whether the current Jibri's status is
      *        idle (<tt>true</tt>) or busy (<tt>false</tt>).
+     * @param isSIP <tt>true</tt> if it's a video SIP gateway Jibri or
+     *        <tt>false</tt> for the live streaming type of Jibri.
      *
      * @return {@link #STATUS_CHANGED} <tt>JibriEvent</tt> for given
      *         <tt>jibriJid</tt>.
      */
     static public JibriEvent newStatusChangedEvent(String     jibriJid,
-                                                   boolean    isIdle)
+                                                   boolean    isIdle,
+                                                   boolean    isSIP)
     {
-        return new JibriEvent(STATUS_CHANGED, jibriJid, isIdle);
+        return new JibriEvent(STATUS_CHANGED, jibriJid, isIdle, isSIP);
     }
 
     /**
      * Creates {@link #WENT_OFFLINE} <tt>JibriEvent</tt>.
      *
      * @param jibriJid the JID of the Jibri for which the event will be created.
+     * @param isSIP <tt>true</tt> if it's a video SIP gateway Jibri or
+     *        <tt>false</tt> for the live streaming type of Jibri.
      *
      * @return {@link #WENT_OFFLINE} <tt>JibriEvent</tt> for given
      *         <tt>jibriJid</tt>.
      */
-    static public JibriEvent newWentOfflineEvent(String jibriJid)
+    static public JibriEvent newWentOfflineEvent(String jibriJid, boolean isSIP)
     {
-        return new JibriEvent(WENT_OFFLINE, jibriJid, null);
+        return new JibriEvent(WENT_OFFLINE, jibriJid, null, isSIP);
     }
 
     /**
@@ -119,9 +136,10 @@ public class JibriEvent
         }
     }
 
-    private JibriEvent(String topic, String jibriJid, Boolean isIdle)
+    private JibriEvent(String topic,
+                       String jibriJid, Boolean isIdle, boolean isSIP)
     {
-        super(topic, initDictionary(jibriJid, isIdle));
+        super(topic, initDictionary(jibriJid, isIdle, isSIP));
     }
 
     /**
@@ -154,5 +172,15 @@ public class JibriEvent
                 "Trying to access 'isIdle' on wrong event type: " + getTopic());
         }
         return isIdle;
+    }
+
+    /**
+     * @return <tt>true</tt> if the event is for SIP Jibri or <tt>false</tt>
+     * for a regular Jibri.
+     */
+    public boolean isSIP()
+    {
+        Boolean isSIP = (Boolean) this.getProperty(IS_SIP_KEY);
+        return isSIP != null ? isSIP : false;
     }
 }

@@ -190,6 +190,12 @@ public class JitsiMeetConferenceImpl
     private JibriRecorder jibriRecorder;
 
     /**
+     * The {@link JibriSipGateway} instance which provides video SIP gateway
+     * services for this conference.
+     */
+    private JibriSipGateway jibriSipGateway;
+
+    /**
      * Information about Jitsi Meet conference services like videobridge,
      * SIP gateway, Jirecon.
      */
@@ -365,6 +371,19 @@ public class JitsiMeetConferenceImpl
 
                 jibriRecorder.init();
             }
+
+            JibriDetector sipJibriDetector = services.getSipJibriDetector();
+            if (sipJibriDetector != null)
+            {
+                jibriSipGateway
+                    = new JibriSipGateway(
+                            this,
+                            getXmppConnection(),
+                            FocusBundleActivator.getSharedThreadPool(),
+                            globalConfig);
+
+                jibriSipGateway.init();
+            }
         }
         catch(Exception e)
         {
@@ -384,6 +403,12 @@ public class JitsiMeetConferenceImpl
             return;
 
         started = false;
+
+        if (jibriSipGateway != null)
+        {
+            jibriSipGateway.dispose();
+            jibriSipGateway = null;
+        }
 
         if (jibriRecorder != null)
         {
