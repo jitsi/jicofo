@@ -127,6 +127,8 @@ public class ChatRoomImpl
      */
     private Integer participantNumber = 0;
 
+    private final ScheduledExecutorService offlineCleaner;
+
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
@@ -148,6 +150,33 @@ public class ChatRoomImpl
 
         this.participantListener = new ParticipantListener();
         muc.addParticipantListener(participantListener);
+
+        this.offlineCleaner = Executors.newScheduledThreadPool(1);
+        this.offlineCleaner.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                cleanOfflineParticipants();
+            }
+        }, 0, 2, TimeUnit.SECONDS);
+    }
+
+    private void cleanOfflineParticipants() {
+        long currentTime = System.currentTimeMillis();
+
+        // бегаем без синхронизации
+        for (ChatMemberImpl member : members.values())
+        {
+            long lastPresenceTime = member.getPresenceTime();
+            if (lastPresenceTime == 0) {
+                continue;
+            }
+
+            if (currentTime - lastPresenceTime > TimeUnit.SECONDS.toMillis(10))
+            {
+                logger.info("This participant died: " + member);
+                this.memberListener.left(member.getContactAddress());
+            }
+        }
     }
 
     @Override
@@ -772,6 +801,8 @@ public class ChatRoomImpl
     @Override
     public boolean destroy(String reason, String alternateAddress)
     {
+        this.offlineCleaner.shutdownNow();
+
         try
         {
             muc.destroy(reason, alternateAddress);

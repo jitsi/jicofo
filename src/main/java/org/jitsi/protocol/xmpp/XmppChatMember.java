@@ -49,6 +49,12 @@ public interface XmppChatMember
     Presence getPresence();
 
     /**
+     * Obtain the last time received presence
+     * @return 0 if we haven't received it yet.
+     */
+    long getPresenceTime();
+
+    /**
      * Check for video muted status.
      * @return <tt>true</tt> if the user has video muted, <tt>false</tt> when
      *         video is not muted or <tt>null</tt> if the status is unknown.
