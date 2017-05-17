@@ -294,7 +294,6 @@ public class JibriSession
             stoppedGracefully = false;
         }
 
-        // FIXME figure out stop
         if (!stoppedGracefully) {
             // The instance is going down which means that
             // the JitsiMeetConference is being disposed. We don't want any
@@ -378,18 +377,10 @@ public class JibriSession
     @Override
     public boolean accept(Packet packet)
     {
-        // FIXME cleanup
-        boolean accept = packet instanceof IQ
+        return packet instanceof IQ
             && currentJibriJid != null
             && (packet.getFrom().equals(currentJibriJid) ||
                     (packet.getFrom() + "/").startsWith(currentJibriJid));
-        //if (!accept)
-        //{
-          //  logger.info("SESSION REJECTING: " + packet.toXML());
-            //logger.info("CURRENT JIBRI: " + currentJibriJid +" from: " + packet.getFrom());
-        //}
-
-        return accept;
     }
 
     /**
@@ -400,11 +391,11 @@ public class JibriSession
     @Override
     synchronized public void processPacket(Packet packet)
     {
-        //if (logger.isDebugEnabled())
-        //{
-            logger.info(
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(
                 "Processing an IQ from Jibri: " + packet.toXML());
-        //}
+        }
 
         IQ iq = (IQ) packet;
 

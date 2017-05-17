@@ -236,11 +236,10 @@ public abstract class CommonJibriStuff
     @Override
     synchronized public void processPacket(Packet packet)
     {
-        // FIXME uncomment
-        //if (logger.isDebugEnabled())
-        //{
-            logger.info("Processing an IQ: " + packet.toXML());
-        //}
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("Processing an IQ: " + packet.toXML());
+        }
 
         IQ iq = (IQ) packet;
 
@@ -282,12 +281,11 @@ public abstract class CommonJibriStuff
                                         final XmppChatMember    sender)
     {
         String senderMucJid = sender.getContactAddress();
-        // FIXME uncomment
-        //if (logger.isDebugEnabled())
-        //{
-        logger.info(
-            "Jibri request from " + senderMucJid + " iq: " + iq.toXML());
-        //}
+        if (logger.isDebugEnabled())
+        {
+            logger.info(
+                "Jibri request from " + senderMucJid + " iq: " + iq.toXML());
+        }
 
         JibriIq.Action action = iq.getAction();
         if (JibriIq.Action.UNDEFINED.equals(action))
