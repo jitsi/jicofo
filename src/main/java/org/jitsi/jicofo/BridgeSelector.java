@@ -459,6 +459,14 @@ public class BridgeSelector
                     bridgeState.setVideoStreamCount(videoStreamCount);
                 }
             }
+            else if ("relay_id".equals(stat.getName()))
+            {
+                Object relayId = stat.getValue();
+                if (relayId != null)
+                {
+                    bridgeState.setRelayId(relayId.toString());
+                }
+            }
         }
     }
 
