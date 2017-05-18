@@ -22,14 +22,6 @@ You can download Debian/Ubuntu binaries:
 * [testing](https://download.jitsi.org/testing/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianTestingRepository))
 * [nightly](https://download.jitsi.org/unstable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianNightlyRepository))
 
-## Old JavaScript client side focus replacement
-
-Migration from old JavaScript focus is the easiest when Jitsi Meet was installed from debian package [quick install]. It should be enough to update 'jitsi-meet' package which will ask you to install also 'jicofo' package:
-```
-apt-get update
-apt-get install jitsi-meet
-```
-
 ## Manual Prosody configuration
 
 Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method(jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration(etc\prosody\prosody.cfg.lua):
