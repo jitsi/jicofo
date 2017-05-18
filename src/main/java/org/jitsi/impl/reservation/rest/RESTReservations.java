@@ -94,13 +94,15 @@ public class RESTReservations
     public void start(FocusManager focusManager)
     {
         if (this.focusManager != null)
+        {
             throw new IllegalStateException("already started");
+        }
 
         this.focusManager = Objects.requireNonNull(focusManager, "focusManager");
 
         focusManager.setFocusAllocationListener(this);
 
-        confDurationGuard = new Timer("ConferenceDuartionGuard");
+        confDurationGuard = new Timer("ConferenceDurationGuard");
         confDurationGuard.scheduleAtFixedRate(
             new ConferenceExpireTask(), EXPIRE_INTERVAL, EXPIRE_INTERVAL);
     }

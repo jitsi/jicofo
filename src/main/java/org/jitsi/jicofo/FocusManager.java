@@ -39,6 +39,7 @@ import java.util.logging.*;
  * and expiring conference focus instances. Manages focus XMPP connection.
  *
  * @author Pawel Domas
+ * @author Boris Grozev
  */
 public class FocusManager
     implements JitsiMeetConferenceImpl.ConferenceListener,
@@ -52,17 +53,17 @@ public class FocusManager
     /**
      * Name of configuration property for focus idle timeout.
      */
-    public static final String IDLE_TIMEOUT_PROP_NAME
+    public static final String IDLE_TIMEOUT_PNAME
         = "org.jitsi.focus.IDLE_TIMEOUT";
 
     /**
      * Default amount of time for which the focus is being kept alive in idle
-     * mode(no peers in the room).
+     * mode (no peers in the room).
      */
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
-     * The name of configuration property that specifies server hostname to
+     * The name of the configuration property that specifies server hostname to
      * which the focus user will connect to.
      */
     public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
@@ -76,7 +77,7 @@ public class FocusManager
         = "org.jitsi.jicofo.XMPP_DOMAIN";
 
     /**
-     * The name of configuration property that specifies XMPP domain of
+     * The name of the configuration property that specifies XMPP domain of
      * the focus user.
      */
     public static final String FOCUS_USER_DOMAIN_PNAME
@@ -90,19 +91,32 @@ public class FocusManager
         = "org.jitsi.jicofo.FOCUS_USER_NAME";
 
     /**
-     * The name of configuration property that specifies login password of the
-     * focus user. If not provided then anonymous login method is used.
+     * The name of the configuration property that specifies login password of
+     * the focus user. If not provided then anonymous login method is used.
      */
     public static final String FOCUS_USER_PASSWORD_PNAME
         = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
 
     /**
-     * The name of configuration property used to configure PubSub node to which
-     * videobridges are publishing their stats. Is used to discover bridges
-     * automatically.
+     * The name of the property used to configure a 1-byte identifier of this
+     * Jicofo instance, used for the purpose of generating conference IDs unique
+     * across a set of Jicofo instances.
+     */
+    public static final String JICOFO_SHORT_ID_PNAME
+        = "org.jitsi.jicofo.SHORT_ID";
+
+    /**
+     * The name of the configuration property used to configure the PubSub node
+     * to which videobridges are publishing their stats. It is used to discover
+     * bridges automatically.
      */
     public static final String SHARED_STATS_PUBSUB_NODE_PNAME
         = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
+
+    /**
+     * The pseudo-random generator which is to be used when generating IDs.
+     */
+    private static final Random RANDOM = new Random();
 
     /**
      * The XMPP domain used by the focus user to register to.
@@ -127,11 +141,22 @@ public class FocusManager
      * {@link Map#size()} on it, which wouldn't be safe with a
      * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
      * I've chosen this solution, because I don't know whether the cleaner
-     * solution of synchronizing on {@code #this} in
+     * solution of synchronizing on {@link #conferencesSyncRoot} in
      * {@link #getConferenceCount()} is safe.
      */
     private final Map<String, JitsiMeetConferenceImpl> conferences
         = new ConcurrentHashMap<>();
+
+    /**
+     * The set of the IDs of conferences in {@link #conferences}.
+     */
+    private final Set<String> conferenceIds = new HashSet<>();
+
+    /**
+     * The object used to synchronize access to {@link #conferences} and
+     * {@link #conferenceIds}.
+     */
+    private final Object conferencesSyncRoot = new Object();
 
     // Convert to list when needed
     /**
@@ -283,7 +308,7 @@ public class FocusManager
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
-    public synchronized boolean conferenceRequest(
+    public boolean conferenceRequest(
             String                 room,
             Map<String, String>    properties,
             Level                  loggingLevel)
@@ -294,28 +319,38 @@ public class FocusManager
 
         room = room.toLowerCase();
 
-        if (!conferences.containsKey(room))
+        JitsiMeetConferenceImpl conference;
+        synchronized (conferencesSyncRoot)
         {
-            if (shutdownInProgress)
-                return false;
+            if (!conferences.containsKey(room))
+            {
+                if (shutdownInProgress)
+                {
+                    return false;
+                }
 
-            createConference(room, properties, loggingLevel);
+                createConference(room, properties, loggingLevel);
+            }
+
+            conference = conferences.get(room);
         }
-
-        JitsiMeetConferenceImpl conference = conferences.get(room);
 
         return conference.isInTheRoom();
     }
 
     /**
      * Makes sure that conference is allocated for given <tt>room</tt>.
+     *
+     * Note: this should only be called by threads which hold the lock on
+     * {@link #conferencesSyncRoot}.
+     *
      * @param room name of the MUC room of Jitsi Meet conference.
      * @param properties configuration properties, see {@link JitsiMeetConfig}
      *                   for the list of valid properties.
      *
      * @throws Exception if any error occurs.
      */
-    private synchronized void createConference(
+    private void createConference(
             String room, Map<String, String> properties, Level logLevel)
         throws Exception
     {
@@ -325,12 +360,14 @@ public class FocusManager
             = JitsiMeetGlobalConfig.getGlobalConfig(
                 FocusBundleActivator.bundleContext);
 
+        String id = generateConferenceId();
         JitsiMeetConferenceImpl conference
             = new JitsiMeetConferenceImpl(
                     room, focusUserName, protocolProviderHandler,
-                    this, config, globalConfig, logLevel);
+                    this, config, globalConfig, logLevel, id);
 
         conferences.put(room, conference);
+        conferenceIds.add(id);
 
         StringBuilder options = new StringBuilder();
         for (Map.Entry<String, String> option : properties.entrySet())
@@ -380,57 +417,98 @@ public class FocusManager
     }
 
     /**
+     * Generates a conference ID which is currently not used by an existing
+     * conference in a specific format (6 hexadecimal symbols).
+     * @return the generated ID.
+     */
+    private String generateConferenceId()
+    {
+        // TODO: verify the format
+        String jicofoShortId
+            = FocusBundleActivator.getConfigService()
+                .getString(JICOFO_SHORT_ID_PNAME, "ff");
+
+        String id;
+
+        // TODO extract a separate sync root for #conferences + #conferenceIds
+        synchronized (this)
+        {
+            do
+            {
+                id
+                    = jicofoShortId +
+                        Integer.toHexString(RANDOM.nextInt(0x1_0000));
+            }
+            while (conferenceIds.contains(id));
+        }
+
+        return id;
+    }
+
+    /**
      * Destroys the conference for given room name.
      * @param roomName full MUC room name to destroy.
      * @param reason optional reason string that will be advertised to the
      *               users upon exit.
      */
-    public synchronized void destroyConference(String roomName, String reason)
+    public void destroyConference(String roomName, String reason)
     {
         roomName = roomName.toLowerCase();
 
-        JitsiMeetConferenceImpl conference
-            = (JitsiMeetConferenceImpl) getConference(roomName);
-        if (conference == null)
+        synchronized (conferencesSyncRoot)
         {
-            logger.error(
-                "Unable to destroy the conference - not found: " + roomName);
-            return;
-        }
+            JitsiMeetConferenceImpl conference
+                = (JitsiMeetConferenceImpl) getConference(roomName);
+            if (conference == null)
+            {
+                logger.error(
+                    "Unable to destroy the conference - not found: " + roomName);
 
-        conference.destroy(reason);
+                return;
+            }
+
+            // It is unclear whether this needs to execute while holding the
+            // lock or not.
+            conference.destroy(reason);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void conferenceEnded(JitsiMeetConferenceImpl conference)
+    public void conferenceEnded(JitsiMeetConferenceImpl conference)
     {
         String roomName = conference.getRoomName();
 
-        conferences.remove(roomName);
+        synchronized (conferencesSyncRoot)
+        {
+            conferences.remove(roomName);
+            conferenceIds.remove(conference.getId());
 
-        if (conference.getLogger().isInfoEnabled())
-            logger.info(
+            if (conference.getLogger().isInfoEnabled())
+                logger.info(
                     "Disposed conference for room: " + roomName
                         + " conference count: " + conferences.size());
 
-        if (focusAllocListener != null)
-        {
-            focusAllocListener.onFocusDestroyed(roomName);
-        }
+            // It is not clear whether the code below necessarily needs to
+            // hold the lock or not.
+            if (focusAllocListener != null)
+            {
+                focusAllocListener.onFocusDestroyed(roomName);
+            }
 
-        // Send focus destroyed event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.sendEvent(
-                EventFactory.focusDestroyed(
-                    conference.getId(), conference.getRoomName()));
-        }
+            // Send focus destroyed event
+            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
+            if (eventAdmin != null)
+            {
+                eventAdmin.sendEvent(
+                    EventFactory.focusDestroyed(
+                        conference.getId(), conference.getRoomName()));
+            }
 
-        maybeDoShutdown();
+            maybeDoShutdown();
+        }
     }
 
     /**
@@ -442,14 +520,11 @@ public class FocusManager
      * @return the {@code JitsiMeetConference} for the specified
      * {@code roomName} or {@code null} if no conference has been allocated yet
      */
-    public JitsiMeetConference getConference(String roomName)
+    public JitsiMeetConferenceImpl getConference(String roomName)
     {
         roomName = roomName.toLowerCase();
 
-        // Other public methods which read from and/or write to the field
-        // conferences are sychronized (e.g. conferenceEnded, conferenceRequest)
-        // so synchronization is necessary here as well.
-        synchronized (this)
+        synchronized (conferencesSyncRoot)
         {
             return conferences.get(roomName);
         }
@@ -459,7 +534,7 @@ public class FocusManager
      * Enables shutdown mode which means that no new focus instances will
      * be allocated. After conference count drops to zero the process will exit.
      */
-    public synchronized void enableGracefulShutdownMode()
+    public void enableGracefulShutdownMode()
     {
         if (!this.shutdownInProgress)
         {
@@ -469,18 +544,24 @@ public class FocusManager
         maybeDoShutdown();
     }
 
-    private synchronized void maybeDoShutdown()
+    private void maybeDoShutdown()
     {
-        if (shutdownInProgress && conferences.isEmpty())
+        synchronized (conferencesSyncRoot)
         {
-            logger.info("Focus is shutting down NOW");
+            if (shutdownInProgress && conferences.isEmpty())
+            {
+                logger.info("Focus is shutting down NOW");
 
-            ShutdownService shutdownService
-                = ServiceUtils.getService(
-                        FocusBundleActivator.bundleContext,
-                        ShutdownService.class);
+                // It is not clear whether the code below necessarily needs to
+                // hold the lock or not. Presumably it is safe to call it
+                // multiple times.
+                ShutdownService shutdownService
+                    = ServiceUtils.getService(
+                    FocusBundleActivator.bundleContext,
+                    ShutdownService.class);
 
-            shutdownService.beginShutdown();
+                shutdownService.beginShutdown();
+            }
         }
     }
 
@@ -573,7 +654,7 @@ public class FocusManager
      * Class takes care of stopping {@link JitsiMeetConference} if there is no
      * active session for too long.
      */
-    class FocusExpireThread
+    private class FocusExpireThread
     {
         private static final long POLL_INTERVAL = 5000;
 
@@ -588,7 +669,7 @@ public class FocusManager
         public FocusExpireThread()
         {
             timeout = FocusBundleActivator.getConfigService()
-                        .getLong(IDLE_TIMEOUT_PROP_NAME, DEFAULT_IDLE_TIMEOUT);
+                        .getLong(IDLE_TIMEOUT_PNAME, DEFAULT_IDLE_TIMEOUT);
         }
 
         void start()
@@ -664,7 +745,7 @@ public class FocusManager
                 try
                 {
                     ArrayList<JitsiMeetConferenceImpl> conferenceCopy;
-                    synchronized (FocusManager.this)
+                    synchronized (FocusManager.this.conferencesSyncRoot)
                     {
                         conferenceCopy = new ArrayList<>(conferences.values());
                     }
@@ -692,7 +773,7 @@ public class FocusManager
                 catch (Exception ex)
                 {
                     logger.warn(
-                        "Error while checking for timeouted conference", ex);
+                        "Error while checking for timed out conference", ex);
                 }
             }
         }

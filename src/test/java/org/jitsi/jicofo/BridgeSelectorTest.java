@@ -132,19 +132,21 @@ public class BridgeSelectorTest
         workingBridges.add(jvb2Jid);
         workingBridges.add(jvb3Jid);
 
-        assertTrue(workingBridges.contains(selector.selectVideobridge()));
+        assertTrue(workingBridges.contains(
+                selector.selectVideobridge(null).getJid()));
 
         // Bridge 1 is down !!!
         workingBridges.remove(jvb1Jid);
         selector.updateBridgeOperationalStatus(jvb1Jid, false);
 
-        assertTrue(workingBridges.contains(selector.selectVideobridge()));
+        assertTrue(workingBridges.contains(
+                selector.selectVideobridge(null).getJid()));
 
         // Bridge 2 is down !!!
         workingBridges.remove(jvb2Jid);
         selector.updateBridgeOperationalStatus(jvb2Jid, false);
 
-        assertEquals(jvb3Jid, selector.selectVideobridge());
+        assertEquals(jvb3Jid, selector.selectVideobridge(null).getJid());
 
         // Bridge 1 is up again, but 3 is down instead
         workingBridges.add(jvb1Jid);
@@ -153,7 +155,7 @@ public class BridgeSelectorTest
         workingBridges.remove(jvb3Jid);
         selector.updateBridgeOperationalStatus(jvb3Jid, false);
 
-        assertEquals(jvb1Jid, selector.selectVideobridge());
+        assertEquals(jvb1Jid, selector.selectVideobridge(null).getJid());
 
         // Reset all bridges - now we'll select based on conference count
         workingBridges.clear();
@@ -178,23 +180,23 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(0));
 
-        assertEquals(jvb3Jid, selector.selectVideobridge());
+        assertEquals(jvb3Jid, selector.selectVideobridge(null).getJid());
 
         // Now Jvb 3 gets occupied the most
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(300));
 
-        assertEquals(jvb1Jid, selector.selectVideobridge());
+        assertEquals(jvb1Jid, selector.selectVideobridge(null).getJid());
 
         // Jvb 1 is gone
         selector.updateBridgeOperationalStatus(jvb1Jid, false);
 
-        assertEquals(jvb2Jid, selector.selectVideobridge());
+        assertEquals(jvb2Jid, selector.selectVideobridge(null).getJid());
 
         // TEST all bridges down
         selector.updateBridgeOperationalStatus(jvb2Jid, false);
         selector.updateBridgeOperationalStatus(jvb3Jid, false);
-        assertEquals(null, selector.selectVideobridge());
+        assertEquals(null, selector.selectVideobridge(null));
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
@@ -210,7 +212,8 @@ public class BridgeSelectorTest
                 jvb3PubSubNode, itemId, createJvbStats(0));
 
         // JVB 1 should not be in front
-        assertNotEquals(jvb1PubSubNode, selector.selectVideobridge());
+        assertNotEquals(
+                jvb1PubSubNode, selector.selectVideobridge(null).getJid());
 
         // JVB 2 least occupied
         mockSubscriptions.fireSubscriptionNotification(
@@ -220,19 +223,21 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
                 jvb3PubSubNode, itemId, createJvbStats(1));
 
-        assertEquals(jvb2Jid, selector.selectVideobridge());
+        assertEquals(jvb2Jid, selector.selectVideobridge(null).getJid());
 
         // FAILURE RESET THRESHOLD
         testFailureResetThreshold(selector, mockSubscriptions);
 
         // Test drain bridges queue
         int maxCount = selector.getKnownBridgesCount();
-        while (selector.selectVideobridge() != null)
+        while (selector.selectVideobridge(null) != null)
         {
-            String bridge = selector.selectVideobridge();
-            selector.updateBridgeOperationalStatus(bridge, false);
+            BridgeState bridge = selector.selectVideobridge(null);
+            selector.updateBridgeOperationalStatus(bridge.getJid(), false);
             if (--maxCount < 0)
+            {
                 fail("Max count exceeded");
+            }
         }
     }
 
@@ -264,11 +269,15 @@ public class BridgeSelectorTest
                 selector.updateBridgeOperationalStatus(nodes[idx], !isTestNode);
             }
             // Should not be selected now
-            assertNotEquals(nodes[testNode], selector.selectVideobridge());
+            assertNotEquals(
+                    nodes[testNode],
+                    selector.selectVideobridge(null).getJid());
             // Wait for faulty status reset
             Thread.sleep(150);
             // Test node should recover
-            assertEquals(nodes[testNode], selector.selectVideobridge());
+            assertEquals(
+                    nodes[testNode],
+                    selector.selectVideobridge(null).getJid());
         }
 
         selector.setFailureResetThreshold(

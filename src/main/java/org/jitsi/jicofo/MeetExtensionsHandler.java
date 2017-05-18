@@ -237,7 +237,7 @@ public class MeetExtensionsHandler
         {
             return null;
         }
-        return (JitsiMeetConferenceImpl) focusManager.getConference(roomName);
+        return focusManager.getConference(roomName);
     }
 
     private void handleMuteIq(MuteIq muteIq)
@@ -404,7 +404,9 @@ public class MeetExtensionsHandler
         }
 
         if (conference.isFocusMember(from))
+        {
             return; // Not interested in local presence
+        }
 
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
         if (role == null)
@@ -433,20 +435,13 @@ public class MeetExtensionsHandler
             }
         }
 
+        // TODO: do we actually still need these events fired now that influxdb
+        // has been removed?
         Participant participant = conference.findParticipantForRoomJid(from);
-        ColibriConference colibriConference = conference.getColibriConference();
-
-        if (participant != null && colibriConference != null)
+        if (participant != null)
         {
             // Check if this conference is valid
-            String conferenceId = colibriConference.getConferenceId();
-            if (StringUtils.isNullOrEmpty(conferenceId))
-            {
-                logger.error(
-                        "Unable to send DisplayNameChanged event"
-                            + " - no conference id");
-                return;
-            }
+            String conferenceId = conference.getId();
 
             // Check for changes to the display name
             String oldDisplayName = participant.getDisplayName();

@@ -38,8 +38,8 @@ import org.osgi.framework.*;
 import java.util.*;
 
 /**
- * Class manages discovered components discovery of Jitsi Meet application
- * services like bridge, recording, SIP gateway and so on...
+ * Class manages discovery of Jitsi Meet application services like
+ * jitsi-videobridge, recording, SIP gateway and so on...
  *
  * @author Pawel Domas
  */
@@ -53,26 +53,12 @@ public class JitsiMeetServices
         = Logger.getLogger(JitsiMeetServices.class);
 
     /**
-     * Feature set advertised by videobridge.
+     * The set of features sufficient for a node to be recognized as a
+     * jitsi-videobridge.
      */
     public static final String[] VIDEOBRIDGE_FEATURES = new String[]
         {
             ColibriConferenceIQ.NAMESPACE,
-            ProtocolProviderServiceJabberImpl
-                .URN_XMPP_JINGLE_DTLS_SRTP,
-            ProtocolProviderServiceJabberImpl
-                .URN_XMPP_JINGLE_ICE_UDP_1,
-            ProtocolProviderServiceJabberImpl
-                .URN_XMPP_JINGLE_RAW_UDP_0
-        };
-
-    /**
-     * Feature set advertised by videobridge which does support health-checks.
-     */
-    public static final String[] VIDEOBRIDGE_FEATURES2 = new String[]
-        {
-            ColibriConferenceIQ.NAMESPACE,
-            DiscoveryUtil.FEATURE_HEALTH_CHECK,
             ProtocolProviderServiceJabberImpl
                 .URN_XMPP_JINGLE_DTLS_SRTP,
             ProtocolProviderServiceJabberImpl
@@ -273,7 +259,7 @@ public class JitsiMeetServices
     }
 
     /**
-     * Call when components goes offline.
+     * Call when a component goes offline.
      *
      * @param node XMPP address of disconnected XMPP component.
      */

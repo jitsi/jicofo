@@ -547,7 +547,7 @@ public abstract class AbstractAuthAuthority
         expireTimer.scheduleAtFixedRate(
             new ExpireTask(), EXPIRE_POLLING_INTERVAL, EXPIRE_POLLING_INTERVAL);
 
-        this.focusManager
+        focusManager
             = ServiceUtils.getService(
                     AuthBundleActivator.bundleContext, FocusManager.class);
 

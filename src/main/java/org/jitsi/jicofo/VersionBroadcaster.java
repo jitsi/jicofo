@@ -133,7 +133,7 @@ public class VersionBroadcaster
         String roomJid = (String) event.getProperty(EventFactory.ROOM_JID_KEY);
 
         JitsiMeetConferenceImpl conference
-            = (JitsiMeetConferenceImpl) focusManager.getConference(roomJid);
+            = focusManager.getConference(roomJid);
         if (conference == null)
         {
             logger.error("Conference is null");
