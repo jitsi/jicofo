@@ -1,4 +1,4 @@
-#Shibboleth authentication
+# Shibboleth authentication
 
 Jicofo supports [Shibboleth] authentication method which allows to take advantage
 of federated identity solution. When this mode is enabled Jicofo will allow only
@@ -39,31 +39,31 @@ promoted to 'moderator' role and the popup will close. The session will be
 valid for future requests until user explicitly logs out using the logout
 button. Eventually session will expire after few days of inactivity.
 
-#Configuration
+# Configuration
 
-###Glossary
+### Glossary
 
-<b>Nginx</b> - HTTP server used in our deployment
+**Nginx** - HTTP server used in our deployment
 
-<b>Prosody</b> - XMPP server used in our deplyoment
+**Prosody** - XMPP server used in our deplyoment
 
-<b>Shibboleth SP(Service Provider)</b> - service integrated with HTTP server in
+**Shibboleth SP(Service Provider)** - service integrated with HTTP server in
 order to provide Shibboleth authentication method to web applications. We're
 going to use it together with Nginx.
 
-<b>Shibboleth IdP(Identity Provider)</b> - provides user identity to Shibboleth
+**Shibboleth IdP(Identity Provider)** - provides user identity to Shibboleth
 SP. That's the place where user enters his username and password. Depending on
 exact SP configuration user may be allowed to select from multiple IdPs during
 login (federation).
 
-<b>Authentication servlet</b> - this is Jetty servlet embedded in Jicofo.
+**Authentication servlet** - this is Jetty servlet embedded in Jicofo.
 Authenticates users based on Shibboleth attributes provided in HTTP request and
 returns the session-id.
 
-<b>Supervisor</b> - utility used to integrate Shibboleth SP with Nginx through
+**Supervisor** - utility used to integrate Shibboleth SP with Nginx through
 fast-cgi
 
-###Install Jitsi-Meet
+### Install Jitsi-Meet
 
 First step is about installing jitsi-meet using [quick-start guide]. Once we're
 done we have basic installation up and running. Now we want to add Shibboleth
@@ -71,7 +71,7 @@ authentication to it.
 
 [quick-start guide]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md
 
-###Patch Prosody [optional]
+### Patch Prosody [optional]
 
 In order to have jitsi-meet system secure MUC room creation has to be restricted
 to 'admins' in Prosody config. Obviously Jicofo user must have admin permissions
@@ -81,7 +81,7 @@ a patch from the thread.
 
 [bug] https://code.google.com/p/lxmppd/issues/detail?id=458
 
-###Install Shibboleth SP with fast-cgi support [Ubuntu/Debian]
+### Install Shibboleth SP with fast-cgi support [Ubuntu/Debian]
 
 We need to install Shibboleth SP with fast-cgi support and integrate it with
 Nginx. This guide is based on original 'nginx-http-shibboleth' module
@@ -113,18 +113,18 @@ packages manually in the following order:
 
 At the end we should have:
 
-a) <b>/etc/shibboleth/</b> directory that contains Shibboleth SP configuration files
+a) **/etc/shibboleth/** directory that contains Shibboleth SP configuration files
 
-b) <b>shibd</b> deamon which can be started using 'sudo service shibd start'
+b) **shibd** deamon which can be started using 'sudo service shibd start'
 
-c) <b>/usr/lib/x86_64-linux-gnu/shibboleth/</b> directory which contains
+c) **/usr/lib/x86_64-linux-gnu/shibboleth/** directory which contains
 'shibauthorizer' and 'shibresponder'. Those are fast-cgi executables required
 for Nginx integration.
 
 If one of the above is missing it means that something went wrong or this guide
 is incorrect :P
 
-###Install and configure Supervisor
+### Install and configure Supervisor
 
 Install Supervisor utility by running:
 
@@ -138,7 +138,7 @@ Create configuration file:
 sudo touch /etc/supervisor/conf.d/shib.conf
 ```
 
-Edit <b>/etc/supervisor/conf.d/shib.conf</b> file:
+Edit **/etc/supervisor/conf.d/shib.conf** file:
 
 ```
 [fcgi-program:shibauthorizer]
@@ -167,7 +167,7 @@ Restart Supervisor:
 sudo service supervisor restart
 ```
 
-After restart it should create two UNIX sockets owned by <b>\_shibd</b> user:
+After restart it should create two UNIX sockets owned by **\_shibd** user:
 
 ```
 unix:///opt/shibboleth/shibauthorizer.sock
@@ -179,14 +179,14 @@ Also error logs mentioned in the config should be empty if everything works ok.
 [TODO: add description about making common user group for nginx and shibboleth
 workers, so that sockets can be set to 0660 mode]
 
-###Build Nginx from sources with fast-cgi and additional modules
+### Build Nginx from sources with fast-cgi and additional modules
 
 In order to make Nginx work with Shibboleth SP external modules
 'nginx-http-shibboleth' and 'headers-more' are required. Unfortunately it's not
 possible to add them on runtime, so we need to build Nginx from sources. By
 installing it from sources we'll overwrite Debian package installation which
 came with jitsi-meet, but this way we can take advantage of
-<b>/etc/init.d/nginx</b> script and initial configuration.
+**/etc/init.d/nginx** script and initial configuration.
 
 Download 'nginx-http-shibboleth' external module:
 
@@ -227,10 +227,10 @@ make
 sudo make install
 ```
 
-###Configure Nginx
+### Configure Nginx
 
 Open config for our jitsi-meet host
-<b>/etc/nginx/sites-available/{our_host}.conf</b>. After *BOSH* config append
+**/etc/nginx/sites-available/{our_host}.conf**. After *BOSH* config append
 Shibboleth configuration:
 
 ```
@@ -262,15 +262,15 @@ Type' 'AUTH_TYPE';
 }
 ```
 
-###Configure Shibboleth SP
+### Configure Shibboleth SP
 
 [Wiki]: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPConfiguration
 
 Before we can use Shibboleth, regular SP configuration is required, but it's out
 of the scope for this document. More info can be found on Shibboleth [Wiki].
 Assuming that basic SP configuration is working we need to add config for Jicofo
-'login location'. In order to do that edit <b>/etc/shibboleth/shibboleth2.xml</b>.
-Before <b>\<ApplicationDefaults\></b> element append following config(replace
+'login location'. In order to do that edit **/etc/shibboleth/shibboleth2.xml**.
+Before **\<ApplicationDefaults\>** element append following config(replace
 *{our host}* with jitsi-meet hostname):
 
 ```
@@ -285,9 +285,9 @@ Before <b>\<ApplicationDefaults\></b> element append following config(replace
 </RequestMapper>
 ```
 
-###Enable Shibboleth servlet in Jicofo
+### Enable Shibboleth servlet in Jicofo
 
-Edit <b>/etc/jitsi/jicofo/sip-communicator.properties</b> file
+Edit **/etc/jitsi/jicofo/sip-communicator.properties** file
 and add following lines:
 
 ```

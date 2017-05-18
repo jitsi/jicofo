@@ -1,4 +1,6 @@
-#Load balancing overview
+# Load balancing
+
+## Overview
 
 Load balancing is done by the jicofo component by selecting the least loaded
 videobridge instance from those detected during startup. Videobridges are
@@ -10,36 +12,36 @@ published by the bridge are available and this can be improved easily.
 
 [stats]: https://github.com/jitsi/jitsi-videobridge/blob/master/src/main/java/org/jitsi/videobridge/stats/VideobridgeStatistics.java
 
-#Load balancing configuration
+# Configuration
 
 In order to have load balancing working we have to make all bridges publish
 theirs stats to shared PubSub node and configure Jicofo to listen to them.
 
 There are following entities mentioned in the configuration:
 
-<b>XMPP PubSub service</b> - this is XMPP server endpoint that manages PubSub
+**XMPP PubSub service** - this is XMPP server endpoint that manages PubSub
 nodes,
  subscriptions and notifications, usually subdomain of the server. In Prosody
  this is VirtualHost with "pubsub" module enabled.
 
-<b>PubSub node</b> - this is PubSub endpoint created by videobridge instance on
+**PubSub node** - this is PubSub endpoint created by videobridge instance on
 PubSub service.
 
 Now some names which will be mentioned in the config:
 
-<b>example.com</b> - our VirtualHost name configured in Prosody with "pubsub"
+**example.com** - our VirtualHost name configured in Prosody with "pubsub"
  module enabled. This is also our "XMPP PubSub service".
 
-<b>jvb1.example.com</b> - first videobridge component
+**jvb1.example.com** - first videobridge component
 
-<b>jvb2.example.com</b> - second videobridge component
+**jvb2.example.com** - second videobridge component
 
-<b>sharedStatsNode</b> - this is the name of PubSub node to which first and second bridge will
+**sharedStatsNode** - this is the name of PubSub node to which first and second bridge will
 publish their stats
 
-###Step 1
+### Step 1
 Enable PubSub statistics in the videobridge. Assuming that Jvb has been
-installed using Debian package then edit <b>/etc/jitsi/videobridge/sip-communicator.properties</b>
+installed using Debian package then edit **/etc/jitsi/videobridge/sip-communicator.properties**
 file and add following lines(sample for the first bridge):
 
 ```
@@ -49,10 +51,10 @@ org.jitsi.videobridge.PUBSUB_SERVICE=example.com
 org.jitsi.videobridge.PUBSUB_NODE=sharedStatsNode
 ```
 
-###Step 2
+### Step 2
 Configure second videobridge instance just like the first one.
 
-###Step 3
+### Step 3
 Videobridge JIDs have to be added to "admins" of the server, so that they
 will have permissions for creating PubSub nodes:
 
@@ -64,9 +66,9 @@ admins = {
 }
 ```
 
-###Step 4
+### Step 4
 
-Edit <b>/etc/jitsi/jicofo/sip-communicator.properties</b>:
+Edit **/etc/jitsi/jicofo/sip-communicator.properties**:
 
 ```
 org.jitsi.focus.pubsub.ADDRESS=example.com
