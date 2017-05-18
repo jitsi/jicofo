@@ -1,33 +1,28 @@
-Jicofo
-======
+# Jicofo
 
 JItsi COnference FOcus is a server side focus component used in [Jitsi Meet]
  conferences.
 
 [Jitsi Meet]: https://github.com/jitsi/jitsi-meet
 
-Overview
-=====
+## Overview
 
 Conference focus is mandatory component of Jitsi Meet conferencing system next to the videobridge. It is responsible for managing media sessions between each of the participants and the videobridge. Whenever new conference is about to start an IQ is sent to the component to allocate new focus instance. After that special focus participant joins Multi User Chat room. It will be creating Jingle session between Jitsi videobridge and the participant. Although the session in terms of XMPP is between focus user and participant the media will flow between participant and the videobridge. That's because focus user will allocate Colibri channels on the bridge and use them as it's own Jingle transport.
 
-Quick install(from the start)
-====
+## Quick install (from the start)
 
 To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instruction which should install and configure 'jicofo' debian package next to 'jitsi-meet'.
 
 [quick install]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md
 
-Download
-====
+## Download
 
 You can download Debian/Ubuntu binaries:
 * [stable](https://download.jitsi.org/stable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianStableRepository))
 * [testing](https://download.jitsi.org/testing/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianTestingRepository))
 * [nightly](https://download.jitsi.org/unstable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianNightlyRepository))
 
-Old JavaScript client side focus replacement
-=====
+## Old JavaScript client side focus replacement
 
 Migration from old JavaScript focus is the easiest when Jitsi Meet was installed from debian package [quick install]. It should be enough to update 'jitsi-meet' package which will ask you to install also 'jicofo' package:
 ```
@@ -35,8 +30,7 @@ apt-get update
 apt-get install jitsi-meet
 ```
 
-Manual configuration for Prosody
-=====
+## Manual Prosody configuration
 
 Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method(jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration(etc\prosody\prosody.cfg.lua):
 ```
@@ -72,8 +66,7 @@ var config = {
     ...
 ```
 
-Running Jicofo from distribution package
-=====
+## Running Jicofo from distribution package
 
 1. Build distributon package using ant target for your OS: "dist.lin", "dist.lin64", "dist.macosx", "dist.win" or "dist.win64"
 2. Packge will be placed in 'dist/{os-name}' folder.
@@ -83,37 +76,17 @@ Running Jicofo from distribution package
     ./jicofo.sh --domain=jitsi.exmaple.com --secret=focus_secret --user_domain=auth.jitsi.example.com --user_name=focus --user_password=focuspassword
 ```
 
-Run arguments descripton
-====
-<ul>
-<li>
---domain=DOMAIN sets the XMPP domain
-</li>
-<li>
---host=HOST sets the hostname of the XMPP server (default: --domain, if --domain is set, localhost otherwise)
-</li>
-<li>
---port=PORT sets the port of the XMPP server (default: 5347)
-</li>
-<li>
---subdomain=SUBDOMAIN sets the sub-domain used to bind focus XMPP component (default: focus)
-</li>
-<li>
---secret=SECRET sets the shared secret used to authenticate focus component to the XMPP server
-</li>
-<li>
---user_domain=DOMAIN specifies the name of XMPP domain used by the focus user to login
-</li>
-<li>
---user_name=USERNAME specifies the username used by the focus XMPP user to login. (default: focus@user_domain)
-</li>
-<li>
---user_password=PASSWORD specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
-</li>
-</ul>
+## Run arguments descripton
+- --domain=DOMAIN sets the XMPP domain
+- --host=HOST sets the hostname of the XMPP server (default: --domain, if --domain is set, localhost otherwise)
+- --port=PORT sets the port of the XMPP server (default: 5347)
+- --subdomain=SUBDOMAIN sets the sub-domain used to bind focus XMPP component (default: focus)
+- --secret=SECRET sets the shared secret used to authenticate focus component to the XMPP server
+- --user_domain=DOMAIN specifies the name of XMPP domain used by the focus user to login
+- --user_name=USERNAME specifies the username used by the focus XMPP user to login. (default: focus@user_domain)
+- --user_password=PASSWORD specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
 
-Secure domain
-====
+## Secure domain
 
 It is possible to allow only authenticated users for creating new conference
 rooms. Whenever new room is about to be created Jitsi Meet will prompt for
@@ -151,7 +124,7 @@ authenticated domain.
 ```
 
 If you have Jicofo installed from the Debian package this should go directly to
-<b>/etc/jitsi/jicofo/sip-communicator.properties</b> file:
+**/etc/jitsi/jicofo/sip-communicator.properties** file:
 ```
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```
