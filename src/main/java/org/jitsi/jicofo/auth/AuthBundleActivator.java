@@ -22,6 +22,7 @@ import net.java.sip.communicator.util.Logger;
 
 import org.eclipse.jetty.ajp.*;
 import org.eclipse.jetty.server.*;
+import org.jitsi.jicofo.rest.*;
 import org.jitsi.rest.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
@@ -137,38 +138,50 @@ public class AuthBundleActivator
      * {@inheritDoc}
      */
     @Override
-    protected Handler initializeHandlerList(
+    protected Handler[] initializeHandlerLists(
             BundleContext bundleContext,
-            Server server)
+            Server privateServer,
+            Server publicServer)
         throws Exception
     {
-        List<Handler> handlers = new ArrayList<Handler>();
+        List<Handler> privateHandlers = null;
 
-        // Shibboleth
-        if (authAuthority instanceof ShibbolethAuthAuthority)
+        if (privateServer != null)
         {
-            ShibbolethAuthAuthority shibbolethAuthAuthority
-                = (ShibbolethAuthAuthority) authAuthority;
+            privateHandlers = new ArrayList<>();
 
-            handlers.add(new ShibbolethHandler(shibbolethAuthAuthority));
+            // Shibboleth
+            if (authAuthority instanceof ShibbolethAuthAuthority)
+            {
+                ShibbolethAuthAuthority shibbolethAuthAuthority
+                    = (ShibbolethAuthAuthority) authAuthority;
+
+                privateHandlers.add(
+                    new ShibbolethHandler(shibbolethAuthAuthority));
+            }
+
+            // FIXME While Shibboleth is optional, the health checks of Jicofo
+            // (over REST) are mandatory at the time of this writing. Make the
+            // latter optional as well (in a way similar to Videobridge, for
+            // example).
+            privateHandlers.add(new HandlerImpl(bundleContext));
         }
 
-        // FIXME While Shibboleth is optional, the health checks of Jicofo (over
-        // REST) are mandatory at the time of this writing. Make the latter
-        // optional as well (in a way similar to Videobridge, for example).
-        handlers.add(new org.jitsi.jicofo.rest.HandlerImpl(bundleContext));
-
-        return initializeHandlerList(handlers);
+        return new Handler[]
+            {
+                initializeHandlerList(privateHandlers),
+                null // we don't serve anything publicly
+            };
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Server initializeServer(BundleContext bundleContext)
+    protected Server[] initializeServers(BundleContext bundleContext)
         throws Exception
     {
-        Server server = super.initializeServer(bundleContext);
+        Server[] servers = super.initializeServers(bundleContext);
 
         if (authAuthority instanceof ShibbolethAuthAuthority)
         {
@@ -177,10 +190,14 @@ public class AuthBundleActivator
                 = new Ajp13SocketConnector();
 
             ajp13SocketConnector.setPort(8009);
-            server.addConnector(ajp13SocketConnector);
+            // Only add it to the private server.
+            if (servers[0] != null)
+            {
+                servers[0].addConnector(ajp13SocketConnector);
+            }
         }
 
-        return server;
+        return servers;
     }
 
     /**
