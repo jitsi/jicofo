@@ -250,10 +250,7 @@ public class JitsiMeetRecording
                     response.setTo(recState.from);
                     response.setFrom(recState.to);
 
-                    ColibriConference colibriConference
-                        = meetConference.getColibriConference();
-                    if(colibriConference != null)
-                        response.setName(colibriConference.getName());
+                    response.setName(meetConference.getRoomName());
 
                     response.setRecording(
                             new ColibriConferenceIQ.Recording(

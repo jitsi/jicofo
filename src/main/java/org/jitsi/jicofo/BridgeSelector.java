@@ -39,6 +39,7 @@ import java.util.*;
  * based on feedback from Jitsi Meet conference focus.
  *
  * @author Pawel Domas
+ * @author Boris Grozev
  */
 public class BridgeSelector
     implements SubscriptionListener,
@@ -239,7 +240,9 @@ public class BridgeSelector
         }
 
         if (bridge != null)
+        {
             notifyBridgeDown(bridge);
+        }
     }
 
     /**
@@ -251,12 +254,30 @@ public class BridgeSelector
      * @param participant the participant for which a bridge is to be selected.
      */
     synchronized public BridgeState selectVideobridge(
-            JitsiMeetConference conference, Participant participant)
+            JitsiMeetConferenceImpl conference, Participant participant)
     {
         List<BridgeState> bridges = getPrioritizedBridgesList();
         if (bridges.size() == 0)
         {
             return null;
+        }
+
+        // TODO: this is temporary hack, which implements the "single bridge"
+        // bridge selection strategy. It will be replaced with a proper
+        // implementation later.
+        if (conference != null)
+        {
+            String jid = conference.getJvbJid();
+            if (jid != null)
+            {
+                BridgeState bridgeState = getBridgeState(jid);
+                if (bridgeState == null)
+                {
+                    logger.error(
+                        "Could not find a conference's existing bridge...");
+                }
+                return bridgeState;
+            }
         }
 
         BridgeState bridge = bridges.get(0);
@@ -271,7 +292,7 @@ public class BridgeSelector
      * @return the selected bridge, represented by its {@link BridgeState}.
      */
     public BridgeState selectVideobridge(
-            JitsiMeetConference conference)
+            JitsiMeetConferenceImpl conference)
     {
         return selectVideobridge(conference, null);
     }
@@ -295,7 +316,9 @@ public class BridgeSelector
         {
             BridgeState bridge = bridgesIter.next();
             if (!bridge.isOperational())
+            {
                 bridgesIter.remove();
+            }
         }
 
         return bridgeList;
@@ -659,6 +682,19 @@ public class BridgeSelector
         {
             handlerRegistration.unregister();
             handlerRegistration = null;
+        }
+    }
+
+    /**
+     * @return the {@link BridgeState} for the bridge with a particular XMPP
+     * JID.
+     * @param jid the JID of the bridge.
+     */
+    public BridgeState getBridgeState(String jid)
+    {
+        synchronized (bridges)
+        {
+            return bridges.get(jid);
         }
     }
 }

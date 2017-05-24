@@ -243,7 +243,7 @@ public class JitsiMeetConfig
      * Returns the value of the start muted audio property.
      * @return the value of the start muted audio property.
      */
-    public Integer getAudioMuted()
+    public Integer getStartAudioMuted()
     {
         return getInt(START_AUDIO_MUTED);
     }
@@ -252,7 +252,7 @@ public class JitsiMeetConfig
      * Returns the value of the start muted video property.
      * @return the value of the start muted video property.
      */
-    public Integer getVideoMuted()
+    public Integer getStartVideoMuted()
     {
         return getInt(START_VIDEO_MUTED);
     }

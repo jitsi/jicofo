@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.util.*;
 
 /**
@@ -50,14 +49,4 @@ public interface JitsiMeetConference
      * @return {@link Participant} instance or <tt>null</tt> if not found.
      */
     Participant findParticipantForRoomJid(String mucJid);
-
-    /**
-     * The {@link ColibriConference} for this instance.
-     *
-     * @return {@link ColibriConference} currently allocated on the JVB for the
-     * conference handled by this {@link JitsiMeetConference} instance or
-     * <tt>null</tt> if there isn't any for some reason (not started, broken or
-     * ended).
-     */
-    ColibriConference getColibriConference();
 }

@@ -170,7 +170,7 @@ public class JvbDoctorTest
             assertNotNull(conference);
 
             // No jvb currently in use
-            assertNull(testConf.getConferenceUtility().getJvbConferenceId());
+            assertNull(testConf.conference.getJvbJid());
         }
 
         // Bridge is now healthy again
@@ -189,8 +189,7 @@ public class JvbDoctorTest
 
             assertNotNull(conference);
 
-            assertNotNull(
-                testConf.getConferenceUtility().getJvbConferenceId());
+            assertNotNull(testConf.conference.getJvbJid());
         }
 
         mockBridge.stop(osgi.bc);

@@ -156,6 +156,17 @@ public class Participant
     private String displayName = null;
 
     /**
+     * Used to synchronize access to {@link #channelAllocator}.
+     */
+    private final Object channelAllocatorSyncRoot = new Object();
+
+    /**
+     * The {@link ChannelAllocator}, if any, which is currently allocating
+     * channels for this participant.
+     */
+    private ChannelAllocator channelAllocator = null;
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link XmppChatMember} that represent this
@@ -747,5 +758,28 @@ public class Participant
     public String getMucJid()
     {
         return roomMember.getContactAddress();
+    }
+
+    /**
+     * Replaces the {@link ChannelAllocator}, which is currently allocating
+     * channels for this participant (if any) with the specified channel
+     * allocator (if any).
+     * @param channelAllocator the channel allocator to set, or {@code null}
+     * to clear it.
+     */
+    public void setChannelAllocator(ChannelAllocator channelAllocator)
+    {
+        synchronized (channelAllocatorSyncRoot)
+        {
+            if (this.channelAllocator != null)
+            {
+                // There is an ongoing thread allocating channels and sending
+                // an invite for this participant. Tell it to stop.
+                this.channelAllocator.cancel();
+                logger.warn("Canceling a ChannelAllocator.");
+            }
+
+            this.channelAllocator = channelAllocator;
+        }
     }
 }

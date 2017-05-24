@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.util.*;
 
 /**
@@ -42,15 +41,6 @@ public class MockJitsiMeetConference
      */
     @Override
     public Participant findParticipantForRoomJid(String jid)
-    {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ColibriConference getColibriConference()
     {
         return null;
     }
