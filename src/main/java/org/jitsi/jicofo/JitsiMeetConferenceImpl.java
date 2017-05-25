@@ -2058,25 +2058,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns the JID of one of the bridges used by this conference.
-     * TODO: remove this when the bridge selection strategy is properly
-     * implemented.
-     * @return the JID of one of the bridges used by this conference or
-     * {@code null} if the conference doesn't currently use any bridges.
-     */
-    public String getJvbJid()
-    {
-        for (BridgeDesc bridgeDesc : bridges)
-        {
-            if (bridgeDesc != null)
-            {
-                return bridgeDesc.bridgeState.getJid();
-            }
-        }
-        return null;
-    }
-
-    /**
      * Returns the COLIBRI conference ID of one of the bridges used by this
      * conference.
      * TODO: remove this (it is only used for testing)
