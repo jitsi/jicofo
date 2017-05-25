@@ -43,7 +43,7 @@ public interface OperationSetSubscription
 
     /**
      * Cancels subscriptions for given <tt>node</tt>.
-     * @param node the node for which subscription will be cancelled.
+     * @param node the node for which subscription will be canceled.
      * @param listener subscription listener to be registered.
      */
     void unSubscribe(String node, SubscriptionListener listener);

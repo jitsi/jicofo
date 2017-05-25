@@ -363,7 +363,7 @@ public class JvbDoctor
                 if (!tasks.containsKey(bridgeJid))
                 {
                     logger.info(
-                            "Health check task cancelled for: " + bridgeJid);
+                            "Health check task canceled for: " + bridgeJid);
                     return false;
                 }
                 return true;

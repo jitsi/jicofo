@@ -102,7 +102,7 @@ public class ChannelAllocator implements Runnable
     private final boolean reInvite;
 
     /**
-     * A flag which indicates whether channel allocation is cancelled. Raising
+     * A flag which indicates whether channel allocation is canceled. Raising
      * this makes the allocation thread discontinue the allocation process and
      * return.
      */
@@ -186,7 +186,7 @@ public class ChannelAllocator implements Runnable
             offer = createOffer();
             if (offer == null)
             {
-                logger.info("Channel allocation cancelled for " + address);
+                logger.info("Channel allocation canceled for " + address);
                 return;
             }
         }
@@ -407,7 +407,7 @@ public class ChannelAllocator implements Runnable
                             participant.getEndpointId(),
                             true /* initiator */, contents);
 
-                // null means cancelled, because colibriConference has been
+                // null means canceled, because colibriConference has been
                 // disposed by another thread
                 if (peerChannels == null)
                 {
