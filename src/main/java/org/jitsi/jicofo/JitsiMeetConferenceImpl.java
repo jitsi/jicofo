@@ -2224,6 +2224,7 @@ public class JitsiMeetConferenceImpl
         public boolean terminate(Participant participant)
         {
             //TODO synchronize?
+            // TODO: make sure this does not block waiting for a response
             boolean removed = participants.remove(participant);
 
             ColibriConferenceIQ channelsInfo
