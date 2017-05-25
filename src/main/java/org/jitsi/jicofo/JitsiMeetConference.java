@@ -17,7 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+
+import java.util.*;
 
 /**
  * The conference interface extracted from {@link JitsiMeetConferenceImpl} for
@@ -49,4 +52,27 @@ public interface JitsiMeetConference
      * @return {@link Participant} instance or <tt>null</tt> if not found.
      */
     Participant findParticipantForRoomJid(String mucJid);
+
+    /**
+     * @return the list of {@link BridgeState} currently used by this
+     * conference.
+     */
+    List<BridgeState> getBridges();
+
+    /**
+     * Returns the name of conference multi-user chat room.
+     */
+    public String getRoomName();
+
+    /**
+     * Returns focus MUC JID if it is in the room or <tt>null</tt> otherwise.
+     * JID example: room_name@muc.server.com/focus_nickname.
+     */
+    public String getFocusJid();
+
+    /**
+     * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
+     * currently in or <tt>null</tt> if it isn't in any.
+     */
+    public ChatRoom2 getChatRoom();
 }

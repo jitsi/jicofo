@@ -1581,8 +1581,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns the name of conference multi-user chat room.
+     * {@inheritDoc}
      */
+    @Override
     public String getRoomName()
     {
         return roomName;
@@ -1621,9 +1622,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns focus MUC JID if it is in the room or <tt>null</tt> otherwise.
-     * JID example: room_name@muc.server.com/focus_nickname.
+     * {@inheritDoc}
      */
+    @Override
     public String getFocusJid()
     {
 
@@ -1871,9 +1872,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
-     * currently in or <tt>null</tt> if it isn't in any.
+     * {@inheritDoc}
      */
+    @Override
     public ChatRoom2 getChatRoom()
     {
         return chatRoom;
@@ -2091,6 +2092,28 @@ public class JitsiMeetConferenceImpl
         }
         return null;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BridgeState> getBridges()
+    {
+        List<BridgeState> bridgeStates = new LinkedList<>();
+        synchronized (bridges)
+        {
+            for (BridgeDesc bridgeDesc : bridges)
+            {
+                // TODO: do we actually want the hasFailed check?
+                if (!bridgeDesc.bridgeHasFailed)
+                {
+                    bridgeStates.add(bridgeDesc.bridgeState);
+                }
+            }
+        }
+        return  bridgeStates;
+    }
+
 
     /**
      * The interface used to listen for conference events.

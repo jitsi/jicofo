@@ -88,7 +88,7 @@ public class JireconRecorder
      * @param connection XMPP connection instance which will be used for
      * communication.
      */
-    public JireconRecorder(JitsiMeetConferenceImpl conference,
+    public JireconRecorder(JitsiMeetConference conference,
                            String recorderComponentJid,
                            XmppConnection connection)
     {
