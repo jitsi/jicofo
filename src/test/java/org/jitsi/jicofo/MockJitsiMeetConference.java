@@ -17,7 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+
+import java.util.*;
 
 /**
  * Mock {@link JitsiMeetConference} implementation.
@@ -41,6 +44,30 @@ public class MockJitsiMeetConference
      */
     @Override
     public Participant findParticipantForRoomJid(String jid)
+    {
+        return null;
+    }
+
+    @Override
+    public List<BridgeState> getBridges()
+    {
+        return new LinkedList<>();
+    }
+
+    @Override
+    public String getRoomName()
+    {
+        return null;
+    }
+
+    @Override
+    public String getFocusJid()
+    {
+        return null;
+    }
+
+    @Override
+    public ChatRoom2 getChatRoom()
     {
         return null;
     }
