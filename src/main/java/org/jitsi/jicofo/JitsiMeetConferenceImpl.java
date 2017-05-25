@@ -2105,7 +2105,7 @@ public class JitsiMeetConferenceImpl
             for (BridgeDesc bridgeDesc : bridges)
             {
                 // TODO: do we actually want the hasFailed check?
-                if (!bridgeDesc.bridgeHasFailed)
+                if (!bridgeDesc.hasFailed)
                 {
                     bridgeStates.add(bridgeDesc.bridgeState);
                 }
@@ -2155,7 +2155,7 @@ public class JitsiMeetConferenceImpl
          * this flag to skip channel expiration step when the conference is being
          * disposed of.
          */
-        public boolean bridgeHasFailed = false;
+        public boolean hasFailed = false;
 
         /**
          * Initializes a new {@link BridgeDesc} instance.
@@ -2177,7 +2177,7 @@ public class JitsiMeetConferenceImpl
         {
             // We will not expire channels if the bridge is faulty or
             // when our connection is down
-            if (!bridgeHasFailed && protocolProviderHandler.isRegistered())
+            if (!hasFailed && protocolProviderHandler.isRegistered())
             {
                 colibriConference.expireConference();
             }
@@ -2230,7 +2230,7 @@ public class JitsiMeetConferenceImpl
             ColibriConferenceIQ channelsInfo
                 = participant.getColibriChannelsInfo();
 
-            if (channelsInfo != null && !bridgeHasFailed)
+            if (channelsInfo != null && !hasFailed)
             {
                 logger.info("Expiring channels for: " + participant.getMucJid());
                 colibriConference.expireChannels(channelsInfo);

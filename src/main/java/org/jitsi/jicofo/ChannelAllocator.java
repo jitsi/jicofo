@@ -438,7 +438,7 @@ public class ChannelAllocator implements Runnable
                         != exc.getErrorCode())
                 {
                     bridgeSelector.updateBridgeOperationalStatus(jvb, false);
-                    bridgeDesc.bridgeHasFailed = true;
+                    bridgeDesc.hasFailed = true;
                 }
 
                 // Check if the conference is in progress
