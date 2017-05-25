@@ -141,6 +141,12 @@ public class BridgeSelector
     private final Map<String, String> pubSubToBridge = new HashMap<>();
 
     /**
+     * The bridge selection strategy.
+     */
+    private BridgeSelectionStrategy bridgeSelectionStrategy
+        = new SingleBridgeSelectionStrategy();
+
+    /**
      * Creates new instance of {@link BridgeSelector}.
      *
      * @param subscriptionOpSet the operations set that will be used by this
@@ -254,45 +260,20 @@ public class BridgeSelector
      * @param participant the participant for which a bridge is to be selected.
      */
     synchronized public BridgeState selectVideobridge(
-            JitsiMeetConferenceImpl conference, Participant participant)
+            JitsiMeetConference conference, Participant participant)
     {
         List<BridgeState> bridges = getPrioritizedBridgesList();
-        if (bridges.size() == 0)
-        {
-            return null;
-        }
-
-        // TODO: this is temporary hack, which implements the "single bridge"
-        // bridge selection strategy. It will be replaced with a proper
-        // implementation later.
-        if (conference != null)
-        {
-            String jid = conference.getJvbJid();
-            if (jid != null)
-            {
-                BridgeState bridgeState = getBridgeState(jid);
-                if (bridgeState == null)
-                {
-                    logger.error(
-                        "Could not find a conference's existing bridge...");
-                }
-                return bridgeState;
-            }
-        }
-
-        BridgeState bridge = bridges.get(0);
-        return bridge.isOperational() ? bridge : null;
+        return bridgeSelectionStrategy.select(bridges, conference, participant);
     }
 
     /**
-     *
      * Selects a bridge to be used for a specific {@link JitsiMeetConference}.
      *
      * @param conference the conference for which a bridge is to be selected.
      * @return the selected bridge, represented by its {@link BridgeState}.
      */
     public BridgeState selectVideobridge(
-            JitsiMeetConferenceImpl conference)
+            JitsiMeetConference conference)
     {
         return selectVideobridge(conference, null);
     }
@@ -695,6 +676,134 @@ public class BridgeSelector
         synchronized (bridges)
         {
             return bridges.get(jid);
+        }
+    }
+
+    /**
+     * Represents an algorithm for bridge selection.
+     */
+    private abstract class BridgeSelectionStrategy
+    {
+        /**
+         * Selects a bridge to be used for a specific
+         * {@link JitsiMeetConference} and a specific {@link Participant}.
+         *
+         * @param bridges the list of bridges to select from.
+         * @param conference the conference for which a bridge is to be
+         * selected.
+         * @param participant the participant for which a bridge is to be
+         * selected.
+         * @return the selected bridge, or {@code null} if no bridge is
+         * available.
+         */
+        private BridgeState select(
+                List<BridgeState> bridges,
+                JitsiMeetConference conference,
+                Participant participant)
+        {
+            List<BridgeState> conferenceBridges = conference.getBridges();
+            if (conferenceBridges.isEmpty())
+            {
+                return selectInitial(bridges, conference, participant);
+            }
+            else
+            {
+                return doSelect(
+                        bridges, conferenceBridges,
+                        conference, participant);
+            }
+        }
+
+        /**
+         * Selects a bridge to be used for a specific
+         * {@link JitsiMeetConference} and a specific {@link Participant},
+         * assuming that no other bridge is used by the conference (i.e. this
+         * is the initial selection of a bridge for the conference).
+         *
+         * @param bridges the list of bridges to select from.
+         * @param conference the conference for which a bridge is to be
+         * selected.
+         * @param participant the participant for which a bridge is to be
+         * selected.
+         * @return the selected bridge, or {@code null} if no bridge is
+         * available.
+         */
+        private BridgeState selectInitial(List<BridgeState> bridges,
+                                  JitsiMeetConference conference,
+                                  Participant participant)
+        {
+            // TODO: take the region into account
+
+            for (BridgeState bridge : bridges)
+            {
+                if (bridge.isOperational())
+                {
+                    return bridge;
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Selects a bridge to be used for a specific
+         * {@link JitsiMeetConference} and a specific {@link Participant}.
+         *
+         * @param bridges the list of bridges to select from.
+         * @param conferenceBridges the list of bridges currently used by the
+         * conference.
+         * @param conference the conference for which a bridge is to be
+         * selected.
+         * @param participant the participant for which a bridge is to be
+         * selected.
+         * @return the selected bridge, or {@code null} if no bridge is
+         * available.
+         */
+        abstract BridgeState doSelect(
+                List<BridgeState> bridges,
+                List<BridgeState> conferenceBridges,
+                JitsiMeetConference conference,
+                Participant participant);
+    }
+
+    /**
+     * A {@link BridgeSelectionStrategy} implementation which keeps all
+     * participants in a conference on the same bridge.
+     */
+    private class SingleBridgeSelectionStrategy
+        extends BridgeSelectionStrategy
+    {
+        /**
+         * {@inheritDoc}
+         * </p>
+         * Always selects the bridge already used by the conference.
+         */
+        @Override
+        public BridgeState doSelect(
+                List<BridgeState> bridges,
+                List<BridgeState> conferenceBridges,
+                JitsiMeetConference conference,
+                Participant participant)
+        {
+            if (conferenceBridges.size() != 1)
+            {
+                logger.error("Unexpected number of bridges with "
+                                 + "SingleBridgeSelectionStrategy: "
+                                 + conferenceBridges.size());
+                return null;
+            }
+
+            BridgeState bridgeState = conferenceBridges.get(0);
+            if (!bridgeState.isOperational())
+            {
+                logger.error(
+                    "The conference already has a bridge, but it is not "
+                        + "operational; conference=" + conference.getRoomName()
+                        + "; bridge=" + bridgeState);
+                return null;
+            }
+
+            return bridgeState;
         }
     }
 }
