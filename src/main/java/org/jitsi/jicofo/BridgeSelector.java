@@ -160,30 +160,37 @@ public class BridgeSelector
 
     /**
      * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process.
+     * and taken into account in best bridge selection process. If a bridge
+     * with the given JID already exists, it is returned and a new instance is
+     * not created.
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
-     *                  set of videobridges.
+     * set of videobridges.
+     * @return the {@link BridgeState} for the bridge with the provided JID.
      */
-    public void addJvbAddress(String bridgeJid)
+    public BridgeState addJvbAddress(String bridgeJid)
     {
-        addJvbAddress(bridgeJid, null);
+        return addJvbAddress(bridgeJid, null);
     }
 
     /**
      * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process.
+     * and taken into account in best bridge selection process. If a bridge
+     * with the given JID already exists, it is returned and a new instance is
+     * not created.
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
-     *                  set of videobridges.
+     * set of videobridges.
      * @param version the {@link Version} IQ instance which contains the info
-     *                about JVB version.
+     * about JVB version.
+     * @return the {@link BridgeState} for the bridge with the provided JID.
      */
-    synchronized public void addJvbAddress(String bridgeJid, Version version)
+    synchronized public BridgeState addJvbAddress(
+            String bridgeJid, Version version)
     {
         if (isJvbOnTheList(bridgeJid))
         {
-            return;
+            return bridges.get(bridgeJid);
         }
 
         logger.info("Added videobridge: " + bridgeJid + " v: " + version);
@@ -206,6 +213,7 @@ public class BridgeSelector
         bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
+        return newBridge;
     }
 
     /**
@@ -303,28 +311,6 @@ public class BridgeSelector
         }
 
         return bridgeList;
-    }
-
-    /**
-     * Updates given *operational* status of the videobridge identified by given
-     * <tt>bridgeJid</tt> address.
-     *
-     * @param bridgeJid the XMPP address of the bridge.
-     * @param isWorking <tt>true</tt> if bridge successfully allocated
-     *                  the channels which means it is in *operational* state.
-     */
-    synchronized public void updateBridgeOperationalStatus(String bridgeJid,
-                                              boolean isWorking)
-    {
-        BridgeState bridge = bridges.get(bridgeJid);
-        if (bridge != null)
-        {
-            bridge.setIsOperational(isWorking);
-        }
-        else
-        {
-            logger.warn("No bridge registered for jid: " + bridgeJid);
-        }
     }
 
     /**
@@ -701,7 +687,10 @@ public class BridgeSelector
                 JitsiMeetConference conference,
                 Participant participant)
         {
-            List<BridgeState> conferenceBridges = conference.getBridges();
+            List<BridgeState> conferenceBridges
+                = conference == null
+                        ? new LinkedList<BridgeState>()
+                        : conference.getBridges();
             if (conferenceBridges.isEmpty())
             {
                 return selectInitial(bridges, conference, participant);

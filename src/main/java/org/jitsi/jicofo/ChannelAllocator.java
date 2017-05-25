@@ -414,7 +414,7 @@ public class ChannelAllocator implements Runnable
                     return null;
                 }
 
-                bridgeSelector.updateBridgeOperationalStatus(jvb, true);
+                bridgeDesc.bridgeState.setIsOperational(true);
 
                 if (bridgeDesc.colibriConference.hasJustAllocated())
                 {
@@ -437,7 +437,7 @@ public class ChannelAllocator implements Runnable
                 if (OperationFailedException.ILLEGAL_ARGUMENT
                         != exc.getErrorCode())
                 {
-                    bridgeSelector.updateBridgeOperationalStatus(jvb, false);
+                    bridgeDesc.bridgeState.setIsOperational(false);
                     bridgeDesc.hasFailed = true;
                 }
 
