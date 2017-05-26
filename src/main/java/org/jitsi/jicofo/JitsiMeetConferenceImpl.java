@@ -522,13 +522,15 @@ public class JitsiMeetConferenceImpl
             {
                 for (final ChatRoomMember member : chatRoom.getMembers())
                 {
-                    inviteChatMember(member, member == chatRoomMember);
+                    inviteChatMember(
+                            (XmppChatMember) member,
+                            member == chatRoomMember);
                 }
             }
             // Only the one who has just joined
             else
             {
-                inviteChatMember(chatRoomMember, true);
+                inviteChatMember((XmppChatMember) chatRoomMember, true);
             }
         }
     }
@@ -560,7 +562,7 @@ public class JitsiMeetConferenceImpl
      * result of just having joined (as opposed to e.g. another participant
      * joining triggering the invite).
      */
-    private void inviteChatMember(ChatRoomMember chatRoomMember,
+    private void inviteChatMember(XmppChatMember chatRoomMember,
                                   boolean justJoined)
     {
         synchronized (participantLock)
@@ -579,7 +581,7 @@ public class JitsiMeetConferenceImpl
             final Participant participant
                 = new Participant(
                         this,
-                        (XmppChatMember) chatRoomMember,
+                        chatRoomMember,
                         globalConfig.getMaxSSRCsPerUser());
 
             participants.add(participant);

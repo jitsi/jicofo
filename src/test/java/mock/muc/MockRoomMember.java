@@ -168,4 +168,10 @@ public class MockRoomMember
         // FIXME: not implemented
         return null;
     }
+
+    @Override
+    public String getRegion()
+    {
+        return null;
+    }
 }

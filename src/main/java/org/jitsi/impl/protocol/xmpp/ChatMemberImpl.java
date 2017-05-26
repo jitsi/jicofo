@@ -48,6 +48,12 @@ public class ChatMemberImpl
     private final String nickname;
 
     /**
+     * The region (e.g. "us-east") of this {@link ChatMemberImpl}, advertised
+     * by the remote peer in presence.
+     */
+    private String region;
+
+    /**
      * The chat room of the member.
      */
     private final ChatRoomImpl chatRoom;
@@ -262,6 +268,25 @@ public class ChatMemberImpl
                 this.robot = newStatus;
             }
         }
+
+        RegionPacketExtension regionPE
+            = (RegionPacketExtension)
+                presence.getExtension(
+                        RegionPacketExtension.ELEMENT_NAME,
+                        RegionPacketExtension.NAMESPACE);
+        if (regionPE != null)
+        {
+            region = regionPE.getRegionId();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getRegion()
+    {
+        return region;
     }
 
     /**

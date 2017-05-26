@@ -78,6 +78,11 @@ public class XmppProtocolActivator
                 VideoMutedExtension.NAMESPACE,
                 new DefaultPacketExtensionProvider<>(
                         VideoMutedExtension.class));
+        smackInterOp.addExtensionProvider(
+                RegionPacketExtension.ELEMENT_NAME,
+                RegionPacketExtension.NAMESPACE,
+                new DefaultPacketExtensionProvider<>(
+                        RegionPacketExtension.class));
 
         // Override original Smack Version IQ class
         AbstractSmackInteroperabilityLayer.getInstance()
