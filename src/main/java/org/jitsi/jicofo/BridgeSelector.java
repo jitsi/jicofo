@@ -457,6 +457,14 @@ public class BridgeSelector
                     bridgeState.setRelayId(relayId.toString());
                 }
             }
+            else if ("region".equals(stat.getName()))
+            {
+                Object region = stat.getValue();
+                if (region != null)
+                {
+                    bridgeState.setRegion(region.toString());
+                }
+            }
         }
     }
 

@@ -69,6 +69,12 @@ class BridgeState
     private String relayId = null;
 
     /**
+     * The region advertised by the bridge, or {@code null} if none was
+     * advertised.
+     */
+    private String region = null;
+
+    /**
      * Accumulates video stream count changes coming from
      * {@link BridgeEvent#VIDEOSTREAMS_CHANGED} in order to estimate video
      * stream count on the bridge. The value is included in the result
@@ -301,4 +307,22 @@ class BridgeState
     {
         return version;
     }
+
+    /**
+     * @return the region of this {@link BridgeState}.
+     */
+    public String getRegion()
+    {
+        return region;
+    }
+
+    /**
+     * Sets the region (e.g. "us-east") of this {@link BridgeState}.
+     * @param region the value to set.
+     */
+    public void setRegion(String region)
+    {
+        this.region = region;
+    }
+
 }
