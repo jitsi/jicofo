@@ -729,7 +729,19 @@ public class BridgeSelector
                                   JitsiMeetConference conference,
                                   Participant participant)
         {
-            // TODO: take the region into account
+            // Prefer a bridge in the participant's region.
+            String participantRegion = participant.getChatMember().getRegion();
+            if (participantRegion != null)
+            {
+                for (BridgeState bridge : bridges)
+                {
+                    if (bridge.isOperational()
+                        && participantRegion.equals(bridge.getRegion()))
+                    {
+                        return bridge;
+                    }
+                }
+            }
 
             for (BridgeState bridge : bridges)
             {
