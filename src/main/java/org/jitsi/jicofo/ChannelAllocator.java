@@ -151,6 +151,8 @@ public class ChannelAllocator implements Runnable
         {
             logger.error("Exception on participant invite", e);
         }
+
+        participant.channelAllocatorCompleted(this);
     }
 
     /**

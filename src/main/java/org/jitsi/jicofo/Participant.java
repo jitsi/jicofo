@@ -782,4 +782,22 @@ public class Participant
             this.channelAllocator = channelAllocator;
         }
     }
+
+    /**
+     * Signals to this {@link Participant} that a specific
+     * {@link ChannelAllocator} has completed its task and its thread is about
+     * to terminate.
+     * @param channelAllocator the {@link ChannelAllocator} which has completed
+     * its task and its thread is about to terminate.
+     */
+    void channelAllocatorCompleted(ChannelAllocator channelAllocator)
+    {
+        synchronized (channelAllocatorSyncRoot)
+        {
+            if (this.channelAllocator == channelAllocator)
+            {
+                this.channelAllocator = null;
+            }
+        }
+    }
 }
