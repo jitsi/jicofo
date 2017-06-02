@@ -225,10 +225,7 @@ public class ColibriConferenceImpl
     @Override
     public String getConferenceId()
     {
-        synchronized (syncRoot)
-        {
-            return conferenceState.getID();
-        }
+        return conferenceState.getID();
     }
 
     /**
