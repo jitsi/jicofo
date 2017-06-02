@@ -102,6 +102,10 @@ public class ColibriConferenceImpl
      * The error code produced by the allocator thread which is to be passed to
      * the waiting threads, so that they will throw
      * {@link OperationFailedException} consistent with the allocator thread.
+     *
+     * Note: this and {@link #allocChannelsErrorMsg} are only used to modify
+     * the message logged when an exception is thrown. They are NOT used to
+     * decide whether to throw an exception or not.
      */
     private int allocChannelsErrorCode = -1;
 
@@ -377,50 +381,60 @@ public class ColibriConferenceImpl
     private void maybeThrowOperationFailed(Packet response)
         throws OperationFailedException
     {
-        if (response == null)
+        // This code block must be protected, because in the last "if" a
+        // decision is made based on the value of allocChannelsErrorCode, which
+        // could have been written by another thread. We use syncRoot, because
+        // the existing code already runs with its lock acquired.
+        synchronized (syncRoot)
         {
-            allocChannelsErrorCode
-                = OperationFailedException.NETWORK_FAILURE;
-            allocChannelsErrorMsg
-                = "Failed to allocate colibri channels: response is null."
-                + " Maybe the response timed out.";
-        }
-        else if (response.getError() != null)
-        {
-            XMPPError error = response.getError();
-            if (XMPPError.Condition
-                    .bad_request.toString().equals(error.getCondition()))
+            if (response == null)
             {
                 allocChannelsErrorCode
-                    = OperationFailedException.ILLEGAL_ARGUMENT;
+                    = OperationFailedException.NETWORK_FAILURE;
                 allocChannelsErrorMsg
-                    = "Failed to allocate colibri channels - bad request: "
-                            + response.toXML();
+                    = "Failed to allocate colibri channels: response is null."
+                            + " Maybe the response timed out.";
             }
-            else
+            else if (response.getError() != null)
+            {
+                XMPPError error = response.getError();
+                if (XMPPError.Condition
+                    .bad_request.toString().equals(error.getCondition()))
+                {
+                    allocChannelsErrorCode
+                        = OperationFailedException.ILLEGAL_ARGUMENT;
+                    allocChannelsErrorMsg
+                        = "Failed to allocate colibri channels - bad request: "
+                                + response.toXML();
+                }
+                else
+                {
+                    allocChannelsErrorCode
+                        = OperationFailedException.GENERAL_ERROR;
+                    allocChannelsErrorMsg
+                        = "Failed to allocate colibri channels: "
+                                + response.toXML();
+                }
+            }
+            else if (!(response instanceof ColibriConferenceIQ))
             {
                 allocChannelsErrorCode = OperationFailedException.GENERAL_ERROR;
                 allocChannelsErrorMsg
-                    = "Failed to allocate colibri channels: "
-                            + response.toXML();
+                    = "Failed to allocate colibri channels: response is not a"
+                            + " colibri conference";
+            }
+            else
+            {
+                allocChannelsErrorCode = -1;
+                allocChannelsErrorMsg = null;
+            }
+
+            if (allocChannelsErrorCode != -1)
+            {
+                throw new OperationFailedException(
+                    allocChannelsErrorMsg, allocChannelsErrorCode);
             }
         }
-        else if (!(response instanceof ColibriConferenceIQ))
-        {
-            allocChannelsErrorCode = OperationFailedException.GENERAL_ERROR;
-            allocChannelsErrorMsg
-                = "Failed to allocate colibri channels: response is not a"
-                        + " colibri conference";
-        }
-        else
-        {
-            allocChannelsErrorCode = -1;
-            allocChannelsErrorMsg = null;
-        }
-
-        if (allocChannelsErrorCode != -1)
-            throw new OperationFailedException(
-                    allocChannelsErrorMsg, allocChannelsErrorCode);
     }
 
     /**
