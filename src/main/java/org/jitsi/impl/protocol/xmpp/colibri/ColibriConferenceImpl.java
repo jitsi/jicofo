@@ -257,20 +257,27 @@ public class ColibriConferenceImpl
         final int newVideoChannelsCount
             = JingleOfferFactory.containsVideoContent(contents) ? 1 : 0;
 
+        boolean conferenceExisted;
         try
         {
             synchronized (syncRoot)
             {
                 // Only if not in 'disposed' state
                 if (checkIfDisposed("createColibriChannels"))
-                    return null;
-
-                synchronized (stateEstimationSync)
                 {
-                    trackVideoChannelsAddedRemoved(newVideoChannelsCount);
+                    return null;
                 }
 
-                acquireCreateConferenceSemaphore(endpointName);
+                if (newVideoChannelsCount != 0)
+                {
+                    synchronized (stateEstimationSync)
+                    {
+                        trackVideoChannelsAddedRemoved(newVideoChannelsCount);
+                    }
+                }
+
+                conferenceExisted
+                    = !acquireCreateConferenceSemaphore(endpointName);
 
                 colibriBuilder.reset();
 
@@ -298,8 +305,6 @@ public class ColibriConferenceImpl
             // Verify the response and throw OperationFailedException
             // if it's not a success
             maybeThrowOperationFailed(response);
-
-            boolean conferenceExisted = getConferenceId() != null;
 
             /*
              * Update the complete ColibriConferenceIQ representation maintained by
