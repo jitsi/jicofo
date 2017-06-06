@@ -612,10 +612,14 @@ public class XmppProtocolProvider
             Objects.requireNonNull(packet, "packet");
 
             if (connection.isConnected())
+            {
                 connection.sendPacket(packet);
+            }
             else
+            {
                 logger.error(
                     "No connection - unable to send packet: " + packet.toXML());
+            }
         }
 
         /**
@@ -632,11 +636,15 @@ public class XmppProtocolProvider
                         new PacketIDFilter(packet.getPacketID()));
 
             if (connection.isConnected())
+            {
                 connection.sendPacket(packet);
+            }
             else
+            {
                 throw new OperationFailedException(
                     "No connection - unable to send packet: " + packet.toXML(),
                     OperationFailedException.PROVIDER_NOT_REGISTERED);
+            }
 
             //FIXME: retry allocation on timeout
             Packet response
