@@ -243,6 +243,9 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
+     * </p>
+     * Blocks until a reply is received (and might also block waiting for
+     * the conference to be allocated before sending the request).
      */
     @Override
     public ColibriConferenceIQ createColibriChannels(
@@ -288,7 +291,9 @@ public class ColibriConferenceImpl
             }
 
             if (logger.isDebugEnabled())
+            {
                 logger.debug(Thread.currentThread() + " sending alloc request");
+            }
 
             logRequest("Channel allocate request", allocateRequest);
 
@@ -298,9 +303,11 @@ public class ColibriConferenceImpl
             logResponse("Channel allocate response", response);
 
             if (logger.isDebugEnabled())
+            {
                 logger.debug(
                     Thread.currentThread() +
                         " - have alloc response? " + (response != null));
+            }
 
             // Verify the response and throw OperationFailedException
             // if it's not a success
@@ -446,7 +453,7 @@ public class ColibriConferenceImpl
      *
      * Methods exposed for unit test purpose.
      *
-     * @param endpointName the name of Colibri endpoint(conference participant)
+     * @param endpointName the name of Colibri endpoint (conference participant)
      *
      * @return <tt>true</tt> if current thread is conference creator.
      *
@@ -477,7 +484,7 @@ public class ColibriConferenceImpl
      *
      * Exposed for unit tests purpose.
      *
-     * @param endpointName Colibri endpoint name(participant)
+     * @param endpointName Colibri endpoint name (participant)
      * @param request Colibri IQ to be send towards the bridge.
      *
      * @return <tt>Packet</tt> which is JVB response or <tt>null</tt> if
@@ -500,9 +507,9 @@ public class ColibriConferenceImpl
     {
         synchronized (syncRoot)
         {
-            if (this.justAllocated)
+            if (justAllocated)
             {
-                this.justAllocated = false;
+                justAllocated = false;
                 return true;
             }
             return false;
@@ -512,7 +519,9 @@ public class ColibriConferenceImpl
     private void logResponse(String message, Packet response)
     {
         if (!logger.isDebugEnabled())
+        {
             return;
+        }
 
         String responseXml = IQUtils.responseToXML(response);
 
@@ -524,11 +533,15 @@ public class ColibriConferenceImpl
     private void logRequest(String message, IQ iq)
     {
         if (logger.isDebugEnabled())
-            logger.debug(message + "\n" + iq.toXML().replace(">",">\n"));
+        {
+            logger.debug(message + "\n" + iq.toXML().replace(">", ">\n"));
+        }
     }
 
     /**
      * {@inheritDoc}
+     * </t>
+     * Does not block or wait for a response.
      */
     @Override
     public void expireChannels(ColibriConferenceIQ channelInfo)
@@ -539,7 +552,9 @@ public class ColibriConferenceImpl
         {
             // Only if not in 'disposed' state
             if (checkIfDisposed("expireChannels"))
+            {
                 return;
+            }
 
             colibriBuilder.reset();
 
@@ -567,6 +582,8 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
+     * </t>
+     * Does not block or wait for a response.
      */
     @Override
     public void updateRtpDescription(
@@ -579,7 +596,9 @@ public class ColibriConferenceImpl
         {
             // Only if not in 'disposed' state
             if (checkIfDisposed("updateRtpDescription"))
+            {
                 return;
+            }
 
             colibriBuilder.reset();
 
@@ -598,6 +617,8 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
+     * </t>
+     * Does not block or wait for a response.
      */
     @Override
     public void updateTransportInfo(
@@ -609,7 +630,9 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             if (checkIfDisposed("updateTransportInfo"))
+            {
                 return;
+            }
 
             colibriBuilder.reset();
 
@@ -628,6 +651,8 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
+     * </t>
+     * Does not block or wait for a response.
      */
     @Override
     public void updateSourcesInfo(MediaSourceMap sources,
@@ -639,7 +664,9 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             if (checkIfDisposed("updateSourcesInfo"))
+            {
                 return;
+            }
 
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
             {
@@ -681,6 +708,8 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
+     * </t>
+     * Does not block or wait for a response.
      */
     @Override
     public void updateBundleTransportInfo(
@@ -692,7 +721,9 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             if (checkIfDisposed("updateBundleTransportInfo"))
+            {
                 return;
+            }
 
             colibriBuilder.reset();
 
@@ -712,6 +743,8 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
+     * </t>
+     * Does not block or wait for a response.
      */
     @Override
     public void expireConference()
@@ -721,7 +754,9 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             if (checkIfDisposed("expireConference"))
+            {
                 return;
+            }
 
             colibriBuilder.reset();
 
@@ -778,7 +813,9 @@ public class ColibriConferenceImpl
                                    boolean mute)
     {
         if (checkIfDisposed("muteParticipant"))
+        {
             return false;
+        }
 
         ColibriConferenceIQ request = new ColibriConferenceIQ();
         request.setID(conferenceState.getID());
@@ -870,7 +907,9 @@ public class ColibriConferenceImpl
         synchronized (syncRoot)
         {
             if (checkIfDisposed("updateChannelsInfo"))
+            {
                 return;
+            }
 
             colibriBuilder.reset();
 
@@ -1023,17 +1062,22 @@ public class ColibriConferenceImpl
                     creatorThread = Thread.currentThread();
 
                     if (logger.isDebugEnabled())
+                    {
                         logger.debug("I'm the conference creator - " +
-                                     Thread.currentThread().getName());
+                                         Thread.currentThread().getName());
+                    }
 
                     return true;
                 }
                 else
                 {
                     if (logger.isDebugEnabled())
+                    {
                         logger.debug(
                             "Will have to wait until the conference " +
-                            "is created - " + Thread.currentThread().getName());
+                                "is created - " + Thread.currentThread()
+                                .getName());
+                    }
 
                     while (creatorThread != null)
                     {
@@ -1057,10 +1101,12 @@ public class ColibriConferenceImpl
                     }
 
                     if (logger.isDebugEnabled())
+                    {
                         logger.debug(
                             "Conference created ! Continuing with " +
-                            "channel allocation -" +
-                            Thread.currentThread().getName());
+                                "channel allocation -" +
+                                Thread.currentThread().getName());
+                    }
                 }
             }
             return false;
@@ -1077,9 +1123,11 @@ public class ColibriConferenceImpl
                 if (creatorThread == Thread.currentThread())
                 {
                     if (logger.isDebugEnabled())
+                    {
                         logger.debug(
-                            "Conference creator is releasing " +
-                            "the lock - " + Thread.currentThread().getName());
+                               "Conference creator is releasing the lock - "
+                                    + Thread.currentThread().getName());
+                    }
 
                     creatorThread = null;
                     syncRoot.notifyAll();
