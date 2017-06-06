@@ -386,9 +386,6 @@ public class ChannelAllocator implements Runnable
             return null;
         }
 
-        BridgeSelector bridgeSelector
-            = meetConference.getServices().getBridgeSelector();
-
         String jvb = bridgeSession.colibriConference.getJitsiVideobridge();
         if (StringUtils.isNullOrEmpty(jvb))
         {
