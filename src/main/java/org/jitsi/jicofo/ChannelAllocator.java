@@ -106,7 +106,7 @@ public class ChannelAllocator implements Runnable
      * this makes the allocation thread discontinue the allocation process and
      * return.
      */
-    private boolean canceled = false;
+    private volatile boolean canceled = false;
 
     /**
      * Initializes a new {@link ChannelAllocator} instance which is meant to

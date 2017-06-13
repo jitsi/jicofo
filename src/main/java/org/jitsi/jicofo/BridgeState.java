@@ -100,12 +100,13 @@ class BridgeState
      * working bridges go down and might eventually get elevated back to
      * {@code true}.
      */
-    private boolean isOperational = true /* we assume it is operational */;
+    private volatile boolean isOperational
+        = true /* we assume it is operational */;
 
     /**
      * The time when this instance has failed.
      */
-    private long failureTimestamp;
+    private volatile long failureTimestamp;
 
     BridgeState(BridgeSelector bridgeSelector, String bridgeJid,
                 Version version)
