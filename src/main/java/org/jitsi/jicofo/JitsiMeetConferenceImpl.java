@@ -215,9 +215,9 @@ public class JitsiMeetConferenceImpl
     private ScheduledExecutorService executor;
 
     /**
-     * The list of {@link BridgeDesc} currently in use by this conference.
+     * The list of {@link BridgeSession} currently in use by this conference.
      */
-    private final List<BridgeDesc> bridges = new LinkedList<>();
+    private final List<BridgeSession> bridges = new LinkedList<>();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -592,15 +592,15 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private BridgeDesc inviteParticipant(
+    private BridgeSession inviteParticipant(
             Participant participant,
             boolean reInvite,
             boolean[] startMuted)
     {
-        BridgeDesc bridgeDesc;
+        BridgeSession bridgeSession;
         synchronized (bridges)
         {
-            if (findBridgeDesc(participant) != null)
+            if (findBridgeSession(participant) != null)
             {
                 // This should never happen.
                 logger.error("The participant already has a bridge?");
@@ -640,27 +640,27 @@ public class JitsiMeetConferenceImpl
 
             }
 
-            bridgeDesc = findBridgeDesc(bridgeState);
-            if (bridgeDesc == null)
+            bridgeSession = findBridgeSession(bridgeState);
+            if (bridgeSession == null)
             {
                 // The selected bridge is not yet used for this conference,
-                // so initialize a new BridgeDesc
-                bridgeDesc = new BridgeDesc(bridgeState);
-                bridges.add(bridgeDesc);
+                // so initialize a new BridgeSession
+                bridgeSession = new BridgeSession(bridgeState);
+                bridges.add(bridgeSession);
                 // TODO: if the number of bridges changes 1->2 or 2->1, then
                 // we need to enable/disable relaying.
             }
 
-            bridgeDesc.participants.add(participant);
+            bridgeSession.participants.add(participant);
             logger.info("Added participant jid= " + participant.getMucJid()
-                            + ", bridge=" + bridgeDesc.bridgeState.getJid());
+                            + ", bridge=" + bridgeSession.bridgeState.getJid());
 
             // Colibri channel allocation and jingle invitation take time, so
             // schedule them on a separate thread.
             ChannelAllocator channelAllocator
                 = new ChannelAllocator(
                         this,
-                        bridgeDesc,
+                        bridgeSession,
                         participant,
                         startMuted,
                         reInvite);
@@ -669,24 +669,24 @@ public class JitsiMeetConferenceImpl
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
         }
 
-        return bridgeDesc;
+        return bridgeSession;
     }
 
     /**
-     * @return the {@link BridgeDesc} instance which is used for a specific
+     * @return the {@link BridgeSession} instance which is used for a specific
      * {@link Participant}, or {@code null} if there is no bridge for the
      * participant.
      * @param participant the {@link Participant} for which to find the bridge.
      */
-    private BridgeDesc findBridgeDesc(Participant participant)
+    private BridgeSession findBridgeSession(Participant participant)
     {
         synchronized (bridges)
         {
-            for (BridgeDesc bridgeDesc : bridges)
+            for (BridgeSession bridgeSession : bridges)
             {
-                if (bridgeDesc.participants.contains(participant))
+                if (bridgeSession.participants.contains(participant))
                 {
-                    return bridgeDesc;
+                    return bridgeSession;
                 }
             }
         }
@@ -694,23 +694,23 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * @return the {@link BridgeDesc} instance used by this
+     * @return the {@link BridgeSession} instance used by this
      * {@link JitsiMeetConferenceImpl} which corresponds to a particular
      * jitsi-videobridge instance represented by a {@link BridgeState}, or
      * {@code null} if the {@link BridgeState} is not currently used in this
      * conference.
-     * @param state the {@link BridgeDesc} which represents a particular
-     * jitsi-videobridge instance for which to return the {@link BridgeDesc}.
+     * @param state the {@link BridgeSession} which represents a particular
+     * jitsi-videobridge instance for which to return the {@link BridgeSession}.
      */
-    private BridgeDesc findBridgeDesc(BridgeState state)
+    private BridgeSession findBridgeSession(BridgeState state)
     {
         synchronized (bridges)
         {
-            for (BridgeDesc bridgeDesc : bridges)
+            for (BridgeSession bridgeSession : bridges)
             {
-                if (bridgeDesc.bridgeState.equals(state))
+                if (bridgeSession.bridgeState.equals(state))
                 {
-                    return bridgeDesc;
+                    return bridgeSession;
                 }
             }
         }
@@ -719,23 +719,23 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * @return the {@link BridgeDesc} instance used by this
+     * @return the {@link BridgeSession} instance used by this
      * {@link JitsiMeetConferenceImpl} which corresponds to a particular
      * jitsi-videobridge instance represented by its JID, or
      * {@code null} if the {@link BridgeState} is not currently used in this
      * conference.
      * @param jid the XMPP JID which represents a particular
-     * jitsi-videobridge instance for which to return the {@link BridgeDesc}.
+     * jitsi-videobridge instance for which to return the {@link BridgeSession}.
      */
-    private BridgeDesc findBridgeDesc(String jid)
+    private BridgeSession findBridgeSession(String jid)
     {
         synchronized (bridges)
         {
-            for (BridgeDesc bridgeDesc : bridges)
+            for (BridgeSession bridgeSession : bridges)
             {
-                if (bridgeDesc.bridgeState.getJid().equals(jid))
+                if (bridgeSession.bridgeState.getJid().equals(jid))
                 {
-                    return bridgeDesc;
+                    return bridgeSession;
                 }
             }
         }
@@ -905,12 +905,12 @@ public class JitsiMeetConferenceImpl
 
         synchronized (bridges)
         {
-            for (BridgeDesc bridgeDesc : bridges)
+            for (BridgeSession bridgeSession : bridges)
             {
                 // No need to expire channels, just expire the whole colibri
                 // conference.
-                // bridgeDesc.terminateAll();
-                bridgeDesc.dispose();
+                // bridgeSession.terminateAll();
+                bridgeSession.dispose();
             }
             bridges.clear();
         }
@@ -997,10 +997,10 @@ public class JitsiMeetConferenceImpl
 
             // Cancel any threads currently trying to invite the participant.
             participant.setChannelAllocator(null);
-            BridgeDesc bridgeDesc = findBridgeDesc(participant);
-            if (bridgeDesc != null)
+            BridgeSession bridgeSession = findBridgeSession(participant);
+            if (bridgeSession != null)
             {
-                bridgeDesc.terminate(participant);
+                bridgeSession.terminate(participant);
             }
 
             boolean removed = participants.remove(participant);
@@ -1159,10 +1159,10 @@ public class JitsiMeetConferenceImpl
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
         // peer on the new bridge
-        BridgeDesc bridgeDesc = findBridgeDesc(participant);
-        if (bridgeDesc != null)
+        BridgeSession bridgeSession = findBridgeSession(participant);
+        if (bridgeSession != null)
         {
-            bridgeDesc.colibriConference.updateChannelsInfo(
+            bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
                     peerSSRCs,
@@ -1266,10 +1266,10 @@ public class JitsiMeetConferenceImpl
         // based on it's hasBundleSupport() value
         participant.addTransportFromJingle(contentList);
 
-        BridgeDesc bridgeDesc = findBridgeDesc(participant);
+        BridgeSession bridgeSession = findBridgeSession(participant);
         // We can hit null here during conference restart, but the state will be
         // synced up later when the client sends 'transport-accept'
-        if (bridgeDesc == null)
+        if (bridgeSession == null)
         {
             logger.warn("Skipped transport-info processing - no conference");
             return;
@@ -1277,13 +1277,13 @@ public class JitsiMeetConferenceImpl
 
         if (participant.hasBundleSupport())
         {
-            bridgeDesc.colibriConference.updateBundleTransportInfo(
+            bridgeSession.colibriConference.updateBundleTransportInfo(
                     participant.getBundleTransport(),
                     participant.getColibriChannelsInfo());
         }
         else
         {
-            bridgeDesc.colibriConference.updateTransportInfo(
+            bridgeSession.colibriConference.updateTransportInfo(
                     participant.getTransportMap(),
                     participant.getColibriChannelsInfo());
         }
@@ -1383,10 +1383,10 @@ public class JitsiMeetConferenceImpl
         // Updates SSRC Groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
-        BridgeDesc bridgeDesc = findBridgeDesc(participant);
-        if (bridgeDesc != null)
+        BridgeSession bridgeSession = findBridgeSession(participant);
+        if (bridgeSession != null)
         {
-            bridgeDesc.colibriConference.updateSourcesInfo(
+            bridgeSession.colibriConference.updateSourcesInfo(
                     participant.getSSRCsCopy(),
                     participant.getSSRCGroupsCopy(),
                     participant.getColibriChannelsInfo());
@@ -1476,13 +1476,13 @@ public class JitsiMeetConferenceImpl
         SSRCSignaling.deleteSSRCParams(ssrcsToRemove);
 
         // Updates SSRC Groups on the bridge
-        BridgeDesc bridgeDesc = findBridgeDesc(participant);
+        BridgeSession bridgeSession = findBridgeSession(participant);
         // We may hit null here during conference restart, but that's not
         // important since the bridge for this instance will not be used
         // anymore and state is synced up soon after channels are allocated
-        if (updateChannels && bridgeDesc != null)
+        if (updateChannels && bridgeSession != null)
         {
-            bridgeDesc.colibriConference.updateSourcesInfo(
+            bridgeSession.colibriConference.updateSourcesInfo(
                     participant.getSSRCsCopy(),
                     participant.getSSRCGroupsCopy(),
                     participant.getColibriChannelsInfo());
@@ -1699,10 +1699,10 @@ public class JitsiMeetConferenceImpl
             "Will " + (doMute ? "mute" : "unmute")
                 + " " + toBeMutedJid + " on behalf of " + fromJid);
 
-        BridgeDesc bridgeDesc = findBridgeDesc(participant);
+        BridgeSession bridgeSession = findBridgeSession(participant);
         boolean succeeded
-            = bridgeDesc != null
-                    && bridgeDesc.colibriConference.muteParticipant(
+            = bridgeSession != null
+                    && bridgeSession.colibriConference.muteParticipant(
                             participant.getColibriChannelsInfo(), doMute);
 
         if (succeeded)
@@ -1785,17 +1785,17 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (bridges)
         {
-            BridgeDesc bridgeDesc = findBridgeDesc(bridgeJid);
-            if (bridgeDesc != null)
+            BridgeSession bridgeSession = findBridgeSession(bridgeJid);
+            if (bridgeSession != null)
             {
                 logger.error("One of our bridges failed: " + bridgeJid);
 
                 // Note: the Jingle sessions are still alive, we'll just
                 // (try to) move to a new bridge and send transport-replace.
                 List<Participant> participantsToReinvite
-                    = bridgeDesc.terminateAll();
+                    = bridgeSession.terminateAll();
 
-                bridges.remove(bridgeDesc);
+                bridges.remove(bridgeSession);
 
                 for (Participant participant : participantsToReinvite)
                 {
@@ -1851,9 +1851,9 @@ public class JitsiMeetConferenceImpl
         // We're gonna handle this, no more work for this ChannelAllocator.
         channelAllocator.cancel();
 
-        BridgeDesc bridgeDesc = channelAllocator.getBridgeDesc();
+        BridgeSession bridgeSession = channelAllocator.getBridgeSession();
         Participant participant = channelAllocator.getParticipant();
-        bridgeDesc.terminate(participant);
+        bridgeSession.terminate(participant);
 
         // Retry once.
         // TODO: be smarter about re-trying
@@ -1867,7 +1867,7 @@ public class JitsiMeetConferenceImpl
         }
         else
         {
-            onBridgeDown(bridgeDesc.bridgeState.getJid());
+            onBridgeDown(bridgeSession.bridgeState.getJid());
         }
     }
 
@@ -2064,11 +2064,11 @@ public class JitsiMeetConferenceImpl
      */
     public String getJvbConferenceId()
     {
-        for (BridgeDesc bridgeDesc : bridges)
+        for (BridgeSession bridgeSession : bridges)
         {
-            if (bridgeDesc != null)
+            if (bridgeSession != null)
             {
-                return bridgeDesc.colibriConference.getConferenceId();
+                return bridgeSession.colibriConference.getConferenceId();
             }
         }
         return null;
@@ -2083,12 +2083,12 @@ public class JitsiMeetConferenceImpl
         List<BridgeState> bridgeStates = new LinkedList<>();
         synchronized (bridges)
         {
-            for (BridgeDesc bridgeDesc : bridges)
+            for (BridgeSession bridgeSession : bridges)
             {
                 // TODO: do we actually want the hasFailed check?
-                if (!bridgeDesc.hasFailed)
+                if (!bridgeSession.hasFailed)
                 {
-                    bridgeStates.add(bridgeDesc.bridgeState);
+                    bridgeStates.add(bridgeSession.bridgeState);
                 }
             }
         }
@@ -2112,7 +2112,7 @@ public class JitsiMeetConferenceImpl
      * Represents a {@link BridgeState} instance as used by this
      * {@link JitsiMeetConferenceImpl}.
      */
-    class BridgeDesc
+    class BridgeSession
     {
         /**
          * The {@link BridgeState}.
@@ -2121,13 +2121,13 @@ public class JitsiMeetConferenceImpl
 
         /**
          * The list of participants in the conference which use this
-         * {@link BridgeDesc}.
+         * {@link BridgeSession}.
          */
         List<Participant> participants = new LinkedList<>();
 
         /**
          * The {@link ColibriConference} instance used to communicate with
-         * the jitsi-videobridge represented by this {@link BridgeDesc}.
+         * the jitsi-videobridge represented by this {@link BridgeSession}.
          */
         final ColibriConference colibriConference;
 
@@ -2139,11 +2139,11 @@ public class JitsiMeetConferenceImpl
         public boolean hasFailed = false;
 
         /**
-         * Initializes a new {@link BridgeDesc} instance.
+         * Initializes a new {@link BridgeSession} instance.
          * @param bridgeState the {@link BridgeState} which the new
-         * {@link BridgeDesc} instance is to represent.
+         * {@link BridgeSession} instance is to represent.
          */
-        BridgeDesc(BridgeState bridgeState)
+        BridgeSession(BridgeState bridgeState)
         {
             this.bridgeState = bridgeState;
             this.colibriConference
@@ -2151,7 +2151,7 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Disposes of this {@link BridgeDesc}, attempting to expire the
+         * Disposes of this {@link BridgeSession}, attempting to expire the
          * COLIBRI conference.
          */
         private void dispose()

@@ -75,10 +75,10 @@ public class ChannelAllocator implements Runnable
     private final JitsiMeetConferenceImpl meetConference;
 
     /**
-     * The {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeDesc} on which
+     * The {@link JitsiMeetConferenceImpl.BridgeSession} on which
      * to allocate channels for the participant.
      */
-    private final JitsiMeetConferenceImpl.BridgeDesc bridgeDesc;
+    private final JitsiMeetConferenceImpl.BridgeSession bridgeSession;
 
     /**
      * The participant that is to be invited by this instance to the conference.
@@ -124,13 +124,13 @@ public class ChannelAllocator implements Runnable
      */
     public ChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
-            JitsiMeetConferenceImpl.BridgeDesc bridgeDesc,
+            JitsiMeetConferenceImpl.BridgeSession bridgeSession,
             Participant participant,
             boolean[] startMuted,
             boolean reInvite)
     {
         this.meetConference = meetConference;
-        this.bridgeDesc = bridgeDesc;
+        this.bridgeSession = bridgeSession;
         this.participant = participant;
         this.startMuted = startMuted;
         this.reInvite = reInvite;
@@ -274,13 +274,13 @@ public class ChannelAllocator implements Runnable
             // a failure to invite the participant in the jingle level, we will
             // not trigger a retry here.
             // In any case, try and expire the channels on the bridge.
-            bridgeDesc.terminate(participant);
+            bridgeSession.terminate(participant);
         }
         else if (reInvite)
         {
             // Update channels info
             // FIXME we should include this stuff in the offer
-            bridgeDesc.colibriConference.updateChannelsInfo(
+            bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
                     participant.getSSRCsCopy(),
@@ -379,7 +379,7 @@ public class ChannelAllocator implements Runnable
         throws OperationFailedException
     {
         // TODO: synchronization?
-        if (bridgeDesc.colibriConference.isDisposed())
+        if (bridgeSession.colibriConference.isDisposed())
         {
             // Nope - the conference has been disposed, before the thread got
             // the chance to do anything
@@ -389,7 +389,7 @@ public class ChannelAllocator implements Runnable
         BridgeSelector bridgeSelector
             = meetConference.getServices().getBridgeSelector();
 
-        String jvb = bridgeDesc.colibriConference.getJitsiVideobridge();
+        String jvb = bridgeSession.colibriConference.getJitsiVideobridge();
         if (StringUtils.isNullOrEmpty(jvb))
         {
             logger.error("No bridge jid");
@@ -402,7 +402,7 @@ public class ChannelAllocator implements Runnable
         // allocator thread dies before this thread get the chance to allocate
         // anything, then it will cancel and channels for this Participant will
         // be allocated from 'restartConference'
-        while (!bridgeDesc.colibriConference.isDisposed())
+        while (!bridgeSession.colibriConference.isDisposed())
         {
             try
             {
@@ -411,7 +411,7 @@ public class ChannelAllocator implements Runnable
                                  + participant.getMucJid());
 
                 ColibriConferenceIQ peerChannels
-                    = bridgeDesc.colibriConference.createColibriChannels(
+                    = bridgeSession.colibriConference.createColibriChannels(
                             participant.hasBundleSupport(),
                             participant.getEndpointId(),
                             true /* initiator */, contents);
@@ -423,12 +423,12 @@ public class ChannelAllocator implements Runnable
                     return null;
                 }
 
-                bridgeDesc.bridgeState.setIsOperational(true);
+                bridgeSession.bridgeState.setIsOperational(true);
 
-                if (bridgeDesc.colibriConference.hasJustAllocated())
+                if (bridgeSession.colibriConference.hasJustAllocated())
                 {
                     meetConference.onColibriConferenceAllocated(
-                            bridgeDesc.colibriConference, jvb);
+                        bridgeSession.colibriConference, jvb);
                 }
                 return peerChannels;
             }
@@ -446,13 +446,13 @@ public class ChannelAllocator implements Runnable
                 if (OperationFailedException.ILLEGAL_ARGUMENT
                         != exc.getErrorCode())
                 {
-                    bridgeDesc.bridgeState.setIsOperational(false);
-                    bridgeDesc.hasFailed = true;
+                    bridgeSession.bridgeState.setIsOperational(false);
+                    bridgeSession.hasFailed = true;
                 }
 
                 // Check if the conference is in progress
                 if (!StringUtils.isNullOrEmpty(
-                            bridgeDesc.colibriConference.getConferenceId()))
+                    bridgeSession.colibriConference.getConferenceId()))
                 {
                     // Notify the conference that this ColibriConference is now
                     // broken.
@@ -697,12 +697,12 @@ public class ChannelAllocator implements Runnable
     }
 
     /**
-     * @return the {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeDesc}
+     * @return the {@link JitsiMeetConferenceImpl.BridgeSession}
      * instance of this {@link ChannelAllocator}.
      */
-    public JitsiMeetConferenceImpl.BridgeDesc getBridgeDesc()
+    public JitsiMeetConferenceImpl.BridgeSession getBridgeSession()
     {
-        return bridgeDesc;
+        return bridgeSession;
     }
 
     /**
