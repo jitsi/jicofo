@@ -1856,9 +1856,7 @@ public class JitsiMeetConferenceImpl
         bridgeDesc.terminate(participant);
 
         // Retry once.
-        // TODO: be smarter about re-trying: e.g. don't retry if we know there
-        // was a bridge bridge
-        //
+        // TODO: be smarter about re-trying
         boolean retry = !channelAllocator.isReInvite();
 
         if (retry)
