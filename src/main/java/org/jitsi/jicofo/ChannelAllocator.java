@@ -169,19 +169,19 @@ public class ChannelAllocator implements Runnable
         List<String> features = DiscoveryUtil.discoverParticipantFeatures(
                     meetConference.getXmppProvider(), address);
 
-        participant.setSupportedFeatures(features);
-
-        logger.info(
-            address + " has bundle ? " + participant.hasBundleSupport());
-
-        List<ContentPacketExtension> offer;
-
         if (canceled)
         {
             // Another thread intentionally called cancel() and it is its
             // responsibility to retry if necessary.
             return;
         }
+
+        participant.setSupportedFeatures(features);
+
+        logger.info(
+            address + " has bundle ? " + participant.hasBundleSupport());
+
+        List<ContentPacketExtension> offer;
 
         try
         {
@@ -231,7 +231,7 @@ public class ChannelAllocator implements Runnable
 
             expireChannels = true;
         }
-        else
+        else if (!canceled)
         {
             OperationSetJingle jingle = meetConference.getJingle();
             boolean ack;
@@ -349,11 +349,18 @@ public class ChannelAllocator implements Runnable
                 CHANNEL_ALLOCATION_FAILED_ERR_CODE);
         }
 
-        participant.setColibriChannelsInfo(colibriChannels);
+        if (!canceled)
+        {
+            participant.setColibriChannelsInfo(colibriChannels);
 
-        craftOffer(contents, colibriChannels);
+            craftOffer(contents, colibriChannels);
 
-        return contents;
+            return contents;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     /**
