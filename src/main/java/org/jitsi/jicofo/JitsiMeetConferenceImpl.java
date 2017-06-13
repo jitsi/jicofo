@@ -911,8 +911,8 @@ public class JitsiMeetConferenceImpl
                 // conference.
                 // bridgeDesc.terminateAll();
                 bridgeDesc.dispose();
-                bridges.remove(bridgeDesc);
             }
+            bridges.clear();
         }
 
         // TODO: what about removing the participants and ending their jingle
