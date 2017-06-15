@@ -53,7 +53,7 @@ public class JitsiMeetRecording
      * The <tt>JitsiMeetConferenceImpl</tt> for which this instance is dealing
      * with all the recording related stuff.
      */
-    private final JitsiMeetConferenceImpl meetConference;
+    private final JitsiMeetConference meetConference;
 
     /**
      * Recording functionality implementation backend.
@@ -165,7 +165,9 @@ public class JitsiMeetRecording
             String from, String token,
             ColibriConferenceIQ.Recording.State state, String path, String to)
     {
-        ChatRoomMember member = meetConference.findMember(from);
+        ChatRoom2 chatRoom = meetConference.getChatRoom();
+        ChatRoomMember member
+            = chatRoom == null ? null : chatRoom.findChatMember(from);
         if (member == null)
         {
             logger.error("No member found for address: " + from);
@@ -250,10 +252,7 @@ public class JitsiMeetRecording
                     response.setTo(recState.from);
                     response.setFrom(recState.to);
 
-                    ColibriConference colibriConference
-                        = meetConference.getColibriConference();
-                    if(colibriConference != null)
-                        response.setName(colibriConference.getName());
+                    response.setName(meetConference.getRoomName());
 
                     response.setRecording(
                             new ColibriConferenceIQ.Recording(

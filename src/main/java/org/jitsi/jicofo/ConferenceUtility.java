@@ -45,16 +45,6 @@ public class ConferenceUtility
     }
 
     /**
-     * Returns the ID of Colibri conference hosted on the videobridge.
-     */
-    public String getJvbConferenceId()
-    {
-        ColibriConference colibriConference = conference.getColibriConference();
-        return colibriConference != null
-            ? colibriConference.getConferenceId() : null;
-    }
-
-    /**
      * Returns the id of video channel allocated for the participant with given
      * JID.
      * @param participantJid the MUC JID of the participant for whom we want to

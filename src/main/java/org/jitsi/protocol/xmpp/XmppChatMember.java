@@ -62,4 +62,9 @@ public interface XmppChatMember
      * otherwise.
      */
     boolean isRobot();
+
+    /**
+     * Gets the region (e.g. "us-east") of this {@link XmppChatMember}.
+     */
+    String getRegion();
 }

@@ -17,8 +17,10 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+
+import java.util.*;
 
 /**
  * Mock {@link JitsiMeetConference} implementation.
@@ -46,11 +48,26 @@ public class MockJitsiMeetConference
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public ColibriConference getColibriConference()
+    public List<BridgeState> getBridges()
+    {
+        return new LinkedList<>();
+    }
+
+    @Override
+    public String getRoomName()
+    {
+        return null;
+    }
+
+    @Override
+    public String getFocusJid()
+    {
+        return null;
+    }
+
+    @Override
+    public ChatRoom2 getChatRoom()
     {
         return null;
     }

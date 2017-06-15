@@ -48,7 +48,7 @@ public class TestConference
 
     private MockProtocolProvider focusProtocolProvider;
 
-    private JitsiMeetConference conference;
+    public JitsiMeetConferenceImpl conference;
 
     private MockVideobridge mockBridge;
 
@@ -168,7 +168,7 @@ public class TestConference
     public long[] getSimulcastLayersSSRCs(String peerJid)
     {
         ConferenceUtility confUtility = getConferenceUtility();
-        String conferenceId = confUtility.getJvbConferenceId();
+        String conferenceId = conference.getJvbConferenceId();
         String videoChannelId
             = confUtility.getParticipantVideoChannelId(peerJid);
         List<RTPEncodingDesc> layers

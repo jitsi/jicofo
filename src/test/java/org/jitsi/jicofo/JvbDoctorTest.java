@@ -35,8 +35,7 @@ import org.junit.runners.*;
 
 import java.util.concurrent.*;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 import static org.mockito.Mockito.*;
 
@@ -170,7 +169,7 @@ public class JvbDoctorTest
             assertNotNull(conference);
 
             // No jvb currently in use
-            assertNull(testConf.getConferenceUtility().getJvbConferenceId());
+            assertTrue(testConf.conference.getBridges().isEmpty());
         }
 
         // Bridge is now healthy again
@@ -189,8 +188,7 @@ public class JvbDoctorTest
 
             assertNotNull(conference);
 
-            assertNotNull(
-                testConf.getConferenceUtility().getJvbConferenceId());
+            assertFalse(testConf.conference.getBridges().isEmpty());
         }
 
         mockBridge.stop(osgi.bc);

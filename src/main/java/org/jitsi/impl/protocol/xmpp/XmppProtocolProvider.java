@@ -199,7 +199,7 @@ public class XmppProtocolProvider
      * <tt>false</tt> in case we have failed want to retry connection attempt.
      * <tt>true</tt> is returned when we either connect successfully or when we
      * detect that there is no chance to get connected any any future retries
-     * should be cancelled.
+     * should be canceled.
      */
     synchronized private boolean doConnect()
     {

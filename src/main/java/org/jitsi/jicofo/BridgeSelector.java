@@ -39,6 +39,7 @@ import java.util.*;
  * based on feedback from Jitsi Meet conference focus.
  *
  * @author Pawel Domas
+ * @author Boris Grozev
  */
 public class BridgeSelector
     implements SubscriptionListener,
@@ -140,6 +141,12 @@ public class BridgeSelector
     private final Map<String, String> pubSubToBridge = new HashMap<>();
 
     /**
+     * The bridge selection strategy.
+     */
+    private BridgeSelectionStrategy bridgeSelectionStrategy
+        = new SingleBridgeSelectionStrategy();
+
+    /**
      * Creates new instance of {@link BridgeSelector}.
      *
      * @param subscriptionOpSet the operations set that will be used by this
@@ -153,30 +160,37 @@ public class BridgeSelector
 
     /**
      * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process.
+     * and taken into account in best bridge selection process. If a bridge
+     * with the given JID already exists, it is returned and a new instance is
+     * not created.
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
-     *                  set of videobridges.
+     * set of videobridges.
+     * @return the {@link BridgeState} for the bridge with the provided JID.
      */
-    public void addJvbAddress(String bridgeJid)
+    public BridgeState addJvbAddress(String bridgeJid)
     {
-        addJvbAddress(bridgeJid, null);
+        return addJvbAddress(bridgeJid, null);
     }
 
     /**
      * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process.
+     * and taken into account in best bridge selection process. If a bridge
+     * with the given JID already exists, it is returned and a new instance is
+     * not created.
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
-     *                  set of videobridges.
+     * set of videobridges.
      * @param version the {@link Version} IQ instance which contains the info
-     *                about JVB version.
+     * about JVB version.
+     * @return the {@link BridgeState} for the bridge with the provided JID.
      */
-    synchronized public void addJvbAddress(String bridgeJid, Version version)
+    synchronized public BridgeState addJvbAddress(
+            String bridgeJid, Version version)
     {
         if (isJvbOnTheList(bridgeJid))
         {
-            return;
+            return bridges.get(bridgeJid);
         }
 
         logger.info("Added videobridge: " + bridgeJid + " v: " + version);
@@ -199,6 +213,7 @@ public class BridgeSelector
         bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
+        return newBridge;
     }
 
     /**
@@ -239,7 +254,9 @@ public class BridgeSelector
         }
 
         if (bridge != null)
+        {
             notifyBridgeDown(bridge);
+        }
     }
 
     /**
@@ -254,17 +271,10 @@ public class BridgeSelector
             JitsiMeetConference conference, Participant participant)
     {
         List<BridgeState> bridges = getPrioritizedBridgesList();
-        if (bridges.size() == 0)
-        {
-            return null;
-        }
-
-        BridgeState bridge = bridges.get(0);
-        return bridge.isOperational() ? bridge : null;
+        return bridgeSelectionStrategy.select(bridges, conference, participant);
     }
 
     /**
-     *
      * Selects a bridge to be used for a specific {@link JitsiMeetConference}.
      *
      * @param conference the conference for which a bridge is to be selected.
@@ -295,32 +305,12 @@ public class BridgeSelector
         {
             BridgeState bridge = bridgesIter.next();
             if (!bridge.isOperational())
+            {
                 bridgesIter.remove();
+            }
         }
 
         return bridgeList;
-    }
-
-    /**
-     * Updates given *operational* status of the videobridge identified by given
-     * <tt>bridgeJid</tt> address.
-     *
-     * @param bridgeJid the XMPP address of the bridge.
-     * @param isWorking <tt>true</tt> if bridge successfully allocated
-     *                  the channels which means it is in *operational* state.
-     */
-    synchronized public void updateBridgeOperationalStatus(String bridgeJid,
-                                              boolean isWorking)
-    {
-        BridgeState bridge = bridges.get(bridgeJid);
-        if (bridge != null)
-        {
-            bridge.setIsOperational(isWorking);
-        }
-        else
-        {
-            logger.warn("No bridge registered for jid: " + bridgeJid);
-        }
     }
 
     /**
@@ -457,6 +447,22 @@ public class BridgeSelector
                 if (videoStreamCount != null)
                 {
                     bridgeState.setVideoStreamCount(videoStreamCount);
+                }
+            }
+            else if ("relay_id".equals(stat.getName()))
+            {
+                Object relayId = stat.getValue();
+                if (relayId != null)
+                {
+                    bridgeState.setRelayId(relayId.toString());
+                }
+            }
+            else if ("region".equals(stat.getName()))
+            {
+                Object region = stat.getValue();
+                if (region != null)
+                {
+                    bridgeState.setRegion(region.toString());
                 }
             }
         }
@@ -651,6 +657,162 @@ public class BridgeSelector
         {
             handlerRegistration.unregister();
             handlerRegistration = null;
+        }
+    }
+
+    /**
+     * @return the {@link BridgeState} for the bridge with a particular XMPP
+     * JID.
+     * @param jid the JID of the bridge.
+     */
+    public BridgeState getBridgeState(String jid)
+    {
+        synchronized (bridges)
+        {
+            return bridges.get(jid);
+        }
+    }
+
+    /**
+     * Represents an algorithm for bridge selection.
+     */
+    private abstract class BridgeSelectionStrategy
+    {
+        /**
+         * Selects a bridge to be used for a specific
+         * {@link JitsiMeetConference} and a specific {@link Participant}.
+         *
+         * @param bridges the list of bridges to select from.
+         * @param conference the conference for which a bridge is to be
+         * selected.
+         * @param participant the participant for which a bridge is to be
+         * selected.
+         * @return the selected bridge, or {@code null} if no bridge is
+         * available.
+         */
+        private BridgeState select(
+                List<BridgeState> bridges,
+                JitsiMeetConference conference,
+                Participant participant)
+        {
+            List<BridgeState> conferenceBridges
+                = conference == null
+                        ? new LinkedList<BridgeState>()
+                        : conference.getBridges();
+            if (conferenceBridges.isEmpty())
+            {
+                return selectInitial(bridges, conference, participant);
+            }
+            else
+            {
+                return doSelect(
+                        bridges, conferenceBridges,
+                        conference, participant);
+            }
+        }
+
+        /**
+         * Selects a bridge to be used for a specific
+         * {@link JitsiMeetConference} and a specific {@link Participant},
+         * assuming that no other bridge is used by the conference (i.e. this
+         * is the initial selection of a bridge for the conference).
+         *
+         * @param bridges the list of bridges to select from.
+         * @param conference the conference for which a bridge is to be
+         * selected.
+         * @param participant the participant for which a bridge is to be
+         * selected.
+         * @return the selected bridge, or {@code null} if no bridge is
+         * available.
+         */
+        private BridgeState selectInitial(List<BridgeState> bridges,
+                                  JitsiMeetConference conference,
+                                  Participant participant)
+        {
+            // Prefer a bridge in the participant's region.
+            String participantRegion = participant.getChatMember().getRegion();
+            if (participantRegion != null)
+            {
+                for (BridgeState bridge : bridges)
+                {
+                    if (bridge.isOperational()
+                        && participantRegion.equals(bridge.getRegion()))
+                    {
+                        return bridge;
+                    }
+                }
+            }
+
+            for (BridgeState bridge : bridges)
+            {
+                if (bridge.isOperational())
+                {
+                    return bridge;
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Selects a bridge to be used for a specific
+         * {@link JitsiMeetConference} and a specific {@link Participant}.
+         *
+         * @param bridges the list of bridges to select from.
+         * @param conferenceBridges the list of bridges currently used by the
+         * conference.
+         * @param conference the conference for which a bridge is to be
+         * selected.
+         * @param participant the participant for which a bridge is to be
+         * selected.
+         * @return the selected bridge, or {@code null} if no bridge is
+         * available.
+         */
+        abstract BridgeState doSelect(
+                List<BridgeState> bridges,
+                List<BridgeState> conferenceBridges,
+                JitsiMeetConference conference,
+                Participant participant);
+    }
+
+    /**
+     * A {@link BridgeSelectionStrategy} implementation which keeps all
+     * participants in a conference on the same bridge.
+     */
+    private class SingleBridgeSelectionStrategy
+        extends BridgeSelectionStrategy
+    {
+        /**
+         * {@inheritDoc}
+         * </p>
+         * Always selects the bridge already used by the conference.
+         */
+        @Override
+        public BridgeState doSelect(
+                List<BridgeState> bridges,
+                List<BridgeState> conferenceBridges,
+                JitsiMeetConference conference,
+                Participant participant)
+        {
+            if (conferenceBridges.size() != 1)
+            {
+                logger.error("Unexpected number of bridges with "
+                                 + "SingleBridgeSelectionStrategy: "
+                                 + conferenceBridges.size());
+                return null;
+            }
+
+            BridgeState bridgeState = conferenceBridges.get(0);
+            if (!bridgeState.isOperational())
+            {
+                logger.error(
+                    "The conference already has a bridge, but it is not "
+                        + "operational; conference=" + conference.getRoomName()
+                        + "; bridge=" + bridgeState);
+                return null;
+            }
+
+            return bridgeState;
         }
     }
 }
