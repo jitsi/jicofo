@@ -2181,7 +2181,7 @@ public class JitsiMeetConferenceImpl
         {
             List<Participant> terminatedParticipants = new LinkedList<>();
             // sync on what?
-            for (Participant participant : participants)
+            for (Participant participant : new LinkedList<>(participants))
             {
                 if (terminate(participant))
                 {
