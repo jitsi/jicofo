@@ -301,6 +301,11 @@ public class JingleOfferFactory
             rtpDesc.addExtmap(framemarking);
         }
 
+        RTPHdrExtPacketExtension rtpStreamId = new RTPHdrExtPacketExtension();
+        rtpStreamId.setID("4");
+        rtpStreamId.setURI(URI.create(RTPExtension.RTP_STREAM_ID_URN));
+        rtpDesc.addExtmap(rtpStreamId);
+
         // a=rtpmap:100 VP8/90000
         PayloadTypePacketExtension vp8
             = addPayloadTypeExtension(rtpDesc, VP8_PT, Constants.VP8, 90000);
