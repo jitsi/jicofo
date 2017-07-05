@@ -2232,6 +2232,10 @@ public class JitsiMeetConferenceImpl
             //TODO synchronize?
             // TODO: make sure this does not block waiting for a response
             boolean removed = participants.remove(participant);
+            if (removed)
+            {
+                logRegions();
+            }
 
             ColibriConferenceIQ channelsInfo
                 = participant.getColibriChannelsInfo();
