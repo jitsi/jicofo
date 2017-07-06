@@ -694,7 +694,6 @@ public class JitsiMeetConferenceImpl
 
         sb.append("]");
         logger.info(sb.toString());
-
     }
 
     /**
