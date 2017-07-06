@@ -654,6 +654,7 @@ public class JitsiMeetConferenceImpl
             bridgeSession.participants.add(participant);
             logger.info("Added participant jid= " + participant.getMucJid()
                             + ", bridge=" + bridgeSession.bridgeState.getJid());
+            logRegions();
 
             // Colibri channel allocation and jingle invitation take time, so
             // schedule them on a separate thread.
@@ -670,6 +671,29 @@ public class JitsiMeetConferenceImpl
         }
 
         return bridgeSession;
+    }
+
+    /**
+     * Logs the regions of all bridges and participants of the conference.
+     */
+    private void logRegions()
+    {
+        StringBuilder sb = new StringBuilder("Region info, conference=" + getId() + ": [");
+        synchronized (bridges)
+        {
+            for (BridgeSession bridgeSession : bridges)
+            {
+                sb.append("[").append(bridgeSession.bridgeState.getRegion());
+                for (Participant p : bridgeSession.participants)
+                {
+                    sb.append(", ").append(p.getChatMember().getRegion());
+                }
+                sb.append("]");
+            }
+        }
+
+        sb.append("]");
+        logger.info(sb.toString());
     }
 
     /**
@@ -2207,6 +2231,10 @@ public class JitsiMeetConferenceImpl
             //TODO synchronize?
             // TODO: make sure this does not block waiting for a response
             boolean removed = participants.remove(participant);
+            if (removed)
+            {
+                logRegions();
+            }
 
             ColibriConferenceIQ channelsInfo
                 = participant.getColibriChannelsInfo();
