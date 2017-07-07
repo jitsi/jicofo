@@ -160,6 +160,18 @@ public class XmppProtocolProvider
         ConnectionConfiguration connConfig
             = new ConnectionConfiguration(
                     serverAddressUserSetting, serverPort, serviceName);
+                    
+                    // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but might try to authenticate
+                    // with a non supported mechanism if one is offered by the server. 
+                    // This moves the preference of PLAIN to the top, and disables the unused mechanisms.
+                    
+                    SASLAuthentication.supportSASLMechanism("PLAIN",0);                    
+                    SASLAuthentication.unsupportSASLMechanism("DIGEST-MD5");
+                    SASLAuthentication.unsupportSASLMechanism("CRAM-MD5");
+                    SASLAuthentication.unsupportSASLMechanism("JIVE-SHAREDSECRET");
+                    SASLAuthentication.unsupportSASLMechanism("SCRAM-SHA-1");
+                    SASLAuthentication.unsupportSASLMechanism("GSSAPI");
+                    SASLAuthentication.unsupportSASLMechanism("EXTERNAL");
 
         connection = new XMPPConnection(connConfig);
 
