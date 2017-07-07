@@ -23,44 +23,44 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import java.util.*;
 
 /**
- * Class maps lists of SSRC groups to media types and encapsulates various
+ * Class maps lists of source groups to media types and encapsulates various
  * utility operations.
  *
  * @author Pawel Domas
  */
-public class MediaSSRCGroupMap
+public class MediaSourceGroupMap
 {
     /**
      * Map backend.
      */
-    private final Map<String, List<SSRCGroup>> groupMap;
+    private final Map<String, List<SourceGroup>> groupMap;
 
     /**
-     * Creates new instance of <tt>MediaSSRCGroupMap</tt>.
+     * Creates new instance of <tt>MediaSourceGroupMap</tt>.
      */
-    public MediaSSRCGroupMap()
+    public MediaSourceGroupMap()
     {
-        this(new HashMap<String, List<SSRCGroup>>());
+        this(new HashMap<>());
     }
 
     /**
-     * Creates new instance of <tt>MediaSSRCGroupMap</tt>.
+     * Creates new instance of <tt>MediaSourceGroupMap</tt>.
      * @param map the map with predefined values that will be used by new
      *            instance.
      */
-    private MediaSSRCGroupMap(Map<String, List<SSRCGroup>> map)
+    private MediaSourceGroupMap(Map<String, List<SourceGroup>> map)
     {
         this.groupMap = map;
     }
 
     /**
-     * Returns the list of {@link SSRCGroup} for given media type.
-     * @param media the name of media type for which list of SSRC groups will be
+     * Returns the list of {@link SourceGroup} for given media type.
+     * @param media the name of media type for which list of source groups will be
      *              returned.
      */
-    public List<SSRCGroup> getSSRCGroupsForMedia(String media)
+    public List<SourceGroup> getSourceGroupsForMedia(String media)
     {
-        List<SSRCGroup> mediaGroups = groupMap.get(media);
+        List<SourceGroup> mediaGroups = groupMap.get(media);
         if (mediaGroups == null)
         {
             mediaGroups = new ArrayList<>();
@@ -70,27 +70,27 @@ public class MediaSSRCGroupMap
     }
 
     /**
-     * Extracts SSRC groups from Jingle content list.
+     * Extracts source groups from Jingle content list.
      * @param contents the list of <tt>ContentPacketExtension</tt> which will be
-     *                 examined for media SSRC groups.
-     * @return <tt>MediaSSRCGroupMap</tt> that reflects SSRC groups of media
+     *                 examined for media source groups.
+     * @return <tt>MediaSourceGroupMap</tt> that reflects source groups of media
      *         described by given content list.
      */
-    public static MediaSSRCGroupMap getSSRCGroupsForContents(
+    public static MediaSourceGroupMap getSourceGroupsForContents(
             List<ContentPacketExtension> contents)
     {
-        MediaSSRCGroupMap mediaSSRCGroupMap = new MediaSSRCGroupMap();
+        MediaSourceGroupMap mediaSourceGroupMap = new MediaSourceGroupMap();
 
         for (ContentPacketExtension content : contents)
         {
-            List<SSRCGroup> mediaGroups
-                = mediaSSRCGroupMap.getSSRCGroupsForMedia(content.getName());
+            List<SourceGroup> mediaGroups
+                = mediaSourceGroupMap.getSourceGroupsForMedia(content.getName());
 
             // FIXME: does not check for duplicates
-            mediaGroups.addAll(SSRCGroup.getSSRCGroupsForContent(content));
+            mediaGroups.addAll(SourceGroup.getSourceGroupsForContent(content));
         }
 
-        return mediaSSRCGroupMap;
+        return mediaSourceGroupMap;
     }
 
     /**
@@ -102,73 +102,72 @@ public class MediaSSRCGroupMap
     }
 
     /**
-     * Adds mapping of SSRC group to media type.
+     * Adds mapping of source group to media type.
      * @param media the media type name.
-     * @param ssrcGroup <tt>SSRCGroup</tt> that will be mapped to given media
+     * @param sourceGroup <tt>SourceGroup</tt> that will be mapped to given media
      *                  type.
      */
-    public void addSSRCGroup(String media, SSRCGroup ssrcGroup)
+    public void addSourceGroup(String media, SourceGroup sourceGroup)
     {
-        getSSRCGroupsForMedia(media).add(ssrcGroup);
+        getSourceGroupsForMedia(media).add(sourceGroup);
     }
 
     /**
-     * Adds mapping of SSRC groups to media type.
+     * Adds mapping of source groups to media type.
      * @param media the media type name.
-     * @param ssrcGroups <tt>SSRCGroup</tt>s that will be mapped to given media
+     * @param sourceGroups <tt>SourceGroup</tt>s that will be mapped to given media
      *                  type.
      */
-    public void addSSRCGroups(String media, List<SSRCGroup> ssrcGroups)
+    public void addSourceGroups(String media, List<SourceGroup> sourceGroups)
     {
-        getSSRCGroupsForMedia(media).addAll(ssrcGroups);
+        getSourceGroupsForMedia(media).addAll(sourceGroups);
     }
 
     /**
-     * Adds SSRC groups contained in given <tt>MediaSSRCGroupMap</tt> to this
+     * Adds source groups contained in given <tt>MediaSourceGroupMap</tt> to this
      * map instance.
-     * @param ssrcGroups the <tt>MediaSSRCGroupMap</tt> that will be added to
+     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> that will be added to
      *                   this map instance.
      */
-    public void add(MediaSSRCGroupMap ssrcGroups)
+    public void add(MediaSourceGroupMap sourceGroups)
     {
-        for (String media : ssrcGroups.getMediaTypes())
+        for (String media : sourceGroups.getMediaTypes())
         {
-            List<SSRCGroup> groups = ssrcGroups.getSSRCGroupsForMedia(media);
-            for (SSRCGroup group : groups)
+            List<SourceGroup> groups = sourceGroups.getSourceGroupsForMedia(media);
+            for (SourceGroup group : groups)
             {
-                addSSRCGroup(media, group);
+                addSourceGroup(media, group);
             }
         }
     }
 
     /**
-     * Checks whether or not this map contains given <tt>{@link SSRCGroup}</tt>.
+     * Checks whether or not this map contains given <tt>{@link SourceGroup}</tt>.
      * @param mediaType the type of the media fo the group to be found.
-     * @param toFind the <tt>SSRCGroup</tt> to be found.
-     * @return <tt>true</tt> if the given <tt>SSRCGroup</tt> exists in the map
+     * @param toFind the <tt>SourceGroup</tt> to be found.
+     * @return <tt>true</tt> if the given <tt>SourceGroup</tt> exists in the map
      * already or <tt>false</tt> otherwise. A group is considered equal when it
-     * has the same semantics and SSRCs stored. The order of SSRCs appearing in
+     * has the same semantics and sources stored. The order of sources appearing in
      * the group is important as well.
      */
-    public boolean containsGroup(String mediaType, SSRCGroup toFind)
+    public boolean containsGroup(String mediaType, SourceGroup toFind)
     {
-        List<SourcePacketExtension> comparedSSRCs = toFind.getSources();
+        List<SourcePacketExtension> comparedSources = toFind.getSources();
 
-        List<SSRCGroup> groups = this.getSSRCGroupsForMedia(mediaType);
-        for (SSRCGroup group : groups)
+        List<SourceGroup> groups = this.getSourceGroupsForMedia(mediaType);
+        for (SourceGroup group : groups)
         {
             if (!toFind.getSemantics().equals(toFind.getSemantics()))
                 continue;
 
-            List<SourcePacketExtension> groupSSRCs = group.getSources();
-            if (groupSSRCs.size() != comparedSSRCs.size())
+            List<SourcePacketExtension> groupSources = group.getSources();
+            if (groupSources.size() != comparedSources.size())
                 continue;
 
             boolean theSame = true;
-            for (int i=0; i<comparedSSRCs.size(); i++)
+            for (int i = 0; i < comparedSources.size(); i++)
             {
-                if (groupSSRCs.get(i).getSSRC()
-                    != comparedSSRCs.get(i).getSSRC())
+                if (!groupSources.get(i).sourceEquals(comparedSources.get(i)))
                 {
                     theSame = false;
                     break;
@@ -181,13 +180,13 @@ public class MediaSSRCGroupMap
     }
 
     /**
-     * Returns <tt>true</tt> if this map contains any SSRC groups.
+     * Returns <tt>true</tt> if this map contains any source groups.
      */
     public boolean isEmpty()
     {
         for (String media : groupMap.keySet())
         {
-            if (!getSSRCGroupsForMedia(media).isEmpty())
+            if (!getSourceGroupsForMedia(media).isEmpty())
             {
                 return false;
             }
@@ -196,35 +195,35 @@ public class MediaSSRCGroupMap
     }
 
     /**
-     * Removes SSRC groups contained ing given <tt>MediaSSRCGroupMap</tt> from
+     * Removes source groups contained in the given <tt>MediaSourceGroupMap</tt> from
      * this map if they exist.
-     * @param mapToRemove the <tt>MediaSSRCGroupMap</tt> that contains SSRC
+     * @param mapToRemove the <tt>MediaSourceGroupMap</tt> that contains source
      *                    groups mappings to be removed from this instance.
-     * @return the <tt>MediaSSRCGroupMap</tt> that contains only these SSRC
+     * @return the <tt>MediaSourceGroupMap</tt> that contains only these source
      *         groups which were actually removed(existed in this map).
      */
-    public MediaSSRCGroupMap remove(MediaSSRCGroupMap mapToRemove)
+    public MediaSourceGroupMap remove(MediaSourceGroupMap mapToRemove)
     {
-        MediaSSRCGroupMap removedGroups = new MediaSSRCGroupMap();
+        MediaSourceGroupMap removedGroups = new MediaSourceGroupMap();
 
         for (String media : mapToRemove.groupMap.keySet())
         {
-            List<SSRCGroup> groupList = getSSRCGroupsForMedia(media);
-            List<SSRCGroup> toBeRemoved= new ArrayList<>();
+            List<SourceGroup> groupList = getSourceGroupsForMedia(media);
+            List<SourceGroup> toBeRemoved= new ArrayList<>();
 
-            for (SSRCGroup ssrcGroupToCheck
+            for (SourceGroup sourceGroupToCheck
                 : mapToRemove.groupMap.get(media))
             {
-                for (SSRCGroup ssrcGroup : groupList)
+                for (SourceGroup sourceGroup : groupList)
                 {
-                    if (ssrcGroupToCheck.equals(ssrcGroup))
+                    if (sourceGroupToCheck.equals(sourceGroup))
                     {
-                        toBeRemoved.add(ssrcGroup);
+                        toBeRemoved.add(sourceGroup);
                     }
                 }
             }
 
-            removedGroups.getSSRCGroupsForMedia(media).addAll(toBeRemoved);
+            removedGroups.getSourceGroupsForMedia(media).addAll(toBeRemoved);
 
             groupList.removeAll(toBeRemoved);
         }
@@ -235,16 +234,16 @@ public class MediaSSRCGroupMap
     /**
      * Returns deep copy of this map instance.
      */
-    public MediaSSRCGroupMap copy()
+    public MediaSourceGroupMap copy()
     {
-        Map<String, List<SSRCGroup>> mapCopy = new HashMap<>();
+        Map<String, List<SourceGroup>> mapCopy = new HashMap<>();
 
         for (String media : groupMap.keySet())
         {
-            List<SSRCGroup> listToCopy = new ArrayList<>(groupMap.get(media));
-            List<SSRCGroup> listCopy = new ArrayList<>(listToCopy.size());
+            List<SourceGroup> listToCopy = new ArrayList<>(groupMap.get(media));
+            List<SourceGroup> listCopy = new ArrayList<>(listToCopy.size());
 
-            for (SSRCGroup group : listToCopy)
+            for (SourceGroup group : listToCopy)
             {
                 listCopy.add(group.copy());
             }
@@ -252,23 +251,23 @@ public class MediaSSRCGroupMap
             mapCopy.put(media, listCopy);
         }
 
-        return new MediaSSRCGroupMap(mapCopy);
+        return new MediaSourceGroupMap(mapCopy);
     }
 
-    String groupsToString(List<SSRCGroup> ssrcs)
+    String groupsToString(List<SourceGroup> sources)
     {
         StringBuilder str = new StringBuilder();
-        for (SSRCGroup group : ssrcs)
+        for (SourceGroup group : sources)
         {
             SourceGroupPacketExtension sourceGroup = group.getExtensionCopy();
 
-            str.append("SSRCGroup(")
+            str.append("SourceGroup(")
                 .append(sourceGroup.getSemantics())
                 .append(")[ ");
 
-            for (SourcePacketExtension ssrc : sourceGroup.getSources())
+            for (SourcePacketExtension source : sourceGroup.getSources())
             {
-                str.append(ssrc.getSSRC()).append(" ");
+                str.append(source.toString()).append(" ");
             }
             str.append("]");
         }
@@ -279,7 +278,7 @@ public class MediaSSRCGroupMap
      * Converts to a map of <tt>SourceGroupPacketExtension</tt>.
      * @return a map of Colibri content's names to the lists of
      *         <tt>SourceGroupPacketExtension</tt> which reflects current state
-     *         of this <tt>MediaSSRCGroupMap</tt>.
+     *         of this <tt>MediaSourceGroupMap</tt>.
      */
     public Map<String, List<SourceGroupPacketExtension>> toMap()
     {
@@ -287,11 +286,11 @@ public class MediaSSRCGroupMap
 
         for (String media : groupMap.keySet())
         {
-            List<SSRCGroup> groups = groupMap.get(media);
+            List<SourceGroup> groups = groupMap.get(media);
             List<SourceGroupPacketExtension> peGroups
                 = new ArrayList<>(groups.size());
 
-            for (SSRCGroup group : groups)
+            for (SourceGroup group : groups)
             {
                 peGroups.add(group.getExtensionCopy());
             }
@@ -305,11 +304,11 @@ public class MediaSSRCGroupMap
     @Override
     public String toString()
     {
-        StringBuilder str = new StringBuilder("SSRC_Groups{");
+        StringBuilder str = new StringBuilder("source_Groups{");
         for (String media : getMediaTypes())
         {
             str.append(" ").append(media).append(":[ ");
-            str.append(groupsToString(getSSRCGroupsForMedia(media)));
+            str.append(groupsToString(getSourceGroupsForMedia(media)));
             str.append(" ]");
         }
         return str.append(" }@").append(hashCode()).toString();

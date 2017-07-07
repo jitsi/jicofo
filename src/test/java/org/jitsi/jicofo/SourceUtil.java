@@ -28,31 +28,46 @@ import java.util.*;
  *
  * @author Pawel Domas
  */
-public class SSRCUtil
+public class SourceUtil
 {
-    static public SourcePacketExtension createSSRC(long ssrc, String[][] params)
+    static public SourcePacketExtension createSourceWithSsrc(long ssrc, String[][] params)
     {
         SourcePacketExtension ssrcPE = new SourcePacketExtension();
 
         ssrcPE.setSSRC(ssrc);
-
-        for (String[] param : params)
-        {
-            ssrcPE.addParameter(
-                new ParameterPacketExtension(param[0], param[1]));
-        }
+        setSourceParams(ssrcPE, params);
 
         return ssrcPE;
     }
 
-    static public SSRCGroup createSSRCGroup(String                semantics,
-                                            SourcePacketExtension ssrcs[])
+    static public SourcePacketExtension createSourceWithRid(String rid, String[][] params)
+    {
+        SourcePacketExtension ssrcPE = new SourcePacketExtension();
+
+        ssrcPE.setRid(rid);
+        setSourceParams(ssrcPE, params);
+
+        return ssrcPE;
+    }
+
+    static private void setSourceParams(SourcePacketExtension source, String[][] params)
+    {
+        for (String[] param : params)
+        {
+            source.addParameter(
+                    new ParameterPacketExtension(param[0], param[1]));
+        }
+
+    }
+
+    static public SourceGroup createSourceGroup(String                semantics,
+                                                SourcePacketExtension ssrcs[])
     {
         SourceGroupPacketExtension groupPe = new SourceGroupPacketExtension();
 
         groupPe.setSemantics(semantics);
         groupPe.addSources(Arrays.asList(ssrcs));
 
-        return new SSRCGroup(groupPe);
+        return new SourceGroup(groupPe);
     }
 }

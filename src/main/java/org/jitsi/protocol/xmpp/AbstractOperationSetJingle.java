@@ -294,6 +294,9 @@ public abstract class AbstractOperationSetJingle
         switch (action)
         {
         case SESSION_ACCEPT:
+            logger.error("BB: Received session accept: \n" + iq.toXML());
+
+
             error = requestHandler.onSessionAccept(session, iq.getContentList());
             break;
         case TRANSPORT_ACCEPT:
@@ -341,8 +344,8 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendAddSourceIQ(MediaSSRCMap         ssrcs,
-                                MediaSSRCGroupMap    ssrcGroupMap,
+    public void sendAddSourceIQ(MediaSourceMap ssrcs,
+                                MediaSourceGroupMap ssrcGroupMap,
                                 JingleSession        session)
     {
         JingleIQ addSourceIq = new JingleIQ();
@@ -365,7 +368,7 @@ public abstract class AbstractOperationSetJingle
 
             content.addChildExtension(rtpDesc);
 
-            for (SourcePacketExtension ssrc : ssrcs.getSSRCsForMedia(media))
+            for (SourcePacketExtension ssrc : ssrcs.getSourcesForMedia(media))
             {
                 try
                 {
@@ -409,12 +412,12 @@ public abstract class AbstractOperationSetJingle
                         RtpDescriptionPacketExtension.class);
                 }
 
-                for (SSRCGroup ssrcGroup
-                    : ssrcGroupMap.getSSRCGroupsForMedia(media))
+                for (SourceGroup sourceGroup
+                    : ssrcGroupMap.getSourceGroupsForMedia(media))
                 {
                     try
                     {
-                        rtpDesc.addChildExtension(ssrcGroup.getExtensionCopy());
+                        rtpDesc.addChildExtension(sourceGroup.getExtensionCopy());
                     }
                     catch (Exception e)
                     {
@@ -447,8 +450,8 @@ public abstract class AbstractOperationSetJingle
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendRemoveSourceIQ(MediaSSRCMap         ssrcs,
-                                   MediaSSRCGroupMap    ssrcGroupMap,
+    public void sendRemoveSourceIQ(MediaSourceMap ssrcs,
+                                   MediaSourceGroupMap ssrcGroupMap,
                                    JingleSession        session)
     {
         JingleIQ removeSourceIq = new JingleIQ();
@@ -470,7 +473,7 @@ public abstract class AbstractOperationSetJingle
 
             content.addChildExtension(rtpDesc);
 
-            for (SourcePacketExtension ssrc : ssrcs.getSSRCsForMedia(media))
+            for (SourcePacketExtension ssrc : ssrcs.getSourcesForMedia(media))
             {
                 try
                 {
@@ -514,12 +517,12 @@ public abstract class AbstractOperationSetJingle
                         RtpDescriptionPacketExtension.class);
                 }
 
-                for (SSRCGroup ssrcGroup
-                    : ssrcGroupMap.getSSRCGroupsForMedia(media))
+                for (SourceGroup sourceGroup
+                    : ssrcGroupMap.getSourceGroupsForMedia(media))
                 {
                     try
                     {
-                        rtpDesc.addChildExtension(ssrcGroup.getExtensionCopy());
+                        rtpDesc.addChildExtension(sourceGroup.getExtensionCopy());
                     }
                     catch (Exception e)
                     {

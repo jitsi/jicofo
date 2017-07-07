@@ -614,8 +614,8 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void updateSourcesInfo(MediaSSRCMap ssrcs,
-                                  MediaSSRCGroupMap ssrcGroups,
+    public void updateSourcesInfo(MediaSourceMap ssrcs,
+                                  MediaSourceGroupMap ssrcGroups,
                                   ColibriConferenceIQ localChannelsInfo)
     {
         ColibriConferenceIQ iq;
@@ -844,8 +844,8 @@ public class ColibriConferenceImpl
     public void updateChannelsInfo(
             ColibriConferenceIQ                            localChannelsInfo,
             Map<String, RtpDescriptionPacketExtension>     rtpInfoMap,
-            MediaSSRCMap                                   ssrcs,
-            MediaSSRCGroupMap                              ssrcGroups,
+            MediaSourceMap                                 ssrcs,
+            MediaSourceGroupMap ssrcGroups,
             IceUdpTransportPacketExtension                 bundleTransport,
             Map<String, IceUdpTransportPacketExtension>    transportMap)
     {

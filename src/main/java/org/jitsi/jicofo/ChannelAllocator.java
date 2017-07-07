@@ -283,8 +283,8 @@ public class ChannelAllocator implements Runnable
             bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
-                    participant.getSSRCsCopy(),
-                    participant.getSSRCGroupsCopy(),
+                    participant.getSourcesCopy(),
+                    participant.getSourceGroupsCopy(),
                     null, null);
         }
     }
@@ -483,11 +483,11 @@ public class ChannelAllocator implements Runnable
     {
         boolean useBundle = participant.hasBundleSupport();
 
-        MediaSSRCMap conferenceSSRCs
+        MediaSourceMap conferenceSSRCs
             = meetConference.getAllSSRCs(
                     reInvite ? participant : null);
 
-        MediaSSRCGroupMap conferenceSSRCGroups
+        MediaSourceGroupMap conferenceSSRCGroups
             = meetConference.getAllSSRCGroups(
                     reInvite ? participant : null);
 
@@ -661,7 +661,7 @@ public class ChannelAllocator implements Runnable
 
                 // Include all peers SSRCs
                 List<SourcePacketExtension> mediaSources
-                    = conferenceSSRCs.getSSRCsForMedia(contentName);
+                    = conferenceSSRCs.getSourcesForMedia(contentName);
 
                 for (SourcePacketExtension ssrc : mediaSources)
                 {
@@ -676,12 +676,12 @@ public class ChannelAllocator implements Runnable
                 }
 
                 // Include SSRC groups
-                List<SSRCGroup> sourceGroups
-                    = conferenceSSRCGroups.getSSRCGroupsForMedia(contentName);
+                List<SourceGroup> sourceGroups
+                    = conferenceSSRCGroups.getSourceGroupsForMedia(contentName);
 
-                for(SSRCGroup ssrcGroup : sourceGroups)
+                for(SourceGroup sourceGroup : sourceGroups)
                 {
-                    rtpDescPe.addChildExtension(ssrcGroup.getPacketExtension());
+                    rtpDescPe.addChildExtension(sourceGroup.getPacketExtension());
                 }
             }
         }

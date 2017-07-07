@@ -121,11 +121,11 @@ public interface ColibriConference
      * <tt>RtpDescriptionPacketExtension</tt> which will be used to update
      * the RTP description of the channel in corresponding content described by
      * <tt>localChannelsInfo</tt>.
-     * @param ssrcs (optional) the <tt>MediaSSRCMap</tt> which maps Colibri
+     * @param ssrcs (optional) the <tt>MediaSourceMap</tt> which maps Colibri
      * content name to a list of <tt>SourcePacketExtension</tt> which will be
      * used to update SSRCs of the channel in corresponding content described by
      * <tt>localChannelsInfo</tt>.
-     * @param ssrcGroups (optional) the <tt>MediaSSRCGroupMap</tt> which maps
+     * @param ssrcGroups (optional) the <tt>MediaSourceGroupMap</tt> which maps
      * Colibri content name to a list of <tt>SourceGroupPacketExtension</tt>
      * which will be used to update SSRCs of the channel in corresponding
      * content described by <tt>localChannelsInfo</tt>.
@@ -141,8 +141,8 @@ public interface ColibriConference
     void updateChannelsInfo(
             ColibriConferenceIQ                            localChannelsInfo,
             Map<String, RtpDescriptionPacketExtension>     rtpInfoMap,
-            MediaSSRCMap                                   ssrcs,
-            MediaSSRCGroupMap                              ssrcGroups,
+            MediaSourceMap ssrcs,
+            MediaSourceGroupMap ssrcGroups,
             IceUdpTransportPacketExtension                 bundleTransport,
             Map<String, IceUdpTransportPacketExtension>    transportMap);
 
@@ -182,8 +182,8 @@ public interface ColibriConference
      *                          on the bridge.</tt>
      */
     void updateSourcesInfo(
-            MediaSSRCMap           ssrcs,
-            MediaSSRCGroupMap      ssrcGroups,
+            MediaSourceMap ssrcs,
+            MediaSourceGroupMap ssrcGroups,
             ColibriConferenceIQ    localChannelsInfo);
 
     /**
