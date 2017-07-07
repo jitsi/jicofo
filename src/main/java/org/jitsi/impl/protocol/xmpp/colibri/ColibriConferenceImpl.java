@@ -844,8 +844,8 @@ public class ColibriConferenceImpl
     public void updateChannelsInfo(
             ColibriConferenceIQ                            localChannelsInfo,
             Map<String, RtpDescriptionPacketExtension>     rtpInfoMap,
-            MediaSourceMap                                 ssrcs,
-            MediaSourceGroupMap ssrcGroups,
+            MediaSourceMap                                 sources,
+            MediaSourceGroupMap                            sourceGroups,
             IceUdpTransportPacketExtension                 bundleTransport,
             Map<String, IceUdpTransportPacketExtension>    transportMap)
     {
@@ -868,16 +868,16 @@ public class ColibriConferenceImpl
                 send = true;
             }
             // SSRCs
-            if (ssrcs != null
+            if (sources != null
                     && colibriBuilder.addSSSRCInfo(
-                            ssrcs.toMap(), localChannelsInfo))
+                            sources.toMap(), localChannelsInfo))
             {
                 send = true;
             }
             // SSRC groups
-            if (ssrcGroups != null
+            if (sourceGroups != null
                     && colibriBuilder.addSSSRCGroupsInfo(
-                            ssrcGroups.toMap(), localChannelsInfo))
+                            sourceGroups.toMap(), localChannelsInfo))
             {
                 send = true;
             }

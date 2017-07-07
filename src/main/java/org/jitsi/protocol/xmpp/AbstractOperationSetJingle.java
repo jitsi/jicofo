@@ -294,9 +294,6 @@ public abstract class AbstractOperationSetJingle
         switch (action)
         {
         case SESSION_ACCEPT:
-            logger.error("BB: Received session accept: \n" + iq.toXML());
-
-
             error = requestHandler.onSessionAccept(session, iq.getContentList());
             break;
         case TRANSPORT_ACCEPT:

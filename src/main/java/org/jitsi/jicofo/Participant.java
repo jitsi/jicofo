@@ -550,10 +550,7 @@ public class Participant
                 = addedSources.getSourcesForMedia(mediaType);
             for (SourcePacketExtension source : sources)
             {
-                if (source.hasSSRC())
-                {
-                    SSRCSignaling.setSSRCOwner(source, roomJid);
-                }
+                SSRCSignaling.setSSRCOwner(source, roomJid);
             }
         }
 
