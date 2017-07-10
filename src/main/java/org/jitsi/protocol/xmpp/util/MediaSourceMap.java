@@ -41,7 +41,7 @@ public class MediaSourceMap
      */
     public MediaSourceMap()
     {
-        this(new HashMap<>());
+        this(new HashMap<String, List<SourcePacketExtension>>());
     }
 
     /**
@@ -64,27 +64,17 @@ public class MediaSourceMap
      */
     public List<SourcePacketExtension> getSourcesForMedia(String media)
     {
-
-        // CopyOnWriteArrayList "never changes during the lifetime of the iterator, so
-        // interference is impossible and the iterator is guaranteed not to throw
-        // ConcurrentModificationException" so using it makes sure we don't hit any
-        // ConcurrentModificationExceptions if we iterate to make modifications
-        return sources.computeIfAbsent(media, m -> new CopyOnWriteArrayList<>());
-//
-//            sourceList = new CopyOnWriteArrayList<>();
-//            sources.put(media, sourceList);
-//        });
-//        //List<SourcePacketExtension> sourceList = sources.get(media);
-//        if (sourceList == null)
-//        {
-//            // CopyOnWriteArrayList "never changes during the lifetime of the iterator, so
-//            // interference is impossible and the iterator is guaranteed not to throw
-//            // ConcurrentModificationException" so using it makes sure we don't hit any
-//            // ConcurrentModificationExceptions if we iterate to make modifications
-//            sourceList = new CopyOnWriteArrayList<>();
-//            sources.put(media, sourceList);
-//        }
-//        return sourceList;
+        List<SourcePacketExtension> sourceList = sources.get(media);
+        if (sourceList == null)
+        {
+            // CopyOnWriteArrayList "never changes during the lifetime of the iterator, so
+            // interference is impossible and the iterator is guaranteed not to throw
+            // ConcurrentModificationException" so using it makes sure we don't hit any
+            // ConcurrentModificationExceptions if we iterate to make modifications
+            sourceList = new CopyOnWriteArrayList<>();
+            sources.put(media, sourceList);
+        }
+        return sourceList;
     }
 
     /**

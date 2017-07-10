@@ -40,7 +40,7 @@ public class MediaSourceGroupMap
      */
     public MediaSourceGroupMap()
     {
-        this(new HashMap<>());
+        this(new HashMap<String, List<SourceGroup>>());
     }
 
     /**
