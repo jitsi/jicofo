@@ -67,8 +67,6 @@ public class SSRCValidator
     /**
      * The limit sources count per media type allowed to be stored by
      * the {@link Participant} at a time.
-     * NOTE(bbaldino): changing this to max source count to have it
-     * apply to rids as well, not sure if that's appropriate
      */
     private final int maxSourceCount;
 

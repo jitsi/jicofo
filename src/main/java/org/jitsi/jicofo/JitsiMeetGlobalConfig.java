@@ -42,7 +42,7 @@ public class JitsiMeetGlobalConfig
         = "org.jitsi.jicofo.DISABLE_AUTO_OWNER";
 
     /**
-     * The name of configuration property that sets {@link #maxSSRCsPerUser}.
+     * The name of configuration property that sets {@link #maxSourcesPerUser}.
      */
     private final static String MAX_SSRC_PER_USER_CONFIG_PNAME
         = "org.jitsi.jicofo.MAX_SSRC_PER_USER";
@@ -55,7 +55,7 @@ public class JitsiMeetGlobalConfig
         = "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT";
 
     /**
-     * The default value for {@link #maxSSRCsPerUser}.
+     * The default value for {@link #maxSourcesPerUser}.
      */
     private final static int DEFAULT_MAX_SSRC_PER_USER = 20;
 
@@ -91,10 +91,10 @@ public class JitsiMeetGlobalConfig
     private int jibriPendingTimeout;
 
     /**
-     * Maximal amount of SSRCs per media that can be advertised by
+     * Maximal amount of sources per media that can be advertised by
      * conference participant.
      */
-    private int maxSSRCsPerUser;
+    private int maxSourcesPerUser;
 
     /**
      * Tells how long participant's media session will be kept alive once it
@@ -169,7 +169,7 @@ public class JitsiMeetGlobalConfig
 
         logger.info("Automatically grant 'owner' role: " + autoOwner);
 
-        this.maxSSRCsPerUser
+        this.maxSourcesPerUser
             = configService.getInt(
                     MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
 
@@ -217,9 +217,9 @@ public class JitsiMeetGlobalConfig
      *
      * @return <tt>int</tt> value - see above.
      */
-    public int getMaxSSRCsPerUser()
+    public int getMaxSourcesPerUser()
     {
-        return maxSSRCsPerUser;
+        return maxSourcesPerUser;
     }
 
     /**

@@ -42,7 +42,7 @@ public class MediaSourceMapTest
     public void testGetSourcesSsrcAndRid()
     {
         /**
-         * Test to make sure both ssrc and rid sources are extracted
+         * Test to make sure both SSRC and RID sources are extracted
          */
         RtpDescriptionPacketExtension rtpDescriptionPacketExtension =
                 new RtpDescriptionPacketExtension();

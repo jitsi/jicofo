@@ -484,11 +484,11 @@ public class ChannelAllocator implements Runnable
         boolean useBundle = participant.hasBundleSupport();
 
         MediaSourceMap conferenceSSRCs
-            = meetConference.getAllSSRCs(
+            = meetConference.getAllSources(
                     reInvite ? participant : null);
 
         MediaSourceGroupMap conferenceSSRCGroups
-            = meetConference.getAllSSRCGroups(
+            = meetConference.getAllSourceGroups(
                     reInvite ? participant : null);
 
         for (ContentPacketExtension cpe : contents)

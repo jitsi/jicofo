@@ -42,7 +42,7 @@ public class MediaSourceGroupMapTest
     {
         /**
          * Make sure that groups with the same semantic but different source
-         * types (rid vs ssrc) don't collide
+         * types (RID vs SSRC) don't collide
          */
         MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
         // First add an ssrc SIM group
@@ -56,7 +56,7 @@ public class MediaSourceGroupMapTest
                 }
         );
         sourceGroups.addSourceGroup("video", ssrcSimGroup);
-        // Now create an rid group
+        // Now create an RID group
         SourceGroup ridSimGroup = SourceUtil.createSourceGroup(
                 SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
                 new SourcePacketExtension[] {

@@ -243,7 +243,7 @@ public class AdvertiseSSRCsTest
         MockParticipant user2 = new MockParticipant("User2");
         user2.join(chat);
 
-        int maxSSRCs = globalConfig.getMaxSSRCsPerUser();
+        int maxSSRCs = globalConfig.getMaxSourcesPerUser();
 
         // Accept invite with all users
         // Add many SSRCs to both users

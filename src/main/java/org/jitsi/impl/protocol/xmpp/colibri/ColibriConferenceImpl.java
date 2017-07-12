@@ -614,8 +614,8 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void updateSourcesInfo(MediaSourceMap ssrcs,
-                                  MediaSourceGroupMap ssrcGroups,
+    public void updateSourcesInfo(MediaSourceMap sources,
+                                  MediaSourceGroupMap sourceGroups,
                                   ColibriConferenceIQ localChannelsInfo)
     {
         ColibriConferenceIQ iq;
@@ -628,7 +628,7 @@ public class ColibriConferenceImpl
             if (StringUtils.isNullOrEmpty(conferenceState.getID()))
             {
                 logger.error(
-                        "Have not updated SSRC info on the bridge - "
+                        "Have not updated source info on the bridge - "
                             + "no conference in progress");
                 return;
             }
@@ -637,17 +637,17 @@ public class ColibriConferenceImpl
 
             boolean send = false;
 
-            // ssrcs
-            if (ssrcs != null
-                    && colibriBuilder.addSSSRCInfo(
-                            ssrcs.toMap(), localChannelsInfo))
+            // sources
+            if (sources != null
+                    && colibriBuilder.addSourceInfo(
+                            sources.toMap(), localChannelsInfo))
             {
                 send = true;
             }
             // ssrcGroups
-            if (ssrcGroups != null
-                    && colibriBuilder.addSSSRCGroupsInfo(
-                            ssrcGroups.toMap(), localChannelsInfo))
+            if (sourceGroups != null
+                    && colibriBuilder.addSourceGroupsInfo(
+                            sourceGroups.toMap(), localChannelsInfo))
             {
                 send = true;
             }
@@ -657,7 +657,7 @@ public class ColibriConferenceImpl
 
         if (iq != null)
         {
-            logRequest("Sending SSRC update: ", iq);
+            logRequest("Sending source update: ", iq);
 
             connection.sendPacket(iq);
         }
@@ -869,14 +869,14 @@ public class ColibriConferenceImpl
             }
             // SSRCs
             if (sources != null
-                    && colibriBuilder.addSSSRCInfo(
+                    && colibriBuilder.addSourceInfo(
                             sources.toMap(), localChannelsInfo))
             {
                 send = true;
             }
             // SSRC groups
             if (sourceGroups != null
-                    && colibriBuilder.addSSSRCGroupsInfo(
+                    && colibriBuilder.addSourceGroupsInfo(
                             sourceGroups.toMap(), localChannelsInfo))
             {
                 send = true;
