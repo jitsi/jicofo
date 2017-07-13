@@ -730,7 +730,10 @@ public class BridgeSelector
                                   Participant participant)
         {
             // Prefer a bridge in the participant's region.
-            String participantRegion = participant.getChatMember().getRegion();
+            String participantRegion
+                = participant != null
+                    ? participant.getChatMember().getRegion()
+                    : null;
             if (participantRegion != null)
             {
                 for (BridgeState bridge : bridges)
