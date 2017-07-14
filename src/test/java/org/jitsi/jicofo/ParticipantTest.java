@@ -64,9 +64,9 @@ public class ParticipantTest
         this.participant
             = new Participant(mockConference, roomMember, 20);
 
-        SourcePacketExtension ssrc1 = createSSRC(1L);
-        SourcePacketExtension ssrc2 = createSSRC(2L);
-        SourcePacketExtension ssrc4 = createSSRC(4L);
+        SourcePacketExtension ssrc1 = createSourceWithSsrc(1L);
+        SourcePacketExtension ssrc2 = createSourceWithSsrc(2L);
+        SourcePacketExtension ssrc4 = createSourceWithSsrc(4L);
 
         this.audioSSRCs = new SourcePacketExtension[] { ssrc1, ssrc2, ssrc4};
 
@@ -139,13 +139,13 @@ public class ParticipantTest
     @Test
     public void testNegative()
     {
-        audioRtpDescPe.addChildExtension(createSSRC(-1));
+        audioRtpDescPe.addChildExtension(createSourceWithSsrc(-1));
 
         this.addDefaultAudioSSRCs();
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect SSRC -1 as invalid");
         }
         catch (InvalidSSRCsException exc)
@@ -157,13 +157,13 @@ public class ParticipantTest
     @Test
     public void testZero()
     {
-        audioRtpDescPe.addChildExtension(createSSRC(0));
+        audioRtpDescPe.addChildExtension(createSourceWithSsrc(0));
 
         this.addDefaultAudioSSRCs();
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect SSRC 0 as invalid");
         }
         catch (InvalidSSRCsException exc)
@@ -176,7 +176,7 @@ public class ParticipantTest
     public void testInvalidNumber()
     {
         // FIXME SSRC implementation will always trim the value to 32bit
-        //SourcePacketExtension ssrcInvalid = createSSRC(0xFFFFFFFFFL);
+        //SourcePacketExtension ssrcInvalid = createSourceWithSsrc(0xFFFFFFFFFL);
 
         //this.addDefaultAudioSSRCs();
 
@@ -188,7 +188,7 @@ public class ParticipantTest
     {
         // Duplicated SSRC with 1
         SourcePacketExtension ssrc1Duplicate
-            = SSRCUtil.createSSRC(1L, new String[][]{
+            = SourceUtil.createSourceWithSsrc(1L, new String[][]{
                     {"cname", "cname3"},
                     {"msid", "stream3 track3"},
                     {"mslabel", "stream3"},
@@ -201,7 +201,7 @@ public class ParticipantTest
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect SSRC 1 duplicate");
         }
         catch (InvalidSSRCsException exc)
@@ -215,7 +215,7 @@ public class ParticipantTest
     {
         // Duplicated video SSRC will conflict with SSRC 1 in audio
         SourcePacketExtension ssrc1Duplicate
-            = SSRCUtil.createSSRC(1L, new String[][]{
+            = SourceUtil.createSourceWithSsrc(1L, new String[][]{
             {"cname", "cname3"},
             {"msid", "stream3 track3"},
             {"mslabel", "stream3"},
@@ -230,7 +230,7 @@ public class ParticipantTest
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect SSRC 1 duplicate");
         }
         catch (InvalidSSRCsException exc)
@@ -244,7 +244,7 @@ public class ParticipantTest
     {
         // Duplicated media stream id with SSRC2
         SourcePacketExtension ssrc3
-            = SSRCUtil.createSSRC(3L, new String[][]{
+            = SourceUtil.createSourceWithSsrc(3L, new String[][]{
             {"cname", "cname2"},
             {"msid", "stream2 track2"},
             {"mslabel", "stream2"},
@@ -257,7 +257,7 @@ public class ParticipantTest
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect MSID duplicate");
         }
         catch (InvalidSSRCsException exc)
@@ -280,7 +280,7 @@ public class ParticipantTest
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect MSID mismatch in 10+20 FID group");
         }
         catch (InvalidSSRCsException exc)
@@ -290,7 +290,7 @@ public class ParticipantTest
                 "Invalid message (constant needs update ?): " + errorMsg,
                 errorMsg.startsWith(
                     "MSID mismatch detected "
-                        + "in group SSRCGroup[FID, 10, 20, ]"));
+                        + "in group SourceGroup[FID, 10, 20, ]"));
         }
     }
 
@@ -306,23 +306,23 @@ public class ParticipantTest
             = new Participant(mockConference, roomMember, maxSsrcCount);
 
         this.addDefaultAudioSSRCs();
-        audioRtpDescPe.addChildExtension(createSSRC(5L));
-        audioRtpDescPe.addChildExtension(createSSRC(6L));
+        audioRtpDescPe.addChildExtension(createSourceWithSsrc(5L));
+        audioRtpDescPe.addChildExtension(createSourceWithSsrc(6L));
 
         Object[] ssrcsAndGroups
-            = participant.addSSRCsAndGroupsFromContent(answerContents);
-        MediaSSRCMap addedSSRCs = (MediaSSRCMap) ssrcsAndGroups[0];
+            = participant.addSourcesAndGroupsFromContent(answerContents);
+        MediaSourceMap addedSSRCs = (MediaSourceMap) ssrcsAndGroups[0];
 
         List<SourcePacketExtension> addedAudioSSRCs
-            = addedSSRCs.getSSRCsForMedia("audio");
+            = addedSSRCs.getSourcesForMedia("audio");
 
         assertEquals(4, addedAudioSSRCs.size());
 
         verifySSRC(
-            "cname5", "stream5 track5", addedSSRCs.findSSRC("audio", 5L));
+            "cname5", "stream5 track5", addedSSRCs.findSourceViaSsrc("audio", 5L));
 
         /* overflows the max SSRC count */
-        assertNull(addedSSRCs.findSSRC("audio", 6L));
+        assertNull(addedSSRCs.findSourceViaSsrc("audio", 6L));
     }
 
     @Test
@@ -332,22 +332,22 @@ public class ParticipantTest
         this.addDefaultAudioSSRCs();
 
         Object[] ssrcsAndGroups
-            = participant.addSSRCsAndGroupsFromContent(answerContents);
-        MediaSSRCMap addedSSRCs = (MediaSSRCMap) ssrcsAndGroups[0];
+            = participant.addSourcesAndGroupsFromContent(answerContents);
+        MediaSourceMap addedSSRCs = (MediaSourceMap) ssrcsAndGroups[0];
 
         List<SourcePacketExtension> addedAudioSSRCs
-            = addedSSRCs.getSSRCsForMedia("audio");
+            = addedSSRCs.getSourcesForMedia("audio");
 
         assertEquals(3, addedAudioSSRCs.size());
 
         verifySSRC(
-            "cname1", "stream1 track1", addedSSRCs.findSSRC("audio", 1L));
+            "cname1", "stream1 track1", addedSSRCs.findSourceViaSsrc("audio", 1L));
 
         verifySSRC(
-            "cname2", "stream2 track2", addedSSRCs.findSSRC("audio", 2L));
+            "cname2", "stream2 track2", addedSSRCs.findSourceViaSsrc("audio", 2L));
 
         verifySSRC(
-            "cname4", "stream4 track4", addedSSRCs.findSSRC("audio", 4L));
+            "cname4", "stream4 track4", addedSSRCs.findSourceViaSsrc("audio", 4L));
     }
 
     @Test
@@ -365,13 +365,13 @@ public class ParticipantTest
         group2.setSemantics(SourceGroupPacketExtension.SEMANTICS_FID);
         videoRtpDescPe.addChildExtension(group2);
 
-        MediaSSRCGroupMap addedGroups
-            = (MediaSSRCGroupMap) participant
-                .addSSRCsAndGroupsFromContent(answerContents)[1];
+        MediaSourceGroupMap addedGroups
+            = (MediaSourceGroupMap) participant
+                .addSourcesAndGroupsFromContent(answerContents)[1];
 
         assertEquals(
             this.videoGroups.length,
-            addedGroups.getSSRCGroupsForMedia("video").size());
+            addedGroups.getSourceGroupsForMedia("video").size());
     }
 
     @Test
@@ -389,13 +389,13 @@ public class ParticipantTest
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answerContents);
+            participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Failed to detect that SSRC 2 is not in video SDP");
         }
         catch (InvalidSSRCsException e)
         {
             assertTrue(e.getMessage().startsWith(
-                "SSRC 2 not found in video for group: SSRCGroup[FID, 1, 2, ]"));
+                "SSRC 2 not found in video for group: SourceGroup[FID, 1, 2, ]"));
         }
     }
 
@@ -421,13 +421,13 @@ public class ParticipantTest
                 new long[] { 1L, 2L}, "cname1", "s t1"));
 
         Object[] ssrcsAndGroups
-            = participant.addSSRCsAndGroupsFromContent(answerContents);
+            = participant.addSourcesAndGroupsFromContent(answerContents);
 
-        MediaSSRCMap ssrcs = (MediaSSRCMap) ssrcsAndGroups[0];
-        assertEquals(2, ssrcs.getSSRCsForMedia("video").size());
+        MediaSourceMap ssrcs = (MediaSourceMap) ssrcsAndGroups[0];
+        assertEquals(2, ssrcs.getSourcesForMedia("video").size());
 
-        MediaSSRCGroupMap groups = (MediaSSRCGroupMap) ssrcsAndGroups[1];
-        assertEquals(1, groups.getSSRCGroupsForMedia("video").size());
+        MediaSourceGroupMap groups = (MediaSourceGroupMap) ssrcsAndGroups[1];
+        assertEquals(1, groups.getSourceGroupsForMedia("video").size());
     }
 
     private void verifySSRC(
@@ -440,9 +440,9 @@ public class ParticipantTest
         assertNull(ssrc.getParameter("label"));
     }
 
-    private SourcePacketExtension createSSRC(long ssrcNum)
+    private SourcePacketExtension createSourceWithSsrc(long ssrcNum)
     {
-        return SSRCUtil.createSSRC(ssrcNum, new String[][]{
+        return SourceUtil.createSourceWithSsrc(ssrcNum, new String[][]{
             {"cname", "cname" + ssrcNum},
             {"msid", "stream" + ssrcNum + " track" + ssrcNum},
             {"mslabel", "stream" + ssrcNum},
@@ -452,7 +452,7 @@ public class ParticipantTest
 
     private SourcePacketExtension createGroupSSRC(long ssrcNum, String cname, String msid)
     {
-        return SSRCUtil.createSSRC(ssrcNum, new String[][]{
+        return SourceUtil.createSourceWithSsrc(ssrcNum, new String[][]{
             {"cname", cname},
             {"msid", msid}
         });

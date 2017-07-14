@@ -96,8 +96,8 @@ public interface OperationSetJingle
      *                     the notification.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendAddSourceIQ(MediaSSRCMap ssrcMap,
-                         MediaSSRCGroupMap ssrcGroupMap,
+    void sendAddSourceIQ(MediaSourceMap ssrcMap,
+                         MediaSourceGroupMap ssrcGroupMap,
                          JingleSession session);
 
     /**
@@ -110,8 +110,8 @@ public interface OperationSetJingle
      *                     the notification.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendRemoveSourceIQ(MediaSSRCMap ssrcMap,
-                            MediaSSRCGroupMap ssrcGroupMap,
+    void sendRemoveSourceIQ(MediaSourceMap ssrcMap,
+                            MediaSourceGroupMap ssrcGroupMap,
                             JingleSession session);
 
     /**

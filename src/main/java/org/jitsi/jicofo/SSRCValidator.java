@@ -28,7 +28,7 @@ import org.jivesoftware.smack.packet.*;
 import java.util.*;
 
 /**
- * Utility class that wraps the process of validating new SSRCs and SSRC groups
+ * Utility class that wraps the process of validating new sources and source groups
  * that are about to be added to {@link Participant}
  *
  * @author Pawel Domas
@@ -53,127 +53,130 @@ public class SSRCValidator
     private final String endpointId;
 
     /**
-     * The SSRC map obtained from the participant which reflects current SSRC
+     * The source map obtained from the participant which reflects current source
      * status. It's a clone and modifications done here do not affect
      * the version held by {@link Participant}.
      */
-    private final MediaSSRCMap ssrcs;
+    private final MediaSourceMap sources;
 
     /**
-     * Same as {@link #ssrcs}, but for SSRC groups.
+     * Same as {@link #sources}, but for source groups.
      */
-    private final MediaSSRCGroupMap ssrcGroups;
+    private final MediaSourceGroupMap sourceGroups;
 
     /**
-     * The limit SSRCs count per media type allowed to be stored by
+     * The limit sources count per media type allowed to be stored by
      * the {@link Participant} at a time.
      */
-    private final int maxSSRCCount;
+    private final int maxSourceCount;
 
     /**
      * Creates new <tt>SSRCValidator</tt>
      * @param endpointId participant's endpoint ID
-     * @param ssrcMap participant's SSRC map
-     * @param ssrcGroups participant's SSRC group map
-     * @param maxSSRCCount the SSRC limit, tells how many SSRC per media type
+     * @param sources participant's source map
+     * @param sourceGroups participant's source group map
+     * @param maxSourceCount the source limit, tells how many sources per media type
      * can be stored at a time.
      * @param logLevelDelegate a <tt>Logger</tt> which will be used as
      * the logging level delegate.
      */
     public SSRCValidator(String               endpointId,
-                         MediaSSRCMap         ssrcMap,
-                         MediaSSRCGroupMap    ssrcGroups,
-                         int                  maxSSRCCount,
+                         MediaSourceMap sources,
+                         MediaSourceGroupMap sourceGroups,
+                         int maxSourceCount,
                          Logger               logLevelDelegate)
     {
         this.endpointId = endpointId;
-        this.ssrcs = ssrcMap.copyDeep();
-        this.ssrcGroups = ssrcGroups.copy();
-        this.maxSSRCCount = maxSSRCCount;
+        this.sources = sources.copyDeep();
+        this.sourceGroups = sourceGroups.copy();
+        this.maxSourceCount = maxSourceCount;
         this.logger = Logger.getLogger(classLogger, logLevelDelegate);
     }
 
     /**
-     * Makes an attempt to add given SSRC and SSRC groups to the current state.
+     * Makes an attempt to add given sources and source groups to the current state.
      * It checks some constraints that prevent from injecting invalid
      * description into the conference:
      * 1. Allow SSRC value between 1 and 0xFFFFFFFF (note that 0 is a valid
      *    value, but it breaks WebRTC stack in Chrome, so not allowed here)
-     * 2. Does not allow the same SSRC to appear more than once per media type
-     * 3. Truncates SSRCs above the limit (configured in the constructor)
+     * 2. Does not allow the same source to appear more than once per media type
+     * 3. Truncates sources above the limit (configured in the constructor)
      * 4. Filters out SSRC parameters other than 'cname' and 'msid'
-     * 5. Drop empty SSRC groups
-     * 6. Skips duplicated groups (the same semantics and contained SSRCs)
+     * 5. Drop empty source groups
+     * 6. Skips duplicated groups (the same semantics and contained sources)
      * 7. Looks for MSID conflicts between SSRCs which do not belong to the same
      *    group
-     * 8. Makes sure that SSRCs described by groups exist in media description
+     * 8. Makes sure that sources described by groups exist in media description
      *
-     * @param newSSRCs the SSRCs to add
-     * @param newGroups the SSRC groups to add
+     * @param newSources the sources to add
+     * @param newGroups the groups to add
      *
      * @return see return value description of
-     * {@link Participant#addSSRCsAndGroupsFromContent(List)}.
+     * {@link Participant#addSourcesAndGroupsFromContent(List)}.
      *
      * @throws InvalidSSRCsException see throws of
-     * {@link Participant#addSSRCsAndGroupsFromContent(List)}.
+     * {@link Participant#addSourcesAndGroupsFromContent(List)}.
      */
-    public Object[] tryAddSSRCsAndGroups(MediaSSRCMap         newSSRCs,
-                                         MediaSSRCGroupMap    newGroups)
+    public Object[] tryAddSourcesAndGroups(MediaSourceMap newSources,
+                                           MediaSourceGroupMap newGroups)
         throws InvalidSSRCsException
     {
-        MediaSSRCMap acceptedSSRCs = new MediaSSRCMap();
-        for (String mediaType : newSSRCs.getMediaTypes())
+        MediaSourceMap acceptedSources = new MediaSourceMap();
+        for (String mediaType : newSources.getMediaTypes())
         {
-            List<SourcePacketExtension> mediaSsrcs
-                = newSSRCs.getSSRCsForMedia(mediaType);
+            List<SourcePacketExtension> mediaSources
+                = newSources.getSourcesForMedia(mediaType);
 
-            for (SourcePacketExtension ssrcPe : mediaSsrcs)
+            for (SourcePacketExtension source : mediaSources)
             {
-                long ssrcValue = ssrcPe.getSSRC();
-
-                // NOTE Technically SSRC == 0 is allowed, but it breaks Chrome
-                if (ssrcValue <= 0L || ssrcValue > 0xFFFFFFFFL)
+                if (source.hasSSRC())
                 {
-                    throw new InvalidSSRCsException(
-                        "Illegal SSRC value: " + ssrcValue);
+                    long ssrcValue = source.getSSRC();
+
+                    // NOTE Technically SSRC == 0 is allowed, but it breaks Chrome
+                    if (ssrcValue <= 0L || ssrcValue > 0xFFFFFFFFL)
+                    {
+                        throw new InvalidSSRCsException(
+                                "Illegal SSRC value: " + ssrcValue);
+                    }
                 }
 
                 // Check for duplicates
                 String conflictingMediaType
-                    = ssrcs.findSSRCsMediaType(ssrcValue);
+                    = sources.getMediaTypeForSource(source);
                 if (conflictingMediaType != null)
                 {
                     throw new InvalidSSRCsException(
-                        "SSRC "  + ssrcValue + " is in "
+                        "Source "  + source.toString() + " is in "
                             + conflictingMediaType + " already");
                 }
                 // Check for SSRC limit exceeded
                 else if (
-                    ssrcs.getSSRCsForMedia(mediaType).size() >= maxSSRCCount)
+                    sources.getSourcesForMedia(mediaType).size() >= maxSourceCount)
                 {
                     logger.error(
-                        "Too many SSRCs signalled by "
-                            + endpointId + " - dropping: " + ssrcValue);
+                        "Too many sources signalled by "
+                            + endpointId + " - dropping: " + source.toString());
                     // Abort - can't add any more SSRCs.
                     break;
                 }
 
-                SourcePacketExtension copy = ssrcPe.copy();
+                SourcePacketExtension copy = source.copy();
 
                 filterOutParams(copy);
 
-                acceptedSSRCs.addSSRC(mediaType, copy);
-                this.ssrcs.addSSRC(mediaType, copy);
+                acceptedSources.addSource(mediaType, copy);
+                this.sources.addSource(mediaType, copy);
             }
         }
         // Go over groups
-        MediaSSRCGroupMap acceptedGroups = new MediaSSRCGroupMap();
+        MediaSourceGroupMap acceptedGroups = new MediaSourceGroupMap();
 
-        // Cross check if any SSRC belongs to any existing group already
+        // Cross check if any source belongs to any existing group already
         for (String mediaType : newGroups.getMediaTypes())
         {
-            for (SSRCGroup groupToAdd
-                : newGroups.getSSRCGroupsForMedia(mediaType))
+            for (SourceGroup groupToAdd
+                : newGroups.getSourceGroupsForMedia(mediaType))
             {
                 if (groupToAdd.isEmpty())
                 {
@@ -181,7 +184,7 @@ public class SSRCValidator
                     continue;
                 }
 
-                if (ssrcGroups.containsGroup(mediaType, groupToAdd))
+                if (sourceGroups.containsGroup(mediaType, groupToAdd))
                 {
                     logger.warn(
                         endpointId
@@ -190,15 +193,15 @@ public class SSRCValidator
                 }
                 else
                 {
-                    acceptedGroups.addSSRCGroup(mediaType, groupToAdd);
-                    ssrcGroups.addSSRCGroup(mediaType, groupToAdd);
+                    acceptedGroups.addSourceGroup(mediaType, groupToAdd);
+                    sourceGroups.addSourceGroup(mediaType, groupToAdd);
                 }
             }
         }
 
         this.validateStreams();
 
-        return new Object[] { acceptedSSRCs, acceptedGroups };
+        return new Object[] { acceptedSources, acceptedGroups };
     }
 
     private void filterOutParams(SourcePacketExtension copy)
@@ -223,72 +226,74 @@ public class SSRCValidator
     private void validateStreams()
         throws InvalidSSRCsException
     {
-        // Holds SSRCs that belongs to any group
-        MediaSSRCMap groupedSSRCs = new MediaSSRCMap();
+        // Holds sources that belongs to any group
+        MediaSourceMap groupedSources = new MediaSourceMap();
 
         // Go over every group and check if they have corresponding SSRCs
-        for (String mediaType : ssrcGroups.getMediaTypes())
+        for (String mediaType : sourceGroups.getMediaTypes())
         {
-            List<SSRCGroup> mediaGroups
-                = ssrcGroups.getSSRCGroupsForMedia(mediaType);
-            for (SSRCGroup group : mediaGroups)
+            List<SourceGroup> mediaGroups
+                = sourceGroups.getSourceGroupsForMedia(mediaType);
+            for (SourceGroup group : mediaGroups)
             {
-                List<SourcePacketExtension> groupSSRCs = group.getSources();
+                List<SourcePacketExtension> groupSources = group.getSources();
                 // NOTE that empty groups are not allowed at this point and
                 // should have been filtered out earlier
                 String groupMSID = null;
 
-                for (SourcePacketExtension ssrc : groupSSRCs)
+                for (SourcePacketExtension source : groupSources)
                 {
-                    long ssrcValue = ssrc.getSSRC();
                     // Is there a corresponding SSRC that's in the SSRCs map ?
-                    SourcePacketExtension ssrcInMedia
-                        = this.ssrcs.findSSRC(mediaType, ssrcValue);
-                    if (ssrcInMedia == null)
+                    SourcePacketExtension sourceInMedia
+                            = this.sources.findSource(mediaType, source);
+                    if (sourceInMedia == null)
                     {
                         String errorMsg
-                            = "SSRC " + ssrcValue + " not found in "
+                                = "Source  " + source.toString() + " not found in "
                                 + mediaType + " for group: " + group;
                         throw new InvalidSSRCsException(errorMsg);
                     }
-                    // Grouped SSRC needs to have some MSID
-                    String msid = SSRCSignaling.getStreamId(ssrcInMedia);
-                    if (StringUtils.isNullOrEmpty(msid))
+                    if (source.hasSSRC())
                     {
-                        throw new InvalidSSRCsException(
-                            "Grouped SSRC (" + ssrcValue + ") has no 'msid'");
+                        long ssrcValue = source.getSSRC();
+                        // Grouped SSRC needs to have some MSID
+                        String msid = SSRCSignaling.getStreamId(sourceInMedia);
+                        if (StringUtils.isNullOrEmpty(msid))
+                        {
+                            throw new InvalidSSRCsException(
+                                    "Grouped SSRC (" + ssrcValue + ") has no 'msid'");
+                        }
+                        // The first SSRC's MSID is used as group's MSID
+                        if (groupMSID == null)
+                        {
+                            groupMSID = msid;
+                        }
+                        // Verify if MSID is the same across all SSRCs which belong
+                        // to the same group
+                        else if (!groupMSID.equals(msid))
+                        {
+                            throw new InvalidSSRCsException(
+                                    "MSID mismatch detected in group " + group);
+                        }
                     }
 
-                    // The first SSRC's MSID is used as group's MSID
-                    if (groupMSID == null)
-                    {
-                        groupMSID = msid;
-                    }
-                    // Verify if MSID is the same across all SSRCs which belong
-                    // to the same group
-                    else if (!groupMSID.equals(msid))
-                    {
-                        throw new InvalidSSRCsException(
-                            "MSID mismatch detected in group " + group);
-                    }
-
-                    groupedSSRCs.addSSRC(mediaType, ssrc);
+                    groupedSources.addSource(mediaType, source);
                 }
             }
         }
 
-        MediaSSRCMap notGroupedSSRCs = this.ssrcs.copyDeep();
-        notGroupedSSRCs.remove(groupedSSRCs);
+        MediaSourceMap notGroupedSSRCs = this.sources.copyDeep();
+        notGroupedSSRCs.remove(groupedSources);
 
         // Check for duplicated 'MSID's across each media type in
-        // non grouped-ssrcs
+        // non grouped-sources
         for (String mediaType : notGroupedSSRCs.getMediaTypes())
         {
             Map<String, SourcePacketExtension> streamMap
                 = new HashMap<>();
 
             List<SourcePacketExtension> mediaSSRCs
-                = notGroupedSSRCs.getSSRCsForMedia(mediaType);
+                = notGroupedSSRCs.getSourcesForMedia(mediaType);
             for (SourcePacketExtension ssrc : mediaSSRCs)
             {
                 String streamId = SSRCSignaling.getStreamId(ssrc);

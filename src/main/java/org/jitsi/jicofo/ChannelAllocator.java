@@ -283,8 +283,8 @@ public class ChannelAllocator implements Runnable
             bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
-                    participant.getSSRCsCopy(),
-                    participant.getSSRCGroupsCopy(),
+                    participant.getSourcesCopy(),
+                    participant.getSourceGroupsCopy(),
                     null, null);
         }
     }
@@ -483,12 +483,12 @@ public class ChannelAllocator implements Runnable
     {
         boolean useBundle = participant.hasBundleSupport();
 
-        MediaSSRCMap conferenceSSRCs
-            = meetConference.getAllSSRCs(
+        MediaSourceMap conferenceSSRCs
+            = meetConference.getAllSources(
                     reInvite ? participant : null);
 
-        MediaSSRCGroupMap conferenceSSRCGroups
-            = meetConference.getAllSSRCGroups(
+        MediaSourceGroupMap conferenceSSRCGroups
+            = meetConference.getAllSourceGroups(
                     reInvite ? participant : null);
 
         for (ContentPacketExtension cpe : contents)
@@ -661,7 +661,7 @@ public class ChannelAllocator implements Runnable
 
                 // Include all peers SSRCs
                 List<SourcePacketExtension> mediaSources
-                    = conferenceSSRCs.getSSRCsForMedia(contentName);
+                    = conferenceSSRCs.getSourcesForMedia(contentName);
 
                 for (SourcePacketExtension ssrc : mediaSources)
                 {
@@ -676,12 +676,12 @@ public class ChannelAllocator implements Runnable
                 }
 
                 // Include SSRC groups
-                List<SSRCGroup> sourceGroups
-                    = conferenceSSRCGroups.getSSRCGroupsForMedia(contentName);
+                List<SourceGroup> sourceGroups
+                    = conferenceSSRCGroups.getSourceGroupsForMedia(contentName);
 
-                for(SSRCGroup ssrcGroup : sourceGroups)
+                for(SourceGroup sourceGroup : sourceGroups)
                 {
-                    rtpDescPe.addChildExtension(ssrcGroup.getPacketExtension());
+                    rtpDescPe.addChildExtension(sourceGroup.getPacketExtension());
                 }
             }
         }

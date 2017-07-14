@@ -35,69 +35,104 @@ import static org.junit.Assert.assertEquals;
 
  */
 @RunWith(JUnit4.class)
-public class MediaSSRCMapTest
+public class MediaSourceMapTest
 {
+
+    @Test
+    public void testGetSourcesSsrcAndRid()
+    {
+        /**
+         * Test to make sure both SSRC and RID sources are extracted
+         */
+        RtpDescriptionPacketExtension rtpDescriptionPacketExtension =
+                new RtpDescriptionPacketExtension();
+        rtpDescriptionPacketExtension.setMedia("video");
+
+        SourcePacketExtension ssrcOne = new SourcePacketExtension();
+        ssrcOne.setSSRC(12345678L);
+        rtpDescriptionPacketExtension.addChildExtension(ssrcOne);
+
+        SourcePacketExtension ssrcTwo = new SourcePacketExtension();
+        ssrcTwo.setSSRC(23456789L);
+        rtpDescriptionPacketExtension.addChildExtension(ssrcTwo);
+
+        SourcePacketExtension ridOne = new SourcePacketExtension();
+        ridOne.setAttribute("rid", "1");
+        rtpDescriptionPacketExtension.addChildExtension(ridOne);
+
+        SourcePacketExtension ridTwo = new SourcePacketExtension();
+        ridTwo.setAttribute("rid", "2");
+        rtpDescriptionPacketExtension.addChildExtension(ridTwo);
+
+        ContentPacketExtension content = new ContentPacketExtension();
+        content.setName("video");
+        content.addChildExtension(rtpDescriptionPacketExtension);
+
+        MediaSourceMap result = MediaSourceMap.getSourcesFromContent(Collections.singletonList(content));
+        List<SourcePacketExtension> sources = result.getSourcesForMedia("video");
+        assertEquals(4, sources.size());
+    }
     /**
      * Test for remove SSRC operation(only basic scenario).
      */
     @Test
     public void testSSRCRemove()
     {
-        MediaSSRCMap ssrcMap = new MediaSSRCMap();
+        MediaSourceMap ssrcMap = new MediaSourceMap();
 
         SourcePacketExtension audioSSRC1
-            = SSRCUtil.createSSRC(12312435L,
+            = SourceUtil.createSourceWithSsrc(12312435L,
             new String[][]{
                 {"cname", "valsda42342!!@#duAppppa"},
                 {"msid", "sd-saf-2-3-rf2-r43"}
             });
         SourcePacketExtension audioSSRC2
-            = SSRCUtil.createSSRC(5463455L,
+            = SourceUtil.createSourceWithSsrc(5463455L,
             new String[][]{
                 {"cname", "valsda42342!!@#duAppppa"},
                 {"msid", "sd-saf-2-3-rf2-r43"}
             });
 
         SourcePacketExtension videoSSRC1
-            = SSRCUtil.createSSRC(954968935L,
+            = SourceUtil.createSourceWithSsrc(954968935L,
             new String[][]{
                 {"cname", "valsdsdf@$@#a42342!!@#duAppppa"},
                 {"msid", "bfghjh56-udff2-r43"}
             });
         SourcePacketExtension videoSSRC2
-            = SSRCUtil.createSSRC(6456345L,
+            = SourceUtil.createSourceWithSsrc(6456345L,
             new String[][]{
                 {"cname", "valsdsdf@$@#a42342!!@#duAppppa"},
                 {"msid", "bfghjh56-udff2-r43"}
             });
         SourcePacketExtension videoSSRC3
-            = SSRCUtil.createSSRC(3645473245L,
+            = SourceUtil.createSourceWithSsrc(3645473245L,
             new String[][]{
                 {"cname", "valsdsdf@$@#a42342!!@#duAppppa"},
                 {"msid", "bfghjh56-udff2-r43"}
             });
 
-        ssrcMap.addSSRC("audio", audioSSRC1);
-        ssrcMap.addSSRC("audio", audioSSRC2);
+        ssrcMap.addSource("audio", audioSSRC1);
+        ssrcMap.addSource("audio", audioSSRC2);
 
-        ssrcMap.addSSRC("video", videoSSRC1);
-        ssrcMap.addSSRC("video", videoSSRC2);
-        ssrcMap.addSSRC("video", videoSSRC3);
+        ssrcMap.addSource("video", videoSSRC1);
+        ssrcMap.addSource("video", videoSSRC2);
+        ssrcMap.addSource("video", videoSSRC3);
 
-        MediaSSRCMap toBeRemoved = new MediaSSRCMap();
-        toBeRemoved.addSSRC("audio", audioSSRC1.copy());
-        toBeRemoved.addSSRC("video", videoSSRC1.copy());
-        toBeRemoved.addSSRC("video", videoSSRC2.copy());
+        MediaSourceMap toBeRemoved = new MediaSourceMap();
+        toBeRemoved.addSource("audio", audioSSRC1.copy());
+        toBeRemoved.addSource("video", videoSSRC1.copy());
+        toBeRemoved.addSource("video", videoSSRC2.copy());
 
-        MediaSSRCMap removed = ssrcMap.remove(toBeRemoved);
-
-        compareSSRCs(
-            toBeRemoved.getSSRCsForMedia("audio"),
-            removed.getSSRCsForMedia("audio"));
+        MediaSourceMap removed = ssrcMap.remove(toBeRemoved);
 
         compareSSRCs(
-            toBeRemoved.getSSRCsForMedia("video"),
-            removed.getSSRCsForMedia("video"));
+            toBeRemoved.getSourcesForMedia("audio"),
+            removed.getSourcesForMedia("audio"));
+
+        compareSSRCs(
+            toBeRemoved.getSourcesForMedia("video"),
+            removed.getSourcesForMedia("video"));
     }
 
     private void compareSSRCs(List<SourcePacketExtension> ssrcList1,

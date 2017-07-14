@@ -67,16 +67,16 @@ public class SSRCSignaling
 
     /**
      * Call will remove all {@link ParameterPacketExtension}s from all
-     * <tt>SourcePacketExtension</tt>s stored in given <tt>MediaSSRCMap</tt>.
+     * <tt>SourcePacketExtension</tt>s stored in given <tt>MediaSourceMap</tt>.
      *
-     * @param ssrcMap the <tt>MediaSSRCMap</tt> which contains the SSRC packet
+     * @param ssrcMap the <tt>MediaSourceMap</tt> which contains the SSRC packet
      * extensions to be stripped out of their parameters.
      */
-    public static void deleteSSRCParams(MediaSSRCMap ssrcMap)
+    public static void deleteSSRCParams(MediaSourceMap ssrcMap)
     {
         for (String media : ssrcMap.getMediaTypes())
         {
-            for (SourcePacketExtension ssrc : ssrcMap.getSSRCsForMedia(media))
+            for (SourcePacketExtension ssrc : ssrcMap.getSourcesForMedia(media))
             {
                 deleteSSRCParams(ssrc);
             }
@@ -227,7 +227,7 @@ public class SSRCSignaling
 
     /**
      * Merges the first valid video stream into the first valid audio stream
-     * described in <tt>MediaSSRCMap</tt>. A valid media stream is the one that
+     * described in <tt>MediaSourceMap</tt>. A valid media stream is the one that
      * has well defined "stream ID" as in the description of
      * {@link #getFirstWithMSID(List)} method.
      *
@@ -236,10 +236,10 @@ public class SSRCSignaling
      * @return <tt>true</tt> if the streams have been merged or <tt>false</tt>
      * otherwise.
      */
-    public static boolean mergeVideoIntoAudio(MediaSSRCMap peerSSRCs)
+    public static boolean mergeVideoIntoAudio(MediaSourceMap peerSSRCs)
     {
         List<SourcePacketExtension> audioSSRCs
-            = peerSSRCs.getSSRCsForMedia(MediaType.AUDIO.toString());
+            = peerSSRCs.getSourcesForMedia(MediaType.AUDIO.toString());
 
         // We want to sync video stream with the first valid audio stream
         SourcePacketExtension audioSSRC = getFirstWithMSID(audioSSRCs);
@@ -257,7 +257,7 @@ public class SSRCSignaling
         // Find first video SSRC with non-empty stream ID and different
         // than 'default' which is sometimes used when unspecified
         List<SourcePacketExtension> videoSSRCs
-            = peerSSRCs.getSSRCsForMedia(MediaType.VIDEO.toString());
+            = peerSSRCs.getSourcesForMedia(MediaType.VIDEO.toString());
 
         boolean merged = false;
         // There are multiple video SSRCs in simulcast
@@ -290,35 +290,35 @@ public class SSRCSignaling
      *
      * @param contents the Jingle contents list that describes media SSRCs.
      *
-     * @return a <tt>Map<String,MediaSSRCMap></tt> which is the SSRC to owner
+     * @return a <tt>Map<String,MediaSourceMap></tt> which is the SSRC to owner
      *         mapping of the SSRCs contained in given Jingle content list.
      *         An owner comes form the {@link SSRCInfoPacketExtension} included
      *         as a child of the {@link SourcePacketExtension}.
      */
-    public static Map<String, MediaSSRCMap> ownerMapping(
+    public static Map<String, MediaSourceMap> ownerMapping(
             List<ContentPacketExtension> contents)
     {
-        Map<String, MediaSSRCMap> ownerMapping = new HashMap<>();
+        Map<String, MediaSourceMap> ownerMapping = new HashMap<>();
         for (ContentPacketExtension content : contents)
         {
             String media = content.getName();
-            MediaSSRCMap mediaSSRCMap
-                = MediaSSRCMap.getSSRCsFromContent(contents);
+            MediaSourceMap mediaSourceMap
+                = MediaSourceMap.getSourcesFromContent(contents);
 
             for (SourcePacketExtension ssrc
-                    : mediaSSRCMap.getSSRCsForMedia(media))
+                    : mediaSourceMap.getSourcesForMedia(media))
             {
                 String owner = getSSRCOwner(ssrc);
-                MediaSSRCMap ownerMap = ownerMapping.get(owner);
+                MediaSourceMap ownerMap = ownerMapping.get(owner);
 
                 // Create if not found
                 if (ownerMap == null)
                 {
-                    ownerMap = new MediaSSRCMap();
+                    ownerMap = new MediaSourceMap();
                     ownerMapping.put(owner, ownerMap);
                 }
 
-                ownerMap.addSSRC(media, ssrc);
+                ownerMap.addSource(media, ssrc);
             }
         }
         return ownerMapping;

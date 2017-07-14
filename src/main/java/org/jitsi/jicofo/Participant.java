@@ -30,7 +30,7 @@ import java.util.*;
 
 /**
  * Class represent Jitsi Meet conference participant. Stores information about
- * Colibri channels allocated, Jingle session and media SSRCs.
+ * Colibri channels allocated, Jingle session and media sources.
  *
  * @author Pawel Domas
  */
@@ -85,41 +85,41 @@ public class Participant
     private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
 
     /**
-     * Peer's media SSRCs.
+     * Peer's media sources.
      */
-    private final MediaSSRCMap ssrcs = new MediaSSRCMap();
+    private final MediaSourceMap sources = new MediaSourceMap();
 
     /**
-     * Peer's media SSRC groups.
+     * Peer's media source groups.
      */
-    private final MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
+    private final MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
 
     /**
-     * SSRCs received from other peers scheduled for later addition, because
-     * of the Jingle session not being ready at the point when SSRCs appeared in
+     * sources received from other peers scheduled for later addition, because
+     * of the Jingle session not being ready at the point when sources appeared in
      * the conference.
      */
-    private MediaSSRCMap ssrcsToAdd = new MediaSSRCMap();
+    private MediaSourceMap sourcesToAdd = new MediaSourceMap();
 
     /**
-     * SSRC groups received from other peers scheduled for later addition.
-     * @see #ssrcsToAdd
+     * source groups received from other peers scheduled for later addition.
+     * @see #sourcesToAdd
      */
-    private MediaSSRCGroupMap ssrcGroupsToAdd = new MediaSSRCGroupMap();
+    private MediaSourceGroupMap sourceGroupsToAdd = new MediaSourceGroupMap();
 
     /**
-     * SSRCs received from other peers scheduled for later removal, because
-     * of the Jingle session not being ready at the point when SSRCs appeared in
+     * sources received from other peers scheduled for later removal, because
+     * of the Jingle session not being ready at the point when sources appeared in
      * the conference.
      * FIXME: do we need that since these were never added ? - check
      */
-    private MediaSSRCMap ssrcsToRemove = new MediaSSRCMap();
+    private MediaSourceMap sourcesToRemove = new MediaSourceMap();
 
     /**
-     * SSRC groups received from other peers scheduled for later removal.
-     * @see #ssrcsToRemove
+     * source groups received from other peers scheduled for later removal.
+     * @see #sourcesToRemove
      */
-    private MediaSSRCGroupMap ssrcGroupsToRemove = new MediaSSRCGroupMap();
+    private MediaSourceGroupMap sourceGroupsToRemove = new MediaSourceGroupMap();
 
     /**
      * Stores information about bundled transport if {@link #hasBundleSupport()}
@@ -141,9 +141,9 @@ public class Participant
     private List<String> supportedFeatures = new ArrayList<>();
 
     /**
-     * Tells how many unique SSRCs per media participant is allowed to advertise
+     * Tells how many unique sources per media participant is allowed to advertise
      */
-    private final int maxSSRCCount;
+    private final int maxSourceCount;
 
     /**
      * Remembers participant's muted status.
@@ -172,17 +172,17 @@ public class Participant
      * @param roomMember the {@link XmppChatMember} that represent this
      *                   participant in MUC conference room.
      *
-     * @param maxSSRCCount how many unique SSRCs per media this participant
+     * @param maxSourceCount how many unique sources per media this participant
      *                     instance will be allowed to advertise.
      */
     public Participant(JitsiMeetConference    conference,
                        XmppChatMember         roomMember,
-                       int                    maxSSRCCount)
+                       int maxSourceCount)
     {
         Objects.requireNonNull(conference, "conference");
 
         this.roomMember = Objects.requireNonNull(roomMember, "roomMember");
-        this.maxSSRCCount = maxSSRCCount;
+        this.maxSourceCount = maxSourceCount;
         this.logger = Logger.getLogger(classLogger, conference.getLogger());
     }
 
@@ -249,106 +249,106 @@ public class Participant
     }
 
     /**
-     * Removes given media SSRCs from this peer state.
-     * @param ssrcMap the SSRC map that contains the SSRCs to be removed.
-     * @return <tt>MediaSSRCMap</tt> which contains SSRCs removed from this map.
+     * Removes given media sources from this peer state.
+     * @param sourceMap the source map that contains the sources to be removed.
+     * @return <tt>MediaSourceMap</tt> which contains sources removed from this map.
      */
-    public MediaSSRCMap removeSSRCs(MediaSSRCMap ssrcMap)
+    public MediaSourceMap removeSources(MediaSourceMap sourceMap)
     {
-        return ssrcs.remove(ssrcMap);
+        return sources.remove(sourceMap);
     }
 
     /**
-     * Returns deep copy of this peer's media SSRC map.
+     * Returns deep copy of this peer's media source map.
      */
-    public MediaSSRCMap getSSRCsCopy()
+    public MediaSourceMap getSourcesCopy()
     {
-        return ssrcs.copyDeep();
+        return sources.copyDeep();
     }
 
     /**
-     * Returns deep copy of this peer's media SSRC group map.
+     * Returns deep copy of this peer's media source group map.
      */
-    public MediaSSRCGroupMap getSSRCGroupsCopy()
+    public MediaSourceGroupMap getSourceGroupsCopy()
     {
-        return ssrcGroups.copy();
+        return sourceGroups.copy();
     }
 
     /**
-     * Returns <tt>true</tt> if this peer has any not synchronized SSRCs
+     * Returns <tt>true</tt> if this peer has any not synchronized sources
      * scheduled for addition.
      */
-    public boolean hasSsrcsToAdd()
+    public boolean hasSourcesToAdd()
     {
-        return !ssrcsToAdd.isEmpty() || !ssrcGroupsToAdd.isEmpty();
+        return !sourcesToAdd.isEmpty() || !sourceGroupsToAdd.isEmpty();
     }
 
     /**
-     * Reset the queue that holds not synchronized SSRCs scheduled for future
+     * Reset the queue that holds not synchronized sources scheduled for future
      * addition.
      */
-    public void clearSsrcsToAdd()
+    public void clearSourcesToAdd()
     {
-        ssrcsToAdd = new MediaSSRCMap();
-        ssrcGroupsToAdd = new MediaSSRCGroupMap();
+        sourcesToAdd = new MediaSourceMap();
+        sourceGroupsToAdd = new MediaSourceGroupMap();
     }
 
     /**
-     * Reset the queue that holds not synchronized SSRCs scheduled for future
+     * Reset the queue that holds not synchronized sources scheduled for future
      * removal.
      */
-    public void clearSsrcsToRemove()
+    public void clearSourcesToRemove()
     {
-        ssrcsToRemove = new MediaSSRCMap();
-        ssrcGroupsToRemove = new MediaSSRCGroupMap();
+        sourcesToRemove = new MediaSourceMap();
+        sourceGroupsToRemove = new MediaSourceGroupMap();
     }
 
     /**
-     * Returns <tt>true</tt> if this peer has any not synchronized SSRCs
+     * Returns <tt>true</tt> if this peer has any not synchronized sources
      * scheduled for removal.
      */
-    public boolean hasSsrcsToRemove()
+    public boolean hasSourcesToRemove()
     {
-        return !ssrcsToRemove.isEmpty() || !ssrcGroupsToRemove.isEmpty();
+        return !sourcesToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty();
     }
 
     /**
-     * Returns <tt>true</tt> if this peer has any not synchronized SSRCs
+     * Returns <tt>true</tt> if this peer has any not synchronized sources
      * scheduled for addition.
      */
-    public MediaSSRCMap getSsrcsToAdd()
+    public MediaSourceMap getSourcesToAdd()
     {
-        return ssrcsToAdd;
+        return sourcesToAdd;
     }
 
     /**
-     * Returns <tt>true</tt> if this peer has any not synchronized SSRCs
+     * Returns <tt>true</tt> if this peer has any not synchronized sources
      * scheduled for removal.
      */
-    public MediaSSRCMap getSsrcsToRemove()
+    public MediaSourceMap getSourcesToRemove()
     {
-        return ssrcsToRemove;
+        return sourcesToRemove;
     }
 
     /**
-     * Schedules SSRCs received from other peer for future 'source-add' update.
+     * Schedules sources received from other peer for future 'source-add' update.
      *
-     * @param ssrcMap the media SSRC map that contains SSRCs for future updates.
+     * @param sourceMap the media source map that contains sources for future updates.
      */
-    public void scheduleSSRCsToAdd(MediaSSRCMap ssrcMap)
+    public void scheduleSourcesToAdd(MediaSourceMap sourceMap)
     {
-        ssrcsToAdd.add(ssrcMap);
+        sourcesToAdd.add(sourceMap);
     }
 
     /**
-     * Schedules SSRCs received from other peer for future 'source-remove'
+     * Schedules sources received from other peer for future 'source-remove'
      * update.
      *
-     * @param ssrcMap the media SSRC map that contains SSRCs for future updates.
+     * @param sourceMap the media source map that contains sources for future updates.
      */
-    public void scheduleSSRCsToRemove(MediaSSRCMap ssrcMap)
+    public void scheduleSourcesToRemove(MediaSourceMap sourceMap)
     {
-        ssrcsToRemove.add(ssrcMap);
+        sourcesToRemove.add(sourceMap);
     }
 
     /**
@@ -490,123 +490,123 @@ public class Participant
     }
 
     /**
-     * Returns the list of SSRC groups of given media type that belong ot this
+     * Returns the list of source groups of given media type that belong ot this
      * participant.
      * @param media the name of media type("audio","video", ...)
-     * @return the list of {@link SSRCGroup} for given media type.
+     * @return the list of {@link SourceGroup} for given media type.
      */
-    public List<SSRCGroup> getSSRCGroupsForMedia(String media)
+    public List<SourceGroup> getSourceGroupsForMedia(String media)
     {
-        return ssrcGroups.getSSRCGroupsForMedia(media);
+        return sourceGroups.getSourceGroupsForMedia(media);
     }
 
     /**
-     * Returns <tt>MediaSSRCGroupMap</tt> that contains the mapping of media
-     * SSRC groups that describe media of this participant.
+     * Returns <tt>MediaSourceGroupMap</tt> that contains the mapping of media
+     * source groups that describe media of this participant.
      */
-    public MediaSSRCGroupMap getSSRCGroups()
+    public MediaSourceGroupMap getSourceGroups()
     {
-        return ssrcGroups;
+        return sourceGroups;
     }
 
     /**
-     * Adds SSRCs and SSRC groups for media described in given Jingle content
+     * Adds sources and source groups for media described in given Jingle content
      * list.
      * @param contents the list of <tt>ContentPacketExtension</tt> that
-     *                 describes media SSRCs and SSRC groups.
-     * @return an array of two objects where first one is <tt>MediaSSRCMap</tt>
-     * contains the SSRCs that have been added and the second one is
-     * <tt>MediaSSRCGroupMap</tt> with <tt>SSRCGroup</tt>s added to this
+     *                 describes media sources and source groups.
+     * @return an array of two objects where first one is <tt>MediaSourceMap</tt>
+     * contains the sources that have been added and the second one is
+     * <tt>MediaSourceGroupMap</tt> with <tt>SourceGroup</tt>s added to this
      * participant.
      *
      * @throws InvalidSSRCsException if a critical problem has been found
      * with SSRC and SSRC groups. This <tt>Participant</tt>'s state remains
      * unchanged (no SSRCs or groups were added/removed).
      */
-    public Object[] addSSRCsAndGroupsFromContent(
+    public Object[] addSourcesAndGroupsFromContent(
             List<ContentPacketExtension> contents)
         throws InvalidSSRCsException
     {
         SSRCValidator validator
             = new SSRCValidator(
                     getEndpointId(),
-                    this.ssrcs, this.ssrcGroups, maxSSRCCount, this.logger);
+                    this.sources, this.sourceGroups, maxSourceCount, this.logger);
 
-        MediaSSRCMap ssrcsToAdd
-            = MediaSSRCMap.getSSRCsFromContent(contents);
-        MediaSSRCGroupMap groupsToAdd
-            = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
+        MediaSourceMap sourcesToAdd
+            = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceGroupMap groupsToAdd
+            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
 
         Object[] added
-            = validator.tryAddSSRCsAndGroups(ssrcsToAdd, groupsToAdd);
-        MediaSSRCMap addedSSRCs = (MediaSSRCMap) added[0];
-        MediaSSRCGroupMap addedGroups = (MediaSSRCGroupMap) added[1];
+            = validator.tryAddSourcesAndGroups(sourcesToAdd, groupsToAdd);
+        MediaSourceMap addedSources = (MediaSourceMap) added[0];
+        MediaSourceGroupMap addedGroups = (MediaSourceGroupMap) added[1];
 
-        // Mark as SSRC owner
+        // Mark as source owner
         String roomJid = roomMember.getContactAddress();
-        for (String mediaType : addedSSRCs.getMediaTypes())
+        for (String mediaType : addedSources.getMediaTypes())
         {
-            List<SourcePacketExtension> ssrcs
-                = addedSSRCs.getSSRCsForMedia(mediaType);
-            for (SourcePacketExtension ssrc : ssrcs)
+            List<SourcePacketExtension> sources
+                = addedSources.getSourcesForMedia(mediaType);
+            for (SourcePacketExtension source : sources)
             {
-                SSRCSignaling.setSSRCOwner(ssrc, roomJid);
+                SSRCSignaling.setSSRCOwner(source, roomJid);
             }
         }
 
-        this.ssrcs.add(addedSSRCs);
-        this.ssrcGroups.add(addedGroups);
+        this.sources.add(addedSources);
+        this.sourceGroups.add(addedGroups);
 
         return added;
     }
 
     /**
-     * Schedules given media SSRC groups for later addition.
-     * @param ssrcGroups the <tt>MediaSSRCGroupMap</tt> to be scheduled for
+     * Schedules given media source groups for later addition.
+     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
      *                   later addition.
      */
-    public void scheduleSSRCGroupsToAdd(MediaSSRCGroupMap ssrcGroups)
+    public void scheduleSourceGroupsToAdd(MediaSourceGroupMap sourceGroups)
     {
-        ssrcGroupsToAdd.add(ssrcGroups);
+        sourceGroupsToAdd.add(sourceGroups);
     }
 
     /**
-     * Schedules given media SSRC groups for later removal.
-     * @param ssrcGroups the <tt>MediaSSRCGroupMap</tt> to be scheduled for
+     * Schedules given media source groups for later removal.
+     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
      *                   later removal.
      */
-    public void scheduleSSRCGroupsToRemove(MediaSSRCGroupMap ssrcGroups)
+    public void scheduleSourceGroupsToRemove(MediaSourceGroupMap sourceGroups)
     {
-        ssrcGroupsToRemove.add(ssrcGroups);
+        sourceGroupsToRemove.add(sourceGroups);
     }
 
     /**
-     * Returns the map of SSRC groups that are waiting for synchronization.
+     * Returns the map of source groups that are waiting for synchronization.
      */
-    public MediaSSRCGroupMap getSSRCGroupsToAdd()
+    public MediaSourceGroupMap getSourceGroupsToAdd()
     {
-        return ssrcGroupsToAdd;
+        return sourceGroupsToAdd;
     }
 
     /**
-     * Returns the map of SSRC groups that are waiting for being removed from
+     * Returns the map of source groups that are waiting for being removed from
      * peer session.
      */
-    public MediaSSRCGroupMap getSsrcGroupsToRemove()
+    public MediaSourceGroupMap getSourceGroupsToRemove()
     {
-        return ssrcGroupsToRemove;
+        return sourceGroupsToRemove;
     }
 
     /**
-     * Removes SSRC groups from this participant state.
-     * @param groupsToRemove the map of SSRC groups that will be removed
+     * Removes source groups from this participant state.
+     * @param groupsToRemove the map of source groups that will be removed
      *                       from this participant media state description.
-     * @return <tt>MediaSSRCGroupMap</tt> which contains SSRC groups removed
+     * @return <tt>MediaSourceGroupMap</tt> which contains source groups removed
      *         from this map.
      */
-    public MediaSSRCGroupMap removeSSRCGroups(MediaSSRCGroupMap groupsToRemove)
+    public MediaSourceGroupMap removeSourceGroups(MediaSourceGroupMap groupsToRemove)
     {
-        return ssrcGroups.remove(groupsToRemove);
+        return sourceGroups.remove(groupsToRemove);
     }
 
     /**

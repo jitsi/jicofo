@@ -45,7 +45,7 @@ import java.util.logging.*;
  * a) Invites peers to the conference once they join multi user chat room
  *    (establishes Jingle session with peer).
  * b) Manages colibri channels per peer.
- * c) Advertisement of changes in peer's SSRCs. When new peer joins the
+ * c) Advertisement of changes in peer's sources. When new peer joins the
  * 'add-source' notification is being sent, on leave: 'remove-source'
  * and a combination of add/remove on stream switch(desktop sharing).
  *
@@ -582,7 +582,7 @@ public class JitsiMeetConferenceImpl
                 = new Participant(
                         this,
                         chatRoomMember,
-                        globalConfig.getMaxSSRCsPerUser());
+                        globalConfig.getMaxSourcesPerUser());
 
             participants.add(participant);
             inviteParticipant(
@@ -1011,10 +1011,10 @@ public class JitsiMeetConferenceImpl
 
                 jingle.terminateSession(peerJingleSession, reason, message);
 
-                removeSSRCs(
+                removeSources(
                     peerJingleSession,
-                    participant.getSSRCsCopy(),
-                    participant.getSSRCGroupsCopy(),
+                    participant.getSourcesCopy(),
+                    participant.getSourceGroupsCopy(),
                     false /* no JVB update - will expire */);
 
             }
@@ -1163,7 +1163,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            participant.addSSRCsAndGroupsFromContent(answer);
+            participant.addSourcesAndGroupsFromContent(answer);
         }
         catch (InvalidSSRCsException e)
         {
@@ -1175,10 +1175,10 @@ public class JitsiMeetConferenceImpl
                 XMPPError.Condition.bad_request, e.getMessage());
         }
 
-        MediaSSRCMap peerSSRCs = participant.getSSRCsCopy();
-        MediaSSRCGroupMap peerGroupsMap = participant.getSSRCGroupsCopy();
+        MediaSourceMap peerSources = participant.getSourcesCopy();
+        MediaSourceGroupMap peerGroupsMap = participant.getSourceGroupsCopy();
 
-        logger.info("Received SSRCs from " + peerAddress + " " + peerSSRCs);
+        logger.info("Received sources from " + peerAddress + " " + peerSources);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
@@ -1189,7 +1189,7 @@ public class JitsiMeetConferenceImpl
             bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
-                    peerSSRCs,
+                    peerSources,
                     peerGroupsMap,
                     participant.getBundleTransport(),
                     participant.getTransportMap());
@@ -1201,48 +1201,48 @@ public class JitsiMeetConferenceImpl
         }
 
         // Loop over current participant and send 'source-add' notification
-        propagateNewSSRCs(participant, peerSSRCs, peerGroupsMap);
+        propagateNewSources(participant, peerSources, peerGroupsMap);
 
         // Notify the peer itself since it is now stable
-        if (participant.hasSsrcsToAdd())
+        if (participant.hasSourcesToAdd())
         {
             jingle.sendAddSourceIQ(
-                    participant.getSsrcsToAdd(),
-                    participant.getSSRCGroupsToAdd(),
+                    participant.getSourcesToAdd(),
+                    participant.getSourceGroupsToAdd(),
                     peerJingleSession);
 
-            participant.clearSsrcsToAdd();
+            participant.clearSourcesToAdd();
         }
-        if (participant.hasSsrcsToRemove())
+        if (participant.hasSourcesToRemove())
         {
             jingle.sendRemoveSourceIQ(
-                    participant.getSsrcsToRemove(),
-                    participant.getSsrcGroupsToRemove(),
+                    participant.getSourcesToRemove(),
+                    participant.getSourceGroupsToRemove(),
                     peerJingleSession);
 
-            participant.clearSsrcsToRemove();
+            participant.clearSourcesToRemove();
         }
 
         return null;
     }
 
     /**
-     * Advertises new SSRCs across all conference participants by using
+     * Advertises new sources across all conference participants by using
      * 'source-add' Jingle notification.
      *
-     * @param ssrcOwner the <tt>Participant</tt> who owns the SSRCs.
-     * @param ssrcsToAdd the <tt>MediaSSRCMap</tt> with the SSRCs to advertise.
-     * @param ssrcGroupsToAdd the <tt>MediaSSRCGroupMap</tt> with SSRC groups
+     * @param sourceOwner the <tt>Participant</tt> who owns the sources.
+     * @param sourcesToAdd the <tt>MediaSourceMap</tt> with the sources to advertise.
+     * @param sourceGroupsToAdd the <tt>MediaSourceGroupMap</tt> with source groups
      *        to advertise.
      */
-    private void propagateNewSSRCs(Participant          ssrcOwner,
-                                   MediaSSRCMap         ssrcsToAdd,
-                                   MediaSSRCGroupMap    ssrcGroupsToAdd)
+    private void propagateNewSources(Participant          sourceOwner,
+                                     MediaSourceMap       sourcesToAdd,
+                                     MediaSourceGroupMap  sourceGroupsToAdd)
     {
         for (Participant peerToNotify : participants)
         {
             // Skip origin
-            if (ssrcOwner == peerToNotify)
+            if (sourceOwner == peerToNotify)
             {
                 continue;
             }
@@ -1255,15 +1255,15 @@ public class JitsiMeetConferenceImpl
                         "No jingle session yet for "
                             + peerToNotify.getChatMember().getContactAddress());
 
-                peerToNotify.scheduleSSRCsToAdd(ssrcsToAdd);
+                peerToNotify.scheduleSourcesToAdd(sourcesToAdd);
 
-                peerToNotify.scheduleSSRCGroupsToAdd(ssrcGroupsToAdd);
+                peerToNotify.scheduleSourceGroupsToAdd(sourceGroupsToAdd);
 
                 continue;
             }
 
             jingle.sendAddSourceIQ(
-                    ssrcsToAdd, ssrcGroupsToAdd, jingleSessionToNotify);
+                    sourcesToAdd, sourceGroupsToAdd, jingleSessionToNotify);
         }
     }
 
@@ -1362,9 +1362,9 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Callback called when we receive 'source-add' notification from conference
-     * participant. New SSRCs received are advertised to active participants.
+     * participant. New sources received are advertised to active participants.
      * If some participant does not have Jingle session established yet then
-     * those SSRCs are scheduled for future update.
+     * those sources are scheduled for future update.
      *
      * {@inheritDoc}
      */
@@ -1385,7 +1385,7 @@ public class JitsiMeetConferenceImpl
         Object[] added;
         try
         {
-            added = participant.addSSRCsAndGroupsFromContent(contents);
+            added = participant.addSourcesAndGroupsFromContent(contents);
         }
         catch (InvalidSSRCsException e)
         {
@@ -1395,24 +1395,24 @@ public class JitsiMeetConferenceImpl
                 XMPPError.Condition.bad_request, e.getMessage());
         }
 
-        MediaSSRCMap ssrcsToAdd = (MediaSSRCMap) added[0];
-        MediaSSRCGroupMap ssrcGroupsToAdd = (MediaSSRCGroupMap) added[1];
+        MediaSourceMap sourcesToAdd = (MediaSourceMap) added[0];
+        MediaSourceGroupMap sourceGroupsToAdd = (MediaSourceGroupMap) added[1];
 
-        if (ssrcsToAdd.isEmpty() && ssrcGroupsToAdd.isEmpty())
+        if (sourcesToAdd.isEmpty() && sourceGroupsToAdd.isEmpty())
         {
             logger.warn("Not sending source-add, notification would be empty");
             return null;
         }
 
-        // Updates SSRC Groups on the bridge
+        // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
         BridgeSession bridgeSession = findBridgeSession(participant);
         if (bridgeSession != null)
         {
             bridgeSession.colibriConference.updateSourcesInfo(
-                    participant.getSSRCsCopy(),
-                    participant.getSSRCGroupsCopy(),
+                    participant.getSourcesCopy(),
+                    participant.getSourceGroupsCopy(),
                     participant.getColibriChannelsInfo());
         }
         else
@@ -1421,16 +1421,16 @@ public class JitsiMeetConferenceImpl
             // TODO: how do we handle this? Re-invite?
         }
 
-        propagateNewSSRCs(participant, ssrcsToAdd, ssrcGroupsToAdd);
+        propagateNewSources(participant, sourcesToAdd, sourceGroupsToAdd);
 
         return null;
     }
 
     /**
      * Callback called when we receive 'source-remove' notification from
-     * conference participant. New SSRCs received are advertised to active
+     * conference participant. New sources received are advertised to active
      * participants. If some participant does not have Jingle session
-     * established yet then those SSRCs are scheduled for future update.
+     * established yet then those sources are scheduled for future update.
      *
      * {@inheritDoc}
      */
@@ -1438,32 +1438,32 @@ public class JitsiMeetConferenceImpl
     public XMPPError onRemoveSource(JingleSession sourceJingleSession,
                                List<ContentPacketExtension> contents)
     {
-        MediaSSRCMap ssrcsToRemove
-            = MediaSSRCMap.getSSRCsFromContent(contents);
+        MediaSourceMap sourcesToRemove
+            = MediaSourceMap.getSourcesFromContent(contents);
 
-        MediaSSRCGroupMap ssrcGroupsToRemove
-            = MediaSSRCGroupMap.getSSRCGroupsForContents(contents);
+        MediaSourceGroupMap sourceGroupsToRemove
+            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
 
-        removeSSRCs(
-                sourceJingleSession, ssrcsToRemove, ssrcGroupsToRemove, true);
+        removeSources(
+                sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
 
         return null;
     }
 
     /**
-     * Removes SSRCs from the conference and notifies other participants.
+     * Removes sources from the conference and notifies other participants.
      *
-     * @param sourceJingleSession source Jingle session from which SSRCs are
+     * @param sourceJingleSession source Jingle session from which sources are
      *                            being removed.
-     * @param ssrcsToRemove the {@link MediaSSRCMap} of SSRCs to be removed from
+     * @param sourcesToRemove the {@link MediaSourceMap} of sources to be removed from
      *                      the conference.
-     * @param updateChannels tells whether or not SSRC update request should be
+     * @param updateChannels tells whether or not sources update request should be
      *                       sent to the bridge.
      */
-    private void removeSSRCs(JingleSession        sourceJingleSession,
-                             MediaSSRCMap         ssrcsToRemove,
-                             MediaSSRCGroupMap    ssrcGroupsToRemove,
-                             boolean              updateChannels)
+    private void removeSources(JingleSession        sourceJingleSession,
+                               MediaSourceMap       sourcesToRemove,
+                               MediaSourceGroupMap  sourceGroupsToRemove,
+                               boolean              updateChannels)
     {
         Participant participant
             = findParticipantForJingleSession(sourceJingleSession);
@@ -1474,22 +1474,22 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        // Only SSRCs owned by this peer end up in "removed" set
-        MediaSSRCMap removedSSRCs = participant.removeSSRCs(ssrcsToRemove);
+        // Only sources owned by this peer end up in "removed" set
+        MediaSourceMap removedSources = participant.removeSources(sourcesToRemove);
 
-        MediaSSRCGroupMap removedGroups
-            = participant.removeSSRCGroups(ssrcGroupsToRemove);
+        MediaSourceGroupMap removedGroups
+            = participant.removeSourceGroups(sourceGroupsToRemove);
 
-        if (removedSSRCs.isEmpty() && removedGroups.isEmpty())
+        if (removedSources.isEmpty() && removedGroups.isEmpty())
         {
             logger.warn(
-                    "No ssrcs or groups to be removed from: "+ participantJid);
+                    "No sources or groups to be removed from: "+ participantJid);
             return;
         }
 
-        // This prevents from removing SSRCs which do not belong to this peer
-        ssrcsToRemove = removedSSRCs;
-        ssrcGroupsToRemove = removedGroups;
+        // This prevents from removing sources which do not belong to this peer
+        sourcesToRemove = removedSources;
+        sourceGroupsToRemove = removedGroups;
 
         // We remove all ssrc params from SourcePacketExtension as we want
         // the client to simply remove all lines corresponding to given SSRC and
@@ -1497,9 +1497,9 @@ public class JitsiMeetConferenceImpl
         // Some params might get out of sync for various reasons like for
         // example Chrome coming up with 'default' value for missing 'mslabel'
         // or when we'll be doing lip-sync stream merge
-        SSRCSignaling.deleteSSRCParams(ssrcsToRemove);
+        SSRCSignaling.deleteSSRCParams(sourcesToRemove);
 
-        // Updates SSRC Groups on the bridge
+        // Updates source Groups on the bridge
         BridgeSession bridgeSession = findBridgeSession(participant);
         // We may hit null here during conference restart, but that's not
         // important since the bridge for this instance will not be used
@@ -1507,12 +1507,12 @@ public class JitsiMeetConferenceImpl
         if (updateChannels && bridgeSession != null)
         {
             bridgeSession.colibriConference.updateSourcesInfo(
-                    participant.getSSRCsCopy(),
-                    participant.getSSRCGroupsCopy(),
+                    participant.getSourcesCopy(),
+                    participant.getSourceGroupsCopy(),
                     participant.getColibriChannelsInfo());
         }
 
-        logger.info("Removing " + participantJid + " SSRCs " + ssrcsToRemove);
+        logger.info("Removing " + participantJid + " sources " + sourcesToRemove);
 
         for (Participant otherParticipant : participants)
         {
@@ -1528,30 +1528,30 @@ public class JitsiMeetConferenceImpl
                 logger.warn(
                     "Remove source: no jingle session for " + participantJid);
 
-                otherParticipant.scheduleSSRCsToRemove(ssrcsToRemove);
+                otherParticipant.scheduleSourcesToRemove(sourcesToRemove);
 
-                otherParticipant.scheduleSSRCGroupsToRemove(ssrcGroupsToRemove);
+                otherParticipant.scheduleSourceGroupsToRemove(sourceGroupsToRemove);
 
                 continue;
             }
 
             jingle.sendRemoveSourceIQ(
-                    ssrcsToRemove, ssrcGroupsToRemove, jingleSessionToNotify);
+                    sourcesToRemove, sourceGroupsToRemove, jingleSessionToNotify);
         }
     }
 
     /**
-     * Gathers the list of all SSRCs that exist in the current conference state.
+     * Gathers the list of all sources that exist in the current conference state.
      *
-     * @param except optional <tt>Participant</tt> instance whose SSRCs will be
+     * @param except optional <tt>Participant</tt> instance whose sources will be
      *               excluded from the list
      *
-     * @return <tt>MediaSSRCMap</tt> of all SSRCs of given media type that exist
+     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
-    MediaSSRCMap getAllSSRCs(Participant except)
+    MediaSourceMap getAllSources(Participant except)
     {
-        MediaSSRCMap mediaSSRCs = new MediaSSRCMap();
+        MediaSourceMap mediaSources = new MediaSourceMap();
 
         for (Participant peer : participants)
         {
@@ -1561,25 +1561,25 @@ public class JitsiMeetConferenceImpl
                 continue;
             }
 
-            mediaSSRCs.add(peer.getSSRCsCopy());
+            mediaSources.add(peer.getSourcesCopy());
         }
 
-        return mediaSSRCs;
+        return mediaSources;
     }
 
     /**
-     * Gathers the list of all SSRC groups that exist in the current conference
+     * Gathers the list of all source groups that exist in the current conference
      * state.
      *
-     * @param except optional <tt>Participant</tt> instance whose SSRC groups
+     * @param except optional <tt>Participant</tt> instance whose source groups
      *               will be excluded from the list
      *
-     * @return the list of all SSRC groups of given media type that exist in
+     * @return the list of all source groups of given media type that exist in
      *         current conference state.
      */
-    MediaSSRCGroupMap getAllSSRCGroups(Participant except)
+    MediaSourceGroupMap getAllSourceGroups(Participant except)
     {
-        MediaSSRCGroupMap ssrcGroups = new MediaSSRCGroupMap();
+        MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
 
         for (Participant peer : participants)
         {
@@ -1589,10 +1589,10 @@ public class JitsiMeetConferenceImpl
                 continue;
             }
 
-            ssrcGroups.add(peer.getSSRCGroupsCopy());
+            sourceGroups.add(peer.getSourceGroupsCopy());
         }
 
-        return ssrcGroups;
+        return sourceGroups;
     }
 
     /**
