@@ -35,11 +35,11 @@ sudo prosodyctl register focus auth.jitsi.example.com focuspassword
 ```
 Include focus user as one of server admins:
 ```
-admins = { focus@auth.jitsi.example.com }
+admins = { "focus@auth.jitsi.example.com" }
 ```
 Add XMPP focus component:
 ```
-Component "focus.jitsi.exmaple.com"
+Component "focus.jitsi.example.com"
     component_secret="focus_secret"
 ```
 Restart Prosody:
