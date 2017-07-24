@@ -160,11 +160,8 @@ public class XmppProtocolProvider
         ConnectionConfiguration connConfig
             = new ConnectionConfiguration(
                     serverAddressUserSetting, serverPort, serviceName);
-                    
                     // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but trys to authenticate
-                    // with GSSAPI when it's offered is offered by the server. 
-                    //                   
-                                
+                    // with GSSAPI when it's offered by the server. Disable GSSAPI.
                     SASLAuthentication.unsupportSASLMechanism("GSSAPI");
                  
         connection = new XMPPConnection(connConfig);
