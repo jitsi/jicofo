@@ -34,7 +34,11 @@ LOGFILE=/var/log/jitsi/jicofo.log
 DESC=jicofo
 DAEMON_OPTS=" --host=$JICOFO_HOST --domain=$JICOFO_HOSTNAME --port=$JICOFO_PORT --secret=$JICOFO_SECRET --user_name=$JICOFO_AUTH_USER --user_domain=$JICOFO_AUTH_DOMAIN --user_password=$JICOFO_AUTH_PASSWORD $JICOFO_OPTS"
 
-test -x $DAEMON || exit 0
+
+if [ ! -x $DAEMON ] ;then
+  echo "Daemon not executable: $DAEMON"
+  exit 1
+fi
 
 set -e
 
