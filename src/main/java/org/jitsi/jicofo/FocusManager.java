@@ -322,17 +322,20 @@ public class FocusManager
         JitsiMeetConferenceImpl conference;
         synchronized (conferencesSyncRoot)
         {
-            if (!conferences.containsKey(room))
-            {
-                if (shutdownInProgress)
-                {
-                    return false;
-                }
+            conference = conferences.get(room);
+        }
 
-                createConference(room, properties, loggingLevel);
+        if (conference == null)
+        {
+            // A new conference request.
+            if (shutdownInProgress)
+            {
+                return false;
             }
 
-            conference = conferences.get(room);
+            // createConference blocks waiting for the MUC to be joined,
+            // and it should not hold any locks while doing this.
+            conference = createConference(room, properties, loggingLevel);
         }
 
         return conference.isInTheRoom();
@@ -350,7 +353,7 @@ public class FocusManager
      *
      * @throws Exception if any error occurs.
      */
-    private void createConference(
+    private JitsiMeetConferenceImpl createConference(
             String room, Map<String, String> properties, Level logLevel)
         throws Exception
     {
@@ -360,14 +363,18 @@ public class FocusManager
             = JitsiMeetGlobalConfig.getGlobalConfig(
                 FocusBundleActivator.bundleContext);
 
-        String id = generateConferenceId();
-        JitsiMeetConferenceImpl conference
-            = new JitsiMeetConferenceImpl(
+        JitsiMeetConferenceImpl conference;
+        String id;
+        synchronized (conferencesSyncRoot)
+        {
+            id = generateConferenceId();
+            conference
+                = new JitsiMeetConferenceImpl(
                     room, focusUserName, protocolProviderHandler,
                     this, config, globalConfig, logLevel, id);
 
-        conferences.put(room, conference);
-        conferenceIds.add(id);
+            conferences.put(room, conference);
+        }
 
         StringBuilder options = new StringBuilder();
         for (Map.Entry<String, String> option : properties.entrySet())
@@ -411,9 +418,16 @@ public class FocusManager
             // on FocusManager instance.
 
             //conference.stop();
+            synchronized (conferencesSyncRoot)
+            {
+                conferences.remove(room);
+                conferenceIds.remove(id);
+            }
 
             throw e;
         }
+
+        return conference;
     }
 
     /**
@@ -430,8 +444,7 @@ public class FocusManager
 
         String id;
 
-        // TODO extract a separate sync root for #conferences + #conferenceIds
-        synchronized (this)
+        synchronized (conferencesSyncRoot)
         {
             do
             {
