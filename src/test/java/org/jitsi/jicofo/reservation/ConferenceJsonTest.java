@@ -21,6 +21,8 @@ import org.jitsi.impl.reservation.rest.*;
 import org.jitsi.impl.reservation.rest.json.*;
 import org.json.simple.parser.*;
 import org.junit.*;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.io.*;
 import java.util.*;
@@ -87,6 +89,7 @@ public class ConferenceJsonTest
 
     @Test
     public void testToJson()
+            throws XmppStringprepException
     {
         Calendar c = Calendar.getInstance();
         c.set(Calendar.YEAR, 2014);
@@ -98,7 +101,9 @@ public class ConferenceJsonTest
         c.set(Calendar.MILLISECOND, 0);
 
         Conference conf = new Conference(
-            "test1", "pawel.gawel", c.getTime());
+                JidCreate.entityBareFrom("test1@example.com"),
+                "pawel.gawel",
+                c.getTime());
 
         Map<String, Object> objects = conf.createJSonMap();
 

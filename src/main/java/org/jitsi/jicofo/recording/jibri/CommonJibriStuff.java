@@ -25,12 +25,13 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -43,7 +44,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public abstract class CommonJibriStuff
-    implements PacketListener, PacketFilter
+    implements StanzaListener, StanzaFilter
 {
     /**
      * The Jitsi Meet conference instance.
@@ -234,7 +235,7 @@ public abstract class CommonJibriStuff
      * belong to {@link #conference} MUC.
      */
     @Override
-    synchronized public void processPacket(Packet packet)
+    synchronized public void processStanza(Stanza packet)
     {
         if (logger.isDebugEnabled())
         {
@@ -243,18 +244,18 @@ public abstract class CommonJibriStuff
 
         IQ iq = (IQ) packet;
 
-        String from = iq.getFrom();
+        Jid from = iq.getFrom();
 
         JibriIq jibriIq = (JibriIq) iq;
 
-        String roomName = MucUtil.extractRoomNameFromMucJid(from);
+        Localpart roomName = from.getLocalpartOrNull();
         if (roomName == null)
         {
             logger.warn("Could not extract room name from jid:" + from);
             return;
         }
 
-        String actualRoomName = conference.getRoomName();
+        Jid actualRoomName = conference.getRoomName();
         if (!actualRoomName.equals(roomName))
         {
             if (logger.isDebugEnabled())
@@ -331,7 +332,7 @@ public abstract class CommonJibriStuff
 
     private boolean verifyModeratorRole(JibriIq iq)
     {
-        String from = iq.getFrom();
+        Jid from = iq.getFrom();
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
 
         if (role == null)
@@ -357,7 +358,7 @@ public abstract class CommonJibriStuff
     {
         connection.sendPacket(
             IQ.createErrorResponse(
-                request, new XMPPError(condition, msg)));
+                request, XMPPError.from(condition, msg)));
     }
 
     /**

@@ -31,6 +31,9 @@ import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -46,9 +49,9 @@ public class BridgeSelectorTest
 {
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static String jvb1Jid = "jvb1.test.domain.net";
-    private static String jvb2Jid = "jvb2.test.domain.net";
-    private static String jvb3Jid = "jvb3.test.domain.net";
+    private static DomainBareJid jvb1Jid;
+    private static DomainBareJid jvb2Jid;
+    private static DomainBareJid jvb3Jid;
     private static BridgeState jvb1State;
     private static BridgeState jvb2State;
     private static BridgeState jvb3State;
@@ -60,6 +63,9 @@ public class BridgeSelectorTest
     public static void setUpClass()
         throws Exception
     {
+        jvb1Jid = JidCreate.domainBareFrom("jvb1.test.domain.net");
+        jvb2Jid = JidCreate.domainBareFrom("jvb2.test.domain.net");
+        jvb3Jid = JidCreate.domainBareFrom("jvb3.test.domain.net");
         String bridgeMapping
             = jvb1Jid + ":" + jvb1PubSubNode + ";" +
               jvb2Jid + ":" + jvb2PubSubNode + ";" +
@@ -130,7 +136,7 @@ public class BridgeSelectorTest
                      selector.getBridgeForPubSubNode(jvb3PubSubNode));
 
         // Test bridge operational status
-        List<String> workingBridges = new ArrayList<>();
+        List<Jid> workingBridges = new ArrayList<>();
         workingBridges.add(jvb1Jid);
         workingBridges.add(jvb2Jid);
         workingBridges.add(jvb3Jid);
@@ -248,7 +254,7 @@ public class BridgeSelectorTest
         BridgeSelector selector, MockSubscriptionOpSetImpl mockSubscriptions)
             throws InterruptedException
     {
-        String[] nodes = new String[]{ jvb1Jid, jvb2Jid, jvb3Jid};
+        DomainBareJid[] nodes = new DomainBareJid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
         BridgeState[] states
             = new BridgeState[] {jvb1State, jvb2State, jvb3State};
 
@@ -289,7 +295,7 @@ public class BridgeSelectorTest
             BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
     }
 
-    PacketExtension createJvbStats(int videoStreamCount)
+    ExtensionElement createJvbStats(int videoStreamCount)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 

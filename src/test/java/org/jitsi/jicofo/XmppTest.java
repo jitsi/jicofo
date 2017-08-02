@@ -27,6 +27,8 @@ import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 import org.xmpp.packet.IQ;
 
 import static org.junit.Assert.assertNotNull;
@@ -58,7 +60,8 @@ public class XmppTest
     public void testAllocateConference()
         throws Exception
     {
-        String roomName = "testRoom";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testRoom@example.com");
 
         FocusComponent focusComponent
             = MockMainMethodActivator.getFocusComponent();

@@ -22,6 +22,7 @@ import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 import org.json.simple.parser.*;
+import org.jxmpp.jid.EntityBareJid;
 
 import java.io.*;
 import java.util.*;
@@ -66,7 +67,7 @@ public class RESTReservations
     /**
      * Active conferences known to our side.
      */
-    private final Map<String, Conference> conferenceMap = new HashMap<>();
+    private final Map<EntityBareJid, Conference> conferenceMap = new HashMap<>();
 
     /**
      * Utility class that deals with API REST request processing.
@@ -128,7 +129,7 @@ public class RESTReservations
      * {@inheritDoc}
      */
     public synchronized Result createConference(String creator,
-                                                String mucRoomName)
+                                                EntityBareJid mucRoomName)
     {
         Conference conference = conferenceMap.get(mucRoomName);
         if (conference == null)
@@ -187,12 +188,7 @@ public class RESTReservations
                             RESULT_INTERNAL_ERROR, result.error.getMessage());
                 }
             }
-            catch (IOException e)
-            {
-                logger.error(e, e);
-                return new Result(RESULT_INTERNAL_ERROR, e.getMessage());
-            }
-            catch (ParseException e)
+            catch (IOException | ParseException e)
             {
                 logger.error(e, e);
                 return new Result(RESULT_INTERNAL_ERROR, e.getMessage());
@@ -224,7 +220,7 @@ public class RESTReservations
     /**
      * Deletes conference for given <tt>mucRoomName</tt> through the API.
      */
-    private synchronized Result deleteConference(String mucRoomName)
+    private synchronized Result deleteConference(EntityBareJid mucRoomName)
     {
         Conference conference = conferenceMap.get(mucRoomName);
         if (conference != null)
@@ -271,11 +267,7 @@ public class RESTReservations
                 logger.error("DELETE API ERROR: " + result);
             }
         }
-        catch (IOException e)
-        {
-            logger.error(e, e);
-        }
-        catch (ParseException e)
+        catch (IOException | ParseException e)
         {
             logger.error(e, e);
         }
@@ -309,10 +301,8 @@ public class RESTReservations
      * {@inheritDoc}
      */
     @Override
-    synchronized public void onFocusDestroyed(String roomName)
+    synchronized public void onFocusDestroyed(EntityBareJid roomName)
     {
-        //roomName = MucUtil.extractName(roomName);
-
         // Focus destroyed
         Conference conference = conferenceMap.get(roomName);
         if (conference == null)
@@ -368,7 +358,7 @@ public class RESTReservations
                     if (now - startTime > duration - EXPIRE_INTERVAL)
                     {
                         // Destroy the conference
-                        String mucRoomName = conference.getMucRoomName();
+                        EntityBareJid mucRoomName = conference.getMucRoomName();
 
                         deleteConference(conference.getId());
 

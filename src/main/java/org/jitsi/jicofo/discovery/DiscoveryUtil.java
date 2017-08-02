@@ -26,6 +26,8 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -110,18 +112,18 @@ public class DiscoveryUtil
      */
     public final static String[] VERSION_FEATURES = new String[]
         {
-            ProtocolProviderServiceJabberImpl.URN_XMPP_IQ_VERSION
+            Version.NAMESPACE
         };
 
     /**
      * Gets the list of features supported by participant. If we fail to 
-     * obtain it due to network failure default feature list is returned. 
-     * @param protocolProvider protocol provider service instance that will 
+     * obtain it due to network failure default feature list is returned.
+     * @param protocolProvider protocol provider service instance that will
      *        be used for discovery.
      * @param address XMPP address of the participant.
      */
     public static List<String> discoverParticipantFeatures
-        (ProtocolProviderService protocolProvider, String address)
+        (ProtocolProviderService protocolProvider, EntityFullJid address)
     {
         OperationSetSimpleCaps disco 
             = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
@@ -165,17 +167,17 @@ public class DiscoveryUtil
      */
     static public Version discoverVersion(
             XmppConnection                connection,
-            String                               jid,
-            List<String>                    features )
+            Jid                           jid,
+            List<String>                  features)
     {
         // If the bridge supports version IQ query it's version
         if (DiscoveryUtil.checkFeatureSupport(VERSION_FEATURES, features))
         {
             Version versionIq = new Version();
-            versionIq.setType(IQ.Type.GET);
+            versionIq.setType(IQ.Type.get);
             versionIq.setTo(jid);
 
-            Packet response;
+            Stanza response;
             try
             {
                 response = connection.sendPacketAndGetReply(versionIq);

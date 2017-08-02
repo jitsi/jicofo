@@ -20,46 +20,36 @@ package org.jitsi.impl.protocol.xmpp.extensions;
 
 import org.jitsi.util.*;
 
-import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.provider.*;
 
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 import org.xmlpull.v1.*;
 
 /**
- * Provider handles parsing of {@link ConferenceIq} and {@link LoginUrlIQ}
+ * Provider handles parsing of {@link ConferenceIq} and {@link LoginUrlIq}
  * stanzas and converting objects back to their XML representation.
  *
  * @author Pawel Domas
  */
 public class ConferenceIqProvider
-    implements IQProvider
+    extends IQProvider<ConferenceIq>
 {
-
     /**
      * Creates new instance of <tt>ConferenceIqProvider</tt>.
      */
     public ConferenceIqProvider()
     {
-        ProviderManager providerManager = ProviderManager.getInstance();
-
         // <conference>
-        providerManager.addIQProvider(
+        ProviderManager.addIQProvider(
             ConferenceIq.ELEMENT_NAME, ConferenceIq.NAMESPACE, this);
-
-        // <auth-url>
-        providerManager.addIQProvider(
-            LoginUrlIQ.ELEMENT_NAME, LoginUrlIQ.NAMESPACE, this);
-
-        //<logout>
-        providerManager.addIQProvider(
-            LogoutIq.ELEMENT_NAME, LogoutIq.NAMESPACE, this);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public IQ parseIQ(XmlPullParser parser)
+    public ConferenceIq parse(XmlPullParser parser, int initialDepth)
         throws Exception
     {
         String namespace = parser.getNamespace();
@@ -72,15 +62,14 @@ public class ConferenceIqProvider
 
         String rootElement = parser.getName();
 
-        ConferenceIq iq = null;
-        LoginUrlIQ authUrlIQ = null;
-        LogoutIq logoutIq = null;
-
+        ConferenceIq iq;
         if (ConferenceIq.ELEMENT_NAME.equals(rootElement))
         {
             iq = new ConferenceIq();
-            String room
-                = parser.getAttributeValue("", ConferenceIq.ROOM_ATTR_NAME);
+            EntityBareJid room
+                = JidCreate.entityBareFrom(
+                        parser.getAttributeValue("",
+                                ConferenceIq.ROOM_ATTR_NAME));
 
             iq.setRoom(room);
 
@@ -117,56 +106,6 @@ public class ConferenceIqProvider
                 iq.setIdentity(identity);
             }
         }
-        else if (LoginUrlIQ.ELEMENT_NAME.equals(rootElement))
-        {
-            authUrlIQ = new LoginUrlIQ();
-
-            String url = parser.getAttributeValue(
-                    "", LoginUrlIQ.URL_ATTRIBUTE_NAME);
-            if (!StringUtils.isNullOrEmpty(url))
-            {
-                authUrlIQ.setUrl(url);
-            }
-            String room = parser.getAttributeValue(
-                    "", LoginUrlIQ.ROOM_NAME_ATTR_NAME);
-            if (!StringUtils.isNullOrEmpty(room))
-            {
-                authUrlIQ.setRoom(room);
-            }
-            String popup = parser.getAttributeValue(
-                    "", LoginUrlIQ.POPUP_ATTR_NAME);
-            if (!StringUtils.isNullOrEmpty(popup))
-            {
-                Boolean popupBool = Boolean.parseBoolean(popup);
-                authUrlIQ.setPopup(popupBool);
-            }
-            String machineUID = parser.getAttributeValue(
-                    "", LoginUrlIQ.MACHINE_UID_ATTR_NAME);
-            if (!StringUtils.isNullOrEmpty(machineUID))
-            {
-                authUrlIQ.setMachineUID(machineUID);
-            }
-        }
-        else if (LogoutIq.ELEMENT_NAME.endsWith(rootElement))
-        {
-            logoutIq = new LogoutIq();
-
-            String sessionId = parser.getAttributeValue(
-                    "", LogoutIq.SESSION_ID_ATTR);
-
-            if (!StringUtils.isNullOrEmpty(sessionId))
-            {
-                logoutIq.setSessionId(sessionId);
-            }
-
-            String logoutUrl = parser.getAttributeValue(
-                    "", LogoutIq.LOGOUT_URL_ATTR);
-
-            if (!StringUtils.isNullOrEmpty(logoutUrl))
-            {
-                logoutIq.setLogoutUrl(logoutUrl);
-            }
-        }
         else
         {
             return null;
@@ -190,7 +129,7 @@ public class ConferenceIqProvider
                     }
                     else if (ConferenceIq.Property.ELEMENT_NAME.equals(name))
                     {
-                        if (iq != null && property != null)
+                        if (property != null)
                         {
                             iq.addProperty(property);
                             property = null;
@@ -231,17 +170,6 @@ public class ConferenceIqProvider
             }
         }
 
-        if (iq != null)
-        {
-            return iq;
-        }
-        else if (authUrlIQ != null)
-        {
-            return authUrlIQ;
-        }
-        else
-        {
-            return logoutIq;
-        }
+        return iq;
     }
 }

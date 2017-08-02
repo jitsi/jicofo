@@ -19,6 +19,9 @@ package org.jitsi.jicofo.auth;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
 
 /**
  * FIXME work in progress, still have to integrate OAuth
@@ -47,8 +50,8 @@ public interface AuthenticationAuthority
      *         the authentication system.
      */
     String createLoginUrl(
-            String machineUID, String peerFullJid,
-            String roomName, boolean popup);
+            String machineUID, EntityFullJid peerFullJid,
+            EntityBareJid roomName, boolean popup);
 
     /**
      * Process given <tt>ConferenceIq</tt> query in order to verify user's
@@ -96,7 +99,7 @@ public interface AuthenticationAuthority
      * it is authenticated.
      * @param jabberId the Jabber ID of the user to be verified.
      */
-    String getSessionForJid(String jabberId);
+    String getSessionForJid(Jid jabberId);
 
     /**
      * Returns user login associated with given <tt>jabberId</tt>.
@@ -105,7 +108,7 @@ public interface AuthenticationAuthority
      * @return user login associated with given <tt>jabberId</tt> or
      *         <tt>null</tt>
      */
-    String getUserIdentity(String jabberId);
+    String getUserIdentity(Jid jabberId);
 
     /**
      * Returns <tt>true</tt> if this is external authentication method that

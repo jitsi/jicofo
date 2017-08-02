@@ -22,6 +22,8 @@ import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
 import org.junit.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 
 import static org.junit.Assert.assertEquals;
 
@@ -50,7 +52,8 @@ public class LeakingRoomsTest
     public void testOneToOneConference()
             throws Exception
     {
-        String roomName = "testLeaks@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConf
@@ -62,7 +65,7 @@ public class LeakingRoomsTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-                = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+                = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Add discovery delay
         MockSetSimpleCapsOpSet discoOpSet = pps.getMockCapsOpSet();

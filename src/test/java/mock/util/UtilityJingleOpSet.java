@@ -25,6 +25,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -40,12 +41,12 @@ public class UtilityJingleOpSet
     private final static Logger logger
         = Logger.getLogger(UtilityJingleOpSet.class);
 
-    private final String jid;
+    private final Jid jid;
     private final XmppConnection connection;
 
     private final Queue<JingleIQ> sessionInvites = new LinkedList<>();
 
-    public UtilityJingleOpSet(String ourJid,
+    public UtilityJingleOpSet(Jid ourJid,
                               XmppConnection connection)
     {
         this.jid = ourJid;
@@ -54,10 +55,10 @@ public class UtilityJingleOpSet
 
     public void init()
     {
-        connection.addPacketHandler(new PacketListener()
+        connection.addPacketHandler(new StanzaListener()
         {
             @Override
-            public void processPacket(Packet packet)
+            public void processStanza(Stanza packet)
             {
                 JingleIQ jingleIQ = (JingleIQ) packet;
 
@@ -77,10 +78,10 @@ public class UtilityJingleOpSet
                     sessionInvites.notifyAll();
                 }
             }
-        }, new PacketFilter()
+        }, new StanzaFilter()
         {
             @Override
-            public boolean accept(Packet packet)
+            public boolean accept(Stanza packet)
             {
                 if (!getOurJID().equals(packet.getTo()))
                     return false;
@@ -97,7 +98,7 @@ public class UtilityJingleOpSet
     }
 
     @Override
-    protected String getOurJID()
+    protected Jid getOurJID()
     {
         return jid;
     }

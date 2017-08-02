@@ -17,11 +17,11 @@
  */
 package mock.xmpp;
 
-import org.jitsi.assertions.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -34,13 +34,12 @@ public class MockXmppConnectionImpl
     private final static Logger logger
         = Logger.getLogger(MockXmppConnectionImpl.class);
 
-    final LinkedList<Packet> packetQueue = new LinkedList<Packet>();
+    final LinkedList<Stanza> packetQueue = new LinkedList<>();
 
-    private final Map<PacketListener, PacketHandler> handlers
-        = new HashMap<PacketListener, PacketHandler>();
+    private final Map<StanzaListener, PacketHandler> handlers = new HashMap<>();
 
     @Override
-    public void sendPacket(final Packet packet)
+    public void sendPacket(final Stanza packet)
     {
         new Thread(new Runnable()
         {
@@ -49,10 +48,10 @@ public class MockXmppConnectionImpl
             {
                 doSendPacket(packet);
             }
-        },"Packet " + packet.getPacketID() + " sender").start();
+        },"Packet " + packet.getStanzaId() + " sender").start();
     }
 
-    private void doSendPacket(Packet packet)
+    private void doSendPacket(Stanza packet)
     {
         synchronized (packetQueue)
         {
@@ -79,37 +78,49 @@ public class MockXmppConnectionImpl
                     "Notifying handler " + handler
                         + " about: " + packet.toXML());
 
-                handler.listener.processPacket(packet);
+                try
+                {
+                    handler.listener.processStanza(packet);
+                }
+                catch (SmackException.NotConnectedException
+                        | InterruptedException e)
+                {
+                    // ignore, but log - same as the real implementation
+                    e.printStackTrace();
+                }
             }
         }
     }
 
     @Override
-    public Packet sendPacketAndGetReply(Packet packet)
+    public IQ sendPacketAndGetReply(IQ packet)
     {
-        String myJid = packet.getFrom();
-        String packetId = packet.getPacketID();
+        Jid myJid = packet.getFrom();
+        String packetId = packet.getStanzaId();
 
         sendPacket(packet);
 
-        return readNextPacket(myJid, packetId, 10000);
+        return (IQ)readNextPacket(myJid, packetId, 10000);
     }
 
-    public Packet readNextPacket(String myJid, long timeout)
+    public Stanza readNextPacket(Jid myJid, long timeout)
     {
         return readNextPacket(myJid, null, timeout);
     }
 
-    public Packet readNextPacket(String myJid, String packetId, long timeout)
+    public Stanza readNextPacket(Jid myJid, String packetId, long timeout)
     {
-        Assert.notNullNorEmpty(myJid, "JID: " + myJid);
+        if (myJid == null)
+        {
+            throw new IllegalArgumentException("myJid");
+        }
 
         logger.debug(
             "Read packet request for JID: " + myJid
                 + " packet: " + packetId + " tout: "
                 + timeout + " t: " + Thread.currentThread());
 
-        Packet myPacket = null;
+        Stanza myPacket = null;
         long start = System.currentTimeMillis();
         long end = start + timeout;
 
@@ -138,7 +149,7 @@ public class MockXmppConnectionImpl
                     }
                 }
 
-                for (Packet p : packetQueue)
+                for (Stanza p : packetQueue)
                 {
                     if (myJid.equals(p.getTo()))
                     {
@@ -147,10 +158,10 @@ public class MockXmppConnectionImpl
                         {
                             IQ iq = (IQ) p;
                             IQ.Type iqType = iq.getType();
-                            if ((IQ.Type.RESULT.equals(iqType) ||
-                                 IQ.Type.ERROR.equals(iqType))
+                            if ((IQ.Type.result.equals(iqType) ||
+                                 IQ.Type.error.equals(iqType))
 
-                                && packetId.equals(p.getPacketID()))
+                                && packetId.equals(p.getStanzaId()))
                             {
                                 myPacket = p;
                             }
@@ -171,7 +182,7 @@ public class MockXmppConnectionImpl
 
         if (myPacket != null)
         {
-            logger.debug("Routing packet: " + myPacket.getPacketID()
+            logger.debug("Routing packet: " + myPacket.getStanzaId()
                 + " to " + myJid + " t: " + Thread.currentThread());
         }
         else
@@ -183,7 +194,7 @@ public class MockXmppConnectionImpl
         return myPacket;
     }
 
-    public void addPacketHandler(PacketListener listener, PacketFilter filter)
+    public void addPacketHandler(StanzaListener listener, StanzaFilter filter)
     {
         synchronized (handlers)
         {
@@ -191,7 +202,7 @@ public class MockXmppConnectionImpl
         }
     }
 
-    public void removePacketHandler(PacketListener listener)
+    public void removePacketHandler(StanzaListener listener)
     {
         synchronized (handlers)
         {
@@ -201,10 +212,10 @@ public class MockXmppConnectionImpl
 
     class PacketHandler
     {
-        PacketFilter filter;
-        PacketListener listener;
+        StanzaFilter filter;
+        StanzaListener listener;
 
-        public PacketHandler(PacketListener listener, PacketFilter filter)
+        public PacketHandler(StanzaListener listener, StanzaFilter filter)
         {
             this.listener = listener;
             this.filter = filter;
@@ -213,7 +224,7 @@ public class MockXmppConnectionImpl
 
     class PacketReceiver
     {
-        private final String jid;
+        private final Jid jid;
 
         private final MockXmppConnectionImpl connection;
 
@@ -221,9 +232,9 @@ public class MockXmppConnectionImpl
 
         private boolean run = true;
 
-        private final List<Packet> packets = new ArrayList<Packet>();
+        private final List<Stanza> packets = new ArrayList<>();
 
-        public PacketReceiver(String jid, MockXmppConnectionImpl connection)
+        public PacketReceiver(Jid jid, MockXmppConnectionImpl connection)
         {
             this.jid = jid;
             this.connection = connection;
@@ -238,7 +249,7 @@ public class MockXmppConnectionImpl
                 {
                     while (run)
                     {
-                        Packet p = connection.readNextPacket(jid, 500);
+                        Stanza p = connection.readNextPacket(jid, 500);
                         if (p != null)
                         {
                             synchronized (packets)
@@ -254,7 +265,7 @@ public class MockXmppConnectionImpl
             receiver.start();
         }
 
-        public Packet waitForPacket(long timeout)
+        public Stanza waitForPacket(long timeout)
         {
             synchronized (packets)
             {
@@ -298,7 +309,7 @@ public class MockXmppConnectionImpl
             }
         }
 
-        public Packet getPacket(int idx)
+        public Stanza getPacket(int idx)
         {
             synchronized (packets)
             {

@@ -34,6 +34,8 @@ import org.jitsi.util.*;
 import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -65,7 +67,7 @@ public class ColibriConferenceImpl
     /**
      * XMPP address of videobridge component.
      */
-    private String jitsiVideobridge;
+    private Jid jitsiVideobridge;
 
     /**
      * The {@link ColibriConferenceIQ} that stores the state of whole conference
@@ -120,7 +122,7 @@ public class ColibriConferenceImpl
 
     /**
      * Flag used to figure out if Colibri conference has been allocated during
-     * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
+     * last {@link #createColibriChannels(boolean, Jid, boolean, List)} call.
      */
     private boolean justAllocated = false;
 
@@ -183,7 +185,7 @@ public class ColibriConferenceImpl
             logger.warn("Not doing " + operationName + " - instance disposed");
             return true;
         }
-        if (StringUtils.isNullOrEmpty(jitsiVideobridge))
+        if (jitsiVideobridge == null)
         {
             logger.error(
                 "Not doing " + operationName + " - bridge not initialized");
@@ -196,7 +198,7 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void setJitsiVideobridge(String videobridgeJid)
+    public void setJitsiVideobridge(Jid videobridgeJid)
     {
         if (!StringUtils.isNullOrEmpty(conferenceState.getID()))
         {
@@ -210,7 +212,7 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public String getJitsiVideobridge()
+    public Jid getJitsiVideobridge()
     {
         return this.jitsiVideobridge;
     }
@@ -246,7 +248,7 @@ public class ColibriConferenceImpl
     @Override
     public ColibriConferenceIQ createColibriChannels(
             boolean useBundle,
-            String endpointName,
+            Jid endpointName,
             boolean peerIsInitiator,
             List<ContentPacketExtension> contents)
         throws OperationFailedException
@@ -285,14 +287,9 @@ public class ColibriConferenceImpl
             logRequest("Channel allocate request", allocateRequest);
 
             // FIXME retry allocation on timeout ?
-            Packet response = sendAllocRequest(endpointName, allocateRequest);
+            Stanza response = sendAllocRequest(endpointName, allocateRequest);
 
             logResponse("Channel allocate response", response);
-
-            if (logger.isDebugEnabled())
-                logger.debug(
-                    Thread.currentThread() +
-                        " - have alloc response? " + (response != null));
 
             // Verify the response and throw OperationFailedException
             // if it's not a success
@@ -374,7 +371,7 @@ public class ColibriConferenceImpl
      * error that may indicate that the JVB instance is faulty.
      *
      */
-    private void maybeThrowOperationFailed(Packet response)
+    private void maybeThrowOperationFailed(Stanza response)
         throws OperationFailedException
     {
         if (response == null)
@@ -389,7 +386,7 @@ public class ColibriConferenceImpl
         {
             XMPPError error = response.getError();
             if (XMPPError.Condition
-                    .bad_request.toString().equals(error.getCondition()))
+                    .bad_request.equals(error.getCondition()))
             {
                 allocChannelsErrorCode
                     = OperationFailedException.ILLEGAL_ARGUMENT;
@@ -438,7 +435,7 @@ public class ColibriConferenceImpl
      *         to allocate new conference and current thread has been waiting
      *         to acquire the semaphore.
      */
-    protected boolean acquireCreateConferenceSemaphore(String endpointName)
+    protected boolean acquireCreateConferenceSemaphore(Jid endpointName)
         throws OperationFailedException
     {
         return createConfSemaphore.acquire();
@@ -450,14 +447,14 @@ public class ColibriConferenceImpl
      *
      * @param endpointName the name of colibri conference endpoint(participant)
      */
-    protected void releaseCreateConferenceSemaphore(String endpointName)
+    protected void releaseCreateConferenceSemaphore(Jid endpointName)
     {
         createConfSemaphore.release();
     }
 
     /**
      * Sends Colibri packet and waits for response in
-     * {@link #createColibriChannels(boolean, String, boolean, List)} call.
+     * {@link #createColibriChannels(boolean, Jid, boolean, List)} call.
      *
      * Exposed for unit tests purpose.
      *
@@ -468,9 +465,9 @@ public class ColibriConferenceImpl
      *         the request timed out.
      *
      * @throws OperationFailedException see throws description of
-     * {@link XmppConnection#sendPacketAndGetReply(Packet)}.
+     * {@link XmppConnection#sendPacketAndGetReply(IQ)}.
      */
-    protected Packet sendAllocRequest(String endpointName,
+    protected Stanza sendAllocRequest(Jid endpointName,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {
@@ -493,7 +490,7 @@ public class ColibriConferenceImpl
         }
     }
 
-    private void logResponse(String message, Packet response)
+    private void logResponse(String message, Stanza response)
     {
         if (!logger.isDebugEnabled())
             return;
@@ -508,7 +505,8 @@ public class ColibriConferenceImpl
     private void logRequest(String message, IQ iq)
     {
         if (logger.isDebugEnabled())
-            logger.debug(message + "\n" + iq.toXML().replace(">",">\n"));
+            logger.debug(message + "\n" + iq.toXML().toString()
+                    .replace(">",">\n"));
     }
 
     /**
@@ -807,7 +805,7 @@ public class ColibriConferenceImpl
             return false;
         }
 
-        request.setType(IQ.Type.SET);
+        request.setType(IQ.Type.set);
         request.setTo(jitsiVideobridge);
 
         request.addContent(contentRequest);
@@ -823,7 +821,7 @@ public class ColibriConferenceImpl
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
-    public void setName(String name)
+    public void setName(Localpart name)
     {
         conferenceState.setName(name);
     }
@@ -832,7 +830,7 @@ public class ColibriConferenceImpl
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
-    public String getName()
+    public Localpart getName()
     {
         return conferenceState.getName();
     }
@@ -1000,7 +998,7 @@ public class ColibriConferenceImpl
         {
             synchronized (syncRoot)
             {
-                String jvbInUse = jitsiVideobridge;
+                Jid jvbInUse = jitsiVideobridge;
 
                 if (conferenceState.getID() == null && creatorThread == null)
                 {

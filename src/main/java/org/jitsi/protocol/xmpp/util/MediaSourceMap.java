@@ -19,6 +19,7 @@ package org.jitsi.protocol.xmpp.util;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -218,12 +219,12 @@ public class MediaSourceMap
      * @return <tt>SourcePacketExtension</tt> for given media type and owner or
      *         <tt>null</tt> if not found.
      */
-    public SourcePacketExtension findSSRCforOwner(String media, String owner)
+    public SourcePacketExtension findSSRCforOwner(String media, Jid owner)
     {
         List<SourcePacketExtension> mediaSSRCs = getSourcesForMedia(media);
         for (SourcePacketExtension ssrc : mediaSSRCs)
         {
-            String ssrcOwner = SSRCSignaling.getSSRCOwner(ssrc);
+            Jid ssrcOwner = SSRCSignaling.getSSRCOwner(ssrc);
             if (ssrcOwner != null && ssrcOwner.equals(owner))
                 return ssrc;
         }

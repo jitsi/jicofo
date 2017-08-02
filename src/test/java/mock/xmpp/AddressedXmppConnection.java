@@ -21,6 +21,7 @@ package mock.xmpp;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 /**
  * Addressed version of {@link MockXmppConnectionImpl} that will fill the 'from'
@@ -29,18 +30,18 @@ import org.jivesoftware.smack.packet.*;
 public class AddressedXmppConnection
     implements MockXmppConnection
 {
-    private final String ourJid;
+    private final Jid ourJid;
 
     private final MockXmppConnectionImpl connection;
 
-    public AddressedXmppConnection(String ourJid,
+    public AddressedXmppConnection(Jid ourJid,
                                    MockXmppConnectionImpl connection)
     {
         this.ourJid = ourJid;
         this.connection = connection;
     }
 
-    private void fromCheck(Packet ourRequest)
+    private void fromCheck(Stanza ourRequest)
     {
         if (ourRequest.getFrom() == null)
         {
@@ -49,7 +50,7 @@ public class AddressedXmppConnection
     }
 
     @Override
-    public void sendPacket(Packet packet)
+    public void sendPacket(Stanza packet)
     {
         fromCheck(packet);
 
@@ -57,7 +58,7 @@ public class AddressedXmppConnection
     }
 
     @Override
-    public Packet sendPacketAndGetReply(Packet packet)
+    public IQ sendPacketAndGetReply(IQ packet)
     {
         fromCheck(packet);
 
@@ -65,13 +66,13 @@ public class AddressedXmppConnection
     }
 
     @Override
-    public void addPacketHandler(PacketListener listener, PacketFilter filter)
+    public void addPacketHandler(StanzaListener listener, StanzaFilter filter)
     {
         connection.addPacketHandler(listener, filter);
     }
 
     @Override
-    public void removePacketHandler(PacketListener listener)
+    public void removePacketHandler(StanzaListener listener)
     {
         connection.removePacketHandler(listener);
     }

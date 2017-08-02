@@ -31,6 +31,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 
+import org.jxmpp.jid.Jid;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -40,7 +41,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockVideobridge
-    implements PacketFilter, PacketListener, BundleActivator
+    implements StanzaFilter, StanzaListener, BundleActivator
 {
     /**
      * The logger
@@ -50,7 +51,7 @@ public class MockVideobridge
 
     private final MockXmppConnection connection;
 
-    private final String bridgeJid;
+    private final Jid bridgeJid;
 
     private Videobridge bridge;
 
@@ -61,7 +62,7 @@ public class MockVideobridge
     private VideobridgeBundleActivator jvbActivator;
 
     public MockVideobridge(MockXmppConnection connection,
-                           String bridgeJid)
+                           Jid bridgeJid)
     {
         this.connection = connection;
         this.bridgeJid = bridgeJid;
@@ -89,12 +90,12 @@ public class MockVideobridge
     }
 
     @Override
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         return bridgeJid.equals(packet.getTo());
     }
 
-    public void processPacket(Packet p)
+    public void processStanza(Stanza p)
     {
         if (p instanceof ColibriConferenceIQ
                 || p instanceof HealthCheckIQ)
@@ -116,16 +117,16 @@ public class MockVideobridge
             }
             else
             {
-                response = IQ.createErrorResponse((IQ) p, new XMPPError(error));
+                response = IQ.createErrorResponse((IQ) p, error);
             }
 
             if (response != null)
             {
                 response.setTo(p.getFrom());
                 response.setFrom(bridgeJid);
-                if (IQ.Type.RESULT.equals(response.getType()))
+                if (IQ.Type.result.equals(response.getType()))
                 {
-                    response.setPacketID(p.getPacketID());
+                    response.setStanzaId(p.getStanzaId());
                 }
                 connection.sendPacket(response);
 
@@ -156,8 +157,8 @@ public class MockVideobridge
             return
                 IQ.createErrorResponse(
                     p,
-                    new XMPPError(
-                        XMPPError.Condition.interna_server_error));
+                    XMPPError.getBuilder(
+                        XMPPError.Condition.internal_server_error));
         }
         else if (p instanceof ColibriConferenceIQ)
         {
@@ -227,7 +228,7 @@ public class MockVideobridge
         return any ? count : -1;
     }
 
-    public String getBridgeJid()
+    public Jid getBridgeJid()
     {
         return bridgeJid;
     }

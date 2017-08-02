@@ -46,10 +46,6 @@ public class MockActivator
     public void start(BundleContext bundleContext)
         throws Exception
     {
-        // FIXME: make sure that we're using interoperability layer
-        AbstractSmackInteroperabilityLayer.setImplementationClass(
-            SmackV3InteroperabilityLayer.class);
-
         XmppProtocolActivator.registerXmppExtensions();
 
         sipFactory

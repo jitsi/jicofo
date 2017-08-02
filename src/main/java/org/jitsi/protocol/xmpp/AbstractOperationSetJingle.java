@@ -27,6 +27,7 @@ import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -57,7 +58,7 @@ public abstract class AbstractOperationSetJingle
      *
      * @return our JID
      */
-    protected abstract String getOurJID();
+    protected abstract Jid getOurJID();
 
     /**
      * Returns {@link XmppConnection} implementation.
@@ -97,7 +98,7 @@ public abstract class AbstractOperationSetJingle
      */
     @Override
     public boolean initiateSession(boolean                      useBundle,
-                                   String                       address,
+                                   Jid                          address,
                                    List<ContentPacketExtension> contents,
                                    JingleRequestHandler         requestHandler,
                                    boolean[]                    startMuted)
@@ -124,7 +125,7 @@ public abstract class AbstractOperationSetJingle
      * @param sessionId Jingle session ID
      * @param useBundle <tt>true</tt> if bundled transport is being used or
      * <tt>false</tt> otherwise
-     * @param address the XMPP address where the IQ will be sent
+     * @param address the XMPP address where the IQ will be sent to
      * @param contents the list of Jingle contents which describes the actual
      * offer
      * @param startMuted an array where the first value stands for "start with
@@ -135,7 +136,7 @@ public abstract class AbstractOperationSetJingle
      */
     private JingleIQ createInviteIQ(String                          sessionId,
                                     boolean                         useBundle,
-                                    String                          address,
+                                    Jid                             address,
                                     List<ContentPacketExtension>    contents,
                                     boolean[]                       startMuted)
     {
@@ -210,7 +211,7 @@ public abstract class AbstractOperationSetJingle
                 return false;
             }
         }
-        else if (IQ.Type.RESULT.equals(reply.getType()))
+        else if (IQ.Type.result.equals(reply.getType()))
         {
             return true;
         }
@@ -234,7 +235,7 @@ public abstract class AbstractOperationSetJingle
                                     boolean[]                       startMuted)
         throws OperationFailedException
     {
-        String address = session.getAddress();
+        Jid address = session.getAddress();
 
         logger.info("RE-INVITE PEER: " + address);
 
@@ -273,7 +274,7 @@ public abstract class AbstractOperationSetJingle
         {
             // bad-request
             IQ badRequest = IQ.createErrorResponse(
-                iq, new XMPPError(XMPPError.Condition.bad_request));
+                iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
 
             getConnection().sendPacket(badRequest);
 
@@ -349,7 +350,7 @@ public abstract class AbstractOperationSetJingle
 
         addSourceIq.setAction(JingleAction.SOURCEADD);
         addSourceIq.setFrom(getOurJID());
-        addSourceIq.setType(IQ.Type.SET);
+        addSourceIq.setType(IQ.Type.set);
 
         for (String media : ssrcs.getMediaTypes())
         {
@@ -455,7 +456,7 @@ public abstract class AbstractOperationSetJingle
 
         removeSourceIq.setAction(JingleAction.SOURCEREMOVE);
         removeSourceIq.setFrom(getOurJID());
-        removeSourceIq.setType(IQ.Type.SET);
+        removeSourceIq.setType(IQ.Type.set);
 
         for (String media : ssrcs.getMediaTypes())
         {

@@ -47,12 +47,12 @@ public class JibriIqProviderTest
 
         // JibriIq
         String iqXml =
-            "<iq to='t' from='f'>" +
+            "<iq to='t' from='f' type='set'>" +
                 "<jibri xmlns='http://jitsi.org/protocol/jibri'" +
                 "       status='busy' action='stop'/>" +
                 "</iq>";
 
-        JibriIq jibriIq = (JibriIq) IQUtils.parse(iqXml, provider);
+        JibriIq jibriIq = IQUtils.parse(iqXml, provider);
 
         assertNotNull(jibriIq);
 
@@ -70,19 +70,19 @@ public class JibriIqProviderTest
 
         // JibriIq
         String iqXml =
-            "<iq to='t' from='f'>" +
+            "<iq to='t' from='f' type='error'>" +
                 "<jibri xmlns='http://jitsi.org/protocol/jibri'" +
                 "       status='failed'>" +
                 "<error xmlns='urn:ietf:params:xml:ns:xmpp-stanzas' " +
-                "       type='wait' code='504'>" +
+                "       type='wait'>" +
                 "<remote-server-timeout" +
                 "       xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>" +
                 "<text>Youtube request timeout</text>" +
                 "</error>" +
-                "<jibri/>" +
+                "</jibri>" +
                 "</iq>";
 
-        JibriIq jibriIq = (JibriIq) IQUtils.parse(iqXml, provider);
+        JibriIq jibriIq = IQUtils.parse(iqXml, provider);
 
         assertNotNull(jibriIq);
 
@@ -93,16 +93,18 @@ public class JibriIqProviderTest
 
         assertEquals(XMPPError.Type.WAIT, error.getType());
 
-        assertEquals(504, error.getCode());
+        // FIXME smack4: workaround for Smack#160
+        String result = error.getDescriptiveText() != null
+                ? error.getDescriptiveText()
+                : error.getDescriptiveText(null);
+        assertEquals("Youtube request timeout", result);
 
-        assertEquals("Youtube request timeout", error.getMessage());
-
-        String condition = error.getCondition();
+        XMPPError.Condition condition = error.getCondition();
 
         assertNotNull(condition);
 
         assertEquals(
-                XMPPError.Condition.remote_server_timeout.toString(),
+                XMPPError.Condition.remote_server_timeout,
                 condition);
     }
 }

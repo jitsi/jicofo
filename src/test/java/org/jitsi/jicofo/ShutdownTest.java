@@ -31,6 +31,9 @@ import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.parts.Domainpart;
 import org.osgi.framework.*;
 
 import org.xmpp.packet.*;
@@ -47,6 +50,7 @@ public class ShutdownTest
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
     static String shutdownJid = "shutdown.server.net";
+    static String testDomain = "example.com";
 
     @BeforeClass
     public static void setUpClass()
@@ -75,7 +79,8 @@ public class ShutdownTest
         TestShutdownService shutdownService
             = new TestShutdownService(osgi.bc);
 
-        String roomName = "testroom@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         FocusComponent focusComponent
@@ -97,7 +102,8 @@ public class ShutdownTest
         // Try shutdown from wrong jid
         ShutdownIQ gracefulShutdownIQ = ShutdownIQ.createGracefulShutdownIQ();
 
-        gracefulShutdownIQ.setFrom("randomJid1234");
+        gracefulShutdownIQ.setFrom(
+                JidCreate.from("randomJid1234@" + testDomain));
 
         IQ result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));
@@ -107,7 +113,7 @@ public class ShutdownTest
                      result.getError().getCondition());
 
         // Now use authorized JID
-        gracefulShutdownIQ.setFrom(shutdownJid);
+        gracefulShutdownIQ.setFrom(JidCreate.from(shutdownJid));
 
         result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));
@@ -116,7 +122,8 @@ public class ShutdownTest
 
         // Now try to allocate conference - must be rejected
         ConferenceIq newConferenceIQ = new ConferenceIq();
-        newConferenceIQ.setRoom("newRoom1");
+        newConferenceIQ.setRoom(
+                JidCreate.entityBareFrom("newRoom1@example.com"));
 
         result = focusComponent.handleIQSetImpl(
             IQUtils.convert(newConferenceIQ));

@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.util.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -58,7 +59,7 @@ public interface OperationSetJingle
      */
     boolean initiateSession(
             boolean useBundle,
-            String address,
+            Jid address,
             List<ContentPacketExtension> contents,
             JingleRequestHandler requestHandler,
             boolean[] startMuted)

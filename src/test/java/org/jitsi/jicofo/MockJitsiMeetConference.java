@@ -19,6 +19,9 @@ package org.jitsi.jicofo;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -43,7 +46,7 @@ public class MockJitsiMeetConference
      * {@inheritDoc}
      */
     @Override
-    public Participant findParticipantForRoomJid(String jid)
+    public Participant findParticipantForRoomJid(Jid jid)
     {
         return null;
     }
@@ -55,13 +58,13 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public String getRoomName()
+    public EntityBareJid getRoomName()
     {
         return null;
     }
 
     @Override
-    public String getFocusJid()
+    public EntityFullJid getFocusJid()
     {
         return null;
     }

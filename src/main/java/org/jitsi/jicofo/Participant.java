@@ -25,6 +25,9 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.parts.Resourcepart;
 
 import java.util.*;
 
@@ -51,9 +54,10 @@ public class Participant
      * @param chatRoomMember XMPP MUC chat room member which represents a
      *                       <tt>Participant</tt>.
      */
-    public static String getEndpointId(ChatRoomMember chatRoomMember)
+    public static Jid getEndpointId(XmppChatMember chatRoomMember)
     {
-        return chatRoomMember.getName(); // XMPP MUC Nickname
+        //return chatRoomMember.getName(); // XMPP MUC Nickname
+        return chatRoomMember.getJabberID();
     }
 
     /**
@@ -543,7 +547,7 @@ public class Participant
         MediaSourceGroupMap addedGroups = (MediaSourceGroupMap) added[1];
 
         // Mark as source owner
-        String roomJid = roomMember.getContactAddress();
+        Jid roomJid = roomMember.getJabberID();
         for (String mediaType : addedSources.getMediaTypes())
         {
             List<SourcePacketExtension> sources
@@ -728,7 +732,7 @@ public class Participant
      * Returns the endpoint ID for this participant in the videobridge(Colibri)
      * context.
      */
-    public String getEndpointId()
+    public Jid getEndpointId()
     {
         return getEndpointId(roomMember);
     }
@@ -755,9 +759,9 @@ public class Participant
      * Returns the MUC JID of this <tt>Participant</tt>.
      * @return full MUC address e.g. "room1@muc.server.net/nickname"
      */
-    public String getMucJid()
+    public EntityFullJid getMucJid()
     {
-        return roomMember.getContactAddress();
+        return roomMember.getJabberID().asFullJidOrThrow();
     }
 
     /**

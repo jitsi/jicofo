@@ -34,12 +34,12 @@ public interface XmppConnection
      * Sends given XMPP packet through this connection.
      * XXX The method will silently fail to send the packet if the XMPP
      * connection is broken(not connected). Use this method only if such
-     * behaviour is desired, otherwise {@link #sendPacketAndGetReply(Packet)}
+     * behaviour is desired, otherwise {@link #sendPacketAndGetReply(IQ)}
      * should be used instead.
      *
      * @param packet the packet to be sent.
      */
-    void sendPacket(Packet packet);
+    void sendPacket(Stanza packet);
 
     /**
      * Sends the packet and wait for reply in blocking mode.
@@ -53,7 +53,7 @@ public interface XmppConnection
      * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} error code if
      * the packet could not be sent, because the XMPP connection is broken.
      */
-    Packet sendPacketAndGetReply(Packet packet)
+    IQ sendPacketAndGetReply(IQ packet)
         throws OperationFailedException;
 
     /**
@@ -65,7 +65,7 @@ public interface XmppConnection
      * @param filter the <tt>PacketFilter</tt> that filters out packets reaching
      * <tt>listener</tt> object.
      */
-    void addPacketHandler(PacketListener listener, PacketFilter filter);
+    void addPacketHandler(StanzaListener listener, StanzaFilter filter);
 
     /**
      * Removes packet listener and the filter applied to it, so that it will no
@@ -74,5 +74,5 @@ public interface XmppConnection
      * @param listener the <tt>PacketListener</tt> instance to be removed from
      * listeners set.
      */
-    void removePacketHandler(PacketListener listener);
+    void removePacketHandler(StanzaListener listener);
 }

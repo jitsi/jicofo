@@ -17,6 +17,10 @@
  */
 package org.jitsi.jicofo.auth;
 
+import org.jxmpp.jid.DomainBareJid;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
+
 /**
  * Special case of <tt>XMPPDomainAuthAuthority</tt> where the user is
  * authenticated in Prosody with JWT token authentication method. The name of
@@ -38,7 +42,7 @@ public class ExternalJWTAuthority
      * @param domain the name of the Prosody domain with JWT authentication
      * enabled.
      */
-    public ExternalJWTAuthority(String domain)
+    public ExternalJWTAuthority(DomainBareJid domain)
     {
         // For external JWT type of authentication we do not want to persist
         // the session IDs longer than the duration of the conference.
@@ -53,8 +57,8 @@ public class ExternalJWTAuthority
 
     @Override
     public String createLoginUrl(
-        String machineUID, String peerFullJid,
-        String roomName, boolean popup)
+            String machineUID, EntityFullJid peerFullJid,
+            EntityBareJid roomName, boolean popup)
     {
         // Login URL is configured/generated in the client
         return null;

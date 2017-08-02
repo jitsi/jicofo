@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import java.util.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.ColibriConferenceIQ.Recording.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.rayo.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
@@ -30,25 +29,23 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.util.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.provider.*;
-import org.jivesoftware.smackx.packet.*;
+import org.jivesoftware.smack.packet.id.StanzaIdUtil;
+import org.jivesoftware.smackx.nick.packet.*;
+import org.jxmpp.jid.*;
 
 /**
- * Class handles various Jitsi Meet extensions IQs like {@link MuteIq} and
- * Colibri for recording.
+ * Class handles various Jitsi Meet extensions IQs like {@link MuteIq}.
  *
  * @author Pawel Domas
  * @author Boris Grozev
  */
 public class MeetExtensionsHandler
-    implements PacketFilter,
-               PacketListener
+    implements StanzaFilter,
+               StanzaListener
 {
     /**
      * The logger
@@ -83,16 +80,13 @@ public class MeetExtensionsHandler
         this.focusManager = focusManager;
 
         MuteIqProvider muteIqProvider = new MuteIqProvider();
-        muteIqProvider.registerMuteIqProvider(
-            ProviderManager.getInstance());
+        muteIqProvider.registerMuteIqProvider();
 
         RayoIqProvider rayoIqProvider = new RayoIqProvider();
-        rayoIqProvider.registerRayoIQs(
-                ProviderManager.getInstance());
+        rayoIqProvider.registerRayoIQs();
 
         StartMutedProvider startMutedProvider = new StartMutedProvider();
-        startMutedProvider.registerStartMutedProvider(
-            ProviderManager.getInstance());
+        startMutedProvider.registerStartMutedProvider();
     }
 
     /**
@@ -129,7 +123,7 @@ public class MeetExtensionsHandler
     }
 
     @Override
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         return acceptMuteIq(packet)
                 || acceptColibriIQ(packet)
@@ -138,7 +132,7 @@ public class MeetExtensionsHandler
     }
 
     @Override
-    public void processPacket(Packet packet)
+    public void processStanza(Stanza packet)
     {
         if (connection == null)
         {
@@ -168,7 +162,7 @@ public class MeetExtensionsHandler
         }
     }
 
-    private boolean acceptColibriIQ(Packet packet)
+    private boolean acceptColibriIQ(Stanza packet)
     {
         return packet instanceof ColibriConferenceIQ
             // And with recording element
@@ -178,7 +172,7 @@ public class MeetExtensionsHandler
     private void handleColibriIq(ColibriConferenceIQ colibriIQ)
     {
         ColibriConferenceIQ.Recording recording = colibriIQ.getRecording();
-        String from = colibriIQ.getFrom();
+        Jid from = colibriIQ.getFrom();
         JitsiMeetConferenceImpl conference
             = getConferenceForMucJid(colibriIQ.getFrom());
         if (conference == null)
@@ -187,51 +181,25 @@ public class MeetExtensionsHandler
             return;
         }
 
-        JitsiMeetRecording recordingHandler = conference.getRecording();
-        if (recordingHandler == null)
-        {
-            logger.error(
-                    "JitsiMeetRecording is null for iq: " + colibriIQ.toXML());
-
-            // Internal server error
-            connection.sendPacket(
-                    IQ.createErrorResponse(
-                            colibriIQ,
-                            new XMPPError(
-                                    XMPPError.Condition.interna_server_error)));
-            return;
-        }
-
-        State recordingState =
-            recordingHandler.modifyRecordingState(
-                    colibriIQ.getFrom(),
-                    recording.getToken(),
-                    recording.getState(),
-                    recording.getDirectory(),
-                    colibriIQ.getTo());
-
         ColibriConferenceIQ response = new ColibriConferenceIQ();
 
-        response.setType(IQ.Type.RESULT);
-        response.setPacketID(colibriIQ.getPacketID());
+        response.setType(IQ.Type.result);
+        response.setStanzaId(colibriIQ.getStanzaId());
         response.setTo(colibriIQ.getFrom());
         response.setFrom(colibriIQ.getTo());
         response.setName(colibriIQ.getName());
 
-        response.setRecording(
-            new ColibriConferenceIQ.Recording(recordingState));
-
         connection.sendPacket(response);
     }
 
-    private boolean acceptMuteIq(Packet packet)
+    private boolean acceptMuteIq(Stanza packet)
     {
         return packet instanceof MuteIq;
     }
 
-    private JitsiMeetConferenceImpl getConferenceForMucJid(String mucJid)
+    private JitsiMeetConferenceImpl getConferenceForMucJid(Jid mucJid)
     {
-        String roomName = MucUtil.extractRoomNameFromMucJid(mucJid);
+        EntityBareJid roomName = mucJid.asEntityBareJidIfPossible();
         if (roomName == null)
         {
             return null;
@@ -242,12 +210,12 @@ public class MeetExtensionsHandler
     private void handleMuteIq(MuteIq muteIq)
     {
         Boolean doMute = muteIq.getMute();
-        String jid = muteIq.getJid();
+        Jid jid = muteIq.getJid();
 
-        if (doMute == null || StringUtils.isNullOrEmpty(jid))
+        if (doMute == null || jid == null)
             return;
 
-        String from = muteIq.getFrom();
+        Jid from = muteIq.getFrom();
         JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
         if (conference == null)
         {
@@ -264,7 +232,7 @@ public class MeetExtensionsHandler
             if (!muteIq.getFrom().equals(jid))
             {
                 MuteIq muteStatusUpdate = new MuteIq();
-                muteStatusUpdate.setType(IQ.Type.SET);
+                muteStatusUpdate.setType(IQ.Type.set);
                 muteStatusUpdate.setTo(jid);
 
                 muteStatusUpdate.setMute(doMute);
@@ -276,20 +244,20 @@ public class MeetExtensionsHandler
         {
             result = IQ.createErrorResponse(
                 muteIq,
-                new XMPPError(XMPPError.Condition.interna_server_error));
+                XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
         connection.sendPacket(result);
     }
 
-    private boolean acceptRayoIq(Packet p)
+    private boolean acceptRayoIq(Stanza p)
     {
         return p instanceof RayoIqProvider.DialIq;
     }
 
     private void handleRayoIQ(RayoIqProvider.DialIq dialIq)
     {
-        String from = dialIq.getFrom();
+        Jid from = dialIq.getFrom();
 
         JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
 
@@ -304,8 +272,8 @@ public class MeetExtensionsHandler
         if (role == null)
         {
             // Only room members are allowed to send requests
-            IQ error = createErrorResponse(
-                dialIq, new XMPPError(XMPPError.Condition.forbidden));
+            IQ error = IQ.createErrorResponse(
+                dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
 
             connection.sendPacket(error);
 
@@ -315,8 +283,8 @@ public class MeetExtensionsHandler
         if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
         {
             // Moderator permission is required
-            IQ error = createErrorResponse(
-                dialIq, new XMPPError(XMPPError.Condition.not_allowed));
+            IQ error = IQ.createErrorResponse(
+                dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
 
             connection.sendPacket(error);
 
@@ -324,16 +292,18 @@ public class MeetExtensionsHandler
         }
 
         // Check if Jigasi is available
-        String jigasiJid;
+        Jid jigasiJid;
         JigasiDetector detector = conference.getServices().getJigasiDetector();
         if (detector == null || (jigasiJid = detector.selectJigasi()) == null)
             jigasiJid = conference.getServices().getSipGateway();
 
-        if (StringUtils.isNullOrEmpty(jigasiJid))
+        if (jigasiJid == null)
         {
             // Not available
-            IQ error = createErrorResponse(
-                dialIq, new XMPPError(XMPPError.Condition.service_unavailable));
+            IQ error = IQ.createErrorResponse(
+                dialIq,
+                XMPPError.getBuilder(
+                        XMPPError.Condition.service_unavailable).build());
 
             connection.sendPacket(error);
 
@@ -341,30 +311,19 @@ public class MeetExtensionsHandler
         }
 
         // Redirect original request to Jigasi component
-        String originalPacketId = dialIq.getPacketID();
-
-        dialIq.setFrom(null);
-        dialIq.setTo(jigasiJid);
-        dialIq.setPacketID(IQ.nextID());
+        RayoIqProvider.DialIq forwardDialIq = new RayoIqProvider.DialIq(dialIq);
+        forwardDialIq.setFrom((Jid)null);
+        forwardDialIq.setTo(jigasiJid);
+        forwardDialIq.setStanzaId(StanzaIdUtil.newStanzaId());
 
         try
         {
-            IQ reply = (IQ) connection.sendPacketAndGetReply(dialIq);
-            if (reply != null)
-            {
-                // Send Jigasi response back to the client
-                reply.setFrom(null);
-                reply.setTo(from);
-                reply.setPacketID(originalPacketId);
-            }
-            else
-            {
-                reply
-                    = createErrorResponse(
-                        dialIq,
-                        new XMPPError(
-                                XMPPError.Condition.remote_server_timeout));
-            }
+            IQ reply = connection.sendPacketAndGetReply(forwardDialIq);
+
+            // Send Jigasi response back to the client
+            reply.setFrom((Jid)null);
+            reply.setTo(from);
+            reply.setStanzaId(dialIq.getStanzaId());
             connection.sendPacket(reply);
         }
         catch (OperationFailedException e)
@@ -373,7 +332,7 @@ public class MeetExtensionsHandler
         }
     }
 
-    private boolean acceptPresence(Packet packet)
+    private boolean acceptPresence(Stanza packet)
     {
         return packet instanceof Presence;
     }
@@ -390,7 +349,7 @@ public class MeetExtensionsHandler
             return;
         }
 
-        String from = presence.getFrom();
+        Jid from = presence.getFrom();
         JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
 
         if (conference == null)
@@ -445,7 +404,7 @@ public class MeetExtensionsHandler
             // Check for changes to the display name
             String oldDisplayName = participant.getDisplayName();
             String newDisplayName = null;
-            for (PacketExtension pe : presence.getExtensions())
+            for (ExtensionElement pe : presence.getExtensions())
             {
                 if (pe instanceof Nick)
                 {
@@ -474,37 +433,5 @@ public class MeetExtensionsHandler
                 }
             }
         }
-    }
-
-    /**
-     * FIXME: replace with IQ.createErrorResponse
-     * Prosody does not allow to include request body in error
-     * response. Replace this method with IQ.createErrorResponse once fixed.
-     */
-    private IQ createErrorResponse(IQ request, XMPPError error)
-    {
-        IQ.Type requestType = request.getType();
-        if (!(requestType == IQ.Type.GET || requestType == IQ.Type.SET))
-        {
-            throw new IllegalArgumentException(
-                    "IQ must be of type 'set' or 'get'. Original IQ: "
-                        + request.toXML());
-        }
-
-        final IQ result
-            = new IQ()
-            {
-                @Override
-                public String getChildElementXML()
-                {
-                    return "";
-                }
-            };
-        result.setType(IQ.Type.ERROR);
-        result.setPacketID(request.getPacketID());
-        result.setFrom(request.getTo());
-        result.setTo(request.getFrom());
-        result.setError(error);
-        return result;
     }
 }

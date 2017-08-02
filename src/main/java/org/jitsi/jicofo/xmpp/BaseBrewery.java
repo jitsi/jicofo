@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
@@ -25,6 +24,7 @@ import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  * @author Damian Minkov
  */
-public abstract class BaseBrewery<T extends PacketExtension>
+public abstract class BaseBrewery<T extends ExtensionElement>
     implements ChatRoomMemberPresenceListener,
                ChatRoomMemberPropertyChangeListener,
                RegistrationStateChangeListener
@@ -233,7 +233,7 @@ public abstract class BaseBrewery<T extends PacketExtension>
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
         {
             // Process offline status
-            BrewInstance instance = find(chatMember.getContactAddress());
+            BrewInstance instance = find(chatMember.getJabberID());
 
             if (instance != null)
                 removeInstance(instance);
@@ -265,14 +265,14 @@ public abstract class BaseBrewery<T extends PacketExtension>
         if (presence == null)
             return;
 
-        PacketExtension ext
+        ExtensionElement ext
             = presence.getExtension(extensionElementName, extensionNamespace);
 
         // if the extension is missing skip processing
         if (ext == null)
             return;
 
-        processInstanceStatusChanged(member.getContactAddress(), (T) ext);
+        processInstanceStatusChanged(member.getJabberID(), (T) ext);
     }
 
     /**
@@ -284,7 +284,7 @@ public abstract class BaseBrewery<T extends PacketExtension>
      * instance status.
      */
     private void processInstanceStatusChanged(
-        String mucJid, T extension)
+        Jid mucJid, T extension)
     {
         BrewInstance instance = find(mucJid);
 
@@ -310,7 +310,7 @@ public abstract class BaseBrewery<T extends PacketExtension>
      * @param mucJid the brewing instance muc address
      * @param status the updated status for that instance
      */
-    abstract protected void onInstanceStatusChanged(String mucJid, T status);
+    abstract protected void onInstanceStatusChanged(Jid mucJid, T status);
 
     /**
      * Finds instance by muc address.
@@ -318,7 +318,7 @@ public abstract class BaseBrewery<T extends PacketExtension>
      * @param mucJid the address to use while searching for muc instance.
      * @return the brewing instance or null if not found.
      */
-    private BrewInstance find(String mucJid)
+    private BrewInstance find(Jid mucJid)
     {
         for (BrewInstance i : instances)
         {
@@ -347,7 +347,7 @@ public abstract class BaseBrewery<T extends PacketExtension>
      * Notifies that a brewing instance is going offline.
      * @param jid the instance muc address
      */
-    abstract protected void notifyInstanceOffline(String jid);
+    abstract protected void notifyInstanceOffline(Jid jid);
 
     /**
      * Internal structure for storing information about brewing instances.
@@ -357,14 +357,14 @@ public abstract class BaseBrewery<T extends PacketExtension>
         /**
          * Eg. "room@muc.server.net/nick"
          */
-        public final String mucJid;
+        public final Jid mucJid;
 
         /**
-         * One of {@link PacketExtension}
+         * One of {@link ExtensionElement}
          */
         public T status;
 
-        BrewInstance(String mucJid, T status)
+        BrewInstance(Jid mucJid, T status)
         {
             this.mucJid = mucJid;
             this.status = status;

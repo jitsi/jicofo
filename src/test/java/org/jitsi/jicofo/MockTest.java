@@ -22,6 +22,9 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -36,7 +39,7 @@ public class MockTest
 {
     @Test
     public void testXmpConnection()
-        throws InterruptedException
+            throws InterruptedException, XmppStringprepException
     {
         MockXmppConnection mockConnection
             = new MockXmppConnectionImpl();
@@ -49,9 +52,9 @@ public class MockTest
         peerB.start();
         peerC.start();
 
-        mockConnection.sendPacket(getPacket("A", "B", "AtoB"));
-        mockConnection.sendPacket(getPacket("A", "C", "AtoC"));
-        mockConnection.sendPacket(getPacket("B", "A", "BtoA"));
+        mockConnection.sendPacket(getPacket("A", "B"));
+        mockConnection.sendPacket(getPacket("A", "C"));
+        mockConnection.sendPacket(getPacket("B", "A"));
 
         Thread.sleep(500);
 
@@ -63,49 +66,50 @@ public class MockTest
         assertEquals(1, peerB.getPacketCount());
         assertEquals(1, peerC.getPacketCount());
 
-        peerA.getPacket(0).getTo().equals("A");
-        peerB.getPacket(0).getTo().equals("B");
-        peerC.getPacket(0).getTo().equals("C");
+        assertEquals("a", peerA.getPacket(0).getTo().toString());
+        assertEquals("b", peerB.getPacket(0).getTo().toString());
+        assertEquals("c", peerC.getPacket(0).getTo().toString());
     }
 
-    private JingleIQ getPacket(String from, String to, String payload)
+    private JingleIQ getPacket(String from, String to)
+            throws XmppStringprepException
     {
-        JingleIQ jingle = new JingleIQ();
-
-        jingle.setFrom(from);
-        jingle.setTo(to);
-        jingle.setProperty("value", payload);
+        JingleIQ jingle = new JingleIQ(JingleAction.SESSION_INFO, "123");
+        jingle.setFrom(JidCreate.from(from));
+        jingle.setTo(JidCreate.from(to));
 
         return jingle;
     }
 
     @Test
     public void testMockCaps()
+            throws XmppStringprepException
     {
-        MockSetSimpleCapsOpSet mockCaps = new MockSetSimpleCapsOpSet("root");
+        MockSetSimpleCapsOpSet mockCaps = new MockSetSimpleCapsOpSet(
+                JidCreate.domainBareFrom("root"));
 
         MockCapsNode node = new MockCapsNode(
-            "node1",
+            JidCreate.from("node1"),
             new String[]{ "featureA", "featureB"});
 
         mockCaps.addChildNode(node);
 
         mockCaps.addChildNode(
             new MockCapsNode(
-                "node2",
+                    JidCreate.from("node2"),
                 new String[]{ "featureC"}));
 
         mockCaps.addChildNode(
             new MockCapsNode(
-                "node3",
+                    JidCreate.from("node3"),
                 new String[]{ "featureC"}));
 
         assertTrue(
             mockCaps.hasFeatureSupport(
-                "node1",
+                    JidCreate.from("node1"),
                 new String[]{ "featureA", "featureB"}));
 
-        Set<String> nodes = mockCaps.getItems("root");
+        Set<Jid> nodes = mockCaps.getItems(JidCreate.domainBareFrom("root"));
         assertEquals(3, nodes.size());
     }
 }

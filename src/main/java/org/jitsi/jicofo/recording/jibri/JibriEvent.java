@@ -18,6 +18,10 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.util.Logger;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 
@@ -30,6 +34,9 @@ import java.util.*;
 public class JibriEvent
     extends Event
 {
+    /** Class logger */
+    private static final Logger logger = Logger.getLogger(JibriEvent.class);
+
     /**
      * The event is triggered by {@link JibriDetector} whenever new Jibri is
      * available or when some of the existing Jibri changes the status between
@@ -70,7 +77,7 @@ public class JibriEvent
      * @param isSIP <tt>true</tt> for video SIP gateway Jibri or <tt>false</tt>
      *        for live streaming type of Jibri.
      */
-    static private Dictionary<String, Object> initDictionary(String    jibriJid,
+    static private Dictionary<String, Object> initDictionary(Jid       jibriJid,
                                                              Boolean   isIdle,
                                                              boolean   isSIP)
     {
@@ -94,7 +101,7 @@ public class JibriEvent
      * @return {@link #STATUS_CHANGED} <tt>JibriEvent</tt> for given
      *         <tt>jibriJid</tt>.
      */
-    static public JibriEvent newStatusChangedEvent(String     jibriJid,
+    static public JibriEvent newStatusChangedEvent(Jid        jibriJid,
                                                    boolean    isIdle,
                                                    boolean    isSIP)
     {
@@ -111,7 +118,7 @@ public class JibriEvent
      * @return {@link #WENT_OFFLINE} <tt>JibriEvent</tt> for given
      *         <tt>jibriJid</tt>.
      */
-    static public JibriEvent newWentOfflineEvent(String jibriJid, boolean isSIP)
+    static public JibriEvent newWentOfflineEvent(Jid jibriJid, boolean isSIP)
     {
         return new JibriEvent(WENT_OFFLINE, jibriJid, null, isSIP);
     }
@@ -137,7 +144,7 @@ public class JibriEvent
     }
 
     private JibriEvent(String topic,
-                       String jibriJid, Boolean isIdle, boolean isSIP)
+                       Jid jibriJid, Boolean isIdle, boolean isSIP)
     {
         super(topic, initDictionary(jibriJid, isIdle, isSIP));
     }
@@ -148,9 +155,17 @@ public class JibriEvent
      * @return <tt>String</tt> which is a JID of the Jibri for which this event
      *         instance has been created.
      */
-    public String getJibriJid()
+    public Jid getJibriJid()
     {
-        return (String) getProperty(JIBRI_JID_KEY);
+        try
+        {
+            return JidCreate.from(getProperty(JIBRI_JID_KEY).toString());
+        }
+        catch (XmppStringprepException e)
+        {
+            logger.error("Invalid Jibri JID", e);
+            return null;
+        }
     }
 
     /**

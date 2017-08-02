@@ -25,6 +25,7 @@ import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -44,13 +45,13 @@ public class AllocThreadingTestColibriConference
     /**
      * Stores endpoint name of conference creator.
      */
-    private String confCreator;
+    private Jid confCreator;
 
     /**
      * Blocking queue used to put and acquire conference creator endpoint.
      */
-    private BlockingQueue<String> confCreatorQueue
-        = new ArrayBlockingQueue<String>(1);
+    private BlockingQueue<Jid> confCreatorQueue
+        = new ArrayBlockingQueue<>(1);
 
     /**
      * Indicates whether creator thread should be suspended before it sends it's
@@ -69,15 +70,15 @@ public class AllocThreadingTestColibriConference
      * {@link ColibriConferenceImpl.ConferenceCreationSemaphore}.
      * Used to verify if all running threads have reached the semaphore.
      */
-    private BlockingQueue<String> createConfSemaphoreQueue
-        = new LinkedBlockingQueue<String>();
+    private BlockingQueue<Jid> createConfSemaphoreQueue
+        = new LinkedBlockingQueue<>();
 
     /**
      * Blocking queue used to put and acquire endpoints that have sent it's
      * request packets.
      */
-    private BlockingQueue<String> requestsSentQueue
-        = new LinkedBlockingQueue<String>();
+    private BlockingQueue<Jid> requestsSentQueue
+        = new LinkedBlockingQueue<>();
 
     /**
      * Indicates if threads should be blocked before response is received.
@@ -94,8 +95,8 @@ public class AllocThreadingTestColibriConference
      * response packets. Used to verify if all threads have received their
      * response packets.
      */
-    private BlockingQueue<String> responseReceivedQueue
-        = new LinkedBlockingQueue<String>();
+    private BlockingQueue<Jid> responseReceivedQueue
+        = new LinkedBlockingQueue<>();
 
     /**
      * If field is set XMPP error response will be returned to conference create
@@ -148,7 +149,7 @@ public class AllocThreadingTestColibriConference
      *
      * @throws InterruptedException if thread has been interrupted while waiting
      */
-    public String obtainConferenceCreator()
+    public Jid obtainConferenceCreator()
         throws InterruptedException
     {
         return confCreatorQueue.poll(5, TimeUnit.SECONDS);
@@ -168,13 +169,13 @@ public class AllocThreadingTestColibriConference
      * @throws InterruptedException if the thread has been interrupted while
      *         waiting for endpoints.
      */
-    public void waitAllOnCreateConfSemaphore(List<String> endpointToEnter)
+    public void waitAllOnCreateConfSemaphore(List<Jid> endpointToEnter)
         throws InterruptedException
     {
-        List<String> endpointsCopy = new ArrayList<String>(endpointToEnter);
+        List<Jid> endpointsCopy = new ArrayList<>(endpointToEnter);
         while (!endpointsCopy.isEmpty())
         {
-            String endpoint = nextOnCreateConfSemaphore(5);
+            Jid endpoint = nextOnCreateConfSemaphore(5);
             if (endpoint != null)
             {
                 endpointsCopy.remove(endpoint);
@@ -187,14 +188,14 @@ public class AllocThreadingTestColibriConference
         }
     }
 
-    public String nextOnCreateConfSemaphore(long timeoutSec)
+    public Jid nextOnCreateConfSemaphore(long timeoutSec)
         throws InterruptedException
     {
         return createConfSemaphoreQueue.poll(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    protected boolean acquireCreateConferenceSemaphore(String endpointName)
+    protected boolean acquireCreateConferenceSemaphore(Jid endpointName)
         throws OperationFailedException
     {
         createConfSemaphoreQueue.add(endpointName);
@@ -221,20 +222,20 @@ public class AllocThreadingTestColibriConference
         this.blockResponseReceive = blockResponseReceive;
     }
 
-    public String nextRequestSent(long timeoutSeconds)
+    public Jid nextRequestSent(long timeoutSeconds)
         throws InterruptedException
     {
         return requestsSentQueue.poll(timeoutSeconds, TimeUnit.SECONDS);
     }
 
-    public String nextResponseReceived(long timeoutSeconds)
+    public Jid nextResponseReceived(long timeoutSeconds)
         throws InterruptedException
     {
         return responseReceivedQueue.poll(timeoutSeconds, TimeUnit.SECONDS);
     }
 
     @Override
-    protected Packet sendAllocRequest(String endpointName,
+    protected Stanza sendAllocRequest(Jid endpointName,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {
@@ -256,7 +257,7 @@ public class AllocThreadingTestColibriConference
 
         requestsSentQueue.add(endpointName);
 
-        Packet response;
+        Stanza response;
         if (responseError == null)
         {
             response = super.sendAllocRequest(endpointName, request);
@@ -265,7 +266,7 @@ public class AllocThreadingTestColibriConference
         {
             response = IQ.createErrorResponse(
                 request,
-                new XMPPError(responseError));
+                XMPPError.getBuilder(responseError));
         }
 
         synchronized (blockResponseReceiveLock)

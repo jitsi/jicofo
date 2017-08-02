@@ -20,6 +20,7 @@ package org.jitsi.jicofo.jigasi;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jxmpp.jid.*;
 
 /**
  * <tt>JigasiDetector</tt> manages the pool of Jigasi instances which exist in
@@ -61,12 +62,12 @@ public class JigasiDetector
 
     @Override
     protected void onInstanceStatusChanged(
-        String mucJid,
+        Jid mucJid,
         ColibriStatsExtension status)
     {}
 
     @Override
-    protected void notifyInstanceOffline(String jid)
+    protected void notifyInstanceOffline(Jid jid)
     {}
 
     /**
@@ -75,7 +76,7 @@ public class JigasiDetector
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public String selectJigasi()
+    public Jid selectJigasi()
     {
         BrewInstance lessLoadedInstance = null;
         int numberOfParticipants = Integer.MAX_VALUE;

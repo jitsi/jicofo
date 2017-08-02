@@ -34,6 +34,13 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.util.*;
 import org.jitsi.util.Logger;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.parts.Localpart;
+import org.jxmpp.jid.parts.Resourcepart;
+import org.jxmpp.stringprep.XmppStringprepException;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -72,7 +79,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
      */
-    private final String roomName;
+    private final EntityBareJid roomName;
 
     /**
      * {@link ConferenceListener} that will be notified
@@ -105,7 +112,7 @@ public class JitsiMeetConferenceImpl
     /**
      * The name of XMPP user used by the focus to login.
      */
-    private final String focusUserName;
+    private final Resourcepart focusUserName;
 
     /**
      * Chat room operation set used to handle MUC stuff.
@@ -142,11 +149,6 @@ public class JitsiMeetConferenceImpl
      * This lock is used to synchronise write access to {@link #participants}.
      */
     private final Object participantLock = new Object();
-
-    /**
-     * Takes care of conference recording.
-     */
-    private JitsiMeetRecording recording;
 
     /**
      * The {@link JibriRecorder} instance used to provide live streaming through
@@ -231,8 +233,8 @@ public class JitsiMeetConferenceImpl
      * @param logLevel (optional) the logging level to be used by this instance.
      *        See {@link #logger} for more details.
      */
-    public JitsiMeetConferenceImpl(String                   roomName,
-                                   String                   focusUserName,
+    public JitsiMeetConferenceImpl(EntityBareJid            roomName,
+                                   Resourcepart             focusUserName,
                                    ProtocolProviderHandler  protocolProviderHandler,
                                    ConferenceListener       listener,
                                    JitsiMeetConfig          config,
@@ -309,8 +311,6 @@ public class JitsiMeetConferenceImpl
 
             services
                 = ServiceUtils.getService(osgiCtx, JitsiMeetServices.class);
-
-            recording = new JitsiMeetRecording(this, services);
 
             // Set pre-configured SIP gateway
             //if (config.getPreConfiguredSipGateway() != null)
@@ -435,7 +435,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining the room: " + roomName);
 
-        chatRoom = (ChatRoom2) chatOpSet.findRoom(roomName);
+        chatRoom = (ChatRoom2) chatOpSet.findRoom(roomName.toString());
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
         rolesAndPresence.init();
@@ -445,10 +445,6 @@ public class JitsiMeetConferenceImpl
         // Advertise shared Etherpad document
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
-
-        // init recorder
-        if (recording != null)
-            recording.init();
 
         // Trigger focus joined room event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
@@ -511,12 +507,6 @@ public class JitsiMeetConferenceImpl
             // Cancel single participant timeout when someone joins ?
             cancelSinglePeerTimeout();
 
-            if (recording == null)
-            {
-                recording = new JitsiMeetRecording(this, services);
-                recording.init();
-            }
-
             // Invite all not invited yet
             if (participants.size() == 0)
             {
@@ -539,14 +529,15 @@ public class JitsiMeetConferenceImpl
      * Creates a new {@link ColibriConference} instance for use by this
      * {@link JitsiMeetConferenceImpl}.
      */
-    private ColibriConference createNewColibriConference(String bridgeJid)
+    private ColibriConference createNewColibriConference(Jid bridgeJid)
+            throws XmppStringprepException
     {
         ColibriConference colibriConference = colibri.createNewConference();
         colibriConference.setGID(id);
 
         colibriConference.setConfig(config);
 
-        String roomName = MucUtil.extractName(chatRoom.getName());
+        Localpart roomName = Localpart.from(chatRoom.getName());
         colibriConference.setName(roomName);
         colibriConference.setJitsiVideobridge(bridgeJid);
 
@@ -609,11 +600,11 @@ public class JitsiMeetConferenceImpl
 
             // Select a bridge (a BridgeState) for the new participant.
             BridgeState bridgeState = null;
-            String enforcedVideoBridge = config.getEnforcedVideobridge();
+            Jid enforcedVideoBridge = config.getEnforcedVideobridge();
             BridgeSelector bridgeSelector = getServices().getBridgeSelector();
 
 
-            if (!StringUtils.isNullOrEmpty(enforcedVideoBridge, true))
+            if (enforcedVideoBridge != null)
             {
                 bridgeState = bridgeSelector.getBridgeState(enforcedVideoBridge);
                 if (bridgeState == null)
@@ -645,7 +636,16 @@ public class JitsiMeetConferenceImpl
             {
                 // The selected bridge is not yet used for this conference,
                 // so initialize a new BridgeSession
-                bridgeSession = new BridgeSession(bridgeState);
+                try
+                {
+                    bridgeSession = new BridgeSession(bridgeState);
+                }
+                catch (XmppStringprepException e)
+                {
+                    logger.error("Invalid room name", e);
+                    return null;
+                }
+
                 bridges.add(bridgeSession);
                 // TODO: if the number of bridges changes 1->2 or 2->1, then
                 // we need to enable/disable relaying.
@@ -751,7 +751,7 @@ public class JitsiMeetConferenceImpl
      * @param jid the XMPP JID which represents a particular
      * jitsi-videobridge instance for which to return the {@link BridgeSession}.
      */
-    private BridgeSession findBridgeSession(String jid)
+    private BridgeSession findBridgeSession(Jid jid)
     {
         synchronized (bridges)
         {
@@ -870,11 +870,12 @@ public class JitsiMeetConferenceImpl
      * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
      *         participant or <tt>false</tt> otherwise.
      */
-    boolean isFocusMember(String mucJid)
+    boolean isFocusMember(Jid mucJid)
     {
         ChatRoom2 chatRoom = this.chatRoom;
-        return !StringUtils.isNullOrEmpty(mucJid)
-                && chatRoom != null && mucJid.equals(chatRoom.getLocalMucJid());
+        return mucJid != null
+                && chatRoom != null
+                && mucJid.equals(chatRoom.getLocalMucJid());
     }
 
     /**
@@ -917,12 +918,6 @@ public class JitsiMeetConferenceImpl
      */
     private void disposeConference()
     {
-        if (recording != null)
-        {
-            recording.dispose();
-            recording = null;
-        }
-
         // If the conference is being disposed the timeout is not needed
         // anymore
         cancelSinglePeerTimeout();
@@ -1003,7 +998,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            String contactAddress = participant.getMucJid();
+            Jid contactAddress = participant.getMucJid();
             JingleSession peerJingleSession = participant.getJingleSession();
             if (peerJingleSession != null)
             {
@@ -1087,11 +1082,12 @@ public class JitsiMeetConferenceImpl
         return null;
     }
 
-    public Participant findParticipantForRoomJid(String roomJid)
+    public Participant findParticipantForRoomJid(Jid roomJid)
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getContactAddress().equals(roomJid))
+            if (participant.getChatMember().getContactAddress()
+                    .equals(roomJid.toString()))
             {
                 return participant;
             }
@@ -1099,7 +1095,7 @@ public class JitsiMeetConferenceImpl
         return null;
     }
 
-    public ChatRoomMemberRole getRoleForMucJid(String mucJid)
+    public ChatRoomMemberRole getRoleForMucJid(Jid mucJid)
     {
         if (chatRoom == null)
         {
@@ -1108,7 +1104,7 @@ public class JitsiMeetConferenceImpl
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (member.getContactAddress().equals(mucJid))
+            if (member.getContactAddress().equals(mucJid.toString()))
             {
                 return member.getRole();
             }
@@ -1129,14 +1125,15 @@ public class JitsiMeetConferenceImpl
     {
         Participant participant
             = findParticipantForJingleSession(peerJingleSession);
-        String peerAddress = peerJingleSession.getAddress();
+        Jid peerAddress = peerJingleSession.getAddress();
 
         if (participant == null)
         {
             String errorMsg
                 = "No participant found for: " + peerAddress;
             logger.error(errorMsg);
-            return new XMPPError(XMPPError.Condition.item_not_found, errorMsg);
+            return XMPPError.from(XMPPError.Condition.item_not_found,
+                    errorMsg).build();
         }
 
         if (participant.getJingleSession() != null)
@@ -1171,8 +1168,8 @@ public class JitsiMeetConferenceImpl
                 "Error processing session accept from: "
                     + peerAddress +": " + e.getMessage());
 
-            return new XMPPError(
-                XMPPError.Condition.bad_request, e.getMessage());
+            return XMPPError.from(
+                XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
         MediaSourceMap peerSources = participant.getSourcesCopy();
@@ -1372,14 +1369,15 @@ public class JitsiMeetConferenceImpl
     public XMPPError onAddSource(JingleSession jingleSession,
                                  List<ContentPacketExtension> contents)
     {
-        String address = jingleSession.getAddress();
+        Jid address = jingleSession.getAddress();
         Participant participant
             = findParticipantForJingleSession(jingleSession);
         if (participant == null)
         {
             String errorMsg = "Add-source: no peer state for " + address;
             logger.error(errorMsg);
-            return new XMPPError(XMPPError.Condition.item_not_found, errorMsg);
+            return XMPPError.from(
+                    XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
         Object[] added;
@@ -1391,8 +1389,8 @@ public class JitsiMeetConferenceImpl
         {
             logger.error(
                 "Error adding SSRCs from: " + address + ": " + e.getMessage());
-            return new XMPPError(
-                XMPPError.Condition.bad_request, e.getMessage());
+            return XMPPError.from(
+                XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
         MediaSourceMap sourcesToAdd = (MediaSourceMap) added[0];
@@ -1467,7 +1465,7 @@ public class JitsiMeetConferenceImpl
     {
         Participant participant
             = findParticipantForJingleSession(sourceJingleSession);
-        String participantJid = sourceJingleSession.getAddress();
+        Jid participantJid = sourceJingleSession.getAddress();
         if (participant == null)
         {
             logger.error("Remove-source: no session for " + participantJid);
@@ -1610,7 +1608,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public String getRoomName()
+    public EntityBareJid getRoomName()
     {
         return roomName;
     }
@@ -1631,7 +1629,7 @@ public class JitsiMeetConferenceImpl
         return protocolProviderHandler.getProtocolProvider();
     }
 
-    public XmppChatMember findMember(String from)
+    public XmppChatMember findMember(Jid from)
     {
         return chatRoom == null ? null : chatRoom.findChatMember(from);
     }
@@ -1651,10 +1649,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public String getFocusJid()
+    public EntityFullJid getFocusJid()
     {
-
-        return roomName + "/" + focusUserName;
+        return JidCreate.fullFrom(roomName, focusUserName);
     }
 
     /**
@@ -1683,8 +1680,8 @@ public class JitsiMeetConferenceImpl
      * @param doMute the new audio mute status to set.
      * @return <tt>true</tt> if status has been set successfully.
      */
-    boolean handleMuteRequest(String fromJid,
-                              String toBeMutedJid,
+    boolean handleMuteRequest(Jid fromJid,
+                              Jid toBeMutedJid,
                               boolean doMute)
     {
         Participant principal = findParticipantForRoomJid(fromJid);
@@ -1766,7 +1763,7 @@ public class JitsiMeetConferenceImpl
         }
 
         BridgeEvent bridgeEvent = (BridgeEvent) event;
-        String bridgeJid = bridgeEvent.getBridgeJid();
+        Jid bridgeJid = bridgeEvent.getBridgeJid();
         switch (event.getTopic())
         {
         case BridgeEvent.BRIDGE_DOWN:
@@ -1778,7 +1775,7 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private void onBridgeUp(String bridgeJid)
+    private void onBridgeUp(Jid bridgeJid)
     {
         // Check if we're not shutting down
         if (!started)
@@ -1805,7 +1802,7 @@ public class JitsiMeetConferenceImpl
      * Handles on bridge down event by shutting down the conference if it's the
      * one we're using here.
      */
-    void onBridgeDown(String bridgeJid)
+    void onBridgeDown(Jid bridgeJid)
     {
         synchronized (bridges)
         {
@@ -1922,28 +1919,15 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns <tt>JitsiMeetRecording</tt> for this conference.
-     * @return <tt>JitsiMeetRecording</tt> instance for this conference or
-     *         <tt>null</tt> if it's not available yet(should be after we join
-     *         the MUC).
-     */
-    public JitsiMeetRecording getRecording()
-    {
-        return recording;
-    }
-
-    /**
      * Methods called by {@link ChannelAllocator} just after it has created new
      * Colibri conference on the JVB.
-     *
-     * @param colibriConference <tt>ColibriConference</tt> instance which just
+     *  @param colibriConference <tt>ColibriConference</tt> instance which just
      * has been allocated on the bridge
      * @param videobridgeJid the JID of the JVB where given
-     * <tt>ColibriConference</tt> has been allocated
      */
     public void onColibriConferenceAllocated(
             ColibriConference    colibriConference,
-            String               videobridgeJid)
+            Jid videobridgeJid)
     {
         // TODO: do we need this event?
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
@@ -1964,12 +1948,6 @@ public class JitsiMeetConferenceImpl
         {
             meetTools.removePresenceExtension(
                     chatRoom, new BridgeNotAvailablePacketExt());
-        }
-
-        // it is safe to call this multiple times
-        if (recording != null)
-        {
-            recording.onConferenceAllocated();
         }
     }
 
@@ -1992,19 +1970,14 @@ public class JitsiMeetConferenceImpl
      */
     private String createSharedDocumentName()
     {
-        String sharedDocumentName;
         if (config.useRoomAsSharedDocName())
         {
-            sharedDocumentName
-                = MucUtil.extractName(roomName.toLowerCase());
+            return roomName.getLocalpart().toString();
         }
         else
         {
-            sharedDocumentName
-                = UUID.randomUUID().toString().replaceAll("-", "");
+            return UUID.randomUUID().toString().replaceAll("-", "");
         }
-
-        return sharedDocumentName;
     }
 
     /**
@@ -2168,6 +2141,7 @@ public class JitsiMeetConferenceImpl
          * {@link BridgeSession} instance is to represent.
          */
         BridgeSession(BridgeState bridgeState)
+                throws XmppStringprepException
         {
             this.bridgeState = bridgeState;
             this.colibriConference

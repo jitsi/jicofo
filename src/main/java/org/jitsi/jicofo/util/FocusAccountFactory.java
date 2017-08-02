@@ -19,7 +19,11 @@ package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
+import org.jxmpp.jid.DomainBareJid;
+import org.jxmpp.jid.parts.Resourcepart;
+import org.jxmpp.stringprep.XmppStringprepException;
 
+import javax.annotation.Resource;
 import java.util.*;
 
 /**
@@ -44,12 +48,21 @@ public class FocusAccountFactory
      */
     public static Map<String, String> createFocusAccountProperties(
             String serverAddress,
-            String domain,
-            String userName)
+            DomainBareJid domain,
+            Resourcepart userName)
     {
         HashMap<String, String> properties = new HashMap<String, String>();
 
-        String resource = userName + System.nanoTime();
+        Resourcepart resource = null;
+        try
+        {
+            resource = Resourcepart.from(
+                    userName.toString() + System.nanoTime());
+        }
+        catch (XmppStringprepException e)
+        {
+            // ignore, cannot happen
+        }
 
         String userID = userName + "@" + domain + "/" + resource;
 
@@ -58,10 +71,9 @@ public class FocusAccountFactory
         properties.put(ProtocolProviderFactory.SERVER_PORT, "5222");
 
         // This is used as the multi user chat nick when joining the room
-        properties.put(ProtocolProviderFactory.DISPLAY_NAME, userName);
+        properties.put(ProtocolProviderFactory.DISPLAY_NAME, userName.toString());
 
-        properties.put(ProtocolProviderFactory.RESOURCE,
-                       resource);
+        properties.put(ProtocolProviderFactory.RESOURCE, resource.toString());
         properties.put(ProtocolProviderFactory.RESOURCE_PRIORITY, "30");
 
         properties.put(JabberAccountID.ANONYMOUS_AUTH, "true");
@@ -126,15 +138,17 @@ public class FocusAccountFactory
      */
     public static Map<String, String> createFocusAccountProperties(
             String serverAddress,
-            String domain,
-            String userName,
+            DomainBareJid domain,
+            Resourcepart userName,
             String password)
     {
         Map<String, String> properties
             = createFocusAccountProperties(
                     serverAddress, domain, userName);
 
-        properties.put(ProtocolProviderFactory.AUTHORIZATION_NAME, userName);
+        properties.put(
+                ProtocolProviderFactory.AUTHORIZATION_NAME,
+                userName.toString());
 
         /*String pass = new String(Base64.encode(password.getBytes()));
         properties.put(ProtocolProviderFactory.PASSWORD,

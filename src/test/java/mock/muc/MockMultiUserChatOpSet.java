@@ -18,6 +18,9 @@
 package mock.muc;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 
@@ -28,16 +31,23 @@ public class MockMultiUserChatOpSet
     extends AbstractOperationSetMultiUserChat
 {
     private static final Map<String, MockMucShare> mucDomainSharing
-        = new HashMap<String, MockMucShare>();
+        = new HashMap<>();
 
     private final ProtocolProviderService protocolProviderService;
 
-    private final Map<String, MockMultiUserChat> chatRooms
-        = new HashMap<String, MockMultiUserChat>();
+    private final Map<EntityBareJid, MockMultiUserChat> chatRooms
+        = new HashMap<>();
 
-    private static String fixRoomName(String room)
+    private static EntityBareJid fixRoomName(String room)
     {
-        return room.toLowerCase();
+        try
+        {
+            return JidCreate.entityBareFrom(room);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public MockMultiUserChatOpSet(
@@ -52,7 +62,13 @@ public class MockMultiUserChatOpSet
     {
         synchronized (chatRooms)
         {
-            return new ArrayList<String>(chatRooms.keySet());
+            ArrayList<String> result = new ArrayList<>();
+            for (EntityBareJid n : chatRooms.keySet())
+            {
+                result.add(n.toString());
+            }
+
+            return result;
         }
     }
 
@@ -75,11 +91,11 @@ public class MockMultiUserChatOpSet
                                    Map<String, Object> roomProperties)
         throws OperationFailedException, OperationNotSupportedException
     {
-        roomName = fixRoomName(roomName);
+        EntityBareJid roomNameJid = fixRoomName(roomName);
 
         synchronized (chatRooms)
         {
-            if (chatRooms.containsKey(roomName))
+            if (chatRooms.containsKey(roomNameJid))
             {
                 throw new OperationFailedException(
                     "Room " + roomName + " already exists.",
@@ -87,14 +103,14 @@ public class MockMultiUserChatOpSet
             }
 
             MockMultiUserChat chatRoom
-                = new MockMultiUserChat(roomName, protocolProviderService);
+                = new MockMultiUserChat(roomNameJid, protocolProviderService);
 
-            chatRooms.put(roomName, chatRoom);
+            chatRooms.put(roomNameJid, chatRoom);
 
             MockMucShare sharedDomain = mucDomainSharing.get(roomName);
             if (sharedDomain == null)
             {
-                sharedDomain = new MockMucShare(roomName);
+                sharedDomain = new MockMucShare(roomNameJid);
 
                 mucDomainSharing.put(roomName, sharedDomain);
             }
@@ -110,16 +126,16 @@ public class MockMultiUserChatOpSet
         throws OperationFailedException, OperationNotSupportedException
     {
         // MUC room names are case insensitive
-        roomName = fixRoomName(roomName);
+        EntityBareJid roomNameJid = fixRoomName(roomName);
 
         synchronized (chatRooms)
         {
-            if (!chatRooms.containsKey(roomName))
+            if (!chatRooms.containsKey(roomNameJid))
             {
                 ChatRoom room = createChatRoom(roomName, null);
-                chatRooms.put(roomName, (MockMultiUserChat) room);
+                chatRooms.put(roomNameJid, (MockMultiUserChat) room);
             }
-            return chatRooms.get(roomName);
+            return chatRooms.get(roomNameJid);
         }
     }
 

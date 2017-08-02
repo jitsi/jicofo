@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.util;
 
+import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
@@ -25,6 +26,8 @@ import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.jivesoftware.smack.SmackException.*;
 
 /**
  * Process incoming xmpp packets, queues them and process them by passing them
@@ -35,6 +38,10 @@ import java.util.concurrent.*;
  */
 public class QueuePacketProcessor
 {
+    /** The logger */
+    private final static Logger logger
+            = Logger.getLogger(QueuePacketProcessor.class);
+
     /**
      * The single thread executor that will process packets.
      */
@@ -44,12 +51,12 @@ public class QueuePacketProcessor
      * The packet filter which will be used to filter packets to be processed by
      * {@link #packetListener}.
      */
-    private final PacketFilter packetFilter;
+    private final StanzaFilter packetFilter;
 
     /**
      * The packet listener to the real processing.
      */
-    private PacketListener packetListener;
+    private StanzaListener packetListener;
 
     /**
      * The XMPP connection to which {@link #packetListener} will be registered.
@@ -60,7 +67,7 @@ public class QueuePacketProcessor
      * Stores instance of {@link #packetListener} wrapper to be able
      * to unregister it correctly.
      */
-    private PacketListener _packetListenerWrap;
+    private StanzaListener _packetListenerWrap;
 
     /**
      * Constructs QueuePacketProcessor, taking the PacketListener that will
@@ -73,8 +80,8 @@ public class QueuePacketProcessor
      */
     public QueuePacketProcessor(
             XmppConnection    connection,
-            PacketListener    packetListener,
-            PacketFilter      packetFilter)
+            StanzaListener    packetListener,
+            StanzaFilter      packetFilter)
     {
         this.packetListener
             = Objects.requireNonNull(packetListener, "packetListener");
@@ -97,10 +104,10 @@ public class QueuePacketProcessor
         final ExecutorService theExecutorService
             = this.executor = Executors.newSingleThreadExecutor();
 
-        this._packetListenerWrap = new PacketListener()
+        this._packetListenerWrap = new StanzaListener()
         {
             @Override
-            public void processPacket(final Packet packet)
+            public void processStanza(final Stanza packet)
             {
                 // add the packet to the queue of tasks to process
                 theExecutorService.submit(new Runnable()
@@ -112,7 +119,16 @@ public class QueuePacketProcessor
                         if (QueuePacketProcessor.this.executor
                                 == theExecutorService)
                         {
-                            packetListener.processPacket(packet);
+                            try
+                            {
+                                packetListener.processStanza(packet);
+                            }
+                            catch (NotConnectedException
+                                    | InterruptedException e)
+                            {
+                                logger.error(
+                                    "Could not process stanza in queue", e);
+                            }
                         }
                     }
                 });

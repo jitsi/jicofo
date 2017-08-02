@@ -10,7 +10,7 @@ import org.jivesoftware.smack.filter.*;
 public interface MockXmppConnection
     extends XmppConnection
 {
-    void addPacketHandler(PacketListener listener, PacketFilter filter);
+    void addPacketHandler(StanzaListener listener, StanzaFilter filter);
 
-    void removePacketHandler(PacketListener listener);
+    void removePacketHandler(StanzaListener listener);
 }

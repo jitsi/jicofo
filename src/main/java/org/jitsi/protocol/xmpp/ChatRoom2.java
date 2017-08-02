@@ -20,6 +20,8 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -40,18 +42,18 @@ public interface ChatRoom2
      * @return an instance of <tt>XmppChatMember</tt> for given MUC jid or
      *         <tt>null</tt> if not found.
      */
-    XmppChatMember findChatMember(String mucJid);
+    XmppChatMember findChatMember(Jid mucJid);
 
     /**
      * Returns the MUC address of our chat member.
      * @return our full MUC JID for example: room@conference.server.net/nickname
      */
-    String getLocalMucJid();
+    EntityFullJid getLocalMucJid();
 
     /**
-     * @return the list of all our presence {@link PacketExtension}s.
+     * @return the list of all our presence {@link ExtensionElement}s.
      */
-    Collection<PacketExtension> getPresenceExtensions();
+    Collection<ExtensionElement> getPresenceExtensions();
 
     /**
      * Modifies our current MUC presence by adding and/or removing specified
@@ -59,6 +61,6 @@ public interface ChatRoom2
      * @param toRemove the list of extensions to be removed.
      * @param toAdd the list of extension to be added.
      */
-    void modifyPresence(Collection<PacketExtension> toRemove,
-                        Collection<PacketExtension> toAdd);
+    void modifyPresence(Collection<ExtensionElement> toRemove,
+                        Collection<ExtensionElement> toAdd);
 }

@@ -17,21 +17,19 @@
  */
 package org.jitsi.jicofo.discovery;
 
+import org.jivesoftware.smack.provider.IQProvider;
+import org.xmlpull.v1.XmlPullParser;
+
 /**
- * Wraps original Smack IQ to implement additional methods.
- *
- * @author Pawel Domas
+ * Fake IQ provider that doesn't actually parse version elements but returns
+ * a new {@link Version} instance instead.
  */
-public class Version
-    extends org.jivesoftware.smackx.iqversion.packet.Version
+public class VersionIqProvider extends IQProvider<Version>
 {
-    /**
-     * Creates a string representation of this <tt>Version</tt> IQ which will
-     * include the application name, version number and OS.
-     * @return a string with the following format {name}({version},{os})
-     */
-    public String getNameVersionOsString()
+    @Override
+    public Version parse(XmlPullParser parser, int initialDepth)
+            throws Exception
     {
-        return getName() + "(" + getVersion() + "," + getOs() + ")";
+        return new Version();
     }
 }

@@ -24,6 +24,7 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -50,7 +51,7 @@ public class SSRCValidator
     /**
      * Participant's endpoint ID used for printing log messages.
      */
-    private final String endpointId;
+    private final Jid endpointId;
 
     /**
      * The source map obtained from the participant which reflects current source
@@ -80,11 +81,11 @@ public class SSRCValidator
      * @param logLevelDelegate a <tt>Logger</tt> which will be used as
      * the logging level delegate.
      */
-    public SSRCValidator(String               endpointId,
-                         MediaSourceMap sources,
+    public SSRCValidator(Jid                 endpointId,
+                         MediaSourceMap      sources,
                          MediaSourceGroupMap sourceGroups,
-                         int maxSourceCount,
-                         Logger               logLevelDelegate)
+                         int                 maxSourceCount,
+                         Logger              logLevelDelegate)
     {
         this.endpointId = endpointId;
         this.sources = sources.copyDeep();
@@ -206,11 +207,11 @@ public class SSRCValidator
 
     private void filterOutParams(SourcePacketExtension copy)
     {
-        Iterator<? extends PacketExtension> params
+        Iterator<? extends ExtensionElement> params
             = copy.getChildExtensions().iterator();
         while (params.hasNext())
         {
-            PacketExtension ext = params.next();
+            ExtensionElement ext = params.next();
             if (ext instanceof ParameterPacketExtension)
             {
                 ParameterPacketExtension ppe = (ParameterPacketExtension) ext;
@@ -249,7 +250,7 @@ public class SSRCValidator
                     if (sourceInMedia == null)
                     {
                         String errorMsg
-                                = "Source  " + source.toString() + " not found in "
+                                = "Source " + source.toString() + " not found in "
                                 + mediaType + " for group: " + group;
                         throw new InvalidSSRCsException(errorMsg);
                     }

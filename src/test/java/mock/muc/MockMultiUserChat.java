@@ -23,9 +23,14 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.parts.Resourcepart;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -45,31 +50,30 @@ public class MockMultiUserChat
     private static final Logger logger
         = Logger.getLogger(MockMultiUserChat.class);
 
-    private final String roomName;
+    private final EntityBareJid roomName;
 
     private final ProtocolProviderService protocolProvider;
 
     private volatile boolean isJoined;
 
-    private final List<ChatRoomMember> members
-        = new CopyOnWriteArrayList<ChatRoomMember>();
+    private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
-    private ChatRoomMember me;
+    private XmppChatMember me;
 
     /**
      * Listeners that will be notified of changes in member status in the
      * room such as member joined, left or being kicked or dropped.
      */
     private final Vector<ChatRoomMemberPresenceListener> memberListeners
-        = new Vector<ChatRoomMemberPresenceListener>();
+        = new Vector<>();
 
     private final Vector<ChatRoomLocalUserRoleListener> localUserRoleListeners
-        = new Vector<ChatRoomLocalUserRoleListener>();
+        = new Vector<>();
 
     private final Vector<ChatRoomMemberRoleListener> memberRoleListeners
-        = new Vector<ChatRoomMemberRoleListener>();
+        = new Vector<>();
 
-    public MockMultiUserChat(String roomName,
+    public MockMultiUserChat(EntityBareJid roomName,
                              ProtocolProviderService protocolProviderService)
     {
         this.roomName = roomName;
@@ -77,20 +81,21 @@ public class MockMultiUserChat
     }
 
     @Override
-    public String getLocalMucJid()
+    public EntityFullJid getLocalMucJid()
     {
-        return me != null ? me.getContactAddress() : null;
+        return me != null ? me.getJabberID().asEntityFullJidOrThrow() : null;
     }
 
     @Override
-    public Collection<PacketExtension> getPresenceExtensions()
+    public Collection<ExtensionElement> getPresenceExtensions()
     {
         throw new RuntimeException("not implemented");
     }
 
     @Override
     public void modifyPresence(
-        Collection<PacketExtension> toRemove, Collection<PacketExtension> toAdd)
+        Collection<ExtensionElement> toRemove,
+        Collection<ExtensionElement> toAdd)
     {
         throw new RuntimeException("not implemented");
     }
@@ -98,7 +103,7 @@ public class MockMultiUserChat
     @Override
     public String getName()
     {
-        return roomName;
+        return roomName.toString();
     }
 
     @Override
@@ -129,9 +134,10 @@ public class MockMultiUserChat
         joinAs(nickname, null);
     }
 
-    private String createAddressForName(String nickname)
+    private EntityFullJid createAddressForName(String nickname)
+            throws XmppStringprepException
     {
-        return roomName + "/" + nickname;
+        return JidCreate.entityFullFrom(roomName, Resourcepart.from(nickname));
     }
 
     @Override
@@ -143,8 +149,18 @@ public class MockMultiUserChat
 
         isJoined = true;
 
-        MockRoomMember member
-            = new MockRoomMember(createAddressForName(nickname), this);
+        MockRoomMember member;
+        try
+        {
+            member = new MockRoomMember(createAddressForName(nickname), this);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new OperationFailedException(
+                    "Invalid mock room member JID",
+                    OperationFailedException.ILLEGAL_ARGUMENT,
+                    e);
+        }
 
         // FIXME: for mock purposes we are always the owner on join()
         boolean isOwner = true;//= members.size() == 0;
@@ -169,7 +185,7 @@ public class MockMultiUserChat
             me, oldRole, true);
     }
 
-    public MockRoomMember mockOwnerJoin(String name)
+    public MockRoomMember mockOwnerJoin(Jid name)
     {
         MockRoomMember member = new MockRoomMember(name, this);
 
@@ -181,12 +197,13 @@ public class MockMultiUserChat
     }
 
     public MockRoomMember mockJoin(String nickname)
+            throws XmppStringprepException
     {
-        return mockJoin(
-            createMockRoomMember(nickname));
+        return mockJoin(createMockRoomMember(nickname));
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
+            throws XmppStringprepException
     {
         return new MockRoomMember(
             createAddressForName(nickname), this);
@@ -196,8 +213,18 @@ public class MockMultiUserChat
     {
         synchronized (members)
         {
-            String name = member.getName();
-            if (findMember(member.getName()) != null)
+            Resourcepart name;
+            try
+            {
+                name = Resourcepart.from(member.getName());
+            }
+            catch (XmppStringprepException e)
+            {
+                throw new IllegalArgumentException(
+                        "The member name " + member.getName() + " is invalid");
+            }
+
+            if (findMember(name) != null)
             {
                 throw new IllegalArgumentException(
                         "The member with name: " + name
@@ -496,12 +523,21 @@ public class MockMultiUserChat
     @Override
     public void grantModerator(String address)
     {
-        grantRole(address, ChatRoomMemberRole.MODERATOR);
+        try
+        {
+            grantRole(
+                    JidCreate.entityFullFrom(address),
+                    ChatRoomMemberRole.MODERATOR);
+        }
+        catch (XmppStringprepException e)
+        {
+            logger.error("Invalid address to grant moderator", e);
+        }
     }
 
-    private void grantRole(String address, ChatRoomMemberRole newRole)
+    private void grantRole(EntityFullJid address, ChatRoomMemberRole newRole)
     {
-        MockRoomMember member = findMember(MucUtil.extractNickname(address));
+        MockRoomMember member = findMember(address.getResourceOrNull());
         if (member == null)
         {
             logger.error("Member not found for nickname: " + address);
@@ -515,11 +551,16 @@ public class MockMultiUserChat
         fireMemberRoleEvent(member, oldRole);
     }
 
-    private MockRoomMember findMember(String nickname)
+    private MockRoomMember findMember(Resourcepart nickname)
     {
+        if (nickname == null)
+        {
+            return null;
+        }
+
         for (ChatRoomMember member : members)
         {
-            if (nickname.equals(member.getName()))
+            if (nickname.toString().equals(member.getName()))
                 return (MockRoomMember) member;
         }
         return null;
@@ -528,7 +569,16 @@ public class MockMultiUserChat
     @Override
     public void grantOwnership(String address)
     {
-        grantRole(address, ChatRoomMemberRole.OWNER);
+        try
+        {
+            grantRole(
+                    JidCreate.entityFullFrom(address),
+                    ChatRoomMemberRole.OWNER);
+        }
+        catch (XmppStringprepException e)
+        {
+            logger.error("Invalid address to grant ownership", e);
+        }
     }
 
     @Override
@@ -627,9 +677,7 @@ public class MockMultiUserChat
         Iterable<ChatRoomMemberPresenceListener> listeners;
         synchronized (memberListeners)
         {
-            listeners
-                = new ArrayList<ChatRoomMemberPresenceListener>(
-                        memberListeners);
+            listeners = new ArrayList<>(memberListeners);
         }
 
         for (ChatRoomMemberPresenceListener listener : listeners)
@@ -647,9 +695,7 @@ public class MockMultiUserChat
         Iterable<ChatRoomLocalUserRoleListener> listeners;
         synchronized (localUserRoleListeners)
         {
-            listeners
-                = new ArrayList<ChatRoomLocalUserRoleListener>(
-                        localUserRoleListeners);
+            listeners = new ArrayList<>(localUserRoleListeners);
         }
 
         for (ChatRoomLocalUserRoleListener listener : listeners)
@@ -666,9 +712,7 @@ public class MockMultiUserChat
         Iterable<ChatRoomMemberRoleListener> listeners;
         synchronized (memberRoleListeners)
         {
-            listeners
-                = new ArrayList<ChatRoomMemberRoleListener>(
-                        memberRoleListeners);
+            listeners = new ArrayList<>(memberRoleListeners);
         }
 
         for (ChatRoomMemberRoleListener listener : listeners)
@@ -684,10 +728,8 @@ public class MockMultiUserChat
     }
 
     @Override
-    public XmppChatMember findChatMember(String mucJid)
+    public XmppChatMember findChatMember(Jid mucJid)
     {
-        String nick = MucUtil.extractNickname(mucJid);
-
-        return findMember(nick);
+        return findMember(mucJid.getResourceOrNull());
     }
 }

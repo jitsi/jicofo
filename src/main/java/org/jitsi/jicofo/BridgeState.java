@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.assertions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
 
 /**
  * Class holds videobridge state and implements {@link Comparable}
@@ -42,7 +42,7 @@ class BridgeState
     /**
      * The XMPP address of the bridge.
      */
-    private final String jid;
+    private final Jid jid;
 
     /**
      * How many conferences are there on the bridge (as reported by the bridge
@@ -108,12 +108,16 @@ class BridgeState
      */
     private volatile long failureTimestamp;
 
-    BridgeState(BridgeSelector bridgeSelector, String bridgeJid,
+    BridgeState(BridgeSelector bridgeSelector,
+                Jid bridgeJid,
                 Version version)
     {
-        this.bridgeSelector = bridgeSelector;
-        Assert.notNullNorEmpty(bridgeJid, "bridgeJid: " + bridgeJid);
+        if (bridgeJid == null)
+        {
+            throw new IllegalArgumentException("bridgeJid");
+        }
 
+        this.bridgeSelector = bridgeSelector;
         this.jid = bridgeJid;
         this.version = version;
     }
@@ -299,7 +303,7 @@ class BridgeState
                 + " (estimated: " + getEstimatedVideoStreamCount() + ")");
     }
 
-    public String getJid()
+    public Jid getJid()
     {
         return jid;
     }

@@ -31,12 +31,11 @@ import org.junit.runners.*;
 @RunWith(Suite.class)
 @Suite.SuiteClasses(
     {
-        AuthenticationAuthorityTest.class,
+        ShibbolethAuthenticationAuthorityTest.class,
         AuthEventsTest.class,
         ConferenceJsonTest.class,
         ConferenceIqProviderTest.class,
         JibriIqProviderTest.class,
-        JireconIqProviderTest.class,
         JvbDoctorTest.class,
         MuteIqProviderTest.class,
         AdvertiseSSRCsTest.class,

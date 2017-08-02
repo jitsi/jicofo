@@ -32,6 +32,8 @@ import org.jitsi.jicofo.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.DomainBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 
 import java.util.concurrent.*;
 
@@ -83,7 +85,7 @@ public class JvbDoctorTest
     public void jvbDoctorTest()
         throws Exception
     {
-        String jvb1 = "jvb1.jitsi.net";
+        DomainBareJid jvb1 = JidCreate.domainBareFrom("jvb1.jitsi.net");
 
         FocusManager focusManager
             = ServiceUtils.getService(osgi.bc, FocusManager.class);
@@ -137,7 +139,10 @@ public class JvbDoctorTest
         for (int i=0; i<testConfs.length; i++)
         {
             testConfs[i] = TestConference.allocate(
-                osgi.bc, serverName, roomName + i, mockBridge);
+                    osgi.bc,
+                    serverName,
+                    JidCreate.entityBareFrom(roomName + i),
+                    mockBridge);
 
             testConfs[i].addParticipant();
             testConfs[i].addParticipant();

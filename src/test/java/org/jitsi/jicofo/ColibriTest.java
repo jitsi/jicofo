@@ -31,6 +31,9 @@ import org.jitsi.service.neomedia.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
 
 import java.util.*;
 
@@ -66,7 +69,8 @@ public class ColibriTest
     public void testChannelAllocation()
         throws Exception
     {
-        String roomName = "testroom@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
         JitsiMeetConfig config
             = new JitsiMeetConfig(new HashMap<String,String>());
@@ -105,9 +109,9 @@ public class ColibriTest
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
 
         boolean peer1UseBundle = true;
-        String peer1 = "endpoint1";
+        Jid peer1 = JidCreate.from("endpoint1@example.com");
         boolean peer2UseBundle = true;
-        String peer2 = "endpoint2";
+        Jid peer2 = JidCreate.from("endpoint2@example.com");
 
         ColibriConferenceIQ peer1Channels
             = colibriConf.createColibriChannels(

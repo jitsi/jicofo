@@ -31,6 +31,8 @@ import org.jitsi.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 
 import java.util.*;
 
@@ -71,7 +73,8 @@ public class BundleTest
     public void testBundle()
         throws Exception
     {
-        String roomName = "testroom@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConference
@@ -83,7 +86,7 @@ public class BundleTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         MockParticipant user1 = new MockParticipant("user1", true);
 

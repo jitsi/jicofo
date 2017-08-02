@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -36,7 +37,7 @@ public interface OperationSetSimpleCaps
      *
      * @return the list of sub-nodes of given <tt>node</tt>.
      */
-    Set<String> getItems(String node);
+    Set<Jid> getItems(Jid node);
 
     /**
      * Check if given node supports specified feature set.
@@ -48,7 +49,7 @@ public interface OperationSetSimpleCaps
      *         <tt>features</tt> array or <tt>false</tt> if at least on of
      *         the features is not supported.
      */
-    boolean hasFeatureSupport(String node, String[] features);
+    boolean hasFeatureSupport(Jid node, String[] features);
 
     /**
      * Returns the list of features supported by given <tt>node</tt>. 
@@ -58,7 +59,7 @@ public interface OperationSetSimpleCaps
      *         <tt>null</tt> if we have failed to obtain the list due to some
      *         errors.
      */
-    List<String> getFeatures(String node);
+    List<String> getFeatures(Jid node);
 
     //boolean hasFeatureSupport(String node, String subnode, String[] features);
 }

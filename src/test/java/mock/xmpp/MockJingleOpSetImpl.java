@@ -23,6 +23,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 
 /**
@@ -30,7 +31,7 @@ import org.jivesoftware.smack.packet.*;
  */
 public class MockJingleOpSetImpl
     extends AbstractOperationSetJingle
-    implements PacketListener, PacketFilter
+    implements StanzaListener, StanzaFilter
 {
     private final MockProtocolProvider protocolProvider;
 
@@ -40,7 +41,7 @@ public class MockJingleOpSetImpl
     }
 
     @Override
-    protected String getOurJID()
+    protected Jid getOurJID()
     {
         return protocolProvider.getOurJID();
     }
@@ -62,13 +63,13 @@ public class MockJingleOpSetImpl
     }
 
     @Override
-    public void processPacket(Packet packet)
+    public void processStanza(Stanza packet)
     {
         processJingleIQ((JingleIQ) packet);
     }
 
     @Override
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         return packet instanceof JingleIQ && packet.getTo().equals(getOurJID());
     }

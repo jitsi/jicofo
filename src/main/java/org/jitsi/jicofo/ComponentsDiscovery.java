@@ -32,6 +32,9 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.pubsub.*;
 
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -74,7 +77,7 @@ public class ComponentsDiscovery
     /**
      * Maps a node (XMPP address) to the list of its features.
      */
-    private Map<String, List<String>> itemMap = new ConcurrentHashMap<>();
+    private Map<Jid, List<String>> itemMap = new ConcurrentHashMap<>();
 
     /**
      * Timer which runs re-discovery task.
@@ -84,7 +87,7 @@ public class ComponentsDiscovery
     /**
      * XMPP xmppDomain for which we're discovering service info.
      */
-    private String xmppDomain;
+    private DomainBareJid xmppDomain;
 
     /**
      * The protocol service handler that provides XMPP service.
@@ -138,7 +141,7 @@ public class ComponentsDiscovery
      *                                XMPP connection
      * @throws java.lang.IllegalStateException if started already.
      */
-    public void start(String                  xmppDomain,
+    public void start(DomainBareJid           xmppDomain,
                       String                  statsPubSubNode,
                       ProtocolProviderHandler protocolProviderHandler)
     {
@@ -232,15 +235,15 @@ public class ComponentsDiscovery
      */
     public void discoverServices()
     {
-        Set<String> nodes = capsOpSet.getItems(xmppDomain);
+        Set<Jid> nodes = capsOpSet.getItems(xmppDomain);
         if (nodes == null)
         {
             logger.error("Failed to discover services on " + xmppDomain);
             return;
         }
 
-        List<String> onlineNodes = new ArrayList<>();
-        for (String node : nodes)
+        List<Jid> onlineNodes = new ArrayList<>();
+        for (Jid node : nodes)
         {
             List<String> features = capsOpSet.getFeatures(node);
 
@@ -283,7 +286,7 @@ public class ComponentsDiscovery
         }
 
         // Find disconnected nodes
-        List<String> offlineNodes = new ArrayList<>(itemMap.keySet());
+        List<Jid> offlineNodes = new ArrayList<>(itemMap.keySet());
 
         offlineNodes.removeAll(onlineNodes);
         itemMap.keySet().removeAll(offlineNodes);
@@ -291,7 +294,7 @@ public class ComponentsDiscovery
         if (offlineNodes.size() > 0)
         {
             // There are disconnected nodes
-            for (String offlineNode : offlineNodes)
+            for (Jid offlineNode : offlineNodes)
             {
                 logger.info("Component went offline: " + offlineNode);
 
@@ -326,7 +329,7 @@ public class ComponentsDiscovery
 
     private void setAllNodesOffline()
     {
-        for (String node : itemMap.keySet())
+        for (Jid node : itemMap.keySet())
         {
             logger.info("Connection lost - component offline: " + node);
 
@@ -404,7 +407,7 @@ public class ComponentsDiscovery
          * Maps bridge JID to last received stats timestamp. Used to expire
          * bridge which do not send stats for too long.
          */
-        private final Map<String, Long> bridgesMap = new HashMap<>();
+        private final Map<Jid, Long> bridgesMap = new HashMap<>();
 
         /**
          * <tt>ScheduledExecutorService</tt> used to run cyclic task of bridge
@@ -464,7 +467,15 @@ public class ComponentsDiscovery
                 for (PayloadItem item : items)
                 {
                     // Potential bridge JID may be carried in item ID
-                    verifyJvbJid(item.getId());
+                    try
+                    {
+                        Jid bridgeId = JidCreate.from(item.getId());
+                        verifyJvbJid(bridgeId);
+                    }
+                    catch (XmppStringprepException e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }
 
@@ -510,11 +521,11 @@ public class ComponentsDiscovery
 
             subOpSet.unSubscribe(statsPubSubNode, this);
 
-            Iterator<Map.Entry<String, Long>> bridges
+            Iterator<Map.Entry<Jid, Long>> bridges
                 = bridgesMap.entrySet().iterator();
             while (bridges.hasNext())
             {
-                Map.Entry<String, Long> bridge = bridges.next();
+                Map.Entry<Jid, Long> bridge = bridges.next();
 
                 bridges.remove();
 
@@ -534,16 +545,16 @@ public class ComponentsDiscovery
          */
         synchronized void validateBridges()
         {
-            Iterator<Map.Entry<String, Long>> bridges
+            Iterator<Map.Entry<Jid, Long>> bridges
                 = bridgesMap.entrySet().iterator();
 
             while (bridges.hasNext())
             {
-                Map.Entry<String, Long> bridge = bridges.next();
+                Map.Entry<Jid, Long> bridge = bridges.next();
                 if (System.currentTimeMillis() - bridge.getValue()
                     > MAX_STATS_REPORT_AGE)
                 {
-                    String bridgeJid = bridge.getKey();
+                    Jid bridgeJid = bridge.getKey();
 
                     logger.info(
                         "No stats seen from " + bridgeJid + " for too long");
@@ -567,7 +578,7 @@ public class ComponentsDiscovery
             BridgeEvent bridgeEvent = (BridgeEvent) event;
             if (BridgeEvent.BRIDGE_DOWN.equals(bridgeEvent.getTopic()))
             {
-                String bridgeJid = bridgeEvent.getBridgeJid();
+                DomainBareJid bridgeJid = bridgeEvent.getBridgeJid();
                 if (bridgesMap.remove(bridgeJid) != null)
                 {
                     logger.info("Cleared info about: " + bridgeJid);
@@ -579,7 +590,7 @@ public class ComponentsDiscovery
          * Verifies if given JID belongs to Jitsi videobridge XMPP component.
          * @param bridgeJid the JID to be verified.
          */
-        private void verifyJvbJid(String bridgeJid)
+        private void verifyJvbJid(Jid bridgeJid)
         {
             // Refresh bridge timestamp if it was discovered previously
             if (bridgesMap.containsKey(bridgeJid))
@@ -589,7 +600,7 @@ public class ComponentsDiscovery
                 return;
             }
             // Is it JVB ?
-            if (!bridgeJid.contains("."))
+            if (!bridgeJid.toString().contains("."))
                 return;
 
             List<String> jidFeatures = capsOpSet.getFeatures(bridgeJid);
@@ -613,37 +624,48 @@ public class ComponentsDiscovery
                 meetServices.newBridgeDiscovered(bridgeJid, jvbVersion);
             }
         }
-        private void refreshBridgeTimestamp(String bridgeJid)
+        private void refreshBridgeTimestamp(Jid bridgeJid)
         {
             bridgesMap.put(bridgeJid, System.currentTimeMillis());
         }
 
-        private void bridgeWentOffline(String bridgeJid)
+        private void bridgeWentOffline(Jid bridgeJid)
         {
             meetServices.nodeNoLongerAvailable(bridgeJid);
         }
 
         @Override
         public void onSubscriptionUpdate(
-            String node, String itemId, PacketExtension payload)
+            String node, String itemId, ExtensionElement payload)
         {
+            DomainBareJid bridgeId;
+            try
+            {
+                bridgeId = JidCreate.domainBareFrom(itemId);
+            }
+            catch (XmppStringprepException e)
+            {
+                logger.error("Invalid itemId", e);
+                return;
+            }
+
             synchronized (this)
             {
                 // JVB unavailable ?
                 if ("service-unavailable".equals(payload.getElementName()))
                 {
                     logger.info(
-                            "Service unavailable through PubSub for " + itemId);
+                            "Service unavailable through PubSub for " + bridgeId);
 
-                    if (bridgesMap.remove(itemId) != null)
+                    if (bridgesMap.remove(bridgeId) != null)
                     {
-                        bridgeWentOffline(itemId);
+                        bridgeWentOffline(bridgeId);
                     }
                     return;
                 }
 
                 // Potential bridge JID may be carried in item ID
-                verifyJvbJid(itemId);
+                verifyJvbJid(bridgeId);
 
                 // Trigger PubSub update for the shared node on BridgeSelector
                 BridgeSelector selector = meetServices.getBridgeSelector();

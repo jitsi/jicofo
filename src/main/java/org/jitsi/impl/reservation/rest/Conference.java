@@ -18,8 +18,10 @@
 package org.jitsi.impl.reservation.rest;
 
 import org.jitsi.impl.reservation.rest.json.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.parts.Localpart;
 
 import java.util.*;
 
@@ -33,7 +35,7 @@ public class Conference
     /**
      * Full XMPP MUC room address in the form of room_name@muc.server.net.
      */
-    private String mucRoomName;
+    private EntityBareJid mucRoomName;
 
     /**
      * Conference identifier in the reservation system.
@@ -43,7 +45,7 @@ public class Conference
     /**
      * Conference name(short room name).
      */
-    private String name;
+    private Localpart name;
 
     /**
      * Conference owner identifier(email address).
@@ -95,10 +97,10 @@ public class Conference
      * @param owner conference owner identifier(email address).
      * @param startTime conference start time(date).
      */
-    public Conference(String mucRoomName, String owner, Date startTime)
+    public Conference(EntityBareJid mucRoomName, String owner, Date startTime)
     {
         this.setMucRoomName(mucRoomName);
-        this.name = MucUtil.extractName(mucRoomName);
+        this.name = mucRoomName.getLocalpartOrThrow();
         this.owner = owner;
         this.startTime = startTime;
     }
@@ -107,7 +109,7 @@ public class Conference
      * Returns full XMPP MUC room address that hosts the conference, in the
      * form of room_name@muc.server.net.
      */
-    public String getMucRoomName()
+    public EntityBareJid getMucRoomName()
     {
         return mucRoomName;
     }
@@ -116,7 +118,7 @@ public class Conference
      * Sets full XMPP MUC room address that hosts this conference.
      * @param mucRoomName MUC address in the form of: room_name@muc.server.net
      */
-    public void setMucRoomName(String mucRoomName)
+    public void setMucRoomName(EntityBareJid mucRoomName)
     {
         this.mucRoomName = mucRoomName;
     }
@@ -194,7 +196,7 @@ public class Conference
     /**
      * Returns the name of the conference.
      */
-    public String getName()
+    public Localpart getName()
     {
         return name;
     }
@@ -203,7 +205,7 @@ public class Conference
      * Sets conference name.
      * @param name the name of the conference to set.
      */
-    public void setName(String name)
+    public void setName(Localpart name)
     {
         this.name = name;
     }
@@ -271,7 +273,7 @@ public class Conference
     {
         Map<String, Object> obj = new LinkedHashMap<String, Object>();
         putObject(obj, ConferenceJsonHandler.CONF_ID_KEY, id);
-        putString(obj, ConferenceJsonHandler.CONF_NAME_KEY, name);
+        putString(obj, ConferenceJsonHandler.CONF_NAME_KEY, name.toString());
         putString(obj, ConferenceJsonHandler.CONF_OWNER_KEY, owner);
         putDate(obj, ConferenceJsonHandler.CONF_START_TIME_KEY, startTime);
         putObject(obj, ConferenceJsonHandler.CONF_DURATION_KEY, duration);

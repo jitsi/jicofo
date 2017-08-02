@@ -25,6 +25,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityFullJid;
 
 /**
  * Implementation of {@link OperationSetJingleImpl} for
@@ -34,8 +35,8 @@ import org.jivesoftware.smack.packet.*;
  */
 class OperationSetJingleImpl
     extends AbstractOperationSetJingle
-    implements PacketFilter,
-               PacketListener
+    implements StanzaFilter,
+               StanzaListener
 {
     /**
      * The logger used by this class.
@@ -63,14 +64,15 @@ class OperationSetJingleImpl
      */
     public void initialize()
     {
-        xmppProvider.getConnection().addPacketListener(this, this);
+        // FIXME smack4: use IQ handlers
+        xmppProvider.getConnection().addAsyncStanzaListener(this, this);
     }
 
     /**
      * Returns our XMPP address that will be used as 'from' attribute
      * in Jingle QIs.
      */
-    protected String getOurJID()
+    protected EntityFullJid getOurJID()
     {
         return xmppProvider.getOurJid();
     }
@@ -88,7 +90,7 @@ class OperationSetJingleImpl
      *
      * {@inheritDoc}
      */
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         try
         {
@@ -125,7 +127,7 @@ class OperationSetJingleImpl
      * {@inheritDoc}
      */
     @Override
-    public void processPacket(Packet packet)
+    public void processStanza(Stanza packet)
     {
         IQ iq = (IQ) packet;
 

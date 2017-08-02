@@ -29,6 +29,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 
@@ -42,6 +44,8 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ParticipantTest
 {
+    private static OSGiHandler osgi = OSGiHandler.getInstance();
+
     private MockJitsiMeetConference mockConference;
     private MockRoomMember roomMember;
     private Participant participant;
@@ -55,11 +59,28 @@ public class ParticipantTest
     private SourcePacketExtension[] videoSSRCs;
     private SourceGroupPacketExtension[] videoGroups;
 
+    @BeforeClass
+    public static void setUpClass()
+            throws Exception
+    {
+        osgi.init();
+    }
+
+    @AfterClass
+    public static void tearDownClass()
+            throws Exception
+    {
+        osgi.shutdown();
+    }
+
     @Before
     public void setUpContents()
+            throws XmppStringprepException
     {
         this.mockConference = new MockJitsiMeetConference();
-        MockMultiUserChat mockMultiUserChat = new MockMultiUserChat(null, null);
+        MockMultiUserChat mockMultiUserChat = new MockMultiUserChat(
+                JidCreate.entityBareFrom("room@example.com"),
+                null);
         this.roomMember = mockMultiUserChat.createMockRoomMember("testMember");
         this.participant
             = new Participant(mockConference, roomMember, 20);
@@ -139,7 +160,12 @@ public class ParticipantTest
     @Test
     public void testNegative()
     {
-        audioRtpDescPe.addChildExtension(createSourceWithSsrc(-1));
+        // ssrc=-1 *removes* the ssrc attribute
+        // Create a ssrc=0, then hack it away. Invalid sources can only be
+        // received over the wire, setSSRC clips invalid values.
+        SourcePacketExtension sourceWithSsrc = createSourceWithSsrc(-1L);
+        sourceWithSsrc.setAttribute(SourcePacketExtension.SSRC_ATTR_NAME, Long.toString(-1L));
+        audioRtpDescPe.addChildExtension(sourceWithSsrc);
 
         this.addDefaultAudioSSRCs();
 
@@ -206,7 +232,7 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("SSRC 1 is in audio already", exc.getMessage());
+            assertEquals("Source ssrc=1 is in audio already", exc.getMessage());
         }
     }
 
@@ -235,7 +261,7 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("SSRC 1 is in audio already", exc.getMessage());
+            assertEquals("Source ssrc=1 is in audio already", exc.getMessage());
         }
     }
 
@@ -290,7 +316,7 @@ public class ParticipantTest
                 "Invalid message (constant needs update ?): " + errorMsg,
                 errorMsg.startsWith(
                     "MSID mismatch detected "
-                        + "in group SourceGroup[FID, 10, 20, ]"));
+                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
         }
     }
 
@@ -394,8 +420,8 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException e)
         {
-            assertTrue(e.getMessage().startsWith(
-                "SSRC 2 not found in video for group: SourceGroup[FID, 1, 2, ]"));
+            assertTrue(e.getMessage(), e.getMessage().startsWith(
+                "Source ssrc=2 not found in video for group: SourceGroup[FID, ssrc=1, ssrc=2, ]"));
         }
     }
 

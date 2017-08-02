@@ -27,24 +27,21 @@ import org.xmlpull.v1.*;
  * @author Hristo Terezov
  */
 public class StartMutedProvider
-    implements PacketExtensionProvider
+    extends ExtensionElementProvider<StartMutedPacketExtension>
 {
     /**
-     * Registers this extension provider into given <tt>ProviderManager</tt>.
-     *
-     * @param providerManager the <tt>ProviderManager</tt> to which this
-     *                        instance will be bound to.
+     * Registers this extension provider into the <tt>ProviderManager</tt>.
      */
-    public void registerStartMutedProvider(ProviderManager providerManager)
+    public void registerStartMutedProvider()
     {
-        providerManager.addExtensionProvider(
+        ProviderManager.addExtensionProvider(
             StartMutedPacketExtension.ELEMENT_NAME,
             StartMutedPacketExtension.NAMESPACE, this);
     }
 
-
     @Override
-    public PacketExtension parseExtension(XmlPullParser parser) throws Exception
+    public StartMutedPacketExtension parse(XmlPullParser parser, int depth)
+            throws Exception
     {
         StartMutedPacketExtension packetExtension
             = new StartMutedPacketExtension();

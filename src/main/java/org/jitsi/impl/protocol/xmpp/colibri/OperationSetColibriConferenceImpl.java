@@ -57,14 +57,14 @@ public class OperationSetColibriConferenceImpl
         this.connection = connection;
         this.eventAdmin = eventAdmin;
 
-        // FIXME: Register Colibri
-        ProviderManager.getInstance().addIQProvider(
+        // Register Colibri
+        ProviderManager.addIQProvider(
             ColibriConferenceIQ.ELEMENT_NAME,
             ColibriConferenceIQ.NAMESPACE,
             new ColibriIQProvider());
 
-        // FIXME: register Jingle
-        ProviderManager.getInstance().addIQProvider(
+        // register Jingle
+        ProviderManager.addIQProvider(
             JingleIQ.ELEMENT_NAME,
             JingleIQ.NAMESPACE,
             new JingleIQProvider());

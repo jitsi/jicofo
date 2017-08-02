@@ -32,6 +32,10 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.packet.id.StanzaIdUtil;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,8 +44,8 @@ import java.util.concurrent.*;
  *
  */
 public class MockParticipant
-    implements PacketListener,
-               PacketFilter
+    implements StanzaListener,
+               StanzaFilter
 {
     /**
      * The logger.
@@ -79,9 +83,9 @@ public class MockParticipant
 
     private JingleHandler jingleHandler = new JingleHandler();
 
-    private String myJid;
+    private Jid myJid;
 
-    private String remoteJid;
+    private Jid remoteJid;
 
     private MediaSourceMap localSSRCs = new MediaSourceMap();
 
@@ -145,7 +149,14 @@ public class MockParticipant
 
     public void join(MockMultiUserChat chat)
     {
-        user = chat.createMockRoomMember(nick);
+        try
+        {
+            user = chat.createMockRoomMember(nick);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
 
         user.setupFeatures(useBundle);
 
@@ -158,7 +169,14 @@ public class MockParticipant
             = protocolProvider.getOperationSet(
                     OperationSetDirectSmackXmpp.class);
 
-        myJid = chat.getName() + "/" + user.getName();
+        try
+        {
+            myJid = JidCreate.entityFullFrom(chat.getName() + "/" + user.getName());
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
 
         this.jingle = new UtilityJingleOpSet(myJid, mockConnection);
 
@@ -171,7 +189,7 @@ public class MockParticipant
         synchronized (joinLock)
         {
             xmppPeer = new XmppPeer(
-                user.getContactAddress(), mockConnection);
+                user.getJabberID(), mockConnection);
 
             xmppPeer.start();
 
@@ -200,7 +218,7 @@ public class MockParticipant
 
     private void initContents()
     {
-        myContents = new ArrayList<ContentPacketExtension>();
+        myContents = new ArrayList<>();
 
         // AUDIO
         ContentPacketExtension audio = new ContentPacketExtension();
@@ -315,8 +333,7 @@ public class MockParticipant
     private Map<String, IceUdpTransportPacketExtension> createTransportMap(
             JingleIQ user1Invite)
     {
-        this.transportMap
-            = new HashMap<String, IceUdpTransportPacketExtension>();
+        this.transportMap = new HashMap<>();
 
         for (ContentPacketExtension content : user1Invite.getContentList())
         {
@@ -376,8 +393,7 @@ public class MockParticipant
 
     public JingleIQ sendTransportInfo()
     {
-        List<ContentPacketExtension> contents
-            = new ArrayList<ContentPacketExtension>();
+        List<ContentPacketExtension> contents = new ArrayList<>();
 
         for (ContentPacketExtension myContent : myContents)
         {
@@ -414,14 +430,12 @@ public class MockParticipant
             JingleIQ sessionInit,
             Map<String, IceUdpTransportPacketExtension> transportMap)
     {
-        JingleIQ accept = new JingleIQ();
+        JingleIQ accept = new JingleIQ(
+                JingleAction.SESSION_ACCEPT,
+                sessionInit.getSID());
 
-        accept.setPacketID(Packet.nextID());
-        accept.setType(IQ.Type.SET);
-
-        accept.setAction(JingleAction.SESSION_ACCEPT);
-
-        accept.setSID(sessionInit.getSID());
+        accept.setStanzaId(StanzaIdUtil.newStanzaId());
+        accept.setType(IQ.Type.set);
         accept.setFrom(sessionInit.getTo());
         accept.setTo(sessionInit.getFrom());
 
@@ -462,7 +476,7 @@ public class MockParticipant
     }
 
     @Override
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         boolean isJingle
             = user.getContactAddress().equals(packet.getTo())
@@ -477,7 +491,7 @@ public class MockParticipant
     }
 
     @Override
-    public void processPacket(Packet packet)
+    public void processStanza(Stanza packet)
     {
         JingleIQ modifySSRcIq = (JingleIQ) packet;
         JingleAction action = modifySSRcIq.getAction();
@@ -700,7 +714,7 @@ public class MockParticipant
         this.useSsrcGroups = useSsrcGroups;
     }
 
-    public String getMyJid()
+    public Jid getMyJid()
     {
         return myJid;
     }

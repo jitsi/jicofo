@@ -21,10 +21,11 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 
+import org.jxmpp.jid.DomainBareJid;
+import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -74,9 +75,9 @@ public class ProtocolProviderHandler
      *
      */
     public void start(String serverAddress,
-                      String xmppDomain,
+                      DomainBareJid xmppDomain,
                       String xmppLoginPassword,
-                      String nickName)
+                      Resourcepart nickName)
     {
         xmppProviderFactory
             = ProtocolProviderFactory.getProtocolProviderFactory(

@@ -27,13 +27,14 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.service.neomedia.*;
 
 import org.jivesoftware.smack.packet.*;
 
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import java.util.*;
 
@@ -60,7 +61,7 @@ public class ColibriThreadingTest
             List<MockPeerAllocator>                 allocators)
         throws InterruptedException
     {
-        String conferenceCreator = colibriConf.obtainConferenceCreator();
+        Jid conferenceCreator = colibriConf.obtainConferenceCreator();
         for (MockPeerAllocator allocator : allocators)
         {
             if (allocator.endpointName.equals(conferenceCreator))
@@ -103,7 +104,8 @@ public class ColibriThreadingTest
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
-        String mockBridgeJid = "some.mock.bridge.com";
+        DomainBareJid mockBridgeJid = JidCreate.domainBareFrom(
+                "some.mock.bridge.com");
 
         MockVideobridge mockBridge
             = new MockVideobridge(
@@ -122,11 +124,11 @@ public class ColibriThreadingTest
 
         MockPeerAllocator[] allocators = new MockPeerAllocator[20];
 
-        List<String> endpointList = new ArrayList<String>(allocators.length);
+        List<Jid> endpointList = new ArrayList<>(allocators.length);
 
         for (int i=0; i < allocators.length; i++)
         {
-            String endpointName = "peer" + i;
+            Jid endpointName = JidCreate.from("peer" + i + "@example.com");
             allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
             endpointList.add(endpointName);
 
@@ -149,10 +151,10 @@ public class ColibriThreadingTest
 
         // All responses are blocked - here we make sure that all threads have
         // sent their requests
-        List<String> requestsToBeSent = new ArrayList<String>(endpointList);
+        List<Jid> requestsToBeSent = new ArrayList<>(endpointList);
         while (!requestsToBeSent.isEmpty())
         {
-            String endpoint = colibriConf.nextRequestSent(5);
+            Jid endpoint = colibriConf.nextRequestSent(5);
             if (endpoint == null)
             {
                 fail("Endpoints that have failed to " +
@@ -167,10 +169,10 @@ public class ColibriThreadingTest
         colibriConf.resumeResponses();
 
         // Now wait for all responses to be received
-        List<String> responsesToReceive = new ArrayList<String>(endpointList);
+        List<Jid> responsesToReceive = new ArrayList<>(endpointList);
         while (!responsesToReceive.isEmpty())
         {
-            String endpoint = colibriConf.nextResponseReceived(5);
+            Jid endpoint = colibriConf.nextResponseReceived(5);
             if (endpoint == null)
             {
                 fail("Endpoints that have failed to " +
@@ -220,7 +222,8 @@ public class ColibriThreadingTest
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
-        String mockBridgeJid = "some.mock.bridge.com";
+        DomainBareJid mockBridgeJid = JidCreate.domainBareFrom(
+                "some.mock.bridge.com");
 
         MockVideobridge mockBridge
             = new MockVideobridge(
@@ -234,17 +237,17 @@ public class ColibriThreadingTest
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
 
-        colibriConf.setResponseError(XMPPError.Condition.interna_server_error);
+        colibriConf.setResponseError(XMPPError.Condition.internal_server_error);
 
         //colibriConf.blockConferenceCreator(true);
 
         MockPeerAllocator[] allocators = new MockPeerAllocator[20];
 
-        List<String> endpointList = new ArrayList<String>(allocators.length);
+        List<Jid> endpointList = new ArrayList<>(allocators.length);
 
         for (int i=0; i < allocators.length/2; i++)
         {
-            String endpointName = "peer" + i;
+            Jid endpointName = JidCreate.from("peer" + i + "@example.com");
             allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
             endpointList.add(endpointName);
 
@@ -278,7 +281,7 @@ public class ColibriThreadingTest
 
         for (int i=allocators.length/2; i < allocators.length; i++)
         {
-            String endpointName = "peer" + i;
+            Jid endpointName = JidCreate.from("peer" + i + "@example.com");
             allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
             endpointList.add(endpointName);
 
@@ -330,7 +333,7 @@ public class ColibriThreadingTest
 
     class MockPeerAllocator
     {
-        private final String endpointName;
+        private final Jid endpointName;
 
         private final ColibriConference colibriConference;
 
@@ -340,7 +343,7 @@ public class ColibriThreadingTest
 
         private boolean working;
 
-        public MockPeerAllocator(String            endpointName,
+        public MockPeerAllocator(Jid               endpointName,
                                  ColibriConference colibriConference)
         {
             this.endpointName = endpointName;

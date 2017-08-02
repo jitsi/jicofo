@@ -83,7 +83,7 @@ public class JibriSipGateway
      * {@inheritDoc}
      */
     @Override
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         // Do not process if it belongs to the recording session
         // FIXME should accept only packets coming from MUC
@@ -93,7 +93,7 @@ public class JibriSipGateway
             && !StringUtils.isNullOrEmpty(((JibriIq)(packet)).getSipAddress());
     }
 
-    private boolean comesFromSipSession(Packet p)
+    private boolean comesFromSipSession(Stanza p)
     {
         for (JibriSession session : sipSessions.values())
         {
@@ -165,9 +165,9 @@ public class JibriSipGateway
             // Bad request - no SIP address
             return IQ.createErrorResponse(
                     iq,
-                    new XMPPError(
+                    XMPPError.from(
                             XMPPError.Condition.bad_request,
-                            "Stream ID is empty or undefined"));
+                            "Stream ID is empty or undefined").build());
         }
     }
 
@@ -274,10 +274,8 @@ public class JibriSipGateway
         // Publish that in the presence
         if (chatRoom2 != null)
         {
-            Collection<PacketExtension> oldExtension
-                = chatRoom2.getPresenceExtensions();
-            LinkedList<PacketExtension> toRemove = new LinkedList<>();
-            for (PacketExtension ext : oldExtension)
+            LinkedList<ExtensionElement> toRemove = new LinkedList<>();
+            for (ExtensionElement ext : chatRoom2.getPresenceExtensions())
             {
                 // Exclude all that do not match
                 if (ext instanceof  SipCallState
@@ -287,7 +285,7 @@ public class JibriSipGateway
                     toRemove.add(ext);
                 }
             }
-            ArrayList<PacketExtension> newExt = new ArrayList<>();
+            ArrayList<ExtensionElement> newExt = new ArrayList<>();
             newExt.add(sipCallState);
 
             chatRoom2.modifyPresence(toRemove, newExt);

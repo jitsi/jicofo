@@ -27,6 +27,9 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 /**
  *
@@ -185,9 +188,17 @@ public class MockProtocolProvider
 
     public void includeSimpleCapsOpSet()
     {
-        addSupportedOperationSet(
-            OperationSetSimpleCaps.class,
-            new MockSetSimpleCapsOpSet(accountId.getServerAddress()));
+        try
+        {
+            addSupportedOperationSet(
+                OperationSetSimpleCaps.class,
+                new MockSetSimpleCapsOpSet(
+                        JidCreate.from(accountId.getServerAddress())));
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public void includeDirectXmppOpSet()
@@ -227,9 +238,16 @@ public class MockProtocolProvider
         return connection;
     }
 
-    public String getOurJID()
+    public Jid getOurJID()
     {
-        return "mock-" + accountId.getAccountAddress();
+        try
+        {
+            return JidCreate.from("mock-" + accountId.getAccountAddress());
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public MockMultiUserChatOpSet getMockChatOpSet()

@@ -20,6 +20,7 @@ package org.jitsi.jicofo.auth;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -29,7 +30,8 @@ import java.util.*;
  * Authentication servlet {@link ShibbolethHandler} must be deployed under
  * the location secured by Shibboleth(called *login location*). When user wants
  * to login, the application retrieves login URL and redirects user to it(see
- * {@link #createLoginUrl(String, String, String, boolean)}. When user
+ * {@link #createLoginUrl(String, EntityFullJid, EntityBareJid, boolean)}.
+ * When user
  * attempts to access it will be asked for Shibboleth credentials. Once user
  * logs-in, request attributes will be filled by Shibboleth system including
  * 'email' which is treated as users identity. The servlet will bind
@@ -136,8 +138,8 @@ public class ShibbolethAuthAuthority
     /**
      * {@inheritDoc}
      */
-    public String createLoginUrl(String machineUID, String  userJid,
-                                 String roomName,   boolean popup)
+    public String createLoginUrl(String machineUID, EntityFullJid userJid,
+                                 EntityBareJid roomName, boolean popup)
     {
         return String.format(
                 loginUrlPattern, machineUID, userJid, roomName, popup);
@@ -171,8 +173,10 @@ public class ShibbolethAuthAuthority
      * @return <tt>true</tt> if user has been authenticated successfully or
      *         <tt>false</tt> if given token is invalid.
      */
-    String authenticateUser(String machineUID, String authIdentity,
-                            String roomName,   Map<String, String> properties)
+    String authenticateUser(String machineUID,
+                            String authIdentity,
+                            EntityBareJid roomName,
+                            Map<String, String> properties)
     {
         synchronized (syncRoot)
         {
@@ -197,8 +201,8 @@ public class ShibbolethAuthAuthority
     {
         // FIXME this now looks like it could be merged with XMPP or moved to
         // abstract
-        String room = query.getRoom();
-        String peerJid = query.getFrom();
+        //EntityBareJid room = query.getRoom();
+        Jid peerJid = query.getFrom();
 
         String sessionId = query.getSessionId();
         AuthenticationSession session = getSession(sessionId);

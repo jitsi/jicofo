@@ -30,6 +30,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 
 import java.util.*;
 
@@ -66,7 +68,8 @@ public class AdvertiseSSRCsTest
     {
         //FIXME: test when there is participant without contents
 
-        String roomName = "testSSRCs@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConf
@@ -78,7 +81,7 @@ public class AdvertiseSSRCsTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -150,7 +153,8 @@ public class AdvertiseSSRCsTest
     public void testDuplicatedSSRCs()
         throws Exception
     {
-        String roomName = "testSSRCs@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConf
@@ -162,7 +166,7 @@ public class AdvertiseSSRCsTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -217,7 +221,8 @@ public class AdvertiseSSRCsTest
     public void testSSRCLimit()
         throws Exception
     {
-        String roomName = "testSSRCs@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConf
@@ -234,7 +239,7 @@ public class AdvertiseSSRCsTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -316,7 +321,8 @@ public class AdvertiseSSRCsTest
     public void testOneToOneSSRCGroupsConference()
         throws Exception
     {
-        String roomName = "testSSRCs@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConf
@@ -328,7 +334,7 @@ public class AdvertiseSSRCsTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
         final MockParticipant user1 = new MockParticipant("User1");

@@ -18,6 +18,7 @@
 package mock.xmpp;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -30,7 +31,7 @@ public class MockSetSimpleCapsOpSet
 {
     private long discoveryDelay = 0;
 
-    public MockSetSimpleCapsOpSet(String domain)
+    public MockSetSimpleCapsOpSet(Jid domain)
     {
         super(domain, new String[]{});
     }
@@ -40,7 +41,7 @@ public class MockSetSimpleCapsOpSet
         this.discoveryDelay = millis;
     }
 
-    private MockCapsNode findFirstLevel(String name)
+    private MockCapsNode findFirstLevel(Jid name)
     {
         for (MockCapsNode node : childNodes)
         {
@@ -54,12 +55,12 @@ public class MockSetSimpleCapsOpSet
     }
 
     @Override
-    public Set<String> getItems(String nodeName)
+    public Set<Jid> getItems(Jid nodeName)
     {
-        Set<String> result = new HashSet<String>(childNodes.size());
+        Set<Jid> result = new HashSet<>(childNodes.size());
 
         MockCapsNode node;
-        if (nodeName.endsWith(getNodeName()))
+        if (nodeName.toString().endsWith(getNodeName().toString()))
         {
             node = this;
         }
@@ -79,7 +80,7 @@ public class MockSetSimpleCapsOpSet
     }
 
     @Override
-    public boolean hasFeatureSupport(String contactAddress, String[] features)
+    public boolean hasFeatureSupport(Jid contactAddress, String[] features)
     {
         MockCapsNode node = findChild(contactAddress);
         if (node == null)
@@ -109,7 +110,7 @@ public class MockSetSimpleCapsOpSet
     }
 
     @Override
-    public List<String> getFeatures(String node)
+    public List<String> getFeatures(Jid node)
     {
         if (discoveryDelay > 0)
         {
@@ -133,7 +134,7 @@ public class MockSetSimpleCapsOpSet
     }
 
     //@Override
-    public boolean hasFeatureSupport(String node, String subnode,
+    public boolean hasFeatureSupport(String Jid, String subnode,
                                      String[] features)
     {
         return false;

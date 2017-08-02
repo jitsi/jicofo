@@ -17,6 +17,8 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jxmpp.jid.Jid;
+
 import java.util.*;
 
 /**
@@ -35,7 +37,7 @@ public class JingleSession
     /**
      * Remote peer XMPP address.
      */
-    private final String address;
+    private final Jid address;
 
     /**
      * <tt>JingleRequestHandler</tt> that is processing requests for this
@@ -61,7 +63,7 @@ public class JingleSession
      * @param requestHandler request handler that will be associated with
      *                       newly created instance.
      */
-    public JingleSession(String sid, String address,
+    public JingleSession(String sid, Jid address,
                          JingleRequestHandler requestHandler)
     {
 
@@ -86,7 +88,7 @@ public class JingleSession
      *
      * @return remote peer's full XMPP address
      */
-    public String getAddress()
+    public Jid getAddress()
     {
         return address;
     }

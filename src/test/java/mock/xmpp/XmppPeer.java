@@ -20,6 +20,9 @@ package mock.xmpp;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 
@@ -27,15 +30,32 @@ import java.util.*;
  *
  */
 public class XmppPeer
-    implements PacketListener
+    implements StanzaListener
 {
-    private final String jid;
+    private final Jid jid;
 
     private final MockXmppConnection connection;
 
-    private final List<Packet> packets = new ArrayList<Packet>();
+    private final List<Stanza> packets = new ArrayList<>();
 
     public XmppPeer(String jid, MockXmppConnection connection)
+    {
+        this(jidCreate(jid), connection);
+    }
+
+    private static Jid jidCreate(String jid)
+    {
+        try
+        {
+            return JidCreate.from(jid);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public XmppPeer(Jid jid, MockXmppConnection connection)
     {
         this.jid = jid;
         this.connection = connection;
@@ -45,17 +65,17 @@ public class XmppPeer
     {
         this.connection.addPacketHandler(
             this,
-            new PacketFilter()
+            new StanzaFilter()
             {
                 @Override
-                public boolean accept(Packet packet)
+                public boolean accept(Stanza packet)
                 {
                     return jid.equals(packet.getTo());
                 }
             });
     }
 
-    public Packet waitForPacket(long timeout)
+    public Stanza waitForPacket(long timeout)
     {
         synchronized (packets)
         {
@@ -93,7 +113,7 @@ public class XmppPeer
         }
     }
 
-    public Packet getPacket(int idx)
+    public Stanza getPacket(int idx)
     {
         synchronized (packets)
         {
@@ -102,7 +122,7 @@ public class XmppPeer
     }
 
     @Override
-    public void processPacket(Packet packet)
+    public void processStanza(Stanza packet)
     {
         synchronized (packets)
         {

@@ -18,9 +18,12 @@
 package org.jitsi.jicofo;
 
 import mock.*;
+import net.java.sip.communicator.impl.configuration.ConfigurationActivator;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
+
+import javax.security.auth.login.Configuration;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.
@@ -77,6 +80,8 @@ public class OSGiHandler
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, "focusdomain");
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, "focus");
+        System.setProperty(ConfigurationActivator.PNAME_USE_PROPFILE_CONFIG,
+                "true");
 
         this.bundleActivator = new BundleActivator()
         {

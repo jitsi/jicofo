@@ -96,7 +96,7 @@ public class JibriRecorder
      * {@inheritDoc}
      */
     @Override
-    public boolean accept(Packet packet)
+    public boolean accept(Stanza packet)
     {
         // Do not process if it belongs to the recording session
         // FIXME should accept only packets coming from MUC
@@ -152,7 +152,7 @@ public class JibriRecorder
             // Bad request - no stream ID
             return IQ.createErrorResponse(
                     iq,
-                    new XMPPError(
+                    XMPPError.from(
                             XMPPError.Condition.bad_request,
                             "Stream ID is empty or undefined"));
         }
