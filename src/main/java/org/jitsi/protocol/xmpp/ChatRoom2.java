@@ -20,6 +20,7 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.EntityFullJid;
 import org.jxmpp.jid.Jid;
 
@@ -33,6 +34,12 @@ import java.util.*;
 public interface ChatRoom2
     extends ChatRoom
 {
+    /**
+     * Gets the name of this chat room as a JID.
+     * @return the name of this chat room as a JID.
+     */
+    EntityBareJid getNameAsJid();
+
     /**
      * Finds chat member for given MUC jid.
      *

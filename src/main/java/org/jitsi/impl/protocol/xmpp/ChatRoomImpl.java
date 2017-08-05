@@ -171,6 +171,12 @@ public class ChatRoomImpl
     }
 
     @Override
+    public EntityBareJid getNameAsJid()
+    {
+        return roomName;
+    }
+
+    @Override
     public String getIdentifier()
     {
         return null;

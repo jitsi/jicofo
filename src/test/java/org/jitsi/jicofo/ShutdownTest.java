@@ -46,128 +46,162 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ShutdownTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private final OSGiHandler osgi = OSGiHandler.getInstance();
+    private Jid shutdownJid;
+    private TestShutdownService shutdownService;
+    private FocusComponent focusComponent;
+    private TestConference conf1;
+    private MockParticipant conf1User1;
+    private MockParticipant conf1User2;
+    private EntityBareJid roomName;
+    private boolean shutdownStartedExpected;
 
-    static String shutdownJid = "shutdown.server.net";
-
-    @BeforeClass
-    public static void setUpClass()
+    @Before
+    public void setUp()
         throws Exception
     {
+        shutdownJid = JidCreate.from("shutdown.server.net");
         System.setProperty(
-            FocusComponent.SHUTDOWN_ALLOWED_JID_PNAME, shutdownJid);
+            FocusComponent.SHUTDOWN_ALLOWED_JID_PNAME, shutdownJid.toString());
 
         osgi.init();
-    }
 
-    @AfterClass
-    public static void tearDownClass()
-        throws Exception
-    {
-        osgi.shutdown();
-    }
-
-    /**
-     * Allocates Colibri channels in bundle
-     */
-    @Test
-    public void testShutdown()
-        throws Exception
-    {
-        TestShutdownService shutdownService
-            = new TestShutdownService(osgi.bc);
-
-        EntityBareJid roomName = JidCreate.entityBareFrom(
+        shutdownService = new TestShutdownService(osgi.bc);
+        roomName = JidCreate.entityBareFrom(
                 "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        FocusComponent focusComponent
-            = MockMainMethodActivator.getFocusComponent();
+        focusComponent = MockMainMethodActivator.getFocusComponent();
 
-        TestConference conf1
-            = TestConference.allocate(
-                    osgi.bc, serverName, roomName);
+        conf1 = TestConference.allocate(
+        osgi.bc, serverName, roomName);
 
-        MockParticipant conf1User1 = new MockParticipant("C1U1");
-        MockParticipant conf1User2 = new MockParticipant("C1U2");
+        conf1User1 = new MockParticipant("C1U1");
+        conf1User2 = new MockParticipant("C1U2");
 
         conf1.addParticipant(conf1User1);
         conf1.addParticipant(conf1User2);
 
         assertNotNull(conf1User1.acceptInvite(4000));
         assertNotNull(conf1User2.acceptInvite(4000));
+    }
 
-        // Try shutdown from wrong jid
-        ShutdownIQ gracefulShutdownIQ = ShutdownIQ.createGracefulShutdownIQ();
+    @After
+    public void tearDown()
+        throws Exception
+    {
+        try
+        {
+            // End conference
+            conf1User1.leave();
+            conf1User2.leave();
+            conf1.stop();
+        }
+        finally
+        {
+            osgi.shutdown();
+        }
 
-        gracefulShutdownIQ.setFrom(
-                JidCreate.from("randomJid1234@example.com"));
+        // Ensure that the shutdown state matches the test expectation
+        assertEquals(shutdownStartedExpected, shutdownService.shutdownStarted);
+    }
+
+    /**
+     * Try shutdown from wrong jid
+     */
+    @Test
+    public void testShutdownForbidden()
+        throws Exception
+    {
+        shutdownStartedExpected = false;
+        ShutdownIQ shutdownIQ = ShutdownIQ.createGracefulShutdownIQ();
+
+        shutdownIQ.setFrom(JidCreate.from("randomJid1234"));
 
         IQ result = focusComponent.handleIQSetImpl(
-            IQUtils.convert(gracefulShutdownIQ));
+                IQUtils.convert(shutdownIQ));
 
-        assertEquals(IQ.Type.error, result.getType());
+        assertEquals(result.toXML(), IQ.Type.error, result.getType());
         assertEquals(PacketError.Condition.forbidden,
-                     result.getError().getCondition());
+                result.getError().getCondition());
+    }
 
-        // Now use authorized JID
-        gracefulShutdownIQ.setFrom(JidCreate.from(shutdownJid));
+    /**
+     * Try shutdown from authorized JID
+     */
+    @Test
+    public void testShutdownAllowed()
+        throws Exception
+    {
+        ShutdownIQ shutdownIQ = ShutdownIQ.createGracefulShutdownIQ();
+        shutdownIQ.setFrom(shutdownJid);
 
-        result = focusComponent.handleIQSetImpl(
-            IQUtils.convert(gracefulShutdownIQ));
+        IQ result = focusComponent.handleIQSetImpl(
+                IQUtils.convert(shutdownIQ));
 
-        assertEquals(IQ.Type.result, result.getType());
+        assertEquals(result.toXML(), IQ.Type.result, result.getType());
+        shutdownStartedExpected = true;
+    }
 
-        // Now try to allocate conference - must be rejected
+    /**
+     * Try to allocate new conference - must be rejected
+     */
+    @Test
+    public void testNewConferenceDuringShutdown()
+        throws Exception
+    {
+        // initiate shutdown
+        testShutdownAllowed();
+
+        // try to allocate the conference
         ConferenceIq newConferenceIQ = new ConferenceIq();
         newConferenceIQ.setRoom(
                 JidCreate.entityBareFrom("newRoom1@example.com"));
 
-        result = focusComponent.handleIQSetImpl(
-            IQUtils.convert(newConferenceIQ));
+        IQ result = focusComponent.handleIQSetImpl(
+                IQUtils.convert(newConferenceIQ));
 
-        assertEquals(IQ.Type.error, result.getType());
+        assertEquals(result.toXML(), IQ.Type.error, result.getType());
         assertEquals(
-            ColibriConferenceIQ.GracefulShutdown.ELEMENT_NAME,
-            result.getError().getApplicationConditionName());
+                ColibriConferenceIQ.GracefulShutdown.ELEMENT_NAME,
+                result.getError().getApplicationConditionName());
         assertEquals(
-            ColibriConferenceIQ.GracefulShutdown.NAMESPACE,
-            result.getError().getApplicationConditionNamespaceURI());
+                ColibriConferenceIQ.GracefulShutdown.NAMESPACE,
+                result.getError().getApplicationConditionNamespaceURI());
+    }
+
+    /**
+     * Try to join existing conference - must be allowed
+     */
+    @Test
+    public void testJoinExistingConferenceDuringShutdown()
+        throws Exception
+    {
+        // initiate shutdown
+        testShutdownAllowed();
 
         // Request for active conference - should reply with ready
         ConferenceIq activeConfRequest = new ConferenceIq();
         activeConfRequest.setRoom(roomName);
 
-        result = focusComponent.handleIQSetImpl(
+        IQ result = focusComponent.handleIQSetImpl(
             IQUtils.convert(activeConfRequest));
 
-        assertEquals(IQ.Type.result, result.getType());
+        assertEquals(result.toXML(), IQ.Type.result, result.getType());
 
         org.jivesoftware.smack.packet.IQ smackResult
             = IQUtils.convert(result);
 
         assertTrue(smackResult instanceof ConferenceIq);
         assertEquals(true, ((ConferenceIq)smackResult).isReady());
-
-        // Now test shutdown
-        assertFalse(shutdownService.shutdownStarted);
-
-        // End conference
-        conf1User1.leave();
-        conf1User2.leave();
-
-        assertTrue(shutdownService.shutdownStarted);
-
-        conf1.stop();
     }
 
     class TestShutdownService
         implements ShutdownService
     {
-
         private boolean shutdownStarted;
 
-        public TestShutdownService(BundleContext context)
+        TestShutdownService(BundleContext context)
         {
             context.registerService(ShutdownService.class, this, null);
         }

@@ -33,6 +33,7 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.EntityFullJid;
 import org.jxmpp.jid.Jid;
@@ -278,7 +279,7 @@ public class FocusComponent
                 }
 
                 Jid from = gracefulShutdownIQ.getFrom();
-                EntityBareJid bareFrom = from.asEntityBareJidIfPossible();
+                BareJid bareFrom = from.asBareJid();
 
                 if (shutdownAllowedJid == null
                     || !shutdownAllowedJid.equals(bareFrom))

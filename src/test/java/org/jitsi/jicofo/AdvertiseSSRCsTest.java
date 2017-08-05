@@ -46,17 +46,17 @@ public class AdvertiseSSRCsTest
     private static final Logger logger
         = Logger.getLogger(AdvertiseSSRCsTest.class);
 
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private OSGiHandler osgi = OSGiHandler.getInstance();
 
-    @BeforeClass
-    public static void setUpClass()
+    @Before
+    public void setUpClass()
         throws Exception
     {
         osgi.init();
     }
 
-    @AfterClass
-    public static void tearDownClass()
+    @After
+    public void tearDownClass()
         throws Exception
     {
         osgi.shutdown();
@@ -244,9 +244,11 @@ public class AdvertiseSSRCsTest
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
         user1.join(chat);
+        user1.waitForJoinThread(5000);
 
         MockParticipant user2 = new MockParticipant("User2");
         user2.join(chat);
+        user2.waitForJoinThread(5000);
 
         int maxSSRCs = globalConfig.getMaxSourcesPerUser();
 
@@ -268,11 +270,11 @@ public class AdvertiseSSRCsTest
         user1.addMultipleAudioSSRCs(user1ExtraAudioSSRCCount);
         user2.addMultipleAudioSSRCs(user2ExtraAudioSSRCCount);
 
-        assertNotNull(user1.acceptInvite(4000));
-        assertNotNull(user2.acceptInvite(4000));
+        assertNotNull(user1.acceptInvite(10000));
+        assertNotNull(user2.acceptInvite(10000));
 
-        assertNotNull(user1.waitForAddSource(1000));
-        assertNotNull(user2.waitForAddSource(1000));
+        assertNotNull(user1.waitForAddSource(4000));
+        assertNotNull(user2.waitForAddSource(4000));
 
         // Verify User1's SSRCs seen by User2
         assertEquals(1 + user1ExtraVideoSSRCCount,

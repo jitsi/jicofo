@@ -440,7 +440,7 @@ public class JvbDoctor
                 logger.debug("Sending health-check request to: " + bridgeJid);
             }
 
-            Stanza response
+            IQ response
                 = connection.sendPacketAndGetReply(
                         newHealthCheckIQ(bridgeJid));
 
@@ -481,22 +481,13 @@ public class JvbDoctor
                         "Health check response from: " + bridgeJid + ": "
                             + IQUtils.responseToXML(response));
 
-                if (!(response instanceof IQ))
+                if (response == null)
                 {
-                    if (response != null)
-                    {
-                        logger.error("Response not an IQ: " + response.toXML());
-                    }
-                    else
-                    {
-                        notifyHealthCheckFailed(bridgeJid, null);
-                    }
+                    notifyHealthCheckFailed(bridgeJid, null);
                     return;
                 }
 
-                IQ responseIQ = (IQ) response;
-                IQ.Type responseType = responseIQ.getType();
-
+                IQ.Type responseType = response.getType();
                 if (IQ.Type.result.equals(responseType))
                 {
                     // OK
@@ -505,7 +496,7 @@ public class JvbDoctor
 
                 if (IQ.Type.error.equals(responseType))
                 {
-                    XMPPError error = responseIQ.getError();
+                    XMPPError error = response.getError();
                     XMPPError.Condition condition = error.getCondition();
 
                     if (XMPPError.Condition.internal_server_error

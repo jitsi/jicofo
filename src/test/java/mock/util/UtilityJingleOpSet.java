@@ -27,11 +27,8 @@ import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
-import java.util.*;
+import java.util.concurrent.*;
 
-/**
- *
- */
 public class UtilityJingleOpSet
     extends AbstractOperationSetJingle
 {
@@ -44,10 +41,10 @@ public class UtilityJingleOpSet
     private final Jid jid;
     private final XmppConnection connection;
 
-    private final Queue<JingleIQ> sessionInvites = new LinkedList<>();
+    private final BlockingQueue<JingleIQ> sessionInvites
+            = new LinkedBlockingQueue<>();
 
-    public UtilityJingleOpSet(Jid ourJid,
-                              XmppConnection connection)
+    public UtilityJingleOpSet(Jid ourJid, XmppConnection connection)
     {
         this.jid = ourJid;
         this.connection = connection;
@@ -59,6 +56,7 @@ public class UtilityJingleOpSet
         {
             @Override
             public void processStanza(Stanza packet)
+                    throws InterruptedException
             {
                 JingleIQ jingleIQ = (JingleIQ) packet;
 
@@ -71,14 +69,10 @@ public class UtilityJingleOpSet
                     return;
                 }
 
-                synchronized (sessionInvites)
-                {
-                    sessionInvites.add(jingleIQ);
-
-                    sessionInvites.notifyAll();
-                }
+                sessionInvites.put(jingleIQ);
             }
-        }, new StanzaFilter()
+        },
+        new StanzaFilter()
         {
             @Override
             public boolean accept(Stanza packet)
@@ -113,28 +107,26 @@ public class UtilityJingleOpSet
         long timeout, final JingleRequestHandler requestHandler)
         throws InterruptedException
     {
-        JingleIQ invite = null;
-
-        synchronized (sessionInvites)
+        JingleIQ invite;
+        long remainingWait = timeout;
+        long waitStart = System.currentTimeMillis();
+        do
         {
-            if (sessionInvites.isEmpty())
-            {
-                sessionInvites.wait(timeout);
-            }
+            invite = sessionInvites.poll(remainingWait, TimeUnit.MILLISECONDS);
+            remainingWait = timeout - (System.currentTimeMillis() - waitStart);
+        }
+        while (invite == null && remainingWait > 0);
 
-            if (sessionInvites.isEmpty())
-                return null;
-
-            invite = sessionInvites.remove();
+        if (invite == null)
+        {
+            return null;
         }
 
         String sid = invite.getSID();
-
         JingleSession session
             = new JingleSession(sid, invite.getFrom(), requestHandler);
 
         sessions.put(sid, session);
-
         return invite;
     }
 }

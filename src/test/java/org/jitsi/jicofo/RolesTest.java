@@ -87,7 +87,7 @@ public class RolesTest
         // Accept invite with all users
         for (MockParticipant user : users)
         {
-            assertNotNull(user.acceptInvite(4000));
+            assertNotNull(user.acceptInvite(10000));
         }
 
         for (int i = 0; i < users.length; i++)

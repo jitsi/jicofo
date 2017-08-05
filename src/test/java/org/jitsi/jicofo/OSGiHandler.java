@@ -74,6 +74,7 @@ public class OSGiHandler
         if (deadlocked)
             throw new RuntimeException("Running on deadlocked stack");
 
+        System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         System.setProperty(FocusManager.HOSTNAME_PNAME, "test.domain.net");
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, "focusdomain");

@@ -87,39 +87,44 @@ public class LeakingRoomsTest
         user5.joinInNewThread(chat);
 
         long joinTimeout = 5000;
-        // User 1 and 4 leaves before channels are allocated for him
-        user4.waitForJoinThread(joinTimeout);
-        user4.leave();
         user1.waitForJoinThread(joinTimeout);
-        user1.leave();
-
         user2.waitForJoinThread(joinTimeout);
         user3.waitForJoinThread(joinTimeout);
+        user4.waitForJoinThread(joinTimeout);
         user5.waitForJoinThread(joinTimeout);
 
+        // User 1 and 4 leaves before channels are allocated for him
+        user4.leave();
+        user1.leave();
+
         // Accept invite with all users
-        long acceptInviteTimeout = 5000;
+        long acceptInviteTimeout = 10000;
         user2.acceptInvite(acceptInviteTimeout);
         user3.acceptInvite(acceptInviteTimeout);
         user5.acceptInvite(acceptInviteTimeout);
 
-        assertEquals(3, testConf.getParticipantCount());
-        //FIXME: implement waiting for allocation/expiration in order to verify
-        //assertEquals(3,
-          //  testConf.getMockVideoBridge().getChannelCountByContent("audio"));
-        //assertEquals(3,
-          //  testConf.getMockVideoBridge().getChannelCountByContent("video"));
-        //assertEquals(3,
-          //  testConf.getMockVideoBridge().getChannelCountByContent("data"));
+        try
+        {
+            assertEquals(3, testConf.getParticipantCount());
+            //FIXME: implement waiting for allocation/expiration in order to verify
+            //assertEquals(3,
+            //  testConf.getMockVideoBridge().getChannelCountByContent("audio"));
+            //assertEquals(3,
+            //  testConf.getMockVideoBridge().getChannelCountByContent("video"));
+            //assertEquals(3,
+            //  testConf.getMockVideoBridge().getChannelCountByContent("data"));
 
-        user2.leave();
-        user3.leave();
-        user5.leave();
+            user2.leave();
+            user3.leave();
+            user5.leave();
 
-        assertEquals(0, testConf.getParticipantCount());
+            assertEquals(0, testConf.getParticipantCount());
 
-        //assertEquals(0, testConf.getMockVideoBridge().getChannelsCount());
-
-        testConf.stop();
+            //assertEquals(0, testConf.getMockVideoBridge().getChannelsCount());
+        }
+        finally
+        {
+            testConf.stop();
+        }
     }
 }

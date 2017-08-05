@@ -133,17 +133,8 @@ public class VersionBroadcaster
             return;
         }
 
-        EntityBareJid roomJid;
-        try
-        {
-            roomJid = JidCreate.entityBareFrom(
-                    event.getProperty(EventFactory.ROOM_JID_KEY).toString());
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Invalid room JID", e);
-            return;
-        }
+        EntityBareJid roomJid
+                = (EntityBareJid)event.getProperty(EventFactory.ROOM_JID_KEY);
 
         JitsiMeetConference conference
             = focusManager.getConference(roomJid);
@@ -184,22 +175,8 @@ public class VersionBroadcaster
 
         // Videobridge
         // It is not be reported for FOCUS_JOINED_ROOM_TOPIC
-        String bridgeId = (String)event.getProperty(
-                EventFactory.BRIDGE_JID_KEY);
-        DomainBareJid bridgeJid = null;
-        try
-        {
-            if (bridgeId != null)
-            {
-                bridgeJid = JidCreate.domainBareFrom(bridgeId);
-            }
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Invalid bridge JID", e);
-            return;
-        }
-
+        DomainBareJid bridgeJid
+                = (DomainBareJid)event.getProperty(EventFactory.BRIDGE_JID_KEY);
         Version jvbVersion
             = bridgeJid == null
                 ? null : meetServices.getBridgeVersion(bridgeJid);

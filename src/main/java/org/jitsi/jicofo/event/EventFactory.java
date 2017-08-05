@@ -161,7 +161,7 @@ public class EventFactory
      * @return new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
      */
     public static Event focusJoinedRoom(
-            Jid roomJid,
+            EntityBareJid roomJid,
             String focusId)
     {
         Dictionary<String, Object> props = new Hashtable<>(2);

@@ -151,7 +151,7 @@ public class ChatRoomRoleAndPresence
     {
         logger.info("Chat room event " + evt);
 
-        ChatRoomMember sourceMember = evt.getChatRoomMember();
+        XmppChatMember sourceMember = (XmppChatMember)evt.getChatRoomMember();
 
         String eventType = evt.getEventType();
         if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
@@ -228,7 +228,7 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (conference.isFocusMember(member)
+            if (conference.isFocusMember((XmppChatMember) member)
                 || ((XmppChatMember) member).isRobot()
                 // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))

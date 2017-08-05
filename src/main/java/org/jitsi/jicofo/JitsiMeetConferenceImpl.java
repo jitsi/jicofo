@@ -485,7 +485,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the new member that has just joined the room.
      */
-    protected void onMemberJoined(final ChatRoomMember chatRoomMember)
+    protected void onMemberJoined(final XmppChatMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -537,7 +537,7 @@ public class JitsiMeetConferenceImpl
 
         colibriConference.setConfig(config);
 
-        Localpart roomName = Localpart.from(chatRoom.getName());
+        Localpart roomName = chatRoom.getNameAsJid().getLocalpart();
         colibriConference.setName(roomName);
         colibriConference.setJitsiVideobridge(bridgeJid);
 
@@ -840,7 +840,7 @@ public class JitsiMeetConferenceImpl
         int realCount = 0;
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (!isFocusMember(member))
+            if (!isFocusMember((XmppChatMember)member))
             {
                 realCount++;
             }
@@ -857,9 +857,9 @@ public class JitsiMeetConferenceImpl
      * @return <tt>true</tt> if given {@link ChatRoomMember} is a focus
      *         participant.
      */
-    boolean isFocusMember(ChatRoomMember member)
+    boolean isFocusMember(XmppChatMember member)
     {
-        return member.getName().equals(focusUserName);
+        return focusUserName.equals(member.getJabberID().getResourceOrEmpty());
     }
 
     /**
@@ -1061,7 +1061,7 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getContactAddress().equals(
+            if (participant.getChatMember().getJabberID().equals(
                     jingleSession.getAddress()))
             {
                 return participant;

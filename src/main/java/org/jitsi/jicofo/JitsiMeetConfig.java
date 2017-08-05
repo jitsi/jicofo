@@ -147,7 +147,13 @@ public class JitsiMeetConfig
     {
         try
         {
-            return JidCreate.from(properties.get(ENFORCED_BRIDGE));
+            String enforcedBridge = properties.get(ENFORCED_BRIDGE);
+            if (StringUtils.isNullOrEmpty(enforcedBridge))
+            {
+                return null;
+            }
+
+            return JidCreate.from(enforcedBridge);
         }
         catch (XmppStringprepException e)
         {

@@ -107,6 +107,12 @@ public class MockMultiUserChat
     }
 
     @Override
+    public EntityBareJid getNameAsJid()
+    {
+        return roomName;
+    }
+
+    @Override
     public String getIdentifier()
     {
         return null;

@@ -286,6 +286,7 @@ public class MockParticipant
                 catch (InterruptedException e)
                 {
                     logger.error(e, e);
+                    Thread.currentThread().interrupt();
                 }
             }
         },"Accept invite " + nick).start();
@@ -385,6 +386,7 @@ public class MockParticipant
 
             fakeCandidate.setIP("127.0.0.1");
             fakeCandidate.setPort(60000);
+            fakeCandidate.setType(CandidateType.host);
 
             iceTransport.addCandidate(fakeCandidate);
         }
@@ -479,7 +481,7 @@ public class MockParticipant
     public boolean accept(Stanza packet)
     {
         boolean isJingle
-            = user.getContactAddress().equals(packet.getTo())
+            = user.getJabberID().equals(packet.getTo())
                     && packet instanceof JingleIQ;
 
         if (!isJingle)
