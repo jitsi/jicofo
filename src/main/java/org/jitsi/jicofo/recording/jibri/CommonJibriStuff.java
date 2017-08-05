@@ -307,7 +307,7 @@ public abstract class CommonJibriStuff
             jibriSession == null)
         {
             IQ response = handleStartRequest(iq);
-            connection.sendPacket(response);
+            connection.sendStanza(response);
             return;
         }
         // stop ?
@@ -315,7 +315,7 @@ public abstract class CommonJibriStuff
             jibriSession != null)
         {
             XMPPError error = jibriSession.stop();
-            connection.sendPacket(
+            connection.sendStanza(
                 error == null
                     ? IQ.createResultIQ(iq)
                     : IQ.createErrorResponse(iq, error));
@@ -356,7 +356,7 @@ public abstract class CommonJibriStuff
             XMPPError.Condition    condition,
             String                 msg)
     {
-        connection.sendPacket(
+        connection.sendStanza(
             IQ.createErrorResponse(
                 request, XMPPError.from(condition, msg)));
     }

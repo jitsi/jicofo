@@ -961,7 +961,7 @@ public class ChatRoomImpl
             return;
         }
 
-        connection.sendPacket(lastPresenceSent);
+        connection.sendStanza(lastPresenceSent);
     }
 
     /**
@@ -1014,7 +1014,7 @@ public class ChatRoomImpl
             return;
         }
 
-        connection.sendPacket(lastPresenceSent);
+        connection.sendStanza(lastPresenceSent);
     }
 
     private ChatMemberImpl addMember(EntityFullJid participant)

@@ -413,7 +413,7 @@ public class JibriSession
 
             processJibriIqFromJibri(jibriIq);
 
-            xmpp.sendPacket(IQ.createResultIQ(iq));
+            xmpp.sendStanza(IQ.createResultIQ(iq));
         }
         else if (IQ.Type.error.equals(iq.getType()))
         {
@@ -610,7 +610,7 @@ public class JibriSession
         // timeout each time.
         reschedulePendingTimeout();
 
-        xmpp.sendPacket(startIq);
+        xmpp.sendStanza(startIq);
     }
 
     /**

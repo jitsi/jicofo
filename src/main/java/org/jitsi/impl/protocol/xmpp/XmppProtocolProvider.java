@@ -649,7 +649,7 @@ public class XmppProtocolProvider
          * {@inheritDoc}
          */
         @Override
-        public void sendPacket(Stanza packet)
+        public void sendStanza(Stanza packet)
         {
             Objects.requireNonNull(packet, "packet");
             try

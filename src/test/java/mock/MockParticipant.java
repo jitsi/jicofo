@@ -305,7 +305,7 @@ public class MockParticipant
 
         // ACK invite
         IQ inviteAck = JingleIQ.createResultIQ(invite);
-        mockConnection.sendPacket(inviteAck);
+        mockConnection.sendStanza(inviteAck);
 
         initContents();
 
@@ -315,7 +315,7 @@ public class MockParticipant
 
         logger.info(nick + " accept: " + user1Accept.toXML());
 
-        mockConnection.sendPacket(user1Accept);
+        mockConnection.sendStanza(user1Accept);
 
         this.myJid = user1Accept.getFrom();
         this.remoteJid = user1Accept.getTo();
@@ -423,7 +423,7 @@ public class MockParticipant
             = JinglePacketFactory.createTransportInfo(
                 myJid, remoteJid, jingleSession.getSessionID(), contents);
 
-        mockConnection.sendPacket(transportInfoIq);
+        mockConnection.sendStanza(transportInfoIq);
 
         return transportInfoIq;
     }

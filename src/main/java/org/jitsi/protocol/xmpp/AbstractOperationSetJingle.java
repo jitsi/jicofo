@@ -284,7 +284,7 @@ public abstract class AbstractOperationSetJingle
             IQ badRequest = IQ.createErrorResponse(
                 iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
 
-            getConnection().sendPacket(badRequest);
+            getConnection().sendStanza(badRequest);
 
             return;
         }
@@ -330,12 +330,12 @@ public abstract class AbstractOperationSetJingle
         if (error == null)
         {
             IQ ack = IQ.createResultIQ(iq);
-            getConnection().sendPacket(ack);
+            getConnection().sendStanza(ack);
         }
         else
         {
             IQ errorResponse = IQ.createErrorResponse(iq, error);
-            getConnection().sendPacket(errorResponse);
+            getConnection().sendStanza(errorResponse);
         }
     }
 
@@ -440,7 +440,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().sendPacket(addSourceIq);
+        getConnection().sendStanza(addSourceIq);
     }
 
     /**
@@ -545,7 +545,7 @@ public abstract class AbstractOperationSetJingle
 
         XmppConnection connection = getConnection();
 
-        connection.sendPacket(removeSourceIq);
+        connection.sendStanza(removeSourceIq);
     }
 
     /**
@@ -592,7 +592,7 @@ public abstract class AbstractOperationSetJingle
                     reason,
                     message);
 
-        getConnection().sendPacket(terminate);
+        getConnection().sendStanza(terminate);
 
         sessions.remove(session.getSessionID());
     }

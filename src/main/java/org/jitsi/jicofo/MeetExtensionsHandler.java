@@ -183,7 +183,7 @@ public class MeetExtensionsHandler
         response.setFrom(colibriIQ.getTo());
         response.setName(colibriIQ.getName());
 
-        connection.sendPacket(response);
+        connection.sendStanza(response);
     }
 
     private boolean acceptMuteIq(Stanza packet)
@@ -231,7 +231,7 @@ public class MeetExtensionsHandler
 
                 muteStatusUpdate.setMute(doMute);
 
-                connection.sendPacket(muteStatusUpdate);
+                connection.sendStanza(muteStatusUpdate);
             }
         }
         else
@@ -241,7 +241,7 @@ public class MeetExtensionsHandler
                 XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
-        connection.sendPacket(result);
+        connection.sendStanza(result);
     }
 
     private boolean acceptRayoIq(Stanza p)
@@ -269,7 +269,7 @@ public class MeetExtensionsHandler
             IQ error = IQ.createErrorResponse(
                 dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
 
-            connection.sendPacket(error);
+            connection.sendStanza(error);
 
             return;
         }
@@ -280,7 +280,7 @@ public class MeetExtensionsHandler
             IQ error = IQ.createErrorResponse(
                 dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
 
-            connection.sendPacket(error);
+            connection.sendStanza(error);
 
             return;
         }
@@ -299,7 +299,7 @@ public class MeetExtensionsHandler
                 XMPPError.getBuilder(
                         XMPPError.Condition.service_unavailable).build());
 
-            connection.sendPacket(error);
+            connection.sendStanza(error);
 
             return;
         }
@@ -318,7 +318,7 @@ public class MeetExtensionsHandler
             reply.setFrom((Jid)null);
             reply.setTo(from);
             reply.setStanzaId(dialIq.getStanzaId());
-            connection.sendPacket(reply);
+            connection.sendStanza(reply);
         }
         catch (OperationFailedException e)
         {

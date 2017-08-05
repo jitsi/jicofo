@@ -534,7 +534,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Expire peer channels", iq);
 
-            connection.sendPacket(iq);
+            connection.sendStanza(iq);
 
             synchronized (stateEstimationSync)
             {
@@ -574,7 +574,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending RTP desc update: ", iq);
 
-            connection.sendPacket(iq);
+            connection.sendStanza(iq);
         }
     }
 
@@ -604,7 +604,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending transport info update: ", iq);
 
-            connection.sendPacket(iq);
+            connection.sendStanza(iq);
         }
     }
 
@@ -657,7 +657,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending source update: ", iq);
 
-            connection.sendPacket(iq);
+            connection.sendStanza(iq);
         }
     }
 
@@ -688,7 +688,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending bundle transport info update: ", iq);
 
-            connection.sendPacket(iq);
+            connection.sendStanza(iq);
         }
     }
 
@@ -722,7 +722,7 @@ public class ColibriConferenceImpl
                 {
                     logRequest("Expire conference: ", iq);
 
-                    connection.sendPacket(iq);
+                    connection.sendStanza(iq);
                 }
             }
 
@@ -810,7 +810,7 @@ public class ColibriConferenceImpl
 
         request.addContent(contentRequest);
 
-        connection.sendPacket(request);
+        connection.sendStanza(request);
 
         // FIXME wait for response and set local status
 
@@ -901,7 +901,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending channel info update: ", iq);
 
-            connection.sendPacket(iq);
+            connection.sendStanza(iq);
         }
     }
 

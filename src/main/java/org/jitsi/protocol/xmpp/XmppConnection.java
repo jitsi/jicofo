@@ -39,7 +39,7 @@ public interface XmppConnection
      *
      * @param packet the packet to be sent.
      */
-    void sendPacket(Stanza packet);
+    void sendStanza(Stanza packet);
 
     /**
      * Sends the packet and wait for reply in blocking mode.
