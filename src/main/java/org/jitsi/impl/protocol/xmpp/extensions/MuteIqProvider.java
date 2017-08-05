@@ -34,12 +34,12 @@ public class MuteIqProvider
     /**
      * Registers this IQ provider into given <tt>ProviderManager</tt>.
      */
-    public void registerMuteIqProvider()
+    public static void registerMuteIqProvider()
     {
         ProviderManager.addIQProvider(
             MuteIq.ELEMENT_NAME,
             MuteIq.NAMESPACE,
-            this);
+            new MuteIqProvider());
     }
 
     /**

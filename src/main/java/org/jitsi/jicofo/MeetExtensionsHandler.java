@@ -79,14 +79,9 @@ public class MeetExtensionsHandler
     {
         this.focusManager = focusManager;
 
-        MuteIqProvider muteIqProvider = new MuteIqProvider();
-        muteIqProvider.registerMuteIqProvider();
-
-        RayoIqProvider rayoIqProvider = new RayoIqProvider();
-        rayoIqProvider.registerRayoIQs();
-
-        StartMutedProvider startMutedProvider = new StartMutedProvider();
-        startMutedProvider.registerStartMutedProvider();
+        MuteIqProvider.registerMuteIqProvider();
+        new RayoIqProvider().registerRayoIQs();
+        StartMutedProvider.registerStartMutedProvider();
     }
 
     /**
@@ -171,7 +166,6 @@ public class MeetExtensionsHandler
 
     private void handleColibriIq(ColibriConferenceIQ colibriIQ)
     {
-        ColibriConferenceIQ.Recording recording = colibriIQ.getRecording();
         Jid from = colibriIQ.getFrom();
         JitsiMeetConferenceImpl conference
             = getConferenceForMucJid(colibriIQ.getFrom());
@@ -379,8 +373,7 @@ public class MeetExtensionsHandler
         else if (role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
         {
             StartMutedPacketExtension ext
-                = (StartMutedPacketExtension)
-                    presence.getExtension(
+                = presence.getExtension(
                             StartMutedPacketExtension.ELEMENT_NAME,
                             StartMutedPacketExtension.NAMESPACE);
 

@@ -32,11 +32,12 @@ public class StartMutedProvider
     /**
      * Registers this extension provider into the <tt>ProviderManager</tt>.
      */
-    public void registerStartMutedProvider()
+    public static void registerStartMutedProvider()
     {
         ProviderManager.addExtensionProvider(
             StartMutedPacketExtension.ELEMENT_NAME,
-            StartMutedPacketExtension.NAMESPACE, this);
+            StartMutedPacketExtension.NAMESPACE,
+            new StartMutedProvider());
     }
 
     @Override
