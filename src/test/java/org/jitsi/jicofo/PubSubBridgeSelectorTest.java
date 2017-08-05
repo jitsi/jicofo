@@ -38,10 +38,8 @@ import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.mockito.*;
 
 import java.util.*;

@@ -21,7 +21,7 @@ import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -86,7 +86,7 @@ public class MockXmppConnectionImpl
                         | InterruptedException e)
                 {
                     // ignore, but log - same as the real implementation
-                    e.printStackTrace();
+                    logger.error("Could not notify listener", e);
                 }
             }
         }

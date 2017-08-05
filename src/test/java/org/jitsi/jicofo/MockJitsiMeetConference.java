@@ -19,9 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

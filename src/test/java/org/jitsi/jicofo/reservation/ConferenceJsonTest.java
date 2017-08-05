@@ -21,8 +21,8 @@ import org.jitsi.impl.reservation.rest.*;
 import org.jitsi.impl.reservation.rest.json.*;
 import org.json.simple.parser.*;
 import org.junit.*;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.io.*;
 import java.util.*;

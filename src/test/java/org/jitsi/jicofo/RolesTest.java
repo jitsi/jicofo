@@ -26,8 +26,8 @@ import net.java.sip.communicator.service.protocol.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

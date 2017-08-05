@@ -54,10 +54,9 @@ public class Participant
      * @param chatRoomMember XMPP MUC chat room member which represents a
      *                       <tt>Participant</tt>.
      */
-    public static Jid getEndpointId(XmppChatMember chatRoomMember)
+    public static String getEndpointId(XmppChatMember chatRoomMember)
     {
-        //return chatRoomMember.getName(); // XMPP MUC Nickname
-        return chatRoomMember.getJabberID();
+        return chatRoomMember.getName(); // XMPP MUC Nickname
     }
 
     /**
@@ -732,7 +731,7 @@ public class Participant
      * Returns the endpoint ID for this participant in the videobridge(Colibri)
      * context.
      */
-    public Jid getEndpointId()
+    public String getEndpointId()
     {
         return getEndpointId(roomMember);
     }

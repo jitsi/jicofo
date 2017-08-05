@@ -25,9 +25,8 @@ import org.jitsi.impl.neomedia.rtp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -58,7 +57,7 @@ public class TestConference
     private MockMultiUserChat chat;
 
     static public TestConference allocate(
-            BundleContext ctx, String serverName, EntityBareJid roomName)
+        BundleContext ctx, String serverName, EntityBareJid roomName)
         throws Exception
     {
         TestConference newConf = new TestConference(ctx);

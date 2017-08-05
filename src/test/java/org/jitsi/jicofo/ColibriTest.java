@@ -26,14 +26,12 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.service.neomedia.*;
 
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import java.util.*;
 
@@ -109,9 +107,9 @@ public class ColibriTest
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
 
         boolean peer1UseBundle = true;
-        Jid peer1 = JidCreate.from("endpoint1@example.com");
+        String peer1 = "endpoint1";
         boolean peer2UseBundle = true;
-        Jid peer2 = JidCreate.from("endpoint2@example.com");
+        String peer2 = "endpoint2";
 
         ColibriConferenceIQ peer1Channels
             = colibriConf.createColibriChannels(

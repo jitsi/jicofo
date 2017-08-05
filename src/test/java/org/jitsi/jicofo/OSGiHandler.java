@@ -18,12 +18,10 @@
 package org.jitsi.jicofo;
 
 import mock.*;
-import net.java.sip.communicator.impl.configuration.ConfigurationActivator;
+import net.java.sip.communicator.impl.configuration.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
-
-import javax.security.auth.login.Configuration;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.

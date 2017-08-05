@@ -122,7 +122,7 @@ public class ColibriConferenceImpl
 
     /**
      * Flag used to figure out if Colibri conference has been allocated during
-     * last {@link #createColibriChannels(boolean, Jid, boolean, List)} call.
+     * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
      */
     private boolean justAllocated = false;
 
@@ -248,7 +248,7 @@ public class ColibriConferenceImpl
     @Override
     public ColibriConferenceIQ createColibriChannels(
             boolean useBundle,
-            Jid endpointName,
+            String endpointName,
             boolean peerIsInitiator,
             List<ContentPacketExtension> contents)
         throws OperationFailedException
@@ -435,7 +435,7 @@ public class ColibriConferenceImpl
      *         to allocate new conference and current thread has been waiting
      *         to acquire the semaphore.
      */
-    protected boolean acquireCreateConferenceSemaphore(Jid endpointName)
+    protected boolean acquireCreateConferenceSemaphore(String endpointName)
         throws OperationFailedException
     {
         return createConfSemaphore.acquire();
@@ -447,14 +447,14 @@ public class ColibriConferenceImpl
      *
      * @param endpointName the name of colibri conference endpoint(participant)
      */
-    protected void releaseCreateConferenceSemaphore(Jid endpointName)
+    protected void releaseCreateConferenceSemaphore(String endpointName)
     {
         createConfSemaphore.release();
     }
 
     /**
      * Sends Colibri packet and waits for response in
-     * {@link #createColibriChannels(boolean, Jid, boolean, List)} call.
+     * {@link #createColibriChannels(boolean, String, boolean, List)} call.
      *
      * Exposed for unit tests purpose.
      *
@@ -467,7 +467,7 @@ public class ColibriConferenceImpl
      * @throws OperationFailedException see throws description of
      * {@link XmppConnection#sendPacketAndGetReply(IQ)}.
      */
-    protected Stanza sendAllocRequest(Jid endpointName,
+    protected Stanza sendAllocRequest(String endpointName,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {

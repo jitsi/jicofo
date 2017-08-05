@@ -26,6 +26,8 @@ import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.util.*;
 
@@ -43,7 +45,20 @@ public class SSRCSignaling
      * The constant value used as owner attribute value of
      * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
      */
-    public static final String SSRC_OWNER_JVB = "jvb";
+    public static final Jid SSRC_OWNER_JVB;
+
+    static
+    {
+        try
+        {
+            SSRC_OWNER_JVB = JidCreate.from("jvb");
+        }
+        catch (XmppStringprepException e)
+        {
+            // cannot happen
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Copies value of "<parameter>" SSRC child element. The parameter to be

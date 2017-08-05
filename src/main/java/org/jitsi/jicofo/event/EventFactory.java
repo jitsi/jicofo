@@ -140,7 +140,7 @@ public class EventFactory
      */
     public static Event endpointDisplayNameChanged(
             String conferenceId,
-            Jid endpointId,
+            String endpointId,
             String displayName)
     {
         Dictionary<String, Object> props = new Hashtable<>(3);
@@ -251,7 +251,7 @@ public class EventFactory
      */
     public static Event endpointAuthenticated(String sessionId,
                                               String focusId,
-                                              Jid endpointId)
+                                              String endpointId)
     {
         Dictionary<String, Object> props = new Hashtable<>(3);
 

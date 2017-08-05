@@ -31,9 +31,8 @@ import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.jid.parts.Domainpart;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import org.xmpp.packet.*;
@@ -50,7 +49,6 @@ public class ShutdownTest
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
     static String shutdownJid = "shutdown.server.net";
-    static String testDomain = "example.com";
 
     @BeforeClass
     public static void setUpClass()
@@ -103,7 +101,7 @@ public class ShutdownTest
         ShutdownIQ gracefulShutdownIQ = ShutdownIQ.createGracefulShutdownIQ();
 
         gracefulShutdownIQ.setFrom(
-                JidCreate.from("randomJid1234@" + testDomain));
+                JidCreate.from("randomJid1234@example.com"));
 
         IQ result = focusComponent.handleIQSetImpl(
             IQUtils.convert(gracefulShutdownIQ));

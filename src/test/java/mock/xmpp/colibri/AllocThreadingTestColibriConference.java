@@ -25,7 +25,6 @@ import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.Jid;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -45,12 +44,12 @@ public class AllocThreadingTestColibriConference
     /**
      * Stores endpoint name of conference creator.
      */
-    private Jid confCreator;
+    private String confCreator;
 
     /**
      * Blocking queue used to put and acquire conference creator endpoint.
      */
-    private BlockingQueue<Jid> confCreatorQueue
+    private BlockingQueue<String> confCreatorQueue
         = new ArrayBlockingQueue<>(1);
 
     /**
@@ -70,14 +69,14 @@ public class AllocThreadingTestColibriConference
      * {@link ColibriConferenceImpl.ConferenceCreationSemaphore}.
      * Used to verify if all running threads have reached the semaphore.
      */
-    private BlockingQueue<Jid> createConfSemaphoreQueue
+    private BlockingQueue<String> createConfSemaphoreQueue
         = new LinkedBlockingQueue<>();
 
     /**
      * Blocking queue used to put and acquire endpoints that have sent it's
      * request packets.
      */
-    private BlockingQueue<Jid> requestsSentQueue
+    private BlockingQueue<String> requestsSentQueue
         = new LinkedBlockingQueue<>();
 
     /**
@@ -95,7 +94,7 @@ public class AllocThreadingTestColibriConference
      * response packets. Used to verify if all threads have received their
      * response packets.
      */
-    private BlockingQueue<Jid> responseReceivedQueue
+    private BlockingQueue<String> responseReceivedQueue
         = new LinkedBlockingQueue<>();
 
     /**
@@ -149,7 +148,7 @@ public class AllocThreadingTestColibriConference
      *
      * @throws InterruptedException if thread has been interrupted while waiting
      */
-    public Jid obtainConferenceCreator()
+    public String obtainConferenceCreator()
         throws InterruptedException
     {
         return confCreatorQueue.poll(5, TimeUnit.SECONDS);
@@ -169,13 +168,13 @@ public class AllocThreadingTestColibriConference
      * @throws InterruptedException if the thread has been interrupted while
      *         waiting for endpoints.
      */
-    public void waitAllOnCreateConfSemaphore(List<Jid> endpointToEnter)
+    public void waitAllOnCreateConfSemaphore(List<String> endpointToEnter)
         throws InterruptedException
     {
-        List<Jid> endpointsCopy = new ArrayList<>(endpointToEnter);
+        List<String> endpointsCopy = new ArrayList<>(endpointToEnter);
         while (!endpointsCopy.isEmpty())
         {
-            Jid endpoint = nextOnCreateConfSemaphore(5);
+            String endpoint = nextOnCreateConfSemaphore(5);
             if (endpoint != null)
             {
                 endpointsCopy.remove(endpoint);
@@ -188,14 +187,14 @@ public class AllocThreadingTestColibriConference
         }
     }
 
-    public Jid nextOnCreateConfSemaphore(long timeoutSec)
+    public String nextOnCreateConfSemaphore(long timeoutSec)
         throws InterruptedException
     {
         return createConfSemaphoreQueue.poll(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    protected boolean acquireCreateConferenceSemaphore(Jid endpointName)
+    protected boolean acquireCreateConferenceSemaphore(String endpointName)
         throws OperationFailedException
     {
         createConfSemaphoreQueue.add(endpointName);
@@ -222,20 +221,20 @@ public class AllocThreadingTestColibriConference
         this.blockResponseReceive = blockResponseReceive;
     }
 
-    public Jid nextRequestSent(long timeoutSeconds)
+    public String nextRequestSent(long timeoutSeconds)
         throws InterruptedException
     {
         return requestsSentQueue.poll(timeoutSeconds, TimeUnit.SECONDS);
     }
 
-    public Jid nextResponseReceived(long timeoutSeconds)
+    public String nextResponseReceived(long timeoutSeconds)
         throws InterruptedException
     {
         return responseReceivedQueue.poll(timeoutSeconds, TimeUnit.SECONDS);
     }
 
     @Override
-    protected Stanza sendAllocRequest(Jid endpointName,
+    protected Stanza sendAllocRequest(String endpointName,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {

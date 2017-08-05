@@ -22,8 +22,8 @@ import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
 import org.junit.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import static org.junit.Assert.assertEquals;
 

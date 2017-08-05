@@ -24,7 +24,6 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.Jid;
 
 import java.util.*;
 
@@ -51,7 +50,7 @@ public class SSRCValidator
     /**
      * Participant's endpoint ID used for printing log messages.
      */
-    private final Jid endpointId;
+    private final String endpointId;
 
     /**
      * The source map obtained from the participant which reflects current source
@@ -81,7 +80,7 @@ public class SSRCValidator
      * @param logLevelDelegate a <tt>Logger</tt> which will be used as
      * the logging level delegate.
      */
-    public SSRCValidator(Jid                 endpointId,
+    public SSRCValidator(String              endpointId,
                          MediaSourceMap      sources,
                          MediaSourceGroupMap sourceGroups,
                          int                 maxSourceCount,

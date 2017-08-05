@@ -29,8 +29,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -163,8 +163,11 @@ public class ParticipantTest
         // ssrc=-1 *removes* the ssrc attribute
         // Create a ssrc=0, then hack it away. Invalid sources can only be
         // received over the wire, setSSRC clips invalid values.
-        SourcePacketExtension sourceWithSsrc = createSourceWithSsrc(-1L);
-        sourceWithSsrc.setAttribute(SourcePacketExtension.SSRC_ATTR_NAME, Long.toString(-1L));
+        SourcePacketExtension sourceWithSsrc
+                = createSourceWithSsrc(-1L);
+        sourceWithSsrc.setAttribute(
+                SourcePacketExtension.SSRC_ATTR_NAME,
+                Long.toString(-1L));
         audioRtpDescPe.addChildExtension(sourceWithSsrc);
 
         this.addDefaultAudioSSRCs();

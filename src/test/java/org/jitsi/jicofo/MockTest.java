@@ -22,7 +22,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 

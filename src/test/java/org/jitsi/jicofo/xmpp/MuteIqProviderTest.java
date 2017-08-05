@@ -17,18 +17,17 @@
  */
 package org.jitsi.jicofo.xmpp;
 
-import org.custommonkey.xmlunit.Diff;
+import org.custommonkey.xmlunit.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 
 import org.jitsi.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
-import org.xml.sax.SAXException;
+import org.jxmpp.jid.impl.*;
+import org.xml.sax.*;
 
-import java.io.IOException;
+import java.io.*;
 
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.junit.Assert.assertEquals;

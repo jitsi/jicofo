@@ -61,7 +61,7 @@ public class ColibriThreadingTest
             List<MockPeerAllocator>                 allocators)
         throws InterruptedException
     {
-        Jid conferenceCreator = colibriConf.obtainConferenceCreator();
+        String conferenceCreator = colibriConf.obtainConferenceCreator();
         for (MockPeerAllocator allocator : allocators)
         {
             if (allocator.endpointName.equals(conferenceCreator))
@@ -124,11 +124,11 @@ public class ColibriThreadingTest
 
         MockPeerAllocator[] allocators = new MockPeerAllocator[20];
 
-        List<Jid> endpointList = new ArrayList<>(allocators.length);
+        List<String> endpointList = new ArrayList<>(allocators.length);
 
         for (int i=0; i < allocators.length; i++)
         {
-            Jid endpointName = JidCreate.from("peer" + i + "@example.com");
+            String endpointName = "peer" + i;
             allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
             endpointList.add(endpointName);
 
@@ -151,10 +151,10 @@ public class ColibriThreadingTest
 
         // All responses are blocked - here we make sure that all threads have
         // sent their requests
-        List<Jid> requestsToBeSent = new ArrayList<>(endpointList);
+        List<String> requestsToBeSent = new ArrayList<>(endpointList);
         while (!requestsToBeSent.isEmpty())
         {
-            Jid endpoint = colibriConf.nextRequestSent(5);
+            String endpoint = colibriConf.nextRequestSent(5);
             if (endpoint == null)
             {
                 fail("Endpoints that have failed to " +
@@ -169,10 +169,10 @@ public class ColibriThreadingTest
         colibriConf.resumeResponses();
 
         // Now wait for all responses to be received
-        List<Jid> responsesToReceive = new ArrayList<>(endpointList);
+        List<String> responsesToReceive = new ArrayList<>(endpointList);
         while (!responsesToReceive.isEmpty())
         {
-            Jid endpoint = colibriConf.nextResponseReceived(5);
+            String endpoint = colibriConf.nextResponseReceived(5);
             if (endpoint == null)
             {
                 fail("Endpoints that have failed to " +
@@ -243,11 +243,11 @@ public class ColibriThreadingTest
 
         MockPeerAllocator[] allocators = new MockPeerAllocator[20];
 
-        List<Jid> endpointList = new ArrayList<>(allocators.length);
+        List<String> endpointList = new ArrayList<>(allocators.length);
 
         for (int i=0; i < allocators.length/2; i++)
         {
-            Jid endpointName = JidCreate.from("peer" + i + "@example.com");
+            String endpointName = "peer" + i;
             allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
             endpointList.add(endpointName);
 
@@ -281,7 +281,7 @@ public class ColibriThreadingTest
 
         for (int i=allocators.length/2; i < allocators.length; i++)
         {
-            Jid endpointName = JidCreate.from("peer" + i + "@example.com");
+            String endpointName = "peer" + i;
             allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
             endpointList.add(endpointName);
 
@@ -316,7 +316,7 @@ public class ColibriThreadingTest
     static List<ContentPacketExtension> createContents()
     {
         List<ContentPacketExtension> contents
-            = new ArrayList<ContentPacketExtension>();
+            = new ArrayList<>();
 
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();
@@ -333,7 +333,7 @@ public class ColibriThreadingTest
 
     class MockPeerAllocator
     {
-        private final Jid endpointName;
+        private final String endpointName;
 
         private final ColibriConference colibriConference;
 
@@ -343,7 +343,7 @@ public class ColibriThreadingTest
 
         private boolean working;
 
-        public MockPeerAllocator(Jid               endpointName,
+        public MockPeerAllocator(String            endpointName,
                                  ColibriConference colibriConference)
         {
             this.endpointName = endpointName;

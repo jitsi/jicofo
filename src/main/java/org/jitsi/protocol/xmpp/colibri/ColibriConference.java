@@ -105,7 +105,7 @@ public interface ColibriConference
      */
     ColibriConferenceIQ createColibriChannels(
             boolean                         useBundle,
-            Jid                             endpointName,
+            String                          endpointName,
             boolean                         peerIsInitiator,
             List<ContentPacketExtension>    contents)
         throws    OperationFailedException;
