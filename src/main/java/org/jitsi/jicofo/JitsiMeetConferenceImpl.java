@@ -454,7 +454,7 @@ public class JitsiMeetConferenceImpl
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
         {
-            eventAdmin.sendEvent(
+            eventAdmin.postEvent(
                     EventFactory.focusJoinedRoom(
                             roomName,
                             getId()));
@@ -1949,7 +1949,7 @@ public class JitsiMeetConferenceImpl
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
         {
-            eventAdmin.sendEvent(
+            eventAdmin.postEvent(
                     EventFactory.conferenceRoom(
                             colibriConference.getConferenceId(),
                             roomName,

@@ -389,7 +389,7 @@ public class FocusManager
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
         {
-            eventAdmin.sendEvent(
+            eventAdmin.postEvent(
                 EventFactory.focusCreated(
                     conference.getId(), conference.getRoomName()));
         }
@@ -502,7 +502,7 @@ public class FocusManager
             EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
             if (eventAdmin != null)
             {
-                eventAdmin.sendEvent(
+                eventAdmin.postEvent(
                     EventFactory.focusDestroyed(
                         conference.getId(), conference.getRoomName()));
             }

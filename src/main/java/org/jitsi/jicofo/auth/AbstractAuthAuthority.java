@@ -189,7 +189,7 @@ public abstract class AbstractAuthAuthority
         EventAdmin eventAdmin = getEventAdmin();
         if (eventAdmin != null)
         {
-            eventAdmin.sendEvent(event);
+            eventAdmin.postEvent(event);
         }
         else
         {

@@ -466,7 +466,7 @@ public class MeetExtensionsHandler
                     {
                         newDisplayName = "";
                     }
-                    eventAdmin.sendEvent(
+                    eventAdmin.postEvent(
                             EventFactory.endpointDisplayNameChanged(
                                     conferenceId,
                                     participant.getEndpointId(),
