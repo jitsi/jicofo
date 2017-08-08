@@ -320,26 +320,52 @@ public class FocusManager
         room = room.toLowerCase();
 
         JitsiMeetConferenceImpl conference;
+        boolean isConferenceCreator;
         synchronized (conferencesSyncRoot)
         {
-            if (!conferences.containsKey(room))
+            conference = conferences.get(room);
+            isConferenceCreator = conference == null;
+            if (isConferenceCreator)
             {
                 if (shutdownInProgress)
                 {
                     return false;
                 }
 
-                createConference(room, properties, loggingLevel);
+                conference = createConference(room, properties, loggingLevel);
             }
-
-            conference = conferences.get(room);
         }
+
+        try
+        {
+            if (isConferenceCreator)
+            {
+                conference.start();
+            }
+        }
+        catch (Exception e)
+        {
+            logger.info("Exception while trying to start the conference", e);
+
+            // stop() method is called by the conference automatically in order
+            // to not release the lock on JitsiMeetConference instance and avoid
+            // a deadlock. It may happen when this thread is about to call
+            // conference.stop() and another thread has entered the method
+            // before us. That other thread will try to call
+            // FocusManager.conferenceEnded, but we're still holding the lock
+            // on FocusManager instance.
+
+            //conference.stop();
+
+            throw e;
+        }
+
 
         return conference.isInTheRoom();
     }
 
     /**
-     * Makes sure that conference is allocated for given <tt>room</tt>.
+     * Allocates conference for given <tt>room</tt>.
      *
      * Note: this should only be called by threads which hold the lock on
      * {@link #conferencesSyncRoot}.
@@ -348,9 +374,11 @@ public class FocusManager
      * @param properties configuration properties, see {@link JitsiMeetConfig}
      *                   for the list of valid properties.
      *
+     * @returns new {@link JitsiMeetConferenceImpl} instance
+     *
      * @throws Exception if any error occurs.
      */
-    private void createConference(
+    private JitsiMeetConferenceImpl createConference(
             String room, Map<String, String> properties, Level logLevel)
         throws Exception
     {
@@ -394,26 +422,7 @@ public class FocusManager
                     conference.getId(), conference.getRoomName()));
         }
 
-        try
-        {
-            conference.start();
-        }
-        catch (Exception e)
-        {
-            logger.info("Exception while trying to start the conference", e);
-
-            // stop() method is called by the conference automatically in order
-            // to not release the lock on JitsiMeetConference instance and avoid
-            // a deadlock. It may happen when this thread is about to call
-            // conference.stop() and another thread has entered the method
-            // before us. That other thread will try to call
-            // FocusManager.conferenceEnded, but we're still holding the lock
-            // on FocusManager instance.
-
-            //conference.stop();
-
-            throw e;
-        }
+        return conference;
     }
 
     /**
@@ -430,8 +439,7 @@ public class FocusManager
 
         String id;
 
-        // TODO extract a separate sync root for #conferences + #conferenceIds
-        synchronized (this)
+        synchronized (conferencesSyncRoot)
         {
             do
             {
