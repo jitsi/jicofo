@@ -25,6 +25,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
+import org.jitsi.jicofo.recording.jibri.OperationSetJibri;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
@@ -143,6 +144,10 @@ public class XmppProtocolProvider
         addSupportedOperationSet(
             OperationSetDirectSmackXmpp.class,
             new OpSetDirectSmackXmppImpl(this));
+
+        addSupportedOperationSet(
+            OperationSetJibri.class,
+            new OperationSetJibri(this.getConnectionAdapter()));
 
         try {
             addSupportedOperationSet(

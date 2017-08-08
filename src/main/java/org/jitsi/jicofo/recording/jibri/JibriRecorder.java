@@ -96,14 +96,13 @@ public class JibriRecorder
      * {@inheritDoc}
      */
     @Override
-    public boolean accept(Stanza packet)
+    public boolean accept(JibriIq packet)
     {
         // Do not process if it belongs to the recording session
         // FIXME should accept only packets coming from MUC
         return !(jibriSession != null && jibriSession.accept(packet))
-            && packet instanceof JibriIq
             // and does not contain SIP address
-            && StringUtils.isNullOrEmpty(((JibriIq)packet).getSipAddress());
+            && StringUtils.isNullOrEmpty(packet.getSipAddress());
     }
 
     /**

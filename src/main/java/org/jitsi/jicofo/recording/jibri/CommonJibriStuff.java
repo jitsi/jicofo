@@ -22,19 +22,19 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.jivesoftware.smack.packet.XMPPError.*;
+import static org.jivesoftware.smack.packet.XMPPError.Condition.*;
 
 /**
  * Common stuff shared between {@link JibriRecorder} (which can deal with only
@@ -44,7 +44,6 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public abstract class CommonJibriStuff
-    implements StanzaListener, StanzaFilter
 {
     /**
      * The Jitsi Meet conference instance.
@@ -117,6 +116,7 @@ public abstract class CommonJibriStuff
                            JitsiMeetGlobalConfig           globalConfig,
                            Logger                          logger)
     {
+
         this.isSIP = isSIP;
         this.connection
             = Objects.requireNonNull(xmppConnection, "xmppConnection");
@@ -194,8 +194,6 @@ public abstract class CommonJibriStuff
             logger.error("Failed to start Jibri event handler: " + e, e);
         }
 
-        connection.addAsyncStanzaListener(this, this);
-
         updateJibriAvailability();
     }
 
@@ -214,34 +212,23 @@ public abstract class CommonJibriStuff
         {
             logger.error("Failed to stop Jibri event handler: " + e, e);
         }
-
-        connection.removeAsyncStanzaListener(this);
     }
+
+    protected abstract boolean accept(JibriIq packet);
 
     /**
      * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
      * if the user is a moderator and will filter out any IQs which do not
      * belong to {@link #conference} MUC.
      */
-    @Override
-    synchronized public void processStanza(Stanza packet)
+    public final synchronized IQ handleIQRequest(JibriIq iq)
     {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("Processing an IQ: " + packet.toXML());
-        }
-
-        IQ iq = (IQ) packet;
-
         Jid from = iq.getFrom();
-
-        JibriIq jibriIq = (JibriIq) iq;
-
         Localpart roomName = from.getLocalpartOrNull();
         if (roomName == null)
         {
             logger.warn("Could not extract room name from jid:" + from);
-            return;
+            return IQ.createErrorResponse(iq, getBuilder(bad_request));
         }
 
         Jid actualRoomName = conference.getRoomName();
@@ -251,9 +238,10 @@ public abstract class CommonJibriStuff
             {
                 logger.debug("Ignored packet from: " + roomName
                     + ", my room: " + actualRoomName
-                    + " p: " + packet.toXML());
+                    + " p: " + iq.toXML());
             }
-            return;
+
+            return IQ.createErrorResponse(iq, getBuilder(bad_request));
         }
 
         XmppChatMember chatMember = conference.findMember(from);
@@ -261,14 +249,14 @@ public abstract class CommonJibriStuff
         {
             logger.warn("ERROR chat member not found for: " + from
                 + " in " + roomName);
-            return;
+            return IQ.createErrorResponse(iq, getBuilder(bad_request));
         }
 
-        processJibriIqFromMeet(jibriIq, chatMember);
+        return processJibriIqFromMeet(iq, chatMember);
     }
 
-    private void processJibriIqFromMeet(final JibriIq           iq,
-                                        final XmppChatMember    sender)
+    private IQ processJibriIqFromMeet(final JibriIq           iq,
+                                      final XmppChatMember    sender)
     {
         String senderMucJid = sender.getContactAddress();
         if (logger.isDebugEnabled())
@@ -279,14 +267,17 @@ public abstract class CommonJibriStuff
 
         JibriIq.Action action = iq.getAction();
         if (JibriIq.Action.UNDEFINED.equals(action))
-            return;
+        {
+            return IQ.createErrorResponse(iq, getBuilder(bad_request));
+        }
 
-        // verifyModeratorRole sends 'not_allowed' error on false
-        if (!verifyModeratorRole(iq))
+        // verifyModeratorRole create 'not_allowed' error on when not moderator
+        XMPPError error = verifyModeratorRole(iq);
+        if (error != null)
         {
             logger.warn(
                 "Ignored Jibri request from non-moderator: " + senderMucJid);
-            return;
+            return IQ.createErrorResponse(iq, error);
         }
 
         JibriSession jibriSession = getJibriSessionForMeetIq(iq);
@@ -295,31 +286,26 @@ public abstract class CommonJibriStuff
         if (JibriIq.Action.START.equals(action) &&
             jibriSession == null)
         {
-            IQ response = handleStartRequest(iq);
-            connection.sendStanza(response);
-            return;
+            return handleStartRequest(iq);
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
             jibriSession != null)
         {
-            XMPPError error = jibriSession.stop();
-            connection.sendStanza(
-                error == null
+            error = jibriSession.stop();
+            return error == null
                     ? IQ.createResultIQ(iq)
-                    : IQ.createErrorResponse(iq, error));
-            return;
+                    : IQ.createErrorResponse(iq, error);
         }
 
         logger.warn("Discarded: " + iq.toXML() + " - nothing to be done, ");
 
         // Bad request
-        sendErrorResponse(
-            iq, XMPPError.Condition.bad_request,
-            "Unable to handle: '" + action);
+        return IQ.createErrorResponse(
+            iq, from(bad_request, "Unable to handle: '" + action));
     }
 
-    private boolean verifyModeratorRole(JibriIq iq)
+    private XMPPError verifyModeratorRole(JibriIq iq)
     {
         Jid from = iq.getFrom();
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
@@ -327,27 +313,16 @@ public abstract class CommonJibriStuff
         if (role == null)
         {
             // Only room members are allowed to send requests
-            sendErrorResponse(iq, XMPPError.Condition.forbidden, null);
-            return false;
+            return getBuilder(forbidden).build();
         }
 
         if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
         {
             // Moderator permission is required
-            sendErrorResponse(iq, XMPPError.Condition.not_allowed, null);
-            return false;
+            return getBuilder(not_allowed).build();
         }
-        return true;
-    }
 
-    private void sendErrorResponse(
-            IQ                     request,
-            XMPPError.Condition    condition,
-            String                 msg)
-    {
-        connection.sendStanza(
-            IQ.createErrorResponse(
-                request, XMPPError.from(condition, msg)));
+        return null;
     }
 
     /**

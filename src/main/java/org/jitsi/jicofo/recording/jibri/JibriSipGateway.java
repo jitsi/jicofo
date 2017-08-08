@@ -83,14 +83,13 @@ public class JibriSipGateway
      * {@inheritDoc}
      */
     @Override
-    public boolean accept(Stanza packet)
+    public boolean accept(JibriIq packet)
     {
         // Do not process if it belongs to the recording session
         // FIXME should accept only packets coming from MUC
         return !comesFromSipSession(packet)
-            && packet instanceof JibriIq
             // and contains SIP address
-            && !StringUtils.isNullOrEmpty(((JibriIq)(packet)).getSipAddress());
+            && !StringUtils.isNullOrEmpty(packet.getSipAddress());
     }
 
     private boolean comesFromSipSession(Stanza p)

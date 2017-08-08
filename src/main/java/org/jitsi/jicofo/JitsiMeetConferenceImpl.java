@@ -31,16 +31,12 @@ import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.eventadmin.*;
 
-import org.jitsi.util.*;
 import org.jitsi.util.Logger;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.jid.parts.Localpart;
-import org.jxmpp.jid.parts.Resourcepart;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.jid.parts.*;
+import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -118,6 +114,9 @@ public class JitsiMeetConferenceImpl
      * Chat room operation set used to handle MUC stuff.
      */
     private OperationSetMultiUserChat chatOpSet;
+
+    /** Jibri operation set to (un)register recorders. */
+    private OperationSetJibri jibriOpSet;
 
     /**
      * Conference room chat instance.
@@ -302,6 +301,9 @@ public class JitsiMeetConferenceImpl
             meetTools
                 = protocolProviderHandler.getOperationSet(
                         OperationSetJitsiMeetTools.class);
+            jibriOpSet
+                = protocolProviderHandler.getOperationSet(
+                        OperationSetJibri.class);
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
@@ -339,17 +341,18 @@ public class JitsiMeetConferenceImpl
                         this);
 
             JibriDetector jibriDetector = services.getJibriDetector();
-            if (jibriDetector != null)
+            if (jibriDetector != null && jibriOpSet != null)
             {
                 jibriRecorder
                     = new JibriRecorder(
                             this, getXmppConnection(), executor, globalConfig);
 
+                jibriOpSet.addJibri(jibriRecorder);
                 jibriRecorder.init();
             }
 
             JibriDetector sipJibriDetector = services.getSipJibriDetector();
-            if (sipJibriDetector != null)
+            if (sipJibriDetector != null && jibriOpSet != null)
             {
                 jibriSipGateway
                     = new JibriSipGateway(
@@ -358,10 +361,11 @@ public class JitsiMeetConferenceImpl
                             FocusBundleActivator.getSharedThreadPool(),
                             globalConfig);
 
+                jibriOpSet.addJibri(jibriSipGateway);
                 jibriSipGateway.init();
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             stop();
 
@@ -385,12 +389,14 @@ public class JitsiMeetConferenceImpl
         if (jibriSipGateway != null)
         {
             jibriSipGateway.dispose();
+            jibriOpSet.removeJibri(jibriSipGateway);
             jibriSipGateway = null;
         }
 
         if (jibriRecorder != null)
         {
             jibriRecorder.dispose();
+            jibriOpSet.removeJibri(jibriRecorder);
             jibriRecorder = null;
         }
 
