@@ -417,7 +417,10 @@ public class ColibriConferenceImpl
 
         if (allocChannelsErrorCode != -1)
             throw new OperationFailedException(
-                    allocChannelsErrorMsg, allocChannelsErrorCode);
+                    allocChannelsErrorMsg, allocChannelsErrorCode,
+                    response == null
+                            ? null
+                            : new Exception(response.toXML().toString()));
     }
 
     /**

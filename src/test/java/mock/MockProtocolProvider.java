@@ -18,6 +18,7 @@
 package mock;
 
 import mock.muc.*;
+import mock.util.UtilityJingleOpSet;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 import mock.xmpp.pubsub.*;
@@ -25,6 +26,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jxmpp.jid.*;
@@ -51,12 +53,9 @@ public class MockProtocolProvider
     private RegistrationState registrationState
         = RegistrationState.UNREGISTERED;
 
-    private static MockXmppConnectionImpl sharedMockConnection
-        = new MockXmppConnectionImpl();
+    private MockXmppConnection connection;
 
-    private AddressedXmppConnection connection;
-
-    private MockJingleOpSetImpl jingleOpSet;
+    private AbstractOperationSetJingle jingleOpSet;
 
     public MockProtocolProvider(MockAccountID accountId, EventAdmin eventAdmin)
     {
@@ -70,7 +69,7 @@ public class MockProtocolProvider
     {
         if (jingleOpSet != null)
         {
-            jingleOpSet.start();
+            connection.registerIQRequestHandler(jingleOpSet);
         }
 
         setRegistrationState(
@@ -97,7 +96,7 @@ public class MockProtocolProvider
     {
         if (jingleOpSet != null)
         {
-            jingleOpSet.stop();
+            connection.unregisterIQRequestHandler(jingleOpSet);
         }
 
         setRegistrationState(
@@ -179,7 +178,7 @@ public class MockProtocolProvider
 
     public void includeJingleOpSet()
     {
-        this.jingleOpSet = new MockJingleOpSetImpl(this);
+        this.jingleOpSet = new OperationSetJingleImpl(this.connection);
 
         addSupportedOperationSet(
             OperationSetJingle.class,
@@ -227,22 +226,21 @@ public class MockProtocolProvider
         return getOperationSet(OperationSetBasicTelephony.class);
     }
 
-    public MockXmppConnection getMockXmppConnection()
+    public XmppConnection getXmppConnection()
     {
         if (this.connection == null)
         {
-            this.connection
-                = new AddressedXmppConnection(
-                        getOurJID(), sharedMockConnection);
+            this.connection = new MockXmppConnection(getOurJID());
         }
         return connection;
     }
 
-    public Jid getOurJID()
+    public EntityFullJid getOurJID()
     {
         try
         {
-            return JidCreate.from("mock-" + accountId.getAccountAddress());
+            return JidCreate.entityFullFrom(
+                    "mock-" + accountId.getAccountAddress());
         }
         catch (XmppStringprepException e)
         {

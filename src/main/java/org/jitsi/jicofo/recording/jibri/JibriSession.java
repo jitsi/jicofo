@@ -22,7 +22,6 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;
@@ -30,6 +29,7 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -42,9 +42,6 @@ import java.util.concurrent.*;
  * which is supposed to try another instance when the current one fails. To make
  * this happen it needs to cache all the information required to start new
  * session. It uses {@link JibriDetector} to select new Jibri.
- *
- * It also contains it's own {@link QueuePacketProcessor} and processes XMPP
- * packets associated with the current session.
  *
  * @author Pawel Domas
  */
@@ -131,11 +128,8 @@ public class JibriSession
      */
     private final Owner owner;
 
-    /**
-     * The {@link QueuePacketProcessor} which executes
-     * {@link #processStanza(Stanza)} on dedicated single threaded queue.
-     */
-    private QueuePacketProcessor packetProcessor;
+    /** Handler for Jibri get IQs. */
+    private JibriIqRequestHandler jibriIqRequestHandler;
 
     /**
      * Reference to scheduled {@link PendingStatusTimeout}
@@ -241,10 +235,11 @@ public class JibriSession
      */
     synchronized public void start()
     {
-        if (packetProcessor == null)
+        if (jibriIqRequestHandler == null)
         {
-            this.packetProcessor = new QueuePacketProcessor(xmpp, this, this);
-            this.packetProcessor.start();
+            xmpp.addAsyncStanzaListener(this, this);
+            jibriIqRequestHandler = new JibriIqRequestHandler();
+            xmpp.registerIQRequestHandler(jibriIqRequestHandler);
 
             tryStartRestartJibri(null);
         }
@@ -258,7 +253,7 @@ public class JibriSession
      */
     synchronized public XMPPError stop()
     {
-        if (packetProcessor == null)
+        if (jibriIqRequestHandler == null)
         {
             return null;
         }
@@ -309,8 +304,9 @@ public class JibriSession
             setJibriStatus(JibriIq.Status.OFF, null);
         }
 
-        packetProcessor.stop();
-        packetProcessor = null;
+        xmpp.removeAsyncStanzaListener(this);
+        xmpp.unregisterIQRequestHandler(jibriIqRequestHandler);
+        jibriIqRequestHandler = null;
 
         return error;
     }
@@ -407,15 +403,7 @@ public class JibriSession
             return;
         }
 
-        if (iq instanceof JibriIq)
-        {
-            JibriIq jibriIq = (JibriIq) iq;
-
-            processJibriIqFromJibri(jibriIq);
-
-            xmpp.sendStanza(IQ.createResultIQ(iq));
-        }
-        else if (IQ.Type.error.equals(iq.getType()))
+        if (IQ.Type.error.equals(iq.getType()))
         {
             //processJibriError(iq.getError());
             XMPPError error = iq.getError();
@@ -424,6 +412,23 @@ public class JibriSession
                 + (error != null ? error.toXML() : "null"));
 
             tryStartRestartJibri(error);
+        }
+    }
+
+    private class JibriIqRequestHandler extends AbstractIqRequestHandler
+    {
+        JibriIqRequestHandler()
+        {
+            super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE,
+                    IQ.Type.get, Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iq)
+        {
+            JibriIq jibriIq = (JibriIq) iq;
+            processJibriIqFromJibri(jibriIq);
+            return IQ.createResultIQ(iq);
         }
     }
 

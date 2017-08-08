@@ -92,12 +92,6 @@ public abstract class CommonJibriStuff
     protected final OperationSetJitsiMeetTools meetTools;
 
     /**
-     * {@link QueuePacketProcessor} used to execute packets on separate single
-     * threaded queue which will not block Smack's packet reader thread.
-     */
-    private QueuePacketProcessor packetProcessor;
-
-    /**
      * Executor service used by {@link JibriSession} to schedule pending timeout
      * tasks.
      */
@@ -200,8 +194,7 @@ public abstract class CommonJibriStuff
             logger.error("Failed to start Jibri event handler: " + e, e);
         }
 
-        this.packetProcessor = new QueuePacketProcessor(connection, this, this);
-        this.packetProcessor.start();
+        connection.addAsyncStanzaListener(this, this);
 
         updateJibriAvailability();
     }
@@ -222,11 +215,7 @@ public abstract class CommonJibriStuff
             logger.error("Failed to stop Jibri event handler: " + e, e);
         }
 
-        if (this.packetProcessor != null)
-        {
-            this.packetProcessor.stop();
-            this.packetProcessor = null;
-        }
+        connection.removeAsyncStanzaListener(this);
     }
 
     /**

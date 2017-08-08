@@ -18,69 +18,23 @@
 package org.jitsi.jicofo;
 
 import mock.xmpp.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.jxmpp.jid.*;
+import org.jxmpp.jid.Jid;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import java.util.*;
+import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  *
  */
 @RunWith(JUnit4.class)
-public class MockTest
+public class CapsMockTest
 {
-    @Test
-    public void testXmpConnection()
-            throws InterruptedException, XmppStringprepException
-    {
-        MockXmppConnection mockConnection
-            = new MockXmppConnectionImpl();
-
-        XmppPeer peerA = new XmppPeer("A", mockConnection);
-        XmppPeer peerB = new XmppPeer("B", mockConnection);
-        XmppPeer peerC = new XmppPeer("C", mockConnection);
-
-        peerA.start();
-        peerB.start();
-        peerC.start();
-
-        mockConnection.sendPacket(getPacket("A", "B"));
-        mockConnection.sendPacket(getPacket("A", "C"));
-        mockConnection.sendPacket(getPacket("B", "A"));
-
-        Thread.sleep(500);
-
-        peerA.stop();
-        peerB.stop();
-        peerC.stop();
-
-        assertEquals(1, peerA.getPacketCount());
-        assertEquals(1, peerB.getPacketCount());
-        assertEquals(1, peerC.getPacketCount());
-
-        assertEquals("a", peerA.getPacket(0).getTo().toString());
-        assertEquals("b", peerB.getPacket(0).getTo().toString());
-        assertEquals("c", peerC.getPacket(0).getTo().toString());
-    }
-
-    private JingleIQ getPacket(String from, String to)
-            throws XmppStringprepException
-    {
-        JingleIQ jingle = new JingleIQ(JingleAction.SESSION_INFO, "123");
-        jingle.setFrom(JidCreate.from(from));
-        jingle.setTo(JidCreate.from(to));
-
-        return jingle;
-    }
-
     @Test
     public void testMockCaps()
             throws XmppStringprepException

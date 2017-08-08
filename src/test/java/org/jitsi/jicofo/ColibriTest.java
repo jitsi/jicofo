@@ -136,7 +136,7 @@ public class ColibriTest
         colibriConf.expireChannels(peer2Channels);
 
         //FIXME: fix unreliable sleep call
-        Thread.sleep(1000);
+        Thread.sleep(5000);
 
         assertEquals(3, mockBridge.getChannelsCount());
 

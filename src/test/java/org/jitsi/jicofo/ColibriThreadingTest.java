@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import mock.*;
 import mock.jvb.*;
+import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
@@ -109,7 +110,7 @@ public class ColibriThreadingTest
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    mockProvider.getMockXmppConnection(),
+                    new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
         mockBridge.start(osgi.bc);
@@ -227,7 +228,7 @@ public class ColibriThreadingTest
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    mockProvider.getMockXmppConnection(),
+                    mockProvider.getXmppConnection(),
                     mockBridgeJid);
 
         mockBridge.start(osgi.bc);

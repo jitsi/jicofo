@@ -315,6 +315,10 @@ public class AdvertiseSSRCsTest
         user2.leave();
         user1.leave();
 
+        // stopping the conference also stops the bridge,
+        // but the users leaving still want the bridge to disconnect properly
+        Thread.sleep(5000);
+
         testConf.stop();
     }
 

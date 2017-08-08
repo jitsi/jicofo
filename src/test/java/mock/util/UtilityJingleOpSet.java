@@ -17,13 +17,12 @@
  */
 package mock.util;
 
+import mock.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -38,63 +37,59 @@ public class UtilityJingleOpSet
     private final static Logger logger
         = Logger.getLogger(UtilityJingleOpSet.class);
 
-    private final Jid jid;
     private final XmppConnection connection;
 
     private final BlockingQueue<JingleIQ> sessionInvites
             = new LinkedBlockingQueue<>();
+    public MockParticipant mockParticipant;
 
-    public UtilityJingleOpSet(Jid ourJid, XmppConnection connection)
+    public UtilityJingleOpSet(XmppConnection connection)
     {
-        this.jid = ourJid;
         this.connection = connection;
     }
 
-    public void init()
+    @Override
+    public IQ handleIQRequest(IQ iqRequest)
     {
-        connection.addPacketHandler(new StanzaListener()
+        JingleIQ jingleIQ = (JingleIQ) iqRequest;
+
+        switch (jingleIQ.getAction())
         {
-            @Override
-            public void processStanza(Stanza packet)
-                    throws InterruptedException
-            {
-                JingleIQ jingleIQ = (JingleIQ) packet;
-
-                String sid = jingleIQ.getSID();
-
-                if (sessions.containsKey(sid))
+            case SESSION_INITIATE:
+                try
                 {
-                    logger.error(
-                        "Received session-initiate for existing session: " + sid);
-                    return;
+                    String sid = jingleIQ.getSID();
+                    if (sessions.containsKey(sid))
+                    {
+                        logger.error("Received session-initiate "
+                                + "for existing session: " + sid);
+                        return null;
+                    }
+                    sessionInvites.put(jingleIQ);
                 }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                break;
+            case SOURCEADD:
+            case ADDSOURCE:
+            case SOURCEREMOVE:
+            case REMOVESOURCE:
+                if (mockParticipant != null)
+                {
+                    mockParticipant.processStanza(iqRequest);
+                }
+                break;
+        }
 
-                sessionInvites.put(jingleIQ);
-            }
-        },
-        new StanzaFilter()
-        {
-            @Override
-            public boolean accept(Stanza packet)
-            {
-                if (!getOurJID().equals(packet.getTo()))
-                    return false;
-
-                if (!(packet instanceof JingleIQ))
-                    return false;
-
-                JingleIQ jingleIQ = (JingleIQ) packet;
-
-                return
-                    JingleAction.SESSION_INITIATE.equals(jingleIQ.getAction());
-            }
-        });
+        return null;
     }
 
     @Override
     protected Jid getOurJID()
     {
-        return jid;
+        return connection.getUser();
     }
 
     @Override

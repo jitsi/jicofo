@@ -36,6 +36,6 @@ public class MockSmackXmppOpSet
     @Override
     public XmppConnection getXmppConnection()
     {
-        return protocolProvider.getMockXmppConnection();
+        return protocolProvider.getXmppConnection();
     }
 }

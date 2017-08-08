@@ -27,13 +27,12 @@ import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.id.StanzaIdUtil;
+import org.jivesoftware.smack.packet.id.*;
 import org.jivesoftware.smackx.nick.packet.*;
 import org.jxmpp.jid.*;
 
@@ -65,11 +64,6 @@ public class MeetExtensionsHandler
     private XmppConnection connection;
 
     /**
-     * Process packets in different thread, keeping packets receive order.
-     */
-    private QueuePacketProcessor packetProcessor = null;
-
-    /**
      * Creates new instance of {@link MeetExtensionsHandler}.
      * @param focusManager <tt>FocusManager</tt> that will be used by new
      *                     instance to access active conferences and focus
@@ -93,12 +87,7 @@ public class MeetExtensionsHandler
             = focusManager.getOperationSet(
                     OperationSetDirectSmackXmpp.class).getXmppConnection();
 
-        if (this.packetProcessor == null)
-        {
-            this.packetProcessor
-                = new QueuePacketProcessor(connection, this, this);
-            this.packetProcessor.start();
-        }
+        connection.addAsyncStanzaListener(this, this);
     }
 
     /**
@@ -108,11 +97,7 @@ public class MeetExtensionsHandler
     {
         if (connection != null)
         {
-            if (this.packetProcessor != null)
-            {
-                this.packetProcessor.stop();
-                this.packetProcessor = null;
-            }
+            connection.removeAsyncStanzaListener(this);
             connection = null;
         }
     }

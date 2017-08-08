@@ -17,8 +17,11 @@
  */
 package mock.xmpp;
 
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -30,17 +33,19 @@ import java.util.*;
  *
  */
 public class XmppPeer
-    implements StanzaListener
+    implements StanzaListener,
+        IQRequestHandler
 {
     private final Jid jid;
 
-    private final MockXmppConnection connection;
+    private final XmppConnection connection;
 
     private final List<Stanza> packets = new ArrayList<>();
+    private final List<IQ> iqs = new ArrayList<>();
 
-    public XmppPeer(String jid, MockXmppConnection connection)
+    public XmppPeer(String jid)
     {
-        this(jidCreate(jid), connection);
+        this(jidCreate(jid), new MockXmppConnection(jidCreate(jid)));
     }
 
     private static Jid jidCreate(String jid)
@@ -55,15 +60,20 @@ public class XmppPeer
         }
     }
 
-    public XmppPeer(Jid jid, MockXmppConnection connection)
+    public XmppPeer(Jid jid, XmppConnection connection)
     {
         this.jid = jid;
         this.connection = connection;
     }
 
+    public XmppConnection getConnection()
+    {
+        return connection;
+    }
+
     public void start()
     {
-        this.connection.addPacketHandler(
+        this.connection.addAsyncStanzaListener(
             this,
             new StanzaFilter()
             {
@@ -73,36 +83,19 @@ public class XmppPeer
                     return jid.equals(packet.getTo());
                 }
             });
-    }
-
-    public Stanza waitForPacket(long timeout)
-    {
-        synchronized (packets)
-        {
-            if (getPacketCount() == 0)
-            {
-                try
-                {
-                    packets.wait(timeout);
-                }
-                catch (InterruptedException e)
-                {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            return packets.size() > 0 ? packets.get(0) : null;
-        }
+        this.connection.registerIQRequestHandler(this);
     }
 
     public void stop()
     {
         synchronized (packets)
         {
-            connection.removePacketHandler(this);
+            connection.removeAsyncStanzaListener(this);
 
             packets.notifyAll();
         }
+
+        this.connection.unregisterIQRequestHandler(this);
     }
 
     public int getPacketCount()
@@ -113,11 +106,27 @@ public class XmppPeer
         }
     }
 
+    public int getIqCount()
+    {
+        synchronized (iqs)
+        {
+            return iqs.size();
+        }
+    }
+
     public Stanza getPacket(int idx)
     {
         synchronized (packets)
         {
             return packets.get(idx);
+        }
+    }
+
+    public IQ getIq(int idx)
+    {
+        synchronized (iqs)
+        {
+            return iqs.get(idx);
         }
     }
 
@@ -130,5 +139,42 @@ public class XmppPeer
 
             packets.notifyAll();
         }
+    }
+
+    @Override
+    public IQ handleIQRequest(IQ iqRequest)
+    {
+        synchronized (iqs)
+        {
+            iqs.add(iqRequest);
+        }
+
+        return IQ.createErrorResponse(
+                iqRequest,
+                XMPPError.Condition.feature_not_implemented);
+    }
+
+    @Override
+    public Mode getMode()
+    {
+        return Mode.sync;
+    }
+
+    @Override
+    public IQ.Type getType()
+    {
+        return IQ.Type.get;
+    }
+
+    @Override
+    public String getElement()
+    {
+        return JingleIQ.ELEMENT_NAME;
+    }
+
+    @Override
+    public String getNamespace()
+    {
+        return JingleIQ.NAMESPACE;
     }
 }

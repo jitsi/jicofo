@@ -21,6 +21,7 @@ import mock.*;
 import mock.jvb.*;
 import mock.muc.*;
 
+import mock.xmpp.*;
 import org.jitsi.impl.neomedia.rtp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
@@ -94,7 +95,7 @@ public class TestConference
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    getFocusProtocolProvider().getMockXmppConnection(),
+                    new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
         mockBridge.start(bc);

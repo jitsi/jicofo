@@ -26,6 +26,8 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
 
+import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler;
+import org.jivesoftware.smack.iqrequest.IQRequestHandler;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.Jid;
 
@@ -38,6 +40,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public abstract class AbstractOperationSetJingle
+    extends AbstractIqRequestHandler
     implements OperationSetJingle
 {
     /**
@@ -52,6 +55,27 @@ public abstract class AbstractOperationSetJingle
      */
     protected final Map<String, JingleSession> sessions
         = new ConcurrentHashMap<>();
+
+    protected AbstractOperationSetJingle()
+    {
+        super(JingleIQ.ELEMENT_NAME, JingleIQ.NAMESPACE,
+                IQ.Type.set, Mode.sync);
+    }
+
+    @Override
+    public IQ handleIQRequest(IQ iqRequest)
+    {
+        JingleIQ packet = (JingleIQ) iqRequest;
+        JingleSession session = getSession(packet.getSID());
+        if (session == null)
+        {
+            logger.error("No session found for SID " + packet.getSID());
+            return IQ.createErrorResponse(packet,
+                    XMPPError.getBuilder(XMPPError.Condition.bad_request));
+        }
+
+        return processJingleIQ(packet);
+    }
 
     /**
      * Implementing classes should return our JID here.
@@ -273,7 +297,7 @@ public abstract class AbstractOperationSetJingle
      *
      * @param iq the <tt>JingleIQ</tt> to process.
      */
-    protected void processJingleIQ(JingleIQ iq)
+    protected IQ processJingleIQ(JingleIQ iq)
     {
         JingleSession session = getSession(iq.getSID());
         JingleAction action = iq.getAction();
@@ -281,25 +305,12 @@ public abstract class AbstractOperationSetJingle
         if (action == null)
         {
             // bad-request
-            IQ badRequest = IQ.createErrorResponse(
+            return IQ.createErrorResponse(
                 iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
-
-            getConnection().sendStanza(badRequest);
-
-            return;
-        }
-        if (session == null)
-        {
-            logger.error(
-                "Action: " + action
-                    + ", no session found for SID " + iq.getSID());
-            return;
         }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
-
         XMPPError error = null;
-
         switch (action)
         {
         case SESSION_ACCEPT:
@@ -329,13 +340,11 @@ public abstract class AbstractOperationSetJingle
         // FIXME IQ type is not taken into account
         if (error == null)
         {
-            IQ ack = IQ.createResultIQ(iq);
-            getConnection().sendStanza(ack);
+            return IQ.createResultIQ(iq);
         }
         else
         {
-            IQ errorResponse = IQ.createErrorResponse(iq, error);
-            getConnection().sendStanza(errorResponse);
+            return IQ.createErrorResponse(iq, error);
         }
     }
 
@@ -543,9 +552,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        XmppConnection connection = getConnection();
-
-        connection.sendStanza(removeSourceIq);
+        getConnection().sendStanza(removeSourceIq);
     }
 
     /**

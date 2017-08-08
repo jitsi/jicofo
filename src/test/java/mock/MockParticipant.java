@@ -29,8 +29,6 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
 import org.jxmpp.jid.*;
@@ -44,8 +42,6 @@ import java.util.concurrent.*;
  *
  */
 public class MockParticipant
-    implements StanzaListener,
-               StanzaFilter
 {
     /**
      * The logger.
@@ -63,7 +59,7 @@ public class MockParticipant
 
     private MockRoomMember user;
 
-    private MockXmppConnection mockConnection;
+    private XmppConnection mockConnection;
 
     private UtilityJingleOpSet jingle;
 
@@ -160,14 +156,6 @@ public class MockParticipant
 
         user.setupFeatures(useBundle);
 
-        MockProtocolProvider protocolProvider
-            = (MockProtocolProvider)chat.getParentProvider();
-
-        mockConnection = protocolProvider.getMockXmppConnection();
-
-        OperationSetDirectSmackXmpp smackOpSet
-            = protocolProvider.getOperationSet(
-                    OperationSetDirectSmackXmpp.class);
 
         try
         {
@@ -178,21 +166,16 @@ public class MockParticipant
             throw new RuntimeException(e);
         }
 
-        this.jingle = new UtilityJingleOpSet(myJid, mockConnection);
-
-        jingle.init();
-
-        mockConnection.addPacketHandler(this, this);
+        mockConnection = new MockXmppConnection(myJid);
+        jingle = new UtilityJingleOpSet(mockConnection);
+        jingle.mockParticipant = this;
+        mockConnection.registerIQRequestHandler(jingle);
 
         chat.mockJoin(user);
-
         synchronized (joinLock)
         {
-            xmppPeer = new XmppPeer(
-                user.getJabberID(), mockConnection);
-
+            xmppPeer = new XmppPeer(user.getJabberID(), mockConnection);
             xmppPeer.start();
-
             joinLock.notifyAll();
         }
     }
@@ -477,28 +460,13 @@ public class MockParticipant
         return nick;
     }
 
-    @Override
-    public boolean accept(Stanza packet)
-    {
-        boolean isJingle
-            = user.getJabberID().equals(packet.getTo())
-                    && packet instanceof JingleIQ;
-
-        if (!isJingle)
-            return false;
-
-        JingleIQ jingleIQ = (JingleIQ) packet;
-        return JingleAction.SOURCEADD.equals(jingleIQ.getAction())
-            || JingleAction.SOURCEREMOVE.equals(jingleIQ.getAction());
-    }
-
-    @Override
-    public void processStanza(Stanza packet)
+    public void processStanza(IQ packet)
     {
         JingleIQ modifySSRcIq = (JingleIQ) packet;
         JingleAction action = modifySSRcIq.getAction();
 
-        if (JingleAction.SOURCEADD.equals(action))
+        if (JingleAction.SOURCEADD.equals(action)
+                || JingleAction.ADDSOURCE.equals(action))
         {
             synchronized (sourceLock)
             {
@@ -528,7 +496,8 @@ public class MockParticipant
                 sourceLock.notifyAll();
             }
         }
-        else if (JingleAction.SOURCEREMOVE.equals(action))
+        else if (JingleAction.SOURCEREMOVE.equals(action)
+                || JingleAction.REMOVESOURCE.equals(action))
         {
             synchronized (sourceLock)
             {

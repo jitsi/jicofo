@@ -29,6 +29,7 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.DaemonThreadFactory;
+import org.jitsi.protocol.xmpp.XmppConnection;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.stats.*;
 
@@ -80,7 +81,7 @@ public class PubSubBridgeSelectorTest
 
     private static MockSetSimpleCapsOpSet capsOpSet;
 
-    private static MockXmppConnection xmppConnection;
+    private static XmppConnection xmppConnection;
 
     private static MockVideobridge jvb1;
 
@@ -117,7 +118,7 @@ public class PubSubBridgeSelectorTest
         mockProvider
             = (MockProtocolProvider) providerListener.obtainProvider(1000);
 
-        xmppConnection = mockProvider.getMockXmppConnection();
+        xmppConnection = mockProvider.getXmppConnection();
 
         selector = meetServices.getBridgeSelector();
 
@@ -170,7 +171,7 @@ public class PubSubBridgeSelectorTest
         throws Exception
     {
         MockVideobridge mockBridge
-            = new MockVideobridge(xmppConnection, jvbJid);
+            = new MockVideobridge(new MockXmppConnection(jvbJid), jvbJid);
 
         MockCapsNode jvbNode
             = new MockCapsNode(

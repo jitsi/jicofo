@@ -46,13 +46,13 @@ public class MockColibriOpSet
         this.eventAdmin = eventAdmin;
 
         colibriImpl.initialize(
-            protocolProvider.getMockXmppConnection(), eventAdmin);
+            protocolProvider.getXmppConnection(), eventAdmin);
     }
 
     public AllocThreadingTestColibriConference createAllocThreadingConf()
     {
         return new AllocThreadingTestColibriConference(
-            protocolProvider.getMockXmppConnection(), eventAdmin);
+            protocolProvider.getXmppConnection(), eventAdmin);
     }
 
     @Override

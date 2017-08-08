@@ -98,7 +98,7 @@ public class JvbDoctorTest
         assertNotNull(focusPps);
 
         MockVideobridge mockBridge
-            = new MockVideobridge(focusPps.getMockXmppConnection(), jvb1);
+            = new MockVideobridge(new MockXmppConnection(jvb1), jvb1);
 
         // Make sure that jvb advertises health-check support
         MockSetSimpleCapsOpSet mockCaps = focusPps.getMockCapsOpSet();
@@ -129,7 +129,7 @@ public class JvbDoctorTest
         selector.addJvbAddress(jvb1);
 
         // Verify that BridgeSelector has triggered bridge up event
-        verify(eventSpy, timeout(100))
+        verify(eventSpy, timeout(5000))
             .handleEvent(BridgeEvent.createBridgeUp(jvb1));
 
         TestConference[] testConfs = new TestConference[5];

@@ -31,8 +31,8 @@ import org.jitsi.retry.*;
 import org.jitsi.util.Logger;
 
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.XMPPException.*;
 import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.disco.packet.*;
@@ -124,7 +124,8 @@ public class XmppProtocolProvider
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
 
-        this.jingleOpSet = new OperationSetJingleImpl(this);
+        this.jingleOpSet = new OperationSetJingleImpl(
+                this.getConnectionAdapter());
         addSupportedOperationSet(OperationSetJingle.class, jingleOpSet);
 
         addSupportedOperationSet(
@@ -260,7 +261,7 @@ public class XmppProtocolProvider
 
             colibriTools.initialize(getConnectionAdapter(), eventAdmin);
 
-            jingleOpSet.initialize();
+            connection.registerIQRequestHandler(jingleOpSet);
 
             discoInfoManager = new ScServiceDiscoveryManager(
                 XmppProtocolProvider.this, connection,
@@ -351,6 +352,7 @@ public class XmppProtocolProvider
 
         connection.disconnect();
 
+        connection.unregisterIQRequestHandler(jingleOpSet);
         connection.removeConnectionListener(connListener);
 
         connection = null;
@@ -645,6 +647,12 @@ public class XmppProtocolProvider
             this.connection = Objects.requireNonNull(connection, "connection");
         }
 
+        @Override
+        public EntityFullJid getUser()
+        {
+            return this.connection.getUser();
+        }
+
         /**
          * {@inheritDoc}
          */
@@ -684,26 +692,28 @@ public class XmppProtocolProvider
                 try
                 {
                     //FIXME: retry allocation on timeout
-                    return packetCollector.nextResultOrThrow();
+                    return packetCollector.nextResult();
                 }
                 finally
                 {
                     packetCollector.cancel();
                 }
             }
-            catch (XMPPErrorException
-                    | InterruptedException
-                    | NoResponseException e)
+            catch (InterruptedException
+                    /*| XMPPErrorException
+                    | NoResponseException*/ e)
             {
                 throw new OperationFailedException(
                         "No response or failed otherwise: " + packet.toXML(),
-                        OperationFailedException.GENERAL_ERROR);
+                        OperationFailedException.GENERAL_ERROR,
+                        e);
             }
             catch (NotConnectedException e)
             {
                 throw new OperationFailedException(
                     "No connection - unable to send packet: " + packet.toXML(),
-                    OperationFailedException.PROVIDER_NOT_REGISTERED);
+                    OperationFailedException.PROVIDER_NOT_REGISTERED,
+                    e);
             }
         }
 
@@ -711,8 +721,8 @@ public class XmppProtocolProvider
          * {@inheritDoc}
          */
         @Override
-        public void addPacketHandler(StanzaListener listener,
-                                     StanzaFilter filter)
+        public void addAsyncStanzaListener(StanzaListener listener,
+                                           StanzaFilter filter)
         {
             connection.addAsyncStanzaListener(listener, filter);
         }
@@ -721,9 +731,21 @@ public class XmppProtocolProvider
          * {@inheritDoc}
          */
         @Override
-        public void removePacketHandler(StanzaListener listener)
+        public boolean removeAsyncStanzaListener(StanzaListener listener)
         {
-            connection.removeAsyncStanzaListener(listener);
+            return connection.removeAsyncStanzaListener(listener);
+        }
+
+        @Override
+        public IQRequestHandler registerIQRequestHandler(IQRequestHandler handler)
+        {
+            return connection.registerIQRequestHandler(handler);
+        }
+
+        @Override
+        public IQRequestHandler unregisterIQRequestHandler(IQRequestHandler handler)
+        {
+            return connection.unregisterIQRequestHandler(handler);
         }
     }
 

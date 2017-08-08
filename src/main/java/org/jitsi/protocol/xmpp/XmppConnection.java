@@ -21,7 +21,9 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 /**
  * The interface for Smack XMPP connection.
@@ -30,6 +32,8 @@ import org.jivesoftware.smack.packet.*;
  */
 public interface XmppConnection
 {
+    EntityFullJid getUser();
+
     /**
      * Sends given XMPP packet through this connection.
      * XXX The method will silently fail to send the packet if the XMPP
@@ -65,7 +69,7 @@ public interface XmppConnection
      * @param filter the <tt>PacketFilter</tt> that filters out packets reaching
      * <tt>listener</tt> object.
      */
-    void addPacketHandler(StanzaListener listener, StanzaFilter filter);
+    void addAsyncStanzaListener(StanzaListener listener, StanzaFilter filter);
 
     /**
      * Removes packet listener and the filter applied to it, so that it will no
@@ -74,5 +78,9 @@ public interface XmppConnection
      * @param listener the <tt>PacketListener</tt> instance to be removed from
      * listeners set.
      */
-    void removePacketHandler(StanzaListener listener);
+    boolean removeAsyncStanzaListener(StanzaListener listener);
+
+    IQRequestHandler registerIQRequestHandler(IQRequestHandler handler);
+
+    IQRequestHandler unregisterIQRequestHandler(IQRequestHandler handler);
 }
