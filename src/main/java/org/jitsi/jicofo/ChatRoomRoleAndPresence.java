@@ -363,7 +363,7 @@ public class ChatRoomRoleAndPresence
                 if (eventAdmin == null)
                     return;
 
-                eventAdmin.sendEvent(
+                eventAdmin.postEvent(
                     EventFactory.endpointAuthenticated(
                             authSessionId,
                             conference.getId(),
