@@ -392,8 +392,7 @@ public class ColibriConferenceImpl
     {
         // This code block must be protected, because in the last "if" a
         // decision is made based on the value of allocChannelsErrorCode, which
-        // could have been written by another thread. We use syncRoot, because
-        // the existing code already runs with its lock acquired.
+        // could have been written by another thread.
         synchronized (syncRoot)
         {
             if (response == null)
