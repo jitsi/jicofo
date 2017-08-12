@@ -442,6 +442,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Joining the room: " + roomName);
 
         chatRoom = (ChatRoom2) chatOpSet.findRoom(roomName.toString());
+        chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
         rolesAndPresence.init();
@@ -876,7 +877,8 @@ public class JitsiMeetConferenceImpl
      * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
      *         participant or <tt>false</tt> otherwise.
      */
-    boolean isFocusMember(Jid mucJid)
+    @Override
+    public boolean isFocusMember(Jid mucJid)
     {
         ChatRoom2 chatRoom = this.chatRoom;
         return mucJid != null
@@ -1101,6 +1103,7 @@ public class JitsiMeetConferenceImpl
         return null;
     }
 
+    @Override
     public ChatRoomMemberRole getRoleForMucJid(Jid mucJid)
     {
         if (chatRoom == null)
@@ -1963,6 +1966,7 @@ public class JitsiMeetConferenceImpl
      * @param startMuted the new value to set on this instance. The specified
      * array is copied.
      */
+    @Override
     public void setStartMuted(boolean[] startMuted)
     {
         this.startMuted = startMuted;

@@ -25,15 +25,11 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.eventadmin.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
-import org.jivesoftware.smackx.nick.packet.*;
 import org.jxmpp.jid.*;
 
 /**
@@ -43,8 +39,6 @@ import org.jxmpp.jid.*;
  * @author Boris Grozev
  */
 public class MeetExtensionsHandler
-    implements StanzaFilter,
-               StanzaListener
 {
     /**
      * The logger
@@ -58,10 +52,12 @@ public class MeetExtensionsHandler
      */
     private final FocusManager focusManager;
 
-    /**
-     * Operation set that provider XMPP connection.
-     */
+    /** The currently used XMPP connection. */
     private XmppConnection connection;
+
+    private MuteIqHandler muteIqHandler;
+    private ColibriIqHandler colibriIqHandler;
+    private DialIqHandler dialIqHandler;
 
     /**
      * Creates new instance of {@link MeetExtensionsHandler}.
@@ -87,7 +83,60 @@ public class MeetExtensionsHandler
             = focusManager.getOperationSet(
                     OperationSetDirectSmackXmpp.class).getXmppConnection();
 
-        connection.addAsyncStanzaListener(this, this);
+        muteIqHandler = new MuteIqHandler();
+        colibriIqHandler = new ColibriIqHandler();
+        dialIqHandler = new DialIqHandler();
+        connection.registerIQRequestHandler(muteIqHandler);
+        connection.registerIQRequestHandler(colibriIqHandler);
+        connection.registerIQRequestHandler(dialIqHandler);
+    }
+
+    private class MuteIqHandler extends AbstractIqRequestHandler
+    {
+        MuteIqHandler()
+        {
+            super(MuteIq.ELEMENT_NAME, MuteIq.NAMESPACE, IQ.Type.get, Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
+        {
+            return handleMuteIq((MuteIq) iqRequest);
+        }
+    }
+
+    private class ColibriIqHandler extends AbstractIqRequestHandler
+    {
+        ColibriIqHandler()
+        {
+            super(ColibriConferenceIQ.ELEMENT_NAME,
+                ColibriConferenceIQ.NAMESPACE,
+                IQ.Type.get,
+                Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
+        {
+            return handleColibriIq((ColibriConferenceIQ) iqRequest);
+        }
+    }
+
+    private class DialIqHandler extends AbstractIqRequestHandler
+    {
+        DialIqHandler()
+        {
+            super(RayoIqProvider.DialIq.ELEMENT_NAME,
+                RayoIqProvider.NAMESPACE,
+                IQ.Type.get,
+                Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
+        {
+            return handleRayoIQ((RayoIqProvider.DialIq) iqRequest);
+        }
     }
 
     /**
@@ -97,67 +146,29 @@ public class MeetExtensionsHandler
     {
         if (connection != null)
         {
-            connection.removeAsyncStanzaListener(this);
+            connection.unregisterIQRequestHandler(muteIqHandler);
+            connection.unregisterIQRequestHandler(colibriIqHandler);
+            connection.unregisterIQRequestHandler(dialIqHandler);
             connection = null;
         }
     }
 
-    @Override
-    public boolean accept(Stanza packet)
+    private IQ handleColibriIq(ColibriConferenceIQ colibriIQ)
     {
-        return acceptMuteIq(packet)
-                || acceptColibriIQ(packet)
-                || acceptRayoIq(packet)
-                || acceptPresence(packet);
-    }
-
-    @Override
-    public void processStanza(Stanza packet)
-    {
-        if (connection == null)
+        if (colibriIQ.getRecording() == null)
         {
-            logger.error("Not initialized");
-            return;
+            return IQ.createErrorResponse(colibriIQ, XMPPError.getBuilder(
+                XMPPError.Condition.unexpected_request));
         }
 
-        if (packet instanceof ColibriConferenceIQ)
-        {
-            handleColibriIq((ColibriConferenceIQ) packet);
-        }
-        else if (packet instanceof MuteIq)
-        {
-            handleMuteIq((MuteIq) packet);
-        }
-        else if (packet instanceof RayoIqProvider.DialIq)
-        {
-            handleRayoIQ((RayoIqProvider.DialIq) packet);
-        }
-        else if (packet instanceof Presence)
-        {
-            handlePresence((Presence) packet);
-        }
-        else
-        {
-            logger.error("Unexpected packet: " + packet.toXML());
-        }
-    }
-
-    private boolean acceptColibriIQ(Stanza packet)
-    {
-        return packet instanceof ColibriConferenceIQ
-            // And with recording element
-            && ((ColibriConferenceIQ)packet).getRecording() != null;
-    }
-
-    private void handleColibriIq(ColibriConferenceIQ colibriIQ)
-    {
         Jid from = colibriIQ.getFrom();
         JitsiMeetConferenceImpl conference
             = getConferenceForMucJid(colibriIQ.getFrom());
         if (conference == null)
         {
             logger.debug("Room not found for JID: " + from);
-            return;
+            return IQ.createErrorResponse(colibriIQ, XMPPError.getBuilder(
+                XMPPError.Condition.item_not_found));
         }
 
         ColibriConferenceIQ response = new ColibriConferenceIQ();
@@ -168,12 +179,7 @@ public class MeetExtensionsHandler
         response.setFrom(colibriIQ.getTo());
         response.setName(colibriIQ.getName());
 
-        connection.sendStanza(response);
-    }
-
-    private boolean acceptMuteIq(Stanza packet)
-    {
-        return packet instanceof MuteIq;
+        return response;
     }
 
     private JitsiMeetConferenceImpl getConferenceForMucJid(Jid mucJid)
@@ -186,20 +192,24 @@ public class MeetExtensionsHandler
         return focusManager.getConference(roomName);
     }
 
-    private void handleMuteIq(MuteIq muteIq)
+    private IQ handleMuteIq(MuteIq muteIq)
     {
         Boolean doMute = muteIq.getMute();
         Jid jid = muteIq.getJid();
 
         if (doMute == null || jid == null)
-            return;
+        {
+            return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(
+                XMPPError.Condition.item_not_found));
+        }
 
         Jid from = muteIq.getFrom();
         JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
         if (conference == null)
         {
             logger.debug("Mute error: room not found for JID: " + from);
-            return;
+            return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(
+                XMPPError.Condition.item_not_found));
         }
 
         IQ result;
@@ -226,15 +236,10 @@ public class MeetExtensionsHandler
                 XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
-        connection.sendStanza(result);
+        return result;
     }
 
-    private boolean acceptRayoIq(Stanza p)
-    {
-        return p instanceof RayoIqProvider.DialIq;
-    }
-
-    private void handleRayoIQ(RayoIqProvider.DialIq dialIq)
+    private IQ handleRayoIQ(RayoIqProvider.DialIq dialIq)
     {
         Jid from = dialIq.getFrom();
 
@@ -243,7 +248,8 @@ public class MeetExtensionsHandler
         if (conference == null)
         {
             logger.debug("Mute error: room not found for JID: " + from);
-            return;
+            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(
+                XMPPError.Condition.item_not_found));
         }
 
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
@@ -251,23 +257,15 @@ public class MeetExtensionsHandler
         if (role == null)
         {
             // Only room members are allowed to send requests
-            IQ error = IQ.createErrorResponse(
+            return IQ.createErrorResponse(
                 dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
-
-            connection.sendStanza(error);
-
-            return;
         }
 
         if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
         {
             // Moderator permission is required
-            IQ error = IQ.createErrorResponse(
+            return IQ.createErrorResponse(
                 dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
-
-            connection.sendStanza(error);
-
-            return;
         }
 
         // Check if Jigasi is available
@@ -279,14 +277,10 @@ public class MeetExtensionsHandler
         if (jigasiJid == null)
         {
             // Not available
-            IQ error = IQ.createErrorResponse(
+            return IQ.createErrorResponse(
                 dialIq,
                 XMPPError.getBuilder(
                         XMPPError.Condition.service_unavailable).build());
-
-            connection.sendStanza(error);
-
-            return;
         }
 
         // Redirect original request to Jigasi component
@@ -303,72 +297,14 @@ public class MeetExtensionsHandler
             reply.setFrom((Jid)null);
             reply.setTo(from);
             reply.setStanzaId(dialIq.getStanzaId());
-            connection.sendStanza(reply);
+            return reply;
         }
         catch (OperationFailedException e)
         {
             logger.error("Failed to send DialIq - XMPP disconnected", e);
-        }
-    }
-
-    private boolean acceptPresence(Stanza packet)
-    {
-        return packet instanceof Presence;
-    }
-
-    /**
-     * Handles presence stanzas
-     * @param presence
-     */
-    private void handlePresence(Presence presence)
-    {
-        // unavailable is sent when user leaves the room
-        if (!presence.isAvailable())
-        {
-            return;
-        }
-
-        Jid from = presence.getFrom();
-        JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
-
-        if (conference == null)
-        {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Room not found for JID: " + from);
-            }
-            return;
-        }
-
-        if (conference.isFocusMember(from))
-        {
-            return; // Not interested in local presence
-        }
-
-        ChatRoomMemberRole role = conference.getRoleForMucJid(from);
-        if (role == null)
-        {
-            // FIXME this is printed every time new user joins the room, because
-            // PacketListener is fired before MUC knows the user is in the room.
-            // This might be a problem if it would be the only presence ever
-            // received from such participant although very unlikely with
-            // the current client code.
-            logger.warn("Failed to get user's role for: " + from);
-        }
-        else if (role.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
-        {
-            StartMutedPacketExtension ext
-                = presence.getExtension(
-                            StartMutedPacketExtension.ELEMENT_NAME,
-                            StartMutedPacketExtension.NAMESPACE);
-
-            if (ext != null)
-            {
-                boolean[] startMuted
-                    = { ext.getAudioMuted(), ext.getVideoMuted() };
-
-                conference.setStartMuted(startMuted);
-            }
+            return IQ.createErrorResponse(dialIq, XMPPError
+                .getBuilder(XMPPError.Condition.internal_server_error)
+                .setDescriptiveEnText("Failed to forward DialIq"));
         }
     }
 }

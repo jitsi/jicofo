@@ -23,6 +23,8 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.xmpp.util.*;
 
@@ -140,6 +142,9 @@ public class ChatRoomImpl
      */
     private Integer participantNumber = 0;
 
+    /** The conference that is backed by this MUC room. */
+    private JitsiMeetConference conference;
+
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
@@ -162,6 +167,20 @@ public class ChatRoomImpl
 
         this.participantListener = new ParticipantListener();
         muc.addParticipantListener(participantListener);
+    }
+
+    /**
+     * Sets the conference that is backed by this MUC. Can only be set once.
+     * @param conference the conference backed by this MUC.
+     */
+    public void setConference(JitsiMeetConference conference)
+    {
+        if (this.conference != null)
+        {
+            throw new IllegalStateException("Conference is already set!");
+        }
+
+        this.conference = conference;
     }
 
     @Override
@@ -217,6 +236,54 @@ public class ChatRoomImpl
             muc.addPresenceInterceptor(presenceInterceptor);
 
             muc.create(myNickName);
+            muc.addParticipantListener(new PresenceListener()
+            {
+                @Override
+                public void processPresence(Presence presence)
+                {
+                    if (!presence.isAvailable())
+                    {
+                        return;
+                    }
+
+                    if (conference == null)
+                    {
+                        logger.error("Conference not set for room "
+                            + roomName);
+                        return;
+                    }
+
+                    if (conference.isFocusMember(presence.getFrom()))
+                    {
+                        return; // Not interested in local presence
+                    }
+
+                    ChatRoomMemberRole memberRole = conference
+                        .getRoleForMucJid(presence.getFrom());
+                    if (memberRole == null)
+                    {
+                        logger.warn("Failed to get user's role for: "
+                            + presence.getFrom());
+                        return;
+                    }
+
+                    if (memberRole.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+                    {
+                        StartMutedPacketExtension ext
+                            = presence.getExtension(
+                                StartMutedPacketExtension.ELEMENT_NAME,
+                                StartMutedPacketExtension.NAMESPACE);
+
+                        if (ext != null)
+                        {
+                            boolean[] startMuted
+                                = { ext.getAudioMuted(), ext.getVideoMuted() };
+
+                            conference.setStartMuted(startMuted);
+                        }
+                    }
+                }
+            });
             //muc.join(nickname);
 
             // Make the room non-anonymous, so that others can

@@ -22,15 +22,14 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.jicofo.JitsiMeetConference;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.jid.parts.Resourcepart;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.jid.parts.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -73,6 +72,8 @@ public class MockMultiUserChat
     private final Vector<ChatRoomMemberRoleListener> memberRoleListeners
         = new Vector<>();
 
+    private JitsiMeetConference conference;
+
     public MockMultiUserChat(EntityBareJid roomName,
                              ProtocolProviderService protocolProviderService)
     {
@@ -98,6 +99,12 @@ public class MockMultiUserChat
         Collection<ExtensionElement> toAdd)
     {
         throw new RuntimeException("not implemented");
+    }
+
+    @Override
+    public void setConference(JitsiMeetConference conference)
+    {
+        this.conference = conference;
     }
 
     @Override

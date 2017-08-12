@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 import org.jxmpp.jid.*;
@@ -71,6 +72,23 @@ public class MockJitsiMeetConference
     public ChatRoom2 getChatRoom()
     {
         return null;
+    }
+
+    @Override
+    public void setStartMuted(boolean[] startMuted)
+    {
+    }
+
+    @Override
+    public ChatRoomMemberRole getRoleForMucJid(Jid jid)
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isFocusMember(Jid jid)
+    {
+        return false;
     }
 
     /**

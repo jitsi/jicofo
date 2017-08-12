@@ -17,11 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -78,4 +77,29 @@ public interface JitsiMeetConference
      * currently in or <tt>null</tt> if it isn't in any.
      */
     public ChatRoom2 getChatRoom();
+
+    /**
+     * Sets the value of the <tt>startMuted</tt> property of this instance.
+     *
+     * @param startMuted the new value to set on this instance. The specified
+     * array is copied.
+     */
+    void setStartMuted(boolean[] startMuted);
+
+    /**
+     * Gets the role of a member in the conference.
+     * @param jid the member whose role is to be determined.
+     * @return The member's role or <tt>null</tt> if the JID is not a member.
+     */
+    ChatRoomMemberRole getRoleForMucJid(Jid jid);
+
+    /**
+     * Checks if given MUC jid belongs to the focus user.
+     *
+     * @param jid the full MUC address to check.
+     *
+     * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
+     *         participant or <tt>false</tt> otherwise.
+     */
+    boolean isFocusMember(Jid jid);
 }

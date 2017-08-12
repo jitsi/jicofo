@@ -19,10 +19,9 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.jicofo.*;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -70,4 +69,6 @@ public interface ChatRoom2
      */
     void modifyPresence(Collection<ExtensionElement> toRemove,
                         Collection<ExtensionElement> toAdd);
+
+    void setConference(JitsiMeetConference conference);
 }

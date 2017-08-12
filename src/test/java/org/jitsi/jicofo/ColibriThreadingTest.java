@@ -228,7 +228,7 @@ public class ColibriThreadingTest
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    mockProvider.getXmppConnection(),
+                    new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
         mockBridge.start(osgi.bc);
