@@ -129,30 +129,6 @@ public class EventFactory
         = "org/jitsi/jicofo/FOCUS_DESTROYED";
 
     /**
-     * Creates a new "endpoint display name changed" <tt>Event</tt>, which
-     * conference ID to the JID of the associated MUC.
-     *
-     * @param conferenceId the ID of the COLIBRI conference.
-     * @param endpointId the ID of the COLIBRI endpoint.
-     * @param displayName the new display name.
-     *
-     * @return the <tt>Event</tt> which was created.
-     */
-    public static Event endpointDisplayNameChanged(
-            String conferenceId,
-            String endpointId,
-            String displayName)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(3);
-
-        props.put(CONFERENCE_ID_KEY, conferenceId);
-        props.put(ENDPOINT_ID_KEY, endpointId);
-        props.put(DISPLAY_NAME_KEY, displayName);
-
-        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC, props);
-    }
-
-    /**
      * Creates new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
      *
      * @param roomJid the full address of MUC room.

@@ -370,46 +370,5 @@ public class MeetExtensionsHandler
                 conference.setStartMuted(startMuted);
             }
         }
-
-        // TODO: do we actually still need these events fired now that influxdb
-        // has been removed?
-        Participant participant = conference.findParticipantForRoomJid(from);
-        if (participant != null)
-        {
-            // Check if this conference is valid
-            String conferenceId = conference.getId();
-
-            // Check for changes to the display name
-            String oldDisplayName = participant.getDisplayName();
-            String newDisplayName = null;
-            for (ExtensionElement pe : presence.getExtensions())
-            {
-                if (pe instanceof Nick)
-                {
-                    newDisplayName = ((Nick) pe).getName();
-                    break;
-                }
-            }
-
-            if (!Objects.equals(oldDisplayName, newDisplayName))
-            {
-                participant.setDisplayName(newDisplayName);
-
-                EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-                if (eventAdmin != null)
-                {
-                    // Prevent NPE when adding to event hashtable
-                    if (newDisplayName == null)
-                    {
-                        newDisplayName = "";
-                    }
-                    eventAdmin.sendEvent(
-                            EventFactory.endpointDisplayNameChanged(
-                                    conferenceId,
-                                    participant.getEndpointId(),
-                                    newDisplayName));
-                }
-            }
-        }
     }
 }
