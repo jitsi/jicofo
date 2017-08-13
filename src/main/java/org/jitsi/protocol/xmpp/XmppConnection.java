@@ -35,7 +35,7 @@ public interface XmppConnection
     /**
      * Sends given XMPP packet through this connection.
      * XXX The method will silently fail to send the packet if the XMPP
-     * connection is broken(not connected). Use this method only if such
+     * connection is broken (not connected). Use this method only if such
      * behaviour is desired, otherwise {@link #sendPacketAndGetReply(IQ)}
      * should be used instead.
      *

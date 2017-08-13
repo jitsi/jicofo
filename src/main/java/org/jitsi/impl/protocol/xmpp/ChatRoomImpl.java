@@ -353,7 +353,7 @@ public class ChatRoomImpl
     @Override
     public boolean isJoined()
     {
-        return muc.isJoined();
+        return muc != null && muc.isJoined();
     }
 
     private void leave(String reason, EntityBareJid jid)

@@ -55,6 +55,14 @@ public class BridgeSelector
     private final static Logger logger = Logger.getLogger(BridgeSelector.class);
 
     /**
+     * The name of the property which controls the
+     * {@link BridgeSelectionStrategy} to be used by this
+     * {@link BridgeSelector}.
+     */
+    public static final String BRIDGE_SELECTION_STRATEGY_PNAME
+        = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
+
+    /**
      * Property used to configure mapping of videobridge JIDs to PubSub nodes.
      * Single mapping is defined by writing videobridge JID followed by ':' and
      * pub-sub node name. If multiple mapping are to be appended then ';' must
@@ -147,8 +155,7 @@ public class BridgeSelector
     /**
      * The bridge selection strategy.
      */
-    private BridgeSelectionStrategy bridgeSelectionStrategy
-        = new SingleBridgeSelectionStrategy();
+    private final BridgeSelectionStrategy bridgeSelectionStrategy;
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -160,6 +167,51 @@ public class BridgeSelector
     {
         this.subscriptionOpSet
             = Objects.requireNonNull(subscriptionOpSet, "subscriptionOpSet");
+
+        bridgeSelectionStrategy
+            = Objects.requireNonNull(createBridgeSelectionStrategy());
+        logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+    }
+
+    /**
+     * Creates a {@link BridgeSelectionStrategy} for this {@link BridgeSelector}.
+     * The class that will be instantiated is based on configuration.
+     */
+    private BridgeSelectionStrategy createBridgeSelectionStrategy()
+    {
+        Class clazz = SingleBridgeSelectionStrategy.class;
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+        if (config != null)
+        {
+            String clazzName
+                = config.getString(BRIDGE_SELECTION_STRATEGY_PNAME);
+            if (clazzName != null)
+            {
+                clazzName = BridgeSelector.class.getCanonicalName()
+                    + "$" + clazzName;
+                try
+                {
+                    clazz = Class.forName(clazzName);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    logger.error("Failed to find class: " + clazzName, e);
+                    clazz = SingleBridgeSelectionStrategy.class;
+                }
+            }
+        }
+
+        try
+        {
+            return (BridgeSelectionStrategy) clazz.newInstance();
+        }
+        catch (Exception e)
+        {
+            logger.error(
+                    "Failed to instantiate " + clazz.getName()
+                    + ". Falling back to SingleBridgeSelectionStrategy.", e);
+            return new SingleBridgeSelectionStrategy();
+        }
     }
 
     /**
@@ -703,7 +755,7 @@ public class BridgeSelector
     /**
      * Represents an algorithm for bridge selection.
      */
-    private abstract class BridgeSelectionStrategy
+    private static abstract class BridgeSelectionStrategy
     {
         /**
          * Selects a bridge to be used for a specific
@@ -809,7 +861,7 @@ public class BridgeSelector
      * A {@link BridgeSelectionStrategy} implementation which keeps all
      * participants in a conference on the same bridge.
      */
-    private class SingleBridgeSelectionStrategy
+    private static class SingleBridgeSelectionStrategy
         extends BridgeSelectionStrategy
     {
         /**

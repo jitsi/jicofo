@@ -388,9 +388,6 @@ public class ChannelAllocator implements Runnable
             return null;
         }
 
-        BridgeSelector bridgeSelector
-            = meetConference.getServices().getBridgeSelector();
-
         Jid jvb = bridgeSession.colibriConference.getJitsiVideobridge();
         if (jvb == null)
         {
