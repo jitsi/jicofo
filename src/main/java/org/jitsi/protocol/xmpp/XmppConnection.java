@@ -19,8 +19,6 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -59,26 +57,6 @@ public interface XmppConnection
      */
     IQ sendPacketAndGetReply(IQ packet)
         throws OperationFailedException;
-
-    /**
-     * Adds packet listener and a filter that limits the packets reaching
-     * listener object.
-     *
-     * @param listener the <tt>PacketListener</tt> that will be notified about
-     * XMPP packets received.
-     * @param filter the <tt>PacketFilter</tt> that filters out packets reaching
-     * <tt>listener</tt> object.
-     */
-    void addAsyncStanzaListener(StanzaListener listener, StanzaFilter filter);
-
-    /**
-     * Removes packet listener and the filter applied to it, so that it will no
-     * longer be notified about incoming XMPP packets.
-     *
-     * @param listener the <tt>PacketListener</tt> instance to be removed from
-     * listeners set.
-     */
-    boolean removeAsyncStanzaListener(StanzaListener listener);
 
     IQRequestHandler registerIQRequestHandler(IQRequestHandler handler);
 

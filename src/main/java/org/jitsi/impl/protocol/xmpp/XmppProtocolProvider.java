@@ -722,25 +722,6 @@ public class XmppProtocolProvider
             }
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void addAsyncStanzaListener(StanzaListener listener,
-                                           StanzaFilter filter)
-        {
-            connection.addAsyncStanzaListener(listener, filter);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean removeAsyncStanzaListener(StanzaListener listener)
-        {
-            return connection.removeAsyncStanzaListener(listener);
-        }
-
         @Override
         public IQRequestHandler registerIQRequestHandler(IQRequestHandler handler)
         {

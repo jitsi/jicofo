@@ -19,8 +19,6 @@ package mock.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -29,18 +27,11 @@ import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
-/**
- *
- */
 public class XmppPeer
-    implements StanzaListener,
-        IQRequestHandler
+    implements IQRequestHandler
 {
-    private final Jid jid;
-
     private final XmppConnection connection;
 
-    private final List<Stanza> packets = new ArrayList<>();
     private final List<IQ> iqs = new ArrayList<>();
 
     public XmppPeer(String jid)
@@ -62,7 +53,6 @@ public class XmppPeer
 
     public XmppPeer(Jid jid, XmppConnection connection)
     {
-        this.jid = jid;
         this.connection = connection;
     }
 
@@ -73,37 +63,12 @@ public class XmppPeer
 
     public void start()
     {
-        this.connection.addAsyncStanzaListener(
-            this,
-            new StanzaFilter()
-            {
-                @Override
-                public boolean accept(Stanza packet)
-                {
-                    return jid.equals(packet.getTo());
-                }
-            });
         this.connection.registerIQRequestHandler(this);
     }
 
     public void stop()
     {
-        synchronized (packets)
-        {
-            connection.removeAsyncStanzaListener(this);
-
-            packets.notifyAll();
-        }
-
         this.connection.unregisterIQRequestHandler(this);
-    }
-
-    public int getPacketCount()
-    {
-        synchronized (packets)
-        {
-            return packets.size();
-        }
     }
 
     public int getIqCount()
@@ -114,30 +79,11 @@ public class XmppPeer
         }
     }
 
-    public Stanza getPacket(int idx)
-    {
-        synchronized (packets)
-        {
-            return packets.get(idx);
-        }
-    }
-
     public IQ getIq(int idx)
     {
         synchronized (iqs)
         {
             return iqs.get(idx);
-        }
-    }
-
-    @Override
-    public void processStanza(Stanza packet)
-    {
-        synchronized (packets)
-        {
-            packets.add(packet);
-
-            packets.notifyAll();
         }
     }
 

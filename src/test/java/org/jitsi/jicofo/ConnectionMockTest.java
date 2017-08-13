@@ -28,9 +28,6 @@ import org.jxmpp.stringprep.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- *
- */
 @RunWith(JUnit4.class)
 public class ConnectionMockTest
 {
@@ -60,29 +57,6 @@ public class ConnectionMockTest
     }
 
     @Test
-    public void testXmpConnectionStanza()
-            throws InterruptedException, XmppStringprepException
-    {
-        peerA.getConnection().sendStanza(getMessage("B"));
-        peerA.getConnection().sendStanza(getMessage("C"));
-        peerB.getConnection().sendStanza(getMessage("A"));
-
-        Thread.sleep(500);
-
-        assertEquals(1, peerA.getPacketCount());
-        assertEquals(1, peerB.getPacketCount());
-        assertEquals(1, peerC.getPacketCount());
-
-        assertEquals(0, peerA.getIqCount());
-        assertEquals(0, peerB.getIqCount());
-        assertEquals(0, peerC.getIqCount());
-
-        assertEquals("a", peerA.getPacket(0).getTo().toString());
-        assertEquals("b", peerB.getPacket(0).getTo().toString());
-        assertEquals("c", peerC.getPacket(0).getTo().toString());
-    }
-
-    @Test
     public void testXmpConnectionIqGet()
             throws InterruptedException, XmppStringprepException
     {
@@ -91,11 +65,6 @@ public class ConnectionMockTest
         peerB.getConnection().sendStanza(getIq("A"));
 
         Thread.sleep(500);
-
-        // A gets two error replies, B one, and C none
-        assertEquals(2, peerA.getPacketCount());
-        assertEquals(1, peerB.getPacketCount());
-        assertEquals(0, peerC.getPacketCount());
 
         assertEquals(1, peerA.getIqCount());
         assertEquals(1, peerB.getIqCount());
@@ -114,11 +83,5 @@ public class ConnectionMockTest
         jingle.setTo(JidCreate.from(to));
 
         return jingle;
-    }
-
-    private Message getMessage(String to)
-            throws XmppStringprepException
-    {
-        return new Message(to, "test message");
     }
 }

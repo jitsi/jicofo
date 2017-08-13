@@ -29,8 +29,8 @@ import java.util.List;
 
 /**
  * This operation is basically just an IQ handler for {@link JibriIq}s.
- * However, all Jibri instances register here so that they can get a hold of
- * the incoming IQs and process them.
+ * However, all conferences register here so that they can get a hold of
+ * the incoming Jibri IQs and process them.
  */
 public class OperationSetJibri
     extends AbstractIqRequestHandler
@@ -62,9 +62,9 @@ public class OperationSetJibri
     }
 
     /**
-     * Removes a Jibri from receiving IQs.
+     * Removes a Jibri handler from receiving IQs.
      *
-     * @param jibri the Jibri to remove.
+     * @param jibri the Jibri handler to remove.
      */
     public void removeJibri(CommonJibriStuff jibri)
     {
@@ -89,6 +89,6 @@ public class OperationSetJibri
         }
 
         return IQ.createErrorResponse(iq, XMPPError.getBuilder(
-            XMPPError.Condition.service_unavailable));
+            XMPPError.Condition.item_not_found));
     }
 }

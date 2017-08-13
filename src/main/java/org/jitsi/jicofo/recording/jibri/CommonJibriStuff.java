@@ -214,55 +214,78 @@ public abstract class CommonJibriStuff
         }
     }
 
-    protected abstract boolean accept(JibriIq packet);
-
     /**
-     * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
-     * if the user is a moderator and will filter out any IQs which do not
-     * belong to {@link #conference} MUC.
+     * Checks if the IQ is from a member of this room or from an active Jibri
+     * session.
+     * @param iq a random incoming Jibri IQ.
+     * @return <tt>true</tt>, when the IQ is from a member of this room or from
+     * an active Jibri session.
      */
-    public final synchronized IQ handleIQRequest(JibriIq iq)
+    public final boolean accept(JibriIq iq)
     {
         Jid from = iq.getFrom();
+
+        // Process if it belongs to an active recording session
+        JibriSession session = getJibriSessionForMeetIq(iq);
+        if (session != null && session.accept(iq))
+        {
+            return true;
+        }
+
+        // Check if the implementation wants to deal with this IQ sub-type
+        if (!acceptType(iq))
+        {
+            return false;
+        }
+
+        // otherwise, check if it belongs to this conference
         Localpart roomName = from.getLocalpartOrNull();
         if (roomName == null)
         {
             logger.warn("Could not extract room name from jid:" + from);
-            return IQ.createErrorResponse(iq, getBuilder(bad_request));
+            return false;
         }
 
         Jid actualRoomName = conference.getRoomName();
         if (!actualRoomName.equals(roomName))
         {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Ignored packet from: " + roomName
-                    + ", my room: " + actualRoomName
-                    + " p: " + iq.toXML());
-            }
-
-            return IQ.createErrorResponse(iq, getBuilder(bad_request));
+            return false;
         }
 
         XmppChatMember chatMember = conference.findMember(from);
         if (chatMember == null)
         {
-            logger.warn("ERROR chat member not found for: " + from
-                + " in " + roomName);
-            return IQ.createErrorResponse(iq, getBuilder(bad_request));
+            logger.warn("Chat member not found for: " + from);
+            return false;
         }
 
-        return processJibriIqFromMeet(iq, chatMember);
+        return true;
     }
 
-    private IQ processJibriIqFromMeet(final JibriIq           iq,
-                                      final XmppChatMember    sender)
+    /**
+     * Implementors of this class decided here if they want to deal with
+     * the incoming JibriIQ.
+     * @param packet the Jibri IQ to check.
+     * @return <tt>true</tt> if the implementation should handle it.
+     */
+    protected abstract boolean acceptType(JibriIq packet);
+
+    /**
+     * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
+     * if the user is a moderator.
+     */
+    public final synchronized IQ handleIQRequest(JibriIq iq)
     {
-        String senderMucJid = sender.getContactAddress();
         if (logger.isDebugEnabled())
         {
-            logger.info(
-                "Jibri request from " + senderMucJid + " iq: " + iq.toXML());
+            logger.debug("Jibri request. IQ: " + iq.toXML());
+        }
+
+        // Process if it belongs to an active recording session
+        JibriSession session = getJibriSessionForMeetIq(iq);
+        if (session != null && session.accept(iq))
+        {
+            return session.processJibriIqFromJibri(iq);
         }
 
         JibriIq.Action action = iq.getAction();
@@ -275,8 +298,7 @@ public abstract class CommonJibriStuff
         XMPPError error = verifyModeratorRole(iq);
         if (error != null)
         {
-            logger.warn(
-                "Ignored Jibri request from non-moderator: " + senderMucJid);
+            logger.warn("Ignored Jibri request from non-moderator.");
             return IQ.createErrorResponse(iq, error);
         }
 

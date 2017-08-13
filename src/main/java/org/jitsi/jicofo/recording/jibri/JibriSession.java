@@ -46,8 +46,6 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class JibriSession
-    implements StanzaFilter,
-               StanzaListener
 {
     /**
      * The class logger which can be used to override logging level inherited
@@ -127,9 +125,6 @@ public class JibriSession
      * The owner which will be notified about status changes of this session.
      */
     private final Owner owner;
-
-    /** Handler for Jibri get IQs. */
-    private JibriIqRequestHandler jibriIqRequestHandler;
 
     /**
      * Reference to scheduled {@link PendingStatusTimeout}
@@ -235,14 +230,7 @@ public class JibriSession
      */
     synchronized public void start()
     {
-        if (jibriIqRequestHandler == null)
-        {
-            xmpp.addAsyncStanzaListener(this, this);
-            jibriIqRequestHandler = new JibriIqRequestHandler();
-            xmpp.registerIQRequestHandler(jibriIqRequestHandler);
-
-            tryStartRestartJibri(null);
-        }
+        tryStartRestartJibri(null);
     }
 
     /**
@@ -253,11 +241,6 @@ public class JibriSession
      */
     synchronized public XMPPError stop()
     {
-        if (jibriIqRequestHandler == null)
-        {
-            return null;
-        }
-
         try
         {
             jibriEventHandler.stop(FocusBundleActivator.bundleContext);
@@ -304,10 +287,6 @@ public class JibriSession
             setJibriStatus(JibriIq.Status.OFF, null);
         }
 
-        xmpp.removeAsyncStanzaListener(this);
-        xmpp.unregisterIQRequestHandler(jibriIqRequestHandler);
-        jibriIqRequestHandler = null;
-
         return error;
     }
 
@@ -338,7 +317,7 @@ public class JibriSession
 
         logger.info("Trying to stop: " + stopRequest.toXML());
 
-        IQ stopReply = (IQ) xmpp.sendPacketAndGetReply(stopRequest);
+        IQ stopReply = xmpp.sendPacketAndGetReply(stopRequest);
 
         logger.info("Stop response: " + IQUtils.responseToXML(stopReply));
 
@@ -373,63 +352,11 @@ public class JibriSession
      * by this session.
      * {@inheritDoc}
      */
-    @Override
-    public boolean accept(Stanza packet)
+    public boolean accept(JibriIq packet)
     {
-        return packet instanceof IQ
-            && currentJibriJid != null
+        return currentJibriJid != null
             && (packet.getFrom().asBareJid()
                     .equals(currentJibriJid.asBareJid()));
-    }
-
-    /**
-     * <tt>JibriIq</tt> processing.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void processStanza(Stanza packet)
-    {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug(
-                "Processing an IQ from Jibri: " + packet.toXML());
-        }
-
-        IQ iq = (IQ) packet;
-
-        if (IQ.Type.result.equals(iq.getType()))
-        {
-            return;
-        }
-
-        if (IQ.Type.error.equals(iq.getType()))
-        {
-            //processJibriError(iq.getError());
-            XMPPError error = iq.getError();
-            logger.info(currentJibriJid + " failed for room "
-                + roomName + " with "
-                + (error != null ? error.toXML() : "null"));
-
-            tryStartRestartJibri(error);
-        }
-    }
-
-    private class JibriIqRequestHandler extends AbstractIqRequestHandler
-    {
-        JibriIqRequestHandler()
-        {
-            super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE,
-                    IQ.Type.get, Mode.sync);
-        }
-
-        @Override
-        public IQ handleIQRequest(IQ iq)
-        {
-            JibriIq jibriIq = (JibriIq) iq;
-            processJibriIqFromJibri(jibriIq);
-            return IQ.createResultIQ(iq);
-        }
     }
 
     /**
@@ -441,7 +368,7 @@ public class JibriSession
         return this.isSIP ? "SIP Jibri" : "Jibri";
     }
 
-    private void processJibriIqFromJibri(JibriIq iq)
+    public IQ processJibriIqFromJibri(JibriIq iq)
     {
         // We have something from Jibri - let's update recording status
         JibriIq.Status status = iq.getStatus();
@@ -472,6 +399,8 @@ public class JibriSession
                 setJibriStatus(status, null);
             }
         }
+
+        return IQ.createResultIQ(iq);
     }
 
     /**
