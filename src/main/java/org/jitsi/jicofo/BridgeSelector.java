@@ -179,7 +179,6 @@ public class BridgeSelector
      */
     private BridgeSelectionStrategy createBridgeSelectionStrategy()
     {
-        Class clazz = SingleBridgeSelectionStrategy.class;
         ConfigurationService config = FocusBundleActivator.getConfigService();
         if (config != null)
         {
@@ -191,27 +190,18 @@ public class BridgeSelector
                     + "$" + clazzName;
                 try
                 {
-                    clazz = Class.forName(clazzName);
+                    Class clazz = Class.forName(clazzName);
+                    return (BridgeSelectionStrategy)clazz.newInstance();
                 }
-                catch (ClassNotFoundException e)
+                catch (Exception e)
                 {
                     logger.error("Failed to find class: " + clazzName, e);
-                    clazz = SingleBridgeSelectionStrategy.class;
                 }
             }
         }
 
-        try
-        {
-            return (BridgeSelectionStrategy) clazz.newInstance();
-        }
-        catch (Exception e)
-        {
-            logger.error(
-                    "Failed to instantiate " + clazz.getName()
-                    + ". Falling back to SingleBridgeSelectionStrategy.", e);
-            return new SingleBridgeSelectionStrategy();
-        }
+        logger.info("Using SingleBridgeSelectionStrategy");
+        return new SingleBridgeSelectionStrategy();
     }
 
     /**
