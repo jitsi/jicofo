@@ -18,14 +18,13 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.OperationSet;
-import org.jitsi.protocol.xmpp.*;
+import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.protocol.event.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * This operation is basically just an IQ handler for {@link JibriIq}s.
@@ -34,21 +33,23 @@ import java.util.List;
  */
 public class OperationSetJibri
     extends AbstractIqRequestHandler
-    implements OperationSet
+    implements OperationSet, RegistrationStateChangeListener
 {
     private final List<CommonJibriStuff> jibris = Collections.synchronizedList(
         new LinkedList<CommonJibriStuff>());
 
+    private final XmppProtocolProvider protocolProvider;
+
     /**
      * Creates a new instance of this class.
      *
-     * @param connection the XMPP connection on which requests from
-     *                   {@link JibriIq}s will be handled.
+     * @param protocolProvider the XMPP to which this instance is bound.
      */
-    public OperationSetJibri(XmppConnection connection)
+    public OperationSetJibri(XmppProtocolProvider protocolProvider)
     {
         super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.get, Mode.async);
-        connection.registerIQRequestHandler(this);
+        this.protocolProvider = protocolProvider;
+        protocolProvider.addRegistrationStateChangeListener(this);
     }
 
     /**
@@ -90,5 +91,15 @@ public class OperationSetJibri
 
         return IQ.createErrorResponse(iq, XMPPError.getBuilder(
             XMPPError.Condition.item_not_found));
+    }
+
+    @Override
+    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    {
+        // Do initializations which require valid connection
+        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        {
+            protocolProvider.getConnection().registerIQRequestHandler(this);
+        }
     }
 }
