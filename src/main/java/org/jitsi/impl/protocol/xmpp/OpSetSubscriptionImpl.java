@@ -24,6 +24,7 @@ import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
+import org.jitsi.util.StringUtils;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.pubsub.*;
 import org.jivesoftware.smackx.pubsub.listener.*;
@@ -98,9 +99,17 @@ public class OpSetSubscriptionImpl
     public OpSetSubscriptionImpl(XmppProtocolProvider parentProvider)
             throws XmppStringprepException
     {
-        this.pubSubAddress
-            = JidCreate.bareFrom(FocusBundleActivator.getConfigService()
-                    .getString(PUBSUB_ADDRESS_PNAME));
+        String pubSubAddressString = FocusBundleActivator.getConfigService()
+            .getString(PUBSUB_ADDRESS_PNAME);
+        if (!StringUtils.isNullOrEmpty(pubSubAddressString))
+        {
+            this.pubSubAddress = JidCreate.bareFrom(pubSubAddressString);
+        }
+        else
+        {
+            this.pubSubAddress = null;
+        }
+
         this.parentProvider = parentProvider;
     }
 
@@ -159,7 +168,7 @@ public class OpSetSubscriptionImpl
         for (org.jivesoftware.smackx.pubsub.Subscription subscription
                     : node.getSubscriptions())
         {
-            if (subscription.getJid().equals(jid))
+            if (subscription.getJid().equals(jid.toString()))
             {
                 return true;
             }
@@ -297,7 +306,7 @@ public class OpSetSubscriptionImpl
          * Subscription listeners.
          */
         private final List<SubscriptionListener> listeners
-            = new CopyOnWriteArrayList<SubscriptionListener>();
+            = new CopyOnWriteArrayList<>();
 
         /**
          * Retry strategy for subscribe operation.
