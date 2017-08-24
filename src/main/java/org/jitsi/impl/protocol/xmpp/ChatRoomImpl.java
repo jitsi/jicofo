@@ -235,7 +235,7 @@ public class ChatRoomImpl
             };
             muc.addPresenceInterceptor(presenceInterceptor);
 
-            muc.create(myNickName);
+            muc.createOrJoin(myNickName);
             muc.addParticipantListener(new PresenceListener()
             {
                 @Override
@@ -297,9 +297,15 @@ public class ChatRoomImpl
             }*/
             Form answer = config.createAnswerForm();
             // Room non-anonymous
-            FormField whois = new FormField("muc#roomconfig_whois");
+            String whoisFieldName = "muc#roomconfig_whois";
+            FormField whois = answer.getField(whoisFieldName);
+            if (whois == null)
+            {
+                whois = new FormField(whoisFieldName);
+                answer.addField(whois);
+            }
+
             whois.addValue("anyone");
-            answer.addField(whois);
             // Room moderated
             //FormField roomModerated
             //    = new FormField("muc#roomconfig_moderatedroom");
@@ -334,7 +340,6 @@ public class ChatRoomImpl
                 | NotAMucServiceException
                 | NoResponseException
                 | NotConnectedException
-                | MissingMucCreationAcknowledgeException
                 | InterruptedException e)
         {
             throw new OperationFailedException(
@@ -626,6 +631,11 @@ public class ChatRoomImpl
     @Override
     public XmppChatMember findChatMember(Jid mucJid)
     {
+        if (mucJid == null)
+        {
+            return null;
+        }
+
         ArrayList<ChatMemberImpl> copy;
         synchronized (members)
         {
@@ -634,7 +644,7 @@ public class ChatRoomImpl
 
         for (ChatMemberImpl member : copy)
         {
-            if (member.getJabberID().equals(mucJid))
+            if (mucJid.equals(member.getJabberID()))
             {
                 return member;
             }

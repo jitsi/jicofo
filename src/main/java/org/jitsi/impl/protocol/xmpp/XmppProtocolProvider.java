@@ -147,7 +147,7 @@ public class XmppProtocolProvider
 
         addSupportedOperationSet(
             OperationSetJibri.class,
-            new OperationSetJibri(this.getConnectionAdapter()));
+            new OperationSetJibri(this));
 
         try {
             addSupportedOperationSet(
