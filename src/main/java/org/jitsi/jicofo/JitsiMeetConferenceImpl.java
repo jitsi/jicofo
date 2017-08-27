@@ -121,7 +121,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Conference room chat instance.
      */
-    private ChatRoom2 chatRoom;
+    private volatile ChatRoom2 chatRoom;
 
     /**
      * Operation set used to handle Jingle sessions with conference peers.

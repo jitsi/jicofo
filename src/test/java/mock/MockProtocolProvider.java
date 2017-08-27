@@ -178,7 +178,7 @@ public class MockProtocolProvider
 
     public void includeJingleOpSet()
     {
-        this.jingleOpSet = new OperationSetJingleImpl(this.connection);
+        this.jingleOpSet = new MockOperationSetJingle(this);
 
         addSupportedOperationSet(
             OperationSetJingle.class,

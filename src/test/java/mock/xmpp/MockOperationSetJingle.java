@@ -15,42 +15,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp;
+package mock.xmpp;
 
-import net.java.sip.communicator.util.*;
-
-import org.jitsi.protocol.xmpp.*;
-
+import mock.MockProtocolProvider;
+import net.java.sip.communicator.util.Logger;
+import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider;
+import org.jitsi.protocol.xmpp.AbstractOperationSetJingle;
+import org.jitsi.protocol.xmpp.XmppConnection;
 import org.jxmpp.jid.EntityFullJid;
 
 import java.util.Objects;
 
 /**
- * Implementation of {@link OperationSetJingleImpl} for
+ * Implementation of {@link MockOperationSetJingle} for
  * {@link XmppProtocolProvider}.
  *
  * @author Pawel Domas
  */
-public class OperationSetJingleImpl
+public class MockOperationSetJingle
     extends AbstractOperationSetJingle
 {
     /**
      * The logger used by this class.
      */
     private final static Logger logger
-            = Logger.getLogger(OperationSetJingleImpl.class);
+            = Logger.getLogger(MockOperationSetJingle.class);
 
     /**
      * Parent {@link XmppProtocolProvider}.
      */
-    private final XmppProtocolProvider xmppProvider;
+    private final MockProtocolProvider xmppProvider;
 
     /**
      * Creates new instance of <tt>OperationSetJingleImpl</tt>.
      *
      * @param xmppProvider parent XMPP protocol provider
      */
-    OperationSetJingleImpl(XmppProtocolProvider xmppProvider)
+    public MockOperationSetJingle(MockProtocolProvider xmppProvider)
     {
         Objects.requireNonNull(xmppProvider);
         this.xmppProvider = xmppProvider;
@@ -62,7 +63,7 @@ public class OperationSetJingleImpl
      */
     protected EntityFullJid getOurJID()
     {
-        return xmppProvider.getOurJid();
+        return getConnection().getUser();
     }
 
     /**
@@ -70,6 +71,6 @@ public class OperationSetJingleImpl
      */
     protected XmppConnection getConnection()
     {
-        return xmppProvider.getConnectionAdapter();
+        return xmppProvider.getXmppConnection();
     }
 }

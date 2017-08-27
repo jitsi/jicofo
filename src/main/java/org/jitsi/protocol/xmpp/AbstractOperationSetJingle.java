@@ -309,6 +309,15 @@ public abstract class AbstractOperationSetJingle
                 iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
 
+        if (session == null)
+        {
+            logger.error(
+                "Action: " + action
+                    + ", no session found for SID " + iq.getSID());
+            return IQ.createErrorResponse(
+                iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
+        }
+
         JingleRequestHandler requestHandler = session.getRequestHandler();
         XMPPError error = null;
         switch (action)
