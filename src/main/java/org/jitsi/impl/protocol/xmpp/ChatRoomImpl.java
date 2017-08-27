@@ -650,7 +650,7 @@ public class ChatRoomImpl
 
         for (ChatMemberImpl member : copy)
         {
-            if (mucJid.equals(member.getJabberID()))
+            if (mucJid.toString().equals(member.getContactAddress()))
             {
                 return member;
             }
