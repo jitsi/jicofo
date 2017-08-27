@@ -50,7 +50,7 @@ import java.util.concurrent.*;
  */
 public class ChatRoomImpl
     extends AbstractChatRoom
-    implements ChatRoom2
+    implements ChatRoom2, PresenceListener
 {
     /**
      * The logger used by this class.
@@ -217,6 +217,52 @@ public class ChatRoomImpl
     }
 
     @Override
+    public void processPresence(Presence presence)
+    {
+        if (!presence.isAvailable())
+        {
+            return;
+        }
+
+        if (conference == null)
+        {
+            logger.debug("Conference not set for room "
+                + roomName);
+            return;
+        }
+
+        if (conference.isFocusMember(presence.getFrom()))
+        {
+            return; // Not interested in local presence
+        }
+
+        ChatRoomMemberRole memberRole = conference
+            .getRoleForMucJid(presence.getFrom());
+        if (memberRole == null)
+        {
+            logger.warn("Failed to get user's role for: "
+                + presence.getFrom());
+            return;
+        }
+
+        if (memberRole.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+        {
+            StartMutedPacketExtension ext
+                = presence.getExtension(
+                StartMutedPacketExtension.ELEMENT_NAME,
+                StartMutedPacketExtension.NAMESPACE);
+
+            if (ext != null)
+            {
+                boolean[] startMuted
+                    = { ext.getAudioMuted(), ext.getVideoMuted() };
+
+                conference.setStartMuted(startMuted);
+            }
+        }
+    }
+
+    @Override
     public void joinAs(String nickname)
         throws OperationFailedException
     {
@@ -236,55 +282,7 @@ public class ChatRoomImpl
             muc.addPresenceInterceptor(presenceInterceptor);
 
             muc.createOrJoin(myNickName);
-            muc.addParticipantListener(new PresenceListener()
-            {
-                @Override
-                public void processPresence(Presence presence)
-                {
-                    if (!presence.isAvailable())
-                    {
-                        return;
-                    }
-
-                    if (conference == null)
-                    {
-                        logger.error("Conference not set for room "
-                            + roomName);
-                        return;
-                    }
-
-                    if (conference.isFocusMember(presence.getFrom()))
-                    {
-                        return; // Not interested in local presence
-                    }
-
-                    ChatRoomMemberRole memberRole = conference
-                        .getRoleForMucJid(presence.getFrom());
-                    if (memberRole == null)
-                    {
-                        logger.warn("Failed to get user's role for: "
-                            + presence.getFrom());
-                        return;
-                    }
-
-                    if (memberRole.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
-                    {
-                        StartMutedPacketExtension ext
-                            = presence.getExtension(
-                                StartMutedPacketExtension.ELEMENT_NAME,
-                                StartMutedPacketExtension.NAMESPACE);
-
-                        if (ext != null)
-                        {
-                            boolean[] startMuted
-                                = { ext.getAudioMuted(), ext.getVideoMuted() };
-
-                            conference.setStartMuted(startMuted);
-                        }
-                    }
-                }
-            });
-            //muc.join(nickname);
+            muc.addParticipantListener(this);
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -417,9 +415,17 @@ public class ChatRoomImpl
         if (connection != null && connection.isConnected())
             muc.removeParticipantListener(participantListener);
 
-        // FIXME smack4: there used to be a custom dispose() method
-        // if leave() fails, the might still be some listeners lingering around
-        // muc.dispose();
+        try
+        {
+            // FIXME smack4: there used to be a custom dispose() method
+            // if leave() fails, there might still be some listeners lingering
+            // around
+            muc.leave();
+        }
+        catch (NotConnectedException | InterruptedException e)
+        {
+            logger.warn("Could not properly leave " + muc.toString(), e);
+        }
 
         opSet.removeRoom(this);
     }
