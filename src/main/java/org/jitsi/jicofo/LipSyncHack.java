@@ -146,7 +146,6 @@ public class LipSyncHack implements OperationSetJingle
         if (streamsOwner == null)
         {
             // Do not log that error for the JVB
-            // FIXME smack4 - ssrc_owner_jvb should be a JID
             if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
                 logger.error(
                         "Stream owner not a participant or not found for jid: "
@@ -183,7 +182,6 @@ public class LipSyncHack implements OperationSetJingle
 
         // The stream is merged most of the time and it's not that interesting.
         // FIXME JVBs SSRCs are not merged currently, but maybe should be ?
-        // FIXME smack4 - should be a JID
         if (merged || SSRCSignaling.SSRC_OWNER_JVB.equals(owner))
             logger.debug(logMsg);
         else

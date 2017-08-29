@@ -404,16 +404,20 @@ public class ChatRoomImpl
                 reason,
                 alternateAddress);*/
 
-        // FIXME smack4: requires Smack#159
-//        if (presenceInterceptor != null)
-//        {
-//            muc.removePresenceInterceptor(presenceInterceptor);
-//        }
+        if (presenceInterceptor != null)
+        {
+            muc.removePresenceInterceptor(presenceInterceptor);
+        }
 
-        muc.removeParticipantStatusListener(memberListener);
+        if (memberListener != null)
+        {
+            muc.removeParticipantStatusListener(memberListener);
+        }
 
-        if (connection != null && connection.isConnected())
+        if (participantListener != null)
+        {
             muc.removeParticipantListener(participantListener);
+        }
 
         try
         {
