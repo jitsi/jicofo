@@ -29,7 +29,7 @@ import org.junit.runners.*;
 
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-import org.xmpp.packet.IQ;
+import org.xmpp.packet.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

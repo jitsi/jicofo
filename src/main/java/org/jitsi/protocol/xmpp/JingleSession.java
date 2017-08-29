@@ -17,7 +17,7 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

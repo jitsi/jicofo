@@ -18,7 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

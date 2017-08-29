@@ -19,8 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 
-import org.jitsi.protocol.xmpp.colibri.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 /**
  * Class adds utility methods that require use of package protected methods of

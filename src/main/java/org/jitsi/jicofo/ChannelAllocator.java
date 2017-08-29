@@ -28,8 +28,7 @@ import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

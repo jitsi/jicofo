@@ -19,8 +19,7 @@ package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

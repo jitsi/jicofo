@@ -24,7 +24,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 
-import org.jxmpp.jid.DomainBareJid;
+import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 

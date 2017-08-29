@@ -20,8 +20,7 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 /**
  * XMPP extended interface of {@link ChatRoomMember}.

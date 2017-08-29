@@ -25,7 +25,7 @@ import org.jxmpp.jid.Jid;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 

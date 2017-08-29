@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.discovery;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
@@ -26,8 +25,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

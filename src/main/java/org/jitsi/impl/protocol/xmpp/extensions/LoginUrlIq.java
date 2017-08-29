@@ -18,8 +18,8 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import org.jitsi.util.*;
-import org.jivesoftware.smack.packet.IQ;
-import org.jxmpp.jid.EntityBareJid;
+import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.io.*;
 import java.net.*;

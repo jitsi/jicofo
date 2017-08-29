@@ -32,8 +32,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;

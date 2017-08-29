@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.discovery;
 
-import org.jivesoftware.smack.provider.IQProvider;
-import org.xmlpull.v1.XmlPullParser;
+import org.jivesoftware.smack.provider.*;
+import org.xmlpull.v1.*;
 
 /**
  * Fake IQ provider that doesn't actually parse version elements but returns

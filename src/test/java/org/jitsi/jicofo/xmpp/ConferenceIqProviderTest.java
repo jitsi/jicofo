@@ -17,14 +17,14 @@
  */
 package org.jitsi.jicofo.xmpp;
 
-import org.custommonkey.xmlunit.Diff;
+import org.custommonkey.xmlunit.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
-import org.xml.sax.SAXException;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
+import org.xml.sax.*;
 
 import java.io.*;
 import java.net.*;

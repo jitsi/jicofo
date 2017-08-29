@@ -32,7 +32,7 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;

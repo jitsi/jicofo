@@ -19,9 +19,7 @@ package org.jitsi.jicofo.auth;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 /**
  * FIXME work in progress, still have to integrate OAuth

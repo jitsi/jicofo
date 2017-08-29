@@ -28,8 +28,6 @@ import org.jitsi.osgi.*;
 import org.jitsi.service.version.*;
 
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.util.*;

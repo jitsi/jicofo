@@ -18,20 +18,20 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
-
+import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.util.StringUtils;
+import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.pubsub.*;
+import org.jivesoftware.smackx.pubsub.PubSubException.NotAPubSubNodeException;
 import org.jivesoftware.smackx.pubsub.listener.*;
-import org.jxmpp.jid.BareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -250,7 +250,8 @@ public class OpSetSubscriptionImpl
         catch (XMPPException
                 | InterruptedException
                 | NoResponseException
-                | NotConnectedException e)
+                | NotConnectedException
+                | NotAPubSubNodeException e)
         {
             logger.error(
                 "Failed to fetch PubSub items of: " + nodeName +
@@ -447,7 +448,8 @@ public class OpSetSubscriptionImpl
             catch (XMPPException
                     | InterruptedException
                     | NoResponseException
-                    | NotConnectedException e)
+                    | NotConnectedException
+                    | NotAPubSubNodeException e)
             {
                 logger.error(
                     "An error occurred while trying to unsubscribe from" +

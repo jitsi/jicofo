@@ -21,9 +21,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
 
-import org.jxmpp.jid.EntityFullJid;
-
-import java.util.Objects;
+import org.jxmpp.jid.*;
 
 /**
  * Implementation of {@link OperationSetJingleImpl} for
@@ -52,7 +50,6 @@ public class OperationSetJingleImpl
      */
     OperationSetJingleImpl(XmppProtocolProvider xmppProvider)
     {
-        Objects.requireNonNull(xmppProvider);
         this.xmppProvider = xmppProvider;
     }
 

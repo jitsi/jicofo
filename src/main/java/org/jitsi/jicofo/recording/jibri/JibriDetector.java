@@ -24,7 +24,7 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in

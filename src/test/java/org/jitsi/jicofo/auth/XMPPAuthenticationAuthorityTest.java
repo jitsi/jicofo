@@ -17,25 +17,17 @@
  */
 package org.jitsi.jicofo.auth;
 
-import mock.MockMainMethodActivator;
-import net.java.sip.communicator.util.ServiceUtils;
-import org.jitsi.impl.protocol.xmpp.extensions.ConferenceIq;
-import org.jitsi.impl.protocol.xmpp.extensions.SessionInvalidPacketExtension;
-import org.jitsi.jicofo.FocusBundleActivator;
-import org.jitsi.jicofo.OSGiHandler;
-import org.jitsi.jicofo.xmpp.FocusComponent;
-import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.XMPPError;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import mock.*;
+import net.java.sip.communicator.util.*;
+import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.*;
+import org.jivesoftware.smack.packet.*;
+import org.junit.*;
+import org.junit.runner.*;
 import org.junit.runners.JUnit4;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;

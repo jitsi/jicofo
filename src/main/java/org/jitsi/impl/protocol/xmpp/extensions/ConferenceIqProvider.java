@@ -22,8 +22,8 @@ import org.jitsi.util.*;
 
 import org.jivesoftware.smack.provider.*;
 
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.xmlpull.v1.*;
 
 /**

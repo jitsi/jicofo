@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.*;
 import org.jitsi.rest.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import java.util.*;

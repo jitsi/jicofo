@@ -25,8 +25,8 @@ import net.java.sip.communicator.service.protocol.globalstatus.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.parts.Resourcepart;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 

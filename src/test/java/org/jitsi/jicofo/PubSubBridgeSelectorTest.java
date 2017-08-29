@@ -28,8 +28,8 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.jicofo.util.DaemonThreadFactory;
-import org.jitsi.protocol.xmpp.XmppConnection;
+import org.jitsi.jicofo.util.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.stats.*;
 

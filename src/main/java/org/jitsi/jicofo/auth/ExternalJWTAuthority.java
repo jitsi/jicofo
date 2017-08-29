@@ -17,9 +17,7 @@
  */
 package org.jitsi.jicofo.auth;
 
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.*;
 
 /**
  * Special case of <tt>XMPPDomainAuthAuthority</tt> where the user is

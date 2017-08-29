@@ -17,14 +17,13 @@
  */
 package mock.xmpp;
 
-import mock.MockProtocolProvider;
-import net.java.sip.communicator.util.Logger;
-import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider;
-import org.jitsi.protocol.xmpp.AbstractOperationSetJingle;
-import org.jitsi.protocol.xmpp.XmppConnection;
-import org.jxmpp.jid.EntityFullJid;
+import mock.*;
+import net.java.sip.communicator.util.*;
+import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.*;
+import org.jxmpp.jid.*;
 
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Implementation of {@link MockOperationSetJingle} for

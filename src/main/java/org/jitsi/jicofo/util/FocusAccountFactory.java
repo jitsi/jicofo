@@ -19,11 +19,10 @@ package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.parts.Resourcepart;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
+import org.jxmpp.stringprep.*;
 
-import javax.annotation.Resource;
 import java.util.*;
 
 /**

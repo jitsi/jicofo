@@ -992,8 +992,16 @@ public class ChatRoomImpl
 
     public Occupant getOccupant(ChatMemberImpl chatMemeber)
     {
-        return muc.getOccupant(
-                chatMemeber.getJabberID().asEntityFullJidOrThrow());
+        try
+        {
+            return muc.getOccupant(
+                JidCreate.entityFullFrom(chatMemeber.getContactAddress()));
+        }
+        catch (XmppStringprepException e)
+        {
+            // the contact address was converted from a Jid
+            throw new RuntimeException(e);
+        }
     }
 
     /**

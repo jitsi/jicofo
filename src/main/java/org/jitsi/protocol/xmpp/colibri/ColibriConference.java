@@ -23,8 +23,8 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.parts.Localpart;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 

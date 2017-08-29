@@ -22,7 +22,7 @@ import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 import org.json.simple.parser.*;
-import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.*;
 
 import java.io.*;
 import java.util.*;

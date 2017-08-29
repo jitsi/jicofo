@@ -18,10 +18,9 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 
-import org.jitsi.util.StringUtils;
-import org.jivesoftware.smack.provider.IQProvider;
-import org.jivesoftware.smack.provider.ProviderManager;
-import org.xmlpull.v1.XmlPullParser;
+import org.jitsi.util.*;
+import org.jivesoftware.smack.provider.*;
+import org.xmlpull.v1.*;
 
 /**
  * Provider handles parsing of {@link ConferenceIq} and {@link LoginUrlIq}

@@ -18,7 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import org.jitsi.util.*;
-import org.jivesoftware.smack.packet.IQ;
+import org.jivesoftware.smack.packet.*;
 
 import java.io.*;
 import java.net.*;

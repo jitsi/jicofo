@@ -18,7 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 /**
  * IQ used for the signaling of audio muting functionality in Jitsi Meet

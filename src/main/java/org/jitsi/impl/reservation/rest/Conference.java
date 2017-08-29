@@ -19,9 +19,8 @@ package org.jitsi.impl.reservation.rest;
 
 import org.jitsi.impl.reservation.rest.json.*;
 import org.jitsi.util.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.parts.Localpart;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 

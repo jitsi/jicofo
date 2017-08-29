@@ -18,9 +18,8 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
-import org.jivesoftware.smack.packet.ExtensionElement;
-import org.jivesoftware.smack.packet.IQ;
-import org.jxmpp.jid.EntityBareJid;
+import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

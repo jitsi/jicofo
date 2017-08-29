@@ -28,7 +28,7 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.util.Logger;
 
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 

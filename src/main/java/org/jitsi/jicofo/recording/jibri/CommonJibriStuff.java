@@ -116,7 +116,6 @@ public abstract class CommonJibriStuff
                            JitsiMeetGlobalConfig           globalConfig,
                            Logger                          logger)
     {
-
         this.isSIP = isSIP;
         this.connection
             = Objects.requireNonNull(xmppConnection, "xmppConnection");

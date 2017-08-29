@@ -18,10 +18,10 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.util.Logger;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jitsi.util.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 

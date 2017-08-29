@@ -24,11 +24,9 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.*;
 import org.jitsi.util.Logger;
 import org.jitsi.eventadmin.*;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

@@ -21,7 +21,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.reservation.rest.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
-import org.jxmpp.jid.parts.Localpart;
+import org.jxmpp.jid.parts.*;
 
 import java.io.*;
 import java.text.*;

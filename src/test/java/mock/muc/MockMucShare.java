@@ -20,8 +20,8 @@ package mock.muc;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
-import org.jitsi.protocol.xmpp.XmppChatMember;
-import org.jxmpp.jid.EntityBareJid;
+import org.jitsi.protocol.xmpp.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

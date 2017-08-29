@@ -33,11 +33,8 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
-import org.jxmpp.jid.BareJid;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 import org.xmpp.packet.IQ;
 
@@ -476,7 +473,8 @@ public class FocusComponent
                     .createErrorResponse(authUrlIq, error);
         }
 
-        EntityFullJid peerFullJid = authUrlIq.getFrom().asEntityFullJidIfPossible();
+        EntityFullJid peerFullJid
+            = authUrlIq.getFrom().asEntityFullJidIfPossible();
         EntityBareJid roomName = authUrlIq.getRoom();
         if (roomName == null)
         {

@@ -22,7 +22,7 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.jicofo.JitsiMeetConference;
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;

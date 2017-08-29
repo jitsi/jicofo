@@ -20,7 +20,7 @@ package org.jitsi.jicofo.reservation;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.*;
 
 /**
  * FIXME: work in progress

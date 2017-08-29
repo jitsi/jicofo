@@ -19,7 +19,7 @@ package org.jitsi.protocol.xmpp.util;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
-import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;

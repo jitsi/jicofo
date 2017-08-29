@@ -26,8 +26,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
 
-import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler;
-import org.jivesoftware.smack.iqrequest.IQRequestHandler;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.Jid;
 

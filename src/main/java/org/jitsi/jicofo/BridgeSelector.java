@@ -29,10 +29,9 @@ import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.util.*;
