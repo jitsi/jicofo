@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ParticipantTest
 {
-    private static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = OSGiHandler.getInstance();
 
     private MockJitsiMeetConference mockConference;
     private MockRoomMember roomMember;
@@ -61,14 +61,14 @@ public class ParticipantTest
 
     @BeforeClass
     public static void setUpClass()
-            throws Exception
+        throws Exception
     {
         osgi.init();
     }
 
     @AfterClass
     public static void tearDownClass()
-            throws Exception
+        throws Exception
     {
         osgi.shutdown();
     }
@@ -235,7 +235,10 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("Source ssrc=1 is in audio already", exc.getMessage());
+            String errorMsg = exc.getMessage();
+            assertEquals(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                "Source ssrc=1 is in audio already", errorMsg);
         }
     }
 
@@ -264,7 +267,10 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("Source ssrc=1 is in audio already", exc.getMessage());
+            String errorMsg = exc.getMessage();
+            assertEquals(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                "Source ssrc=1 is in audio already", errorMsg);
         }
     }
 
@@ -292,7 +298,8 @@ public class ParticipantTest
         catch (InvalidSSRCsException exc)
         {
             assertEquals(
-                "Not grouped SSRC 3 has conflicting MSID 'stream2' with 2",
+                "Not grouped SSRC 3 has conflicting"
+                    + " MSID 'stream2 track2' with 2",
                 exc.getMessage());
         }
     }
@@ -311,6 +318,32 @@ public class ParticipantTest
         {
             participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect MSID mismatch in 10+20 FID group");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                errorMsg.startsWith(
+                    "MSID mismatch detected "
+                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
+        }
+    }
+
+    @Test
+    public void testTrackMismatchInTheSameGroup()
+    {
+        // Overwrite SSRC 20 with wrong track id part of the MSID
+        this.videoSSRCs[1]
+            = createGroupSSRC(20L, "videocname", "vstream wrongTrack");
+
+        this.addDefaultVideoSSRCs();
+        this.addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect track mismatch in 10+20 FID group");
         }
         catch (InvalidSSRCsException exc)
         {
@@ -423,8 +456,12 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException e)
         {
-            assertTrue(e.getMessage(), e.getMessage().startsWith(
-                "Source ssrc=2 not found in video for group: SourceGroup[FID, ssrc=1, ssrc=2, ]"));
+            String errorMsg = e.getMessage();
+            assertTrue(
+                    "Invalid message (constant needs update ?): " + errorMsg,
+                    errorMsg.startsWith(
+                        "Source ssrc=2 not found in video for group:"
+                            + " SourceGroup[FID, ssrc=1, ssrc=2, ]"));
         }
     }
 

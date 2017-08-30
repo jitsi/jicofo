@@ -152,6 +152,25 @@ public class SSRCSignaling
     }
 
     /**
+     * Obtains the MSID attribute value of given {@link SourcePacketExtension}.
+     * @param source {@link SourcePacketExtension}
+     * @return <tt>String</tt> value of the MSID attribute of given source
+     * extension or <tt>null</tt> if it's either empty or not present.
+     */
+    public static String getMsid(SourcePacketExtension source)
+    {
+        ParameterPacketExtension msid = getParam(source, "msid");
+        if (msid != null && !StringUtils.isNullOrEmpty(msid.getValue()))
+        {
+            return msid.getValue();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    /**
      * Obtains <tt>ParameterPacketExtension</tt> for given name(if it exists).
      * @param ssrc the <tt>SourcePacketExtension</tt> to be searched for
      *             parameter
@@ -193,12 +212,12 @@ public class SSRCSignaling
      */
     public static String getStreamId(SourcePacketExtension ssrc)
     {
-        ParameterPacketExtension msid = getParam(ssrc, "msid");
+        String msid = getMsid(ssrc);
 
-        if (msid == null || StringUtils.isNullOrEmpty(msid.getValue()))
+        if (msid == null)
             return null;
 
-        String[] streamAndTrack = msid.getValue().split(" ");
+        String[] streamAndTrack = msid.split(" ");
         String streamId = streamAndTrack.length == 2 ? streamAndTrack[0] : null;
         if (streamId != null) {
             streamId = streamId.trim();
@@ -217,12 +236,12 @@ public class SSRCSignaling
      */
     private static String getTrackId(SourcePacketExtension ssrc)
     {
-        ParameterPacketExtension msid = getParam(ssrc, "msid");
+        String msid = getMsid(ssrc);
 
-        if (msid == null || StringUtils.isNullOrEmpty(msid.getValue()))
+        if (msid == null)
             return null;
 
-        String[] streamAndTrack = msid.getValue().split(" ");
+        String[] streamAndTrack = msid.split(" ");
         String trackId = streamAndTrack.length == 2 ? streamAndTrack[1] : null;
         if (trackId != null) {
             trackId = trackId.trim();
