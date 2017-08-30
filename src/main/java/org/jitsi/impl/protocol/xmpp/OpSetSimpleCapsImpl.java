@@ -23,9 +23,8 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.SmackException.NoResponseException;
-import org.jivesoftware.smack.SmackException.NotConnectedException;
-import org.jxmpp.jid.Jid;
+import org.jivesoftware.smack.SmackException.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 

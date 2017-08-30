@@ -206,14 +206,6 @@ public class ConferenceIq
         return (List)getExtensions(
                 Property.ELEMENT_NAME,
                 ConferenceIq.NAMESPACE);
-//        List<Property> result = new ArrayList<>();
-//        for (ExtensionElement ee :
-//                getExtensions(Property.ELEMENT_NAME, ConferenceIq.NAMESPACE))
-//        {
-//            result.add((Property)ee);
-//        }
-//
-//        return result;
     }
 
     /**
