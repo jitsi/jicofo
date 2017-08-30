@@ -264,7 +264,7 @@ public class SSRCValidator
                     {
                         long ssrcValue = source.getSSRC();
                         // Grouped SSRC needs to have some MSID
-                        String msid = SSRCSignaling.getStreamId(sourceInMedia);
+                        String msid = SSRCSignaling.getMsid(sourceInMedia);
                         if (StringUtils.isNullOrEmpty(msid))
                         {
                             throw new InvalidSSRCsException(
@@ -303,21 +303,21 @@ public class SSRCValidator
                 = notGroupedSSRCs.getSourcesForMedia(mediaType);
             for (SourcePacketExtension ssrc : mediaSSRCs)
             {
-                String streamId = SSRCSignaling.getStreamId(ssrc);
-                if (streamId != null)
+                String msid = SSRCSignaling.getMsid(ssrc);
+                if (msid != null)
                 {
                     SourcePacketExtension conflictingSSRC
-                        = streamMap.get(streamId);
+                        = streamMap.get(msid);
                     if (conflictingSSRC != null)
                     {
                         throw new InvalidSSRCsException(
                             "Not grouped SSRC " + ssrc.getSSRC()
-                                + " has conflicting MSID '" + streamId
+                                + " has conflicting MSID '" + msid
                                 + "' with " + conflictingSSRC.getSSRC());
                     }
                     else
                     {
-                        streamMap.put(streamId, ssrc);
+                        streamMap.put(msid, ssrc);
                     }
                 }
                 // else

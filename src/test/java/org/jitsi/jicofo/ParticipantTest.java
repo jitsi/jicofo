@@ -287,7 +287,8 @@ public class ParticipantTest
         catch (InvalidSSRCsException exc)
         {
             assertEquals(
-                "Not grouped SSRC 3 has conflicting MSID 'stream2' with 2",
+                "Not grouped SSRC 3 has conflicting"
+                    + " MSID 'stream2 track2' with 2",
                 exc.getMessage());
         }
     }
@@ -306,6 +307,32 @@ public class ParticipantTest
         {
             participant.addSourcesAndGroupsFromContent(answerContents);
             fail("Did not detect MSID mismatch in 10+20 FID group");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                errorMsg.startsWith(
+                    "MSID mismatch detected "
+                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
+        }
+    }
+
+    @Test
+    public void testTrackMismatchInTheSameGroup()
+    {
+        // Overwrite SSRC 20 with wrong track id part of the MSID
+        this.videoSSRCs[1]
+            = createGroupSSRC(20L, "videocname", "vstream wrongTrack");
+
+        this.addDefaultVideoSSRCs();
+        this.addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect track mismatch in 10+20 FID group");
         }
         catch (InvalidSSRCsException exc)
         {
