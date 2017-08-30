@@ -129,7 +129,14 @@ public class SSRCValidator
 
             for (SourcePacketExtension source : mediaSources)
             {
-                if (source.hasSSRC())
+                if (!source.hasSSRC() && !source.hasRid())
+                {
+                    // SourcePacketExtension treats -1 as lack of SSRC
+                    throw new InvalidSSRCsException(
+                            "Source with no value was passed"
+                                + " (parsed from negative ?)");
+                }
+                else if (source.hasSSRC())
                 {
                     long ssrcValue = source.getSSRC();
 
@@ -249,7 +256,7 @@ public class SSRCValidator
                     if (sourceInMedia == null)
                     {
                         String errorMsg
-                                = "Source  " + source.toString() + " not found in "
+                                = "Source " + source.toString() + " not found in "
                                 + mediaType + " for group: " + group;
                         throw new InvalidSSRCsException(errorMsg);
                     }

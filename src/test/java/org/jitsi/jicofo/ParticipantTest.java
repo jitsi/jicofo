@@ -42,6 +42,8 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ParticipantTest
 {
+    static OSGiHandler osgi = OSGiHandler.getInstance();
+
     private MockJitsiMeetConference mockConference;
     private MockRoomMember roomMember;
     private Participant participant;
@@ -54,6 +56,20 @@ public class ParticipantTest
 
     private SourcePacketExtension[] videoSSRCs;
     private SourceGroupPacketExtension[] videoGroups;
+
+    @BeforeClass
+    public static void setUpClass()
+        throws Exception
+    {
+        osgi.init();
+    }
+
+    @AfterClass
+    public static void tearDownClass()
+        throws Exception
+    {
+        osgi.shutdown();
+    }
 
     @Before
     public void setUpContents()
@@ -150,7 +166,9 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("Illegal SSRC value: -1", exc.getMessage());
+            assertEquals(
+                "Source with no value was passed (parsed from negative ?)",
+                exc.getMessage());
         }
     }
 
@@ -206,7 +224,10 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("SSRC 1 is in audio already", exc.getMessage());
+            String errorMsg = exc.getMessage();
+            assertEquals(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                "Source ssrc=1 is in audio already", errorMsg);
         }
     }
 
@@ -235,7 +256,10 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals("SSRC 1 is in audio already", exc.getMessage());
+            String errorMsg = exc.getMessage();
+            assertEquals(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                "Source ssrc=1 is in audio already", errorMsg);
         }
     }
 
@@ -290,7 +314,7 @@ public class ParticipantTest
                 "Invalid message (constant needs update ?): " + errorMsg,
                 errorMsg.startsWith(
                     "MSID mismatch detected "
-                        + "in group SourceGroup[FID, 10, 20, ]"));
+                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
         }
     }
 
@@ -394,8 +418,12 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException e)
         {
-            assertTrue(e.getMessage().startsWith(
-                "SSRC 2 not found in video for group: SourceGroup[FID, 1, 2, ]"));
+            String errorMsg = e.getMessage();
+            assertTrue(
+                    "Invalid message (constant needs update ?): " + errorMsg,
+                    errorMsg.startsWith(
+                        "Source ssrc=2 not found in video for group:"
+                            + " SourceGroup[FID, ssrc=1, ssrc=2, ]"));
         }
     }
 

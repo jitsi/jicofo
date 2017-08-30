@@ -48,6 +48,7 @@ import org.junit.runners.*;
         MediaSourceGroupMapTest.class,
         MediaSourceMapTest.class,
         MockTest.class,
+        ParticipantTest.class,
         PubSubBridgeSelectorTest.class,
         RolesTest.class,
         XmppTest.class,
