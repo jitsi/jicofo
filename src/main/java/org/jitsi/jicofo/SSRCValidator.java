@@ -129,7 +129,14 @@ public class SSRCValidator
 
             for (SourcePacketExtension source : mediaSources)
             {
-                if (source.hasSSRC())
+                if (!source.hasSSRC() && !source.hasRid())
+                {
+                    // SourcePacketExtension treats -1 as lack of SSRC
+                    throw new InvalidSSRCsException(
+                            "Source with no value was passed"
+                                + " (parsed from negative ?)");
+                }
+                else if (source.hasSSRC())
                 {
                     long ssrcValue = source.getSSRC();
 
@@ -249,7 +256,7 @@ public class SSRCValidator
                     if (sourceInMedia == null)
                     {
                         String errorMsg
-                                = "Source  " + source.toString() + " not found in "
+                                = "Source " + source.toString() + " not found in "
                                 + mediaType + " for group: " + group;
                         throw new InvalidSSRCsException(errorMsg);
                     }
@@ -257,7 +264,7 @@ public class SSRCValidator
                     {
                         long ssrcValue = source.getSSRC();
                         // Grouped SSRC needs to have some MSID
-                        String msid = SSRCSignaling.getStreamId(sourceInMedia);
+                        String msid = SSRCSignaling.getMsid(sourceInMedia);
                         if (StringUtils.isNullOrEmpty(msid))
                         {
                             throw new InvalidSSRCsException(
@@ -296,21 +303,21 @@ public class SSRCValidator
                 = notGroupedSSRCs.getSourcesForMedia(mediaType);
             for (SourcePacketExtension ssrc : mediaSSRCs)
             {
-                String streamId = SSRCSignaling.getStreamId(ssrc);
-                if (streamId != null)
+                String msid = SSRCSignaling.getMsid(ssrc);
+                if (msid != null)
                 {
                     SourcePacketExtension conflictingSSRC
-                        = streamMap.get(streamId);
+                        = streamMap.get(msid);
                     if (conflictingSSRC != null)
                     {
                         throw new InvalidSSRCsException(
                             "Not grouped SSRC " + ssrc.getSSRC()
-                                + " has conflicting MSID '" + streamId
+                                + " has conflicting MSID '" + msid
                                 + "' with " + conflictingSSRC.getSSRC());
                     }
                     else
                     {
-                        streamMap.put(streamId, ssrc);
+                        streamMap.put(msid, ssrc);
                     }
                 }
                 // else
