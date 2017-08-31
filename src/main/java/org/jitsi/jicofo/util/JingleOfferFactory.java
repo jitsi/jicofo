@@ -95,6 +95,13 @@ public class JingleOfferFactory
     public static final String ENABLE_AST_PNAME = "org.jitsi.jicofo.ENABLE_AST";
 
     /**
+     * The name of the property which enables the inclusion of the REMB RTCP
+     * in the offer.
+     */
+    public static final String ENABLE_REMB_PNAME
+        = "org.jitsi.jicofo.ENABLE_REMB";
+
+    /**
      * The name of the property which enables the inclusion of the TOF RTP
      * header extension in the offer.
      */
@@ -152,6 +159,11 @@ public class JingleOfferFactory
     private final boolean enableTof;
 
     /**
+     * Whether to enable the REMB RTCP in created offers.
+     */
+    private final boolean enableRemb;
+
+    /**
      * Ctor.
      *
      * @param cfg the {@link ConfigurationService} to pull config options from.
@@ -174,6 +186,8 @@ public class JingleOfferFactory
         // (and currently clients seem to not use it when abs-send-time is
         // available).
         enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
+
+        enableRemb = cfg != null && cfg.getBoolean(ENABLE_REMB_PNAME, true);
     }
 
     /**
@@ -360,8 +374,6 @@ public class JingleOfferFactory
         // a=rtcp-fb:100 nack pli
         vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:100 goog-remb
-        vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
 
         if (minBitrate != -1)
         {
@@ -388,8 +400,6 @@ public class JingleOfferFactory
         // a=rtcp-fb:107 nack pli
         h264.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:107 goog-remb
-        h264.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
 
         if (minBitrate != -1)
         {
@@ -416,8 +426,20 @@ public class JingleOfferFactory
         // a=rtcp-fb:101 nack pli
         vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:101 goog-remb
-        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
+        if (enableRemb)
+        {
+            // a=rtcp-fb:100 goog-remb
+            vp8.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+
+            // a=rtcp-fb:107 goog-remb
+            h264.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+
+            // a=rtcp-fb:101 goog-remb
+            vp9.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+        }
 
         if (enableTcc)
         {
@@ -473,10 +495,6 @@ public class JingleOfferFactory
 
             // a=rtcp-fb:96 nack pli
             rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
-
-            // a=rtcp-fb:96 goog-remb
-            rtx.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("goog-remb", null));
 
             // a=rtpmap:99 rtx/90000
             PayloadTypePacketExtension rtxH264 = addPayloadTypeExtension(
