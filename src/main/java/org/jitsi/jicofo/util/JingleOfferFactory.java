@@ -89,6 +89,18 @@ public class JingleOfferFactory
     public static final String ENABLE_TCC_PNAME = "org.jitsi.jicofo.ENABLE_TCC";
 
     /**
+     * The name of the property which enables the inclusion of the AST RTP
+     * header extension in the offer.
+     */
+    public static final String ENABLE_AST_PNAME = "org.jitsi.jicofo.ENABLE_AST";
+
+    /**
+     * The name of the property which enables the inclusion of the TOF RTP
+     * header extension in the offer.
+     */
+    public static final String ENABLE_TOF_PNAME = "org.jitsi.jicofo.ENABLE_TOF";
+
+    /**
      * The VP8 payload type to include in the Jingle session-invite.
      */
     private final int VP8_PT;
@@ -130,6 +142,16 @@ public class JingleOfferFactory
     private final boolean enableTcc;
 
     /**
+     * Whether to enable the AST RTP header extension in created offers.
+     */
+    private final boolean enableAst;
+
+    /**
+     * Whether to enable the TOF RTP header extension in created offers.
+     */
+    private final boolean enableTof;
+
+    /**
      * Ctor.
      *
      * @param cfg the {@link ConfigurationService} to pull config options from.
@@ -146,6 +168,12 @@ public class JingleOfferFactory
             = cfg != null && cfg.getBoolean(ENABLE_FRAMEMARKING_PNAME, false);
 
         enableTcc = cfg != null && cfg.getBoolean(ENABLE_TCC_PNAME, false);
+        enableAst = cfg != null && cfg.getBoolean(ENABLE_AST_PNAME, true);
+
+        // TOF is currently disabled, because we don't support it in the bridge
+        // (and currently clients seem to not use it when abs-send-time is
+        // available).
+        enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
     }
 
     /**
@@ -285,23 +313,24 @@ public class JingleOfferFactory
 
         rtpDesc.setMedia("video");
 
-        // This is currently disabled, because we don't support it in the
-        // bridge (and currently clients seem to not use it when
-        // abs-send-time is available).
-        // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
-        //RTPHdrExtPacketExtension toOffset
-        //    = new RTPHdrExtPacketExtension();
-        //toOffset.setID("2");
-        //toOffset.setURI(
-        //    URI.create("urn:ietf:params:rtp-hdrext:toffset"));
-        //rtpDesc.addExtmap(toOffset);
+        if (enableTof)
+        {
+            // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
+            RTPHdrExtPacketExtension toOffset = new RTPHdrExtPacketExtension();
+            toOffset.setID("2");
+            toOffset.setURI(URI.create(RTPExtension.TOF_URN));
+            rtpDesc.addExtmap(toOffset);
+        }
 
-        // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
-        RTPHdrExtPacketExtension absSendTime
-            = new RTPHdrExtPacketExtension();
-        absSendTime.setID("3");
-        absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
-        rtpDesc.addExtmap(absSendTime);
+        if (enableAst)
+        {
+            // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+            RTPHdrExtPacketExtension absSendTime
+                = new RTPHdrExtPacketExtension();
+            absSendTime.setID("3");
+            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
+            rtpDesc.addExtmap(absSendTime);
+        }
 
         if (enableFrameMarking)
         {
