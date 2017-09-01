@@ -57,6 +57,11 @@ public class MockMediaStream
     }
 
     @Override
+    public void clearRTPExtensions()
+    {
+    }
+
+    @Override
     public void clearDynamicRTPPayloadTypes()
     {
     }

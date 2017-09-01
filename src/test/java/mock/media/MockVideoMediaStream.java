@@ -61,12 +61,6 @@ public class MockVideoMediaStream
     }
 
     @Override
-    public RemoteBitrateEstimator getRemoteBitrateEstimator()
-    {
-        return null;
-    }
-
-    @Override
     public Component getVisualComponent()
     {
         return null;

@@ -19,7 +19,6 @@ package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
-import org.jitsi.impl.libjitsi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.codec.*;
@@ -84,6 +83,31 @@ public class JingleOfferFactory
         = "org.jitsi.jicofo.ENABLE_FRAMEMARKING";
 
     /**
+     * The name of the property which enables the inclusion of the TCC RTP
+     * header extension in the offer.
+     */
+    public static final String ENABLE_TCC_PNAME = "org.jitsi.jicofo.ENABLE_TCC";
+
+    /**
+     * The name of the property which enables the inclusion of the AST RTP
+     * header extension in the offer.
+     */
+    public static final String ENABLE_AST_PNAME = "org.jitsi.jicofo.ENABLE_AST";
+
+    /**
+     * The name of the property which enables the inclusion of the REMB RTCP
+     * in the offer.
+     */
+    public static final String ENABLE_REMB_PNAME
+        = "org.jitsi.jicofo.ENABLE_REMB";
+
+    /**
+     * The name of the property which enables the inclusion of the TOF RTP
+     * header extension in the offer.
+     */
+    public static final String ENABLE_TOF_PNAME = "org.jitsi.jicofo.ENABLE_TOF";
+
+    /**
      * The VP8 payload type to include in the Jingle session-invite.
      */
     private final int VP8_PT;
@@ -117,7 +141,27 @@ public class JingleOfferFactory
      * Whether to enable the framemarking RTP header extension in created
      * offers.
      */
-    private final boolean ENABLE_FRAMEMARKING;
+    private final boolean enableFrameMarking;
+
+    /**
+     * Whether to enable the TCC RTP header extension in created offers.
+     */
+    private final boolean enableTcc;
+
+    /**
+     * Whether to enable the AST RTP header extension in created offers.
+     */
+    private final boolean enableAst;
+
+    /**
+     * Whether to enable the TOF RTP header extension in created offers.
+     */
+    private final boolean enableTof;
+
+    /**
+     * Whether to enable the REMB RTCP in created offers.
+     */
+    private final boolean enableRemb;
 
     /**
      * Ctor.
@@ -132,8 +176,18 @@ public class JingleOfferFactory
         VP9_RTX_PT = cfg != null ? cfg.getInt(VP9_RTX_PT_PNAME, 97) : 97;
         H264_PT = cfg != null ? cfg.getInt(H264_PT_PNAME, 107) : 107;
         H264_RTX_PT = cfg != null ? cfg.getInt(H264_RTX_PT_PNAME, 99) : 99;
-        ENABLE_FRAMEMARKING
+        enableFrameMarking
             = cfg != null && cfg.getBoolean(ENABLE_FRAMEMARKING_PNAME, false);
+
+        enableTcc = cfg != null && cfg.getBoolean(ENABLE_TCC_PNAME, false);
+        enableAst = cfg != null && cfg.getBoolean(ENABLE_AST_PNAME, true);
+
+        // TOF is currently disabled, because we don't support it in the bridge
+        // (and currently clients seem to not use it when abs-send-time is
+        // available).
+        enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
+
+        enableRemb = cfg != null && cfg.getBoolean(ENABLE_REMB_PNAME, true);
     }
 
     /**
@@ -273,25 +327,26 @@ public class JingleOfferFactory
 
         rtpDesc.setMedia("video");
 
-        // This is currently disabled, because we don't support it in the
-        // bridge (and currently clients seem to not use it when
-        // abs-send-time is available).
-        // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
-        //RTPHdrExtPacketExtension toOffset
-        //    = new RTPHdrExtPacketExtension();
-        //toOffset.setID("2");
-        //toOffset.setURI(
-        //    URI.create("urn:ietf:params:rtp-hdrext:toffset"));
-        //rtpDesc.addExtmap(toOffset);
+        if (enableTof)
+        {
+            // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
+            RTPHdrExtPacketExtension toOffset = new RTPHdrExtPacketExtension();
+            toOffset.setID("2");
+            toOffset.setURI(URI.create(RTPExtension.TOF_URN));
+            rtpDesc.addExtmap(toOffset);
+        }
 
-        // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
-        RTPHdrExtPacketExtension absSendTime
-            = new RTPHdrExtPacketExtension();
-        absSendTime.setID("3");
-        absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
-        rtpDesc.addExtmap(absSendTime);
+        if (enableAst)
+        {
+            // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+            RTPHdrExtPacketExtension absSendTime
+                = new RTPHdrExtPacketExtension();
+            absSendTime.setID("3");
+            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
+            rtpDesc.addExtmap(absSendTime);
+        }
 
-        if (ENABLE_FRAMEMARKING)
+        if (enableFrameMarking)
         {
             // a=extmap:9 urn:ietf:params:rtp-hdrext:framemarking
             RTPHdrExtPacketExtension framemarking
@@ -319,8 +374,6 @@ public class JingleOfferFactory
         // a=rtcp-fb:100 nack pli
         vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:100 goog-remb
-        vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
 
         if (minBitrate != -1)
         {
@@ -347,8 +400,6 @@ public class JingleOfferFactory
         // a=rtcp-fb:107 nack pli
         h264.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:107 goog-remb
-        h264.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
 
         if (minBitrate != -1)
         {
@@ -375,8 +426,42 @@ public class JingleOfferFactory
         // a=rtcp-fb:101 nack pli
         vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-        // a=rtcp-fb:101 goog-remb
-        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
+        if (enableRemb)
+        {
+            // a=rtcp-fb:100 goog-remb
+            vp8.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+
+            // a=rtcp-fb:107 goog-remb
+            h264.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+
+            // a=rtcp-fb:101 goog-remb
+            vp9.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("goog-remb", null));
+        }
+
+        if (enableTcc)
+        {
+            // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+            RTPHdrExtPacketExtension tcc
+                = new RTPHdrExtPacketExtension();
+            tcc.setID("5");
+            tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
+            rtpDesc.addExtmap(tcc);
+
+            // a=rtcp-fb:100 transport-cc
+            vp8.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("transport-cc", null));
+
+            // a=rtcp-fb:107 transport-cc
+            h264.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("transport-cc", null));
+
+            // a=rtcp-fb:101 transport-cc
+            vp9.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("transport-cc", null));
+        }
 
         if (minBitrate != -1)
         {
@@ -410,10 +495,6 @@ public class JingleOfferFactory
 
             // a=rtcp-fb:96 nack pli
             rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
-
-            // a=rtcp-fb:96 goog-remb
-            rtx.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("goog-remb", null));
 
             // a=rtpmap:99 rtx/90000
             PayloadTypePacketExtension rtxH264 = addPayloadTypeExtension(
@@ -508,8 +589,21 @@ public class JingleOfferFactory
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
+    private void addAudioToContent(ContentPacketExtension content,
+                                   boolean stereo)
+    {
+        addAudioToContent(content, stereo, enableTcc);
+    }
+
+    /**
+     * Adds the video-related extensions for an offer to a
+     * {@link ContentPacketExtension}.
+     * @param content the {@link ContentPacketExtension} to add extensions to.
+     * @param stereo enable transport-cc
+     * @param enableTcc enable opus stereo mode
+     */
     private static void addAudioToContent(ContentPacketExtension content,
-                                          boolean stereo)
+                                          boolean stereo, boolean enableTcc)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -538,6 +632,13 @@ public class JingleOfferFactory
 
         // fmtp:111 useinbandfec=1
         addParameterExtension(opus, "useinbandfec", "1");
+
+        if (enableTcc)
+        {
+            // a=rtcp-fb:111 transport-cc
+            opus.addRtcpFeedbackType(
+                createRtcpFbPacketExtension("transport-cc", null));
+        }
 
         // a=rtpmap:103 ISAC/16000
         addPayloadTypeExtension(rtpDesc, 103, "ISAC", 16000);
