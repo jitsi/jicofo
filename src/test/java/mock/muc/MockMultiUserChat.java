@@ -89,6 +89,13 @@ public class MockMultiUserChat
     }
 
     @Override
+    public boolean containsPresenceExtension(
+        String elementName, String namespace)
+    {
+        return false;
+    }
+
+    @Override
     public void modifyPresence(
         Collection<PacketExtension> toRemove, Collection<PacketExtension> toAdd)
     {

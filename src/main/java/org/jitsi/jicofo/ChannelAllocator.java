@@ -399,7 +399,8 @@ public class ChannelAllocator implements Runnable
         // allocator thread dies before this thread get the chance to allocate
         // anything, then it will cancel and channels for this Participant will
         // be allocated from 'restartConference'
-        while (!bridgeSession.colibriConference.isDisposed())
+        while (!bridgeSession.colibriConference.isDisposed()
+                && !bridgeSession.hasFailed)
         {
             try
             {

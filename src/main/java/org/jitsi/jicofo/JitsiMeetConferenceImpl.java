@@ -633,9 +633,17 @@ public class JitsiMeetConferenceImpl
             if (bridgeState == null)
             {
                 // Can not find a bridge to use.
-                logger.error("Can not invite participant -- no bridge"
-                                 + " available.");
-                // TODO: update presence with BRIDGE_NOT_AVAILABLE?
+                logger.error(
+                        "Can not invite participant -- no bridge available.");
+
+                if (chatRoom != null
+                    && !chatRoom.containsPresenceExtension(
+                            BridgeNotAvailablePacketExt.ELEMENT_NAME,
+                            BridgeNotAvailablePacketExt.NAMESPACE))
+                {
+                    meetTools.sendPresenceExtension(
+                            chatRoom, new BridgeNotAvailablePacketExt());
+                }
                 return null;
 
             }
