@@ -99,6 +99,8 @@ public class XmppProtocolActivator
 
         SmackConfiguration.setPacketReplyTimeout(15000);
 
+        SmackConfiguration.setLocalSocks5ProxyEnabled(false);
+
         registerXmppExtensions();
 
         XmppProviderFactory focusFactory
