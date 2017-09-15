@@ -97,6 +97,11 @@ from anonymous domain. Here's what has to be configured:
  VirtualHost guest.jitsi-meet.example.com
      authentication = "anonymous"
  ```
+ c) Add a new user record to Prosody, for each user you want to be able to create a new conference room, substituting the address the user will use to authenticate for "user@domain.tld":</br>
+ ```
+ prosodyctl adduser user@domain.tld
+ ```
+ 
 2 In Jitsi Meet config.js configure 'anonymousdomain':<br/>
 ```
 var config = {
