@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
@@ -122,29 +123,42 @@ public class JibriRecorder
     @Override
     protected IQ handleStartRequest(JibriIq iq)
     {
+        RecordingMode recordingMode = iq.getRecordingMode();
         String streamID = iq.getStreamId();
+        boolean emptyStreamId = StringUtils.isNullOrEmpty(streamID);
         String displayName = iq.getDisplayName();
 
-        // Proceed if not empty
-        if (!StringUtils.isNullOrEmpty(streamID))
+        if ((!emptyStreamId
+                && (recordingMode.equals(RecordingMode.STREAM))
+                    || recordingMode.equals(RecordingMode.UNDEFINED))
+            || (emptyStreamId && recordingMode.equals(RecordingMode.FILE)))
         {
             jibriSession
                 = new JibriSession(
-                        this,
-                        conference.getRoomName(),
-                        globalConfig.getJibriPendingTimeout(),
-                        connection,
-                        scheduledExecutor,
-                        jibriDetector,
-                        false, null, displayName, streamID,
-                        classLogger);
+                    this,
+                    conference.getRoomName(),
+                    globalConfig.getJibriPendingTimeout(),
+                    connection,
+                    scheduledExecutor,
+                    jibriDetector,
+                    false, null, displayName, streamID,
+                    classLogger);
             // Try starting Jibri on separate thread with retries
             jibriSession.start();
             // This will ACK the request immediately to simplify the flow,
             // any error will be passed with the FAILED state
             return IQ.createResultIQ(iq);
         }
-        else
+        else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
+        {
+            // Bad request - no stream ID and no recording mode
+            return IQ.createErrorResponse(
+                iq,
+                XMPPError.from(
+                    XMPPError.Condition.bad_request,
+                    "Stream ID is empty and recording mode is not FILE"));
+        }
+        else if (emptyStreamId && recordingMode.equals(RecordingMode.STREAM))
         {
             // Bad request - no stream ID
             return IQ.createErrorResponse(
@@ -152,6 +166,15 @@ public class JibriRecorder
                     XMPPError.from(
                             XMPPError.Condition.bad_request,
                             "Stream ID is empty or undefined"));
+        }
+        else
+        {
+            // Bad request - catch all
+            return IQ.createErrorResponse(
+                    iq,
+                    XMPPError.from(
+                        XMPPError.Condition.bad_request,
+                        "Invalid recording mode and stream ID combination"));
         }
     }
 

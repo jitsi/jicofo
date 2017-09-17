@@ -124,7 +124,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>libjitsi</artifactId>
-      <version>1.0-20170705.232157-293</version>
+      <version>1.0-20170901.140206-311</version>
     </dependency>
     <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->  
     <dependency>

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
@@ -523,7 +524,15 @@ public class JibriSession
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.set);
         startIq.setAction(JibriIq.Action.START);
-        startIq.setStreamId(streamID);
+        if (streamID != null)
+        {
+            startIq.setStreamId(streamID);
+            startIq.setRecordingMode(RecordingMode.STREAM);
+        }
+        else
+        {
+            startIq.setRecordingMode(RecordingMode.FILE);
+        }
         startIq.setSipAddress(sipAddress);
         startIq.setDisplayName(displayName);
 

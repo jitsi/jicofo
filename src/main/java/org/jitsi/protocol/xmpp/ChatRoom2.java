@@ -62,6 +62,16 @@ public interface ChatRoom2
     Collection<ExtensionElement> getPresenceExtensions();
 
     /**
+     * Checks if a packet extension is already in the presence.
+     *
+     * @param elementName the name of XML element of the presence extension.
+     * @param namespace the namespace of XML element of the presence extension.
+     *
+     * @return <tt>boolean</tt>
+     */
+    boolean containsPresenceExtension(String elementName, String namespace);
+
+    /**
      * Modifies our current MUC presence by adding and/or removing specified
      * extensions. The extension are compared by instance equality.
      * @param toRemove the list of extensions to be removed.

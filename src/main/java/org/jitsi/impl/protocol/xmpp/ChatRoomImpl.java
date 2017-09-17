@@ -687,6 +687,17 @@ public class ChatRoomImpl
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean containsPresenceExtension(String elementName,
+                                             String namespace)
+    {
+        return lastPresenceSent != null
+            && lastPresenceSent.getExtension(elementName, namespace) != null;
+    }
+
     @Override
     public Message createMessage(byte[] content, String contentType,
                                  String contentEncoding, String subject)

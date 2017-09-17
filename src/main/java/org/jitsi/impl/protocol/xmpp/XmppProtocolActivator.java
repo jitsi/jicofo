@@ -31,6 +31,7 @@ import org.jitsi.jicofo.discovery.Version;
 import org.jivesoftware.smack.*;
 
 import org.jivesoftware.smack.provider.*;
+import org.jivesoftware.smackx.bytestreams.socks5.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -95,6 +96,8 @@ public class XmppProtocolActivator
         XmppProtocolActivator.bundleContext = bundleContext;
 
         SmackConfiguration.setDefaultReplyTimeout(15000);
+
+        Socks5Proxy.setLocalSocks5ProxyEnabled(false);
 
         registerXmppExtensions();
 
