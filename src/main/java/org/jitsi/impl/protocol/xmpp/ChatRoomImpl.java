@@ -654,7 +654,7 @@ public class ChatRoomImpl
 
         for (ChatMemberImpl member : copy)
         {
-            if (mucJid.toString().equals(member.getContactAddress()))
+            if (mucJid.equals(member.getContactAddressJid()))
             {
                 return member;
             }
@@ -1003,16 +1003,7 @@ public class ChatRoomImpl
 
     public Occupant getOccupant(ChatMemberImpl chatMemeber)
     {
-        try
-        {
-            return muc.getOccupant(
-                JidCreate.entityFullFrom(chatMemeber.getContactAddress()));
-        }
-        catch (XmppStringprepException e)
-        {
-            // the contact address was converted from a Jid
-            throw new RuntimeException(e);
-        }
+        return muc.getOccupant(chatMemeber.getContactAddressJid());
     }
 
     /**

@@ -1102,8 +1102,8 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getContactAddress()
-                    .equals(roomJid.toString()))
+            if (participant.getChatMember().getContactAddressJid()
+                    .equals(roomJid))
             {
                 return participant;
             }
