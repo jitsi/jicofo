@@ -543,7 +543,7 @@ public class Participant
         MediaSourceGroupMap addedGroups = (MediaSourceGroupMap) added[1];
 
         // Mark as source owner
-        Jid roomJid = roomMember.getJabberID();
+        Jid roomJid = roomMember.getContactAddressJid();
         for (String mediaType : addedSources.getMediaTypes())
         {
             List<SourcePacketExtension> sources
@@ -757,7 +757,7 @@ public class Participant
      */
     public EntityFullJid getMucJid()
     {
-        return roomMember.getJabberID().asFullJidOrThrow();
+        return roomMember.getContactAddressJid();
     }
 
     /**

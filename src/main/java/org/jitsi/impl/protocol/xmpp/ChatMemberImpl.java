@@ -131,6 +131,11 @@ public class ChatMemberImpl
         return address.toString();
     }
 
+    public EntityFullJid getContactAddressJid()
+    {
+        return address;
+    }
+
     @Override
     public String getName()
     {

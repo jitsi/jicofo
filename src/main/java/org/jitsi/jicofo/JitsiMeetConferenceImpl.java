@@ -874,7 +874,7 @@ public class JitsiMeetConferenceImpl
      */
     boolean isFocusMember(XmppChatMember member)
     {
-        return focusUserName.equals(member.getJabberID().getResourceOrEmpty());
+        return member.getName().equals(focusUserName.toString());
     }
 
     /**
@@ -1077,7 +1077,7 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getJabberID().equals(
+            if (participant.getChatMember().getContactAddressJid().equals(
                     jingleSession.getAddress()))
             {
                 return participant;

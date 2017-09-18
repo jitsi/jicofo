@@ -84,7 +84,7 @@ public class MockMultiUserChat
     @Override
     public EntityFullJid getLocalMucJid()
     {
-        return me != null ? me.getJabberID().asEntityFullJidOrThrow() : null;
+        return me != null ? me.getContactAddressJid() : null;
     }
 
     @Override
@@ -205,7 +205,7 @@ public class MockMultiUserChat
             me, oldRole, true);
     }
 
-    public MockRoomMember mockOwnerJoin(Jid name)
+    public MockRoomMember mockOwnerJoin(EntityFullJid name)
     {
         MockRoomMember member = new MockRoomMember(name, this);
 

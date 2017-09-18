@@ -38,13 +38,13 @@ public class MockRoomMember
 {
     private final Resourcepart name;
 
-    private final Jid address;
+    private final EntityFullJid address;
 
     private final MockMultiUserChat room;
 
     private ChatRoomMemberRole role = ChatRoomMemberRole.MEMBER;
 
-    MockRoomMember(Jid address, MockMultiUserChat chatRoom)
+    MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
     {
         this.address = address;
         this.name = address.getResourceOrThrow();
@@ -89,6 +89,12 @@ public class MockRoomMember
     public String getContactAddress()
     {
         return address.toString();
+    }
+
+    @Override
+    public EntityFullJid getContactAddressJid()
+    {
+        return address;
     }
 
     @Override
