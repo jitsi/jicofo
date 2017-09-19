@@ -71,6 +71,111 @@ public class SSRCValidator
     private final int maxSourceCount;
 
     /**
+     * Filters out FID groups that do belong to any simulcast grouping.
+     *
+     * @param simGroupings the list of all {@link SimulcastGrouping}s.
+     * @param fidGroups the list of all FID groups even these which are part of
+     *        the <tt>simGroupings</tt>.
+     *
+     * @return a list of FID groups that are not part of any SIM grouping.
+     */
+    static private List<SourceGroup> getIndependentFidGroups(
+            List<SimulcastGrouping>    simGroupings,
+            List<SourceGroup>          fidGroups)
+    {
+        if (simGroupings.isEmpty())
+        {
+            // Nothing to be done here...
+            return new ArrayList<>(fidGroups);
+        }
+
+        List<SourceGroup> independentFidGroups = new LinkedList<>();
+
+        for (SourceGroup fidGroup : fidGroups)
+        {
+            for (SimulcastGrouping simGrouping : simGroupings)
+            {
+                if (!simGrouping.belongsToSimulcastGrouping(fidGroup))
+                {
+                    independentFidGroups.add(fidGroup);
+                }
+            }
+        }
+
+        return independentFidGroups;
+    }
+
+    /**
+     * Checks if there are no MSID conflicts across all independent FID groups.
+     *
+     * @param independentFidGroups the list of all independent FID groups (that
+     *        do not belong to any other higher level grouping).
+     *
+     * @throws InvalidSSRCsException in case of MSID conflict
+     */
+    static private void verifyNoMsidConflictsAcrossFidGroups(
+            List<SourceGroup> independentFidGroups)
+        throws InvalidSSRCsException
+    {
+        for (SourceGroup fidGroup : independentFidGroups)
+        {
+            // NOTE at this point we're sure that every source has MSID
+            String fidGroupMsid = fidGroup.getGroupMsid();
+            List<SourceGroup> withTheMsid
+                = SSRCSignaling.selectWithMsid(
+                        independentFidGroups, fidGroupMsid);
+
+            for (SourceGroup conflictingGroup : withTheMsid)
+            {
+                if (conflictingGroup != fidGroup)
+                {
+                    throw new InvalidSSRCsException(
+                            "MSID conflict across FID groups: "
+                                + fidGroupMsid + ", " + conflictingGroup
+                                + " conflicts with group " + fidGroup);
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if there are no MSID conflicts across simulcast groups.
+     *
+     * @param mediaType the media type to be checked in this call
+     * @param groupedSources the map holding all sources which belong to any
+     *        group for all media types.
+     * @param simGroupings the list of all {@link SimulcastGrouping}s for
+     *        the <tt>mediaType</tt>.
+     *
+     * @throws InvalidSSRCsException in case of MSID conflict
+     */
+    static private void verifyNoMsidConflictsAcrossSimGroupings(
+            String                     mediaType,
+            MediaSourceMap             groupedSources,
+            List<SimulcastGrouping>    simGroupings)
+        throws InvalidSSRCsException
+    {
+        for (SimulcastGrouping simGrouping : simGroupings)
+        {
+            String simulcastMsid = simGrouping.getSimulcastMsid();
+            List<SourcePacketExtension> sourcesWithTheMsid
+                = groupedSources.findSourcesWithMsid(
+                        mediaType, simulcastMsid);
+
+            for (SourcePacketExtension src : sourcesWithTheMsid)
+            {
+                if (!simGrouping.belongsToSimulcastGrouping(src))
+                {
+                    throw new InvalidSSRCsException(
+                        "MSID conflict across SIM groups: "
+                            + simulcastMsid + ", " + src
+                            + " conflicts with group " + simGrouping);
+                }
+            }
+        }
+    }
+
+    /**
      * Creates new <tt>SSRCValidator</tt>
      * @param endpointId participant's endpoint ID
      * @param sources participant's source map
@@ -91,6 +196,59 @@ public class SSRCValidator
         this.sourceGroups = sourceGroups.copy();
         this.maxSourceCount = maxSourceCount;
         this.logger = Logger.getLogger(classLogger, logLevelDelegate);
+    }
+
+    /**
+     * Because {@link SourcePacketExtension} inside of
+     * {@link SourceGroupPacketExtension} do not contain any parameters (CNAME,
+     * MSID, etc.) those have to be copied from the
+     * {@link SourcePacketExtension}s signalled in the media section in order
+     * to simplify the stream validation process by not having to look up
+     * another collection.
+     *
+     * @throws InvalidSSRCsException if a corresponding
+     * {@link SourcePacketExtension} signalled in {@link #sourceGroups} does not
+     * exist in {@link #sources}.
+     */
+    private void copySourceParamsToGroups()
+        throws InvalidSSRCsException
+    {
+        for (String mediaType : sourceGroups.getMediaTypes())
+        {
+            List<SourceGroup> mediaGroups
+                = sourceGroups.getSourceGroupsForMedia(mediaType);
+            List<SourceGroup> newMediaGroups
+                = new ArrayList<>(mediaGroups.size());
+
+            for (SourceGroup group : mediaGroups)
+            {
+                List<SourcePacketExtension> groupSources = group.getSources();
+                List<SourcePacketExtension> newSources
+                    = new ArrayList<>(groupSources.size());
+
+                for (SourcePacketExtension srcInGroup : groupSources)
+                {
+                    SourcePacketExtension sourceInMedia
+                        = sources.findSource(mediaType, srcInGroup);
+
+                    if (sourceInMedia == null)
+                    {
+                        throw new InvalidSSRCsException(
+                                "Source " + srcInGroup
+                                    + " not found in '" + mediaType
+                                    + "' for group: " + group);
+                    }
+
+                    newSources.add(sourceInMedia);
+                }
+
+                newMediaGroups.add(
+                        new SourceGroup(group.getSemantics(), newSources));
+            }
+
+            mediaGroups.clear();
+            mediaGroups.addAll(newMediaGroups);
+        }
     }
 
     /**
@@ -233,6 +391,11 @@ public class SSRCValidator
     private void validateStreams()
         throws InvalidSSRCsException
     {
+        // Migrate source attributes from SourcePacketExtensions stored in
+        // the media section to SourcePacketExtensions stored by the groups
+        // directly in order to simplify the stream validation process.
+        copySourceParamsToGroups();
+
         // Holds sources that belongs to any group
         MediaSourceMap groupedSources = new MediaSourceMap();
 
@@ -246,37 +409,21 @@ public class SSRCValidator
                 List<SourcePacketExtension> groupSources = group.getSources();
                 // NOTE that empty groups are not allowed at this point and
                 // should have been filtered out earlier
-                String groupMSID = null;
+                String groupMSID = group.getGroupMsid();
 
                 for (SourcePacketExtension source : groupSources)
                 {
-                    // Is there a corresponding SSRC that's in the SSRCs map ?
-                    SourcePacketExtension sourceInMedia
-                            = this.sources.findSource(mediaType, source);
-                    if (sourceInMedia == null)
-                    {
-                        String errorMsg
-                                = "Source " + source.toString() + " not found in "
-                                + mediaType + " for group: " + group;
-                        throw new InvalidSSRCsException(errorMsg);
-                    }
                     if (source.hasSSRC())
                     {
-                        long ssrcValue = source.getSSRC();
-                        // Grouped SSRC needs to have some MSID
-                        String msid = SSRCSignaling.getMsid(sourceInMedia);
-                        if (StringUtils.isNullOrEmpty(msid))
+                        String msid = SSRCSignaling.getMsid(source);
+                        // Grouped SSRC needs to have a valid MSID
+                        if (StringUtils.isNullOrEmpty(groupMSID))
                         {
                             throw new InvalidSSRCsException(
-                                    "Grouped SSRC (" + ssrcValue + ") has no 'msid'");
+                                    "Grouped " + source + " has no 'msid'");
                         }
-                        // The first SSRC's MSID is used as group's MSID
-                        if (groupMSID == null)
-                        {
-                            groupMSID = msid;
-                        }
-                        // Verify if MSID is the same across all SSRCs which belong
-                        // to the same group
+                        // Verify if MSID is the same across all SSRCs which
+                        // belong to the same group
                         else if (!groupMSID.equals(msid))
                         {
                             throw new InvalidSSRCsException(
@@ -287,6 +434,26 @@ public class SSRCValidator
                     groupedSources.addSource(mediaType, source);
                 }
             }
+        }
+
+        // Verify SIM/FID grouping
+        for (String mediaType : sourceGroups.getMediaTypes())
+        {
+            List<SimulcastGrouping> simGroupings
+                = sourceGroups.findSimulcastGroupings(mediaType);
+
+            // Check if this SIM group's MSID does not appear in any other
+            // simulcast grouping
+            verifyNoMsidConflictsAcrossSimGroupings(
+                    mediaType, groupedSources, simGroupings);
+
+            // Check for MSID conflicts across FID groups that do not belong to
+            // any Simulcast grouping.
+            List<SourceGroup> fidGroups = sourceGroups.getRtxGroups(mediaType);
+            List<SourceGroup> independentFidGroups
+                = getIndependentFidGroups(simGroupings, fidGroups);
+
+            verifyNoMsidConflictsAcrossFidGroups(independentFidGroups);
         }
 
         MediaSourceMap notGroupedSSRCs = this.sources.copyDeep();

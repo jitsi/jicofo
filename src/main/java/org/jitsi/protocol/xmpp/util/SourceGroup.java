@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.util.*;
 
 import java.util.*;
@@ -81,6 +82,19 @@ public class SourceGroup
     }
 
     /**
+     * Creates new instance of <tt>SourceGroup</tt>.
+     * @param semantics the group's semantics
+     * @param sources a {@link List} of the group's
+     *        {@link SourcePacketExtension}s
+     */
+    public SourceGroup(String semantics, List<SourcePacketExtension> sources)
+    {
+        group = new SourceGroupPacketExtension();
+        group.setSemantics(semantics);
+        group.addSources(sources);
+    }
+
+    /**
      * Adds source to this group.
      *
      * @param source the <tt>SourcePacketExtension</tt> to be added to this
@@ -100,6 +114,61 @@ public class SourceGroup
     public void addSources(List<SourcePacketExtension> video)
     {
         group.addSources(video);
+    }
+
+    /**
+     * Checks if given {@link SourcePacketExtension} is part of this group.
+     *
+     * @param source {@link SourcePacketExtension} to be checked.
+     *
+     * @return <tt>true</tt> or <tt>false</tt>
+     */
+    public boolean belongsToGroup(SourcePacketExtension source)
+    {
+        if (source.hasSSRC())
+        {
+            for (SourcePacketExtension groupSrcs : this.getSources())
+            {
+                if (groupSrcs.hasSSRC()
+                    && groupSrcs.getSSRC() == source.getSSRC())
+                {
+                    return true;
+                }
+            }
+        }
+        else if (source.hasRid())
+        {
+            for (SourcePacketExtension groupSrc : this.getSources())
+            {
+                if (groupSrc.hasRid()
+                    && groupSrc.getRid().equalsIgnoreCase(source.getRid()))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Obtains group's MSID.
+     *
+     * NOTE it makes sense only once the attributes have been copied from
+     * the media section {@link SourcePacketExtension}s, as normally
+     * {@link SourcePacketExtension}s signalled inside of
+     * {@link SourceGroupPacketExtension} do not contain any parameters
+     * including MSID. See {@link SSRCValidator#copySourceParamsToGroups()}.
+     *
+     * @return a {@link String}
+     */
+    public String getGroupMsid()
+    {
+        List<SourcePacketExtension> sources = this.group.getSources();
+
+        return sources.size() > 0
+            ? SSRCSignaling.getMsid(sources.get(0))
+            : null;
     }
 
     /**
