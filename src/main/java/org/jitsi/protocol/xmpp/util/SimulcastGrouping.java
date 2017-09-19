@@ -163,6 +163,18 @@ public class SimulcastGrouping
     }
 
     /**
+     * Checks if this SIM group is using RID signaling.
+     *
+     * @return <tt>true</tt> or <tt>false</tt>
+     */
+    public boolean isUsingRidSignaling()
+    {
+        List<SourcePacketExtension> sources = simGroup.getSources();
+
+        return sources.size() > 0 && sources.get(0).hasRid();
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

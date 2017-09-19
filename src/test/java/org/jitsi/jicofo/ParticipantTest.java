@@ -448,6 +448,42 @@ public class ParticipantTest
     }
 
     @Test
+    public void testNoMsidSimGroup()
+    {
+        String cname = "videocname";
+        String msid = null;
+
+        this.videoSSRCs = new SourcePacketExtension[] {
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid)
+        };
+
+        this.videoGroups = new SourceGroupPacketExtension[] {
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                new long[] { 10L, 20L, 30L })
+        };
+
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect 'null' MSID in SIM group");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                    "Invalid message (constant needs update ?): " + errorMsg,
+                    errorMsg.startsWith(
+                            "Grouped ssrc=10 has no 'msid'"));
+        }
+    }
+
+    @Test
     public void testTrackMismatchInTheSameGroup()
     {
         // Overwrite SSRC 20 with wrong track id part of the MSID

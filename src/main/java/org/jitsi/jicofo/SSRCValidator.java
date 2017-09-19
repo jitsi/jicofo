@@ -158,6 +158,18 @@ public class SSRCValidator
         for (SimulcastGrouping simGrouping : simGroupings)
         {
             String simulcastMsid = simGrouping.getSimulcastMsid();
+
+            if (simGrouping.isUsingRidSignaling())
+            {
+                // Skip RID simulcast group
+                continue;
+            }
+            else if (StringUtils.isNullOrEmpty(simulcastMsid))
+            {
+                throw new InvalidSSRCsException(
+                        "No MSID in simulcast group: " + simGrouping);
+            }
+
             List<SourcePacketExtension> sourcesWithTheMsid
                 = groupedSources.findSourcesWithMsid(
                         mediaType, simulcastMsid);
