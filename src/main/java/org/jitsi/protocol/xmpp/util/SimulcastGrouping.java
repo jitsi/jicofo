@@ -169,9 +169,9 @@ public class SimulcastGrouping
      */
     public boolean isUsingRidSignaling()
     {
-        List<SourcePacketExtension> sources = simGroup.getSources();
-
-        return sources.size() > 0 && sources.get(0).hasRid();
+        return
+            SourceRidGroupPacketExtension.ELEMENT_NAME.equals(
+                    simGroup.getPacketExtension().getElementName());
     }
 
     /**
