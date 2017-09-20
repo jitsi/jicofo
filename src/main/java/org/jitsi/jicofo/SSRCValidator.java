@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -211,59 +212,6 @@ public class SSRCValidator
     }
 
     /**
-     * Because {@link SourcePacketExtension} inside of
-     * {@link SourceGroupPacketExtension} do not contain any parameters (CNAME,
-     * MSID, etc.) those have to be copied from the
-     * {@link SourcePacketExtension}s signalled in the media section in order
-     * to simplify the stream validation process by not having to look up
-     * another collection.
-     *
-     * @throws InvalidSSRCsException if a corresponding
-     * {@link SourcePacketExtension} signalled in {@link #sourceGroups} does not
-     * exist in {@link #sources}.
-     */
-    private void copySourceParamsToGroups()
-        throws InvalidSSRCsException
-    {
-        for (String mediaType : sourceGroups.getMediaTypes())
-        {
-            List<SourceGroup> mediaGroups
-                = sourceGroups.getSourceGroupsForMedia(mediaType);
-            List<SourceGroup> newMediaGroups
-                = new ArrayList<>(mediaGroups.size());
-
-            for (SourceGroup group : mediaGroups)
-            {
-                List<SourcePacketExtension> groupSources = group.getSources();
-                List<SourcePacketExtension> newSources
-                    = new ArrayList<>(groupSources.size());
-
-                for (SourcePacketExtension srcInGroup : groupSources)
-                {
-                    SourcePacketExtension sourceInMedia
-                        = sources.findSource(mediaType, srcInGroup);
-
-                    if (sourceInMedia == null)
-                    {
-                        throw new InvalidSSRCsException(
-                                "Source " + srcInGroup
-                                    + " not found in '" + mediaType
-                                    + "' for group: " + group);
-                    }
-
-                    newSources.add(sourceInMedia);
-                }
-
-                newMediaGroups.add(
-                        new SourceGroup(group.getSemantics(), newSources));
-            }
-
-            mediaGroups.clear();
-            mediaGroups.addAll(newMediaGroups);
-        }
-    }
-
-    /**
      * Makes an attempt to add given sources and source groups to the current state.
      * It checks some constraints that prevent from injecting invalid
      * description into the conference:
@@ -406,7 +354,11 @@ public class SSRCValidator
         // Migrate source attributes from SourcePacketExtensions stored in
         // the media section to SourcePacketExtensions stored by the groups
         // directly in order to simplify the stream validation process.
-        copySourceParamsToGroups();
+        // The reason for that is that <tt>SourcePacketExtension</tt>s stored
+        // in groups are empty and contain only SSRC number without any
+        // parameters. Without this step we'd have to access separate collection
+        // to check source's parameters like MSID.
+        SSRCSignaling.copySourceParamsToGroups(sourceGroups, sources);
 
         // Holds sources that belongs to any group
         MediaSourceMap groupedSources = new MediaSourceMap();
@@ -451,8 +403,15 @@ public class SSRCValidator
         // Verify SIM/FID grouping
         for (String mediaType : sourceGroups.getMediaTypes())
         {
+            // FIXME migrate logic to use MediaType instead of String
+            if (!MediaType.VIDEO.toString().equalsIgnoreCase(mediaType))
+            {
+                // Verify Simulcast only for the video media type
+                continue;
+            }
+
             List<SimulcastGrouping> simGroupings
-                = sourceGroups.findSimulcastGroupings(mediaType);
+                = sourceGroups.findSimulcastGroupings();
 
             // Check if this SIM group's MSID does not appear in any other
             // simulcast grouping
@@ -461,7 +420,7 @@ public class SSRCValidator
 
             // Check for MSID conflicts across FID groups that do not belong to
             // any Simulcast grouping.
-            List<SourceGroup> fidGroups = sourceGroups.getRtxGroups(mediaType);
+            List<SourceGroup> fidGroups = sourceGroups.getRtxGroups();
             List<SourceGroup> independentFidGroups
                 = getIndependentFidGroups(simGroupings, fidGroups);
 
