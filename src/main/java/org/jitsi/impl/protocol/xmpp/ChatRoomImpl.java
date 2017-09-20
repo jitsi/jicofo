@@ -190,6 +190,7 @@ public class ChatRoomImpl
     public void joinAs(String nickname)
         throws OperationFailedException
     {
+        boolean ownerNotAvailable = true;
         try
         {
             this.myNickName = nickname;
@@ -210,6 +211,14 @@ public class ChatRoomImpl
 
             muc.create(nickname);
             //muc.join(nickname);
+            
+            for (Occupant occupant : muc.getModerators())
+            {
+                if (occupant.getAffiliation().equalsIgnoreCase("owner"))
+                {
+                    ownerNotAvailable = false;
+                }
+            }
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -253,8 +262,13 @@ public class ChatRoomImpl
 
             muc.sendConfigurationForm(answer);
         }
-        catch (XMPPException e)
+        catch (XMPPException | ClassCastException e)
         {
+            if (ownerNotAvailable)
+            {
+                logger.warn("No moderator in room!! Looks like the room is disposed.");
+                return;
+            }
             throw new OperationFailedException(
                 "Failed to join the room",
                 OperationFailedException.GENERAL_ERROR, e);
