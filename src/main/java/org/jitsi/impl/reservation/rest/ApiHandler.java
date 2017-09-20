@@ -17,20 +17,29 @@
  */
 package org.jitsi.impl.reservation.rest;
 
-import net.java.sip.communicator.util.*;
-import org.apache.http.*;
+import net.java.sip.communicator.util.Logger;
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.*;
-import org.apache.http.client.methods.*;
-import org.apache.http.impl.client.*;
-import org.apache.http.message.*;
-import org.jitsi.impl.reservation.rest.json.*;
-import org.json.simple.parser.*;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.jitsi.impl.reservation.rest.json.ConferenceJsonHandler;
+import org.jitsi.impl.reservation.rest.json.ErrorJsonHandler;
+import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.*;
-import java.lang.Object;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class deals with JSON objects serialization and sending requests to REST
@@ -53,7 +62,7 @@ public class ApiHandler
     /**
      * HTTP client used for sending requests.
      */
-    private final DefaultHttpClient client = new DefaultHttpClient();
+    private final CloseableHttpClient client = HttpClientBuilder.create().build();
 
     /**
      * <tt>JSONParser</tt> instance used for parsing JSON.
@@ -147,7 +156,7 @@ public class ApiHandler
         {
             if (response != null && response.getEntity() != null)
             {
-                response.getEntity().consumeContent();
+                EntityUtils.consume(response.getEntity());
             }
         }
     }
@@ -197,7 +206,7 @@ public class ApiHandler
         {
             if (response != null && response.getEntity() != null)
             {
-                response.getEntity().consumeContent();
+                EntityUtils.consume(response.getEntity());
             }
         }
     }
@@ -243,7 +252,7 @@ public class ApiHandler
         {
             if (response != null && response.getEntity() != null)
             {
-                response.getEntity().consumeContent();
+                EntityUtils.consume(response.getEntity());
             }
         }
     }
