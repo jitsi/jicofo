@@ -90,28 +90,27 @@ public class ParticipantTest
         String msid = "vstream vtrack";
 
         this.videoSSRCs = new SourcePacketExtension[] {
-            createGroupSSRC(10L, cname, msid),
-            createGroupSSRC(20L, cname, msid),
-            createGroupSSRC(30L, cname, msid),
-            createGroupSSRC(40L, cname, msid),
-            createGroupSSRC(50L, cname, msid),
-            createGroupSSRC(60L, cname, msid)
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid),
+            createSSRC(40L, cname, msid),
+            createSSRC(50L, cname, msid),
+            createSSRC(60L, cname, msid)
         };
 
         this.videoGroups = new SourceGroupPacketExtension[] {
             createGroup(
-                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
-                new long[] { 10L, 30L, 50L },
-                cname, msid),
+                    SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                    new long[] { 10L, 30L, 50L }),
             createGroup(
-                SourceGroupPacketExtension.SEMANTICS_FID,
-                new long[] { 10L, 20L }, cname, msid),
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 10L, 20L }),
             createGroup(
-                SourceGroupPacketExtension.SEMANTICS_FID,
-                new long[] { 30L, 40L }, cname, msid),
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 30L, 40L }),
             createGroup(
-                SourceGroupPacketExtension.SEMANTICS_FID,
-                new long[] { 50L, 60L }, cname, msid)
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 50L, 60L })
         };
 
         JingleOfferFactory jingleOfferFactory
@@ -298,7 +297,7 @@ public class ParticipantTest
     {
         // Overwrite SSRC 20 with something wrong
         this.videoSSRCs[1]
-            = createGroupSSRC(20L, "blabla", "wrongStream wrongTrack");
+            = createSSRC(20L, "blabla", "wrongStream wrongTrack");
 
         this.addDefaultVideoSSRCs();
         this.addDefaultVideoGroups();
@@ -320,11 +319,176 @@ public class ParticipantTest
     }
 
     @Test
+    public void testMsidConflictFidGroups()
+    {
+        String cname = "videocname";
+        String msid = "vstream vtrack";
+
+        this.videoSSRCs = new SourcePacketExtension[] {
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid),
+            createSSRC(40L, cname, msid)
+        };
+
+        this.videoGroups = new SourceGroupPacketExtension[] {
+            createGroup(
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 10L, 20L }),
+            createGroup(
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 30L, 40L })
+        };
+
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect 2 FID groups for the same MSID");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                errorMsg.startsWith(
+                    "MSID conflict across FID groups: vstream vtrack,"
+                        + " SourceGroup[FID, ssrc=30, ssrc=40, ]@")
+                    && errorMsg.contains(
+                        " conflicts with group SourceGroup"
+                            + "[FID, ssrc=10, ssrc=20, ]@"));
+        }
+    }
+
+    @Test
+    public void testMsidMismatchInSimGroup()
+    {
+        String cname = "videocname";
+        String msid = "vstream vtrack";
+
+        this.videoSSRCs = new SourcePacketExtension[] {
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid),
+            createSSRC(40L, cname, msid + "224")
+        };
+
+        this.videoGroups = new SourceGroupPacketExtension[] {
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                new long[] { 10L, 30L }),
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { 10L, 20L }),
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { 30L, 40L })
+        };
+
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect MSID mismatch in SIM group");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                errorMsg.startsWith(
+                    "MSID mismatch detected in group "
+                        + "SourceGroup[FID, ssrc=30, ssrc=40, ]"));
+        }
+    }
+
+    @Test
+    public void testMsidConflictSimGroups()
+    {
+        String cname = "videocname";
+        String msid = "vstream vtrack";
+
+        this.videoSSRCs = new SourcePacketExtension[] {
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid),
+            createSSRC(40L, cname, msid)
+        };
+
+        this.videoGroups = new SourceGroupPacketExtension[] {
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                new long[] { 10L, 20L }),
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                new long[] { 30L, 40L })
+        };
+
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect MSID conflict in SIM groups");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                "Invalid message (constant needs update ?): " + errorMsg,
+                errorMsg.startsWith(
+                    "MSID conflict across SIM groups: vstream vtrack, ssrc=30"
+                        + " conflicts with group Simulcast[ssrc=10,ssrc=20,]"));
+        }
+    }
+
+    @Test
+    public void testNoMsidSimGroup()
+    {
+        String cname = "videocname";
+        String msid = null;
+
+        this.videoSSRCs = new SourcePacketExtension[] {
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid)
+        };
+
+        this.videoGroups = new SourceGroupPacketExtension[] {
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                new long[] { 10L, 20L, 30L })
+        };
+
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+            fail("Did not detect 'null' MSID in SIM group");
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            String errorMsg = exc.getMessage();
+            assertTrue(
+                    "Invalid message (constant needs update ?): " + errorMsg,
+                    errorMsg.startsWith(
+                            "Grouped ssrc=10 has no 'msid'"));
+        }
+    }
+
+    @Test
     public void testTrackMismatchInTheSameGroup()
     {
         // Overwrite SSRC 20 with wrong track id part of the MSID
         this.videoSSRCs[1]
-            = createGroupSSRC(20L, "videocname", "vstream wrongTrack");
+            = createSSRC(20L, "videocname", "vstream wrongTrack");
 
         this.addDefaultVideoSSRCs();
         this.addDefaultVideoGroups();
@@ -428,12 +592,12 @@ public class ParticipantTest
     @Test
     public void testGroupedSSRCNotFound()
     {
-        SourcePacketExtension ssrc1 = createGroupSSRC(1L, "cname1", "s t1");
+        SourcePacketExtension ssrc1 = createSSRC(1L, "cname1", "s t1");
 
         SourceGroupPacketExtension group1
             = createGroup(
-                SourceGroupPacketExtension.SEMANTICS_FID,
-                new long[] { 1L, 2L}, "cname1", "s t1");
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 1L, 2L});
 
         videoRtpDescPe.addChildExtension(ssrc1);
         videoRtpDescPe.addChildExtension(group1);
@@ -449,7 +613,7 @@ public class ParticipantTest
             assertTrue(
                     "Invalid message (constant needs update ?): " + errorMsg,
                     errorMsg.startsWith(
-                        "Source ssrc=2 not found in video for group:"
+                        "Source ssrc=2 not found in 'video' for group:"
                             + " SourceGroup[FID, ssrc=1, ssrc=2, ]"));
         }
     }
@@ -458,13 +622,13 @@ public class ParticipantTest
     public void testDuplicatedGroups()
         throws InvalidSSRCsException
     {
-        SourcePacketExtension ssrc1 = createGroupSSRC(1L, "cname1", "s t1");
-        SourcePacketExtension ssrc2 = createGroupSSRC(2L, "cname1", "s t1");
+        SourcePacketExtension ssrc1 = createSSRC(1L, "cname1", "s t1");
+        SourcePacketExtension ssrc2 = createSSRC(2L, "cname1", "s t1");
 
         SourceGroupPacketExtension group1
             = createGroup(
                     SourceGroupPacketExtension.SEMANTICS_FID,
-                    new long[] { 1L, 2L}, "cname1", "s t1");
+                    new long[] { 1L, 2L});
 
         videoRtpDescPe.addChildExtension(ssrc1);
         videoRtpDescPe.addChildExtension(ssrc2);
@@ -472,8 +636,8 @@ public class ParticipantTest
 
         videoRtpDescPe.addChildExtension(
             createGroup(
-                SourceGroupPacketExtension.SEMANTICS_FID,
-                new long[] { 1L, 2L}, "cname1", "s t1"));
+                    SourceGroupPacketExtension.SEMANTICS_FID,
+                    new long[] { 1L, 2L}));
 
         Object[] ssrcsAndGroups
             = participant.addSourcesAndGroupsFromContent(answerContents);
@@ -505,7 +669,7 @@ public class ParticipantTest
         });
     }
 
-    private SourcePacketExtension createGroupSSRC(long ssrcNum, String cname, String msid)
+    private SourcePacketExtension createSSRC(long ssrcNum, String cname, String msid)
     {
         return SourceUtil.createSourceWithSsrc(ssrcNum, new String[][]{
             {"cname", cname},
@@ -514,9 +678,7 @@ public class ParticipantTest
     }
 
     private SourceGroupPacketExtension createGroup(String semantics,
-                                                   long[] ssrcs,
-                                                   String cname,
-                                                   String msid)
+                                                   long[] ssrcs)
     {
         SourceGroupPacketExtension groupPe = new SourceGroupPacketExtension();
 
@@ -525,7 +687,10 @@ public class ParticipantTest
         List<SourcePacketExtension> ssrcList = new ArrayList<>(ssrcs.length);
         for (long ssrc : ssrcs)
         {
-            ssrcList.add(createGroupSSRC(ssrc, cname, msid));
+            ssrcList.add(
+                    SourceUtil.createSourceWithSsrc(
+                            ssrc,
+                            new String[][]{ }));
         }
         groupPe.addSources(ssrcList);
 
