@@ -20,6 +20,7 @@ package org.jitsi.protocol.xmpp.util;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.jxmpp.jid.*;
+import org.jitsi.util.*;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -190,6 +191,39 @@ public class MediaSourceMap
             }
         }
         return null;
+    }
+
+    /**
+     * Finds {@link SourcePacketExtension} that have the given MSID.
+     *
+     * @param mediaType the type of the media to be searched.
+     * @param groupMsid the MSID to be found.
+     *
+     * @return a {@link List} of {@link SourcePacketExtension} that matches
+     * the given MSID.
+     */
+    public List<SourcePacketExtension> findSourcesWithMsid(
+            String    mediaType,
+            String    groupMsid)
+    {
+        if (StringUtils.isNullOrEmpty(groupMsid))
+        {
+            throw new IllegalArgumentException("Null or empty 'groupMsid'");
+        }
+
+        List<SourcePacketExtension> mediaSources
+            = getSourcesForMedia(mediaType);
+        List<SourcePacketExtension> result = new LinkedList<>();
+
+        for (SourcePacketExtension source : mediaSources)
+        {
+            if (groupMsid.equalsIgnoreCase(SSRCSignaling.getMsid(source)))
+            {
+                result.add(source);
+            }
+        }
+
+        return result;
     }
 
     /**

@@ -359,6 +359,38 @@ public class SSRCSignaling
         return ownerMapping;
     }
 
+    /**
+     * From the given list of {@link SourceGroup}s select those that share
+     * the given MSID value.
+     *
+     * @param groups a {@link List} of {@link SourceGroup} to be filtered out.
+     * @param groupMsid a {@link String} with the MSID value to be used as
+     *        selector.
+     *
+     * @return a {@link List} of {@link SourceGroup}.
+     */
+    public static List<SourceGroup> selectWithMsid(
+        List<SourceGroup>    groups,
+        String               groupMsid)
+    {
+        if (StringUtils.isNullOrEmpty(groupMsid))
+        {
+            throw new IllegalArgumentException("Null or empty 'groupMsid'");
+        }
+
+        List<SourceGroup> result = new LinkedList<>();
+
+        for (SourceGroup group : groups)
+        {
+            if (groupMsid.equalsIgnoreCase(group.getGroupMsid()))
+            {
+                result.add(group);
+            }
+        }
+
+        return result;
+    }
+
     public static void setSSRCOwner(SourcePacketExtension ssrcPe, Jid owner)
     {
         SSRCInfoPacketExtension ssrcInfo

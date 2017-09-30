@@ -54,6 +54,60 @@ public class MediaSourceGroupMap
     }
 
     /**
+     * Finds and extracts {@link SimulcastGrouping}s for given media type.
+     *
+     * @param mediaType eg. 'audio', 'video', etc.
+     *
+     * @return a {@link List} of {@link SimulcastGrouping}s.
+     */
+    public List<SimulcastGrouping> findSimulcastGroupings(String mediaType)
+    {
+        List<SourceGroup> simGroups = getSimulcastGroups(mediaType);
+        List<SimulcastGrouping> simulcastGroupings = new LinkedList<>();
+
+        for (SourceGroup simGroup : simGroups)
+        {
+            SimulcastGrouping simGrouping
+                = SimulcastGrouping.extractSimGrouping(
+                mediaType,
+                this,
+                simGroup);
+
+            simulcastGroupings.add(simGrouping);
+        }
+
+        return simulcastGroupings;
+    }
+
+    /**
+     * Gets RTX (FID) groups for given media type.
+     *
+     * @param mediaType eg. 'audio', 'video', etc.
+     *
+     * @return a {@link List} of {@link SourceGroup}.
+     */
+    public List<SourceGroup> getRtxGroups(String mediaType)
+    {
+        return findSourceGroups(
+            mediaType,
+            SourceGroupPacketExtension.SEMANTICS_FID);
+    }
+
+    /**
+     * Finds Simulcast groups for given media type.
+     *
+     * @param mediaType eg. 'audio', 'video', etc.
+     *
+     * @return a {@link List} of {@link SourceGroup}.
+     */
+    public List<SourceGroup> getSimulcastGroups(String mediaType)
+    {
+        return findSourceGroups(
+            mediaType,
+            SourceGroupPacketExtension.SEMANTICS_SIMULCAST);
+    }
+
+    /**
      * Returns the list of {@link SourceGroup} for given media type.
      * @param media the name of media type for which list of source groups will be
      *              returned.
@@ -67,6 +121,32 @@ public class MediaSourceGroupMap
             groupMap.put(media, mediaGroups);
         }
         return mediaGroups;
+    }
+
+    /**
+     * Finds groups that match given media type and semantics.
+     *
+     * @param media eg. 'audio', 'video', etc.
+     * @param semantics a group semantics eg. 'SIM' or 'FID'
+     *
+     * @return a {@link List} of {@link SourceGroup}
+     */
+    private List<SourceGroup> findSourceGroups(String media, String semantics)
+    {
+        Objects.requireNonNull(semantics, "semantics");
+
+        List<SourceGroup> mediaGroups = groupMap.get(media);
+        List<SourceGroup> result = new LinkedList<>();
+
+        for (SourceGroup group : mediaGroups)
+        {
+            if (semantics.equalsIgnoreCase(group.getSemantics()))
+            {
+                result.add(group);
+            }
+        }
+
+        return result;
     }
 
     /**
