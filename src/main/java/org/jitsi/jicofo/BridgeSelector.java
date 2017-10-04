@@ -850,7 +850,7 @@ public class BridgeSelector
      * A {@link BridgeSelectionStrategy} implementation which keeps all
      * participants in a conference on the same bridge.
      */
-    private static class SingleBridgeSelectionStrategy
+    public static class SingleBridgeSelectionStrategy
         extends BridgeSelectionStrategy
     {
         /**
