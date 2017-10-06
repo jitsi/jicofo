@@ -95,7 +95,11 @@ public class MeetExtensionsHandler
     {
         MuteIqHandler()
         {
-            super(MuteIq.ELEMENT_NAME, MuteIq.NAMESPACE, IQ.Type.get, Mode.sync);
+            super(
+                MuteIq.ELEMENT_NAME,
+                MuteIq.NAMESPACE,
+                IQ.Type.set,
+                Mode.sync);
         }
 
         @Override
@@ -221,6 +225,7 @@ public class MeetExtensionsHandler
             if (!muteIq.getFrom().equals(jid))
             {
                 MuteIq muteStatusUpdate = new MuteIq();
+                muteStatusUpdate.setJid(jid);
                 muteStatusUpdate.setType(IQ.Type.set);
                 muteStatusUpdate.setTo(jid);
 
