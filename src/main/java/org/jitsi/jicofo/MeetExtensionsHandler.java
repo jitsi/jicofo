@@ -56,7 +56,6 @@ public class MeetExtensionsHandler
     private XmppConnection connection;
 
     private MuteIqHandler muteIqHandler;
-    private ColibriIqHandler colibriIqHandler;
     private DialIqHandler dialIqHandler;
 
     /**
@@ -84,10 +83,8 @@ public class MeetExtensionsHandler
                     OperationSetDirectSmackXmpp.class).getXmppConnection();
 
         muteIqHandler = new MuteIqHandler();
-        colibriIqHandler = new ColibriIqHandler();
         dialIqHandler = new DialIqHandler();
         connection.registerIQRequestHandler(muteIqHandler);
-        connection.registerIQRequestHandler(colibriIqHandler);
         connection.registerIQRequestHandler(dialIqHandler);
     }
 
@@ -109,30 +106,13 @@ public class MeetExtensionsHandler
         }
     }
 
-    private class ColibriIqHandler extends AbstractIqRequestHandler
-    {
-        ColibriIqHandler()
-        {
-            super(ColibriConferenceIQ.ELEMENT_NAME,
-                ColibriConferenceIQ.NAMESPACE,
-                IQ.Type.get,
-                Mode.sync);
-        }
-
-        @Override
-        public IQ handleIQRequest(IQ iqRequest)
-        {
-            return handleColibriIq((ColibriConferenceIQ) iqRequest);
-        }
-    }
-
     private class DialIqHandler extends AbstractIqRequestHandler
     {
         DialIqHandler()
         {
             super(RayoIqProvider.DialIq.ELEMENT_NAME,
                 RayoIqProvider.NAMESPACE,
-                IQ.Type.get,
+                IQ.Type.set,
                 Mode.sync);
         }
 
@@ -151,39 +131,9 @@ public class MeetExtensionsHandler
         if (connection != null)
         {
             connection.unregisterIQRequestHandler(muteIqHandler);
-            connection.unregisterIQRequestHandler(colibriIqHandler);
             connection.unregisterIQRequestHandler(dialIqHandler);
             connection = null;
         }
-    }
-
-    private IQ handleColibriIq(ColibriConferenceIQ colibriIQ)
-    {
-        if (colibriIQ.getRecording() == null)
-        {
-            return IQ.createErrorResponse(colibriIQ, XMPPError.getBuilder(
-                XMPPError.Condition.unexpected_request));
-        }
-
-        Jid from = colibriIQ.getFrom();
-        JitsiMeetConferenceImpl conference
-            = getConferenceForMucJid(colibriIQ.getFrom());
-        if (conference == null)
-        {
-            logger.debug("Room not found for JID: " + from);
-            return IQ.createErrorResponse(colibriIQ, XMPPError.getBuilder(
-                XMPPError.Condition.item_not_found));
-        }
-
-        ColibriConferenceIQ response = new ColibriConferenceIQ();
-
-        response.setType(IQ.Type.result);
-        response.setStanzaId(colibriIQ.getStanzaId());
-        response.setTo(colibriIQ.getFrom());
-        response.setFrom(colibriIQ.getTo());
-        response.setName(colibriIQ.getName());
-
-        return response;
     }
 
     private JitsiMeetConferenceImpl getConferenceForMucJid(Jid mucJid)
