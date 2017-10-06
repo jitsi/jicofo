@@ -219,6 +219,7 @@ public class ChatRoomImpl
     @Override
     public void processPresence(Presence presence)
     {
+        // unavailable is sent when user leaves the room
         if (!presence.isAvailable())
         {
             return;
@@ -226,8 +227,11 @@ public class ChatRoomImpl
 
         if (conference == null)
         {
-            logger.debug("Conference not set for room "
-                + roomName);
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Conference not set for room "
+                    + roomName);
+            }
             return;
         }
 
@@ -240,6 +244,11 @@ public class ChatRoomImpl
             .getRoleForMucJid(presence.getFrom());
         if (memberRole == null)
         {
+            // FIXME this is printed every time new user joins the room, because
+            // PacketListener is fired before MUC knows the user is in the room.
+            // This might be a problem if it would be the only presence ever
+            // received from such participant although very unlikely with
+            // the current client code.
             logger.warn("Failed to get user's role for: "
                 + presence.getFrom());
             return;
