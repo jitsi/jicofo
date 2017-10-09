@@ -28,7 +28,6 @@ import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -237,16 +236,9 @@ public abstract class CommonJibriStuff
             return false;
         }
 
-        // otherwise, check if it belongs to this conference
-        Localpart roomName = from.getLocalpartOrNull();
-        if (roomName == null)
-        {
-            logger.warn("Could not extract room name from jid:" + from);
-            return false;
-        }
-
-        Jid actualRoomName = conference.getRoomName();
-        if (!actualRoomName.equals(roomName))
+        BareJid roomName = from.asBareJid();
+        Jid conferenceRoomName = conference.getRoomName();
+        if (!conferenceRoomName.equals(roomName))
         {
             return false;
         }

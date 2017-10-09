@@ -47,7 +47,7 @@ public class OperationSetJibri
      */
     public OperationSetJibri(XmppProtocolProvider protocolProvider)
     {
-        super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.get, Mode.async);
+        super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, Mode.async);
         this.protocolProvider = protocolProvider;
         protocolProvider.addRegistrationStateChangeListener(this);
     }
