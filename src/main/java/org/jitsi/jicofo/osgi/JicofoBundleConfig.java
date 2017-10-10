@@ -19,6 +19,8 @@ package org.jitsi.jicofo.osgi;
 
 import org.jitsi.meet.*;
 
+import java.util.*;
+
 /**
  * Jicofo OSGi bundles description.
  *
@@ -142,5 +144,21 @@ public class JicofoBundleConfig
         };
 
         return bundles;
+    }
+
+    @Override
+    public Map<String, String> getSystemPropertyDefaults()
+    {
+        // "super" is setting defaults common to all components
+        Map<String, String> defaults = super.getSystemPropertyDefaults();
+
+        String true_ = Boolean.toString(true);
+
+        // make sure we use the properties files for configuration
+        defaults.put(
+            "net.java.sip.communicator.impl.configuration.USE_PROPFILE_CONFIG",
+            true_);
+
+        return defaults;
     }
 }
