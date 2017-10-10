@@ -29,6 +29,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -73,9 +75,12 @@ public class ParticipantTest
 
     @Before
     public void setUpContents()
+            throws XmppStringprepException
     {
         this.mockConference = new MockJitsiMeetConference();
-        MockMultiUserChat mockMultiUserChat = new MockMultiUserChat(null, null);
+        MockMultiUserChat mockMultiUserChat = new MockMultiUserChat(
+                JidCreate.entityBareFrom("room@example.com"),
+                null);
         this.roomMember = mockMultiUserChat.createMockRoomMember("testMember");
         this.participant
             = new Participant(mockConference, roomMember, 20);
@@ -154,7 +159,15 @@ public class ParticipantTest
     @Test
     public void testNegative()
     {
-        audioRtpDescPe.addChildExtension(createSourceWithSsrc(-1));
+        // ssrc=-1 *removes* the ssrc attribute
+        // Create a ssrc=0, then hack it away. Invalid sources can only be
+        // received over the wire, setSSRC clips invalid values.
+        SourcePacketExtension sourceWithSsrc
+                = createSourceWithSsrc(-1L);
+        sourceWithSsrc.setAttribute(
+                SourcePacketExtension.SSRC_ATTR_NAME,
+                Long.toString(-1L));
+        audioRtpDescPe.addChildExtension(sourceWithSsrc);
 
         this.addDefaultAudioSSRCs();
 
@@ -165,9 +178,7 @@ public class ParticipantTest
         }
         catch (InvalidSSRCsException exc)
         {
-            assertEquals(
-                "Source with no value was passed (parsed from negative ?)",
-                exc.getMessage());
+            assertEquals("Illegal SSRC value: -1", exc.getMessage());
         }
     }
 

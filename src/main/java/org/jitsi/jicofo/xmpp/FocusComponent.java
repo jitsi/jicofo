@@ -33,6 +33,8 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 import org.xmpp.packet.IQ;
 
@@ -62,7 +64,7 @@ public class FocusComponent
     /**
      * The JID from which shutdown requests are accepted.
      */
-    private String shutdownAllowedJid;
+    private Jid shutdownAllowedJid;
 
     /**
      * Indicates if the focus is anonymous user or authenticated system admin.
@@ -141,8 +143,12 @@ public class FocusComponent
         if (!isPingTaskStarted())
             startPingTask();
 
+        String shutdownAllowedJid
+                = configService.getString(SHUTDOWN_ALLOWED_JID_PNAME);
         this.shutdownAllowedJid
-            = configService.getString(SHUTDOWN_ALLOWED_JID_PNAME);
+            = StringUtils.isNullOrEmpty(shutdownAllowedJid)
+                ? null
+                : JidCreate.from(shutdownAllowedJid);
 
         authAuthority
             = ServiceUtils.getService(bc, AuthenticationAuthority.class);
@@ -210,10 +216,10 @@ public class FocusComponent
             //{
             //    return handleColibriStatsIQ((ColibriStatsIQ) smackIq);
             //}
-            if (smackIq instanceof LoginUrlIQ)
+            if (smackIq instanceof LoginUrlIq)
             {
                 org.jivesoftware.smack.packet.IQ result
-                    = handleAuthUrlIq((LoginUrlIQ) smackIq);
+                    = handleAuthUrlIq((LoginUrlIq) smackIq);
                 return IQUtils.convert(result);
             }
             else
@@ -265,20 +271,19 @@ public class FocusComponent
                     return IQUtils.convert(
                         org.jivesoftware.smack.packet.IQ.createErrorResponse(
                             smackIq,
-                            new XMPPError(XMPPError.Condition.bad_request)));
+                            XMPPError.getBuilder(
+                                    XMPPError.Condition.bad_request)));
                 }
 
-                String from = gracefulShutdownIQ.getFrom();
-                String bareFrom
-                    = org.jivesoftware.smack.util.StringUtils
-                        .parseBareAddress(from);
+                Jid from = gracefulShutdownIQ.getFrom();
+                BareJid bareFrom = from.asBareJid();
 
-                if (StringUtils.isNullOrEmpty(shutdownAllowedJid)
+                if (shutdownAllowedJid == null
                     || !shutdownAllowedJid.equals(bareFrom))
                 {
                     // Forbidden
-                    XMPPError forbiddenError
-                        = new XMPPError(XMPPError.Condition.forbidden);
+                    XMPPError.Builder forbiddenError
+                        = XMPPError.getBuilder(XMPPError.Condition.forbidden);
 
                     logger.warn("Rejected shutdown request from: " + from);
 
@@ -338,7 +343,7 @@ public class FocusComponent
     public org.jivesoftware.smack.packet.IQ processExtensions(
             ConferenceIq query, ConferenceIq response, boolean roomExists)
     {
-        String peerJid = query.getFrom();
+        Jid peerJid = query.getFrom();
         String identity = null;
 
         // Authentication
@@ -368,7 +373,7 @@ public class FocusComponent
         // Check room reservation?
         if (!roomExists && reservationSystem != null)
         {
-            String room = query.getRoom();
+            EntityBareJid room = query.getRoom();
 
             ReservationSystem.Result result
                 = reservationSystem.createConference(identity, room);
@@ -391,7 +396,7 @@ public class FocusComponent
         throws Exception
     {
         ConferenceIq response = new ConferenceIq();
-        String room = query.getRoom();
+        EntityBareJid room = query.getRoom();
 
         logger.info("Focus request for room: " + room);
 
@@ -423,8 +428,8 @@ public class FocusComponent
             ready = true;
         }
 
-        response.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
-        response.setPacketID(query.getPacketID());
+        response.setType(org.jivesoftware.smack.packet.IQ.Type.result);
+        response.setStanzaId(query.getStanzaId());
         response.setFrom(query.getTo());
         response.setTo(query.getFrom());
         response.setRoom(query.getRoom());
@@ -458,28 +463,30 @@ public class FocusComponent
     }
 
     private org.jivesoftware.smack.packet.IQ handleAuthUrlIq(
-            LoginUrlIQ authUrlIq)
+            LoginUrlIq authUrlIq)
     {
         if (authAuthority == null)
         {
-            XMPPError error
-                = new XMPPError(XMPPError.Condition.service_unavailable);
+            XMPPError.Builder error
+                = XMPPError.getBuilder(XMPPError.Condition.service_unavailable);
             return org.jivesoftware.smack.packet.IQ
                     .createErrorResponse(authUrlIq, error);
         }
 
-        String peerFullJid = authUrlIq.getFrom();
-        String roomName = authUrlIq.getRoom();
-        if (StringUtils.isNullOrEmpty(roomName))
+        EntityFullJid peerFullJid
+            = authUrlIq.getFrom().asEntityFullJidIfPossible();
+        EntityBareJid roomName = authUrlIq.getRoom();
+        if (roomName == null)
         {
-            XMPPError error = new XMPPError(XMPPError.Condition.no_acceptable);
+            XMPPError.Builder error = XMPPError.getBuilder(
+                    XMPPError.Condition.not_acceptable);
             return org.jivesoftware.smack.packet.IQ
                     .createErrorResponse(authUrlIq, error);
         }
 
-        LoginUrlIQ result = new LoginUrlIQ();
-        result.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
-        result.setPacketID(authUrlIq.getPacketID());
+        LoginUrlIq result = new LoginUrlIq();
+        result.setType(org.jivesoftware.smack.packet.IQ.Type.result);
+        result.setStanzaId(authUrlIq.getStanzaId());
         result.setTo(authUrlIq.getFrom());
 
         boolean popup =
@@ -488,8 +495,8 @@ public class FocusComponent
         String machineUID = authUrlIq.getMachineUID();
         if (StringUtils.isNullOrEmpty(machineUID))
         {
-            XMPPError error
-                = new XMPPError(
+            XMPPError.Builder error
+                = XMPPError.from(
                     XMPPError.Condition.bad_request,
                     "missing mandatory attribute 'machineUID'");
             return org.jivesoftware.smack.packet.IQ
@@ -519,8 +526,8 @@ public class FocusComponent
         ColibriStatsIQ statsReply = new ColibriStatsIQ();
 
         statsReply.setType(
-            org.jivesoftware.smack.packet.IQ.Type.RESULT);
-        statsReply.setPacketID(iq.getPacketID());
+            org.jivesoftware.smack.packet.IQ.Type.result);
+        statsReply.setStanzaId(iq.getStanzaId());
         statsReply.setTo(iq.getFrom());
 
         int conferenceCount = focusManager.getConferenceCount();

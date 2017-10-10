@@ -23,6 +23,8 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -41,13 +43,13 @@ public interface ColibriConference
      *
      * @param videobridgeJid the videobridge address to be set.
      */
-    void setJitsiVideobridge(String videobridgeJid);
+    void setJitsiVideobridge(Jid videobridgeJid);
 
     /**
      * Returns XMPP address of currently used videobridge or <tt>null</tt>
      * if the isn't any.
      */
-    String getJitsiVideobridge();
+    Jid getJitsiVideobridge();
 
     /**
      * Returns the identifier assigned for our conference by the videobridge.
@@ -68,13 +70,13 @@ public interface ColibriConference
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
-    void setName(String name);
+    void setName(Localpart name);
 
     /**
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
-    String getName();
+    Localpart getName();
 
     /**
      * Returns <tt>true</tt> if conference has been allocated during last

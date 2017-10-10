@@ -26,6 +26,8 @@ import net.java.sip.communicator.service.protocol.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -59,7 +61,8 @@ public class RolesTest
     public void testPassModeratorRole()
         throws Exception
     {
-        String roomName = "testroom@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
         TestConference testConference
@@ -71,7 +74,7 @@ public class RolesTest
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
 
         MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName);
+            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
         MockParticipant users[] = new MockParticipant[4];
@@ -84,7 +87,7 @@ public class RolesTest
         // Accept invite with all users
         for (MockParticipant user : users)
         {
-            assertNotNull(user.acceptInvite(4000));
+            assertNotNull(user.acceptInvite(10000));
         }
 
         for (int i = 0; i < users.length; i++)

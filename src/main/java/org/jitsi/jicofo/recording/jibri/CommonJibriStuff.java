@@ -22,18 +22,18 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.jivesoftware.smack.packet.XMPPError.*;
+import static org.jivesoftware.smack.packet.XMPPError.Condition.*;
 
 /**
  * Common stuff shared between {@link JibriRecorder} (which can deal with only
@@ -43,7 +43,6 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public abstract class CommonJibriStuff
-    implements PacketListener, PacketFilter
 {
     /**
      * The Jitsi Meet conference instance.
@@ -89,12 +88,6 @@ public abstract class CommonJibriStuff
      * presence.
      */
     protected final OperationSetJitsiMeetTools meetTools;
-
-    /**
-     * {@link QueuePacketProcessor} used to execute packets on separate single
-     * threaded queue which will not block Smack's packet reader thread.
-     */
-    private QueuePacketProcessor packetProcessor;
 
     /**
      * Executor service used by {@link JibriSession} to schedule pending timeout
@@ -199,9 +192,6 @@ public abstract class CommonJibriStuff
             logger.error("Failed to start Jibri event handler: " + e, e);
         }
 
-        this.packetProcessor = new QueuePacketProcessor(connection, this, this);
-        this.packetProcessor.start();
-
         updateJibriAvailability();
     }
 
@@ -220,83 +210,87 @@ public abstract class CommonJibriStuff
         {
             logger.error("Failed to stop Jibri event handler: " + e, e);
         }
-
-        if (this.packetProcessor != null)
-        {
-            this.packetProcessor.stop();
-            this.packetProcessor = null;
-        }
     }
 
     /**
-     * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
-     * if the user is a moderator and will filter out any IQs which do not
-     * belong to {@link #conference} MUC.
+     * Checks if the IQ is from a member of this room or from an active Jibri
+     * session.
+     * @param iq a random incoming Jibri IQ.
+     * @return <tt>true</tt>, when the IQ is from a member of this room or from
+     * an active Jibri session.
      */
-    @Override
-    synchronized public void processPacket(Packet packet)
+    public final boolean accept(JibriIq iq)
     {
-        if (logger.isDebugEnabled())
+        Jid from = iq.getFrom();
+
+        // Process if it belongs to an active recording session
+        JibriSession session = getJibriSessionForMeetIq(iq);
+        if (session != null && session.accept(iq))
         {
-            logger.debug("Processing an IQ: " + packet.toXML());
+            return true;
         }
 
-        IQ iq = (IQ) packet;
-
-        String from = iq.getFrom();
-
-        JibriIq jibriIq = (JibriIq) iq;
-
-        String roomName = MucUtil.extractRoomNameFromMucJid(from);
-        if (roomName == null)
+        // Check if the implementation wants to deal with this IQ sub-type
+        if (!acceptType(iq))
         {
-            logger.warn("Could not extract room name from jid:" + from);
-            return;
+            return false;
         }
 
-        String actualRoomName = conference.getRoomName();
-        if (!actualRoomName.equals(roomName))
+        BareJid roomName = from.asBareJid();
+        Jid conferenceRoomName = conference.getRoomName();
+        if (!conferenceRoomName.equals(roomName))
         {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Ignored packet from: " + roomName
-                    + ", my room: " + actualRoomName
-                    + " p: " + packet.toXML());
-            }
-            return;
+            return false;
         }
 
         XmppChatMember chatMember = conference.findMember(from);
         if (chatMember == null)
         {
-            logger.warn("ERROR chat member not found for: " + from
-                + " in " + roomName);
-            return;
+            logger.warn("Chat member not found for: " + from);
+            return false;
         }
 
-        processJibriIqFromMeet(jibriIq, chatMember);
+        return true;
     }
 
-    private void processJibriIqFromMeet(final JibriIq           iq,
-                                        final XmppChatMember    sender)
+    /**
+     * Implementors of this class decided here if they want to deal with
+     * the incoming JibriIQ.
+     * @param packet the Jibri IQ to check.
+     * @return <tt>true</tt> if the implementation should handle it.
+     */
+    protected abstract boolean acceptType(JibriIq packet);
+
+    /**
+     * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
+     * if the user is a moderator.
+     */
+    public final synchronized IQ handleIQRequest(JibriIq iq)
     {
-        String senderMucJid = sender.getContactAddress();
         if (logger.isDebugEnabled())
         {
-            logger.info(
-                "Jibri request from " + senderMucJid + " iq: " + iq.toXML());
+            logger.debug("Jibri request. IQ: " + iq.toXML());
+        }
+
+        // Process if it belongs to an active recording session
+        JibriSession session = getJibriSessionForMeetIq(iq);
+        if (session != null && session.accept(iq))
+        {
+            return session.processJibriIqFromJibri(iq);
         }
 
         JibriIq.Action action = iq.getAction();
         if (JibriIq.Action.UNDEFINED.equals(action))
-            return;
-
-        // verifyModeratorRole sends 'not_allowed' error on false
-        if (!verifyModeratorRole(iq))
         {
-            logger.warn(
-                "Ignored Jibri request from non-moderator: " + senderMucJid);
-            return;
+            return IQ.createErrorResponse(iq, getBuilder(bad_request));
+        }
+
+        // verifyModeratorRole create 'not_allowed' error on when not moderator
+        XMPPError error = verifyModeratorRole(iq);
+        if (error != null)
+        {
+            logger.warn("Ignored Jibri request from non-moderator.");
+            return IQ.createErrorResponse(iq, error);
         }
 
         JibriSession jibriSession = getJibriSessionForMeetIq(iq);
@@ -305,59 +299,43 @@ public abstract class CommonJibriStuff
         if (JibriIq.Action.START.equals(action) &&
             jibriSession == null)
         {
-            IQ response = handleStartRequest(iq);
-            connection.sendPacket(response);
-            return;
+            return handleStartRequest(iq);
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
             jibriSession != null)
         {
-            XMPPError error = jibriSession.stop();
-            connection.sendPacket(
-                error == null
+            error = jibriSession.stop();
+            return error == null
                     ? IQ.createResultIQ(iq)
-                    : IQ.createErrorResponse(iq, error));
-            return;
+                    : IQ.createErrorResponse(iq, error);
         }
 
         logger.warn("Discarded: " + iq.toXML() + " - nothing to be done, ");
 
         // Bad request
-        sendErrorResponse(
-            iq, XMPPError.Condition.bad_request,
-            "Unable to handle: '" + action);
+        return IQ.createErrorResponse(
+            iq, from(bad_request, "Unable to handle: '" + action));
     }
 
-    private boolean verifyModeratorRole(JibriIq iq)
+    private XMPPError verifyModeratorRole(JibriIq iq)
     {
-        String from = iq.getFrom();
+        Jid from = iq.getFrom();
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
 
         if (role == null)
         {
             // Only room members are allowed to send requests
-            sendErrorResponse(iq, XMPPError.Condition.forbidden, null);
-            return false;
+            return getBuilder(forbidden).build();
         }
 
         if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
         {
             // Moderator permission is required
-            sendErrorResponse(iq, XMPPError.Condition.not_allowed, null);
-            return false;
+            return getBuilder(not_allowed).build();
         }
-        return true;
-    }
 
-    private void sendErrorResponse(
-            IQ                     request,
-            XMPPError.Condition    condition,
-            String                 msg)
-    {
-        connection.sendPacket(
-            IQ.createErrorResponse(
-                request, new XMPPError(condition, msg)));
+        return null;
     }
 
     /**

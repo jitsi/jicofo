@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import org.jitsi.util.*;
+import org.jivesoftware.smack.packet.*;
 
 import java.io.*;
 import java.net.*;
@@ -29,7 +30,7 @@ import java.net.*;
  * @author Pawel Domas
  */
 public class LogoutIq
-    extends AbstractIQ
+    extends IQ
 {
     /**
      * XML element name of logout IQ.
@@ -68,7 +69,7 @@ public class LogoutIq
      */
     public LogoutIq()
     {
-        super(NAMESPACE, ELEMENT_NAME);
+        super(ELEMENT_NAME, NAMESPACE);
     }
 
     /**
@@ -88,26 +89,24 @@ public class LogoutIq
         this.sessionId = sessionId;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void printAttributes(StringBuilder out)
+    protected IQChildElementXmlStringBuilder getIQChildElementBuilder(
+            IQChildElementXmlStringBuilder xml)
     {
-        printStrAttr(out, SESSION_ID_ATTR, sessionId);
-
+        xml.optAttribute(SESSION_ID_ATTR, sessionId);
         if (!StringUtils.isNullOrEmpty(logoutUrl))
         {
             try
             {
                 String encodedUrl = URLEncoder.encode(logoutUrl, "UTF-8");
-                printStrAttr(out, LOGOUT_URL_ATTR, encodedUrl);
+                xml.attribute(LOGOUT_URL_ATTR, encodedUrl);
             }
             catch (UnsupportedEncodingException e)
             {
                 throw new RuntimeException(e);
             }
         }
+        return xml;
     }
 
     /**

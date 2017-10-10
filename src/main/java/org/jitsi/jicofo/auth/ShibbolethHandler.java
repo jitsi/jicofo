@@ -21,8 +21,9 @@ import net.java.sip.communicator.util.Logger;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -115,7 +116,7 @@ class ShibbolethHandler
 
     private Map<String, String> createPropertiesMap(HttpServletRequest request)
     {
-        HashMap<String, String> propertiesMap = new HashMap<String, String>();
+        HashMap<String, String> propertiesMap = new HashMap<>();
 
         Enumeration<String> headers = request.getHeaderNames();
         while (headers.hasMoreElements())
@@ -172,17 +173,16 @@ class ShibbolethHandler
             dumpRequestInfo(request);
         }
 
-        String room = request.getParameter("room");
-        if (StringUtils.isNullOrEmpty(room))
+        if (request.getParameter("room") == null)
         {
             response.sendError(
                 HttpServletResponse.SC_BAD_REQUEST,
                 "Missing mandatory parameter 'room'");
             return;
         }
-        // Extract room name from MUC address
-        String fullRoom = room;
-        room = MucUtil.extractName(room);
+
+        EntityBareJid fullRoom = JidCreate.entityBareFrom(
+                request.getParameter("room"));
 
         String machineUID = request.getParameter("machineUID");
         if (StringUtils.isNullOrEmpty(machineUID))
@@ -261,7 +261,8 @@ class ShibbolethHandler
         else
         {
             // Redirect back to the conference room
-            script += " window.location.href='../"+room+"';\n";
+            script += " window.location.href='../" +
+                    fullRoom.getLocalpart() + "';\n";
         }
 
         responseWriter.println(script +"})();\n</script>\n");

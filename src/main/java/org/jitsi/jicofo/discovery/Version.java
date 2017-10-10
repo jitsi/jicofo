@@ -23,7 +23,7 @@ package org.jitsi.jicofo.discovery;
  * @author Pawel Domas
  */
 public class Version
-    extends org.jivesoftware.smackx.packet.Version
+    extends org.jivesoftware.smackx.iqversion.packet.Version
 {
     /**
      * Creates a string representation of this <tt>Version</tt> IQ which will
@@ -33,14 +33,5 @@ public class Version
     public String getNameVersionOsString()
     {
         return getName() + "(" + getVersion() + "," + getOs() + ")";
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString()
-    {
-        return "Version[" + getNameVersionOsString() + "@" + hashCode();
     }
 }

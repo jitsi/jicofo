@@ -17,19 +17,21 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.jabber.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 
+import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.discovery.Version;
 import org.jivesoftware.smack.*;
 
+import org.jivesoftware.smack.provider.*;
+import org.jivesoftware.smackx.bytestreams.socks5.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -51,44 +53,40 @@ public class XmppProtocolActivator
      */
     static public void registerXmppExtensions()
     {
-        // FIXME: make sure that we're using interoperability layer
-        AbstractSmackInteroperabilityLayer.setImplementationClass(
-            SmackV3InteroperabilityLayer.class);
-        AbstractSmackInteroperabilityLayer smackInterOp
-            = AbstractSmackInteroperabilityLayer.getInstance();
-
         // Constructors called to register extension providers
         new ConferenceIqProvider();
+        new LoginUrlIqProvider();
+        new LogoutIqProvider();
         // Colibri
         new ColibriIQProvider();
         // HealthChecks
         HealthCheckIQProvider.registerIQProvider();
         // Jibri IQs
-        smackInterOp.addIQProvider(
+        ProviderManager.addIQProvider(
                 JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, new JibriIqProvider());
         JibriStatusPacketExt.registerExtensionProvider();
         // User info
-        smackInterOp.addExtensionProvider(
+        ProviderManager.addExtensionProvider(
                 UserInfoPacketExt.ELEMENT_NAME,
                 UserInfoPacketExt.NAMESPACE,
                 new DefaultPacketExtensionProvider<>(UserInfoPacketExt.class));
         // <videomuted> element from jitsi-meet presence
-        smackInterOp.addExtensionProvider(
+        ProviderManager.addExtensionProvider(
                 VideoMutedExtension.ELEMENT_NAME,
                 VideoMutedExtension.NAMESPACE,
                 new DefaultPacketExtensionProvider<>(
                         VideoMutedExtension.class));
-        smackInterOp.addExtensionProvider(
+        ProviderManager.addExtensionProvider(
                 RegionPacketExtension.ELEMENT_NAME,
                 RegionPacketExtension.NAMESPACE,
                 new DefaultPacketExtensionProvider<>(
                         RegionPacketExtension.class));
 
         // Override original Smack Version IQ class
-        AbstractSmackInteroperabilityLayer.getInstance()
-            .addIQProvider(
-                    "query", "jabber:iq:version",
-                    org.jitsi.jicofo.discovery.Version.class);
+        ProviderManager.addIQProvider(
+                Version.ELEMENT,
+                Version.NAMESPACE,
+                new VersionIqProvider());
     }
 
     @Override
@@ -97,9 +95,9 @@ public class XmppProtocolActivator
     {
         XmppProtocolActivator.bundleContext = bundleContext;
 
-        SmackConfiguration.setPacketReplyTimeout(15000);
+        SmackConfiguration.setDefaultReplyTimeout(15000);
 
-        SmackConfiguration.setLocalSocks5ProxyEnabled(false);
+        Socks5Proxy.setLocalSocks5ProxyEnabled(false);
 
         registerXmppExtensions();
 

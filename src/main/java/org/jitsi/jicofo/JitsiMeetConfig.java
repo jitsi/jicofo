@@ -17,10 +17,12 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -140,9 +142,23 @@ public class JitsiMeetConfig
      * <tt>BridgeSelector</tt>. <tt>null</tt> if not specified.
      * That property is per conference specific.
      */
-    public String getEnforcedVideobridge()
+    public Jid getEnforcedVideobridge()
     {
-        return properties.get(ENFORCED_BRIDGE);
+        try
+        {
+            String enforcedBridge = properties.get(ENFORCED_BRIDGE);
+            if (StringUtils.isNullOrEmpty(enforcedBridge))
+            {
+                return null;
+            }
+
+            return JidCreate.from(enforcedBridge);
+        }
+        catch (XmppStringprepException e)
+        {
+            logger.error("Invalid JID for enforced videobridge", e);
+            return null;
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.*;
 import org.jitsi.rest.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -142,7 +143,7 @@ public class AuthBundleActivator
             Server server)
         throws Exception
     {
-        List<Handler> handlers = new ArrayList<Handler>();
+        List<Handler> handlers = new ArrayList<>();
 
         // Shibboleth
         if (authAuthority instanceof ShibbolethAuthAuthority)
@@ -214,12 +215,14 @@ public class AuthBundleActivator
                 authAuthority
                     = new XMPPDomainAuthAuthority(
                             disableAutoLogin,
-                            authenticationLifetime, loginUrl.substring(5));
+                            authenticationLifetime,
+                            JidCreate.domainBareFrom(loginUrl.substring(5)));
             }
             else if (loginUrl.toUpperCase().startsWith("EXT_JWT:"))
             {
                 authAuthority
-                    = new ExternalJWTAuthority(loginUrl.substring(8));
+                    = new ExternalJWTAuthority(
+                            JidCreate.domainBareFrom(loginUrl.substring(8)));
             }
             else
             {

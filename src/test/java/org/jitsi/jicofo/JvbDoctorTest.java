@@ -32,6 +32,8 @@ import org.jitsi.jicofo.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import java.util.concurrent.*;
 
@@ -83,7 +85,7 @@ public class JvbDoctorTest
     public void jvbDoctorTest()
         throws Exception
     {
-        String jvb1 = "jvb1.jitsi.net";
+        DomainBareJid jvb1 = JidCreate.domainBareFrom("jvb1.jitsi.net");
 
         FocusManager focusManager
             = ServiceUtils.getService(osgi.bc, FocusManager.class);
@@ -96,7 +98,7 @@ public class JvbDoctorTest
         assertNotNull(focusPps);
 
         MockVideobridge mockBridge
-            = new MockVideobridge(focusPps.getMockXmppConnection(), jvb1);
+            = new MockVideobridge(new MockXmppConnection(jvb1), jvb1);
 
         // Make sure that jvb advertises health-check support
         MockSetSimpleCapsOpSet mockCaps = focusPps.getMockCapsOpSet();
@@ -127,7 +129,7 @@ public class JvbDoctorTest
         selector.addJvbAddress(jvb1);
 
         // Verify that BridgeSelector has triggered bridge up event
-        verify(eventSpy, timeout(100))
+        verify(eventSpy, timeout(5000))
             .handleEvent(BridgeEvent.createBridgeUp(jvb1));
 
         TestConference[] testConfs = new TestConference[5];
@@ -137,7 +139,10 @@ public class JvbDoctorTest
         for (int i=0; i<testConfs.length; i++)
         {
             testConfs[i] = TestConference.allocate(
-                osgi.bc, serverName, roomName + i, mockBridge);
+                    osgi.bc,
+                    serverName,
+                    JidCreate.entityBareFrom(roomName + i),
+                    mockBridge);
 
             testConfs[i].addParticipant();
             testConfs[i].addParticipant();

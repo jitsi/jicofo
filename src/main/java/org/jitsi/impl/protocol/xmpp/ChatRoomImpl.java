@@ -23,14 +23,22 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
+import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smackx.*;
 import org.jivesoftware.smackx.muc.*;
-import org.jivesoftware.smackx.packet.*;
+import org.jivesoftware.smackx.muc.MultiUserChatException.*;
+import org.jivesoftware.smackx.muc.packet.*;
+import org.jivesoftware.smackx.xdata.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.jid.parts.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,7 +50,7 @@ import java.util.concurrent.*;
  */
 public class ChatRoomImpl
     extends AbstractChatRoom
-    implements ChatRoom2
+    implements ChatRoom2, PresenceListener
 {
     /**
      * The logger used by this class.
@@ -53,10 +61,8 @@ public class ChatRoomImpl
      * Constant used to return empty presence list from
      * {@link #getPresenceExtensions()} in case there's no presence available.
      */
-    private final static Collection<PacketExtension>
-        EMPTY_PRESENCE_LIST
-            = Collections.unmodifiableList(
-                    new ArrayList<PacketExtension>(0));
+    private final static Collection<ExtensionElement>
+        EMPTY_PRESENCE_LIST = Collections.emptyList();
 
     /**
      * Parent MUC operation set.
@@ -67,12 +73,12 @@ public class ChatRoomImpl
      * Caches early presence packets triggered by Smack, before there was member
      * joined event.
      */
-    private Map<String, Presence> presenceCache = new HashMap<>();
+    private Map<Jid, Presence> presenceCache = new HashMap<>();
 
     /**
      * Chat room name.
      */
-    private final String roomName;
+    private final EntityBareJid roomName;
 
     /**
      * {@link MemberListener} instance.
@@ -81,7 +87,7 @@ public class ChatRoomImpl
 
     private final ParticipantListener participantListener;
 
-    private PacketInterceptor presenceInterceptor;
+    private PresenceListener presenceInterceptor;
 
     /**
      * Smack multi user chat backend instance.
@@ -91,12 +97,12 @@ public class ChatRoomImpl
     /**
      * Our nickname.
      */
-    private String myNickName;
+    private Resourcepart myNickName;
 
     /**
      * Our full Multi User Chat XMPP address.
      */
-    private String myMucAddress;
+    private EntityFullJid myMucAddress;
 
     /**
      * Member presence listeners.
@@ -113,7 +119,7 @@ public class ChatRoomImpl
     /**
      * Nickname to member impl class map.
      */
-    private final Map<String, ChatMemberImpl> members = new HashMap<>();
+    private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
 
     /**
      * The list of <tt>ChatRoomMemberPropertyChangeListener</tt>.
@@ -136,6 +142,9 @@ public class ChatRoomImpl
      */
     private Integer participantNumber = 0;
 
+    /** The conference that is backed by this MUC room. */
+    private JitsiMeetConference conference;
+
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
@@ -144,13 +153,14 @@ public class ChatRoomImpl
      *                 new <tt>ChatRoomImpl</tt>instance.
      */
     public ChatRoomImpl(OperationSetMultiUserChatImpl parentChatOperationSet,
-                        String roomName)
+                        EntityBareJid roomName)
     {
         this.opSet = parentChatOperationSet;
         this.roomName = roomName;
 
-        muc = new MultiUserChat(
-                parentChatOperationSet.getConnection(), roomName);
+        MultiUserChatManager manager = MultiUserChatManager
+                .getInstanceFor(parentChatOperationSet.getConnection());
+        muc = manager.getMultiUserChat(roomName);
 
         this.memberListener = new MemberListener();
         muc.addParticipantStatusListener(memberListener);
@@ -159,8 +169,28 @@ public class ChatRoomImpl
         muc.addParticipantListener(participantListener);
     }
 
+    /**
+     * Sets the conference that is backed by this MUC. Can only be set once.
+     * @param conference the conference backed by this MUC.
+     */
+    public void setConference(JitsiMeetConference conference)
+    {
+        if (this.conference != null)
+        {
+            throw new IllegalStateException("Conference is already set!");
+        }
+
+        this.conference = conference;
+    }
+
     @Override
     public String getName()
+    {
+        return roomName.toString();
+    }
+
+    @Override
+    public EntityBareJid getNameAsJid()
     {
         return roomName;
     }
@@ -187,29 +217,81 @@ public class ChatRoomImpl
     }
 
     @Override
+    public void processPresence(Presence presence)
+    {
+        // unavailable is sent when user leaves the room
+        if (!presence.isAvailable())
+        {
+            return;
+        }
+
+        if (conference == null)
+        {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Conference not set for room "
+                    + roomName);
+            }
+            return;
+        }
+
+        if (conference.isFocusMember(presence.getFrom()))
+        {
+            return; // Not interested in local presence
+        }
+
+        ChatRoomMemberRole memberRole = conference
+            .getRoleForMucJid(presence.getFrom());
+        if (memberRole == null)
+        {
+            // FIXME this is printed every time new user joins the room, because
+            // PacketListener is fired before MUC knows the user is in the room.
+            // This might be a problem if it would be the only presence ever
+            // received from such participant although very unlikely with
+            // the current client code.
+            logger.warn("Failed to get user's role for: "
+                + presence.getFrom());
+            return;
+        }
+
+        if (memberRole.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+        {
+            StartMutedPacketExtension ext
+                = presence.getExtension(
+                StartMutedPacketExtension.ELEMENT_NAME,
+                StartMutedPacketExtension.NAMESPACE);
+
+            if (ext != null)
+            {
+                boolean[] startMuted
+                    = { ext.getAudioMuted(), ext.getVideoMuted() };
+
+                conference.setStartMuted(startMuted);
+            }
+        }
+    }
+
+    @Override
     public void joinAs(String nickname)
         throws OperationFailedException
     {
         try
         {
-            this.myNickName = nickname;
-            this.myMucAddress = roomName + "/" + nickname;
+            this.myNickName = Resourcepart.from(nickname);
+            this.myMucAddress = JidCreate.entityFullFrom(roomName, myNickName);
 
-            this.presenceInterceptor = new PacketInterceptor()
+            this.presenceInterceptor = new PresenceListener()
             {
                 @Override
-                public void interceptPacket(Packet packet)
+                public void processPresence(Presence packet)
                 {
-                    if (packet instanceof Presence)
-                    {
-                        lastPresenceSent = (Presence) packet;
-                    }
+                    lastPresenceSent = packet;
                 }
             };
             muc.addPresenceInterceptor(presenceInterceptor);
 
-            muc.create(nickname);
-            //muc.join(nickname);
+            muc.createOrJoin(myNickName);
+            muc.addParticipantListener(this);
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -222,9 +304,15 @@ public class ChatRoomImpl
             }*/
             Form answer = config.createAnswerForm();
             // Room non-anonymous
-            FormField whois = new FormField("muc#roomconfig_whois");
+            String whoisFieldName = "muc#roomconfig_whois";
+            FormField whois = answer.getField(whoisFieldName);
+            if (whois == null)
+            {
+                whois = new FormField(whoisFieldName);
+                answer.addField(whois);
+            }
+
             whois.addValue("anyone");
-            answer.addField(whois);
             // Room moderated
             //FormField roomModerated
             //    = new FormField("muc#roomconfig_moderatedroom");
@@ -253,7 +341,13 @@ public class ChatRoomImpl
 
             muc.sendConfigurationForm(answer);
         }
-        catch (XMPPException e)
+        catch (XMPPException
+                | XmppStringprepException
+                | MucAlreadyJoinedException
+                | NotAMucServiceException
+                | NoResponseException
+                | NotConnectedException
+                | InterruptedException e)
         {
             throw new OperationFailedException(
                 "Failed to join the room",
@@ -274,7 +368,7 @@ public class ChatRoomImpl
         return muc != null && muc.isJoined();
     }
 
-    private void leave(String reason, String jid)
+    private void leave(String reason, EntityBareJid jid)
     {
         logger.info("Leave, reason: " + reason + " alt-jid: " + jid);
 
@@ -284,9 +378,18 @@ public class ChatRoomImpl
     @Override
     public void leave()
     {
-        Connection connection = opSet.getConnection();
+        XMPPConnection connection = opSet.getConnection();
         if (connection != null && connection.isConnected())
-            muc.leave();
+        {
+            try
+            {
+                muc.leave();
+            }
+            catch (NotConnectedException | InterruptedException e)
+            {
+                logger.error("Failed to properly leave " + muc.toString(), e);
+            }
+        }
 
         // Simulate member left events
         // No need to do this - we dispose whole conference anyway on stop
@@ -311,13 +414,31 @@ public class ChatRoomImpl
                 alternateAddress);*/
 
         if (presenceInterceptor != null)
+        {
             muc.removePresenceInterceptor(presenceInterceptor);
-        muc.removeParticipantStatusListener(memberListener);
+        }
 
-        if (connection != null && connection.isConnected())
+        if (memberListener != null)
+        {
+            muc.removeParticipantStatusListener(memberListener);
+        }
+
+        if (participantListener != null)
+        {
             muc.removeParticipantListener(participantListener);
+        }
 
-        muc.dispose();
+        try
+        {
+            // FIXME smack4: there used to be a custom dispose() method
+            // if leave() fails, there might still be some listeners lingering
+            // around
+            muc.leave();
+        }
+        catch (NotConnectedException | InterruptedException e)
+        {
+            logger.warn("Could not properly leave " + muc.toString(), e);
+        }
 
         opSet.removeRoom(this);
     }
@@ -338,7 +459,7 @@ public class ChatRoomImpl
     @Override
     public String getUserNickname()
     {
-        return myNickName;
+        return myNickName.toString();
     }
 
     @Override
@@ -372,9 +493,9 @@ public class ChatRoomImpl
      * @param participant full mucJID of the participant for whom we want to
      *                    reset cached role instance.
      */
-    private void resetRoleForParticipant(String participant)
+    private void resetRoleForParticipant(EntityFullJid participant)
     {
-        if (participant.endsWith("/" + myNickName))
+        if (participant.getResourcepart().equals(myNickName))
         {
             resetCachedUserRole();
         }
@@ -527,8 +648,13 @@ public class ChatRoomImpl
     }
 
     @Override
-    public XmppChatMember findChatMember(String mucJid)
+    public XmppChatMember findChatMember(Jid mucJid)
     {
+        if (mucJid == null)
+        {
+            return null;
+        }
+
         ArrayList<ChatMemberImpl> copy;
         synchronized (members)
         {
@@ -537,7 +663,7 @@ public class ChatRoomImpl
 
         for (ChatMemberImpl member : copy)
         {
-            if (member.getContactAddress().equals(mucJid))
+            if (mucJid.equals(member.getContactAddressJid()))
             {
                 return member;
             }
@@ -547,7 +673,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public String getLocalMucJid()
+    public EntityFullJid getLocalMucJid()
     {
         return myMucAddress;
     }
@@ -658,9 +784,9 @@ public class ChatRoomImpl
     {
         try
         {
-            muc.grantAdmin(address);
+            muc.grantAdmin(JidCreate.from(address));
         }
-        catch (XMPPException e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -671,9 +797,9 @@ public class ChatRoomImpl
     {
         try
         {
-            muc.grantMembership(address);
+            muc.grantMembership(JidCreate.from(address));
         }
-        catch (XMPPException e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -684,9 +810,9 @@ public class ChatRoomImpl
     {
         try
         {
-            muc.grantModerator(nickname);
+            muc.grantModerator(Resourcepart.from(nickname));
         }
-        catch (XMPPException e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -701,11 +827,20 @@ public class ChatRoomImpl
         // to be using wrong namespace(muc#owner instead of muc#admin)
         // which does not work with the Prosody.
         MUCAdmin admin = new MUCAdmin();
-        admin.setType(IQ.Type.SET);
+        admin.setType(IQ.Type.set);
         admin.setTo(roomName);
 
-        MUCAdmin.Item item = new MUCAdmin.Item("owner", null);
-        item.setJid(address);
+        Jid jidAddress;
+        try
+        {
+            jidAddress = JidCreate.from(address);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
         XmppProtocolProvider provider
@@ -716,7 +851,7 @@ public class ChatRoomImpl
         try
         {
             IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
-            if (reply == null || reply.getType() != IQ.Type.RESULT)
+            if (reply == null || reply.getType() != IQ.Type.result)
             {
                 // FIXME: we should have checked exceptions for all operations
                 // in ChatRoom interface which are expected to fail.
@@ -794,9 +929,13 @@ public class ChatRoomImpl
     {
         try
         {
-            muc.destroy(reason, alternateAddress);
+            muc.destroy(reason, JidCreate.entityBareFrom(alternateAddress));
         }
-        catch (XMPPException e)
+        catch (XMPPException
+                | XmppStringprepException
+                | InterruptedException
+                | NoResponseException
+                | NotConnectedException e)
         {
             //FIXME: should not be runtime, but OperationFailed is not
             // included in interface signature(see also other methods
@@ -873,7 +1012,7 @@ public class ChatRoomImpl
 
     public Occupant getOccupant(ChatMemberImpl chatMemeber)
     {
-        return muc.getOccupant(chatMemeber.getContactAddress());
+        return muc.getOccupant(chatMemeber.getContactAddressJid());
     }
 
     /**
@@ -883,7 +1022,7 @@ public class ChatRoomImpl
      * @param packet the packet that may include the MUCUser extension.
      * @return the MUCUser found in the packet.
      */
-    private MUCUser getMUCUserExtension(Packet packet)
+    private MUCUser getMUCUserExtension(Presence packet)
     {
         if (packet != null)
         {
@@ -894,8 +1033,8 @@ public class ChatRoomImpl
         return null;
     }
 
-    public void setPresenceExtension(PacketExtension extension,
-                                     boolean         remove)
+    public void setPresenceExtension(ExtensionElement extension,
+                                     boolean          remove)
     {
         if (lastPresenceSent == null)
         {
@@ -907,7 +1046,7 @@ public class ChatRoomImpl
             = (XmppProtocolProvider) getParentProvider();
 
         // Remove old
-        PacketExtension old
+        ExtensionElement old
             = lastPresenceSent.getExtension(
                     extension.getElementName(), extension.getNamespace());
         if (old != null)
@@ -928,13 +1067,13 @@ public class ChatRoomImpl
             return;
         }
 
-        connection.sendPacket(lastPresenceSent);
+        connection.sendStanza(lastPresenceSent);
     }
 
     /**
      * {@inheritDoc}
      */
-    public Collection<PacketExtension> getPresenceExtensions()
+    public Collection<ExtensionElement> getPresenceExtensions()
     {
         return lastPresenceSent != null
             ? new ArrayList<>(lastPresenceSent.getExtensions())
@@ -944,8 +1083,8 @@ public class ChatRoomImpl
     /**
      * {@inheritDoc}
      */
-    public void modifyPresence(Collection<PacketExtension> toRemove,
-                               Collection<PacketExtension> toAdd)
+    public void modifyPresence(Collection<ExtensionElement> toRemove,
+                               Collection<ExtensionElement> toAdd)
     {
         if (lastPresenceSent == null)
         {
@@ -959,7 +1098,7 @@ public class ChatRoomImpl
         // Remove old
         if (toRemove != null)
         {
-            for (PacketExtension old : toRemove)
+            for (ExtensionElement old : toRemove)
             {
                 lastPresenceSent.removeExtension(old);
             }
@@ -968,7 +1107,7 @@ public class ChatRoomImpl
         // Add new
         if (toAdd != null)
         {
-            for (PacketExtension newExt : toAdd)
+            for (ExtensionElement newExt : toAdd)
             {
                 lastPresenceSent.addExtension(newExt);
             }
@@ -981,10 +1120,10 @@ public class ChatRoomImpl
             return;
         }
 
-        connection.sendPacket(lastPresenceSent);
+        connection.sendStanza(lastPresenceSent);
     }
 
-    private ChatMemberImpl addMember(String participant)
+    private ChatMemberImpl addMember(EntityFullJid participant)
     {
         ChatMemberImpl newMember;
 
@@ -1011,7 +1150,7 @@ public class ChatRoomImpl
         return newMember;
     }
 
-    String getMemberJid(String mucAddress)
+    Jid getMemberJid(EntityFullJid mucAddress)
     {
         Occupant occupant = muc.getOccupant(mucAddress);
         if (occupant == null)
@@ -1026,7 +1165,7 @@ public class ChatRoomImpl
         implements ParticipantStatusListener
     {
         @Override
-        public void joined(String mucJid)
+        public void joined(EntityFullJid mucJid)
         {
             synchronized (members)
             {
@@ -1073,7 +1212,7 @@ public class ChatRoomImpl
             }
         }
 
-        private ChatMemberImpl removeMember(String participant)
+        private ChatMemberImpl removeMember(EntityFullJid participant)
         {
             synchronized (members)
             {
@@ -1089,7 +1228,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void left(String participant)
+        public void left(EntityFullJid participant)
         {
             synchronized (members)
             {
@@ -1117,14 +1256,15 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void kicked(String participant, String s2, String s3)
+        public void kicked(EntityFullJid participant, Jid actor, String reason)
         {
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
                 {
                     logger.debug(
-                        "Kicked: " + participant + ", " + s2 + ", " + s3);
+                        "Kicked: " + participant + ", "
+                                + actor + ", " + reason);
                 }
 
                 ChatMemberImpl member = removeMember(participant);
@@ -1141,7 +1281,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void voiceGranted(String s)
+        public void voiceGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Voice granted: " + s);
@@ -1151,7 +1291,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void voiceRevoked(String s)
+        public void voiceRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Voice revoked: " + s);
@@ -1161,17 +1301,17 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void banned(String s, String s2, String s3)
+        public void banned(EntityFullJid s, Jid actor, String reason)
         {
             if (logger.isTraceEnabled())
-                logger.trace("Banned: " + s + ", " + s2 + ", " + s3);
+                logger.trace("Banned: " + s + ", " + actor + ", " + reason);
 
             // We do not fire events - not required for now
             resetRoleForParticipant(s);
         }
 
         @Override
-        public void membershipGranted(String s)
+        public void membershipGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Membership granted: " + s);
@@ -1181,7 +1321,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void membershipRevoked(String s)
+        public void membershipRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Membership revoked: " + s);
@@ -1191,7 +1331,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void moderatorGranted(String s)
+        public void moderatorGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Moderator granted: " + s);
@@ -1201,7 +1341,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void moderatorRevoked(String s)
+        public void moderatorRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Moderator revoked: " + s);
@@ -1211,7 +1351,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void ownershipGranted(String s)
+        public void ownershipGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Ownership granted: " + s);
@@ -1221,7 +1361,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void ownershipRevoked(String s)
+        public void ownershipRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Ownership revoked: " + s);
@@ -1231,7 +1371,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void adminGranted(String s)
+        public void adminGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Admin granted: " + s);
@@ -1241,7 +1381,7 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void adminRevoked(String s)
+        public void adminRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
                 logger.trace("Admin revoked: " + s);
@@ -1251,7 +1391,8 @@ public class ChatRoomImpl
         }
 
         @Override
-        public void nicknameChanged(String oldNickname, String newNickname)
+        public void nicknameChanged(EntityFullJid oldNickname,
+                                    Resourcepart newNickname)
         {
             logger.error("nicknameChanged - NOT IMPLEMENTED");
             /*synchronized (members)
@@ -1264,26 +1405,22 @@ public class ChatRoomImpl
     }
 
     class ParticipantListener
-        implements PacketListener
+        implements PresenceListener
     {
-
         /**
          * Processes an incoming presence packet.
-         * @param packet the incoming packet.
+         * @param presence the incoming presence.
          */
         @Override
-        public void processPacket(Packet packet)
+        public void processPresence(Presence presence)
         {
-            if (packet == null
-                || !(packet instanceof Presence)
-                || packet.getError() != null)
+            if (presence == null || presence.getError() != null)
             {
                 logger.warn("Unable to handle packet: " +
-                                    ((packet == null) ? "" : packet.toXML()));
+                            (presence == null ? "null" : presence.toXML()));
                 return;
             }
 
-            Presence presence = (Presence) packet;
             if (logger.isTraceEnabled())
             {
                 logger.trace("Presence received " + presence.toXML());
@@ -1313,8 +1450,8 @@ public class ChatRoomImpl
 
             if (mucUser != null)
             {
-                String affiliation = mucUser.getItem().getAffiliation();
-                String role = mucUser.getItem().getRole();
+                MUCAffiliation affiliation = mucUser.getItem().getAffiliation();
+                MUCRole role = mucUser.getItem().getRole();
 
                 // this is the presence for our member initial role and
                 // affiliation, as smack do not fire any initial
@@ -1323,10 +1460,10 @@ public class ChatRoomImpl
                     ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
 
                 if(!presence.isAvailable()
-                    && "none".equalsIgnoreCase(affiliation)
-                    && "none".equalsIgnoreCase(role))
+                    && MUCAffiliation.none == affiliation
+                    && MUCRole.none == role)
                 {
-                    MUCUser.Destroy destroy = mucUser.getDestroy();
+                    Destroy destroy = mucUser.getDestroy();
                     if(destroy == null)
                     {
                         // the room is unavailable to us, there is no

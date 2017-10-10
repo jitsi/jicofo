@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jirecon.*;
 import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.eventadmin.*;
@@ -33,6 +32,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
+import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -73,14 +73,6 @@ public class JitsiMeetServices
      */
     private static final String[] MUC_FEATURES
         = { "http://jabber.org/protocol/muc" };
-
-    /**
-     * Features advertised by Jirecon recorder container.
-     */
-    private static final String[] JIRECON_RECORDER_FEATURES = new String[]
-        {
-            JireconIqProvider.NAMESPACE
-        };
 
     /**
      * Features advertised by SIP gateway component.
@@ -124,12 +116,7 @@ public class JitsiMeetServices
     /**
      * The name of XMPP domain to which Jicofo user logs in.
      */
-    private final String jicofoUserDomain;
-
-    /**
-     * Jirecon recorder component XMPP address.
-     */
-    private String jireconRecorder;
+    private final DomainBareJid jicofoUserDomain;
 
     /**
      * The {@link ProtocolProviderHandler} for Jicofo XMPP connection.
@@ -139,12 +126,12 @@ public class JitsiMeetServices
     /**
      * SIP gateway component XMPP address.
      */
-    private String sipGateway;
+    private Jid sipGateway;
 
     /**
      * The address of MUC component served by our XMPP domain.
      */
-    private String mucService;
+    private Jid mucService;
 
     /**
      * <tt>Version</tt> IQ instance holding detected XMPP server's version
@@ -165,14 +152,12 @@ public class JitsiMeetServices
 
     /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
-     *
-     * @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo
+     *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo
      *        XMPP connection.
      * @param jicofoUserDomain the name of the XMPP domain to which Jicofo user
-     *        is connecting to.
      */
     public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
-                             String jicofoUserDomain)
+                             DomainBareJid jicofoUserDomain)
     {
         super(new String[] { BridgeEvent.HEALTH_CHECK_FAILED });
 
@@ -194,7 +179,7 @@ public class JitsiMeetServices
      * Called by other classes when they detect JVB instance.
      * @param bridgeJid the JID of discovered JVB component.
      */
-    void newBridgeDiscovered(String bridgeJid, Version version)
+    void newBridgeDiscovered(Jid bridgeJid, Version version)
     {
         bridgeSelector.addJvbAddress(bridgeJid, version);
     }
@@ -207,20 +192,13 @@ public class JitsiMeetServices
      * @param version the <tt>Version</tt> IQ which carries the info about
      *                <tt>node</tt> version(if any).
      */
-    void newNodeDiscovered(String node, List<String> features, Version version)
+    void newNodeDiscovered(Jid node,
+                           List<String> features,
+                           Version version)
     {
         if (isJitsiVideobridge(features))
         {
             newBridgeDiscovered(node, version);
-        }
-        else if (
-            jireconRecorder == null
-                && DiscoveryUtil.checkFeatureSupport(
-                        JIRECON_RECORDER_FEATURES, features))
-        {
-            logger.info("Discovered Jirecon recorder: " + node);
-
-            setJireconRecorder(node);
         }
         else if (sipGateway == null
             && DiscoveryUtil.checkFeatureSupport(SIP_GW_FEATURES, features))
@@ -263,17 +241,11 @@ public class JitsiMeetServices
      *
      * @param node XMPP address of disconnected XMPP component.
      */
-    void nodeNoLongerAvailable(String node)
+    void nodeNoLongerAvailable(Jid node)
     {
         if (bridgeSelector.isJvbOnTheList(node))
         {
             bridgeSelector.removeJvbAddress(node);
-        }
-        else if (node.equals(jireconRecorder))
-        {
-            logger.warn("Jirecon recorder went offline: " + node);
-
-            jireconRecorder = null;
         }
         else if (node.equals(sipGateway))
         {
@@ -294,7 +266,7 @@ public class JitsiMeetServices
      * @param sipGateway the XMPP address to be set as SIP gateway component
      *                   address.
      */
-    void setSipGateway(String sipGateway)
+    void setSipGateway(Jid sipGateway)
     {
         this.sipGateway = sipGateway;
     }
@@ -302,7 +274,7 @@ public class JitsiMeetServices
     /**
      * Returns XMPP address of SIP gateway component.
      */
-    public String getSipGateway()
+    public Jid getSipGateway()
     {
         return sipGateway;
     }
@@ -314,16 +286,6 @@ public class JitsiMeetServices
     public JibriDetector getSipJibriDetector()
     {
         return sipJibriDetector;
-    }
-
-    /**
-     * Sets new XMPP address of the Jirecon jireconRecorder component.
-     * @param jireconRecorder the XMPP address to be set as Jirecon recorder
-     *                        component address.
-     */
-    public void setJireconRecorder(String jireconRecorder)
-    {
-        this.jireconRecorder = jireconRecorder;
     }
 
     /**
@@ -347,14 +309,6 @@ public class JitsiMeetServices
     }
 
     /**
-     * Returns the XMPP address of Jirecon recorder component.
-     */
-    public String getJireconRecorder()
-    {
-        return jireconRecorder;
-    }
-
-    /**
      * Returns {@link BridgeSelector} bound to this instance that can be used to
      * select the videobridge on the xmppDomain handled by this instance.
      */
@@ -366,7 +320,7 @@ public class JitsiMeetServices
     /**
      * Returns the address of MUC component for our XMPP domain.
      */
-    public String getMucService()
+    public Jid getMucService()
     {
         return mucService;
     }
@@ -375,7 +329,7 @@ public class JitsiMeetServices
      * Sets the address of MUC component.
      * @param mucService component sub domain that refers to MUC
      */
-    public void setMucService(String mucService)
+    public void setMucService(Jid mucService)
     {
         this.mucService = mucService;
     }
@@ -480,7 +434,7 @@ public class JitsiMeetServices
      * @return {@link Version} instance which holds the details about JVB
      *         version or <tt>null</tt> if unknown.
      */
-    public Version getBridgeVersion(String bridgeJid)
+    public Version getBridgeVersion(DomainBareJid bridgeJid)
     {
         return bridgeSelector.getBridgeVersion(bridgeJid);
     }

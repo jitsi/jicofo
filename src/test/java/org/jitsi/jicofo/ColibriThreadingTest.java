@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import mock.*;
 import mock.jvb.*;
+import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
@@ -27,13 +28,14 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.service.neomedia.*;
 
 import org.jivesoftware.smack.packet.*;
 
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import java.util.*;
 
@@ -103,11 +105,12 @@ public class ColibriThreadingTest
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
-        String mockBridgeJid = "some.mock.bridge.com";
+        DomainBareJid mockBridgeJid = JidCreate.domainBareFrom(
+                "some.mock.bridge.com");
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    mockProvider.getMockXmppConnection(),
+                    new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
         mockBridge.start(osgi.bc);
@@ -122,7 +125,7 @@ public class ColibriThreadingTest
 
         MockPeerAllocator[] allocators = new MockPeerAllocator[20];
 
-        List<String> endpointList = new ArrayList<String>(allocators.length);
+        List<String> endpointList = new ArrayList<>(allocators.length);
 
         for (int i=0; i < allocators.length; i++)
         {
@@ -149,7 +152,7 @@ public class ColibriThreadingTest
 
         // All responses are blocked - here we make sure that all threads have
         // sent their requests
-        List<String> requestsToBeSent = new ArrayList<String>(endpointList);
+        List<String> requestsToBeSent = new ArrayList<>(endpointList);
         while (!requestsToBeSent.isEmpty())
         {
             String endpoint = colibriConf.nextRequestSent(5);
@@ -167,7 +170,7 @@ public class ColibriThreadingTest
         colibriConf.resumeResponses();
 
         // Now wait for all responses to be received
-        List<String> responsesToReceive = new ArrayList<String>(endpointList);
+        List<String> responsesToReceive = new ArrayList<>(endpointList);
         while (!responsesToReceive.isEmpty())
         {
             String endpoint = colibriConf.nextResponseReceived(5);
@@ -220,11 +223,12 @@ public class ColibriThreadingTest
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
-        String mockBridgeJid = "some.mock.bridge.com";
+        DomainBareJid mockBridgeJid = JidCreate.domainBareFrom(
+                "some.mock.bridge.com");
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    mockProvider.getMockXmppConnection(),
+                    new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
         mockBridge.start(osgi.bc);
@@ -234,13 +238,13 @@ public class ColibriThreadingTest
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
 
-        colibriConf.setResponseError(XMPPError.Condition.interna_server_error);
+        colibriConf.setResponseError(XMPPError.Condition.internal_server_error);
 
         //colibriConf.blockConferenceCreator(true);
 
         MockPeerAllocator[] allocators = new MockPeerAllocator[20];
 
-        List<String> endpointList = new ArrayList<String>(allocators.length);
+        List<String> endpointList = new ArrayList<>(allocators.length);
 
         for (int i=0; i < allocators.length/2; i++)
         {
@@ -313,7 +317,7 @@ public class ColibriThreadingTest
     static List<ContentPacketExtension> createContents()
     {
         List<ContentPacketExtension> contents
-            = new ArrayList<ContentPacketExtension>();
+            = new ArrayList<>();
 
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();

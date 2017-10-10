@@ -17,20 +17,20 @@
  */
 package mock.jvb;
 
-import mock.xmpp.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
 import net.java.sip.communicator.util.*;
 
 import net.java.sip.communicator.util.Logger;
 import org.jitsi.impl.neomedia.rtp.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
 import org.jitsi.videobridge.*;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 
+import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -40,7 +40,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockVideobridge
-    implements PacketFilter, PacketListener, BundleActivator
+    implements BundleActivator
 {
     /**
      * The logger
@@ -48,20 +48,27 @@ public class MockVideobridge
     private static final Logger logger
         = Logger.getLogger(MockVideobridge.class);
 
-    private final MockXmppConnection connection;
+    private final XmppConnection connection;
 
-    private final String bridgeJid;
+    private final Jid bridgeJid;
 
     private Videobridge bridge;
-
-    private XMPPError.Condition error;
 
     private boolean returnServerError = false;
 
     private VideobridgeBundleActivator jvbActivator;
 
-    public MockVideobridge(MockXmppConnection connection,
-                           String bridgeJid)
+    private ColibriConferenceIqHandler confIqGetHandler
+            = new ColibriConferenceIqHandler(IQ.Type.get);
+
+    private ColibriConferenceIqHandler confIqSetHandler
+            = new ColibriConferenceIqHandler(IQ.Type.set);
+
+    private HealthCheckIqHandler healthCheckIqHandler
+            = new HealthCheckIqHandler();
+
+    public MockVideobridge(XmppConnection connection,
+                           Jid bridgeJid)
     {
         this.connection = connection;
         this.bridgeJid = bridgeJid;
@@ -76,99 +83,94 @@ public class MockVideobridge
 
         bridge = ServiceUtils.getService(bc, Videobridge.class);
 
-        connection.addPacketHandler(this, this);
+        connection.registerIQRequestHandler(confIqGetHandler);
+        connection.registerIQRequestHandler(confIqSetHandler);
+        connection.registerIQRequestHandler(healthCheckIqHandler);
     }
 
     @Override
     public void stop(BundleContext bundleContext)
         throws Exception
     {
-        connection.removePacketHandler(this);
+        connection.unregisterIQRequestHandler(confIqGetHandler);
+        connection.unregisterIQRequestHandler(confIqSetHandler);
+        connection.unregisterIQRequestHandler(healthCheckIqHandler);
 
         jvbActivator.stop(bundleContext);
     }
 
-    @Override
-    public boolean accept(Packet packet)
+    private class ColibriConferenceIqHandler extends AbstractIqRequestHandler
     {
-        return bridgeJid.equals(packet.getTo());
-    }
-
-    public void processPacket(Packet p)
-    {
-        if (p instanceof ColibriConferenceIQ
-                || p instanceof HealthCheckIQ)
+        ColibriConferenceIqHandler(IQ.Type type)
         {
-            logger.debug("JVB rcv: " + p.toXML());
-
-            IQ response;
-            if (error == null)
-            {
-                try
-                {
-                    response = processImpl((IQ) p);
-                }
-                catch (Exception e)
-                {
-                    response = null;
-                    logger.error("JVB internal error!", e);
-                }
-            }
-            else
-            {
-                response = IQ.createErrorResponse((IQ) p, new XMPPError(error));
-            }
-
-            if (response != null)
-            {
-                response.setTo(p.getFrom());
-                response.setFrom(bridgeJid);
-                if (IQ.Type.RESULT.equals(response.getType()))
-                {
-                    response.setPacketID(p.getPacketID());
-                }
-                connection.sendPacket(response);
-
-                logger.debug("JVB sent: " + response.toXML());
-            }
-            else
-            {
-                logger.warn("The bridge sent no response to " + p.toXML());
-            }
+            super(ColibriConferenceIQ.ELEMENT_NAME,
+                    ColibriConferenceIQ.NAMESPACE,
+                    type,
+                    Mode.sync);
         }
-        else if (p != null)
-        {
-            logger.error(bridgeJid + " has discarded " + p.toXML());
-        }
-    }
 
-    /**
-     *
-     * @param p <tt>ColibriConferenceIQ</tt> or <tt>HealthCheckIQ</tt> assumed
-     * @return
-     * @throws Exception
-     */
-    private IQ processImpl(IQ p)
-        throws Exception
-    {
-        if (isReturnServerError())
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
         {
-            return
-                IQ.createErrorResponse(
-                    p,
-                    new XMPPError(
-                        XMPPError.Condition.interna_server_error));
-        }
-        else if (p instanceof ColibriConferenceIQ)
-        {
-            return
-                bridge.handleColibriConferenceIQ(
-                        (ColibriConferenceIQ) p,
+            if (isReturnServerError())
+            {
+                return IQ.createErrorResponse(
+                        iqRequest,
+                        XMPPError.getBuilder(
+                                XMPPError.Condition.internal_server_error));
+            }
+
+            try
+            {
+                IQ confResult = bridge.handleColibriConferenceIQ(
+                        (ColibriConferenceIQ) iqRequest,
                         Videobridge.OPTION_ALLOW_ANY_FOCUS);
+                confResult.setTo(iqRequest.getFrom());
+                confResult.setStanzaId(iqRequest.getStanzaId());
+                return confResult;
+            }
+            catch (Exception e)
+            {
+                logger.error("JVB internal error!", e);
+                return null;
+            }
         }
-        else
+    }
+
+    private class HealthCheckIqHandler extends AbstractIqRequestHandler
+    {
+        HealthCheckIqHandler()
         {
-            return bridge.handleHealthCheckIQ((HealthCheckIQ) p);
+            super(HealthCheckIQ.ELEMENT_NAME,
+                    HealthCheckIQ.NAMESPACE,
+                    IQ.Type.get,
+                    Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
+        {
+            if (isReturnServerError())
+            {
+                return IQ.createErrorResponse(
+                        iqRequest,
+                        XMPPError.getBuilder(
+                                XMPPError.Condition.internal_server_error));
+            }
+
+            try
+            {
+                IQ healthResult = bridge.handleHealthCheckIQ(
+                        (HealthCheckIQ) iqRequest);
+                healthResult.setTo(iqRequest.getFrom());
+                healthResult.setStanzaId(iqRequest.getStanzaId());
+                return healthResult;
+            }
+            catch (Exception e)
+            {
+                logger.error("JVB internal error!", e);
+                return null;
+            }
         }
     }
 
@@ -227,7 +229,7 @@ public class MockVideobridge
         return any ? count : -1;
     }
 
-    public String getBridgeJid()
+    public Jid getBridgeJid()
     {
         return bridgeJid;
     }
@@ -235,16 +237,6 @@ public class MockVideobridge
     public int getConferenceCount()
     {
         return bridge.getConferenceCount();
-    }
-
-    public void setError(XMPPError.Condition error)
-    {
-        this.error = error;
-    }
-
-    public XMPPError.Condition getError()
-    {
-        return error;
     }
 
     public boolean isReturnServerError()

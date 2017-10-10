@@ -39,7 +39,7 @@ public class ErrorFactory
     public static IQ createNotAuthorizedError(IQ query, String msg)
     {
         final XMPPError error
-            = new XMPPError(XMPPError.Condition.not_authorized, msg);
+            = XMPPError.from(XMPPError.Condition.not_authorized, msg).build();
 
         return IQ.createErrorResponse(query, error);
     }
@@ -56,11 +56,12 @@ public class ErrorFactory
     public static IQ createSessionInvalidResponse(IQ query)
     {
         final XMPPError error
-            = new XMPPError(
-                    XMPPError.Condition.no_acceptable, "invalid session");
-
-        // session-invalid application specific error
-        error.addExtension(new SessionInvalidPacketExtension());
+            = XMPPError.from(
+                    XMPPError.Condition.not_acceptable,
+                    "invalid session")
+                // session-invalid application specific error
+                .addExtension(new SessionInvalidPacketExtension())
+                .build();
 
         return IQ.createErrorResponse(query, error);
     }
@@ -80,7 +81,8 @@ public class ErrorFactory
     {
         // not acceptable
         final XMPPError error
-            = new XMPPError(XMPPError.Condition.no_acceptable, errorMessage);
+            = XMPPError.from(XMPPError.Condition.not_acceptable, errorMessage)
+                .build();
 
         return IQ.createErrorResponse(query, error);
     }
@@ -100,16 +102,11 @@ public class ErrorFactory
                                             ReservationSystem.Result result)
     {
         final XMPPError error
-            = new XMPPError(
+            = XMPPError.from(
                     XMPPError.Condition.service_unavailable,
-                    result.getErrorMessage());
-
-        ReservationErrorPacketExt reservationErr
-            = new ReservationErrorPacketExt();
-
-        reservationErr.setErrorCode(result.getCode());
-
-        error.addExtension(reservationErr);
+                    result.getErrorMessage())
+                .addExtension(new ReservationErrorPacketExt(result.getCode()))
+                .build();
 
         return IQ.createErrorResponse(query, error);
     }

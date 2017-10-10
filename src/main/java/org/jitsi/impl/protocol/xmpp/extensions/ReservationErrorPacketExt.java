@@ -52,6 +52,15 @@ public class ReservationErrorPacketExt
     }
 
     /**
+     * Creates new instance of <tt>ReservationErrorPacketExt</tt>.
+     */
+    public ReservationErrorPacketExt(int code)
+    {
+        super(NAMESPACE, ELEMENT_NAME);
+        setErrorCode(code);
+    }
+
+    /**
      * Sets new value for error code attribute.
      * @param code error code value to set or <tt>-1</tt> to remove
      *             the attribute.

@@ -19,6 +19,7 @@ package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -72,8 +73,9 @@ public class BridgeEvent
 
     /**
      * Used to init the properties passed to the constructor.
+     * @param bridgeJid
      */
-    static private Dictionary<String, Object> initDictionary(String bridgeJid)
+    static private Dictionary<String, Object> initDictionary(Jid bridgeJid)
     {
         Dictionary<String, Object> props = new Hashtable<>();
         props.put(JVB_JID_KEY, bridgeJid);
@@ -87,7 +89,7 @@ public class BridgeEvent
      * @return {@link #BRIDGE_UP} <tt>BridgeEvent</tt> for given
      *         <tt>bridgeJid</tt>.
      */
-    static public BridgeEvent createBridgeUp(String bridgeJid)
+    static public BridgeEvent createBridgeUp(Jid bridgeJid)
     {
         return new BridgeEvent(BRIDGE_UP, bridgeJid);
     }
@@ -99,7 +101,7 @@ public class BridgeEvent
      * @return {@link #BRIDGE_DOWN} <tt>BridgeEvent</tt> for given
      *         <tt>bridgeJid</tt>.
      */
-    static public BridgeEvent createBridgeDown(String bridgeJid)
+    static public BridgeEvent createBridgeDown(Jid bridgeJid)
     {
         return new BridgeEvent(BRIDGE_DOWN, bridgeJid);
     }
@@ -111,7 +113,7 @@ public class BridgeEvent
      * @return {@link #HEALTH_CHECK_FAILED} <tt>BridgeEvent</tt> for given
      *         <tt>bridgeJid</tt>.
      */
-    static public BridgeEvent createHealthFailed(String bridgeJid)
+    static public BridgeEvent createHealthFailed(Jid bridgeJid)
     {
         return new BridgeEvent(HEALTH_CHECK_FAILED, bridgeJid);
     }
@@ -126,8 +128,8 @@ public class BridgeEvent
      * @return {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt> for given
      *         <tt>bridgeJid</tt>.
      */
-    static public BridgeEvent createVideoStreamsChanged(String bridgeJid,
-                                                      int    videoStreamCount)
+    static public BridgeEvent createVideoStreamsChanged(Jid    bridgeJid,
+                                                        int    videoStreamCount)
     {
         Dictionary<String, Object> dict = initDictionary(bridgeJid);
         dict.put(STREAMS_VIDEO_KEY, videoStreamCount);
@@ -161,7 +163,7 @@ public class BridgeEvent
         super(topic, dict);
     }
 
-    private BridgeEvent(String topic, String bridgeJid)
+    private BridgeEvent(String topic, Jid bridgeJid)
     {
         super(topic, initDictionary(bridgeJid));
     }
@@ -172,9 +174,9 @@ public class BridgeEvent
      * @return <tt>String</tt> which is a JID of the JVB for which this event
      *         instance has been created.
      */
-    public String getBridgeJid()
+    public DomainBareJid getBridgeJid()
     {
-        return (String) getProperty(JVB_JID_KEY);
+        return (DomainBareJid) getProperty(JVB_JID_KEY);
     }
 
     /**

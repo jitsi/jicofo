@@ -19,7 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 
-import org.jitsi.protocol.xmpp.colibri.*;
+import org.jxmpp.jid.*;
 
 /**
  * Class adds utility methods that require use of package protected methods of
@@ -50,7 +50,7 @@ public class ConferenceUtility
      * @param participantJid the MUC JID of the participant for whom we want to
      *                       get video channel id.
      */
-    public String getParticipantVideoChannelId(String participantJid)
+    public String getParticipantVideoChannelId(Jid participantJid)
     {
         Participant participant
             = conference.findParticipantForRoomJid(participantJid);

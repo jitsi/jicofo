@@ -18,6 +18,8 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
+import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -30,7 +32,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class ConferenceIq
-    extends AbstractIQ
+    extends IQ
 {
     /**
      * Focus namespace.
@@ -79,7 +81,7 @@ public class ConferenceIq
     /**
      * MUC room name hosting Jitsi Meet conference.
      */
-    private String room;
+    private EntityBareJid room;
 
     /**
      * Indicates if the focus is already in the MUC room and conference is ready
@@ -112,23 +114,26 @@ public class ConferenceIq
      */
     public ConferenceIq()
     {
-        super(NAMESPACE, ELEMENT_NAME);
+        super(ELEMENT_NAME, NAMESPACE);
     }
 
-    /**
-     * Prints attributes in XML format to given <tt>StringBuilder</tt>.
-     * @param out the <tt>StringBuilder</tt> instance used to construct XML
-     *            representation of this element.
-     */
     @Override
-    protected void printAttributes(StringBuilder out)
+    protected IQChildElementXmlStringBuilder getIQChildElementBuilder(
+            IQChildElementXmlStringBuilder xml)
     {
-        printStrAttr(out, ROOM_ATTR_NAME, room);
-        printObjAttr(out, READY_ATTR_NAME, ready);
-        printStrAttr(out, FOCUS_JID_ATTR_NAME, focusJid);
-        printStrAttr(out, SESSION_ID_ATTR_NAME, sessionId);
-        printStrAttr(out, MACHINE_UID_ATTR_NAME, machineUID);
-        printStrAttr(out, IDENTITY_ATTR_NAME, identity);
+        xml.optAttribute(ROOM_ATTR_NAME, room)
+            .optAttribute(FOCUS_JID_ATTR_NAME, focusJid)
+            .optAttribute(SESSION_ID_ATTR_NAME, sessionId)
+            .optAttribute(MACHINE_UID_ATTR_NAME, machineUID)
+            .optAttribute(IDENTITY_ATTR_NAME, identity);
+
+        if (ready != null)
+        {
+            xml.attribute(READY_ATTR_NAME, ready);
+        }
+
+        xml.rightAngleBracket();
+        return xml;
     }
 
     /**
@@ -152,7 +157,7 @@ public class ConferenceIq
      * Returns the value of {@link #room} attribute of this
      * <tt>ConferenceIq</tt>.
      */
-    public String getRoom()
+    public EntityBareJid getRoom()
     {
         return room;
     }
@@ -161,7 +166,7 @@ public class ConferenceIq
      * Sets the {@link #room} attribute of this <tt>ConferenceIq</tt>.
      * @param room the value to be set as {@link #room} attribute value.
      */
-    public void setRoom(String room)
+    public void setRoom(EntityBareJid room)
     {
         this.room = room;
     }
@@ -198,7 +203,9 @@ public class ConferenceIq
      */
     public List<Property> getProperties()
     {
-        return getChildExtensionsOfType(Property.class);
+        return (List)getExtensions(
+                Property.ELEMENT_NAME,
+                ConferenceIq.NAMESPACE);
     }
 
     /**
@@ -208,13 +215,12 @@ public class ConferenceIq
      */
     public Map<String, String> getPropertiesMap()
     {
-        List<Property> properties = getProperties();
-        Map<String, String> propertiesMap= new HashMap<String, String>();
-
-        for (Property property : properties)
+        Map<String, String> propertiesMap = new HashMap<>();
+        for (Property property : getProperties())
         {
             propertiesMap.put(property.getName(), property.getValue());
         }
+
         return propertiesMap;
     }
 
@@ -297,7 +303,7 @@ public class ConferenceIq
          */
         public Property()
         {
-            super(null, ELEMENT_NAME);
+            super(ConferenceIq.NAMESPACE, ELEMENT_NAME);
         }
 
         /**

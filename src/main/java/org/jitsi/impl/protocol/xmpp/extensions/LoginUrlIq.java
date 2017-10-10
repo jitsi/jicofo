@@ -18,6 +18,8 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import org.jitsi.util.*;
+import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.io.*;
 import java.net.*;
@@ -28,8 +30,8 @@ import java.net.*;
  *
  * @author Pawel Domas
  */
-public class LoginUrlIQ
-    extends AbstractIQ
+public class LoginUrlIq
+    extends IQ
 {
     public static final String NAMESPACE = ConferenceIq.NAMESPACE;
 
@@ -68,7 +70,7 @@ public class LoginUrlIQ
      * The conference room name used as a context for authentication.
      * muc_room_name@muc.server.name
      */
-    private String room;
+    private EntityBareJid room;
 
     /**
      * Machine unique identifier used to distinguish sessions for the same
@@ -82,28 +84,23 @@ public class LoginUrlIQ
     private Boolean popup;
 
     /**
-     * Creates new instance of {@link LoginUrlIQ}.
+     * Creates new instance of {@link LoginUrlIq}.
      */
-    public LoginUrlIQ()
+    public LoginUrlIq()
     {
-        super(NAMESPACE, ELEMENT_NAME);
+        super(ELEMENT_NAME, NAMESPACE);
     }
 
-    /**
-     * Prints attributes in XML format to given <tt>StringBuilder</tt>.
-     * @param out the <tt>StringBuilder</tt> instance used to construct XML
-     *            representation of this element.
-     */
     @Override
-    protected void printAttributes(StringBuilder out)
+    protected IQChildElementXmlStringBuilder getIQChildElementBuilder(
+            IQChildElementXmlStringBuilder xml)
     {
         if (!StringUtils.isNullOrEmpty(url))
         {
             try
             {
-                out.append(URL_ATTRIBUTE_NAME)
-                    .append("='").append(
-                        URLEncoder.encode(url, "UTF-8")).append("' ");
+                String value = URLEncoder.encode(url, "UTF-8");
+                xml.attribute(URL_ATTRIBUTE_NAME, value);
             }
             catch (UnsupportedEncodingException e)
             {
@@ -113,13 +110,19 @@ public class LoginUrlIQ
         }
 
         // Room name
-        printStrAttr(out, ROOM_NAME_ATTR_NAME, room);
+        xml.optAttribute(ROOM_NAME_ATTR_NAME, room);
 
         // Machine UID
-        printStrAttr(out, MACHINE_UID_ATTR_NAME, machineUID);
+        xml.optAttribute(MACHINE_UID_ATTR_NAME, machineUID);
 
         // Is it popup URL ?
-        printObjAttr(out, POPUP_ATTR_NAME, popup);
+        if (popup != null)
+        {
+            xml.attribute(POPUP_ATTR_NAME, popup);
+        }
+
+        xml.setEmptyElement();
+        return xml;
     }
 
     /**
@@ -149,7 +152,7 @@ public class LoginUrlIQ
     /**
      * Returns the value of {@link #ROOM_NAME_ATTR_NAME} attribute.
      */
-    public String getRoom()
+    public EntityBareJid getRoom()
     {
         return room;
     }
@@ -158,14 +161,14 @@ public class LoginUrlIQ
      * Sets the value of {@link #ROOM_NAME_ATTR_NAME} attribute.
      * @param room the name of MUC room to be set on this instance.
      */
-    public void setRoom(String room)
+    public void setRoom(EntityBareJid room)
     {
         this.room = room;
     }
 
     /**
      * Returns nullable, <tt>Boolean</tt> value of
-     * {@link LoginUrlIQ#POPUP_ATTR_NAME} attribute.
+     * {@link LoginUrlIq#POPUP_ATTR_NAME} attribute.
      */
     public Boolean getPopup()
     {
@@ -173,7 +176,7 @@ public class LoginUrlIQ
     }
 
     /**
-     * Sets the value of {@link LoginUrlIQ#POPUP_ATTR_NAME}.
+     * Sets the value of {@link LoginUrlIq#POPUP_ATTR_NAME}.
      * @param popup <tt>Boolean</tt> value for the popup attribute to be set
      *              or <tt>null</tt> if should be left unspecified.
      */

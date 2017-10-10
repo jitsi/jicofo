@@ -26,11 +26,12 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.service.neomedia.*;
 
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import java.util.*;
 
@@ -66,7 +67,8 @@ public class ColibriTest
     public void testChannelAllocation()
         throws Exception
     {
-        String roomName = "testroom@conference.pawel.jitsi.net";
+        EntityBareJid roomName = JidCreate.entityBareFrom(
+                "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
         JitsiMeetConfig config
             = new JitsiMeetConfig(new HashMap<String,String>());
@@ -134,7 +136,7 @@ public class ColibriTest
         colibriConf.expireChannels(peer2Channels);
 
         //FIXME: fix unreliable sleep call
-        Thread.sleep(1000);
+        Thread.sleep(5000);
 
         assertEquals(3, mockBridge.getChannelsCount());
 

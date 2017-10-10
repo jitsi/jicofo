@@ -25,6 +25,9 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -42,7 +45,20 @@ public class SSRCSignaling
      * The constant value used as owner attribute value of
      * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
      */
-    public static final String SSRC_OWNER_JVB = "jvb";
+    public static final Jid SSRC_OWNER_JVB;
+
+    static
+    {
+        try
+        {
+            SSRC_OWNER_JVB = JidCreate.from("jvb");
+        }
+        catch (XmppStringprepException e)
+        {
+            // cannot happen
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Copies value of "<parameter>" SSRC child element. The parameter to be
@@ -92,7 +108,7 @@ public class SSRCSignaling
      */
     private static void deleteSSRCParams(SourcePacketExtension ssrcPe)
     {
-        List<? extends PacketExtension> peList = ssrcPe.getChildExtensions();
+        List<? extends ExtensionElement> peList = ssrcPe.getChildExtensions();
         peList.removeAll(ssrcPe.getParameters());
     }
 
@@ -180,7 +196,7 @@ public class SSRCSignaling
      *               want to find an owner.
      * @return MUC jid of the user who own this SSRC.
      */
-    public static String getSSRCOwner(SourcePacketExtension ssrcPe)
+    public static Jid getSSRCOwner(SourcePacketExtension ssrcPe)
     {
         SSRCInfoPacketExtension ssrcInfo
             = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
@@ -314,10 +330,10 @@ public class SSRCSignaling
      *         An owner comes form the {@link SSRCInfoPacketExtension} included
      *         as a child of the {@link SourcePacketExtension}.
      */
-    public static Map<String, MediaSourceMap> ownerMapping(
+    public static Map<Jid, MediaSourceMap> ownerMapping(
             List<ContentPacketExtension> contents)
     {
-        Map<String, MediaSourceMap> ownerMapping = new HashMap<>();
+        Map<Jid, MediaSourceMap> ownerMapping = new HashMap<>();
         for (ContentPacketExtension content : contents)
         {
             String media = content.getName();
@@ -327,7 +343,7 @@ public class SSRCSignaling
             for (SourcePacketExtension ssrc
                     : mediaSourceMap.getSourcesForMedia(media))
             {
-                String owner = getSSRCOwner(ssrc);
+                Jid owner = getSSRCOwner(ssrc);
                 MediaSourceMap ownerMap = ownerMapping.get(owner);
 
                 // Create if not found
@@ -375,7 +391,7 @@ public class SSRCSignaling
         return result;
     }
 
-    public static void setSSRCOwner(SourcePacketExtension ssrcPe, String owner)
+    public static void setSSRCOwner(SourcePacketExtension ssrcPe, Jid owner)
     {
         SSRCInfoPacketExtension ssrcInfo
             = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);

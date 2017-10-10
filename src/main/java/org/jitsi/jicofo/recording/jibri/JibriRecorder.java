@@ -93,18 +93,15 @@ public class JibriRecorder
     }
 
     /**
-     * Accepts only {@link JibriIq}
+     * Accepts only {@link JibriIq} without SIP address.
      * {@inheritDoc}
      */
     @Override
-    public boolean accept(Packet packet)
+    protected boolean acceptType(JibriIq packet)
     {
-        // Do not process if it belongs to the recording session
-        // FIXME should accept only packets coming from MUC
-        return !(jibriSession != null && jibriSession.accept(packet))
-            && packet instanceof JibriIq
-            // and does not contain SIP address
-            && StringUtils.isNullOrEmpty(((JibriIq)packet).getSipAddress());
+        // the packet cannot contain a SIP address (must be handled
+        // by JibriSipGateway)
+        return StringUtils.isNullOrEmpty(packet.getSipAddress());
     }
 
     /**
@@ -157,7 +154,7 @@ public class JibriRecorder
             // Bad request - no stream ID and no recording mode
             return IQ.createErrorResponse(
                 iq,
-                new XMPPError(
+                XMPPError.from(
                     XMPPError.Condition.bad_request,
                     "Stream ID is empty and recording mode is not FILE"));
         }
@@ -166,7 +163,7 @@ public class JibriRecorder
             // Bad request - no stream ID
             return IQ.createErrorResponse(
                     iq,
-                    new XMPPError(
+                    XMPPError.from(
                             XMPPError.Condition.bad_request,
                             "Stream ID is empty or undefined"));
         }
@@ -175,7 +172,7 @@ public class JibriRecorder
             // Bad request - catch all
             return IQ.createErrorResponse(
                     iq,
-                    new XMPPError(
+                    XMPPError.from(
                         XMPPError.Condition.bad_request,
                         "Invalid recording mode and stream ID combination"));
         }

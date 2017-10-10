@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.auth;
 
+import org.jxmpp.jid.*;
+
 import java.util.*;
 
 /**
@@ -55,12 +57,12 @@ public class AuthenticationSession
      * User's jabber ID recently used with this session. Used to bind
      * anonymous JID to {@link #userIdentity}.
      */
-    private String userJabberId;
+    private Jid userJabberId;
 
     /**
      * Optional room name to which this session ID is bound.
      */
-    private String roomName;
+    private EntityBareJid roomName;
 
     /**
      * Creates new instance of <tt>AuthenticationSession</tt>.
@@ -69,12 +71,11 @@ public class AuthenticationSession
      *                   different machines.
      * @param sessionId unique session identifier.
      * @param userIdentity user's identity in the scope of authentication
-     *                     system, usually login name or email address.
+ *                     system, usually login name or email address.
      * @param roomName full name of MUC room which hosts the conference for
-     *                 which new session is to be created.
      */
     public AuthenticationSession(String machineUID, String sessionId, String
-            userIdentity, String roomName)
+            userIdentity, EntityBareJid roomName)
     {
         this.machineUID = Objects.requireNonNull(machineUID, "machineUID");
         this.sessionId = Objects.requireNonNull(sessionId, "sessionId");
@@ -119,7 +120,7 @@ public class AuthenticationSession
     /**
      * Returns Jabber ID assigned to this session.
      */
-    public String getUserJabberId()
+    public Jid getUserJabberId()
     {
         return userJabberId;
     }
@@ -129,7 +130,7 @@ public class AuthenticationSession
      * @param userJabberId the Jabber ID of the user that will be associated
      *                     with this session from now on.
      */
-    public void setUserJabberId(String userJabberId)
+    public void setUserJabberId(Jid userJabberId)
     {
         this.userJabberId = userJabberId;
     }
@@ -147,7 +148,7 @@ public class AuthenticationSession
     /**
      * Returns ful name of MUC room for which this session has been created.
      */
-    public String getRoomName()
+    public EntityBareJid getRoomName()
     {
         return roomName;
     }

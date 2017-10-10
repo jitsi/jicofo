@@ -24,9 +24,11 @@ import org.apache.http.client.entity.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
 import org.apache.http.message.*;
+import org.apache.http.util.*;
 import org.jitsi.impl.reservation.rest.json.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
+import org.jxmpp.jid.*;
 
 import java.io.*;
 import java.lang.Object;
@@ -53,7 +55,8 @@ public class ApiHandler
     /**
      * HTTP client used for sending requests.
      */
-    private final DefaultHttpClient client = new DefaultHttpClient();
+    private final CloseableHttpClient client
+            = HttpClientBuilder.create().build();
 
     /**
      * <tt>JSONParser</tt> instance used for parsing JSON.
@@ -97,7 +100,8 @@ public class ApiHandler
      * @throws ParseException parse exception if any problems during JSON
      *         parsing have occurred.
      */
-    public ApiResult createNewConference(String ownerEmail, String mucRoomName)
+    public ApiResult createNewConference(String ownerEmail,
+                                         EntityBareJid mucRoomName)
             throws IOException, ParseException
     {
         Conference conference
@@ -105,7 +109,7 @@ public class ApiHandler
 
         HttpPost post = new HttpPost(baseUrl + "/conference");
 
-        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+        List<NameValuePair> nameValuePairs = new ArrayList<>(1);
         Map<String, Object> jsonMap = conference.createJSonMap();
 
         for (Map.Entry<String, Object> entry : jsonMap.entrySet())
@@ -147,7 +151,7 @@ public class ApiHandler
         {
             if (response != null && response.getEntity() != null)
             {
-                response.getEntity().consumeContent();
+                EntityUtils.consume(response.getEntity());
             }
         }
     }
@@ -197,7 +201,7 @@ public class ApiHandler
         {
             if (response != null && response.getEntity() != null)
             {
-                response.getEntity().consumeContent();
+                EntityUtils.consume(response.getEntity());
             }
         }
     }
@@ -243,7 +247,7 @@ public class ApiHandler
         {
             if (response != null && response.getEntity() != null)
             {
-                response.getEntity().consumeContent();
+                EntityUtils.consume(response.getEntity());
             }
         }
     }

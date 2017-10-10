@@ -50,7 +50,7 @@ public class AllocThreadingTestColibriConference
      * Blocking queue used to put and acquire conference creator endpoint.
      */
     private BlockingQueue<String> confCreatorQueue
-        = new ArrayBlockingQueue<String>(1);
+        = new ArrayBlockingQueue<>(1);
 
     /**
      * Indicates whether creator thread should be suspended before it sends it's
@@ -70,14 +70,14 @@ public class AllocThreadingTestColibriConference
      * Used to verify if all running threads have reached the semaphore.
      */
     private BlockingQueue<String> createConfSemaphoreQueue
-        = new LinkedBlockingQueue<String>();
+        = new LinkedBlockingQueue<>();
 
     /**
      * Blocking queue used to put and acquire endpoints that have sent it's
      * request packets.
      */
     private BlockingQueue<String> requestsSentQueue
-        = new LinkedBlockingQueue<String>();
+        = new LinkedBlockingQueue<>();
 
     /**
      * Indicates if threads should be blocked before response is received.
@@ -95,7 +95,7 @@ public class AllocThreadingTestColibriConference
      * response packets.
      */
     private BlockingQueue<String> responseReceivedQueue
-        = new LinkedBlockingQueue<String>();
+        = new LinkedBlockingQueue<>();
 
     /**
      * If field is set XMPP error response will be returned to conference create
@@ -171,7 +171,7 @@ public class AllocThreadingTestColibriConference
     public void waitAllOnCreateConfSemaphore(List<String> endpointToEnter)
         throws InterruptedException
     {
-        List<String> endpointsCopy = new ArrayList<String>(endpointToEnter);
+        List<String> endpointsCopy = new ArrayList<>(endpointToEnter);
         while (!endpointsCopy.isEmpty())
         {
             String endpoint = nextOnCreateConfSemaphore(5);
@@ -234,7 +234,7 @@ public class AllocThreadingTestColibriConference
     }
 
     @Override
-    protected Packet sendAllocRequest(String endpointName,
+    protected Stanza sendAllocRequest(String endpointName,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {
@@ -256,7 +256,7 @@ public class AllocThreadingTestColibriConference
 
         requestsSentQueue.add(endpointName);
 
-        Packet response;
+        Stanza response;
         if (responseError == null)
         {
             response = super.sendAllocRequest(endpointName, request);
@@ -265,7 +265,7 @@ public class AllocThreadingTestColibriConference
         {
             response = IQ.createErrorResponse(
                 request,
-                new XMPPError(responseError));
+                XMPPError.getBuilder(responseError));
         }
 
         synchronized (blockResponseReceiveLock)

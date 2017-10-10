@@ -28,6 +28,8 @@ import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 /**
  * Stripped Smack implementation of {@link ChatRoomMember}.
@@ -45,7 +47,7 @@ public class ChatMemberImpl
     /**
      * The MUC nickname used by this member.
      */
-    private final String nickname;
+    private final Resourcepart nickname;
 
     /**
      * The region (e.g. "us-east") of this {@link ChatMemberImpl}, advertised
@@ -67,13 +69,13 @@ public class ChatMemberImpl
      * Full MUC address:
      * room_name@muc.server.net/nickname
      */
-    private final String address;
+    private final EntityFullJid address;
 
     /**
      * Caches real JID of the participant if we're able to see it(not the MUC
      * address stored in {@link ChatMemberImpl#address}).
      */
-    private String memberJid = null;
+    private Jid memberJid = null;
 
     /**
      * Stores the last <tt>Presence</tt> processed by this
@@ -93,11 +95,11 @@ public class ChatMemberImpl
      */
     private Boolean videoMuted;
 
-    public ChatMemberImpl(String participant, ChatRoomImpl chatRoom,
-        int joinOrderNumber)
+    public ChatMemberImpl(EntityFullJid participant, ChatRoomImpl chatRoom,
+                          int joinOrderNumber)
     {
         this.address = participant;
-        this.nickname = participant.substring(participant.lastIndexOf("/")+1);
+        this.nickname = participant.getResourceOrThrow();
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
     }
@@ -126,13 +128,18 @@ public class ChatMemberImpl
     @Override
     public String getContactAddress()
     {
+        return address.toString();
+    }
+
+    public EntityFullJid getContactAddressJid()
+    {
         return address;
     }
 
     @Override
     public String getName()
     {
-        return nickname;
+        return nickname.toString();
     }
 
     @Override
@@ -185,7 +192,13 @@ public class ChatMemberImpl
     }
 
     @Override
-    public String getJabberID()
+    public String getDisplayName()
+    {
+        return null;
+    }
+
+    @Override
+    public Jid getJabberID()
     {
         if (memberJid == null)
         {
@@ -236,10 +249,9 @@ public class ChatMemberImpl
         this.presence = presence;
 
         VideoMutedExtension videoMutedExt
-            = (VideoMutedExtension)
-                presence.getExtension(
-                    VideoMutedExtension.ELEMENT_NAME,
-                    VideoMutedExtension.NAMESPACE);
+            = presence.getExtension(
+                VideoMutedExtension.ELEMENT_NAME,
+                VideoMutedExtension.NAMESPACE);
 
         if (videoMutedExt != null)
         {
@@ -254,10 +266,9 @@ public class ChatMemberImpl
         }
 
         UserInfoPacketExt userInfoPacketExt
-            = (UserInfoPacketExt)
-                presence.getExtension(
-                        UserInfoPacketExt.ELEMENT_NAME,
-                        UserInfoPacketExt.NAMESPACE);
+            = presence.getExtension(
+                    UserInfoPacketExt.ELEMENT_NAME,
+                    UserInfoPacketExt.NAMESPACE);
         if (userInfoPacketExt != null)
         {
             Boolean newStatus = userInfoPacketExt.isRobot();
@@ -270,10 +281,9 @@ public class ChatMemberImpl
         }
 
         RegionPacketExtension regionPE
-            = (RegionPacketExtension)
-                presence.getExtension(
-                        RegionPacketExtension.ELEMENT_NAME,
-                        RegionPacketExtension.NAMESPACE);
+            = presence.getExtension(
+                    RegionPacketExtension.ELEMENT_NAME,
+                    RegionPacketExtension.NAMESPACE);
         if (regionPE != null)
         {
             region = regionPE.getRegionId();

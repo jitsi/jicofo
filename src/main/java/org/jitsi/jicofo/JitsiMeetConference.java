@@ -17,8 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -51,7 +53,7 @@ public interface JitsiMeetConference
      *
      * @return {@link Participant} instance or <tt>null</tt> if not found.
      */
-    Participant findParticipantForRoomJid(String mucJid);
+    Participant findParticipantForRoomJid(Jid mucJid);
 
     /**
      * @return the list of {@link BridgeState} currently used by this
@@ -62,17 +64,42 @@ public interface JitsiMeetConference
     /**
      * Returns the name of conference multi-user chat room.
      */
-    public String getRoomName();
+    public EntityBareJid getRoomName();
 
     /**
      * Returns focus MUC JID if it is in the room or <tt>null</tt> otherwise.
      * JID example: room_name@muc.server.com/focus_nickname.
      */
-    public String getFocusJid();
+    public EntityFullJid getFocusJid();
 
     /**
      * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
      * currently in or <tt>null</tt> if it isn't in any.
      */
     public ChatRoom2 getChatRoom();
+
+    /**
+     * Sets the value of the <tt>startMuted</tt> property of this instance.
+     *
+     * @param startMuted the new value to set on this instance. The specified
+     * array is copied.
+     */
+    void setStartMuted(boolean[] startMuted);
+
+    /**
+     * Gets the role of a member in the conference.
+     * @param jid the member whose role is to be determined.
+     * @return The member's role or <tt>null</tt> if the JID is not a member.
+     */
+    ChatRoomMemberRole getRoleForMucJid(Jid jid);
+
+    /**
+     * Checks if given MUC jid belongs to the focus user.
+     *
+     * @param jid the full MUC address to check.
+     *
+     * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
+     *         participant or <tt>false</tt> otherwise.
+     */
+    boolean isFocusMember(Jid jid);
 }

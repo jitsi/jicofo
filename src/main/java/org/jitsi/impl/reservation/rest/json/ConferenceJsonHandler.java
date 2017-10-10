@@ -21,6 +21,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.reservation.rest.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
+import org.jxmpp.jid.parts.*;
 
 import java.io.*;
 import java.text.*;
@@ -112,10 +113,10 @@ public class ConferenceJsonHandler
             assertString(primitive);
 
             if (checkImmutableString(
-                    editedInstance.getName(),
+                    editedInstance.getName().toString(),
                     (String) primitive, CONF_NAME_KEY))
             {
-                editedInstance.setName((String) primitive);
+                editedInstance.setName(Localpart.from((String)primitive));
             }
         }
         else if (CONF_OWNER_KEY.equals(currentKey))

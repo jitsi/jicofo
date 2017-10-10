@@ -24,9 +24,9 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.*;
 import org.jitsi.util.Logger;
 import org.jitsi.eventadmin.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -149,7 +149,7 @@ public class ChatRoomRoleAndPresence
     {
         logger.info("Chat room event " + evt);
 
-        ChatRoomMember sourceMember = evt.getChatRoomMember();
+        XmppChatMember sourceMember = (XmppChatMember)evt.getChatRoomMember();
 
         String eventType = evt.getEventType();
         if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
@@ -226,7 +226,7 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (conference.isFocusMember(member)
+            if (conference.isFocusMember((XmppChatMember) member)
                 || ((XmppChatMember) member).isRobot()
                 // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
@@ -325,11 +325,11 @@ public class ChatRoomRoleAndPresence
         }
     }
 
-    private boolean grantOwner(String jid)
+    private boolean grantOwner(Jid jid)
     {
         try
         {
-            chatRoom.grantOwnership(jid);
+            chatRoom.grantOwnership(jid.toString());
             return true;
         }
         catch(RuntimeException e)
@@ -343,8 +343,8 @@ public class ChatRoomRoleAndPresence
     private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
         XmppChatMember xmppMember = (XmppChatMember) member;
-        String jabberId = xmppMember.getJabberID();
-        if (StringUtils.isNullOrEmpty(jabberId))
+        Jid jabberId = xmppMember.getJabberID();
+        if (jabberId == null)
         {
             return;
         }
@@ -367,7 +367,7 @@ public class ChatRoomRoleAndPresence
                     EventFactory.endpointAuthenticated(
                             authSessionId,
                             conference.getId(),
-                            Participant.getEndpointId(member)
+                            Participant.getEndpointId(xmppMember)
                     )
                 );
             }
@@ -375,7 +375,7 @@ public class ChatRoomRoleAndPresence
     }
 
     @Override
-    public void jidAuthenticated(String realJid,  String identity,
+    public void jidAuthenticated(Jid realJid, String identity,
                                  String sessionId)
     {
         for (ChatRoomMember member : chatRoom.getMembers())

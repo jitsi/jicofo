@@ -20,16 +20,17 @@ package org.jitsi.jicofo.reservation;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jxmpp.jid.*;
 
 /**
  * FIXME: work in progress
  *
  * Interface for reservation system implementation. If room does not exist
- * {@link FocusComponent} will call {@link #createConference(String, String)}
+ * {@link FocusComponent} will call {@link #createConference(String, EntityBareJid)}
  * method in order to verify that given user is allowed to create the room.
  * <tt>ReservationSystem</tt> itself is responsible for destroying conference
  * when it should expire by calling the method
- * {@link FocusManager#destroyConference(String, String)}.
+ * {@link FocusManager#destroyConference(EntityBareJid, String)}.
  *
  * @author Pawel Domas
  */
@@ -67,7 +68,7 @@ public interface ReservationSystem
      * went wrong. Error details will be returned in XMPP error IQ containing
      * {@link ReservationErrorPacketExt}.
      */
-    public Result createConference(String owner, String name);
+    public Result createConference(String owner, EntityBareJid name);
 
     /**
      * Structure for returning result details.

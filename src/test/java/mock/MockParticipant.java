@@ -29,9 +29,11 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.packet.id.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,8 +42,6 @@ import java.util.concurrent.*;
  *
  */
 public class MockParticipant
-    implements PacketListener,
-               PacketFilter
 {
     /**
      * The logger.
@@ -59,7 +59,7 @@ public class MockParticipant
 
     private MockRoomMember user;
 
-    private MockXmppConnection mockConnection;
+    private XmppConnection mockConnection;
 
     private UtilityJingleOpSet jingle;
 
@@ -79,9 +79,9 @@ public class MockParticipant
 
     private JingleHandler jingleHandler = new JingleHandler();
 
-    private String myJid;
+    private Jid myJid;
 
-    private String remoteJid;
+    private Jid remoteJid;
 
     private MediaSourceMap localSSRCs = new MediaSourceMap();
 
@@ -145,36 +145,37 @@ public class MockParticipant
 
     public void join(MockMultiUserChat chat)
     {
-        user = chat.createMockRoomMember(nick);
+        try
+        {
+            user = chat.createMockRoomMember(nick);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
 
         user.setupFeatures(useBundle);
 
-        MockProtocolProvider protocolProvider
-            = (MockProtocolProvider)chat.getParentProvider();
 
-        mockConnection = protocolProvider.getMockXmppConnection();
+        try
+        {
+            myJid = JidCreate.entityFullFrom(chat.getName() + "/" + user.getName());
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
 
-        OperationSetDirectSmackXmpp smackOpSet
-            = protocolProvider.getOperationSet(
-                    OperationSetDirectSmackXmpp.class);
-
-        myJid = chat.getName() + "/" + user.getName();
-
-        this.jingle = new UtilityJingleOpSet(myJid, mockConnection);
-
-        jingle.init();
-
-        mockConnection.addPacketHandler(this, this);
+        mockConnection = new MockXmppConnection(myJid);
+        jingle = new UtilityJingleOpSet(mockConnection);
+        jingle.mockParticipant = this;
+        mockConnection.registerIQRequestHandler(jingle);
 
         chat.mockJoin(user);
-
         synchronized (joinLock)
         {
-            xmppPeer = new XmppPeer(
-                user.getContactAddress(), mockConnection);
-
+            xmppPeer = new XmppPeer(user.getJabberID(), mockConnection);
             xmppPeer.start();
-
             joinLock.notifyAll();
         }
     }
@@ -200,7 +201,7 @@ public class MockParticipant
 
     private void initContents()
     {
-        myContents = new ArrayList<ContentPacketExtension>();
+        myContents = new ArrayList<>();
 
         // AUDIO
         ContentPacketExtension audio = new ContentPacketExtension();
@@ -268,6 +269,7 @@ public class MockParticipant
                 catch (InterruptedException e)
                 {
                     logger.error(e, e);
+                    Thread.currentThread().interrupt();
                 }
             }
         },"Accept invite " + nick).start();
@@ -286,7 +288,7 @@ public class MockParticipant
 
         // ACK invite
         IQ inviteAck = JingleIQ.createResultIQ(invite);
-        mockConnection.sendPacket(inviteAck);
+        mockConnection.sendStanza(inviteAck);
 
         initContents();
 
@@ -296,7 +298,7 @@ public class MockParticipant
 
         logger.info(nick + " accept: " + user1Accept.toXML());
 
-        mockConnection.sendPacket(user1Accept);
+        mockConnection.sendStanza(user1Accept);
 
         this.myJid = user1Accept.getFrom();
         this.remoteJid = user1Accept.getTo();
@@ -315,8 +317,7 @@ public class MockParticipant
     private Map<String, IceUdpTransportPacketExtension> createTransportMap(
             JingleIQ user1Invite)
     {
-        this.transportMap
-            = new HashMap<String, IceUdpTransportPacketExtension>();
+        this.transportMap = new HashMap<>();
 
         for (ContentPacketExtension content : user1Invite.getContentList())
         {
@@ -368,6 +369,7 @@ public class MockParticipant
 
             fakeCandidate.setIP("127.0.0.1");
             fakeCandidate.setPort(60000);
+            fakeCandidate.setType(CandidateType.host);
 
             iceTransport.addCandidate(fakeCandidate);
         }
@@ -376,8 +378,7 @@ public class MockParticipant
 
     public JingleIQ sendTransportInfo()
     {
-        List<ContentPacketExtension> contents
-            = new ArrayList<ContentPacketExtension>();
+        List<ContentPacketExtension> contents = new ArrayList<>();
 
         for (ContentPacketExtension myContent : myContents)
         {
@@ -405,7 +406,7 @@ public class MockParticipant
             = JinglePacketFactory.createTransportInfo(
                 myJid, remoteJid, jingleSession.getSessionID(), contents);
 
-        mockConnection.sendPacket(transportInfoIq);
+        mockConnection.sendStanza(transportInfoIq);
 
         return transportInfoIq;
     }
@@ -414,14 +415,12 @@ public class MockParticipant
             JingleIQ sessionInit,
             Map<String, IceUdpTransportPacketExtension> transportMap)
     {
-        JingleIQ accept = new JingleIQ();
+        JingleIQ accept = new JingleIQ(
+                JingleAction.SESSION_ACCEPT,
+                sessionInit.getSID());
 
-        accept.setPacketID(Packet.nextID());
-        accept.setType(IQ.Type.SET);
-
-        accept.setAction(JingleAction.SESSION_ACCEPT);
-
-        accept.setSID(sessionInit.getSID());
+        accept.setStanzaId(StanzaIdUtil.newStanzaId());
+        accept.setType(IQ.Type.set);
         accept.setFrom(sessionInit.getTo());
         accept.setTo(sessionInit.getFrom());
 
@@ -461,28 +460,13 @@ public class MockParticipant
         return nick;
     }
 
-    @Override
-    public boolean accept(Packet packet)
-    {
-        boolean isJingle
-            = user.getContactAddress().equals(packet.getTo())
-                    && packet instanceof JingleIQ;
-
-        if (!isJingle)
-            return false;
-
-        JingleIQ jingleIQ = (JingleIQ) packet;
-        return JingleAction.SOURCEADD.equals(jingleIQ.getAction())
-            || JingleAction.SOURCEREMOVE.equals(jingleIQ.getAction());
-    }
-
-    @Override
-    public void processPacket(Packet packet)
+    public void processStanza(IQ packet)
     {
         JingleIQ modifySSRcIq = (JingleIQ) packet;
         JingleAction action = modifySSRcIq.getAction();
 
-        if (JingleAction.SOURCEADD.equals(action))
+        if (JingleAction.SOURCEADD.equals(action)
+                || JingleAction.ADDSOURCE.equals(action))
         {
             synchronized (sourceLock)
             {
@@ -512,7 +496,8 @@ public class MockParticipant
                 sourceLock.notifyAll();
             }
         }
-        else if (JingleAction.SOURCEREMOVE.equals(action))
+        else if (JingleAction.SOURCEREMOVE.equals(action)
+                || JingleAction.REMOVESOURCE.equals(action))
         {
             synchronized (sourceLock)
             {
@@ -700,7 +685,7 @@ public class MockParticipant
         this.useSsrcGroups = useSsrcGroups;
     }
 
-    public String getMyJid()
+    public Jid getMyJid()
     {
         return myJid;
     }

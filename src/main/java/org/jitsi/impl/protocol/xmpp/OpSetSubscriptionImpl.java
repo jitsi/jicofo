@@ -18,18 +18,25 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
-
+import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
+import org.jitsi.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.pubsub.*;
+import org.jivesoftware.smackx.pubsub.PubSubException.NotAPubSubNodeException;
 import org.jivesoftware.smackx.pubsub.listener.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.jivesoftware.smack.SmackException.*;
 
 /**
  * XMPP Pub-sub node implementation of {@link OperationSetSubscription}.
@@ -60,19 +67,14 @@ public class OpSetSubscriptionImpl
         = "org.jitsi.focus.pubsub.RETRY_INTERVAL";
 
     /**
-     * Smack PubSub manager.
-     */
-    private PubSubManager manager;
-
-    /**
      * PubSub address used.
      */
-    private final String pubSubAddress;
+    private final BareJid pubSubAddress;
 
     /**
      * Our JID used for PubSub registration.
      */
-    private String ourJid;
+    private EntityFullJid ourJid;
 
     /**
      * The map of Subscriptions
@@ -95,12 +97,20 @@ public class OpSetSubscriptionImpl
      * @param parentProvider the XMPP provider instance.
      */
     public OpSetSubscriptionImpl(XmppProtocolProvider parentProvider)
+            throws XmppStringprepException
     {
-        this.parentProvider = parentProvider;
+        String pubSubAddressString = FocusBundleActivator.getConfigService()
+            .getString(PUBSUB_ADDRESS_PNAME);
+        if (!StringUtils.isNullOrEmpty(pubSubAddressString))
+        {
+            this.pubSubAddress = JidCreate.bareFrom(pubSubAddressString);
+        }
+        else
+        {
+            this.pubSubAddress = null;
+        }
 
-        this.pubSubAddress
-            = FocusBundleActivator.getConfigService()
-                    .getString(PUBSUB_ADDRESS_PNAME);
+        this.parentProvider = parentProvider;
     }
 
     /**
@@ -124,7 +134,7 @@ public class OpSetSubscriptionImpl
      * Lazy initializer for our JID field(it's not available before provider
      * gets connected).
      */
-    private String getOurJid()
+    private EntityFullJid getOurJid()
     {
         if (ourJid == null)
         {
@@ -138,29 +148,27 @@ public class OpSetSubscriptionImpl
      */
     private PubSubManager getManager()
     {
-        if (manager == null)
-        {
-            manager
-                = new PubSubManager(
-                        parentProvider.getConnection(),
-                        pubSubAddress);
-        }
-        return manager;
+        return PubSubManager.getInstance(
+                parentProvider.getConnection(),
+                pubSubAddress);
     }
 
     /**
      * Checks if given <tt>jid</tt> is registered for PubSub updates on given
      * <tt>node</tt>.
      */
-    private boolean isSubscribed(String jid, Node node)
-        throws XMPPException
+    private boolean isSubscribed(EntityFullJid jid, Node node)
+            throws XMPPException.XMPPErrorException,
+            NotConnectedException,
+            InterruptedException,
+            NoResponseException
     {
         // FIXME: consider using local flag rather than getting the list
         // of subscriptions
         for (org.jivesoftware.smackx.pubsub.Subscription subscription
                     : node.getSubscriptions())
         {
-            if (subscription.getJid().equals(jid))
+            if (subscription.getJid().equals(jid.toString()))
             {
                 return true;
             }
@@ -239,7 +247,11 @@ public class OpSetSubscriptionImpl
                 return leafPubSubNode.getItems();
             }
         }
-        catch (XMPPException e)
+        catch (XMPPException
+                | InterruptedException
+                | NoResponseException
+                | NotConnectedException
+                | NotAPubSubNodeException e)
         {
             logger.error(
                 "Failed to fetch PubSub items of: " + nodeName +
@@ -295,7 +307,7 @@ public class OpSetSubscriptionImpl
          * Subscription listeners.
          */
         private final List<SubscriptionListener> listeners
-            = new CopyOnWriteArrayList<SubscriptionListener>();
+            = new CopyOnWriteArrayList<>();
 
         /**
          * Retry strategy for subscribe operation.
@@ -383,7 +395,7 @@ public class OpSetSubscriptionImpl
                     // our connection dies? If yes, we won't add listener here
                     // and won't receive notifications.
                     pubSubNode.addItemEventListener(OpSetSubscriptionImpl.this);
-                    pubSubNode.subscribe(parentProvider.getOurJid());
+                    pubSubNode.subscribe(parentProvider.getOurJid().toString());
                 }
                 return false;
             }
@@ -426,14 +438,18 @@ public class OpSetSubscriptionImpl
             try
             {
                 Node pubSubNode = manager.getNode(node);
-                String ourJid = getOurJid();
+                EntityFullJid ourJid = getOurJid();
 
                 if (isSubscribed(ourJid, pubSubNode))
                 {
-                    pubSubNode.unsubscribe(ourJid);
+                    pubSubNode.unsubscribe(ourJid.toString());
                 }
             }
-            catch (XMPPException e)
+            catch (XMPPException
+                    | InterruptedException
+                    | NoResponseException
+                    | NotConnectedException
+                    | NotAPubSubNodeException e)
             {
                 logger.error(
                     "An error occurred while trying to unsubscribe from" +

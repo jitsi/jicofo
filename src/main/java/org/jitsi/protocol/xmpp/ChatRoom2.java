@@ -19,7 +19,9 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.jicofo.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -32,6 +34,12 @@ public interface ChatRoom2
     extends ChatRoom
 {
     /**
+     * Gets the name of this chat room as a JID.
+     * @return the name of this chat room as a JID.
+     */
+    EntityBareJid getNameAsJid();
+
+    /**
      * Finds chat member for given MUC jid.
      *
      * @param mucJid full MUC jid of the user for whom we want to find chat
@@ -40,18 +48,18 @@ public interface ChatRoom2
      * @return an instance of <tt>XmppChatMember</tt> for given MUC jid or
      *         <tt>null</tt> if not found.
      */
-    XmppChatMember findChatMember(String mucJid);
+    XmppChatMember findChatMember(Jid mucJid);
 
     /**
      * Returns the MUC address of our chat member.
      * @return our full MUC JID for example: room@conference.server.net/nickname
      */
-    String getLocalMucJid();
+    EntityFullJid getLocalMucJid();
 
     /**
-     * @return the list of all our presence {@link PacketExtension}s.
+     * @return the list of all our presence {@link ExtensionElement}s.
      */
-    Collection<PacketExtension> getPresenceExtensions();
+    Collection<ExtensionElement> getPresenceExtensions();
 
     /**
      * Checks if a packet extension is already in the presence.
@@ -69,6 +77,8 @@ public interface ChatRoom2
      * @param toRemove the list of extensions to be removed.
      * @param toAdd the list of extension to be added.
      */
-    void modifyPresence(Collection<PacketExtension> toRemove,
-                        Collection<PacketExtension> toAdd);
+    void modifyPresence(Collection<ExtensionElement> toRemove,
+                        Collection<ExtensionElement> toAdd);
+
+    void setConference(JitsiMeetConference conference);
 }

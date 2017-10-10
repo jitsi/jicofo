@@ -24,6 +24,7 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
+import org.jxmpp.jid.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
@@ -109,7 +110,7 @@ public class JibriDetector
      * @return XMPP address of idle Jibri instance or <tt>null</tt> if there are
      *         no Jibris available currently.
      */
-    public String selectJibri()
+    public Jid selectJibri()
     {
         for (BrewInstance jibri : instances)
         {
@@ -124,7 +125,7 @@ public class JibriDetector
 
     @Override
     protected void onInstanceStatusChanged(
-        String mucJid,
+        Jid mucJid,
         JibriStatusPacketExt presenceExt)
     {
         JibriStatusPacketExt.Status status = presenceExt.getStatus();
@@ -149,7 +150,7 @@ public class JibriDetector
     }
 
     @Override
-    protected void notifyInstanceOffline(String jid)
+    protected void notifyInstanceOffline(Jid jid)
     {
         logger.info(getLogName() + ": " + jid + " went offline");
 
@@ -163,7 +164,7 @@ public class JibriDetector
             logger.error("No EventAdmin !");
     }
 
-    private void notifyJibriStatus(String jibriJid, boolean available)
+    private void notifyJibriStatus(Jid jibriJid, boolean available)
     {
         logger.info(
             getLogName() + ": " + jibriJid + " available: " + available);

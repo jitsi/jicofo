@@ -29,6 +29,9 @@ import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -135,7 +138,7 @@ public class BridgeSelector
     /**
      * The map of bridge JID to <tt>BridgeState</tt>.
      */
-    private final Map<String, BridgeState> bridges = new HashMap<>();
+    private final Map<Jid, BridgeState> bridges = new HashMap<>();
 
     /**
      * The <tt>EventAdmin</tt> used by this instance to fire/send
@@ -146,7 +149,7 @@ public class BridgeSelector
     /**
      * The map of Pub-Sub nodes to videobridge JIDs.
      */
-    private final Map<String, String> pubSubToBridge = new HashMap<>();
+    private final Map<String, Jid> pubSubToBridge = new HashMap<>();
 
     /**
      * The bridge selection strategy.
@@ -175,7 +178,6 @@ public class BridgeSelector
      */
     private BridgeSelectionStrategy createBridgeSelectionStrategy()
     {
-        Class clazz = SingleBridgeSelectionStrategy.class;
         ConfigurationService config = FocusBundleActivator.getConfigService();
         if (config != null)
         {
@@ -187,27 +189,18 @@ public class BridgeSelector
                     + "$" + clazzName;
                 try
                 {
-                    clazz = Class.forName(clazzName);
+                    Class clazz = Class.forName(clazzName);
+                    return (BridgeSelectionStrategy)clazz.newInstance();
                 }
-                catch (ClassNotFoundException e)
+                catch (Exception e)
                 {
                     logger.error("Failed to find class: " + clazzName, e);
-                    clazz = SingleBridgeSelectionStrategy.class;
                 }
             }
         }
 
-        try
-        {
-            return (BridgeSelectionStrategy) clazz.newInstance();
-        }
-        catch (Exception e)
-        {
-            logger.error(
-                    "Failed to instantiate " + clazz.getName()
-                    + ". Falling back to SingleBridgeSelectionStrategy.", e);
-            return new SingleBridgeSelectionStrategy();
-        }
+        logger.info("Using SingleBridgeSelectionStrategy");
+        return new SingleBridgeSelectionStrategy();
     }
 
     /**
@@ -220,7 +213,7 @@ public class BridgeSelector
      * set of videobridges.
      * @return the {@link BridgeState} for the bridge with the provided JID.
      */
-    public BridgeState addJvbAddress(String bridgeJid)
+    public BridgeState addJvbAddress(Jid bridgeJid)
     {
         return addJvbAddress(bridgeJid, null);
     }
@@ -238,7 +231,7 @@ public class BridgeSelector
      * @return the {@link BridgeState} for the bridge with the provided JID.
      */
     synchronized public BridgeState addJvbAddress(
-            String bridgeJid, Version version)
+            Jid bridgeJid, Version version)
     {
         if (isJvbOnTheList(bridgeJid))
         {
@@ -277,7 +270,7 @@ public class BridgeSelector
      * @return <tt>true</tt> if given JVB XMPP address is already known to this
      * <tt>BridgeSelector</tt>.
      */
-    synchronized boolean isJvbOnTheList(String jvbJid)
+    synchronized boolean isJvbOnTheList(Jid jvbJid)
     {
         return bridges.containsKey(jvbJid);
     }
@@ -289,7 +282,7 @@ public class BridgeSelector
      * @param bridgeJid the JID of videobridge to be removed from this selector's
      *                  set of videobridges.
      */
-    synchronized public void removeJvbAddress(String bridgeJid)
+    synchronized public void removeJvbAddress(Jid bridgeJid)
     {
         logger.info("Removing JVB: " + bridgeJid);
 
@@ -373,7 +366,7 @@ public class BridgeSelector
      * @return videobridge JID for given pub-sub node or <tt>null</tt> if no
      *         mapping found.
      */
-    synchronized public String getBridgeForPubSubNode(String pubSubNode)
+    synchronized public Jid getBridgeForPubSubNode(String pubSubNode)
     {
         BridgeState bridge = findBridgeForNode(pubSubNode);
         return bridge != null ? bridge.getJid() : null;
@@ -388,7 +381,7 @@ public class BridgeSelector
      */
     private synchronized BridgeState findBridgeForNode(String pubSubNode)
     {
-        String bridgeJid = pubSubToBridge.get(pubSubNode);
+        Jid bridgeJid = pubSubToBridge.get(pubSubNode);
         if (bridgeJid != null)
         {
             return bridges.get(bridgeJid);
@@ -404,9 +397,9 @@ public class BridgeSelector
      *
      * @return name of pub-sub node mapped for given videobridge JID.
      */
-    private synchronized String findNodeForBridge(String bridgeJid)
+    private synchronized String findNodeForBridge(Jid bridgeJid)
     {
-        for (Map.Entry<String, String> psNodeToBridge
+        for (Map.Entry<String, Jid> psNodeToBridge
             : pubSubToBridge.entrySet())
         {
             if (psNodeToBridge.getValue().equals(bridgeJid))
@@ -424,7 +417,7 @@ public class BridgeSelector
      * @param itemId stats item ID. Should be the JID of JVB instance.
      * @param payload JVB stats payload.
      */
-    void onSharedNodeUpdate(String itemId, PacketExtension payload)
+    void onSharedNodeUpdate(String itemId, ExtensionElement payload)
     {
         onSubscriptionUpdate(null, itemId, payload);
     }
@@ -435,9 +428,9 @@ public class BridgeSelector
      * {@inheritDoc}
      */
     @Override
-    synchronized public void onSubscriptionUpdate(String          node,
-                                                  String          itemId,
-                                                  PacketExtension payload)
+    synchronized public void onSubscriptionUpdate(String           node,
+                                                  String           itemId,
+                                                  ExtensionElement payload)
     {
         if (!(payload instanceof ColibriStatsExtension))
         {
@@ -455,8 +448,22 @@ public class BridgeSelector
 
         if (bridgeState == null)
         {
+            DomainBareJid bridgeId;
+            try
+            {
+                bridgeId = JidCreate.domainBareFrom(itemId);
+            }
+            catch (XmppStringprepException e)
+            {
+                logger.warn(
+                        "Received PubSub update for unknown bridge: "
+                                + itemId + " node: "
+                                + (node == null ? "'shared'" : node));
+                return;
+            }
+
             // Try to figure out bridge by itemId
-            bridgeState = bridges.get(itemId);
+            bridgeState = bridges.get(bridgeId);
             if (bridgeState == null)
             {
                 logger.warn(
@@ -468,7 +475,7 @@ public class BridgeSelector
         }
 
         ColibriStatsExtension stats = (ColibriStatsExtension) payload;
-        for (PacketExtension child : stats.getChildExtensions())
+        for (ExtensionElement child : stats.getChildExtensions())
         {
             if (!(child instanceof ColibriStatsExtension.Stat))
             {
@@ -567,9 +574,9 @@ public class BridgeSelector
      *
      * @return a <tt>List</tt> of <tt>String</tt> with bridges JIDs.
      */
-    synchronized public List<String> listActiveJVBs()
+    synchronized public List<Jid> listActiveJVBs()
     {
-        ArrayList<String> listing = new ArrayList<>(bridges.size());
+        ArrayList<Jid> listing = new ArrayList<>(bridges.size());
         for (BridgeState bridge : bridges.values())
         {
             if (bridge.isOperational())
@@ -604,7 +611,7 @@ public class BridgeSelector
         String topic = event.getTopic();
         BridgeState bridgeState;
         BridgeEvent bridgeEvent;
-        String bridgeJid;
+        DomainBareJid bridgeJid;
 
         if (!BridgeEvent.isBridgeEvent(event))
         {
@@ -653,7 +660,16 @@ public class BridgeSelector
                     continue;
                 }
 
-                String bridge = bridgeAndNode[0];
+                DomainBareJid bridge = null;
+                try
+                {
+                    bridge = JidCreate.domainBareFrom(bridgeAndNode[0]);
+                }
+                catch (XmppStringprepException e)
+                {
+                    logger.error("Invalid mapping element: " + pair);
+                }
+
                 String pubSubNode = bridgeAndNode[1];
                 pubSubToBridge.put(pubSubNode, bridge);
 
@@ -693,7 +709,7 @@ public class BridgeSelector
      * @return {@link Version} instance which holds the details about JVB
      *         version or <tt>null</tt> if unknown.
      */
-    synchronized public Version getBridgeVersion(String bridgeJid)
+    synchronized public Version getBridgeVersion(DomainBareJid bridgeJid)
     {
         BridgeState bridgeState = bridges.get(bridgeJid);
 
@@ -717,7 +733,7 @@ public class BridgeSelector
      * JID.
      * @param jid the JID of the bridge.
      */
-    public BridgeState getBridgeState(String jid)
+    public BridgeState getBridgeState(Jid jid)
     {
         synchronized (bridges)
         {

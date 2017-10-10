@@ -17,6 +17,8 @@
  */
 package mock.xmpp;
 
+import org.jxmpp.jid.*;
+
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -25,20 +27,20 @@ import java.util.concurrent.*;
  */
 public class MockCapsNode
 {
-    private final String nodeName;
+    private final Jid nodeName;
 
     private final String[] features;
 
     protected List<MockCapsNode> childNodes
-        = new CopyOnWriteArrayList<MockCapsNode>();
+        = new CopyOnWriteArrayList<>();
 
-    public MockCapsNode(String nodeName, String[] features)
+    public MockCapsNode(Jid nodeName, String[] features)
     {
         this.nodeName = nodeName;
         this.features = features;
     }
 
-    public String getNodeName()
+    public Jid getNodeName()
     {
         return nodeName;
     }
@@ -58,7 +60,7 @@ public class MockCapsNode
         return Collections.unmodifiableCollection(childNodes);
     }
 
-    public MockCapsNode findChild(String name)
+    public MockCapsNode findChild(Jid name)
     {
         for (MockCapsNode node : childNodes)
         {

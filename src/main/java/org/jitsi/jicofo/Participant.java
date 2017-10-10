@@ -19,12 +19,12 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -51,7 +51,7 @@ public class Participant
      * @param chatRoomMember XMPP MUC chat room member which represents a
      *                       <tt>Participant</tt>.
      */
-    public static String getEndpointId(ChatRoomMember chatRoomMember)
+    public static String getEndpointId(XmppChatMember chatRoomMember)
     {
         return chatRoomMember.getName(); // XMPP MUC Nickname
     }
@@ -543,7 +543,7 @@ public class Participant
         MediaSourceGroupMap addedGroups = (MediaSourceGroupMap) added[1];
 
         // Mark as source owner
-        String roomJid = roomMember.getContactAddress();
+        Jid roomJid = roomMember.getContactAddressJid();
         for (String mediaType : addedSources.getMediaTypes())
         {
             List<SourcePacketExtension> sources
@@ -755,9 +755,9 @@ public class Participant
      * Returns the MUC JID of this <tt>Participant</tt>.
      * @return full MUC address e.g. "room1@muc.server.net/nickname"
      */
-    public String getMucJid()
+    public EntityFullJid getMucJid()
     {
-        return roomMember.getContactAddress();
+        return roomMember.getContactAddressJid();
     }
 
     /**

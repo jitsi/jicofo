@@ -18,9 +18,9 @@
 package org.jitsi.jicofo.auth;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 /**
  * XMPP domain authentication authority that authorizes user who are logged
@@ -36,7 +36,7 @@ public class XMPPDomainAuthAuthority
     /**
      * Trusted domain for which users are considered authenticated.
      */
-    private final String domain;
+    private final DomainBareJid domain;
 
     /**
      * Creates new instance of <tt>XMPPDomainAuthAuthority</tt>.
@@ -48,40 +48,24 @@ public class XMPPDomainAuthAuthority
      * @param domain a string with XMPP domain name for which users will be
      *               considered authenticated.
      */
-    public XMPPDomainAuthAuthority(boolean    disableAutoLogin,
-                                   long       authenticationLifetime,
-                                   String     domain)
+    public XMPPDomainAuthAuthority(boolean       disableAutoLogin,
+                                   long          authenticationLifetime,
+                                   DomainBareJid domain)
     {
         super(disableAutoLogin, authenticationLifetime);
 
         this.domain = domain;
     }
 
-    private boolean verifyJid(String fullJid)
+    private boolean verifyJid(Jid fullJid)
     {
-        String bareJid = getBareJid(fullJid);
-
-        return bareJid.endsWith("@" + domain);
-    }
-
-    private String getBareJid(String fullJid)
-    {
-        int slashIdx = fullJid.indexOf("/");
-        if (slashIdx != -1)
-        {
-            return fullJid.substring(0, slashIdx);
-        }
-        else
-        {
-            // Bare already ?
-            return fullJid;
-        }
+        return fullJid.asDomainBareJid().equals(domain);
     }
 
     @Override
     protected IQ processAuthLocked(ConferenceIq query, ConferenceIq response)
     {
-        String peerJid = query.getFrom();
+        Jid peerJid = query.getFrom();
         String sessionId = query.getSessionId();
         AuthenticationSession session = getSession(sessionId);
 
@@ -96,7 +80,7 @@ public class XMPPDomainAuthAuthority
         if (session == null && verifyJid(peerJid))
         {
             // Create new session
-            String bareJid = getBareJid(peerJid);
+            BareJid bareJid = peerJid.asBareJid();
             String machineUID = query.getMachineUID();
             if (StringUtils.isNullOrEmpty(machineUID))
             {
@@ -105,7 +89,7 @@ public class XMPPDomainAuthAuthority
                                 + ConferenceIq.MACHINE_UID_ATTR_NAME + "'");
             }
             session = createNewSession(
-                machineUID, bareJid, query.getRoom(), null);
+                machineUID, bareJid.toString(), query.getRoom(), null);
         }
 
         // Authenticate JID with session(if it exists)
@@ -119,11 +103,12 @@ public class XMPPDomainAuthAuthority
 
     @Override
     public String createLoginUrl(
-            String machineUID, String peerFullJid, String roomName, boolean popup)
+            String machineUID,
+            EntityFullJid peerFullJid,
+            EntityBareJid roomName,
+            boolean popup)
     {
-        roomName = MucUtil.extractName(roomName);
-
-        return "./" + roomName + "?login=true";
+        return "./" + roomName.getLocalpartOrThrow() + "?login=true";
     }
 
     @Override

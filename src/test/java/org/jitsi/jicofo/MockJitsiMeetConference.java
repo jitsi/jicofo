@@ -17,8 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -43,7 +45,7 @@ public class MockJitsiMeetConference
      * {@inheritDoc}
      */
     @Override
-    public Participant findParticipantForRoomJid(String jid)
+    public Participant findParticipantForRoomJid(Jid jid)
     {
         return null;
     }
@@ -55,13 +57,13 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public String getRoomName()
+    public EntityBareJid getRoomName()
     {
         return null;
     }
 
     @Override
-    public String getFocusJid()
+    public EntityFullJid getFocusJid()
     {
         return null;
     }
@@ -70,6 +72,23 @@ public class MockJitsiMeetConference
     public ChatRoom2 getChatRoom()
     {
         return null;
+    }
+
+    @Override
+    public void setStartMuted(boolean[] startMuted)
+    {
+    }
+
+    @Override
+    public ChatRoomMemberRole getRoleForMucJid(Jid jid)
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isFocusMember(Jid jid)
+    {
+        return false;
     }
 
     /**

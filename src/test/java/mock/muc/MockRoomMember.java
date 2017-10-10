@@ -25,6 +25,8 @@ import net.java.sip.communicator.service.protocol.globalstatus.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -34,18 +36,18 @@ import java.util.*;
 public class MockRoomMember
     implements XmppChatMember
 {
-    private final String name;
+    private final Resourcepart name;
 
-    private final String address;
+    private final EntityFullJid address;
 
     private final MockMultiUserChat room;
 
     private ChatRoomMemberRole role = ChatRoomMemberRole.MEMBER;
 
-    MockRoomMember(String address, MockMultiUserChat chatRoom)
+    MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
     {
         this.address = address;
-        this.name = address.substring(address.lastIndexOf("/")+1);
+        this.name = address.getResourceOrThrow();
         this.room = chatRoom;
     }
 
@@ -86,13 +88,19 @@ public class MockRoomMember
     @Override
     public String getContactAddress()
     {
+        return address.toString();
+    }
+
+    @Override
+    public EntityFullJid getContactAddressJid()
+    {
         return address;
     }
 
     @Override
     public String getName()
     {
-        return name;
+        return name.toString();
     }
 
     @Override
@@ -131,13 +139,19 @@ public class MockRoomMember
     }
 
     @Override
+    public String getDisplayName()
+    {
+        return null;
+    }
+
+    @Override
     public String toString()
     {
         return "Member@" + hashCode() + "[" + address +"]";
     }
 
     @Override
-    public String getJabberID()
+    public Jid getJabberID()
     {
         return address;
     }

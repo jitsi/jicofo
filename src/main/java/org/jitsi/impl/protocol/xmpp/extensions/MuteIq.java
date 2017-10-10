@@ -17,9 +17,8 @@
  */
 package org.jitsi.impl.protocol.xmpp.extensions;
 
-import org.jitsi.util.*;
-
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 /**
  * IQ used for the signaling of audio muting functionality in Jitsi Meet
@@ -48,40 +47,36 @@ public class MuteIq
     /**
      * Muted peer MUC jid.
      */
-    private String jid;
+    private Jid jid;
 
     /**
      * To mute or unmute.
      */
     private Boolean mute;
 
-    @Override
-    public String getChildElementXML()
+    /**
+     * Creates a new instance of this class.
+     */
+    public MuteIq()
     {
-        StringBuilder output = new StringBuilder();
+        super(ELEMENT_NAME, NAMESPACE);
+    }
 
-        output.append("<mute ")
-            .append("xmlns='").append(NAMESPACE).append("' ");
-        if (!StringUtils.isNullOrEmpty(jid))
-        {
-            output.append("jid='").append(jid).append("'");
-        }
-        if (mute != null)
-        {
-            output.append(">").append(mute).append("</mute>");
-        }
-        else
-        {
-            output.append("/>");
-        }
-        return output.toString();
+    @Override
+    protected IQChildElementXmlStringBuilder getIQChildElementBuilder(
+            IQChildElementXmlStringBuilder xml)
+    {
+        xml.attribute(JID_ATTR_NAME, jid)
+                .rightAngleBracket()
+                .append(mute.toString());
+        return xml;
     }
 
     /**
      * Sets the MUC jid of the user to be muted/unmuted.
      * @param jid muc jid in the form of room_name@muc.server.net/nickname.
      */
-    public void setJid(String jid)
+    public void setJid(Jid jid)
     {
         this.jid = jid;
     }
@@ -90,7 +85,7 @@ public class MuteIq
      * Returns MUC jid of the participant in the form of
      * "room_name@muc.server.net/nickname".
      */
-    public String getJid()
+    public Jid getJid()
     {
         return jid;
     }

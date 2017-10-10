@@ -47,7 +47,7 @@ public class MockSubscriptionOpSetImpl
 
     public void fireSubscriptionNotification(String node,
                                              String itemId,
-                                             PacketExtension payload)
+                                             ExtensionElement payload)
     {
         SubscriptionListener l = listenerMap.get(node);
         if (l != null)

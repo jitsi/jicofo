@@ -29,6 +29,7 @@ import org.jivesoftware.smack.packet.*;
 
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
+import org.jxmpp.jid.*;
 
 /**
  * Common class for {@link AuthenticationAuthority} implementations.
@@ -98,7 +99,7 @@ public abstract class AbstractAuthAuthority
      * The list of registered {@link AuthenticationListener}s.
      */
     private List<AuthenticationListener> authenticationListeners
-            = new CopyOnWriteArrayList<AuthenticationListener>();
+            = new CopyOnWriteArrayList<>();
 
     /**
      * Creates new instance of <tt>AbstractAuthAuthority</tt>.
@@ -152,7 +153,7 @@ public abstract class AbstractAuthAuthority
      * @return new <tt>AuthenticationSession</tt> for given parameters.
      */
     protected AuthenticationSession createNewSession(
-            String machineUID, String authIdentity, String roomName,
+            String machineUID, String authIdentity, EntityBareJid roomName,
             Map<String, String> properties)
     {
         synchronized (syncRoot)
@@ -259,9 +260,9 @@ public abstract class AbstractAuthAuthority
      * @return <tt>AuthenticationSession</tt> for given Jabber ID or
      * <tt>null</tt> if not found.
      */
-    protected AuthenticationSession findSessionForJabberId(String jabberId)
+    protected AuthenticationSession findSessionForJabberId(Jid jabberId)
     {
-        if (StringUtils.isNullOrEmpty(jabberId))
+        if (jabberId == null)
         {
             return null;
         }
@@ -294,7 +295,7 @@ public abstract class AbstractAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public String getSessionForJid(String jabberId)
+    public String getSessionForJid(Jid jabberId)
     {
         AuthenticationSession session = findSessionForJabberId(jabberId);
         return session != null ? session.getSessionId() : null;
@@ -304,7 +305,7 @@ public abstract class AbstractAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public String getUserIdentity(String jabberId)
+    public String getUserIdentity(Jid jabberId)
     {
         AuthenticationSession session = findSessionForJabberId(jabberId);
 
@@ -340,7 +341,7 @@ public abstract class AbstractAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public void onFocusDestroyed(String roomName)
+    public void onFocusDestroyed(EntityBareJid roomName)
     {
         if (!disableAutoLogin)
         {
@@ -390,7 +391,7 @@ public abstract class AbstractAuthAuthority
         authenticationListeners.remove(l);
     }
 
-    protected void notifyUserAuthenticated(String userJid,
+    protected void notifyUserAuthenticated(Jid userJid,
                                            String identity,
                                            String sessionId)
     {
@@ -480,7 +481,9 @@ public abstract class AbstractAuthAuthority
      *                 the session.
      */
     protected void authenticateJidWithSession(
-        AuthenticationSession session, String peerJid, ConferenceIq response)
+            AuthenticationSession session,
+            Jid peerJid,
+            ConferenceIq response)
     {
         session.setUserJabberId(peerJid);
 
@@ -514,8 +517,8 @@ public abstract class AbstractAuthAuthority
 
         LogoutIq result = new LogoutIq();
 
-        result.setType(org.jivesoftware.smack.packet.IQ.Type.RESULT);
-        result.setPacketID(iq.getPacketID());
+        result.setType(org.jivesoftware.smack.packet.IQ.Type.result);
+        result.setStanzaId(iq.getStanzaId());
         result.setFrom(iq.getTo());
         result.setTo(iq.getFrom());
 

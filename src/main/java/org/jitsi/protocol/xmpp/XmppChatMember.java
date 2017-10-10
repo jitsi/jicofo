@@ -20,6 +20,7 @@ package org.jitsi.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 /**
  * XMPP extended interface of {@link ChatRoomMember}.
@@ -30,9 +31,14 @@ public interface XmppChatMember
     extends ChatRoomMember
 {
     /**
-     * Returns ths original user's connection Jabber ID and not the MUC address.
+     * Returns the original user's connection Jabber ID and not the MUC address.
      */
-    String getJabberID();
+    Jid getJabberID();
+
+    /**
+     * Returns the user's MUC address.
+     */
+    EntityFullJid getContactAddressJid();
 
     /**
      * Returns number based on the order of joining of the members in the room.

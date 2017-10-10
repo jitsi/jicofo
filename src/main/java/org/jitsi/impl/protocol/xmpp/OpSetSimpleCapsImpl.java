@@ -23,6 +23,8 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.SmackException.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -45,14 +47,16 @@ public class OpSetSimpleCapsImpl
         this.xmppProvider = xmppProtocolProvider;
     }
 
-    @Override
-    public Set<String> getItems(String node)
+    public Set<Jid> getItems(Jid node)
     {
         try
         {
             return xmppProvider.discoverItems(node);
         }
-        catch (XMPPException e)
+        catch (XMPPException
+                | InterruptedException
+                | NoResponseException
+                | NotConnectedException e)
         {
             logger.error(
                 "Error while discovering the services of " + node
@@ -63,7 +67,7 @@ public class OpSetSimpleCapsImpl
     }
 
     @Override
-    public boolean hasFeatureSupport(String node, String[] features)
+    public boolean hasFeatureSupport(Jid node, String[] features)
     {
         List<String> itemFeatures = getFeatures(node);
 
@@ -72,13 +76,13 @@ public class OpSetSimpleCapsImpl
 
     }
     
-    public List<String> getFeatures(String node)
+    public List<String> getFeatures(Jid node)
     {
         return xmppProvider.getEntityFeatures(node);
     }
 
     //@Override
-    public boolean hasFeatureSupport(String node, String subnode,
+    public boolean hasFeatureSupport(Jid node, String subnode,
                                      String[] features)
     {
         return xmppProvider.checkFeatureSupport(node, subnode, features);

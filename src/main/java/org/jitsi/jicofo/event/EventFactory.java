@@ -19,6 +19,7 @@ package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -127,30 +128,6 @@ public class EventFactory
         = "org/jitsi/jicofo/FOCUS_DESTROYED";
 
     /**
-     * Creates a new "endpoint display name changed" <tt>Event</tt>, which
-     * conference ID to the JID of the associated MUC.
-     *
-     * @param conferenceId the ID of the COLIBRI conference.
-     * @param endpointId the ID of the COLIBRI endpoint.
-     * @param displayName the new display name.
-     *
-     * @return the <tt>Event</tt> which was created.
-     */
-    public static Event endpointDisplayNameChanged(
-            String conferenceId,
-            String endpointId,
-            String displayName)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(3);
-
-        props.put(CONFERENCE_ID_KEY, conferenceId);
-        props.put(ENDPOINT_ID_KEY, endpointId);
-        props.put(DISPLAY_NAME_KEY, displayName);
-
-        return new Event(ENDPOINT_DISPLAY_NAME_CHANGED_TOPIC, props);
-    }
-
-    /**
      * Creates new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
      *
      * @param roomJid the full address of MUC room.
@@ -159,7 +136,7 @@ public class EventFactory
      * @return new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
      */
     public static Event focusJoinedRoom(
-            String roomJid,
+            EntityBareJid roomJid,
             String focusId)
     {
         Dictionary<String, Object> props = new Hashtable<>(2);
@@ -177,13 +154,14 @@ public class EventFactory
      * @param conferenceId the ID of the COLIBRI conference.
      * @param roomJid the JID of the MUC for which the focus was created.
      *
+     * @param focus
      * @return the <tt>Event</tt> which was created.
      */
     public static Event conferenceRoom(
             String conferenceId,
-            String roomJid,
+            EntityBareJid roomJid,
             String focus,
-            String bridgeJid)
+            Jid bridgeJid)
     {
         Dictionary<String, Object> props = new Hashtable<>(4);
 
@@ -267,7 +245,7 @@ public class EventFactory
      *
      * @return new "focus created" <tt>Event</tt>.
      */
-    public static Event focusCreated(String focusId, String roomName)
+    public static Event focusCreated(String focusId, EntityBareJid roomName)
     {
         Dictionary<String, Object> props = new Hashtable<>(2);
 
@@ -285,7 +263,7 @@ public class EventFactory
      *
      * @return new "focus destroyed" <tt>Event</tt> instance.
      */
-    public static Event focusDestroyed(String focusId, String roomName)
+    public static Event focusDestroyed(String focusId, EntityBareJid roomName)
     {
         Dictionary<String, Object> props = new Hashtable<>(2);
 

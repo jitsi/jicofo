@@ -26,7 +26,9 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.protocol.xmpp.util.*;
 
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.Jid;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,6 +39,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public abstract class AbstractOperationSetJingle
+    extends AbstractIqRequestHandler
     implements OperationSetJingle
 {
     /**
@@ -52,12 +55,33 @@ public abstract class AbstractOperationSetJingle
     protected final Map<String, JingleSession> sessions
         = new ConcurrentHashMap<>();
 
+    protected AbstractOperationSetJingle()
+    {
+        super(JingleIQ.ELEMENT_NAME, JingleIQ.NAMESPACE,
+                IQ.Type.set, Mode.sync);
+    }
+
+    @Override
+    public IQ handleIQRequest(IQ iqRequest)
+    {
+        JingleIQ packet = (JingleIQ) iqRequest;
+        JingleSession session = getSession(packet.getSID());
+        if (session == null)
+        {
+            logger.error("No session found for SID " + packet.getSID());
+            return IQ.createErrorResponse(packet,
+                    XMPPError.getBuilder(XMPPError.Condition.bad_request));
+        }
+
+        return processJingleIQ(packet);
+    }
+
     /**
      * Implementing classes should return our JID here.
      *
      * @return our JID
      */
-    protected abstract String getOurJID();
+    protected abstract Jid getOurJID();
 
     /**
      * Returns {@link XmppConnection} implementation.
@@ -97,7 +121,7 @@ public abstract class AbstractOperationSetJingle
      */
     @Override
     public boolean initiateSession(boolean                      useBundle,
-                                   String                       address,
+                                   Jid                          address,
                                    List<ContentPacketExtension> contents,
                                    JingleRequestHandler         requestHandler,
                                    boolean[]                    startMuted)
@@ -111,7 +135,8 @@ public abstract class AbstractOperationSetJingle
         sessions.put(sid, session);
 
         JingleIQ inviteIQ
-            = createInviteIQ(sid, useBundle, address, contents, startMuted);
+            = createInviteIQ(JingleAction.SESSION_INITIATE,
+                sid, useBundle, address, contents, startMuted);
 
         IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
 
@@ -124,7 +149,7 @@ public abstract class AbstractOperationSetJingle
      * @param sessionId Jingle session ID
      * @param useBundle <tt>true</tt> if bundled transport is being used or
      * <tt>false</tt> otherwise
-     * @param address the XMPP address where the IQ will be sent
+     * @param address the XMPP address where the IQ will be sent to
      * @param contents the list of Jingle contents which describes the actual
      * offer
      * @param startMuted an array where the first value stands for "start with
@@ -133,15 +158,24 @@ public abstract class AbstractOperationSetJingle
      * @return New instance of <tt>JingleIQ</tt> filled up with the details
      * provided as parameters.
      */
-    private JingleIQ createInviteIQ(String                          sessionId,
+    private JingleIQ createInviteIQ(JingleAction                    action,
+                                    String                          sessionId,
                                     boolean                         useBundle,
-                                    String                          address,
+                                    Jid                             address,
                                     List<ContentPacketExtension>    contents,
                                     boolean[]                       startMuted)
     {
-        JingleIQ inviteIQ
-            = JinglePacketFactory.createSessionInitiate(
-                    getOurJID(), address, sessionId, contents);
+        JingleIQ inviteIQ = new JingleIQ(action, sessionId);
+
+        inviteIQ.setTo(address);
+        inviteIQ.setFrom(getOurJID());
+        inviteIQ.setInitiator(getOurJID());
+        inviteIQ.setType(IQ.Type.set);
+
+        for(ContentPacketExtension content : contents)
+        {
+            inviteIQ.addContent(content);
+        }
 
         if (useBundle)
         {
@@ -210,7 +244,7 @@ public abstract class AbstractOperationSetJingle
                 return false;
             }
         }
-        else if (IQ.Type.RESULT.equals(reply.getType()))
+        else if (IQ.Type.result.equals(reply.getType()))
         {
             return true;
         }
@@ -234,7 +268,7 @@ public abstract class AbstractOperationSetJingle
                                     boolean[]                       startMuted)
         throws OperationFailedException
     {
-        String address = session.getAddress();
+        Jid address = session.getAddress();
 
         logger.info("RE-INVITE PEER: " + address);
 
@@ -248,13 +282,11 @@ public abstract class AbstractOperationSetJingle
         session.setAccepted(false);
 
         JingleIQ inviteIQ
-            =  createInviteIQ(
+            =  createInviteIQ(JingleAction.TRANSPORT_REPLACE,
                     session.getSessionID(), useBundle, address,
                     contents, startMuted);
 
-        inviteIQ.setAction(JingleAction.TRANSPORT_REPLACE);
-
-        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+        IQ reply = getConnection().sendPacketAndGetReply(inviteIQ);
 
         return wasInviteAccepted(session, reply);
     }
@@ -264,7 +296,7 @@ public abstract class AbstractOperationSetJingle
      *
      * @param iq the <tt>JingleIQ</tt> to process.
      */
-    protected void processJingleIQ(JingleIQ iq)
+    protected IQ processJingleIQ(JingleIQ iq)
     {
         JingleSession session = getSession(iq.getSID());
         JingleAction action = iq.getAction();
@@ -272,25 +304,21 @@ public abstract class AbstractOperationSetJingle
         if (action == null)
         {
             // bad-request
-            IQ badRequest = IQ.createErrorResponse(
-                iq, new XMPPError(XMPPError.Condition.bad_request));
-
-            getConnection().sendPacket(badRequest);
-
-            return;
+            return IQ.createErrorResponse(
+                iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
+
         if (session == null)
         {
             logger.error(
                 "Action: " + action
                     + ", no session found for SID " + iq.getSID());
-            return;
+            return IQ.createErrorResponse(
+                iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
-
         XMPPError error = null;
-
         switch (action)
         {
         case SESSION_ACCEPT:
@@ -320,13 +348,11 @@ public abstract class AbstractOperationSetJingle
         // FIXME IQ type is not taken into account
         if (error == null)
         {
-            IQ ack = IQ.createResultIQ(iq);
-            getConnection().sendPacket(ack);
+            return IQ.createResultIQ(iq);
         }
         else
         {
-            IQ errorResponse = IQ.createErrorResponse(iq, error);
-            getConnection().sendPacket(errorResponse);
+            return IQ.createErrorResponse(iq, error);
         }
     }
 
@@ -345,11 +371,11 @@ public abstract class AbstractOperationSetJingle
                                 MediaSourceGroupMap ssrcGroupMap,
                                 JingleSession        session)
     {
-        JingleIQ addSourceIq = new JingleIQ();
+        JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD,
+                session.getSessionID());
 
-        addSourceIq.setAction(JingleAction.SOURCEADD);
         addSourceIq.setFrom(getOurJID());
-        addSourceIq.setType(IQ.Type.SET);
+        addSourceIq.setType(IQ.Type.set);
 
         for (String media : ssrcs.getMediaTypes())
         {
@@ -424,16 +450,14 @@ public abstract class AbstractOperationSetJingle
             }
         }
 
-        String peerSid = session.getSessionID();
-
         addSourceIq.setTo(session.getAddress());
-        addSourceIq.setSID(peerSid);
 
         logger.info(
             "Notify add SSRC " + session.getAddress()
-                + " SID: " + peerSid + " " + ssrcs + " " + ssrcGroupMap);
+                + " SID: " + session.getSessionID() + " "
+                + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().sendPacket(addSourceIq);
+        getConnection().sendStanza(addSourceIq);
     }
 
     /**
@@ -451,11 +475,11 @@ public abstract class AbstractOperationSetJingle
                                    MediaSourceGroupMap ssrcGroupMap,
                                    JingleSession        session)
     {
-        JingleIQ removeSourceIq = new JingleIQ();
+        JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE,
+                session.getSessionID());
 
-        removeSourceIq.setAction(JingleAction.SOURCEREMOVE);
         removeSourceIq.setFrom(getOurJID());
-        removeSourceIq.setType(IQ.Type.SET);
+        removeSourceIq.setType(IQ.Type.set);
 
         for (String media : ssrcs.getMediaTypes())
         {
@@ -529,18 +553,14 @@ public abstract class AbstractOperationSetJingle
             }
         }
 
-        String peerSid = session.getSessionID();
-
         removeSourceIq.setTo(session.getAddress());
-        removeSourceIq.setSID(peerSid);
 
         logger.info(
             "Notify remove SSRC " + session.getAddress()
-                + " SID: " + peerSid + " " + ssrcs + " " + ssrcGroupMap);
+                + " SID: " + session.getSessionID() + " "
+                + ssrcs + " " + ssrcGroupMap);
 
-        XmppConnection connection = getConnection();
-
-        connection.sendPacket(removeSourceIq);
+        getConnection().sendStanza(removeSourceIq);
     }
 
     /**
@@ -587,7 +607,7 @@ public abstract class AbstractOperationSetJingle
                     reason,
                     message);
 
-        getConnection().sendPacket(terminate);
+        getConnection().sendStanza(terminate);
 
         sessions.remove(session.getSessionID());
     }

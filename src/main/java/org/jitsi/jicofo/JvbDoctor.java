@@ -32,6 +32,7 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -106,7 +107,7 @@ public class JvbDoctor
     /**
      * Health check tasks map.
      */
-    private final Map<String, ScheduledFuture> tasks
+    private final Map<Jid, ScheduledFuture> tasks
         = new ConcurrentHashMap<>();
 
     /**
@@ -223,8 +224,8 @@ public class JvbDoctor
         try
         {
             // Remove scheduled tasks
-            ArrayList<String> bridges = new ArrayList<>(tasks.keySet());
-            for (String bridge : bridges)
+            ArrayList<Jid> bridges = new ArrayList<>(tasks.keySet());
+            for (Jid bridge : bridges)
             {
                 removeBridge(bridge);
             }
@@ -265,7 +266,7 @@ public class JvbDoctor
         }
     }
 
-    private void addBridge(String bridgeJid)
+    private void addBridge(Jid bridgeJid)
     {
         if (tasks.containsKey(bridgeJid))
         {
@@ -292,7 +293,7 @@ public class JvbDoctor
         logger.info("Scheduled health-check task for: " + bridgeJid);
     }
 
-    private void removeBridge(String bridgeJid)
+    private void removeBridge(Jid bridgeJid)
     {
         ScheduledFuture healthTask = tasks.remove(bridgeJid);
         if (healthTask == null)
@@ -308,7 +309,7 @@ public class JvbDoctor
         healthTask.cancel(true);
     }
 
-    private void notifyHealthCheckFailed(String bridgeJid, XMPPError error)
+    private void notifyHealthCheckFailed(Jid bridgeJid, XMPPError error)
     {
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin == null)
@@ -327,7 +328,7 @@ public class JvbDoctor
 
     private class HealthCheckTask implements Runnable
     {
-        private final String bridgeJid;
+        private final Jid bridgeJid;
 
         /**
          * Indicates whether or not the bridge has health-check support.
@@ -336,7 +337,7 @@ public class JvbDoctor
          */
         private Boolean hasHealthCheckSupport;
 
-        public HealthCheckTask(String bridgeJid)
+        public HealthCheckTask(Jid bridgeJid)
         {
             this.bridgeJid = bridgeJid;
         }
@@ -396,11 +397,11 @@ public class JvbDoctor
             }
         }
 
-        private HealthCheckIQ newHealthCheckIQ(String bridgeJid)
+        private HealthCheckIQ newHealthCheckIQ(Jid bridgeJid)
         {
             HealthCheckIQ healthIq = new HealthCheckIQ();
             healthIq.setTo(bridgeJid);
-            healthIq.setType(IQ.Type.GET);
+            healthIq.setType(IQ.Type.get);
             return healthIq;
         }
 
@@ -439,7 +440,7 @@ public class JvbDoctor
                 logger.debug("Sending health-check request to: " + bridgeJid);
             }
 
-            Packet response
+            IQ response
                 = connection.sendPacketAndGetReply(
                         newHealthCheckIQ(bridgeJid));
 
@@ -480,36 +481,27 @@ public class JvbDoctor
                         "Health check response from: " + bridgeJid + ": "
                             + IQUtils.responseToXML(response));
 
-                if (!(response instanceof IQ))
+                if (response == null)
                 {
-                    if (response != null)
-                    {
-                        logger.error("Response not an IQ: " + response.toXML());
-                    }
-                    else
-                    {
-                        notifyHealthCheckFailed(bridgeJid, null);
-                    }
+                    notifyHealthCheckFailed(bridgeJid, null);
                     return;
                 }
 
-                IQ responseIQ = (IQ) response;
-                IQ.Type responseType = responseIQ.getType();
-
-                if (IQ.Type.RESULT.equals(responseType))
+                IQ.Type responseType = response.getType();
+                if (IQ.Type.result.equals(responseType))
                 {
                     // OK
                     return;
                 }
 
-                if (IQ.Type.ERROR.equals(responseType))
+                if (IQ.Type.error.equals(responseType))
                 {
-                    XMPPError error = responseIQ.getError();
-                    String condition = error.getCondition();
+                    XMPPError error = response.getError();
+                    XMPPError.Condition condition = error.getCondition();
 
-                    if (XMPPError.Condition.interna_server_error.toString()
+                    if (XMPPError.Condition.internal_server_error
                             .equals(condition)
-                        || XMPPError.Condition.service_unavailable.toString()
+                        || XMPPError.Condition.service_unavailable
                             .equals(condition))
                     {
                         // Health check failure

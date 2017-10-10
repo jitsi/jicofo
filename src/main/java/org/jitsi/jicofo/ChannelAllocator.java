@@ -28,6 +28,7 @@ import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -163,7 +164,7 @@ public class ChannelAllocator implements Runnable
     private void discoverFeaturesAndInvite()
         throws OperationFailedException
     {
-        String address = participant.getMucJid();
+        EntityFullJid address = participant.getMucJid();
 
         // Feature discovery
         List<String> features = DiscoveryUtil.discoverParticipantFeatures(
@@ -386,8 +387,8 @@ public class ChannelAllocator implements Runnable
             return null;
         }
 
-        String jvb = bridgeSession.colibriConference.getJitsiVideobridge();
-        if (StringUtils.isNullOrEmpty(jvb))
+        Jid jvb = bridgeSession.colibriConference.getJitsiVideobridge();
+        if (jvb == null)
         {
             logger.error("No bridge jid");
             return null;

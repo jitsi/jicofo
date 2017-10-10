@@ -17,98 +17,110 @@
  */
 package mock.xmpp;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
-/**
- *
- */
 public class XmppPeer
-    implements PacketListener
+    implements IQRequestHandler
 {
-    private final String jid;
+    private final XmppConnection connection;
 
-    private final MockXmppConnection connection;
+    private final List<IQ> iqs = new ArrayList<>();
 
-    private final List<Packet> packets = new ArrayList<Packet>();
-
-    public XmppPeer(String jid, MockXmppConnection connection)
+    public XmppPeer(String jid)
     {
-        this.jid = jid;
+        this(jidCreate(jid), new MockXmppConnection(jidCreate(jid)));
+    }
+
+    private static Jid jidCreate(String jid)
+    {
+        try
+        {
+            return JidCreate.from(jid);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public XmppPeer(Jid jid, XmppConnection connection)
+    {
         this.connection = connection;
+    }
+
+    public XmppConnection getConnection()
+    {
+        return connection;
     }
 
     public void start()
     {
-        this.connection.addPacketHandler(
-            this,
-            new PacketFilter()
-            {
-                @Override
-                public boolean accept(Packet packet)
-                {
-                    return jid.equals(packet.getTo());
-                }
-            });
-    }
-
-    public Packet waitForPacket(long timeout)
-    {
-        synchronized (packets)
-        {
-            if (getPacketCount() == 0)
-            {
-                try
-                {
-                    packets.wait(timeout);
-                }
-                catch (InterruptedException e)
-                {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            return packets.size() > 0 ? packets.get(0) : null;
-        }
+        this.connection.registerIQRequestHandler(this);
     }
 
     public void stop()
     {
-        synchronized (packets)
-        {
-            connection.removePacketHandler(this);
+        this.connection.unregisterIQRequestHandler(this);
+    }
 
-            packets.notifyAll();
+    public int getIqCount()
+    {
+        synchronized (iqs)
+        {
+            return iqs.size();
         }
     }
 
-    public int getPacketCount()
+    public IQ getIq(int idx)
     {
-        synchronized (packets)
+        synchronized (iqs)
         {
-            return packets.size();
-        }
-    }
-
-    public Packet getPacket(int idx)
-    {
-        synchronized (packets)
-        {
-            return packets.get(idx);
+            return iqs.get(idx);
         }
     }
 
     @Override
-    public void processPacket(Packet packet)
+    public IQ handleIQRequest(IQ iqRequest)
     {
-        synchronized (packets)
+        synchronized (iqs)
         {
-            packets.add(packet);
-
-            packets.notifyAll();
+            iqs.add(iqRequest);
         }
+
+        return IQ.createErrorResponse(
+                iqRequest,
+                XMPPError.Condition.feature_not_implemented);
+    }
+
+    @Override
+    public Mode getMode()
+    {
+        return Mode.sync;
+    }
+
+    @Override
+    public IQ.Type getType()
+    {
+        return IQ.Type.get;
+    }
+
+    @Override
+    public String getElement()
+    {
+        return JingleIQ.ELEMENT_NAME;
+    }
+
+    @Override
+    public String getNamespace()
+    {
+        return JingleIQ.NAMESPACE;
     }
 }

@@ -23,7 +23,6 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;
@@ -31,7 +30,9 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -43,14 +44,9 @@ import java.util.concurrent.*;
  * this happen it needs to cache all the information required to start new
  * session. It uses {@link JibriDetector} to select new Jibri.
  *
- * It also contains it's own {@link QueuePacketProcessor} and processes XMPP
- * packets associated with the current session.
- *
  * @author Pawel Domas
  */
 public class JibriSession
-    implements PacketFilter,
-               PacketListener
 {
     /**
      * The class logger which can be used to override logging level inherited
@@ -88,7 +84,7 @@ public class JibriSession
      * The JID of the Jibri currently being used by this session or
      * <tt>null</tt> otherwise.
      */
-    private String currentJibriJid;
+    private Jid currentJibriJid;
 
     /**
      * The display name Jibri attribute received from Jitsi Meet to be passed
@@ -132,12 +128,6 @@ public class JibriSession
     private final Owner owner;
 
     /**
-     * The {@link QueuePacketProcessor} which executes
-     * {@link #processPacket(Packet)} on dedicated single threaded queue.
-     */
-    private QueuePacketProcessor packetProcessor;
-
-    /**
      * Reference to scheduled {@link PendingStatusTimeout}
      */
     private ScheduledFuture<?> pendingTimeoutTask;
@@ -160,7 +150,7 @@ public class JibriSession
     /**
      * Name of the MUC room (full MUC address).
      */
-    private final String roomName;
+    private final EntityBareJid roomName;
 
     /**
      * Executor service for used to schedule pending timeout tasks.
@@ -210,7 +200,7 @@ public class JibriSession
      */
     public JibriSession(
             JibriSession.Owner          owner,
-            String                      roomName,
+            EntityBareJid               roomName,
             long                        pendingTimeout,
             XmppConnection              connection,
             ScheduledExecutorService    scheduledExecutor,
@@ -241,13 +231,7 @@ public class JibriSession
      */
     synchronized public void start()
     {
-        if (packetProcessor == null)
-        {
-            this.packetProcessor = new QueuePacketProcessor(xmpp, this, this);
-            this.packetProcessor.start();
-
-            tryStartRestartJibri(null);
-        }
+        tryStartRestartJibri(null);
     }
 
     /**
@@ -258,11 +242,6 @@ public class JibriSession
      */
     synchronized public XMPPError stop()
     {
-        if (packetProcessor == null)
-        {
-            return null;
-        }
-
         try
         {
             jibriEventHandler.stop(FocusBundleActivator.bundleContext);
@@ -273,7 +252,8 @@ public class JibriSession
         }
 
         XMPPError error = null;
-        /**
+
+        /*
          * When sendStopIQ() succeeds without any errors it will reset the state
          * to "recording stopped", but in case something goes wrong the decision
          * must be made outside of that method.
@@ -308,9 +288,6 @@ public class JibriSession
             setJibriStatus(JibriIq.Status.OFF, null);
         }
 
-        packetProcessor.stop();
-        packetProcessor = null;
-
         return error;
     }
 
@@ -335,22 +312,23 @@ public class JibriSession
 
         JibriIq stopRequest = new JibriIq();
 
-        stopRequest.setType(IQ.Type.SET);
+        stopRequest.setType(IQ.Type.set);
         stopRequest.setTo(currentJibriJid);
         stopRequest.setAction(JibriIq.Action.STOP);
 
         logger.info("Trying to stop: " + stopRequest.toXML());
 
-        IQ stopReply = (IQ) xmpp.sendPacketAndGetReply(stopRequest);
+        IQ stopReply = xmpp.sendPacketAndGetReply(stopRequest);
 
         logger.info("Stop response: " + IQUtils.responseToXML(stopReply));
 
         if (stopReply == null)
         {
-            return new XMPPError(XMPPError.Condition.request_timeout, null);
+            return XMPPError.getBuilder(
+                    XMPPError.Condition.internal_server_error).build();
         }
 
-        if (IQ.Type.RESULT.equals(stopReply.getType()))
+        if (IQ.Type.result.equals(stopReply.getType()))
         {
             logger.info(
                 this.isSIP ? "SIP call" : "recording"
@@ -363,8 +341,8 @@ public class JibriSession
             XMPPError error = stopReply.getError();
             if (error == null)
             {
-                error
-                    = new XMPPError(XMPPError.Condition.interna_server_error);
+                error = XMPPError.getBuilder(
+                        XMPPError.Condition.internal_server_error).build();
             }
             return error;
         }
@@ -375,54 +353,11 @@ public class JibriSession
      * by this session.
      * {@inheritDoc}
      */
-    @Override
-    public boolean accept(Packet packet)
+    public boolean accept(JibriIq packet)
     {
-        return packet instanceof IQ
-            && currentJibriJid != null
-            && (packet.getFrom().equals(currentJibriJid) ||
-                    (packet.getFrom() + "/").startsWith(currentJibriJid));
-    }
-
-    /**
-     * <tt>JibriIq</tt> processing.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void processPacket(Packet packet)
-    {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug(
-                "Processing an IQ from Jibri: " + packet.toXML());
-        }
-
-        IQ iq = (IQ) packet;
-
-        if (IQ.Type.RESULT.equals(iq.getType()))
-        {
-            return;
-        }
-
-        if (iq instanceof JibriIq)
-        {
-            JibriIq jibriIq = (JibriIq) iq;
-
-            processJibriIqFromJibri(jibriIq);
-
-            xmpp.sendPacket(IQ.createResultIQ(iq));
-        }
-        else if (IQ.Type.ERROR.equals(iq.getType()))
-        {
-            //processJibriError(iq.getError());
-            XMPPError error = iq.getError();
-            logger.info(currentJibriJid + " failed for room "
-                + roomName + " with "
-                + (error != null ? error.toXML() : "null"));
-
-            tryStartRestartJibri(error);
-        }
+        return currentJibriJid != null
+            && (packet.getFrom().asBareJid()
+                    .equals(currentJibriJid.asBareJid()));
     }
 
     /**
@@ -434,7 +369,7 @@ public class JibriSession
         return this.isSIP ? "SIP Jibri" : "Jibri";
     }
 
-    private void processJibriIqFromJibri(JibriIq iq)
+    public IQ processJibriIqFromJibri(JibriIq iq)
     {
         // We have something from Jibri - let's update recording status
         JibriIq.Status status = iq.getStatus();
@@ -453,9 +388,9 @@ public class JibriSession
                 XMPPError error = iq.getError();
                 if (JibriIq.Status.FAILED.equals(status) && error == null)
                 {
-                    error = new XMPPError(
-                        XMPPError.Condition.interna_server_error,
-                        "Unknown error");
+                    error = XMPPError.from(
+                        XMPPError.Condition.internal_server_error,
+                        "Unknown error").build();
                 }
                 this.currentJibriJid = null;
                 tryStartRestartJibri(error);
@@ -465,6 +400,8 @@ public class JibriSession
                 setJibriStatus(status, null);
             }
         }
+
+        return IQ.createResultIQ(iq);
     }
 
     /**
@@ -490,7 +427,7 @@ public class JibriSession
 
         if (doRetry && retryAttempt++ < NUM_RETRIES)
         {
-            final String newJibriJid = jibriDetector.selectJibri();
+            final Jid newJibriJid = jibriDetector.selectJibri();
 
             logger.debug(
                 "Selected JIBRI: " + newJibriJid + " in " + this.roomName);
@@ -503,14 +440,15 @@ public class JibriSession
             else if (error == null)
             {
                 // Classify this failure as 'service not available'
-                error = new XMPPError(XMPPError.Condition.service_unavailable);
+                error = XMPPError.getBuilder(
+                        XMPPError.Condition.service_unavailable).build();
             }
         }
         if (error == null)
         {
-            error = new XMPPError(
-                        XMPPError.Condition.interna_server_error,
-                        "Retry limit exceeded");
+            error = XMPPError.from(
+                        XMPPError.Condition.internal_server_error,
+                        "Retry limit exceeded").build();
         }
         // No more retries, stop either with the error passed as an argument
         // or with one defined here in this method, which will provide more
@@ -572,7 +510,7 @@ public class JibriSession
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
      */
-    private void startJibri(final String jibriJid)
+    private void startJibri(final Jid jibriJid)
     {
         logger.info(
             "Starting Jibri " + jibriJid
@@ -584,7 +522,7 @@ public class JibriSession
         final JibriIq startIq = new JibriIq();
 
         startIq.setTo(jibriJid);
-        startIq.setType(IQ.Type.SET);
+        startIq.setType(IQ.Type.set);
         startIq.setAction(JibriIq.Action.START);
         if (streamID != null)
         {
@@ -615,7 +553,7 @@ public class JibriSession
         // timeout each time.
         reschedulePendingTimeout();
 
-        xmpp.sendPacket(startIq);
+        xmpp.sendStanza(startIq);
     }
 
     /**
@@ -700,7 +638,7 @@ public class JibriSession
 
             final JibriEvent jibriEvent = (JibriEvent) event;
             final String topic = jibriEvent.getTopic();
-            final String jibriJid = jibriEvent.getJibriJid();
+            final Jid jibriJid = jibriEvent.getJibriJid();
 
             synchronized (JibriSession.this)
             {
@@ -712,9 +650,10 @@ public class JibriSession
                             + " for room: " + roomName);
 
                     tryStartRestartJibri(
-                        new XMPPError(
-                            XMPPError.Condition.remote_server_error,
-                            nickname() + " disconnected unexpectedly"));
+                        XMPPError.from(
+                            XMPPError.Condition.internal_server_error,
+                            nickname() + " disconnected unexpectedly")
+                                .build());
                 }
             }
         }
@@ -741,8 +680,9 @@ public class JibriSession
                     logger.error(
                         nickname() + " pending timeout! " + roomName);
                     XMPPError error
-                        = new XMPPError(
-                                XMPPError.Condition.remote_server_timeout);
+                        = XMPPError.getBuilder(
+                                XMPPError.Condition.internal_server_error)
+                            .build();
                     recordingStopped(error);
                 }
             }

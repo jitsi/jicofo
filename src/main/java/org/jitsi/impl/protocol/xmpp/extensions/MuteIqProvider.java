@@ -17,9 +17,10 @@
  */
 package org.jitsi.impl.protocol.xmpp.extensions;
 
-import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.provider.*;
 
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.xmlpull.v1.*;
 
 /**
@@ -28,26 +29,24 @@ import org.xmlpull.v1.*;
  * @author Pawel Domas
  */
 public class MuteIqProvider
-    implements IQProvider
+    extends IQProvider<MuteIq>
 {
     /**
      * Registers this IQ provider into given <tt>ProviderManager</tt>.
-     * @param providerManager the <tt>ProviderManager</tt> to which this
-     *                        instance wil be bound to.
      */
-    public void registerMuteIqProvider(ProviderManager providerManager)
+    public static void registerMuteIqProvider()
     {
-        providerManager.addIQProvider(
+        ProviderManager.addIQProvider(
             MuteIq.ELEMENT_NAME,
             MuteIq.NAMESPACE,
-            this);
+            new MuteIqProvider());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public IQ parseIQ(XmlPullParser parser)
+    public MuteIq parse(XmlPullParser parser, int initialDepth)
         throws Exception
     {
         String namespace = parser.getNamespace();
@@ -65,10 +64,8 @@ public class MuteIqProvider
         if (MuteIq.ELEMENT_NAME.equals(rootElement))
         {
             iq = new MuteIq();
-
-            String jid
-                = parser.getAttributeValue("", MuteIq.JID_ATTR_NAME);
-
+            Jid jid = JidCreate.from(
+                    parser.getAttributeValue("", MuteIq.JID_ATTR_NAME));
             iq.setJid(jid);
         }
         else
