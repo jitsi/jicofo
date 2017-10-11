@@ -17,19 +17,24 @@
  */
 package org.jitsi.jicofo.discovery;
 
-import org.jivesoftware.smack.provider.*;
+import org.jivesoftware.smackx.iqversion.provider.*;
 import org.xmlpull.v1.*;
 
+import java.io.*;
+
 /**
- * Fake IQ provider that doesn't actually parse version elements but returns
+ * Version IQ provider that wraps original VersionProvider which returns
  * a new {@link Version} instance instead.
  */
-public class VersionIqProvider extends IQProvider<Version>
+public class VersionIqProvider
+    extends VersionProvider
 {
     @Override
     public Version parse(XmlPullParser parser, int initialDepth)
-            throws Exception
+        throws XmlPullParserException, IOException
     {
-        return new Version();
+        org.jivesoftware.smackx.iqversion.packet.Version v
+            = super.parse(parser, initialDepth);
+        return new Version(v);
     }
 }
