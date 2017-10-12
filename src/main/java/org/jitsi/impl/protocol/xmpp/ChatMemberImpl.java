@@ -288,6 +288,22 @@ public class ChatMemberImpl
         {
             region = regionPE.getRegionId();
         }
+
+        StartMutedPacketExtension ext
+            = presence.getExtension(
+            StartMutedPacketExtension.ELEMENT_NAME,
+            StartMutedPacketExtension.NAMESPACE);
+
+        if (ext != null)
+        {
+            boolean[] startMuted
+                = { ext.getAudioMuted(), ext.getVideoMuted() };
+
+            if (getRole().compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+            {
+                chatRoom.setStartMuted(startMuted);
+            }
+        }
     }
 
     /**

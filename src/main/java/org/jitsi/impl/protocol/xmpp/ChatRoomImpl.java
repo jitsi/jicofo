@@ -23,7 +23,6 @@ import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
 
-import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.xmpp.util.*;
@@ -78,8 +77,6 @@ public class ChatRoomImpl
      * {@link MemberListener} instance.
      */
     private final MemberListener memberListener = new MemberListener();
-
-    private final ParticipantListener participantListener;
 
     /**
      * Listener for presence that smack sends on our behalf.
@@ -160,9 +157,7 @@ public class ChatRoomImpl
         muc = manager.getMultiUserChat(roomName);
 
         muc.addParticipantStatusListener(memberListener);
-
-        this.participantListener = new ParticipantListener();
-        muc.addParticipantListener(participantListener);
+        muc.addParticipantListener(this);
     }
 
     /**
@@ -177,6 +172,17 @@ public class ChatRoomImpl
         }
 
         this.conference = conference;
+    }
+
+    void setStartMuted(boolean[] startMuted)
+    {
+        if (conference == null)
+        {
+            logger.warn("Can not set 'start muted', conference is null.");
+            return;
+        }
+
+        conference.setStartMuted(startMuted);
     }
 
     @Override
@@ -213,61 +219,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void processPresence(Presence presence)
-    {
-        // unavailable is sent when user leaves the room
-        if (!presence.isAvailable())
-        {
-            return;
-        }
-
-        if (conference == null)
-        {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Conference not set for room "
-                    + roomName);
-            }
-            return;
-        }
-
-        if (conference.isFocusMember(presence.getFrom()))
-        {
-            return; // Not interested in local presence
-        }
-
-        ChatRoomMemberRole memberRole = conference
-            .getRoleForMucJid(presence.getFrom());
-        if (memberRole == null)
-        {
-            // FIXME this is printed every time new user joins the room, because
-            // PacketListener is fired before MUC knows the user is in the room.
-            // This might be a problem if it would be the only presence ever
-            // received from such participant although very unlikely with
-            // the current client code.
-            logger.warn("Failed to get user's role for: "
-                + presence.getFrom());
-            return;
-        }
-
-        if (memberRole.compareTo(ChatRoomMemberRole.MODERATOR) < 0)
-        {
-            StartMutedPacketExtension ext
-                = presence.getExtension(
-                StartMutedPacketExtension.ELEMENT_NAME,
-                StartMutedPacketExtension.NAMESPACE);
-
-            if (ext != null)
-            {
-                boolean[] startMuted
-                    = { ext.getAudioMuted(), ext.getVideoMuted() };
-
-                conference.setStartMuted(startMuted);
-            }
-        }
-    }
-
-    @Override
     public void joinAs(String nickname)
         throws OperationFailedException
     {
@@ -287,7 +238,6 @@ public class ChatRoomImpl
             muc.addPresenceInterceptor(presenceInterceptor);
 
             muc.createOrJoin(myNickName);
-            muc.addParticipantListener(this);
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -419,10 +369,7 @@ public class ChatRoomImpl
             muc.removeParticipantStatusListener(memberListener);
         }
 
-        if (participantListener != null)
-        {
-            muc.removeParticipantListener(participantListener);
-        }
+        muc.removeParticipantListener(this);
 
         try
         {
@@ -1261,6 +1208,43 @@ public class ChatRoomImpl
         }
     }
 
+    /**
+     * Processes an incoming presence packet.
+     *
+     * @param presence the incoming presence.
+     */
+    @Override
+    public void processPresence(Presence presence)
+    {
+        if (presence == null || presence.getError() != null)
+        {
+            logger.warn("Unable to handle packet: " +
+                            (presence == null ? "null" : presence.toXML()));
+            return;
+        }
+
+        if (logger.isTraceEnabled())
+        {
+            logger.trace("Presence received " + presence.toXML());
+        }
+
+        // Should never happen, but log if something is broken
+        if (myMucAddress == null)
+        {
+            logger.error(
+                "Processing presence when we're not aware of our address");
+        }
+
+        if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
+        {
+            processOwnPresence(presence);
+        }
+        else
+        {
+            processOtherPresence(presence);
+        }
+    }
+
     class MemberListener
         implements ParticipantStatusListener
     {
@@ -1470,47 +1454,6 @@ public class ChatRoomImpl
 
                 addMember(newNickname);
             }*/
-        }
-    }
-
-    class ParticipantListener
-        implements PresenceListener
-    {
-        /**
-         * Processes an incoming presence packet.
-         *
-         * @param presence the incoming presence.
-         */
-        @Override
-        public void processPresence(Presence presence)
-        {
-            if (presence == null || presence.getError() != null)
-            {
-                logger.warn("Unable to handle packet: " +
-                                (presence == null ? "null" : presence.toXML()));
-                return;
-            }
-
-            if (logger.isTraceEnabled())
-            {
-                logger.trace("Presence received " + presence.toXML());
-            }
-
-            // Should never happen, but log if something is broken
-            if (myMucAddress == null)
-            {
-                logger.error(
-                    "Processing presence when we're not aware of our address");
-            }
-
-            if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
-            {
-                processOwnPresence(presence);
-            }
-            else
-            {
-                processOtherPresence(presence);
-            }
         }
     }
 }
