@@ -70,12 +70,6 @@ public class ChatRoomImpl
     private final OperationSetMultiUserChatImpl opSet;
 
     /**
-     * Caches early presence packets triggered by Smack, before there was member
-     * joined event.
-     */
-    private Map<Jid, Presence> presenceCache = new HashMap<>();
-
-    /**
      * Chat room name.
      */
     private final EntityBareJid roomName;
@@ -83,10 +77,13 @@ public class ChatRoomImpl
     /**
      * {@link MemberListener} instance.
      */
-    private final MemberListener memberListener;
+    private final MemberListener memberListener = new MemberListener();
 
     private final ParticipantListener participantListener;
 
+    /**
+     * Listener for presence that smack sends on our behalf.
+     */
     private PresenceListener presenceInterceptor;
 
     /**
@@ -162,7 +159,6 @@ public class ChatRoomImpl
                 .getInstanceFor(parentChatOperationSet.getConnection());
         muc = manager.getMultiUserChat(roomName);
 
-        this.memberListener = new MemberListener();
         muc.addParticipantStatusListener(memberListener);
 
         this.participantListener = new ParticipantListener();
@@ -655,17 +651,14 @@ public class ChatRoomImpl
             return null;
         }
 
-        ArrayList<ChatMemberImpl> copy;
         synchronized (members)
         {
-            copy = new ArrayList<>(members.values());
-        }
-
-        for (ChatMemberImpl member : copy)
-        {
-            if (mucJid.equals(member.getContactAddressJid()))
+            for (ChatMemberImpl member : members.values())
             {
-                return member;
+                if (mucJid.equals(member.getContactAddressJid()))
+                {
+                    return member;
+                }
             }
         }
 
@@ -1123,31 +1116,34 @@ public class ChatRoomImpl
         connection.sendStanza(lastPresenceSent);
     }
 
-    private ChatMemberImpl addMember(EntityFullJid participant)
+    /**
+     * Adds a new {@link ChatMemberImpl} with the given JID to {@link #members}.
+     * If a member with the given JID already exists, it returns the existing
+     * instance.
+     * @param jid the JID of the member.
+     * @return the {@link ChatMemberImpl} for the member with the given JID.
+     */
+    private ChatMemberImpl addMember(EntityFullJid jid)
     {
-        ChatMemberImpl newMember;
-
         synchronized (members)
         {
-            if (members.containsKey(participant))
+            if (members.containsKey(jid))
             {
-                logger.error(participant + " already in " + roomName);
-                return null;
+                return members.get(jid);
             }
 
-            if(!participant.equals(myMucAddress))
+            if(!jid.equals(myMucAddress))
             {
                 participantNumber++;
             }
 
-            newMember
-                = new ChatMemberImpl(participant, ChatRoomImpl.this,
-                        participantNumber);
+            ChatMemberImpl newMember
+                = new ChatMemberImpl(jid, ChatRoomImpl.this, participantNumber);
 
-            members.put(participant, newMember);
+            members.put(jid, newMember);
+
+            return newMember;
         }
-
-        return newMember;
     }
 
     Jid getMemberJid(EntityFullJid mucAddress)
@@ -1161,54 +1157,130 @@ public class ChatRoomImpl
         return occupant.getJid();
     }
 
+    /**
+     * Processes a <tt>Presence</tt> packet addressed to our own occupant
+     * JID.
+     * @param presence the packet to process.
+     */
+    private void processOwnPresence(Presence presence)
+    {
+        MUCUser mucUser = getMUCUserExtension(presence);
+
+        if (mucUser != null)
+        {
+            MUCAffiliation affiliation = mucUser.getItem().getAffiliation();
+            MUCRole role = mucUser.getItem().getRole();
+
+            // this is the presence for our member initial role and
+            // affiliation, as smack do not fire any initial
+            // events lets check it and fire events
+            ChatRoomMemberRole jitsiRole =
+                ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
+
+            if(!presence.isAvailable()
+                && MUCAffiliation.none == affiliation
+                && MUCRole.none == role)
+            {
+                Destroy destroy = mucUser.getDestroy();
+                if(destroy == null)
+                {
+                    // the room is unavailable to us, there is no
+                    // message we will just leave
+                    leave();
+                }
+                else
+                {
+                    leave(destroy.getReason(), destroy.getJid());
+                }
+            }
+            else
+            {
+                setLocalUserRole(
+                    jitsiRole, ChatRoomImpl.this.role == null);
+            }
+        }
+    }
+
+    /**
+     * Process a <tt>Presence</tt> packet sent by one of the other room
+     * occupants.
+     * @param presence the presence.
+     */
+    private void processOtherPresence(Presence presence)
+    {
+        EntityFullJid jid
+            = presence.getFrom().asEntityFullJidIfPossible();
+        if (jid == null)
+        {
+            logger.warn("Presence without a valid jid: "
+                            + presence.getFrom());
+            return;
+        }
+
+        synchronized (members)
+        {
+            ChatMemberImpl chatMember = (ChatMemberImpl) findChatMember(jid);
+            boolean memberIsNew = false;
+            if (chatMember == null)
+            {
+                if (presence.getType().equals(Presence.Type.available))
+                {
+                    // This is how we detect that a new member has joined. We
+                    // do not use the ParticipantStatusListener#joined callback.
+                    if (logger.isDebugEnabled())
+                    {
+                        logger.debug("Joined " + jid + " room: " + roomName);
+                    }
+                    chatMember = addMember(jid);
+                    memberIsNew = true;
+                }
+                else
+                {
+                    // It is not clear to me whether the first presence from
+                    // a member necessarily needs to have type "available", but
+                    // this has worked so far and I don't want to change it.
+
+                    // We received presence from an unknown member which doesn't
+                    // look like a new member's presence. Ignore it.
+                    return;
+                }
+            }
+
+            if (chatMember != null)
+            {
+                chatMember.processPresence(presence);
+
+                if (memberIsNew)
+                {
+                    // Trigger participant "joined"
+                    notifyParticipantJoined(chatMember);
+                }
+
+                notifyMemberPropertyChanged(chatMember);
+            }
+        }
+    }
+
     class MemberListener
         implements ParticipantStatusListener
     {
         @Override
         public void joined(EntityFullJid mucJid)
         {
-            synchronized (members)
+            // When a new member joins, Smack seems to fire
+            // ParticipantStatusListener#joined and
+            // PresenceListener#processPresence in a non-deterministic order.
+
+            // In order to ensure that we have all the information contained
+            // in presence at the time that we create a new ChatMemberImpl,
+            // we completely ignore this joined event. Instead, we rely on
+            // processPresence to detect when a new member has joined and
+            // trigger the creation of a ChatMemberImpl by calling
+            // ChatRoomImpl#memberJoined()
+
+            if (logger.isDebugEnabled())
             {
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug("Joined " + mucJid + " room: " + roomName);
-                }
-                //logger.info(Thread.currentThread()+"JOINED ROOM: "+participant);
-
-                ChatMemberImpl member = addMember(mucJid);
-                if (member == null)
-                {
-                    logger.error("member is NULL");
-                    return;
-                }
-
-                // Process any cached presence
-                XmppProtocolProvider protocolProvider
-                    = (XmppProtocolProvider) getParentProvider();
-
-                XMPPConnection connection = protocolProvider.getConnection();
-                if (connection == null)
-                {
-                    logger.error("Connection is NULL");
-                    return;
-                }
-
-                // Process presence cached in the roster to init fields
-                // like video muted etc.
-                Presence cachedPresence = presenceCache.get(mucJid);
-                if (cachedPresence != null)
-                {
-                    member.processPresence(cachedPresence);
-                }
-
-                // Trigger participant "joined"
-                notifyParticipantJoined(member);
-
-                // Fire presence event after "joined" event
-                if (cachedPresence != null)
-                {
-                    notifyMemberPropertyChanged(member);
-                }
+                logger.debug("Ignore a member joined event for " + mucJid);
             }
         }
 
@@ -1249,9 +1321,6 @@ public class ChatRoomImpl
                         "Member left event for non-existing participant: "
                                     + participant);
                 }
-
-                // Clear cached Presence
-                presenceCache.remove(participant);
             }
         }
 
@@ -1409,6 +1478,7 @@ public class ChatRoomImpl
     {
         /**
          * Processes an incoming presence packet.
+         *
          * @param presence the incoming presence.
          */
         @Override
@@ -1417,7 +1487,7 @@ public class ChatRoomImpl
             if (presence == null || presence.getError() != null)
             {
                 logger.warn("Unable to handle packet: " +
-                            (presence == null ? "null" : presence.toXML()));
+                                (presence == null ? "null" : presence.toXML()));
                 return;
             }
 
@@ -1434,84 +1504,12 @@ public class ChatRoomImpl
             }
 
             if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
+            {
                 processOwnPresence(presence);
+            }
             else
+            {
                 processOtherPresence(presence);
-        }
-
-        /**
-         * Processes a <tt>Presence</tt> packet addressed to our own occupant
-         * JID.
-         * @param presence the packet to process.
-         */
-        private void processOwnPresence(Presence presence)
-        {
-            MUCUser mucUser = getMUCUserExtension(presence);
-
-            if (mucUser != null)
-            {
-                MUCAffiliation affiliation = mucUser.getItem().getAffiliation();
-                MUCRole role = mucUser.getItem().getRole();
-
-                // this is the presence for our member initial role and
-                // affiliation, as smack do not fire any initial
-                // events lets check it and fire events
-                ChatRoomMemberRole jitsiRole =
-                    ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
-
-                if(!presence.isAvailable()
-                    && MUCAffiliation.none == affiliation
-                    && MUCRole.none == role)
-                {
-                    Destroy destroy = mucUser.getDestroy();
-                    if(destroy == null)
-                    {
-                        // the room is unavailable to us, there is no
-                        // message we will just leave
-                        leave();
-                    }
-                    else
-                    {
-                        leave(destroy.getReason(), destroy.getJid());
-                    }
-                }
-                else
-                {
-                    setLocalUserRole(
-                        jitsiRole, ChatRoomImpl.this.role == null);
-                }
-            }
-        }
-
-        /**
-         * Process a <tt>Presence</tt> packet sent by one of the other room
-         * occupants.
-         */
-        private void processOtherPresence(Presence presence)
-        {
-            ChatMemberImpl chatMember
-                = (ChatMemberImpl) findChatMember(presence.getFrom());
-
-            if (chatMember != null)
-            {
-                chatMember.processPresence(presence);
-
-                notifyMemberPropertyChanged(chatMember);
-            }
-            else
-            {
-                // We want to cache that Presence for "on member joined" event
-                if (presence.getType().equals(Presence.Type.available))
-                {
-                    logger.warn(
-                            "Presence for not existing member: "
-                                + presence.toXML());
-
-                    // Note that this access to #presenceCache is not protected
-                    // by a lock on #members (as opposed to the other places
-                    // where #precenceCache is accessed).
-                    presenceCache.put(presence.getFrom(), presence);
-                }
             }
         }
     }
