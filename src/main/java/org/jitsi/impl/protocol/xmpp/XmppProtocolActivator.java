@@ -81,6 +81,10 @@ public class XmppProtocolActivator
                 RegionPacketExtension.NAMESPACE,
                 new DefaultPacketExtensionProvider<>(
                         RegionPacketExtension.class));
+        ProviderManager.addExtensionProvider(
+                StatsId.ELEMENT_NAME,
+                StatsId.NAMESPACE,
+                new StatsId.Provider());
 
         // Override original Smack Version IQ class
         ProviderManager.addIQProvider(

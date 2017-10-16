@@ -743,6 +743,15 @@ public class Participant
     }
 
     /**
+     * Returns the stats ID of the participant.
+     * @return the stats ID of the participant.
+     */
+    public String getStatId()
+    {
+        return roomMember.getStatsId();
+    }
+
+    /**
      * Sets the display name of the participant.
      * @param displayName the display name to set.
      */

@@ -113,13 +113,13 @@ public class ColibriTest
 
         ColibriConferenceIQ peer1Channels
             = colibriConf.createColibriChannels(
-                peer1UseBundle, peer1, true, contents);
+                peer1UseBundle, peer1, null, true, contents);
 
         assertEquals(3 , mockBridge.getChannelsCount());
 
         ColibriConferenceIQ peer2Channels
             = colibriConf.createColibriChannels(
-                peer2UseBundle, peer2, true, contents);
+                peer2UseBundle, peer2, null, true, contents);
 
         assertEquals(6 , mockBridge.getChannelsCount());
 
@@ -132,6 +132,14 @@ public class ColibriTest
                      1, peer1Channels.getChannelBundles().size());
         assertEquals("Peer 2 should have single bundle allocated !",
                      1, peer2Channels.getChannelBundles().size());
+        assertEquals("Peer 1 should have single endpoint allocated !",
+            1, peer1Channels.getEndpoints().size());
+        assertEquals("Peer 2 should have single endpoint allocated !",
+            1, peer2Channels.getEndpoints().size());
+        assertEquals("Peer 1 have wrong endpoint id allocated !",
+            peer1, peer1Channels.getEndpoints().get(0).getId());
+        assertEquals("Peer 2 have wrong endpoint id allocated !",
+            peer2, peer2Channels.getEndpoints().get(0).getId());
 
         colibriConf.expireChannels(peer2Channels);
 

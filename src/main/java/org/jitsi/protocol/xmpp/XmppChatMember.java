@@ -73,4 +73,10 @@ public interface XmppChatMember
      * Gets the region (e.g. "us-east") of this {@link XmppChatMember}.
      */
     String getRegion();
+
+    /**
+     * Gets the statistics id if any.
+     * @return the statistics ID for this member.
+     */
+    String getStatsId();
 }

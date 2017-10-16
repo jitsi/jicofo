@@ -413,6 +413,7 @@ public class ChannelAllocator implements Runnable
                     = bridgeSession.colibriConference.createColibriChannels(
                             participant.hasBundleSupport(),
                             participant.getEndpointId(),
+                            participant.getStatId(),
                             true /* initiator */, contents);
 
                 // null means canceled, because colibriConference has been
