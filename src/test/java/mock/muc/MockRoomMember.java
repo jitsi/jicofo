@@ -188,4 +188,10 @@ public class MockRoomMember
     {
         return null;
     }
+
+    @Override
+    public String getStatsId()
+    {
+        return null;
+    }
 }

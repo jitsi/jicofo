@@ -95,6 +95,11 @@ public class ChatMemberImpl
      */
     private Boolean videoMuted;
 
+    /**
+     * Stores statistics ID for the member.
+     */
+    private String statsId;
+
     public ChatMemberImpl(EntityFullJid participant, ChatRoomImpl chatRoom,
                           int joinOrderNumber)
     {
@@ -304,6 +309,15 @@ public class ChatMemberImpl
                 chatRoom.setStartMuted(startMuted);
             }
         }
+
+        StatsId statsIdPacketExt
+            = presence.getExtension(
+                    StatsId.ELEMENT_NAME,
+                    StatsId.NAMESPACE);
+        if (statsIdPacketExt != null)
+        {
+            statsId = statsIdPacketExt.getStatsId();
+        }
     }
 
     /**
@@ -313,6 +327,15 @@ public class ChatMemberImpl
     public String getRegion()
     {
         return region;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getStatsId()
+    {
+        return statsId;
     }
 
     /**

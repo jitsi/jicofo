@@ -125,8 +125,10 @@ public class ColibriConferenceImpl
         = new ColibriBuilder(conferenceState);
 
     /**
-     * Flag used to figure out if Colibri conference has been allocated during
-     * last {@link #createColibriChannels(boolean, String, boolean, List)} call.
+     * Flag used to figure out if Colibri conference has been
+     * allocated during last
+     * {@link #createColibriChannels(boolean, String, String, boolean, List)}
+     * call.
      */
     private boolean justAllocated = false;
 
@@ -253,6 +255,7 @@ public class ColibriConferenceImpl
     public ColibriConferenceIQ createColibriChannels(
             boolean useBundle,
             String endpointName,
+            String statsId,
             boolean peerIsInitiator,
             List<ContentPacketExtension> contents)
         throws OperationFailedException
@@ -287,7 +290,11 @@ public class ColibriConferenceImpl
                 colibriBuilder.reset();
 
                 colibriBuilder.addAllocateChannelsReq(
-                    useBundle, endpointName, peerIsInitiator, contents);
+                    useBundle,
+                    endpointName,
+                    statsId,
+                    peerIsInitiator,
+                    contents);
 
                 allocateRequest = colibriBuilder.getRequest(jitsiVideobridge);
             }
@@ -477,7 +484,8 @@ public class ColibriConferenceImpl
 
     /**
      * Sends Colibri packet and waits for response in
-     * {@link #createColibriChannels(boolean, String, boolean, List)} call.
+     * {@link #createColibriChannels(boolean, String, String, boolean, List)}
+     * call.
      *
      * Exposed for unit tests purpose.
      *

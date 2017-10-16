@@ -362,9 +362,8 @@ public class ColibriThreadingTest
                 {
                     try
                     {
-                        channels
-                            = colibriConference.createColibriChannels(
-                                    true, endpointName, true, createContents());
+                        channels = colibriConference.createColibriChannels(
+                            true, endpointName, null, true, createContents());
                     }
                     catch (OperationFailedException e)
                     {
