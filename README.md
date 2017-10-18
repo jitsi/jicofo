@@ -18,9 +18,9 @@ To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick
 ## Download
 
 You can download Debian/Ubuntu binaries:
-* [stable](https://download.jitsi.org/stable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianStableRepository))
-* [testing](https://download.jitsi.org/testing/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianTestingRepository))
-* [nightly](https://download.jitsi.org/unstable/) ([instructions](https://jitsi.org/Main/InstallJicofoDebianNightlyRepository))
+* [stable](https://download.jitsi.org/stable/) ([instructions](https://jitsi.org/downloads/ubuntu-debian-installations-instructions/))
+* [testing](https://download.jitsi.org/testing/) ([instructions](https://jitsi.org/downloads/ubuntu-debian-installations-instructions-for-testing/))
+* [nightly](https://download.jitsi.org/unstable/) ([instructions](https://jitsi.org/downloads/ubuntu-debian-installations-instructions-nightly/))
 
 ## Manual Prosody configuration
 
