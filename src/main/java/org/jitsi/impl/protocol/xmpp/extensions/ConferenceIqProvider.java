@@ -24,6 +24,9 @@ import org.jivesoftware.smack.provider.*;
 
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
+import org.jxmpp.jid.parts.*;
+import org.jxmpp.stringprep.*;
+
 import org.xmlpull.v1.*;
 
 /**
@@ -67,9 +70,8 @@ public class ConferenceIqProvider
         {
             iq = new ConferenceIq();
             EntityBareJid room
-                = JidCreate.entityBareFrom(
-                        parser.getAttributeValue("",
-                                ConferenceIq.ROOM_ATTR_NAME));
+                = getRoomJid(
+                    parser.getAttributeValue("", ConferenceIq.ROOM_ATTR_NAME));
 
             iq.setRoom(room);
 
@@ -171,5 +173,33 @@ public class ConferenceIqProvider
         }
 
         return iq;
+    }
+
+    /**
+     * Constructs the jid for the room by taking the last '@' part as domain
+     * and everything before it as the node part. Doing validation on the node
+     * part for allowed chars.
+     *
+     * @param unescapedValue the unescaped jid as received in the iq
+     * @return a bare JID constructed from the given parts.
+     * @throws XmppStringprepException if an error occurs.
+     */
+    private EntityBareJid getRoomJid(String unescapedValue)
+        throws XmppStringprepException
+    {
+        // the node part of the jid may contain '@' which is not allowed
+        // and passing the correct node value to Localpart.from will check
+        // for all not allowed jid characters
+        int ix = unescapedValue.lastIndexOf("@");
+
+        if (ix == -1)
+            throw new XmppStringprepException(unescapedValue,
+                "wrong room name jid format");
+
+        String domainPart = unescapedValue.substring(ix + 1);
+        String localPart = unescapedValue.substring(0, ix);
+
+        return JidCreate.entityBareFrom(
+            Localpart.from(localPart), Domainpart.from(domainPart));
     }
 }
