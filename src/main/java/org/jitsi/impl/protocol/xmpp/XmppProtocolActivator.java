@@ -30,6 +30,7 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jivesoftware.smack.*;
 
+import org.jivesoftware.smack.parsing.*;
 import org.jivesoftware.smack.provider.*;
 import org.jivesoftware.smackx.bytestreams.socks5.*;
 import org.osgi.framework.*;
@@ -100,6 +101,11 @@ public class XmppProtocolActivator
         XmppProtocolActivator.bundleContext = bundleContext;
 
         SmackConfiguration.setDefaultReplyTimeout(15000);
+        // if there is a parsing error, do not break the connection to
+        // the server(the default behaviour) as we need it for
+        // the other conferences
+        SmackConfiguration.setDefaultParsingExceptionCallback(
+            new ExceptionLoggingCallback());
 
         Socks5Proxy.setLocalSocks5ProxyEnabled(false);
 
