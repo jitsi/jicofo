@@ -1206,7 +1206,8 @@ public class JitsiMeetConferenceImpl
                     peerSources,
                     peerGroupsMap,
                     participant.getBundleTransport(),
-                    participant.getTransportMap());
+                    participant.getTransportMap(),
+                    participant.getEndpointId());
         }
         else
         {
@@ -1301,7 +1302,7 @@ public class JitsiMeetConferenceImpl
         }
 
         // Participant will figure out bundle or non-bundle transport
-        // based on it's hasBundleSupport() value
+        // based on its hasBundleSupport() value
         participant.addTransportFromJingle(contentList);
 
         BridgeSession bridgeSession = findBridgeSession(participant);
@@ -1317,7 +1318,7 @@ public class JitsiMeetConferenceImpl
         {
             bridgeSession.colibriConference.updateBundleTransportInfo(
                     participant.getBundleTransport(),
-                    participant.getColibriChannelsInfo());
+                    participant.getEndpointId());
         }
         else
         {
