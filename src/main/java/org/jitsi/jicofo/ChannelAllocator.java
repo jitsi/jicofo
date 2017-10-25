@@ -286,7 +286,7 @@ public class ChannelAllocator implements Runnable
                     participant.getRtpDescriptionMap(),
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
-                    null, null);
+                    null, null, null);
         }
     }
 

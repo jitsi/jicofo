@@ -141,14 +141,18 @@ public interface ColibriConference
      * <tt>IceUdpTransportPacketExtension</tt> to Colibri content name
      * which will be used to update transport of the channels in corresponding
      * content described by <tt>localChannelsInfo</tt>.
+     * @param endpointId the ID of the endpoint for which the update applies
+     * (it is implicit that the update only works for channels of a single
+     * participant/endpoint).
      */
     void updateChannelsInfo(
-            ColibriConferenceIQ                            localChannelsInfo,
-            Map<String, RtpDescriptionPacketExtension>     rtpInfoMap,
+            ColibriConferenceIQ localChannelsInfo,
+            Map<String, RtpDescriptionPacketExtension> rtpInfoMap,
             MediaSourceMap ssrcs,
             MediaSourceGroupMap ssrcGroups,
-            IceUdpTransportPacketExtension                 bundleTransport,
-            Map<String, IceUdpTransportPacketExtension>    transportMap);
+            IceUdpTransportPacketExtension bundleTransport,
+            Map<String, IceUdpTransportPacketExtension> transportMap,
+            String endpointId);
 
     /**
      * Updates the RTP description for active channels (existing on the bridge).
@@ -191,20 +195,16 @@ public interface ColibriConference
             ColibriConferenceIQ    localChannelsInfo);
 
     /**
-     * Updates channel bundle transport information for channels described by
-     * <tt>localChannelsInfo</tt>. Single transport is set on the bundle shared
-     * by all channels described by given IQ and only one bundle group can be
-     * updated by single call to this method.
+     * Updates the transport of a specific channel bundle.
      *
      * @param transport the transport packet extension that contains channel
-     *                  bundle transport candidates.
-     * @param localChannelsInfo <tt>ColibriConferenceIQ</tt> that contains
-     *                          the description of the channels sharing the same
-     *                          bundle group.
+     * bundle transport candidates.
+     * @param channelBundleId the ID of the channel bundle for which to update
+     * the transport.
      */
     void updateBundleTransportInfo(
-            IceUdpTransportPacketExtension    transport,
-            ColibriConferenceIQ               localChannelsInfo);
+            IceUdpTransportPacketExtension transport,
+            String channelBundleId);
 
     /**
      * Expires the channels described by given <tt>ColibriConferenceIQ</tt>.

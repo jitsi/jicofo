@@ -720,7 +720,7 @@ public class ColibriConferenceImpl
     @Override
     public void updateBundleTransportInfo(
             IceUdpTransportPacketExtension transport,
-            ColibriConferenceIQ            localChannelsInfo)
+            String channelBundleId)
     {
         ColibriConferenceIQ iq;
 
@@ -734,7 +734,7 @@ public class ColibriConferenceImpl
             colibriBuilder.reset();
 
             colibriBuilder.addBundleTransportUpdateReq(
-                    transport, localChannelsInfo);
+                    transport, channelBundleId);
 
             iq = colibriBuilder.getRequest(jitsiVideobridge);
         }
@@ -901,12 +901,13 @@ public class ColibriConferenceImpl
      */
     @Override
     public void updateChannelsInfo(
-            ColibriConferenceIQ                            localChannelsInfo,
-            Map<String, RtpDescriptionPacketExtension>     rtpInfoMap,
-            MediaSourceMap                                 sources,
-            MediaSourceGroupMap                            sourceGroups,
-            IceUdpTransportPacketExtension                 bundleTransport,
-            Map<String, IceUdpTransportPacketExtension>    transportMap)
+            ColibriConferenceIQ localChannelsInfo,
+            Map<String, RtpDescriptionPacketExtension> rtpInfoMap,
+            MediaSourceMap sources,
+            MediaSourceGroupMap sourceGroups,
+            IceUdpTransportPacketExtension bundleTransport,
+            Map<String, IceUdpTransportPacketExtension> transportMap,
+            String endpointId)
     {
         ColibriConferenceIQ iq;
 
@@ -945,7 +946,7 @@ public class ColibriConferenceImpl
             // Bundle transport...
             if (bundleTransport != null
                     && colibriBuilder.addBundleTransportUpdateReq(
-                            bundleTransport, localChannelsInfo))
+                            bundleTransport, endpointId))
             {
                 send = true;
             }
