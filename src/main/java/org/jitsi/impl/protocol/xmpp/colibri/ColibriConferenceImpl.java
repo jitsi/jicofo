@@ -593,7 +593,7 @@ public class ColibriConferenceImpl
      */
     @Override
     public void updateRtpDescription(
-            Map<String, RtpDescriptionPacketExtension> map,
+            Map<String, RtpDescriptionPacketExtension> descriptionMap,
             ColibriConferenceIQ localChannelsInfo)
     {
         ColibriConferenceIQ iq;
@@ -608,7 +608,16 @@ public class ColibriConferenceImpl
 
             colibriBuilder.reset();
 
-            colibriBuilder.addRtpDescription(map, localChannelsInfo);
+            for (String contentName : descriptionMap.keySet())
+            {
+                String channelId
+                    = localChannelsInfo.getContent(contentName)
+                        .getChannels().get(0).getID();
+                colibriBuilder.addRtpDescription(
+                        descriptionMap.get(contentName),
+                        contentName,
+                        channelId);
+            }
 
             iq = colibriBuilder.getRequest(jitsiVideobridge);
         }
@@ -902,7 +911,7 @@ public class ColibriConferenceImpl
     @Override
     public void updateChannelsInfo(
             ColibriConferenceIQ localChannelsInfo,
-            Map<String, RtpDescriptionPacketExtension> rtpInfoMap,
+            Map<String, RtpDescriptionPacketExtension> descriptionMap,
             MediaSourceMap sources,
             MediaSourceGroupMap sourceGroups,
             IceUdpTransportPacketExtension bundleTransport,
@@ -923,11 +932,18 @@ public class ColibriConferenceImpl
             boolean send = false;
 
             // RTP description
-            if (rtpInfoMap != null
-                    && colibriBuilder.addRtpDescription(
-                            rtpInfoMap, localChannelsInfo))
+            if (descriptionMap != null)
             {
-                send = true;
+                for (String contentName : descriptionMap.keySet())
+                {
+                    String channelId
+                        = localChannelsInfo.getContent(contentName)
+                            .getChannels().get(0).getID();
+                    send |= colibriBuilder.addRtpDescription(
+                            descriptionMap.get(contentName),
+                            contentName,
+                            channelId);
+                }
             }
             // SSRCs
             if (sources != null
