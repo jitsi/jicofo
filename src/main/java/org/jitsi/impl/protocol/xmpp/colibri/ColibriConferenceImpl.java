@@ -552,7 +552,7 @@ public class ColibriConferenceImpl
     @Override
     public void expireChannels(ColibriConferenceIQ channelInfo)
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -566,14 +566,14 @@ public class ColibriConferenceImpl
 
             colibriBuilder.addExpireChannelsReq(channelInfo);
 
-            iq = colibriBuilder.getRequest(jitsiVideobridge);
+            request = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
-        if (iq != null)
+        if (request != null)
         {
-            logRequest("Expire peer channels", iq);
+            logRequest("Expire peer channels", request);
 
-            connection.sendStanza(iq);
+            connection.sendStanza(request);
 
             synchronized (stateEstimationSync)
             {
@@ -596,7 +596,7 @@ public class ColibriConferenceImpl
             Map<String, RtpDescriptionPacketExtension> descriptionMap,
             ColibriConferenceIQ localChannelsInfo)
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -619,14 +619,14 @@ public class ColibriConferenceImpl
                         channelId);
             }
 
-            iq = colibriBuilder.getRequest(jitsiVideobridge);
+            request = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
-        if (iq != null)
+        if (request != null)
         {
-            logRequest("Sending RTP desc update: ", iq);
+            logRequest("Sending RTP desc update: ", request);
 
-            connection.sendStanza(iq);
+            connection.sendStanza(request);
         }
     }
 
@@ -637,10 +637,10 @@ public class ColibriConferenceImpl
      */
     @Override
     public void updateTransportInfo(
-            Map<String, IceUdpTransportPacketExtension> map,
+            Map<String, IceUdpTransportPacketExtension> transportMap,
             ColibriConferenceIQ localChannelsInfo)
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -651,16 +651,17 @@ public class ColibriConferenceImpl
 
             colibriBuilder.reset();
 
-            colibriBuilder.addTransportUpdateReq(map, localChannelsInfo);
+            colibriBuilder
+                .addTransportUpdateReq(transportMap, localChannelsInfo);
 
-            iq = colibriBuilder.getRequest(jitsiVideobridge);
+            request = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
-        if (iq != null)
+        if (request != null)
         {
-            logRequest("Sending transport info update: ", iq);
+            logRequest("Sending transport info update: ", request);
 
-            connection.sendStanza(iq);
+            connection.sendStanza(request);
         }
     }
 
@@ -674,7 +675,7 @@ public class ColibriConferenceImpl
                                   MediaSourceGroupMap sourceGroups,
                                   ColibriConferenceIQ localChannelsInfo)
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -710,14 +711,14 @@ public class ColibriConferenceImpl
                 send = true;
             }
 
-            iq = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
+            request = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
         }
 
-        if (iq != null)
+        if (request != null)
         {
-            logRequest("Sending source update: ", iq);
+            logRequest("Sending source update: ", request);
 
-            connection.sendStanza(iq);
+            connection.sendStanza(request);
         }
     }
 
@@ -731,7 +732,7 @@ public class ColibriConferenceImpl
             IceUdpTransportPacketExtension transport,
             String channelBundleId)
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -745,14 +746,14 @@ public class ColibriConferenceImpl
             colibriBuilder.addBundleTransportUpdateReq(
                     transport, channelBundleId);
 
-            iq = colibriBuilder.getRequest(jitsiVideobridge);
+            request = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
-        if (iq != null)
+        if (request != null)
         {
-            logRequest("Sending bundle transport info update: ", iq);
+            logRequest("Sending bundle transport info update: ", request);
 
-            connection.sendStanza(iq);
+            connection.sendStanza(request);
         }
     }
 
@@ -764,7 +765,7 @@ public class ColibriConferenceImpl
     @Override
     public void expireConference()
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -784,13 +785,13 @@ public class ColibriConferenceImpl
             // Expire all channels
             if (colibriBuilder.addExpireChannelsReq(conferenceState))
             {
-                iq = colibriBuilder.getRequest(jitsiVideobridge);
+                request = colibriBuilder.getRequest(jitsiVideobridge);
 
-                if (iq != null)
+                if (request != null)
                 {
-                    logRequest("Expire conference: ", iq);
+                    logRequest("Expire conference: ", request);
 
-                    connection.sendStanza(iq);
+                    connection.sendStanza(request);
                 }
             }
 
@@ -846,29 +847,23 @@ public class ColibriConferenceImpl
             return false;
         }
 
-        ColibriConferenceIQ.Content contentRequest
+        ColibriConferenceIQ.Content requestContent
             = new ColibriConferenceIQ.Content(audioContent.getName());
 
         for (ColibriConferenceIQ.Channel channel : audioContent.getChannels())
         {
-            ColibriConferenceIQ.Channel channelRequest
+            ColibriConferenceIQ.Channel requestChannel
                 = new ColibriConferenceIQ.Channel();
 
-            channelRequest.setID(channel.getID());
+            requestChannel.setID(channel.getID());
 
-            if (mute)
-            {
-                channelRequest.setDirection(MediaDirection.SENDONLY);
-            }
-            else
-            {
-                channelRequest.setDirection(MediaDirection.SENDRECV);
-            }
+            requestChannel.setDirection(
+                    mute ? MediaDirection.SENDONLY : MediaDirection.SENDRECV);
 
-            contentRequest.addChannel(channelRequest);
+            requestContent.addChannel(requestChannel);
         }
 
-        if (contentRequest.getChannelCount() == 0)
+        if (requestContent.getChannelCount() == 0)
         {
             logger.error("Failed to mute - no channels to modify." +
                              " ConfID:" + request.getID());
@@ -878,7 +873,7 @@ public class ColibriConferenceImpl
         request.setType(IQ.Type.set);
         request.setTo(jitsiVideobridge);
 
-        request.addContent(contentRequest);
+        request.addContent(requestContent);
 
         connection.sendStanza(request);
 
@@ -918,7 +913,7 @@ public class ColibriConferenceImpl
             Map<String, IceUdpTransportPacketExtension> transportMap,
             String endpointId)
     {
-        ColibriConferenceIQ iq;
+        ColibriConferenceIQ request;
 
         synchronized (syncRoot)
         {
@@ -974,14 +969,14 @@ public class ColibriConferenceImpl
                 send = true;
             }
 
-            iq = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
+            request = send ? colibriBuilder.getRequest(jitsiVideobridge) : null;
         }
 
-        if (iq != null)
+        if (request != null)
         {
-            logRequest("Sending channel info update: ", iq);
+            logRequest("Sending channel info update: ", request);
 
-            connection.sendStanza(iq);
+            connection.sendStanza(request);
         }
     }
 
