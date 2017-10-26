@@ -120,3 +120,32 @@ If you have Jicofo installed from the Debian package this should go directly to
 ```
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```
+
+## Certificates
+Jicofo uses an XMPP user connection (on port 5222 by default), and since the
+upgrade to smack4 it verifies the server's certificate. In a default
+installation the debian installation scripts take care of generating a
+self-signed certificate and adding it to the keystore.
+
+For situations in which the certificate is not trusted you can add it to the
+store by:
+
+### On Linux
+```
+sudo cp cert.pem /usr/local/share/ca-certificates/ 
+sudo update-ca-certificates
+```
+
+### On MacOS X
+On Mac java uses its own keystore, so adding the certificate to the system one
+does not work. Add it to the java keystore with:
+```
+sudo keytool -importcert -file cert.pem -keystore /Library/Java//JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home/jre/lib/security/cacerts
+```
+
+Note that if the XMPP server you are connecting to is a prosody instance
+configured with the jitsi-meet scripts, then you can find the certificate in:
+```
+/var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
+```
+
