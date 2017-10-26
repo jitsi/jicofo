@@ -21,7 +21,7 @@
     <assembly.skipAssembly>true</assembly.skipAssembly>
     <jetty.version>8.1.16.v20140903</jetty.version>
     <smack.version>4.2.1</smack.version>
-    <jitsi-desktop.version>2.13.9aab784</jitsi-desktop.version>
+    <jitsi-desktop.version>2.13.45248f1</jitsi-desktop.version>
   </properties>
 
   <dependencies>
