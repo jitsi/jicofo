@@ -365,7 +365,8 @@ public class FocusComponent
                 if (identity == null)
                 {
                     // Error not authorized
-                    return ErrorFactory.createNotAuthorizedError(query, null);
+                    return ErrorFactory.createNotAuthorizedError(
+                        query, "not authorized user domain");
                 }
             }
         }
