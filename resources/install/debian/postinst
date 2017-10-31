@@ -113,10 +113,7 @@ case "$1" in
             usermod -g jitsi jicofo
         fi
 
-        # we create home folder only if it doesn't exist
-        if [ ! -d /usr/share/jicofo ]; then
-            mkdir -p /usr/share/jicofo
-        fi
+        mkdir -p /usr/share/jicofo
 
         # we claim the home folder of jicofo in case it is owned by someone else
         OWNER=$(stat -c '%U' /usr/share/jicofo)
@@ -129,8 +126,8 @@ case "$1" in
 
         CONFIG_DIR=$(dirname $CONFIG)
         if ! dpkg-statoverride --list "$CONFIG_DIR" >/dev/null; then
-                chown root:$GROUP "$CONFIG_DIR"
-                chmod 750 "$CONFIG_DIR"
+            chown -R jicofo:jitsi "$CONFIG_DIR"
+            chmod 750 "$CONFIG_DIR"
         fi
 
         # die logz
