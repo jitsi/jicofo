@@ -65,7 +65,7 @@ public class ColibriThreadingTest
         String conferenceCreator = colibriConf.obtainConferenceCreator();
         for (MockPeerAllocator allocator : allocators)
         {
-            if (allocator.endpointName.equals(conferenceCreator))
+            if (allocator.endpointId.equals(conferenceCreator))
             {
                 return allocator;
             }
@@ -129,9 +129,9 @@ public class ColibriThreadingTest
 
         for (int i=0; i < allocators.length; i++)
         {
-            String endpointName = "peer" + i;
-            allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
-            endpointList.add(endpointName);
+            String endpointId = "peer" + i;
+            allocators[i] = new MockPeerAllocator(endpointId, colibriConf);
+            endpointList.add(endpointId);
 
             allocators[i].runChannelAllocation();
         }
@@ -248,9 +248,9 @@ public class ColibriThreadingTest
 
         for (int i=0; i < allocators.length/2; i++)
         {
-            String endpointName = "peer" + i;
-            allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
-            endpointList.add(endpointName);
+            String endpointId = "peer" + i;
+            allocators[i] = new MockPeerAllocator(endpointId, colibriConf);
+            endpointList.add(endpointId);
 
             allocators[i].runChannelAllocation();
         }
@@ -282,9 +282,9 @@ public class ColibriThreadingTest
 
         for (int i=allocators.length/2; i < allocators.length; i++)
         {
-            String endpointName = "peer" + i;
-            allocators[i] = new MockPeerAllocator(endpointName, colibriConf);
-            endpointList.add(endpointName);
+            String endpointId = "peer" + i;
+            allocators[i] = new MockPeerAllocator(endpointId, colibriConf);
+            endpointList.add(endpointId);
 
             allocators[i].runChannelAllocation();
         }
@@ -334,7 +334,7 @@ public class ColibriThreadingTest
 
     class MockPeerAllocator
     {
-        private final String endpointName;
+        private final String endpointId;
 
         private final ColibriConference colibriConference;
 
@@ -344,10 +344,10 @@ public class ColibriThreadingTest
 
         private boolean working;
 
-        public MockPeerAllocator(String            endpointName,
+        public MockPeerAllocator(String            endpointId,
                                  ColibriConference colibriConference)
         {
-            this.endpointName = endpointName;
+            this.endpointId = endpointId;
             this.colibriConference = colibriConference;
         }
 
@@ -363,7 +363,7 @@ public class ColibriThreadingTest
                     try
                     {
                         channels = colibriConference.createColibriChannels(
-                            true, endpointName, null, true, createContents());
+                            true, endpointId, null, true, createContents());
                     }
                     catch (OperationFailedException e)
                     {
@@ -378,7 +378,7 @@ public class ColibriThreadingTest
                         }
                     }
                 }
-            }, endpointName + "ChannelAllocatorThread");
+            }, endpointId + "ChannelAllocatorThread");
 
             this.thread.start();
         }

@@ -94,7 +94,7 @@ public interface ColibriConference
      *
      * @param useBundle <tt>true</tt> if channel transport bundle should be used
      *                  for this allocation.
-     * @param endpointName the name that will identify channels endpoint.
+     * @param endpointId the name that will identify channels endpoint.
      * @param statsId the statistics Id to use if any.
      * @param peerIsInitiator <tt>true</tt> if peer is ICE an initiator
      *                        of ICE session.
@@ -106,7 +106,7 @@ public interface ColibriConference
      */
     ColibriConferenceIQ createColibriChannels(
             boolean                         useBundle,
-            String                          endpointName,
+            String                          endpointId,
             String                          statsId,
             boolean                         peerIsInitiator,
             List<ContentPacketExtension>    contents)
