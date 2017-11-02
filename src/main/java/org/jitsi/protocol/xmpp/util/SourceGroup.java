@@ -125,26 +125,11 @@ public class SourceGroup
      */
     public boolean belongsToGroup(SourcePacketExtension source)
     {
-        if (source.hasSSRC())
+        for (SourcePacketExtension groupSrcs : this.getSources())
         {
-            for (SourcePacketExtension groupSrcs : this.getSources())
+            if (groupSrcs.sourceEquals(source))
             {
-                if (groupSrcs.hasSSRC()
-                    && groupSrcs.getSSRC() == source.getSSRC())
-                {
-                    return true;
-                }
-            }
-        }
-        else if (source.hasRid())
-        {
-            for (SourcePacketExtension groupSrc : this.getSources())
-            {
-                if (groupSrc.hasRid()
-                    && groupSrc.getRid().equalsIgnoreCase(source.getRid()))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 

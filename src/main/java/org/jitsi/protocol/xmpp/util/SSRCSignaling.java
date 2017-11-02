@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
@@ -78,6 +79,62 @@ public class SSRCSignaling
         if (srcParam != null && (dstParam = getParam(dst, name)) != null)
         {
             dstParam.setValue(srcParam.getValue());
+        }
+    }
+
+    /**
+     * Replaces all instances of {@link SourcePacketExtension}s held by
+     * {@link SourceGroupPacketExtension}s in the given
+     * {@link MediaSourceGroupMap} with the corresponding ones from the given
+     * {@link MediaSourceMap}<tt></tt>.
+     *
+     * @param groups <tt>MediaSourceGroupMap</tt>
+     * @param sources <tt>MediaSourceMap</tt>
+     *
+     * @throws InvalidSSRCsException if there's no corresponding
+     * {@link SourcePacketExtension} found in the <tt>sources</tt> for any
+     * source in the <tt>groups</tt>.
+     */
+    static public void copySourceParamsToGroups(
+            MediaSourceGroupMap    groups,
+            MediaSourceMap         sources)
+        throws InvalidSSRCsException
+    {
+        for (String mediaType : groups.getMediaTypes())
+        {
+            List<SourceGroup> mediaGroups
+                = groups.getSourceGroupsForMedia(mediaType);
+            List<SourceGroup> newMediaGroups
+                = new ArrayList<>(mediaGroups.size());
+
+            for (SourceGroup group : mediaGroups)
+            {
+                List<SourcePacketExtension> groupSources = group.getSources();
+                List<SourcePacketExtension> newSources
+                    = new ArrayList<>(groupSources.size());
+
+                for (SourcePacketExtension srcInGroup : groupSources)
+                {
+                    SourcePacketExtension sourceInMedia
+                        = sources.findSource(mediaType, srcInGroup);
+
+                    if (sourceInMedia == null)
+                    {
+                        throw new InvalidSSRCsException(
+                                "Source " + srcInGroup
+                                    + " not found in '" + mediaType
+                                    + "' for group: " + group);
+                    }
+
+                    newSources.add(sourceInMedia);
+                }
+
+                newMediaGroups.add(
+                        new SourceGroup(group.getSemantics(), newSources));
+            }
+
+            mediaGroups.clear();
+            mediaGroups.addAll(newMediaGroups);
         }
     }
 
@@ -377,6 +434,11 @@ public class SSRCSignaling
         {
             throw new IllegalArgumentException("Null or empty 'groupMsid'");
         }
+
+        // FIXME change once migrated to Java 8
+        // return groups.stream()
+        //     .filter(group -> group.getGroupMsid().equalsIgnoreCase(groupMsid)
+        //     .collect(Collectors.toList());
 
         List<SourceGroup> result = new LinkedList<>();
 

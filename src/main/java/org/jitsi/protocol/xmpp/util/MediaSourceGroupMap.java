@@ -20,6 +20,8 @@ package org.jitsi.protocol.xmpp.util;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
+import org.jitsi.service.neomedia.*;
+
 import java.util.*;
 
 /**
@@ -54,24 +56,41 @@ public class MediaSourceGroupMap
     }
 
     /**
-     * Finds and extracts {@link SimulcastGrouping}s for given media type.
-     *
-     * @param mediaType eg. 'audio', 'video', etc.
+     * Finds and extracts video {@link SimulcastGrouping}s.
      *
      * @return a {@link List} of {@link SimulcastGrouping}s.
      */
-    public List<SimulcastGrouping> findSimulcastGroupings(String mediaType)
+    public List<SimulcastGrouping> findSimulcastGroupings()
     {
-        List<SourceGroup> simGroups = getSimulcastGroups(mediaType);
+        List<SourceGroup> simGroups = getSimulcastGroups();
         List<SimulcastGrouping> simulcastGroupings = new LinkedList<>();
 
         for (SourceGroup simGroup : simGroups)
         {
+            if (!simGroup.getSemantics().equals(
+                    SourceGroupPacketExtension.SEMANTICS_SIMULCAST))
+            {
+                continue;
+            }
+
+            // The simulcast grouping will consist of the main SIM group and
+            // eventual FID subgroups
+            List<SourceGroup> fidGroups = getRtxGroups();
+            List<SourceGroup> relatedFidGroups = new LinkedList<>();
+
+            for (SourcePacketExtension source : simGroup.getSources())
+            {
+                for (SourceGroup group : fidGroups)
+                {
+                    if (group.belongsToGroup(source))
+                    {
+                        relatedFidGroups.add(group);
+                    }
+                }
+            }
+
             SimulcastGrouping simGrouping
-                = SimulcastGrouping.extractSimGrouping(
-                mediaType,
-                this,
-                simGroup);
+                = new SimulcastGrouping(simGroup, relatedFidGroups);
 
             simulcastGroupings.add(simGrouping);
         }
@@ -80,31 +99,27 @@ public class MediaSourceGroupMap
     }
 
     /**
-     * Gets RTX (FID) groups for given media type.
-     *
-     * @param mediaType eg. 'audio', 'video', etc.
+     * Gets video RTX (FID) groups.
      *
      * @return a {@link List} of {@link SourceGroup}.
      */
-    public List<SourceGroup> getRtxGroups(String mediaType)
+    public List<SourceGroup> getRtxGroups()
     {
         return findSourceGroups(
-            mediaType,
-            SourceGroupPacketExtension.SEMANTICS_FID);
+                MediaType.VIDEO.toString(),
+                SourceGroupPacketExtension.SEMANTICS_FID);
     }
 
     /**
-     * Finds Simulcast groups for given media type.
-     *
-     * @param mediaType eg. 'audio', 'video', etc.
+     * Finds video Simulcast groups.
      *
      * @return a {@link List} of {@link SourceGroup}.
      */
-    public List<SourceGroup> getSimulcastGroups(String mediaType)
+    public List<SourceGroup> getSimulcastGroups()
     {
         return findSourceGroups(
-            mediaType,
-            SourceGroupPacketExtension.SEMANTICS_SIMULCAST);
+                MediaType.VIDEO.toString(),
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST);
     }
 
     /**
@@ -190,17 +205,6 @@ public class MediaSourceGroupMap
     public void addSourceGroup(String media, SourceGroup sourceGroup)
     {
         getSourceGroupsForMedia(media).add(sourceGroup);
-    }
-
-    /**
-     * Adds mapping of source groups to media type.
-     * @param media the media type name.
-     * @param sourceGroups <tt>SourceGroup</tt>s that will be mapped to given media
-     *                  type.
-     */
-    public void addSourceGroups(String media, List<SourceGroup> sourceGroups)
-    {
-        getSourceGroupsForMedia(media).addAll(sourceGroups);
     }
 
     /**

@@ -38,48 +38,6 @@ public class SimulcastGrouping
     private final SourceGroup simGroup;
 
     /**
-     * Extracts new {@link SimulcastGrouping} from given
-     * {@link MediaSourceGroupMap} for given root simulcast group.
-     *
-     * @param mediaType the type of the media of the SIM group.
-     * @param groupsMap the map of all groups of all media types.
-     * @param simGroup the root SIM group for which {@link SimulcastGrouping}
-     *        will be extracted.
-     *
-     * @return {@link SimulcastGrouping} which contains SIM and all FID
-     * subgroups.
-     */
-    public static SimulcastGrouping extractSimGrouping(
-            String                 mediaType,
-            MediaSourceGroupMap    groupsMap,
-            SourceGroup            simGroup)
-    {
-        if (!simGroup.getSemantics().equals(
-                SourceGroupPacketExtension.SEMANTICS_SIMULCAST))
-        {
-            throw new IllegalArgumentException("Not a SIM group: " + simGroup);
-        }
-
-        // The simulcast grouping will consist of the main SIM group and
-        // eventual FID subgroups
-        List<SourceGroup> fidGroups = groupsMap.getRtxGroups(mediaType);
-        List<SourceGroup> relatedFidGroups = new LinkedList<>();
-
-        for (SourcePacketExtension source : simGroup.getSources())
-        {
-            for (SourceGroup group : fidGroups)
-            {
-                if (group.belongsToGroup(source))
-                {
-                    relatedFidGroups.add(group);
-                }
-            }
-        }
-
-        return new SimulcastGrouping(simGroup, relatedFidGroups);
-    }
-
-    /**
      * Creates new {@link SimulcastGrouping} for given SIM and FID groups.
      * @param simGroup a SIM {@link SourceGroup}.
      * @param fidGroups a {@link List} of FID subgroups.
@@ -135,7 +93,7 @@ public class SimulcastGrouping
      */
     public boolean belongsToSimulcastGrouping(SourcePacketExtension src)
     {
-        if (fidGroups.size() > 0)
+        if (!fidGroups.isEmpty())
         {
             for (SourceGroup fidGroup : fidGroups)
             {
