@@ -161,10 +161,10 @@ public class Participant
     private final Object channelAllocatorSyncRoot = new Object();
 
     /**
-     * The {@link ChannelAllocator}, if any, which is currently allocating
-     * channels for this participant.
+     * The {@link AbstractChannelAllocator}, if any, which is currently
+     * allocating channels for this participant.
      */
-    private ChannelAllocator channelAllocator = null;
+    private AbstractChannelAllocator channelAllocator = null;
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -726,13 +726,14 @@ public class Participant
     }
 
     /**
-     * Replaces the {@link ChannelAllocator}, which is currently allocating
-     * channels for this participant (if any) with the specified channel
-     * allocator (if any).
+     * Replaces the {@link AbstractChannelAllocator}, which is currently
+     * allocating channels for this participant (if any) with the specified
+     * channel allocator (if any).
      * @param channelAllocator the channel allocator to set, or {@code null}
      * to clear it.
      */
-    public void setChannelAllocator(ChannelAllocator channelAllocator)
+    public void setChannelAllocator(
+        AbstractChannelAllocator channelAllocator)
     {
         synchronized (channelAllocatorSyncRoot)
         {
@@ -750,12 +751,13 @@ public class Participant
 
     /**
      * Signals to this {@link Participant} that a specific
-     * {@link ChannelAllocator} has completed its task and its thread is about
-     * to terminate.
-     * @param channelAllocator the {@link ChannelAllocator} which has completed
-     * its task and its thread is about to terminate.
+     * {@link AbstractChannelAllocator} has completed its task and its thread
+     * is about to terminate.
+     * @param channelAllocator the {@link AbstractChannelAllocator} which has
+     * completed its task and its thread is about to terminate.
      */
-    void channelAllocatorCompleted(ChannelAllocator channelAllocator)
+    void channelAllocatorCompleted(
+        AbstractChannelAllocator channelAllocator)
     {
         synchronized (channelAllocatorSyncRoot)
         {
