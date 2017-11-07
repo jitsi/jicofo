@@ -18,7 +18,9 @@
 package org.jitsi.jicofo.rest;
 
 import java.io.*;
+import java.lang.management.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -80,6 +82,12 @@ public class Health
      * The maximum number of millis that we cache results for.
      */
     private static final int STATUS_CACHE_INTERVAL = 1000;
+
+    /**
+     * Interval which we consider bad for a health check and we will print
+     * some debug information.
+     */
+    private static final int BAD_HEALTH_CHECK_INTERVAL = 3000;
 
     /**
      * Checks the health (status) of a specific {@link FocusManager}.
@@ -217,9 +225,26 @@ public class Health
             }
             else
             {
-                check(focusManager);
+                HealthChecksMonitor monitor = null;
+                if (focusManager.isHealthChecksDebugEnabled())
+                {
+                    monitor = new HealthChecksMonitor();
+                    monitor.start();
+                }
 
-                status = cacheStatus(HttpServletResponse.SC_OK);
+                try
+                {
+                    check(focusManager);
+
+                    status = cacheStatus(HttpServletResponse.SC_OK);
+                }
+                finally
+                {
+                    if (monitor != null)
+                    {
+                        monitor.stop();
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -270,5 +295,114 @@ public class Health
                     services.getBridgeSelector(), "bridgeSelector");
 
         return bridgeSelector.listActiveJVBs();
+    }
+
+    /**
+     * Health check monitor schedules execution with a delay
+     * {@link Health#BAD_HEALTH_CHECK_INTERVAL} if monitor is not stopped
+     * by the time it executes we consider a health check was taking too much
+     * time executing and we dump the stack trace in the logs.
+     */
+    private static class HealthChecksMonitor
+        extends TimerTask
+    {
+        /**
+         * The timer that will check for slow health executions.
+         */
+        private Timer monitorTimer;
+
+        /**
+         * The timestamp when monitoring was started.
+         */
+        private long startedAt = -1;
+
+        @Override
+        public void run()
+        {
+            // if there is no timer, this means we were stopped
+            if (this.monitorTimer == null)
+            {
+                return;
+            }
+
+            // this monitoring was not stopped before the bad interval
+            // this means it takes too much time
+            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+            ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(
+                    threadMXBean.getAllThreadIds(), 100);
+            StringBuilder dbg = new StringBuilder();
+            for (ThreadInfo threadInfo : threadInfos)
+            {
+                dbg.append('"').append(threadInfo.getThreadName()).append('"');
+
+                Thread.State state = threadInfo.getThreadState();
+                dbg.append("\n   java.lang.Thread.State: ").append(state);
+
+                if (threadInfo.getLockName() != null)
+                {
+                    dbg.append(" on ").append(threadInfo.getLockName());
+                }
+                dbg.append('\n');
+
+                StackTraceElement[] stackTraceElements
+                    = threadInfo.getStackTrace();
+                for (int i = 0; i < stackTraceElements.length; i++)
+                {
+                    StackTraceElement ste = stackTraceElements[i];
+                    dbg.append("\tat " + ste.toString());
+                    dbg.append('\n');
+                    if (i == 0 && threadInfo.getLockInfo() != null)
+                    {
+                        Thread.State ts = threadInfo.getThreadState();
+                        if (ts == Thread.State.BLOCKED
+                            || ts == Thread.State.WAITING
+                            || ts == Thread.State.TIMED_WAITING)
+                        {
+                            dbg.append("\t-  " + ts + " on "
+                                + threadInfo.getLockInfo());
+                            dbg.append('\n');
+                        }
+                    }
+
+                    for (MonitorInfo mi
+                            : threadInfo.getLockedMonitors())
+                    {
+                        if (mi.getLockedStackDepth() == i) {
+                            dbg.append("\t-  locked " + mi);
+                            dbg.append('\n');
+                        }
+                    }
+                }
+                dbg.append("\n\n");
+            }
+            logger.error("Health check took "
+                + (System.currentTimeMillis() - this.startedAt)
+                + " ms. \n"
+                + dbg.toString());
+        }
+
+        /**
+         * Starts the monitor. Schedules execution in separate thread
+         * after some interval, if monitor is not stopped and it executes
+         * we consider the health check took too much time.
+         */
+        public void start()
+        {
+            this.startedAt = System.currentTimeMillis();
+            this.monitorTimer = new Timer(getClass().getSimpleName(), true);
+            this.monitorTimer.schedule(this, BAD_HEALTH_CHECK_INTERVAL);
+        }
+
+        /**
+         * Stops the monitor execution time.
+         */
+        public void stop()
+        {
+            if (this.monitorTimer != null)
+            {
+                this.monitorTimer.cancel();
+                this.monitorTimer = null;
+            }
+        }
     }
 }

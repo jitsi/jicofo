@@ -116,6 +116,20 @@ public class FocusManager
         = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
 
     /**
+     * A property to enable health check debug. Enabling this will result an
+     * extra thread which will be monitoring the health-checks execution times.
+     * The thread will print thread dump in the logs for those health checks
+     * which execute for more than 3 seconds.
+     */
+    private static final String HEALTH_CHECK_DEBUG_PROP_NAME =
+        "org.jitsi.jicofo.rest.HEALTH_CHECK_DEBUG_ENABLED";
+
+    /**
+     * Whether health check debug is enabled. Off by default.
+     */
+    private boolean healthChecksDebugEnabled = false;
+
+    /**
      * The pseudo-random generator which is to be used when generating IDs.
      */
     private static final Random RANDOM = new Random();
@@ -244,6 +258,9 @@ public class FocusManager
 
         protocolProviderHandler.addRegistrationListener(this);
         protocolProviderHandler.register();
+
+        healthChecksDebugEnabled
+            = config.getBoolean(HEALTH_CHECK_DEBUG_PROP_NAME, false);
     }
 
     /**
@@ -654,6 +671,15 @@ public class FocusManager
             // Do initializations which require valid connection
             meetExtensionsHandler.init();
         }
+    }
+
+    /**
+     * {@see FocusManager#healthChecksDebugEnabled}
+     * @return true if enabled.
+     */
+    public boolean isHealthChecksDebugEnabled()
+    {
+        return healthChecksDebugEnabled;
     }
 
     /**
