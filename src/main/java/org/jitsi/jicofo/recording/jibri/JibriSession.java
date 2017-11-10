@@ -226,6 +226,15 @@ public class JibriSession
      */
     synchronized public void start()
     {
+        try
+        {
+            jibriEventHandler.start(FocusBundleActivator.bundleContext);
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to start Jibri event handler: " + e, e);
+        }
+
         tryStartRestartJibri(null);
     }
 
