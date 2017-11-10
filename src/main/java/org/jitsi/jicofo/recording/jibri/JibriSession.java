@@ -19,18 +19,13 @@ package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;
-import org.jitsi.xmpp.util.*;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
-import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -231,17 +226,29 @@ public class JibriSession
      */
     synchronized public void start()
     {
+        try
+        {
+            jibriEventHandler.start(FocusBundleActivator.bundleContext);
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to start Jibri event handler: " + e, e);
+        }
+
         tryStartRestartJibri(null);
     }
 
     /**
-     * Stops this session. It will block until result or error response is
-     * received.
-     * @return {@link XMPPError} if returned by the Jibri instance or
-     * <tt>null</tt> if the session was stopped gracefully.
+     * Stops this session if its not already stopped.
      */
-    synchronized public XMPPError stop()
+    synchronized public void stop()
     {
+        // skip stop request if its already stopped
+        if (JibriIq.Status.OFF.equals(jibriStatus))
+        {
+            return;
+        }
+
         try
         {
             jibriEventHandler.stop(FocusBundleActivator.bundleContext);
@@ -251,64 +258,19 @@ public class JibriSession
             logger.error("Failed to stop Jibri event handler: " + e, e);
         }
 
-        XMPPError error = null;
-
-        /*
-         * When sendStopIQ() succeeds without any errors it will reset the state
-         * to "recording stopped", but in case something goes wrong the decision
-         * must be made outside of that method.
-         */
-        boolean stoppedGracefully;
-        try
-        {
-            error = sendStopIQ();
-            if (error != null)
-            {
-                logger.error(
-                    "An error response to the stop request: " + error.toXML());
-            }
-            stoppedGracefully = error == null;
-        }
-        catch (OperationFailedException e)
-        {
-            logger.error("Failed to send stop IQ - XMPP disconnected", e);
-            stoppedGracefully = false;
-        }
-
-        if (!stoppedGracefully) {
-            // The instance is going down which means that
-            // the JitsiMeetConference is being disposed. We don't want any
-            // updates to be sent, but it makes sense to reset the state
-            // (and that's what recordingSopped() will do).
-            recordingStopped(
-                null, false /* do not send any status updates */);
-        }
-        else
-        {
-            setJibriStatus(JibriIq.Status.OFF, null);
-        }
-
-        return error;
+        sendStopIQ();
+        setJibriStatus(JibriIq.Status.OFF, null);
     }
 
     /**
-     * Sends a "stop" command to the current Jibri(if any). If the operation is
-     * accepted by Jibri (with a RESULT response) then the instance state will
-     * be adjusted to stopped and new Jibri availability status will be
-     * sent. Otherwise the decision whether the instance should go to
-     * the stopped state has to be taken outside of this method based on
-     * the result returned/Exception thrown.
-     *
-     * @return XMPPError if Jibri replies with an error or <tt>null</tt> if
-     * the recording was stopped gracefully.
-     *
-     * @throws OperationFailedException if the XMPP connection is broken.
+     * Sends a "stop" command to the current Jibri(if any). The instance state
+     * will be adjusted to stopped and new Jibri availability status will be
+     * sent.
      */
-    private XMPPError sendStopIQ()
-        throws OperationFailedException
+    private void sendStopIQ()
     {
         if (currentJibriJid == null)
-            return null;
+            return;
 
         JibriIq stopRequest = new JibriIq();
 
@@ -318,34 +280,9 @@ public class JibriSession
 
         logger.info("Trying to stop: " + stopRequest.toXML());
 
-        IQ stopReply = xmpp.sendPacketAndGetReply(stopRequest);
+        xmpp.sendStanza(stopRequest);
 
-        logger.info("Stop response: " + IQUtils.responseToXML(stopReply));
-
-        if (stopReply == null)
-        {
-            return XMPPError.getBuilder(
-                    XMPPError.Condition.internal_server_error).build();
-        }
-
-        if (IQ.Type.result.equals(stopReply.getType()))
-        {
-            logger.info(
-                this.isSIP ? "SIP call" : "recording"
-                    + " stopped on user request in " + roomName);
-            recordingStopped(null);
-            return null;
-        }
-        else
-        {
-            XMPPError error = stopReply.getError();
-            if (error == null)
-            {
-                error = XMPPError.getBuilder(
-                        XMPPError.Condition.internal_server_error).build();
-            }
-            return error;
-        }
+        recordingStopped(null);
     }
 
     /**

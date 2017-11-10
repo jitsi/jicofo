@@ -305,10 +305,8 @@ public abstract class CommonJibriStuff
         else if (JibriIq.Action.STOP.equals(action) &&
             jibriSession != null)
         {
-            error = jibriSession.stop();
-            return error == null
-                    ? IQ.createResultIQ(iq)
-                    : IQ.createErrorResponse(iq, error);
+            jibriSession.stop();
+            return IQ.createResultIQ(iq);
         }
 
         logger.warn("Discarded: " + iq.toXML() + " - nothing to be done, ");
