@@ -230,10 +230,16 @@ public class JibriSession
     }
 
     /**
-     * Stops this session.
+     * Stops this session if its not already stopped.
      */
     synchronized public void stop()
     {
+        // skip stop request if its already stopped
+        if (JibriIq.Status.OFF.equals(jibriStatus))
+        {
+            return;
+        }
+
         try
         {
             jibriEventHandler.stop(FocusBundleActivator.bundleContext);
