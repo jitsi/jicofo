@@ -241,7 +241,15 @@ public class JibriSession
     /**
      * Stops this session if its not already stopped.
      */
-    synchronized public void stop()
+    synchronized public void stop() {
+        this.stop(null);
+    }
+
+    /**
+     * Stops this session if its not already stopped.
+     * @param error - Error reason for stopping if any or null.
+     */
+    synchronized public void stop(XMPPError error)
     {
         // skip stop request if its already stopped
         if (JibriIq.Status.OFF.equals(jibriStatus))
@@ -258,16 +266,16 @@ public class JibriSession
             logger.error("Failed to stop Jibri event handler: " + e, e);
         }
 
-        sendStopIQ();
-        setJibriStatus(JibriIq.Status.OFF, null);
+        sendStopIQ(error);
     }
 
     /**
      * Sends a "stop" command to the current Jibri(if any). The instance state
      * will be adjusted to stopped and new Jibri availability status will be
      * sent.
+     * @param error - Error reason for stopping if any or null.
      */
-    private void sendStopIQ()
+    private void sendStopIQ(XMPPError error)
     {
         if (currentJibriJid == null)
             return;
@@ -282,7 +290,7 @@ public class JibriSession
 
         xmpp.sendStanza(stopRequest);
 
-        recordingStopped(null);
+        recordingStopped(error);
     }
 
     /**
@@ -390,9 +398,8 @@ public class JibriSession
         // No more retries, stop either with the error passed as an argument
         // or with one defined here in this method, which will provide more
         // details about the reason
-        setJibriStatus(JibriIq.Status.FAILED, error);
         // Stop packet processor, etc.
-        stop();
+        stop(error);
     }
 
     /**
@@ -402,25 +409,10 @@ public class JibriSession
      *
      * @param error if the recording stopped because of an error it should be
      * passed as an argument here which will result in stopping with
-     * the {@link JibriIq.Status#FAILED} status passed to the application.
+     * the {@link JibriIq.Status#FAILED} status passed to the application,
+     * otherwise state will be {@link JibriIq.Status#OFF}.
      */
     private void recordingStopped(XMPPError error)
-    {
-        recordingStopped(error, true /* send recording status update */);
-    }
-
-    /**
-     * Methods clears {@link #currentJibriJid} which means we're no longer
-     * recording nor in contact with any Jibri instance.
-     * Refreshes recording status in the room based on Jibri availability.
-     *
-     * @param error if the recording stopped because of an error it should be
-     * passed as an argument here which will result in stopping with
-     * the {@link JibriIq.Status#FAILED} status passed to the application.
-     * @param updateStatus <tt>true</tt> if the Jibri availability status
-     * broadcast should follow the transition to the stopped state.
-     */
-    private void recordingStopped(XMPPError error, boolean updateStatus)
     {
         if (isSIP)
         {
@@ -437,9 +429,13 @@ public class JibriSession
         retryAttempt = 0;
 
         // First we'll send an error and then follow with availability status
-        if (error != null && updateStatus)
+        if (error != null)
         {
             setJibriStatus(JibriIq.Status.FAILED, error);
+        }
+        else
+        {
+            setJibriStatus(JibriIq.Status.OFF, null);
         }
     }
 
@@ -620,7 +616,10 @@ public class JibriSession
                         = XMPPError.getBuilder(
                                 XMPPError.Condition.internal_server_error)
                             .build();
-                    recordingStopped(error);
+                    // we need to tell jibri we stop waiting, in case
+                    // there is a sync issue, where we mark it as stopped
+                    // but jibri just got in
+                    stop(error);
                 }
             }
         }
