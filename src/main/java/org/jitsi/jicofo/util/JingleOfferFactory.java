@@ -388,8 +388,10 @@ public class JingleOfferFactory
         }
 
         // a=rtpmap:107 H264/90000
-        PayloadTypePacketExtension h264
-            = addPayloadTypeExtension(rtpDesc, H264_PT, Constants.H264, 90000);
+        PayloadTypePacketExtension h264 = addPayloadTypeExtension(
+                // XXX(gp): older Chrome versions (users have reported 53/55/61)
+                // fail to enable h264, if the encoding name is in lower case.
+                rtpDesc, H264_PT, Constants.H264.toUpperCase(), 90000);
 
         // a=rtcp-fb:107 ccm fir
         h264.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
