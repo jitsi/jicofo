@@ -324,10 +324,7 @@ public class JibriSession
                 "Updating status from JIBRI: "
                     + iq.toXML() + " for " + roomName);
 
-            // We stop either on "off" or on "failed"
-            if ((JibriIq.Status.OFF.equals(status)
-                    || JibriIq.Status.FAILED.equals(status))
-                    && currentJibriJid != null)
+            if (JibriIq.Status.FAILED.equals(status) && currentJibriJid != null)
             {
                 // Make sure that there is XMPPError for eventual ERROR status
                 XMPPError error = iq.getError();
