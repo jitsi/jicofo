@@ -76,6 +76,13 @@ public class JingleOfferFactory
         = "org.jitsi.jicofo.H264_RTX_PT";
 
     /**
+     * The property name of the FlexFEC payload type to include in the
+     * Jingle session-invite
+     */
+    public static final String FLEXFEC_PT_PNAME =
+        "org.jitsi.jicofo.FLEXFEC_PT_PNAME";
+
+    /**
      * The name of the property which enables the inclusion of the
      * framemarking RTP header extension in the offer.
      */
@@ -138,6 +145,11 @@ public class JingleOfferFactory
     private final int H264_RTX_PT;
 
     /**
+     * The FlexFEC payload type to include in the Jingle session-invite
+     */
+    private final int FLEXFEC_PT;
+
+    /**
      * Whether to enable the framemarking RTP header extension in created
      * offers.
      */
@@ -176,6 +188,8 @@ public class JingleOfferFactory
         VP9_RTX_PT = cfg != null ? cfg.getInt(VP9_RTX_PT_PNAME, 97) : 97;
         H264_PT = cfg != null ? cfg.getInt(H264_PT_PNAME, 107) : 107;
         H264_RTX_PT = cfg != null ? cfg.getInt(H264_RTX_PT_PNAME, 99) : 99;
+        FLEXFEC_PT = cfg != null ? cfg.getInt(FLEXFEC_PT_PNAME, 108) : 108;
+
         enableFrameMarking
             = cfg != null && cfg.getBoolean(ENABLE_FRAMEMARKING_PNAME, false);
 
@@ -400,7 +414,6 @@ public class JingleOfferFactory
         // a=rtcp-fb:107 nack pli
         h264.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-
         if (minBitrate != -1)
         {
             addParameterExtension(
@@ -516,6 +529,12 @@ public class JingleOfferFactory
 
         // a=rtpmap:117 ulpfec/90000
         //addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
+
+        // a=rtpmap:107 flexfec-03/90000
+        PayloadTypePacketExtension flexFec =
+            addPayloadTypeExtension(rtpDesc, FLEXFEC_PT, Constants.FLEXFEC_03, 90000);
+        // a=fmtp:107 repair-window=10000000
+        addParameterExtension(flexFec, "repair-window", "10000000");
 
         content.addChildExtension(rtpDesc);
     }
