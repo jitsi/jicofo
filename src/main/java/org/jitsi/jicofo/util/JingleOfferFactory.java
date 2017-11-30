@@ -108,6 +108,9 @@ public class JingleOfferFactory
     public static final String ENABLE_REMB_PNAME
         = "org.jitsi.jicofo.ENABLE_REMB";
 
+    public static final String ENABLE_FLEXFEC_03_PNAME
+        = "org.jitsi.jicofo.ENABLE_FLEXFEC_03";
+
     /**
      * The name of the property which enables the inclusion of the TOF RTP
      * header extension in the offer.
@@ -176,6 +179,11 @@ public class JingleOfferFactory
     private final boolean enableRemb;
 
     /**
+     * Whether or not to enable FLEXFEC-03
+     */
+    private final boolean enableFlexFec03;
+
+    /**
      * Ctor.
      *
      * @param cfg the {@link ConfigurationService} to pull config options from.
@@ -202,6 +210,8 @@ public class JingleOfferFactory
         enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
 
         enableRemb = cfg != null && cfg.getBoolean(ENABLE_REMB_PNAME, true);
+
+        enableFlexFec03 = cfg != null && cfg.getBoolean(ENABLE_FLEXFEC_03_PNAME, false);
     }
 
     /**

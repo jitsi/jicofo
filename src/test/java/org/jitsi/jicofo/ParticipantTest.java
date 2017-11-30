@@ -459,6 +459,44 @@ public class ParticipantTest
     }
 
     @Test
+    public void testFlexFecGroup()
+    {
+        String cname = "videocname";
+        String msid = "vstream vtrack";
+
+        this.videoSSRCs = new SourcePacketExtension[] {
+            createSSRC(10L, cname, msid),
+            createSSRC(20L, cname, msid),
+            createSSRC(30L, cname, msid),
+            createSSRC(40L, cname, msid),
+        };
+
+        this.videoGroups = new SourceGroupPacketExtension[] {
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FEC,
+                new long[] { 10L, 20L }),
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { 10L, 30L }),
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { 20L, 40L })
+        };
+
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        try
+        {
+            participant.addSourcesAndGroupsFromContent(answerContents);
+        }
+        catch (InvalidSSRCsException exc)
+        {
+            fail(exc.getMessage());
+        }
+    }
+
+    @Test
     public void testNoMsidSimGroup()
     {
         String cname = "videocname";

@@ -118,25 +118,26 @@ public class SSRCValidator
             List<SourceGroup> independentFidGroups)
         throws InvalidSSRCsException
     {
-        for (SourceGroup fidGroup : independentFidGroups)
-        {
-            // NOTE at this point we're sure that every source has MSID
-            String fidGroupMsid = fidGroup.getGroupMsid();
-            List<SourceGroup> withTheMsid
-                = SSRCSignaling.selectWithMsid(
-                        independentFidGroups, fidGroupMsid);
-
-            for (SourceGroup conflictingGroup : withTheMsid)
-            {
-                if (conflictingGroup != fidGroup)
-                {
-                    throw new InvalidSSRCsException(
-                            "MSID conflict across FID groups: "
-                                + fidGroupMsid + ", " + conflictingGroup
-                                + " conflicts with group " + fidGroup);
-                }
-            }
-        }
+        return;
+//        for (SourceGroup fidGroup : independentFidGroups)
+//        {
+//            // NOTE at this point we're sure that every source has MSID
+//            String fidGroupMsid = fidGroup.getGroupMsid();
+//            List<SourceGroup> withTheMsid
+//                = SSRCSignaling.selectWithMsid(
+//                        independentFidGroups, fidGroupMsid);
+//
+//            for (SourceGroup conflictingGroup : withTheMsid)
+//            {
+//                if (conflictingGroup != fidGroup)
+//                {
+//                    throw new InvalidSSRCsException(
+//                            "MSID conflict across FID groups: "
+//                                + fidGroupMsid + ", " + conflictingGroup
+//                                + " conflicts with group " + fidGroup);
+//                }
+//            }
+//        }
     }
 
     /**
