@@ -258,9 +258,9 @@ public class AnyJidAsEntityFullJid implements EntityFullJid
     }
 
     @Override
-    public <T extends Jid> T downcast()
+    public <T extends Jid> T downcast(Class<T> c)
     {
-        return ourJid.downcast();
+        return ourJid.downcast(c);
     }
 
     @Override
