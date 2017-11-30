@@ -97,6 +97,12 @@ public class XmppProtocolProvider
         = new XmppConnectionListener();
 
     /**
+     * Listens to re-connection status updates.
+     */
+    private final XmppReConnectionListener reConnListener
+        = new XmppReConnectionListener();
+
+    /**
      * Colibri operation set.
      */
     private final OperationSetColibriConferenceImpl colibriTools
@@ -192,6 +198,7 @@ public class XmppProtocolProvider
                 .setHost(serverAddressUserSetting)
                 .setPort(serverPort)
                 .setXmppDomain(serviceName);
+        ReconnectionManager.setEnabledPerDefault(true);
 
         if (jabberAccountID.isAnonymousAuthUsed())
         {
@@ -249,6 +256,18 @@ public class XmppProtocolProvider
 
             connection.addConnectionListener(connListener);
 
+            ReconnectionManager
+                .getInstanceFor(connection)
+                .addReconnectionListener(reConnListener);
+
+            discoInfoManager
+                = new ScServiceDiscoveryManager(
+                    XmppProtocolProvider.this,
+                    connection,
+                    new String[]{},
+                    new String[]{},
+                    false);
+
             if (!jabberAccountID.isAnonymousAuthUsed())
             {
                 String login = jabberAccountID.getAuthorizationName();
@@ -267,12 +286,6 @@ public class XmppProtocolProvider
 
             connection.registerIQRequestHandler(jingleOpSet);
 
-            discoInfoManager = new ScServiceDiscoveryManager(
-                XmppProtocolProvider.this, connection,
-                new String[]{}, new String[]{}, false);
-
-            notifyConnected();
-
             logger.info("XMPP provider " + jabberAccountID +
                         " connected (JID: " + connection.getUser() + ")");
 
@@ -288,6 +301,12 @@ public class XmppProtocolProvider
             // rely on Smack's built-in retries, as it will be handled by
             // the RetryStrategy
             connection.removeConnectionListener(connListener);
+
+            ReconnectionManager reconnectionManager
+                = ReconnectionManager.getInstanceFor(connection);
+            if (reconnectionManager != null)
+                reconnectionManager.removeReconnectionListener(reConnListener);
+
             if (connection.isConnected())
             {
                 connection.disconnect();
@@ -591,6 +610,7 @@ public class XmppProtocolProvider
         @Override
         public void authenticated(XMPPConnection connection, boolean resumed)
         {
+            notifyConnected();
         }
 
         @Override
@@ -617,18 +637,41 @@ public class XmppProtocolProvider
             notifyDisconnected();
         }
 
+        /**
+         * Deprecated and will be removed in smack 4.3
+         */
+        @Override
+        public void reconnectionSuccessful()
+        {}
+
+        /**
+         * Deprecated and will be removed in smack 4.3
+         * @param e
+         */
+        @Override
+        public void reconnectionFailed(Exception e)
+        {}
+
+        /**
+         * Deprecated and will be removed in smack 4.3
+         * @param i
+         */
+        @Override
+        public void reconnectingIn(int i)
+        {}
+    }
+
+    /**
+     * Listener that just logs that we are currently reconnecting or we
+     * failed to reconnect.
+     */
+    static class XmppReConnectionListener
+        implements ReconnectionListener
+    {
         @Override
         public void reconnectingIn(int i)
         {
             logger.info("XMPP reconnecting in: " + i);
-        }
-
-        @Override
-        public void reconnectionSuccessful()
-        {
-            logger.info("XMPP reconnection successful");
-
-            notifyConnected();
         }
 
         @Override
