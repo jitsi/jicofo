@@ -457,7 +457,7 @@ public class ColibriConferenceImpl
      *
      * Methods exposed for unit test purpose.
      *
-     * @param endpointId the name of Colibri endpoint (conference participant)
+     * @param endpointId the ID of the Colibri endpoint.
      *
      * @return <tt>true</tt> if current thread is conference creator.
      *
@@ -475,7 +475,7 @@ public class ColibriConferenceImpl
      * Releases "create conference semaphore". Must be called to release the
      * semaphore possibly in "finally" block.
      *
-     * @param endpointId the name of colibri conference endpoint(participant)
+     * @param endpointId the ID of the Colibri endpoint.
      */
     protected void releaseCreateConferenceSemaphore(String endpointId)
     {
@@ -489,7 +489,7 @@ public class ColibriConferenceImpl
      *
      * Exposed for unit tests purpose.
      *
-     * @param endpointId Colibri endpoint name (participant)
+     * @param endpointId the ID of the Colibri endpoint.
      * @param request Colibri IQ to be send towards the bridge.
      *
      * @return <tt>Packet</tt> which is JVB response or <tt>null</tt> if
