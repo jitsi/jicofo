@@ -120,7 +120,7 @@ public class OperationSetMultiUserChatImpl
 
             ChatRoomImpl newRoom = new ChatRoomImpl(this, roomNameJid);
 
-            rooms.put(roomName, newRoom);
+            rooms.put(newRoom.getName(), newRoom);
 
             return newRoom;
         }
