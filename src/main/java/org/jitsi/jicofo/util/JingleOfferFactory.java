@@ -108,6 +108,10 @@ public class JingleOfferFactory
     public static final String ENABLE_REMB_PNAME
         = "org.jitsi.jicofo.ENABLE_REMB";
 
+    /**
+     * The name of the property which enables the inclusion of FLEXFEC-03
+     * in the offer.
+     */
     public static final String ENABLE_FLEXFEC_03_PNAME
         = "org.jitsi.jicofo.ENABLE_FLEXFEC_03";
 
