@@ -540,11 +540,15 @@ public class JingleOfferFactory
         // a=rtpmap:117 ulpfec/90000
         //addPayloadTypeExtension(rtpDesc, 117, Constants.ULPFEC, 90000);
 
-        // a=rtpmap:107 flexfec-03/90000
-        PayloadTypePacketExtension flexFec =
-            addPayloadTypeExtension(rtpDesc, FLEXFEC_PT, Constants.FLEXFEC_03, 90000);
-        // a=fmtp:107 repair-window=10000000
-        addParameterExtension(flexFec, "repair-window", "10000000");
+        if (enableFlexFec03)
+        {
+            // a=rtpmap:107 flexfec-03/90000
+            PayloadTypePacketExtension flexFec =
+                addPayloadTypeExtension(rtpDesc, FLEXFEC_PT, Constants.FLEXFEC_03, 90000);
+            // a=fmtp:107 repair-window=10000000
+            addParameterExtension(flexFec, "repair-window", "10000000");
+        }
+
 
         content.addChildExtension(rtpDesc);
     }
