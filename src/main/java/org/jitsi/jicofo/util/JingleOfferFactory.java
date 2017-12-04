@@ -80,7 +80,7 @@ public class JingleOfferFactory
      * Jingle session-invite
      */
     public static final String FLEXFEC_PT_PNAME =
-        "org.jitsi.jicofo.FLEXFEC_PT_PNAME";
+        "org.jitsi.jicofo.FLEXFEC_PT";
 
     /**
      * The name of the property which enables the inclusion of the
