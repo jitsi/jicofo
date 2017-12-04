@@ -468,7 +468,6 @@ public class ParticipantTest
             createSSRC(10L, cname, msid),
             createSSRC(20L, cname, msid),
             createSSRC(30L, cname, msid),
-            createSSRC(40L, cname, msid),
         };
 
         this.videoGroups = new SourceGroupPacketExtension[] {
@@ -478,9 +477,6 @@ public class ParticipantTest
             createGroup(
                 SourceGroupPacketExtension.SEMANTICS_FID,
                 new long[] { 10L, 30L }),
-            createGroup(
-                SourceGroupPacketExtension.SEMANTICS_FID,
-                new long[] { 20L, 40L })
         };
 
         addDefaultVideoSSRCs();
