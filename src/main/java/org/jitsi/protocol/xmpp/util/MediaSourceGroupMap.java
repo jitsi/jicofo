@@ -241,7 +241,7 @@ public class MediaSourceGroupMap
         List<SourceGroup> groups = this.getSourceGroupsForMedia(mediaType);
         for (SourceGroup group : groups)
         {
-            if (!toFind.getSemantics().equals(toFind.getSemantics()))
+            if (!toFind.getSemantics().equals(group.getSemantics()))
                 continue;
 
             List<SourcePacketExtension> groupSources = group.getSources();
