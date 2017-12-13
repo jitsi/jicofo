@@ -106,6 +106,7 @@ public class LogoutIq
                 throw new RuntimeException(e);
             }
         }
+        xml.setEmptyElement();
         return xml;
     }
 
