@@ -1201,7 +1201,8 @@ public class JitsiMeetConferenceImpl
         MediaSourceMap peerSources = participant.getSourcesCopy();
         MediaSourceGroupMap peerGroupsMap = participant.getSourceGroupsCopy();
 
-        logger.info("Received sources from " + peerAddress + " " + peerSources);
+        logger.info("Received sources from " + peerAddress + " " +
+            peerSources + " and groups " + peerGroupsMap);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
