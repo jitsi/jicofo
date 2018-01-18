@@ -166,15 +166,21 @@ public class SSRCValidatorTest
                     }));
     }
 
-    private SSRCValidator createValidator()
+    private SSRCValidator createValidator(int maxSourcesPerUser)
     {
         return new SSRCValidator(
                 "someEndpointId",
                 new MediaSourceMap(),
                 new MediaSourceGroupMap(),
-                JitsiMeetGlobalConfig.getGlobalConfig(osgi.bc)
-                    .getMaxSourcesPerUser(),
+                maxSourcesPerUser,
                 logger);
+    }
+
+    private SSRCValidator createValidator()
+    {
+        return createValidator(
+                JitsiMeetGlobalConfig.getGlobalConfig(osgi.bc)
+                    .getMaxSourcesPerUser());
     }
 
     @Test
@@ -564,8 +570,7 @@ public class SSRCValidatorTest
         audioSources.add(createSourceWithSsrc(5L));
         audioSources.add(createSourceWithSsrc(6L));
 
-        SSRCValidator ssrcValidator = createValidator();
-        ssrcValidator.setMaxSourceCount(maxSsrcCount);
+        SSRCValidator ssrcValidator = createValidator(maxSsrcCount);
 
         Object[] ssrcsAndGroups
             = ssrcValidator.tryAddSourcesAndGroups(sources, groups);
