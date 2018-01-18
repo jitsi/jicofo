@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
+import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.recording.jibri.*;
@@ -527,7 +528,7 @@ public class JitsiMeetConferenceImpl
             // Only the one who has just joined
             else
             {
-                inviteChatMember((XmppChatMember) chatRoomMember, true);
+                inviteChatMember(chatRoomMember, true);
             }
         }
     }
@@ -536,10 +537,11 @@ public class JitsiMeetConferenceImpl
      * Creates a new {@link ColibriConference} instance for use by this
      * {@link JitsiMeetConferenceImpl}.
      */
-    private ColibriConference createNewColibriConference(Jid bridgeJid)
+    private ColibriConferenceImpl createNewColibriConference(Jid bridgeJid)
             throws XmppStringprepException
     {
-        ColibriConference colibriConference = colibri.createNewConference();
+        ColibriConferenceImpl colibriConference
+            = (ColibriConferenceImpl) colibri.createNewConference();
         colibriConference.setGID(id);
 
         colibriConference.setConfig(config);
@@ -673,8 +675,8 @@ public class JitsiMeetConferenceImpl
 
             // Colibri channel allocation and jingle invitation take time, so
             // schedule them on a separate thread.
-            ChannelAllocator channelAllocator
-                = new ChannelAllocator(
+            ParticipantChannelAllocator channelAllocator
+                = new ParticipantChannelAllocator(
                         this,
                         bridgeSession,
                         participant,
@@ -1874,20 +1876,18 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Method called by {@link ChannelAllocator} when it fails to allocate
-     * channels with {@link OperationFailedException}. We need to make some
-     * decisions here.
+     * Method called by {@link AbstractChannelAllocator} when it fails to
+     * allocate channels with {@link OperationFailedException}. We need to make
+     * some decisions here.
      *
-     * @param channelAllocator instance of <tt>ChannelAllocator</tt> which is
-     * reporting the error.
-     * @param exc <tt>OperationFailedException</tt> which provides details about
-     * the reason for channel allocation failure.
+     * @param channelAllocator the {@link AbstractChannelAllocator} instance
+     * which is reporting the error.
      */
     void onChannelAllocationFailed(
-            ChannelAllocator channelAllocator,
-            OperationFailedException exc)
+            AbstractChannelAllocator channelAllocator)
     {
-        // We're gonna handle this, no more work for this ChannelAllocator.
+        // We're gonna handle this, no more work for this
+        // AbstractChannelAllocator.
         channelAllocator.cancel();
 
         BridgeSession bridgeSession = channelAllocator.getBridgeSession();
@@ -1937,10 +1937,10 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Methods called by {@link ChannelAllocator} just after it has created new
-     * Colibri conference on the JVB.
-     *  @param colibriConference <tt>ColibriConference</tt> instance which just
-     * has been allocated on the bridge
+     * A method to be called by {@link AbstractChannelAllocator} just after it
+     * has created a new Colibri conference on the JVB.
+     * @param colibriConference the {@link ColibriConference} instance which has
+     * just allocated a conference on the bridge.
      * @param videobridgeJid the JID of the JVB where given
      */
     public void onColibriConferenceAllocated(
@@ -2145,7 +2145,7 @@ public class JitsiMeetConferenceImpl
          * The {@link ColibriConference} instance used to communicate with
          * the jitsi-videobridge represented by this {@link BridgeSession}.
          */
-        final ColibriConference colibriConference;
+        final ColibriConferenceImpl colibriConference;
 
         /**
          * Indicates if the bridge used in this conference is faulty. We use
