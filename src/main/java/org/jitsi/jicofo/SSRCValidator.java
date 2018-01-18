@@ -74,7 +74,7 @@ public class SSRCValidator
      * The limit sources count per media type allowed to be stored by
      * each {@link Participant} at a time.
      */
-    private int maxSourceCount;
+    private final int maxSourceCount;
 
     /**
      * Filters out FID groups that do belong to any simulcast grouping.
@@ -212,16 +212,6 @@ public class SSRCValidator
     }
 
     /**
-     * Returns how many sources per media type per participant is allowed in the
-     * conference.
-     * @return an integer
-     */
-    public int getMaxSourceCount()
-    {
-        return this.maxSourceCount;
-    }
-
-    /**
      * Checks how many sources are current in the conference for given
      * participant.
      *
@@ -240,19 +230,6 @@ public class SSRCValidator
                     SSRCSignaling.getSSRCOwner(source), owner))
             .count();
 
-    }
-
-    /**
-     * Sets how many sources can be advertised by each participant of each media
-     * type.
-     * @param maxSourceCount an integer value. If lesser or equal to zero no
-     * sources will be allowed which may or may not make any sense, but this
-     * value is configurable with the value default of
-     * {@link JitsiMeetGlobalConfig#DEFAULT_MAX_SSRC_PER_USER}.
-     */
-    public void setMaxSourceCount(int maxSourceCount)
-    {
-        this.maxSourceCount = maxSourceCount;
     }
 
     /**
