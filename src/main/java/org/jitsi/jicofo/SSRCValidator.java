@@ -28,6 +28,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * Utility class that wraps the process of validating new sources and source
@@ -94,20 +95,13 @@ public class SSRCValidator
             return new ArrayList<>(fidGroups);
         }
 
-        List<SourceGroup> independentFidGroups = new LinkedList<>();
-
-        for (SourceGroup fidGroup : fidGroups)
-        {
-            for (SimulcastGrouping simGrouping : simGroupings)
-            {
-                if (!simGrouping.belongsToSimulcastGrouping(fidGroup))
-                {
-                    independentFidGroups.add(fidGroup);
-                }
-            }
-        }
-
-        return independentFidGroups;
+        return fidGroups.stream()
+            .filter(
+                fidGroup -> simGroupings.stream()
+                    .noneMatch(
+                        simGroup ->
+                            simGroup.belongsToSimulcastGrouping(fidGroup))
+                ).collect(Collectors.toList());
     }
 
     /**
