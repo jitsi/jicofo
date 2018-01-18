@@ -663,6 +663,7 @@ public class XmppProtocolProvider
         @Override
         public void sendStanza(Stanza packet)
         {
+            logger.error("BRIAN: sendStanza:\n" + packet.toXML());
             Objects.requireNonNull(packet, "packet");
             try
             {
@@ -688,6 +689,7 @@ public class XmppProtocolProvider
             throws OperationFailedException
         {
             Objects.requireNonNull(packet, "packet");
+            logger.error("BRIAN: sendPacketAndGetReply:\n" + packet.toXML());
 
             try
             {
