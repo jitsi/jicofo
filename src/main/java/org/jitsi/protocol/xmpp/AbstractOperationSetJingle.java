@@ -559,6 +559,8 @@ public abstract class AbstractOperationSetJingle
 
         removeSourceIq.setTo(session.getAddress());
 
+        logger.error("BRIAN: sending source remove:\n" + removeSourceIq.toXML());
+
         logger.info(
             "Notify remove SSRC " + session.getAddress()
                 + " SID: " + session.getSessionID() + " "
