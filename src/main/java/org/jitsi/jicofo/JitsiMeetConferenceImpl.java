@@ -1399,6 +1399,14 @@ public class JitsiMeetConferenceImpl
         Jid address = jingleSession.getAddress();
         Participant participant
             = findParticipantForJingleSession(jingleSession);
+        // BEGIN TEMP CODE
+        StringBuilder sb = new StringBuilder();
+        for (ContentPacketExtension cpe : contents)
+        {
+            sb.append(cpe.toXML()).append("\n");
+        }
+        logger.error("BRIAN: got source add:\n" + sb.toString());
+        // END TEMP CODE
         if (participant == null)
         {
             String errorMsg = "Add-source: no peer state for " + address;
