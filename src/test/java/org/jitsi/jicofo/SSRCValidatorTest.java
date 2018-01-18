@@ -123,6 +123,49 @@ public class SSRCValidatorTest
                 new long[] { 50L, 60L }));
     }
 
+    /**
+     * This will add sources and groups to {@link #videoSources} and
+     * {@link #videoGroups} which will consist of one 3 layered SIM group,
+     * where each of those layers will consist of 2 RTX SSRCs (6 SSRC numbers
+     * needed).
+     *
+     * @param cname the cname that will be used in the source description.
+     * @param msid the msid that will be used in the source description.
+     * @param videoSourcesArray an array of exactly 6 SSRC numbers.
+     */
+    private void addSimAndRtxParticipantVideoSources(
+        String cname, String msid, long[] videoSourcesArray)
+    {
+        videoSources.add(createSSRC(videoSourcesArray[0], cname, msid));
+        videoSources.add(createSSRC(videoSourcesArray[1], cname, msid));
+        videoSources.add(createSSRC(videoSourcesArray[2], cname, msid));
+        videoSources.add(createSSRC(videoSourcesArray[3], cname, msid));
+        videoSources.add(createSSRC(videoSourcesArray[4], cname, msid));
+        videoSources.add(createSSRC(videoSourcesArray[5], cname, msid));
+
+        videoGroups.add(
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { videoSourcesArray[0], videoSourcesArray[1] }));
+        videoGroups.add(
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { videoSourcesArray[2], videoSourcesArray[3] }));
+        videoGroups.add(
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_FID,
+                new long[] { videoSourcesArray[4], videoSourcesArray[5] }));
+        videoGroups.add(
+            createGroup(
+                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
+                new long[]
+                    {
+                        videoSourcesArray[0],
+                        videoSourcesArray[2],
+                        videoSourcesArray[4]
+                    }));
+    }
+
     private SSRCValidator createValidator()
     {
         return new SSRCValidator(
@@ -132,6 +175,36 @@ public class SSRCValidatorTest
                 JitsiMeetGlobalConfig.getGlobalConfig(osgi.bc)
                     .getMaxSourcesPerUser(),
                 logger);
+    }
+
+    @Test
+    public void test2ParticipantsWithSimAndRtx()
+        throws InvalidSSRCsException
+    {
+        addSimAndRtxParticipantVideoSources(
+                "videocname",
+                "vstream vtrack",
+                new long[]
+                    {
+                        10L, 20L, 30L, 40L, 50L, 60L
+                    });
+
+        SSRCValidator validator = createValidator();
+        validator.tryAddSourcesAndGroups(sources, groups);
+
+        videoSources.clear();
+        videoGroups.clear();
+        addSimAndRtxParticipantVideoSources(
+                "videocname2",
+                "vstream2 vtrack2",
+                new long[]
+                    {
+                        100L, 200L, 300L, 400L, 500L, 600L
+                    });
+
+        // Not creating new validator instance will make it remember previously
+        // added sources and groups just like in the conference.
+        validator.tryAddSourcesAndGroups(sources, groups);
     }
 
     @Test
