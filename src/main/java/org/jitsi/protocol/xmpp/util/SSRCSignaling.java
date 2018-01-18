@@ -251,7 +251,8 @@ public class SSRCSignaling
      * signaled through {@link SSRCInfoPacketExtension}.
      * @param ssrcPe the <tt>SourcePacketExtension</tt> instance for which we
      *               want to find an owner.
-     * @return MUC jid of the user who own this SSRC.
+     * @return MUC {@link Jid} of the user who owns this source or <tt>null</tt>
+     * if it's not owned by anyone.
      */
     public static Jid getSSRCOwner(SourcePacketExtension ssrcPe)
     {
