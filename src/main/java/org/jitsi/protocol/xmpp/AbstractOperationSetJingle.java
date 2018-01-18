@@ -408,6 +408,8 @@ public abstract class AbstractOperationSetJingle
 
         if (ssrcGroupMap != null)
         {
+            logger.error("BRIAN: ssrcGroupMap is not null, media types?: " +
+                ssrcGroupMap.getMediaTypes().size());
             for (String media : ssrcGroupMap.getMediaTypes())
             {
                 ContentPacketExtension content
@@ -456,6 +458,8 @@ public abstract class AbstractOperationSetJingle
             "Notify add SSRC " + session.getAddress()
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
+
+        logger.error("BRIAN: sending add source iq:\n" + addSourceIq.toXML());
 
         getConnection().sendStanza(addSourceIq);
     }
