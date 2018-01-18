@@ -665,10 +665,11 @@ public class XmppProtocolProvider
         {
             StringBuilder sb = new StringBuilder();
             for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-                sb.append(ste);
+                sb.append(ste.toString()).append("\n");
             }
+
             logger.error("BRIAN: sendStanza:\n" + packet.toXML() +
-                "\nfrom:\n" + sb);
+                "\nfrom:\n" + sb.toString());
             Objects.requireNonNull(packet, "packet");
             try
             {
