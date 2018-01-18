@@ -663,7 +663,12 @@ public class XmppProtocolProvider
         @Override
         public void sendStanza(Stanza packet)
         {
-            logger.error("BRIAN: sendStanza:\n" + packet.toXML());
+            StringBuilder sb = new StringBuilder();
+            for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                sb.append(ste);
+            }
+            logger.error("BRIAN: sendStanza:\n" + packet.toXML() +
+                "\nfrom:\n" + sb);
             Objects.requireNonNull(packet, "packet");
             try
             {
