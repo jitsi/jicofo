@@ -509,55 +509,11 @@ public class Participant
         return sourceGroups;
     }
 
-    /**
-     * Adds sources and source groups for media described in given Jingle content
-     * list.
-     * @param contents the list of <tt>ContentPacketExtension</tt> that
-     *                 describes media sources and source groups.
-     * @return an array of two objects where first one is <tt>MediaSourceMap</tt>
-     * contains the sources that have been added and the second one is
-     * <tt>MediaSourceGroupMap</tt> with <tt>SourceGroup</tt>s added to this
-     * participant.
-     *
-     * @throws InvalidSSRCsException if a critical problem has been found
-     * with SSRC and SSRC groups. This <tt>Participant</tt>'s state remains
-     * unchanged (no SSRCs or groups were added/removed).
-     */
-    public Object[] addSourcesAndGroupsFromContent(
-            List<ContentPacketExtension> contents)
-        throws InvalidSSRCsException
+    public void addSourcesAndGroups(MediaSourceMap         addedSources,
+                                    MediaSourceGroupMap    addedGroups)
     {
-        SSRCValidator validator
-            = new SSRCValidator(
-                    getEndpointId(),
-                    this.sources, this.sourceGroups, maxSourceCount, this.logger);
-
-        MediaSourceMap sourcesToAdd
-            = MediaSourceMap.getSourcesFromContent(contents);
-        MediaSourceGroupMap groupsToAdd
-            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-
-        Object[] added
-            = validator.tryAddSourcesAndGroups(sourcesToAdd, groupsToAdd);
-        MediaSourceMap addedSources = (MediaSourceMap) added[0];
-        MediaSourceGroupMap addedGroups = (MediaSourceGroupMap) added[1];
-
-        // Mark as source owner
-        Jid roomJid = roomMember.getContactAddressJid();
-        for (String mediaType : addedSources.getMediaTypes())
-        {
-            List<SourcePacketExtension> sources
-                = addedSources.getSourcesForMedia(mediaType);
-            for (SourcePacketExtension source : sources)
-            {
-                SSRCSignaling.setSSRCOwner(source, roomJid);
-            }
-        }
-
         this.sources.add(addedSources);
         this.sourceGroups.add(addedGroups);
-
-        return added;
     }
 
     /**
@@ -808,5 +764,19 @@ public class Participant
                 this.channelAllocator = null;
             }
         }
+    }
+
+    public void claimSources(MediaSourceMap sourceMap)
+    {
+        // Mark as source owner
+        Jid roomJid = roomMember.getContactAddressJid();
+
+        sourceMap
+            .getMediaTypes()
+            .forEach(
+                mediaType -> sourceMap
+                    .getSourcesForMedia(mediaType)
+                    .forEach(
+                        source -> SSRCSignaling.setSSRCOwner(source, roomJid)));
     }
 }
