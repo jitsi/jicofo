@@ -1140,6 +1140,15 @@ public class JitsiMeetConferenceImpl
             JingleSession peerJingleSession,
             List<ContentPacketExtension> answer)
     {
+        // BEGIN TEMP CODE
+        StringBuilder sb = new StringBuilder();
+        for (ContentPacketExtension cpe : answer)
+        {
+            sb.append(cpe.toXML()).append("\n");
+        }
+        logger.error("BRIAN: received answer:\n " + sb.toString());
+        // END TEMP CODE
+
         Participant participant
             = findParticipantForJingleSession(peerJingleSession);
         Jid peerAddress = peerJingleSession.getAddress();
