@@ -25,12 +25,13 @@ import org.jitsi.service.neomedia.*;
 import org.jitsi.util.*;
 
 import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
- * Utility class that wraps the process of validating new sources and source groups
- * that are about to be added to {@link Participant}
+ * Utility class that wraps the process of validating new sources and source
+ * groups that are to be added to the conference.
  *
  * @author Pawel Domas
  */
@@ -49,13 +50,16 @@ public class SSRCValidator
     private final Logger logger;
 
     /**
-     * Participant's endpoint ID used for printing log messages.
+     * Each validation happens when a participant sends new sources and one
+     * instance of {@link SSRCValidator} is only good for one such validation.
+     * This field stores participant's endpoint ID used for printing log
+     * messages.
      */
     private final String endpointId;
 
     /**
-     * The source map obtained from the participant which reflects current source
-     * status. It's a clone and modifications done here do not affect
+     * The source map obtained from the participant which reflects current
+     * source status. It's a clone and modifications done here do not affect
      * the version held by {@link Participant}.
      */
     private final MediaSourceMap sources;
@@ -67,9 +71,9 @@ public class SSRCValidator
 
     /**
      * The limit sources count per media type allowed to be stored by
-     * the {@link Participant} at a time.
+     * each {@link Participant} at a time.
      */
-    private final int maxSourceCount;
+    private int maxSourceCount;
 
     /**
      * Filters out FID groups that do belong to any simulcast grouping.
@@ -190,11 +194,13 @@ public class SSRCValidator
 
     /**
      * Creates new <tt>SSRCValidator</tt>
-     * @param endpointId participant's endpoint ID
-     * @param sources participant's source map
-     * @param sourceGroups participant's source group map
-     * @param maxSourceCount the source limit, tells how many sources per media type
-     * can be stored at a time.
+     * @param endpointId participant's endpoint ID for whom the new
+     * sources/groups will be validated.
+     * @param sources the map which holds sources of the whole conference.
+     * @param sourceGroups the map which holds source groups currently present
+     * in the conference.
+     * @param maxSourceCount the source limit, tells how many sources per media
+     * type can be stored at a time by each conference participant.
      * @param logLevelDelegate a <tt>Logger</tt> which will be used as
      * the logging level delegate.
      */
@@ -209,6 +215,50 @@ public class SSRCValidator
         this.sourceGroups = sourceGroups.copy();
         this.maxSourceCount = maxSourceCount;
         this.logger = Logger.getLogger(classLogger, logLevelDelegate);
+    }
+
+    /**
+     * Returns how many sources per media type per participant is allowed in the
+     * conference.
+     * @return an integer
+     */
+    public int getMaxSourceCount()
+    {
+        return this.maxSourceCount;
+    }
+
+    /**
+     * Checks how many sources are current in the conference for given
+     * participant.
+     *
+     * @param owner An owner's JID (can be <tt>null</tt> to check for not owned
+     * sources)
+     * @param mediaType The type of the media for which sources will be counted.
+     * @return how many sources are currently in the conference source map for
+     * given media type and owner's JID.
+     */
+    private long getSourceCountForOwner(Jid owner, String mediaType)
+    {
+        return this.sources.getSourcesForMedia(mediaType)
+            .stream()
+            .filter(
+                source -> Objects.equals(
+                    SSRCSignaling.getSSRCOwner(source), owner))
+            .count();
+
+    }
+
+    /**
+     * Sets how many sources can be advertised by each participant of each media
+     * type.
+     * @param maxSourceCount an integer value. If lesser or equal to zero no
+     * sources will be allowed which may or may not make any sense, but this
+     * value is configurable with the value default of
+     * {@link JitsiMeetGlobalConfig#DEFAULT_MAX_SSRC_PER_USER}.
+     */
+    public void setMaxSourceCount(int maxSourceCount)
+    {
+        this.maxSourceCount = maxSourceCount;
     }
 
     /**
@@ -229,14 +279,17 @@ public class SSRCValidator
      * @param newSources the sources to add
      * @param newGroups the groups to add
      *
-     * @return see return value description of
-     * {@link Participant#addSourcesAndGroupsFromContent(List)}.
+     * @return an array of two objects where first one is <tt>MediaSourceMap</tt>
+     * contains the sources that have been accepted and the second one is
+     * <tt>MediaSourceGroupMap</tt> with <tt>SourceGroup</tt>s accepted by this
+     * validator instance.
      *
-     * @throws InvalidSSRCsException see throws of
-     * {@link Participant#addSourcesAndGroupsFromContent(List)}.
+     * @throws InvalidSSRCsException if a critical problem has been found
+     * with the new sources/groups which would probably result in
+     * "setRemoteDescription" error on the client.
      */
-    public Object[] tryAddSourcesAndGroups(MediaSourceMap newSources,
-                                           MediaSourceGroupMap newGroups)
+    public Object[] tryAddSourcesAndGroups(
+            MediaSourceMap newSources, MediaSourceGroupMap newGroups)
         throws InvalidSSRCsException
     {
         MediaSourceMap acceptedSources = new MediaSourceMap();
@@ -275,9 +328,11 @@ public class SSRCValidator
                         "Source "  + source.toString() + " is in "
                             + conflictingMediaType + " already");
                 }
-                // Check for SSRC limit exceeded
-                else if (
-                    sources.getSourcesForMedia(mediaType).size() >= maxSourceCount)
+
+                // Check for Source limit exceeded
+                Jid owner = SSRCSignaling.getSSRCOwner(source);
+                long sourceCount = getSourceCountForOwner(owner, mediaType);
+                if (sourceCount >= maxSourceCount)
                 {
                     logger.error(
                         "Too many sources signalled by "

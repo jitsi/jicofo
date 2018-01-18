@@ -1177,7 +1177,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            participant.addSourcesAndGroupsFromContent(answer);
+            tryAddSourcesToParticipant(participant, answer);
         }
         catch (InvalidSSRCsException e)
         {
@@ -1401,7 +1401,7 @@ public class JitsiMeetConferenceImpl
         Object[] added;
         try
         {
-            added = participant.addSourcesAndGroupsFromContent(contents);
+            added = tryAddSourcesToParticipant(participant, contents);
         }
         catch (InvalidSSRCsException e)
         {
@@ -1554,6 +1554,53 @@ public class JitsiMeetConferenceImpl
             jingle.sendRemoveSourceIQ(
                     sourcesToRemove, sourceGroupsToRemove, jingleSessionToNotify);
         }
+    }
+
+    /**
+     * Will try to add sources and groups described by the given list of Jingle
+     * {@link ContentPacketExtension} to the given participant.
+     *
+     * @param participant - The {@link Participant} instance to which sources
+     * and groups will be added.
+     * @param contents - The list of Jingle 'content' packet extensions which
+     * describe media sources and groups.
+     *
+     * @return See returns description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
+     * @throws InvalidSSRCsException See throws description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
+     */
+    private Object[] tryAddSourcesToParticipant(
+            Participant                     participant,
+            List<ContentPacketExtension>    contents)
+        throws InvalidSSRCsException
+    {
+        MediaSourceMap conferenceSources = getAllSources(null);
+        MediaSourceGroupMap conferenceSourceGroups = getAllSourceGroups(null);
+
+        SSRCValidator validator
+            = new SSRCValidator(
+                    participant.getEndpointId(),
+                    conferenceSources,
+                    conferenceSourceGroups,
+                    globalConfig.getMaxSourcesPerUser(),
+                    this.logger);
+
+        MediaSourceMap newSources
+            = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceGroupMap newGroups
+            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
+
+        // Claim the new sources by injecting owner tag into packet extensions,
+        // so that the validator will be able to tell who owns which sources.
+        participant.claimSources(newSources);
+
+        Object[] added
+            = validator.tryAddSourcesAndGroups(newSources, newGroups);
+
+        participant.addSourcesAndGroups(
+            (MediaSourceMap) added[0],
+            (MediaSourceGroupMap) added[1]);
+
+        return added;
     }
 
     /**
