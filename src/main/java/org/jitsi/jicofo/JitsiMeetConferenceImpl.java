@@ -1438,6 +1438,8 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
+        logger.error("updating sources with : " + participant.getSourcesCopy());
+        logger.error("updating sourcegroups with : " + participant.getSourceGroupsCopy());
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
