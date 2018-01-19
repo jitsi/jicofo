@@ -263,6 +263,7 @@ public class Participant
      */
     public MediaSourceMap getSourcesCopy()
     {
+        logger.error("BRIAN: participant returning sources copy: " + sources.copyDeep());
         return sources.copyDeep();
     }
 
@@ -271,6 +272,7 @@ public class Participant
      */
     public MediaSourceGroupMap getSourceGroupsCopy()
     {
+        logger.error("BRIAN: participant returning sourcegroups copy: " + sourceGroups.copy());
         return sourceGroups.copy();
     }
 
@@ -536,15 +538,15 @@ public class Participant
             = MediaSourceMap.getSourcesFromContent(contents);
         MediaSourceGroupMap groupsToAdd
             = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-        logger.error("Parsed sources from contents: " + sourcesToAdd);
-        logger.error("Parsed source groups from contents: " + groupsToAdd);
+        logger.error("BRIAN: Parsed sources from contents: " + sourcesToAdd);
+        logger.error("BRIAN: Parsed source groups from contents: " + groupsToAdd);
 
         Object[] added
             = validator.tryAddSourcesAndGroups(sourcesToAdd, groupsToAdd);
         MediaSourceMap addedSources = (MediaSourceMap) added[0];
         MediaSourceGroupMap addedGroups = (MediaSourceGroupMap) added[1];
-        logger.error("Added sources from contents: " + addedSources);
-        logger.error("Added source groups from contents: " + addedGroups);
+        logger.error("BRIAN: Added sources from contents: " + addedSources);
+        logger.error("BRIAN: Added source groups from contents: " + addedGroups);
 
         // Mark as source owner
         Jid roomJid = roomMember.getContactAddressJid();
