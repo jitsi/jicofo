@@ -1438,8 +1438,8 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        logger.error("updating sources with : " + participant.getSourcesCopy());
-        logger.error("updating sourcegroups with : " + participant.getSourceGroupsCopy());
+        logger.error("BRIAN: updating sources with : " + participant.getSourcesCopy());
+        logger.error("BRIAN: updating sourcegroups with : " + participant.getSourceGroupsCopy());
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
@@ -1501,6 +1501,8 @@ public class JitsiMeetConferenceImpl
                                MediaSourceGroupMap  sourceGroupsToRemove,
                                boolean              updateChannels)
     {
+        logger.error("BRIAN: removing sources " + sourcesToRemove);
+        logger.error("BRIAN: removing sourcegroups" + sourceGroupsToRemove);
         Participant participant
             = findParticipantForJingleSession(sourceJingleSession);
         Jid participantJid = sourceJingleSession.getAddress();
@@ -1511,10 +1513,14 @@ public class JitsiMeetConferenceImpl
         }
 
         // Only sources owned by this peer end up in "removed" set
+        logger.error("BRIAN: Participant " + participant.getMucJid() + " sources before remove: " + participant.getSourcesCopy());
         MediaSourceMap removedSources = participant.removeSources(sourcesToRemove);
+        logger.error("BRIAN: Participant " + participant.getMucJid() + " sources after remove: " + participant.getSourcesCopy());
 
+        logger.error("BRIAN: Participant " + participant.getMucJid() + " sourcegroups before remove: " + participant.getSourceGroupsCopy());
         MediaSourceGroupMap removedGroups
             = participant.removeSourceGroups(sourceGroupsToRemove);
+        logger.error("BRIAN: Participant " + participant.getMucJid() + " sourcegroups after remove: " + participant.getSourceGroupsCopy());
 
         if (removedSources.isEmpty() && removedGroups.isEmpty())
         {
