@@ -42,7 +42,9 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
+import javax.net.ssl.*;
 import java.io.*;
+import java.security.cert.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -197,6 +199,39 @@ public class XmppProtocolProvider
         {
             connConfig.performSaslAnonymousAuthentication();
         }
+
+        connConfig.setCustomX509TrustManager(new X509TrustManager()
+        {
+            @Override
+            public void checkClientTrusted(X509Certificate[] x509Certificates,
+                String s)
+                throws CertificateException
+            {
+
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] x509Certificates,
+                String s)
+                throws CertificateException
+            {
+
+            }
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers()
+            {
+                return new X509Certificate[0];
+            }
+        });
+        connConfig.setHostnameVerifier(new HostnameVerifier()
+        {
+            @Override
+            public boolean verify(String s, SSLSession sslSession)
+            {
+                return true;
+            }
+        });
 
         connection = new XMPPTCPConnection(connConfig.build());
 
