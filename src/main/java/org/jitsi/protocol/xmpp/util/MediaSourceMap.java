@@ -23,7 +23,8 @@ import org.jxmpp.jid.*;
 import org.jitsi.util.*;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
+import java.util.stream.*;
 
 /**
  * The map of media <tt>SourcePacketExtension</tt> encapsulates various
@@ -35,15 +36,22 @@ public class MediaSourceMap
 {
     /**
      * The media source map storage.
+     *
+     * CopyOnWriteArrayList "never changes during the lifetime of the
+     * iterator, so interference is impossible and the iterator is
+     * guaranteed not to throw ConcurrentModificationException" so using it
+     * makes sure we don't hit any ConcurrentModificationExceptions if we
+     * iterate to make modifications
      */
-    private final Map<String, List<SourcePacketExtension>> sources;
+    private final
+        Map<String, CopyOnWriteArrayList<SourcePacketExtension>> sources;
 
     /**
      * Creates new empty instance of <tt>MediaSourceMap</tt>.
      */
     public MediaSourceMap()
     {
-        this(new HashMap<String, List<SourcePacketExtension>>());
+        this(new HashMap<>());
     }
 
     /**
@@ -52,7 +60,8 @@ public class MediaSourceMap
      *
      * @param sources initial map of media sources.
      */
-    private MediaSourceMap(Map<String, List<SourcePacketExtension>> sources)
+    private MediaSourceMap(
+        Map<String, CopyOnWriteArrayList<SourcePacketExtension>> sources)
     {
         this.sources = sources;
     }
@@ -61,22 +70,14 @@ public class MediaSourceMap
      * Returns the list of <tt>SourcePacketExtension</tt> for given media type
      * contained in this map.
      *
-     * @param media the media type for which the list of
+     * @param mediaType the media type for which the list of
      *              <tt>SourcePacketExtension</tt> will be returned.
      */
-    public List<SourcePacketExtension> getSourcesForMedia(String media)
+    public List<SourcePacketExtension> getSourcesForMedia(String mediaType)
     {
-        List<SourcePacketExtension> sourceList = sources.get(media);
-        if (sourceList == null)
-        {
-            // CopyOnWriteArrayList "never changes during the lifetime of the iterator, so
-            // interference is impossible and the iterator is guaranteed not to throw
-            // ConcurrentModificationException" so using it makes sure we don't hit any
-            // ConcurrentModificationExceptions if we iterate to make modifications
-            sourceList = new CopyOnWriteArrayList<>();
-            sources.put(media, sourceList);
-        }
-        return sourceList;
+        return
+            sources.computeIfAbsent(
+                mediaType, k -> new CopyOnWriteArrayList<>());
     }
 
     /**
@@ -94,39 +95,36 @@ public class MediaSourceMap
      */
     public void add(MediaSourceMap mapToMerge)
     {
-        for (Map.Entry<String, List<SourcePacketExtension>> e
-                : mapToMerge.sources.entrySet())
-        {
-            addSources(e.getKey(), e.getValue());
-        }
+        mapToMerge.sources.forEach(this::addSources);
     }
 
     /**
      * Adds source to this map. NOTE that duplicated sources wil be stored in
      * the map.
      *
-     * @param media the media type of the source to be added.
+     * @param mediaType the media type of the source to be added.
      *
      * @param source the <tt>SourcePacketExtension</tt> to be added to this map.
      */
-    public void addSource(String media, SourcePacketExtension source)
+    public void addSource(String mediaType, SourcePacketExtension source)
     {
         // BEWARE! add will not detect duplications
-        getSourcesForMedia(media).add(source);
+        getSourcesForMedia(mediaType).add(source);
     }
 
     /**
      * Adds sources to this map. NOTE that duplicates will be stored in the map.
      *
-     * @param media the media type of sources to be added to this map.
+     * @param mediaType the media type of sources to be added to this map.
      *
      * @param newSources collection of sources which will be included in this map.
      */
-    public void addSources(String media, Collection<SourcePacketExtension> newSources)
+    public void addSources(
+        String mediaType, Collection<SourcePacketExtension> newSources)
     {
         // BEWARE! addAll will not detect duplications
         // as .equals is not overridden
-        getSourcesForMedia(media).addAll(newSources);
+        getSourcesForMedia(mediaType).addAll(newSources);
     }
 
     /**
@@ -137,22 +135,18 @@ public class MediaSourceMap
      */
     public MediaSourceMap copyDeep()
     {
-        Map<String, List<SourcePacketExtension>> mapCopy = new HashMap<>();
+        Map<String, CopyOnWriteArrayList<SourcePacketExtension>> mapCopy
+            = new HashMap<>();
 
-        for (String media : sources.keySet())
+        for (String mediaType : sources.keySet())
         {
-            List<SourcePacketExtension> mediaSources
-                = sources.get(media);
+            CopyOnWriteArrayList<SourcePacketExtension> sourcesCopy
+                = sources.get(mediaType).stream()
+                    .map(SourcePacketExtension::copy)
+                    .collect(
+                        Collectors.toCollection(CopyOnWriteArrayList::new));
 
-            List<SourcePacketExtension> sourcesCopy
-                = new ArrayList<>(mediaSources.size());
-
-            for (SourcePacketExtension source : mediaSources)
-            {
-                sourcesCopy.add(source.copy());
-            }
-
-            mapCopy.put(media, sourcesCopy);
+            mapCopy.put(mediaType, sourcesCopy);
         }
 
         return new MediaSourceMap(mapCopy);
@@ -161,7 +155,7 @@ public class MediaSourceMap
     /**
      * Looks for SSRC in this map.
      *
-     * @param media the name of media type of the SSRC we're looking for.
+     * @param mediaType the media type of the SSRC we're looking for.
      *
      * @param sourceToFind the <tt>SourcePacketExtension</tt> we're looking for.
      *
@@ -169,28 +163,21 @@ public class MediaSourceMap
      *         the same SSRC number as given in the <tt>ssrcValue</tt> or
      *         <tt>null</tt> if not found.
      */
-    public SourcePacketExtension findSource(String media, SourcePacketExtension sourceToFind)
+    public SourcePacketExtension findSource(
+        String mediaType, SourcePacketExtension sourceToFind)
     {
-        for (SourcePacketExtension source : getSourcesForMedia(media))
-        {
-            if (source.sourceEquals(sourceToFind))
-            {
-                return source;
-            }
-        }
-        return null;
+        return getSourcesForMedia(mediaType).stream()
+            .filter(source -> source.sourceEquals(sourceToFind))
+            .findFirst()
+            .orElse(null);
     }
 
-    public SourcePacketExtension findSourceViaSsrc(String media, long ssrc)
+    public SourcePacketExtension findSourceViaSsrc(String mediaType, long ssrc)
     {
-        for (SourcePacketExtension source : getSourcesForMedia(media))
-        {
-            if (source.hasSSRC() && source.getSSRC() == ssrc)
-            {
-                return source;
-            }
-        }
-        return null;
+        return getSourcesForMedia(mediaType).stream()
+            .filter(source -> source.hasSSRC() && source.getSSRC() == ssrc)
+            .findFirst()
+            .orElse(null);
     }
 
     /**
@@ -203,8 +190,7 @@ public class MediaSourceMap
      * the given MSID.
      */
     public List<SourcePacketExtension> findSourcesWithMsid(
-            String    mediaType,
-            String    groupMsid)
+            String mediaType, String groupMsid)
     {
         if (StringUtils.isNullOrEmpty(groupMsid))
         {
@@ -213,21 +199,16 @@ public class MediaSourceMap
 
         List<SourcePacketExtension> mediaSources
             = getSourcesForMedia(mediaType);
-        List<SourcePacketExtension> result = new LinkedList<>();
 
-        for (SourcePacketExtension source : mediaSources)
-        {
-            if (groupMsid.equalsIgnoreCase(SSRCSignaling.getMsid(source)))
-            {
-                result.add(source);
-            }
-        }
-
-        return result;
+        return mediaSources.stream()
+            .filter(
+                source -> groupMsid.equalsIgnoreCase(
+                    SSRCSignaling.getMsid(source)))
+            .collect(Collectors.toCollection(LinkedList::new));
     }
 
     /**
-     * Looks for given spirce and returns type of the media for the first
+     * Looks for given source and returns type of the media for the first
      * match found.
      * @param source the source to be found
      * @return type of the media of the SSRC identified by the given number or
@@ -236,33 +217,33 @@ public class MediaSourceMap
     public String getMediaTypeForSource(SourcePacketExtension source)
     {
         Set<String> mediaTypes = getMediaTypes();
-        for (String mediaType : mediaTypes)
-        {
-            if (findSource(mediaType, source) != null)
-                return mediaType;
-        }
-        return null;
+        return mediaTypes.stream()
+            .filter(mediaType -> findSource(mediaType, source) != null)
+            .findFirst()
+            .orElse(null);
     }
 
     /**
      * Finds SSRC for given owner.
      *
-     * @param media the media type of the SSRC we'll be looking for.
+     * @param mediaType the media type of the SSRC we'll be looking for.
      * @param owner the MUC JID  of the SSRC owner.
      *
      * @return <tt>SourcePacketExtension</tt> for given media type and owner or
-     *         <tt>null</tt> if not found.
+     *  <tt>null</tt> if not found.
      */
-    public SourcePacketExtension findSSRCforOwner(String media, Jid owner)
+    public SourcePacketExtension findSsrcForOwner(String mediaType, Jid owner)
     {
-        List<SourcePacketExtension> mediaSSRCs = getSourcesForMedia(media);
-        for (SourcePacketExtension ssrc : mediaSSRCs)
-        {
-            Jid ssrcOwner = SSRCSignaling.getSSRCOwner(ssrc);
-            if (ssrcOwner != null && ssrcOwner.equals(owner))
-                return ssrc;
-        }
-        return null;
+        List<SourcePacketExtension> mediaSSRCs = getSourcesForMedia(mediaType);
+        return mediaSSRCs.stream()
+            .filter(
+                ssrc ->
+                {
+                    Jid ssrcOwner = SSRCSignaling.getSSRCOwner(ssrc);
+                    return ssrcOwner != null && ssrcOwner.equals(owner);
+                })
+            .findFirst()
+            .orElse(null);
     }
 
     /**
@@ -277,25 +258,21 @@ public class MediaSourceMap
     {
         MediaSourceMap removedSources = new MediaSourceMap();
         // FIXME: fix duplication
-        for (String media : mapToRemove.sources.keySet())
+        for (String mediaType : mapToRemove.sources.keySet())
         {
-            List<SourcePacketExtension> sourceList = getSourcesForMedia(media);
+            List<SourcePacketExtension> sourceList = getSourcesForMedia(mediaType);
             List<SourcePacketExtension> toBeRemoved = new ArrayList<>();
 
             for (SourcePacketExtension sourceToRemove
-                    : mapToRemove.sources.get(media))
+                    : mapToRemove.sources.get(mediaType))
             {
-                for (SourcePacketExtension source : sourceList)
-                {
-                    if (sourceToRemove.sourceEquals(source))
-                    {
-                        toBeRemoved.add(source);
-                    }
-                }
+                sourceList.stream()
+                    .filter(sourceToRemove::sourceEquals)
+                    .forEach(toBeRemoved::add);
             }
 
             sourceList.removeAll(toBeRemoved);
-            removedSources.getSourcesForMedia(media).addAll(toBeRemoved);
+            removedSources.getSourcesForMedia(mediaType).addAll(toBeRemoved);
         }
         return removedSources;
     }
@@ -303,17 +280,17 @@ public class MediaSourceMap
     /**
      * Removes given source from this map.
      *
-     * @param media the media type of the source to be removed.
+     * @param mediaType the media type of the source to be removed.
      * @param source the <tt>SourcePacketExtension</tt> to be removed from this
      *        <tt>MediaSourceMap</tt>.
      *
      * @return <tt>true</tt> if the source has been actually removed which means
      *         that it was in the map before the operation took place.
      */
-    public boolean remove(String media, SourcePacketExtension source)
+    public boolean remove(String mediaType, SourcePacketExtension source)
     {
-        SourcePacketExtension toBeRemoved = findSource(media, source);
-        return toBeRemoved != null && getSourcesForMedia(media).remove(source);
+        SourcePacketExtension toBeRemoved = findSource(mediaType, source);
+        return toBeRemoved != null && getSourcesForMedia(mediaType).remove(source);
     }
 
     /**
@@ -322,14 +299,8 @@ public class MediaSourceMap
      */
     public boolean isEmpty()
     {
-        for (String media : sources.keySet())
-        {
-            if (!getSourcesForMedia(media).isEmpty())
-            {
-                return false;
-            }
-        }
-        return true;
+        return sources.keySet().stream()
+            .allMatch(mediaType -> getSourcesForMedia(mediaType).isEmpty());
     }
 
     /**
@@ -346,7 +317,8 @@ public class MediaSourceMap
     public static MediaSourceMap getSourcesFromContent(
         List<ContentPacketExtension> contents)
     {
-        Map<String, List<SourcePacketExtension>> mediaSourceMap = new HashMap<>();
+        Map<String, CopyOnWriteArrayList<SourcePacketExtension>>
+            mediaSourceMap = new HashMap<>();
 
         for (ContentPacketExtension content : contents)
         {
@@ -354,13 +326,15 @@ public class MediaSourceMap
                 = content.getFirstChildOfType(
                         RtpDescriptionPacketExtension.class);
 
-            String media = rtpDesc != null ? rtpDesc.getMedia() : content.getName();
+            String mediaType
+                = rtpDesc != null ? rtpDesc.getMedia() : content.getName();
             List<SourcePacketExtension> sourcePacketExtensions =
                     rtpDesc != null ?
                             rtpDesc.getChildExtensionsOfType(SourcePacketExtension.class) :
                             content.getChildExtensionsOfType(SourcePacketExtension.class);
 
-            mediaSourceMap.put(media, sourcePacketExtensions);
+            mediaSourceMap.put(
+                mediaType, new CopyOnWriteArrayList<>(sourcePacketExtensions));
         }
 
         return new MediaSourceMap(mediaSourceMap);
@@ -393,10 +367,10 @@ public class MediaSourceMap
     public String toString()
     {
         StringBuilder str = new StringBuilder("Sources{");
-        for (String media : getMediaTypes())
+        for (String mediaType : getMediaTypes())
         {
-            str.append(" ").append(media).append(": [");
-            str.append(sourcesToString(getSourcesForMedia(media)));
+            str.append(" ").append(mediaType).append(": [");
+            str.append(sourcesToString(getSourcesForMedia(mediaType)));
             str.append("]");
         }
         return str.append(" }@").append(hashCode()).toString();

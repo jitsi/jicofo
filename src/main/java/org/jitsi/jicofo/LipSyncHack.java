@@ -290,26 +290,26 @@ public class LipSyncHack implements OperationSetJingle
     {
         Jid mucJid = session.getAddress();
         // If this is source add for video only then add audio for merge process
-        for (SourcePacketExtension videoSSRC
+        for (SourcePacketExtension videoSsrc
                 : ssrcMap.getSourcesForMedia("video"))
         {
-            Jid owner = SSRCSignaling.getSSRCOwner(videoSSRC);
-            SourcePacketExtension audioSSRC
-                = ssrcMap.findSSRCforOwner("audio", owner);
-            if (audioSSRC == null)
+            Jid owner = SSRCSignaling.getSSRCOwner(videoSsrc);
+            SourcePacketExtension audioSsrc
+                = ssrcMap.findSsrcForOwner("audio", owner);
+            if (audioSsrc == null)
             {
                 // Try finding corresponding audio from the global conference
                 // state for this owner
                 MediaSourceMap allOwnersSSRCs = getParticipantSSRCMap(owner);
                 List<SourcePacketExtension> audioSSRCs
                     = allOwnersSSRCs.getSourcesForMedia("audio");
-                audioSSRC = SSRCSignaling.getFirstWithMSID(audioSSRCs);
+                audioSsrc = SSRCSignaling.getFirstWithMSID(audioSSRCs);
             }
-            if (audioSSRC != null)
+            if (audioSsrc != null)
             {
-                ssrcMap.addSource("audio", audioSSRC);
+                ssrcMap.addSource("audio", audioSsrc);
                 doMerge(mucJid, owner, ssrcMap);
-                ssrcMap.remove("audio", audioSSRC);
+                ssrcMap.remove("audio", audioSsrc);
             }
             else
             {

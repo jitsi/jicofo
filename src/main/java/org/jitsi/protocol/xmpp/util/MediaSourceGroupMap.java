@@ -23,6 +23,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.jitsi.service.neomedia.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * Class maps lists of source groups to media types and encapsulates various
@@ -42,7 +43,7 @@ public class MediaSourceGroupMap
      */
     public MediaSourceGroupMap()
     {
-        this(new HashMap<String, List<SourceGroup>>());
+        this(new HashMap<>());
     }
 
     /**
@@ -124,44 +125,32 @@ public class MediaSourceGroupMap
 
     /**
      * Returns the list of {@link SourceGroup} for given media type.
-     * @param media the name of media type for which list of source groups will be
-     *              returned.
+     * @param mediaType the name of media type for which list of source groups
+     * will be returned.
      */
-    public List<SourceGroup> getSourceGroupsForMedia(String media)
+    public List<SourceGroup> getSourceGroupsForMedia(String mediaType)
     {
-        List<SourceGroup> mediaGroups = groupMap.get(media);
-        if (mediaGroups == null)
-        {
-            mediaGroups = new ArrayList<>();
-            groupMap.put(media, mediaGroups);
-        }
-        return mediaGroups;
+        return groupMap.computeIfAbsent(mediaType, k -> new ArrayList<>());
     }
 
     /**
      * Finds groups that match given media type and semantics.
      *
-     * @param media eg. 'audio', 'video', etc.
+     * @param mediaType eg. 'audio', 'video', etc.
      * @param semantics a group semantics eg. 'SIM' or 'FID'
      *
      * @return a {@link List} of {@link SourceGroup}
      */
-    private List<SourceGroup> findSourceGroups(String media, String semantics)
+    private List<SourceGroup> findSourceGroups(
+        String mediaType, String semantics)
     {
         Objects.requireNonNull(semantics, "semantics");
 
-        List<SourceGroup> mediaGroups = groupMap.get(media);
-        List<SourceGroup> result = new LinkedList<>();
+        List<SourceGroup> mediaGroups = groupMap.get(mediaType);
 
-        for (SourceGroup group : mediaGroups)
-        {
-            if (semantics.equalsIgnoreCase(group.getSemantics()))
-            {
-                result.add(group);
-            }
-        }
-
-        return result;
+        return mediaGroups.stream()
+            .filter(mg -> semantics.equalsIgnoreCase(mg.getSemantics()))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -198,13 +187,13 @@ public class MediaSourceGroupMap
 
     /**
      * Adds mapping of source group to media type.
-     * @param media the media type name.
+     * @param mediaType the media type name.
      * @param sourceGroup <tt>SourceGroup</tt> that will be mapped to given media
      *                  type.
      */
-    public void addSourceGroup(String media, SourceGroup sourceGroup)
+    public void addSourceGroup(String mediaType, SourceGroup sourceGroup)
     {
-        getSourceGroupsForMedia(media).add(sourceGroup);
+        getSourceGroupsForMedia(mediaType).add(sourceGroup);
     }
 
     /**
@@ -215,62 +204,35 @@ public class MediaSourceGroupMap
      */
     public void add(MediaSourceGroupMap sourceGroups)
     {
-        for (String media : sourceGroups.getMediaTypes())
-        {
-            List<SourceGroup> groups = sourceGroups.getSourceGroupsForMedia(media);
-            for (SourceGroup group : groups)
-            {
-                addSourceGroup(media, group);
-            }
-        }
+        sourceGroups.getMediaTypes().forEach(
+            mediaType -> sourceGroups.getSourceGroupsForMedia(mediaType)
+                .forEach(
+                    group -> addSourceGroup(mediaType, group)));
     }
 
     /**
-     * Checks whether or not this map contains given <tt>{@link SourceGroup}</tt>.
-     * @param mediaType the type of the media fo the group to be found.
+     * Checks whether or not this map contains a given {@link SourceGroup}.
+     * @param mediaType the type of the media for the group to be found.
      * @param toFind the <tt>SourceGroup</tt> to be found.
      * @return <tt>true</tt> if the given <tt>SourceGroup</tt> exists in the map
      * already or <tt>false</tt> otherwise. A group is considered equal when it
-     * has the same semantics and sources stored. The order of sources appearing in
-     * the group is important as well.
+     * has the same semantics and sources stored. The order of sources appearing
+     * in the group is important as well.
      */
     public boolean containsGroup(String mediaType, SourceGroup toFind)
     {
-        List<SourcePacketExtension> comparedSources = toFind.getSources();
-
-        List<SourceGroup> groups = this.getSourceGroupsForMedia(mediaType);
-        for (SourceGroup group : groups)
-        {
-            if (!toFind.getSemantics().equals(group.getSemantics()))
-                continue;
-
-            List<SourcePacketExtension> groupSources = group.getSources();
-            if (groupSources.size() != comparedSources.size())
-                continue;
-
-            boolean theSame = true;
-            for (int i = 0; i < comparedSources.size(); i++)
-            {
-                if (!groupSources.get(i).sourceEquals(comparedSources.get(i)))
-                {
-                    theSame = false;
-                    break;
-                }
-            }
-            if (theSame)
-                return true;
-        }
-        return false;
+        return getSourceGroupsForMedia(mediaType).stream()
+            .anyMatch(group -> group.equals(toFind));
     }
 
     /**
-     * Returns <tt>true</tt> if this map contains any source groups.
+     * Returns <tt>true</tt> if this map contains any non-empty source groups.
      */
     public boolean isEmpty()
     {
-        for (String media : groupMap.keySet())
+        for (String mediaType : groupMap.keySet())
         {
-            if (!getSourceGroupsForMedia(media).isEmpty())
+            if (!getSourceGroupsForMedia(mediaType).isEmpty())
             {
                 return false;
             }
@@ -290,13 +252,13 @@ public class MediaSourceGroupMap
     {
         MediaSourceGroupMap removedGroups = new MediaSourceGroupMap();
 
-        for (String media : mapToRemove.groupMap.keySet())
+        for (String mediaType : mapToRemove.groupMap.keySet())
         {
-            List<SourceGroup> groupList = getSourceGroupsForMedia(media);
+            List<SourceGroup> groupList = getSourceGroupsForMedia(mediaType);
             List<SourceGroup> toBeRemoved= new ArrayList<>();
 
             for (SourceGroup sourceGroupToCheck
-                : mapToRemove.groupMap.get(media))
+                : mapToRemove.groupMap.get(mediaType))
             {
                 for (SourceGroup sourceGroup : groupList)
                 {
@@ -307,7 +269,7 @@ public class MediaSourceGroupMap
                 }
             }
 
-            removedGroups.getSourceGroupsForMedia(media).addAll(toBeRemoved);
+            removedGroups.getSourceGroupsForMedia(mediaType).addAll(toBeRemoved);
 
             groupList.removeAll(toBeRemoved);
         }
@@ -322,9 +284,10 @@ public class MediaSourceGroupMap
     {
         Map<String, List<SourceGroup>> mapCopy = new HashMap<>();
 
-        for (String media : groupMap.keySet())
+        for (String mediaType : groupMap.keySet())
         {
-            List<SourceGroup> listToCopy = new ArrayList<>(groupMap.get(media));
+            List<SourceGroup> listToCopy
+                = new ArrayList<>(groupMap.get(mediaType));
             List<SourceGroup> listCopy = new ArrayList<>(listToCopy.size());
 
             for (SourceGroup group : listToCopy)
@@ -332,13 +295,13 @@ public class MediaSourceGroupMap
                 listCopy.add(group.copy());
             }
 
-            mapCopy.put(media, listCopy);
+            mapCopy.put(mediaType, listCopy);
         }
 
         return new MediaSourceGroupMap(mapCopy);
     }
 
-    String groupsToString(List<SourceGroup> sources)
+    private String groupsToString(List<SourceGroup> sources)
     {
         StringBuilder str = new StringBuilder();
         for (SourceGroup group : sources)
@@ -368,9 +331,9 @@ public class MediaSourceGroupMap
     {
         Map<String, List<SourceGroupPacketExtension>> map = new HashMap<>();
 
-        for (String media : groupMap.keySet())
+        for (String mediaType : groupMap.keySet())
         {
-            List<SourceGroup> groups = groupMap.get(media);
+            List<SourceGroup> groups = groupMap.get(mediaType);
             List<SourceGroupPacketExtension> peGroups
                 = new ArrayList<>(groups.size());
 
@@ -379,7 +342,7 @@ public class MediaSourceGroupMap
                 peGroups.add(group.getExtensionCopy());
             }
 
-            map.put(media, peGroups);
+            map.put(mediaType, peGroups);
         }
 
         return map;
@@ -389,10 +352,10 @@ public class MediaSourceGroupMap
     public String toString()
     {
         StringBuilder str = new StringBuilder("source_Groups{");
-        for (String media : getMediaTypes())
+        for (String mediaType : getMediaTypes())
         {
-            str.append(" ").append(media).append(":[ ");
-            str.append(groupsToString(getSourceGroupsForMedia(media)));
+            str.append(" ").append(mediaType).append(":[ ");
+            str.append(groupsToString(getSourceGroupsForMedia(mediaType)));
             str.append(" ]");
         }
         return str.append(" }@").append(hashCode()).toString();

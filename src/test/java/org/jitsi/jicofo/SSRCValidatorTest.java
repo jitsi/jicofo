@@ -283,6 +283,11 @@ public class SSRCValidatorTest
         audioSources.add(ssrc1Duplicate);
         this.addDefaultAudioSSRCs();
 
+        assertDuplicateDetected();
+    }
+
+    private void assertDuplicateDetected()
+    {
         try
         {
             createValidator().tryAddSourcesAndGroups(sources, groups);
@@ -290,10 +295,15 @@ public class SSRCValidatorTest
         }
         catch (InvalidSSRCsException exc)
         {
+            // The same source was added as audio or video, but nothing defines
+            // the order of addition of sources. So we expect either "audio" or
+            // "video".
             String errorMsg = exc.getMessage();
+            errorMsg = errorMsg.replaceAll("audio", "XXXXX");
+            errorMsg = errorMsg.replaceAll("video", "XXXXX");
             assertEquals(
                 "Invalid message (constant needs update ?): " + errorMsg,
-                "Source ssrc=1 is in audio already", errorMsg);
+                "Source ssrc=1 is in XXXXX already", errorMsg);
         }
     }
 
@@ -315,18 +325,7 @@ public class SSRCValidatorTest
         this.addDefaultVideoSSRCs();
         this.addDefaultVideoGroups();
 
-        try
-        {
-            createValidator().tryAddSourcesAndGroups(sources, groups);
-            fail("Did not detect SSRC 1 duplicate");
-        }
-        catch (InvalidSSRCsException exc)
-        {
-            String errorMsg = exc.getMessage();
-            assertEquals(
-                "Invalid message (constant needs update ?): " + errorMsg,
-                "Source ssrc=1 is in audio already", errorMsg);
-        }
+        assertDuplicateDetected();
     }
 
     @Test
