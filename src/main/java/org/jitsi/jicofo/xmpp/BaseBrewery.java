@@ -233,7 +233,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
         {
             // Process offline status
-            BrewInstance instance = find(chatMember.getContactAddressJid());
+            BrewInstance instance = find(chatMember.getOccupantJid());
 
             if (instance != null)
                 removeInstance(instance);
@@ -272,7 +272,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         if (ext == null)
             return;
 
-        processInstanceStatusChanged(member.getContactAddressJid(), (T) ext);
+        processInstanceStatusChanged(member.getOccupantJid(), (T) ext);
     }
 
     /**

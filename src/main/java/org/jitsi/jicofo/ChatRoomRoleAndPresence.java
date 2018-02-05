@@ -244,7 +244,7 @@ public class ChatRoomRoleAndPresence
             else
             {
                 // Elect new owner
-                if (grantOwner(((XmppChatMember)member).getJabberID()))
+                if (grantOwner(((XmppChatMember)member).getJid()))
                 {
                     logger.info(
                         "Granted owner to " + member.getContactAddress());
@@ -343,7 +343,7 @@ public class ChatRoomRoleAndPresence
     private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
         XmppChatMember xmppMember = (XmppChatMember) member;
-        Jid jabberId = xmppMember.getJabberID();
+        Jid jabberId = xmppMember.getJid();
         if (jabberId == null)
         {
             return;
@@ -381,7 +381,7 @@ public class ChatRoomRoleAndPresence
         for (ChatRoomMember member : chatRoom.getMembers())
         {
             XmppChatMember xmppMember = (XmppChatMember) member;
-            if (realJid.equals(xmppMember.getJabberID()))
+            if (realJid.equals(xmppMember.getJid()))
             {
                 checkGrantOwnerToAuthUser(member);
             }

@@ -174,7 +174,7 @@ public class MockParticipant
         chat.mockJoin(user);
         synchronized (joinLock)
         {
-            xmppPeer = new XmppPeer(user.getJabberID(), mockConnection);
+            xmppPeer = new XmppPeer(user.getJid(), mockConnection);
             xmppPeer.start();
             joinLock.notifyAll();
         }
