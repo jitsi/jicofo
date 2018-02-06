@@ -443,4 +443,13 @@ public class Participant
                     .forEach(
                         source -> SSRCSignaling.setSSRCOwner(source, roomJid)));
     }
+
+    /**
+     * @return {@code true} if the Jingle session with this participant has
+     * been established.
+     */
+    public boolean isSessionEstablished()
+    {
+        return jingleSession != null;
+    }
 }

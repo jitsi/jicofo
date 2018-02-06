@@ -1047,9 +1047,9 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             Jid contactAddress = participant.getMucJid();
-            JingleSession jingleSession = participant.getJingleSession();
-            if (jingleSession != null)
+            if (participant.isSessionEstablished())
             {
+                JingleSession jingleSession = participant.getJingleSession();
                 logger.info("Terminating: " + contactAddress);
 
                 jingle.terminateSession(jingleSession, reason, message);
@@ -1059,7 +1059,6 @@ public class JitsiMeetConferenceImpl
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
                     false /* no JVB update - will expire */);
-
             }
 
             // Cancel any threads currently trying to invite the participant.
@@ -1285,37 +1284,31 @@ public class JitsiMeetConferenceImpl
      *        to advertise.
      */
     private void propagateNewSources(Participant          sourceOwner,
-                                     MediaSourceMap       sourcesToAdd,
-                                     MediaSourceGroupMap  sourceGroupsToAdd)
+                                     MediaSourceMap       sources,
+                                     MediaSourceGroupMap  sourceGroups)
     {
-        for (Participant participantToNotify : participants)
-        {
-            // Skip origin
-            if (sourceOwner == participantToNotify)
-            {
-                continue;
-            }
+        participants.stream()
+            .filter(otherParticipant -> otherParticipant != sourceOwner)
+            .forEach(
+                participant ->
+                {
+                    if (!participant.isSessionEstablished())
+                    {
+                        logger.warn(
+                            "No jingle session yet for "
+                                + participant.getEndpointId());
 
-            JingleSession jingleSessionToNotify
-                = participantToNotify.getJingleSession();
-            if (jingleSessionToNotify == null)
-            {
-                logger.warn(
-                        "No jingle session yet for "
-                            + participantToNotify.getChatMember().getContactAddress());
+                        participant.scheduleSourcesToAdd(sources);
+                        participant
+                            .scheduleSourceGroupsToAdd(sourceGroups);
 
-                participantToNotify.scheduleSourcesToAdd(sourcesToAdd);
+                        return;
+                    }
 
-                participantToNotify.scheduleSourceGroupsToAdd(sourceGroupsToAdd);
-
-                continue;
-            }
-
-            jingle.sendAddSourceIQ(
-                    sourcesToAdd, sourceGroupsToAdd, jingleSessionToNotify);
-        }
+                    jingle.sendAddSourceIQ(
+                        sources, sourceGroups, participant.getJingleSession());
+                });
     }
-
 
     /**
      * Callback called when we receive 'transport-info' from conference
@@ -1525,10 +1518,10 @@ public class JitsiMeetConferenceImpl
         }
 
         // Only sources owned by this participant end up in "removed" set
-        MediaSourceMap removedSources
+        final MediaSourceMap removedSources
             = participant.removeSources(sourcesToRemove);
 
-        MediaSourceGroupMap removedGroups
+        final MediaSourceGroupMap removedGroups
             = participant.removeSourceGroups(sourceGroupsToRemove);
 
         if (removedSources.isEmpty() && removedGroups.isEmpty())
@@ -1538,18 +1531,13 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        // This prevents from removing sources which do not belong to this
-        // participant
-        sourcesToRemove = removedSources;
-        sourceGroupsToRemove = removedGroups;
-
         // We remove all ssrc params from SourcePacketExtension as we want
         // the client to simply remove all lines corresponding to given SSRC and
         // not care about parameter's values we send.
         // Some params might get out of sync for various reasons like for
         // example Chrome coming up with 'default' value for missing 'mslabel'
         // or when we'll be doing lip-sync stream merge
-        SSRCSignaling.deleteSSRCParams(sourcesToRemove);
+        SSRCSignaling.deleteSSRCParams(removedSources);
 
         // Updates source Groups on the bridge
         BridgeSession bridgeSession = findBridgeSession(participant);
@@ -1564,32 +1552,33 @@ public class JitsiMeetConferenceImpl
                     participant.getColibriChannelsInfo());
         }
 
-        logger.info("Removing " + participantJid + " sources " + sourcesToRemove);
+        logger.info("Removing " + participantJid + " sources " + removedSources);
 
-        for (Participant otherParticipant : participants)
-        {
-            if (otherParticipant == participant)
-            {
-                continue;
-            }
+        participants.stream()
+            .filter(otherParticipant -> otherParticipant != participant)
+            .forEach(
+                otherParticipant ->
+                {
+                    if (otherParticipant.isSessionEstablished())
+                    {
+                        jingle.sendRemoveSourceIQ(
+                            removedSources,
+                            removedGroups,
+                            otherParticipant.getJingleSession());
+                    }
+                    else
+                    {
+                        logger.warn(
+                            "Remove source: no jingle session for "
+                                + participantJid);
 
-            JingleSession jingleSessionToNotify
-                = otherParticipant.getJingleSession();
-            if (jingleSessionToNotify == null)
-            {
-                logger.warn(
-                    "Remove source: no jingle session for " + participantJid);
+                        otherParticipant.scheduleSourcesToRemove(
+                            removedSources);
 
-                otherParticipant.scheduleSourcesToRemove(sourcesToRemove);
-
-                otherParticipant.scheduleSourceGroupsToRemove(sourceGroupsToRemove);
-
-                continue;
-            }
-
-            jingle.sendRemoveSourceIQ(
-                    sourcesToRemove, sourceGroupsToRemove, jingleSessionToNotify);
-        }
+                        otherParticipant.scheduleSourceGroupsToRemove(
+                            removedGroups);
+                    }
+                });
     }
 
     /**

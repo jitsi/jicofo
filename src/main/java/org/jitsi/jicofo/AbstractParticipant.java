@@ -236,9 +236,11 @@ public class AbstractParticipant
     }
 
     /**
-     * Schedules sources received from other peer for future 'source-add' update.
+     * Schedules sources received from other peer for future 'source-add'
+     * update.
      *
-     * @param sourceMap the media source map that contains sources for future updates.
+     * @param sourceMap the media source map that contains sources for future
+     * updates.
      */
     public void scheduleSourcesToAdd(MediaSourceMap sourceMap)
     {
@@ -249,7 +251,8 @@ public class AbstractParticipant
      * Schedules sources received from other peer for future 'source-remove'
      * update.
      *
-     * @param sourceMap the media source map that contains sources for future updates.
+     * @param sourceMap the media source map that contains sources for future
+     * updates.
      */
     public void scheduleSourcesToRemove(MediaSourceMap sourceMap)
     {
@@ -392,5 +395,16 @@ public class AbstractParticipant
     {
         this.sources.add(addedSources);
         this.sourceGroups.add(addedGroups);
+    }
+
+    /**
+     * @return {@code true} if the session with this participant has already
+     * been established. Before the session is established, we are unable to
+     * update the remote state (e.g. the list of sources (SSRCs) of this
+     * participant).
+     */
+    public boolean isSessionEstablished()
+    {
+        return true;
     }
 }
