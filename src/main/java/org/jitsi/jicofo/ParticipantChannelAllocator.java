@@ -236,12 +236,10 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         boolean useBundle = participant.hasBundleSupport();
 
         MediaSourceMap conferenceSSRCs
-            = meetConference.getAllSources(
-                    reInvite ? participant : null);
+            = meetConference.getAllSources(reInvite ? participant : null);
 
         MediaSourceGroupMap conferenceSSRCGroups
-            = meetConference.getAllSourceGroups(
-                    reInvite ? participant : null);
+            = meetConference.getAllSourceGroups(reInvite ? participant : null);
 
         for (ContentPacketExtension cpe : offer)
         {

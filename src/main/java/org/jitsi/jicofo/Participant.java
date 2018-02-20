@@ -448,8 +448,16 @@ public class Participant
      * @return {@code true} if the Jingle session with this participant has
      * been established.
      */
+    @Override
     public boolean isSessionEstablished()
     {
         return jingleSession != null;
     }
+
+    @Override
+    public String toString()
+    {
+        return "[Participant endpointId=" + getEndpointId();
+    }
+
 }

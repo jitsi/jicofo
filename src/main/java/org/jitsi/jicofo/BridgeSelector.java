@@ -765,7 +765,7 @@ public class BridgeSelector
         {
             List<BridgeState> conferenceBridges
                 = conference == null
-                        ? new LinkedList<BridgeState>()
+                        ? new LinkedList<>()
                         : conference.getBridges();
             if (conferenceBridges.isEmpty())
             {
