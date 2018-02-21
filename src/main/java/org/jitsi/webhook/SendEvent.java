@@ -29,7 +29,7 @@ public class SendEvent implements Runnable {
 	/**
 	 * Constructor
 	 * 
-	 * @param Map<String, Object> data
+	 * @param data
 	 */
 	public SendEvent(Map<String, Object> data) {
 		this.data = data;
