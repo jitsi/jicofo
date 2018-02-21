@@ -610,13 +610,13 @@ public class ColibriConferenceImpl
 
             for (String contentName : descriptionMap.keySet())
             {
-                String channelId
+                ColibriConferenceIQ.Channel channel
                     = localChannelsInfo.getContent(contentName)
-                        .getChannels().get(0).getID();
+                        .getChannels().get(0);
                 colibriBuilder.addRtpDescription(
                         descriptionMap.get(contentName),
                         contentName,
-                        channelId);
+                        channel);
             }
 
             request = colibriBuilder.getRequest(jitsiVideobridge);
@@ -931,13 +931,13 @@ public class ColibriConferenceImpl
             {
                 for (String contentName : descriptionMap.keySet())
                 {
-                    String channelId
+                    ColibriConferenceIQ.Channel channel
                         = localChannelsInfo.getContent(contentName)
-                            .getChannels().get(0).getID();
+                            .getChannels().get(0);
                     send |= colibriBuilder.addRtpDescription(
                             descriptionMap.get(contentName),
                             contentName,
-                            channelId);
+                            channel);
                 }
             }
             // SSRCs
