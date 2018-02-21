@@ -57,6 +57,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     private final Logger logger;
 
     /**
+     * Override super's AbstractParticipant
+     */
+    private final Participant participant;
+
+    /**
      * {@inheritDoc}
      */
     public ParticipantChannelAllocator(
@@ -67,6 +72,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             boolean reInvite)
     {
         super(meetConference, bridgeSession, participant, startMuted, reInvite);
+        this.participant = participant;
         this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
     }
 
@@ -134,7 +140,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     }
 
     @Override
-    protected void invite(Participant participant, List<ContentPacketExtension> offer)
+    protected void invite(List<ContentPacketExtension> offer)
         throws OperationFailedException
     {
         /*
@@ -220,8 +226,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
                     participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
-                    null, null, null);
+                    participant.getSourceGroupsCopy());
         }
     }
 
@@ -437,5 +442,15 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         }
 
         return offer;
+    }
+
+    /**
+     * @return the {@link Participant} associated with this
+     * {@link ParticipantChannelAllocator}.
+     */
+    @Override
+    public Participant getParticipant()
+    {
+        return participant;
     }
 }

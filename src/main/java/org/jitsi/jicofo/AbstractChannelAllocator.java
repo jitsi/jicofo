@@ -76,7 +76,7 @@ public abstract class AbstractChannelAllocator implements Runnable
     /**
      * The participant that is to be invited by this instance to the conference.
      */
-    protected final Participant participant;
+    protected final AbstractParticipant participant;
 
     /**
      * A flag which indicates whether channel allocation is canceled. Raising
@@ -123,7 +123,7 @@ public abstract class AbstractChannelAllocator implements Runnable
     protected AbstractChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
             JitsiMeetConferenceImpl.BridgeSession bridgeSession,
-            Participant participant,
+            AbstractParticipant participant,
             boolean[] startMuted,
             boolean reInvite)
     {
@@ -162,7 +162,6 @@ public abstract class AbstractChannelAllocator implements Runnable
         throws OperationFailedException
     {
         List<ContentPacketExtension> offer;
-        Jid address = participant == null ? null : participant.getMucJid();
 
         if (canceled)
         {
@@ -183,7 +182,7 @@ public abstract class AbstractChannelAllocator implements Runnable
 
         if (colibriChannels == null)
         {
-            logger.error("Channel allocator failed: " + address);
+            logger.error("Channel allocator failed: " + participant);
 
             // Notify conference about failure
             meetConference.onChannelAllocationFailed(this);
@@ -211,7 +210,7 @@ public abstract class AbstractChannelAllocator implements Runnable
 
         try
         {
-            invite(participant, offer);
+            invite(offer);
         }
         catch (OperationFailedException e)
         {
@@ -224,8 +223,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * {@link AbstractChannelAllocator}, if there is one, in order to invite
      * (or re-invite) him to the conference.
      */
-    protected void invite(
-        Participant participant, List<ContentPacketExtension> offer)
+    protected void invite(List<ContentPacketExtension> offer)
         throws OperationFailedException
     {
     }
@@ -267,7 +265,8 @@ public abstract class AbstractChannelAllocator implements Runnable
             {
                 logger.info(
                         "Using " + jvb + " to allocate channels for: "
-                                 + participant.getMucJid());
+                             + (participant == null
+                                    ? "null" : participant.toString()));
 
                 ColibriConferenceIQ colibriChannels
                     = doAllocateChannels(contents);
@@ -371,7 +370,7 @@ public abstract class AbstractChannelAllocator implements Runnable
     /**
      * @return the {@link Participant} of this {@link AbstractChannelAllocator}.
      */
-    public Participant getParticipant()
+    public AbstractParticipant getParticipant()
     {
         return participant;
     }
