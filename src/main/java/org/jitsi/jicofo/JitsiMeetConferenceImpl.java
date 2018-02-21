@@ -32,6 +32,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.eventadmin.*;
 
 import org.jitsi.util.Logger;
+import org.jitsi.webhook.WUserEnded;
+import org.jitsi.webhook.WUserJoined;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -500,6 +502,9 @@ public class JitsiMeetConferenceImpl
                     "Member "
                         + chatRoomMember.getContactAddress() + " joined.");
 
+            WUserJoined user = new WUserJoined(chatRoomMember);
+            user.send();
+
             if (!isFocusMember(chatRoomMember))
             {
                 idleTimestamp = -1;
@@ -896,7 +901,6 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Check if given member represent SIP gateway participant.
-
      * @param member the chat member to be checked.
      *
      * @return <tt>true</tt> if given <tt>member</tt> represents the SIP gateway
@@ -984,6 +988,9 @@ public class JitsiMeetConferenceImpl
             String contactAddress = chatRoomMember.getContactAddress();
 
             logger.info("Member " + contactAddress + " is leaving");
+
+            WUserEnded user = new WUserEnded((XmppChatMember) chatRoomMember);
+            user.send();
 
             Participant leftPeer = findParticipantForChatMember(chatRoomMember);
             if (leftPeer != null)

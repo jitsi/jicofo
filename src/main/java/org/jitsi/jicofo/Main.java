@@ -22,6 +22,7 @@ import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
 import org.jitsi.util.*;
+import org.jitsi.webhook.SendEvent;
 
 /**
  * Provides the <tt>main</tt> entry point of Jitsi Meet conference focus.
@@ -96,12 +97,17 @@ public class Main
      * the focus component.
      */
     private static final String SUBDOMAIN_ARG_NAME = "--subdomain";
-
+    
     /**
      * The name of the command-line argument which specifies sub-domain name for
      * the focus component.
      */
     private static final String SUBDOMAIN_ARG_VALUE = "focus";
+    
+    /**
+     * Webhook url
+     */
+    public static final String WEBHOOK_URL_ARG_NAME = "--webhook";
 
     /**
      * Program entry point.
@@ -155,6 +161,7 @@ public class Main
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
+        SendEvent.WEBHOOK_URL = cmdLine.getOptionValue(WEBHOOK_URL_ARG_NAME);
         if (!StringUtils.isNullOrEmpty(focusPassword))
         {
             System.setProperty(

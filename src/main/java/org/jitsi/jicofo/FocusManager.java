@@ -26,7 +26,7 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.util.Logger;
-
+import org.jitsi.webhook.WRoomEnded;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -510,6 +510,9 @@ public class FocusManager
         {
             conferences.remove(roomName);
             conferenceIds.remove(conference.getId());
+            
+            WRoomEnded roomEnded = new WRoomEnded(conference.getRoomName().getLocalpart().toString());
+            roomEnded.send();
 
             if (conference.getLogger().isInfoEnabled())
                 logger.info(
