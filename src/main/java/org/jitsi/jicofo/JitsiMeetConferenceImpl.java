@@ -2312,5 +2312,14 @@ public class JitsiMeetConferenceImpl
 
             return removed;
         }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return
+            "[JitsiMeetConferenceImpl, name=" + getRoomName().toString() + "]";
     }
 }

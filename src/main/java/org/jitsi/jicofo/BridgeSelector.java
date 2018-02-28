@@ -769,10 +769,29 @@ public class BridgeSelector
                         : conference.getBridges();
             if (conferenceBridges.isEmpty())
             {
-                return selectInitial(bridges, conference, participant);
+                BridgeState bridge = selectInitial(bridges, conference, participant);
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug(
+                        "Selected initial bridge for " + conference +
+                            ": " + bridge);
+                }
+                return bridge;
             }
             else
             {
+                if (conferenceBridges.get(0).getRelayId() == null)
+                {
+                    if (logger.isDebugEnabled())
+                    {
+                        logger.debug(
+                            "Existing bridge does not have a relay, will not " +
+                                "consider other bridges.");
+                    }
+
+                    return conferenceBridges.get(0);
+                }
+
                 return doSelect(
                         bridges, conferenceBridges,
                         conference, participant);
@@ -854,6 +873,12 @@ public class BridgeSelector
         extends BridgeSelectionStrategy
     {
         /**
+         * Default constructor.
+         */
+        SingleBridgeSelectionStrategy()
+        {}
+
+        /**
          * {@inheritDoc}
          * </p>
          * Always selects the bridge already used by the conference.
@@ -884,6 +909,58 @@ public class BridgeSelector
             }
 
             return bridgeState;
+        }
+    }
+
+    /**
+     * Implements a {@link BridgeSelectionStrategy} which tries to split each
+     * conference to different bridges (without regard for the "region"). For
+     * testing purposes only.
+     */
+    private static class SplitBridgeSelectionStrategy
+        extends BridgeSelectionStrategy
+    {
+        /**
+         * Default constructor.
+         */
+        SplitBridgeSelectionStrategy()
+        {}
+
+        /**
+         * {@inheritDoc}
+         * </p>
+         * Always selects the bridge already used by the conference.
+         */
+        @Override
+        public BridgeState doSelect(
+            List<BridgeState> bridges,
+            List<BridgeState> conferenceBridges,
+            JitsiMeetConference conference,
+            Participant participant)
+        {
+            for (BridgeState bridgeState : bridges)
+            {
+                // If there's an available bridge, which isn't yet used in the
+                // conference, use it.
+                if (!conferenceBridges.contains(bridgeState))
+                {
+                    logger.info(
+                        "Selecting a new bridge for " + conference + ": " +
+                            bridgeState);
+                    return bridgeState;
+                }
+            }
+
+            // Otherwise, select one of the existing bridges in the conference
+            // at random.
+            if (!bridges.isEmpty())
+            {
+                return
+                    bridges.get(
+                        Math.abs(new Random().nextInt()) % bridges.size());
+            }
+
+            return null;
         }
     }
 }

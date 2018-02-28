@@ -22,6 +22,8 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.util.*;
 import org.jxmpp.jid.*;
 
+import java.util.*;
+
 /**
  * Class holds videobridge state and implements {@link Comparable}
  * interface to find least loaded bridge.
@@ -109,16 +111,11 @@ class BridgeState
     private volatile long failureTimestamp;
 
     BridgeState(BridgeSelector bridgeSelector,
-                Jid bridgeJid,
+                Jid jid,
                 Version version)
     {
-        if (bridgeJid == null)
-        {
-            throw new IllegalArgumentException("bridgeJid");
-        }
-
         this.bridgeSelector = bridgeSelector;
-        this.jid = bridgeJid;
+        this.jid = Objects.requireNonNull(jid, "jid");
         this.version = version;
     }
 
@@ -330,4 +327,13 @@ class BridgeState
         this.region = region;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return "[BridgeState, jid=" + jid.toString() +
+            ", relayId=" + getRelayId() + ", region=" + getRegion() + "]";
+    }
 }
