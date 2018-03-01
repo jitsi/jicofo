@@ -257,7 +257,10 @@ public class ColibriConferenceImpl
             String endpointId,
             String statsId,
             boolean peerIsInitiator,
-            List<ContentPacketExtension> contents)
+            List<ContentPacketExtension> contents,
+            Map<String, List<SourcePacketExtension>> sourceMap,
+            Map<String, List<SourceGroupPacketExtension>> sourceGroupsMap,
+            List<String> octoRelayIds)
         throws OperationFailedException
     {
         ColibriConferenceIQ allocateRequest;
@@ -294,7 +297,10 @@ public class ColibriConferenceImpl
                     endpointId,
                     statsId,
                     peerIsInitiator,
-                    contents);
+                    contents,
+                    sourceMap,
+                    sourceGroupsMap,
+                    octoRelayIds);
 
                 allocateRequest = colibriBuilder.getRequest(jitsiVideobridge);
             }
@@ -911,9 +917,15 @@ public class ColibriConferenceImpl
             MediaSourceGroupMap sourceGroups,
             IceUdpTransportPacketExtension bundleTransport,
             Map<String, IceUdpTransportPacketExtension> transportMap,
-            String endpointId)
+            String endpointId,
+            List<String> relays)
     {
         ColibriConferenceIQ request;
+        if (localChannelsInfo == null)
+        {
+            logger.error("Can not update channels -- null");
+            return;
+        }
 
         synchronized (syncRoot)
         {
@@ -965,6 +977,11 @@ public class ColibriConferenceImpl
             else if (transportMap != null
                     && colibriBuilder.addTransportUpdateReq(
                             transportMap, localChannelsInfo))
+            {
+                send = true;
+            }
+            if (relays != null
+                    && colibriBuilder.addOctoRelays(relays, localChannelsInfo))
             {
                 send = true;
             }

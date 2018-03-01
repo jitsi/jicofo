@@ -43,6 +43,7 @@ import org.osgi.framework.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
+import java.util.stream.*;
 
 /**
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
@@ -697,6 +698,15 @@ public class JitsiMeetConferenceImpl
                 bridges.add(bridgeSession);
                 // TODO: if the number of bridges changes 1->2 or 2->1, then
                 // we need to enable/disable relaying.
+
+                if (bridges.size() > 2)
+                {
+                    // Octo needs to be enabled (by inviting an Octo
+                    // participant for each bridge), or if it is already enabled
+                    // the list of relays for each bridge (may) need to be
+                    // updated.
+                    updateOctoRelays();
+                }
             }
 
             bridgeSession.participants.add(participant);
@@ -716,6 +726,44 @@ public class JitsiMeetConferenceImpl
 
             participant.setChannelAllocator(channelAllocator);
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+        }
+    }
+
+    /**
+     * Re-calculates the Octo relays for bridges in the conference, and updates
+     * each bridge session.
+     */
+    private void updateOctoRelays()
+    {
+        synchronized (bridges)
+        {
+            List<String> allRelays = getAllRelays(null);
+
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Updating Octo relays for " + this +
+                                 ". All relays:" + allRelays);
+            }
+
+            bridges.forEach(bridge -> bridge.setRelays(allRelays));
+        }
+    }
+
+    /**
+     * @param exclude a relay id to exclude from the result.
+     * @return the set of all Octo relays of bridges in the conference, except
+     * for {@code exclude}.
+     */
+    private List<String> getAllRelays(String exclude)
+    {
+        synchronized (bridges)
+        {
+            return
+                bridges.stream()
+                    .map(bridge -> bridge.bridgeState.getRelayId())
+                    .filter(Objects::nonNull)
+                    .filter(bridge -> !bridge.equals(exclude))
+                    .collect(Collectors.toList());
         }
     }
 
@@ -1206,9 +1254,14 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(answer);
         participant.addTransportFromJingle(answer);
 
+        MediaSourceMap sourcesAdded;
+        MediaSourceGroupMap sourceGroupsAdded;
         try
         {
-            tryAddSourcesToParticipant(participant, answer);
+            Object[] sourcesAndGroupsAdded
+                = tryAddSourcesToParticipant(participant, answer);
+            sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
+            sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
         }
         catch (InvalidSSRCsException e)
         {
@@ -1220,36 +1273,39 @@ public class JitsiMeetConferenceImpl
                 XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
-        MediaSourceMap participantSources = participant.getSourcesCopy();
-        MediaSourceGroupMap participantSourceGroups
-            = participant.getSourceGroupsCopy();
-
-        logger.info("Received sources from " + participantJid + " "
-                        + participantSources);
+        logger.info("Received session-accept from " +
+                        participant.getEndpointId() +
+                        " with accepted sources:" + sourcesAdded);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
-        // peer on the new bridge
-        BridgeSession bridgeSession = findBridgeSession(participant);
-        if (bridgeSession != null)
+        // participant on the new bridge
+        synchronized (bridges)
         {
-            bridgeSession.colibriConference.updateChannelsInfo(
-                    participant.getColibriChannelsInfo(),
-                    participant.getRtpDescriptionMap(),
-                    participantSources,
-                    participantSourceGroups,
-                    participant.getBundleTransport(),
-                    participant.getTransportMap(),
-                    participant.getEndpointId());
-        }
-        else
-        {
-            logger.warn("No bridge found for a participant: "+participant);
-            // TODO: how do we handle this? Re-invite?
+            BridgeSession participantBridge = findBridgeSession(participant);
+            if (participantBridge != null)
+            {
+                participantBridge.updateColibriChannels(participant);
+            }
+            else
+            {
+                logger
+                    .warn("No bridge found for a participant: " + participant);
+                // TODO: how do we handle this? Re-invite?
+            }
+
+            // If we accepted any new sources from the participant, update
+            // the state of all remote bridges.
+            if (!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty())
+            {
+                propagateNewSourcesToOcto(
+                    participantBridge, sourcesAdded, sourceGroupsAdded);
+            }
         }
 
         // Loop over current participant and send 'source-add' notification
-        propagateNewSources(participant, participantSources, participantSourceGroups);
+        propagateNewSources(
+            participant, sourcesAdded.copyDeep(), sourceGroupsAdded.copy());
 
         // Notify the participant itself since it is now stable
         if (participant.hasSourcesToAdd())
@@ -1279,13 +1335,14 @@ public class JitsiMeetConferenceImpl
      * 'source-add' Jingle notification.
      *
      * @param sourceOwner the <tt>Participant</tt> who owns the sources.
-     * @param sourcesToAdd the <tt>MediaSourceMap</tt> with the sources to advertise.
-     * @param sourceGroupsToAdd the <tt>MediaSourceGroupMap</tt> with source groups
+     * @param sources the <tt>MediaSourceMap</tt> with the sources to advertise.
+     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> with source groups
      *        to advertise.
      */
-    private void propagateNewSources(Participant          sourceOwner,
-                                     MediaSourceMap       sources,
-                                     MediaSourceGroupMap  sourceGroups)
+    private void propagateNewSources(
+        Participant sourceOwner,
+        MediaSourceMap sources,
+        MediaSourceGroupMap sourceGroups)
     {
         participants.stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
@@ -1308,6 +1365,29 @@ public class JitsiMeetConferenceImpl
                     jingle.sendAddSourceIQ(
                         sources, sourceGroups, participant.getJingleSession());
                 });
+    }
+
+    /**
+     * Adds the specified sources and source groups to the Octo participants
+     * of all bridges except for {@code exclude}.
+     * @param exclude the bridge to which sources will not be added (i.e. the
+     * bridge to which the participant whose sources we are adding is
+     * connected).
+     * @param sources the sources to add.
+     * @param sourceGroups the source groups to add.
+     */
+    private void propagateNewSourcesToOcto(
+        BridgeSession exclude,
+        MediaSourceMap sources,
+        MediaSourceGroupMap sourceGroups)
+    {
+        synchronized (bridges)
+        {
+            bridges.stream()
+                .filter(bridge -> !bridge.equals(exclude))
+                .forEach(
+                    bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
+        }
     }
 
     /**
@@ -1363,8 +1443,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onTransportAccept(JingleSession              jingleSession,
-                                  List<ContentPacketExtension>    contents)
+    public XMPPError onTransportAccept(
+        JingleSession jingleSession,
+        List<ContentPacketExtension> contents)
     {
         jingleSession.setAccepted(true);
 
@@ -1450,18 +1531,24 @@ public class JitsiMeetConferenceImpl
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
-        BridgeSession bridgeSession = findBridgeSession(participant);
-        if (bridgeSession != null)
+        synchronized (bridges)
         {
-            bridgeSession.colibriConference.updateSourcesInfo(
+            BridgeSession bridgeSession = findBridgeSession(participant);
+            if (bridgeSession != null)
+            {
+                bridgeSession.colibriConference.updateSourcesInfo(
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
                     participant.getColibriChannelsInfo());
-        }
-        else
-        {
-            logger.warn("No bridge for a participant.");
-            // TODO: how do we handle this? Re-invite?
+            }
+            else
+            {
+                logger.warn("No bridge for a participant.");
+                // TODO: how do we handle this? Re-invite?
+            }
+
+            propagateNewSourcesToOcto(
+                bridgeSession, sourcesToAdd, sourceGroupsToAdd);
         }
 
         propagateNewSources(participant, sourcesToAdd, sourceGroupsToAdd);
@@ -1552,6 +1639,15 @@ public class JitsiMeetConferenceImpl
                     participant.getColibriChannelsInfo());
         }
 
+        synchronized (bridges)
+        {
+            bridges.stream()
+                .filter(bridge -> !bridge.equals(bridgeSession))
+                .forEach(
+                    bridge -> bridge.removeSourcesFromOcto(
+                            removedSources, removedGroups));
+        }
+
         logger.info("Removing " + participantJid + " sources " + removedSources);
 
         participants.stream()
@@ -1598,8 +1694,8 @@ public class JitsiMeetConferenceImpl
             List<ContentPacketExtension>    contents)
         throws InvalidSSRCsException
     {
-        MediaSourceMap conferenceSources = getAllSources(null);
-        MediaSourceGroupMap conferenceSourceGroups = getAllSourceGroups(null);
+        MediaSourceMap conferenceSources = getAllSources();
+        MediaSourceGroupMap conferenceSourceGroups = getAllSourceGroups();
 
         SSRCValidator validator
             = new SSRCValidator(
@@ -1631,6 +1727,17 @@ public class JitsiMeetConferenceImpl
     /**
      * Gathers the list of all sources that exist in the current conference state.
      *
+     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
+     * in the current conference state.
+     */
+    private MediaSourceMap getAllSources()
+    {
+        return getAllSources(Collections.EMPTY_LIST);
+    }
+
+    /**
+     * Gathers the list of all sources that exist in the current conference state.
+     *
      * @param except optional <tt>Participant</tt> instance whose sources will be
      *               excluded from the list
      *
@@ -1639,12 +1746,26 @@ public class JitsiMeetConferenceImpl
      */
     MediaSourceMap getAllSources(Participant except)
     {
+        return getAllSources(Collections.singletonList(except));
+    }
+
+    /**
+     * Gathers the list of all sources that exist in the current conference state.
+     *
+     * @param except optional <tt>Participant</tt> instance whose sources will be
+     *               excluded from the list
+     *
+     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
+     * in the current conference state.
+     */
+    private MediaSourceMap getAllSources(List<Participant> except)
+    {
         MediaSourceMap mediaSources = new MediaSourceMap();
 
         for (Participant participant : participants)
         {
             // We want to exclude this one
-            if (participant == except)
+            if (except.contains(participant))
             {
                 continue;
             }
@@ -1659,6 +1780,18 @@ public class JitsiMeetConferenceImpl
      * Gathers the list of all source groups that exist in the current conference
      * state.
      *
+     * @return the list of all source groups of given media type that exist in
+     *         current conference state.
+     */
+    private MediaSourceGroupMap getAllSourceGroups()
+    {
+        return getAllSourceGroups(Collections.EMPTY_LIST);
+    }
+
+    /**
+     * Gathers the list of all source groups that exist in the current conference
+     * state.
+     *
      * @param except optional <tt>Participant</tt> instance whose source groups
      *               will be excluded from the list
      *
@@ -1667,12 +1800,27 @@ public class JitsiMeetConferenceImpl
      */
     MediaSourceGroupMap getAllSourceGroups(Participant except)
     {
+        return getAllSourceGroups(Collections.singletonList(except));
+    }
+
+    /**
+     * Gathers the list of all source groups that exist in the current conference
+     * state.
+     *
+     * @param except a list of participants whose sources will not be included
+     * in the result.
+     *
+     * @return the list of all source groups of given media type that exist in
+     *         current conference state.
+     */
+    private MediaSourceGroupMap getAllSourceGroups(List<Participant> except)
+    {
         MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
 
         for (Participant participant : participants)
         {
             // Excluded this participant groups
-            if (participant == except)
+            if (except.contains(participant))
             {
                 continue;
             }
@@ -1908,6 +2056,8 @@ public class JitsiMeetConferenceImpl
 
                 bridges.remove(bridgeSession);
 
+                updateOctoRelays();
+
                 for (Participant participant : participantsToReinvite)
                 {
                     // Cancel the thread early.
@@ -1959,6 +2109,42 @@ public class JitsiMeetConferenceImpl
         // We're gonna handle this, no more work for this
         // AbstractChannelAllocator.
         channelAllocator.cancel();
+
+        if (channelAllocator instanceof ParticipantChannelAllocator)
+        {
+            onParticipantChannelAllocationFailed(
+                (ParticipantChannelAllocator) channelAllocator);
+        }
+        else if (channelAllocator instanceof OctoChannelAllocator)
+        {
+            onOctoChannelAllocationFailed(
+                (OctoChannelAllocator) channelAllocator);
+        }
+        else
+        {
+            logger.error("Unknown allocator type:");
+        }
+    }
+
+    /**
+     * Handles a failure to allocate channels for Octo.
+     * @param channelAllocator the {@link OctoChannelAllocator} which failed.
+     */
+    private void onOctoChannelAllocationFailed(
+        OctoChannelAllocator channelAllocator)
+    {
+        logger.error("Failed to allocate Octo channels.");
+        onBridgeDown(channelAllocator.getBridgeSession().bridgeState.getJid());
+    }
+
+    /**
+     * Handles a failure to allocate channels for a conference participant.
+     * @param channelAllocator the {@link ParticipantChannelAllocator} which
+     * failed.
+     */
+    private void onParticipantChannelAllocationFailed(
+        ParticipantChannelAllocator channelAllocator)
+    {
 
         BridgeSession bridgeSession = channelAllocator.getBridgeSession();
         Participant participant = channelAllocator.getParticipant();
@@ -2218,6 +2404,11 @@ public class JitsiMeetConferenceImpl
         final ColibriConferenceImpl colibriConference;
 
         /**
+         * The single {@link OctoParticipant} for this bridge session, if any.
+         */
+        private OctoParticipant octoParticipant;
+
+        /**
          * Indicates if the bridge used in this conference is faulty. We use
          * this flag to skip channel expiration step when the conference is being
          * disposed of.
@@ -2312,6 +2503,194 @@ public class JitsiMeetConferenceImpl
 
             return removed;
         }
+
+        /**
+         * Sends a COLIBRI message which updates the channels for a particular
+         * {@link Participant} in this {@link BridgeSession}, setting the
+         * participant's RTP description, sources, transport information, etc.
+         * @param participant
+         */
+        private void updateColibriChannels(Participant participant)
+        {
+            colibriConference.updateChannelsInfo(
+                participant.getColibriChannelsInfo(),
+                participant.getRtpDescriptionMap(),
+                participant.getSourcesCopy(),
+                participant.getSourceGroupsCopy(),
+                participant.getBundleTransport(),
+                participant.getTransportMap(),
+                participant.getEndpointId(),
+                null);
+        }
+
+        /**
+         * Sends a COLIBRI message which updates the channels for the Octo
+         * participant in this {@link BridgeSession}.
+         */
+        private void updateColibriOctoChannels(OctoParticipant octoParticipant)
+        {
+            if (octoParticipant != null)
+            {
+                colibriConference.updateChannelsInfo(
+                    octoParticipant.getColibriChannelsInfo(),
+                    octoParticipant.getRtpDescriptionMap(),
+                    octoParticipant.getSourcesCopy(),
+                    octoParticipant.getSourceGroupsCopy(),
+                    null,
+                    null,
+                    null,
+                    octoParticipant.getRelays());
+            }
+        }
+
+        /**
+         * Returns the Octo participant for this {@link BridgeSession}. If
+         * a participant doesn't exist yet, it is created.
+         * @return the {@link OctoParticipant} for this {@link BridgeSession}.
+         */
+        private OctoParticipant getOctoParticipant()
+        {
+            if (octoParticipant != null)
+            {
+                return octoParticipant;
+            }
+
+            List<String> remoteRelays = getAllRelays(bridgeState.getRelayId());
+            return getOctoParticipant(new LinkedList<>(remoteRelays));
+        }
+
+        /**
+         * Returns the Octo participant for this {@link BridgeSession}. If
+         * a participant doesn't exist yet, it is created and initialized
+         * with {@code relays} as the list of remote Octo relays.
+         * @return the {@link OctoParticipant} for this {@link BridgeSession}.
+         */
+        private OctoParticipant getOctoParticipant(List<String> relays)
+        {
+            if (octoParticipant == null)
+            {
+                octoParticipant = createOctoParticipant(relays);
+            }
+            return octoParticipant;
+        }
+
+        /**
+         * Adds sources and source groups to this {@link BridgeSession}'s Octo
+         * participant. If the Octo participant's session is already
+         * established, then the sources are added and a colibri message is
+         * sent to the bridge. Otherwise, they are scheduled to be added once
+         * the session is established.
+         * @param sources the sources to add.
+         * @param sourceGroups the source groups to add.
+         */
+        private void addSourcesToOcto(
+            MediaSourceMap sources,
+            MediaSourceGroupMap sourceGroups)
+        {
+           OctoParticipant octoParticipant = getOctoParticipant();
+
+           synchronized (octoParticipant)
+           {
+               if (octoParticipant.isSessionEstablished())
+               {
+                   octoParticipant
+                       .addSourcesAndGroups(sources, sourceGroups);
+                   updateColibriOctoChannels(octoParticipant);
+               }
+               else
+               {
+                   // The allocator will take care of updating these when the
+                   // session is established.
+                   octoParticipant.scheduleSourcesToAdd(sources);
+                   octoParticipant.scheduleSourceGroupsToAdd(sourceGroups);
+               }
+           }
+        }
+
+        /**
+         * Removes sources and source groups
+         * @param sources
+         * @param sourceGroups
+         */
+        private void removeSourcesFromOcto(
+            MediaSourceMap sources,
+            MediaSourceGroupMap sourceGroups)
+        {
+            OctoParticipant octoParticipant = this.octoParticipant;
+            if (octoParticipant != null)
+            {
+                synchronized (octoParticipant)
+                {
+                    if (octoParticipant.isSessionEstablished())
+                    {
+                        octoParticipant.removeSources(sources);
+                        octoParticipant.removeSourceGroups(sourceGroups);
+
+                        updateColibriOctoChannels(octoParticipant);
+                    }
+                    else
+                    {
+                        octoParticipant.scheduleSourcesToRemove(sources);
+                        octoParticipant
+                            .scheduleSourceGroupsToRemove(sourceGroups);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Sets the list of Octo relays for this {@link BridgeSession}.
+         * @param allRelays all relays in the conference (including the relay
+         * of the bridge of this {@link BridgeSession}).
+         */
+        private void setRelays(List<String> allRelays)
+        {
+            List<String> remoteRelays = new LinkedList<>(allRelays);
+            remoteRelays.remove(bridgeState.getRelayId());
+
+            if (logger.isDebugEnabled())
+            {
+                logger.debug(
+                    "Updating Octo relays for " + bridgeState + " in " +
+                        JitsiMeetConferenceImpl.this + " to " + remoteRelays);
+            }
+
+            OctoParticipant octoParticipant = getOctoParticipant(remoteRelays);
+            octoParticipant.setRelays(remoteRelays);
+        }
+
+        /**
+         * Creates an {@link OctoParticipant} for this {@link BridgeSession}
+         * and starts an {@link OctoChannelAllocator} to allocate channels for
+         * it.
+         * @param relays the list of Octo relay ids to set to the newly
+         * allocated channels.
+         * @return the instance which was created.
+         */
+        private OctoParticipant createOctoParticipant(List<String> relays)
+        {
+            logger.info(
+                "Creating an Octo participant for " + bridgeState + " in " +
+                    JitsiMeetConferenceImpl.this);
+
+            OctoParticipant octoParticipant
+                = new OctoParticipant(JitsiMeetConferenceImpl.this, relays);
+
+            MediaSourceMap remoteSources = getAllSources(participants);
+            MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants);
+
+            octoParticipant.addSourcesAndGroups(remoteSources, remoteGroups);
+
+            OctoChannelAllocator channelAllocator
+                = new OctoChannelAllocator(
+                    JitsiMeetConferenceImpl.this, this, octoParticipant);
+            octoParticipant.setChannelAllocator(channelAllocator);
+
+            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+
+            return octoParticipant;
+        }
+    }
 
     /**
      * {@inheritDoc}
