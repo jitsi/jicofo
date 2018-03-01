@@ -227,7 +227,7 @@ public class MediaSourceMap
      * Finds SSRC for given owner.
      *
      * @param mediaType the media type of the SSRC we'll be looking for.
-     * @param owner the MUC JID  of the SSRC owner.
+     * @param owner the MUC JID of the SSRC owner.
      *
      * @return <tt>SourcePacketExtension</tt> for given media type and owner or
      *  <tt>null</tt> if not found.
