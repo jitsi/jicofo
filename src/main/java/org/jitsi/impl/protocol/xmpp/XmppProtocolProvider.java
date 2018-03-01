@@ -25,10 +25,13 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
+import org.jitsi.jicofo.FocusBundleActivator;
+import org.jitsi.jicofo.FocusManager;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
+import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.util.Logger;
 
 import org.jivesoftware.smack.*;
@@ -42,7 +45,10 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
+import javax.net.ssl.*;
 import java.io.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -203,6 +209,42 @@ public class XmppProtocolProvider
         if (jabberAccountID.isAnonymousAuthUsed())
         {
             connConfig.performSaslAnonymousAuthentication();
+        }
+
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+        if (config.getBoolean(FocusManager.ALWAYS_TRUST_PNAME,false))
+        {
+            logger.warn("The always_trust config option is enabled. All" +
+                        " XMPP server provided certificates are accepted.");
+            connConfig.setCustomX509TrustManager(new X509TrustManager()
+            {
+                @Override
+                public void checkClientTrusted(X509Certificate[] c, String s)
+                    throws CertificateException
+                {
+                }
+
+                @Override
+                public void checkServerTrusted(X509Certificate[] c, String s)
+                    throws CertificateException
+                {
+                }
+
+                @Override
+                public X509Certificate[] getAcceptedIssuers()
+                {
+                    return new X509Certificate[0];
+                }
+            } );
+
+            connConfig.setHostnameVerifier(new HostnameVerifier()
+            {
+                @Override
+                public boolean verify(String s, SSLSession sslSession)
+                {
+                    return true;
+                }
+            } );
         }
 
         connection = new XMPPTCPConnection(connConfig.build());
