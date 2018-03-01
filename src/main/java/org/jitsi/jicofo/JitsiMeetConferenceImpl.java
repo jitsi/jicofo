@@ -535,7 +535,7 @@ public class JitsiMeetConferenceImpl
      * Creates a new {@link ColibriConference} instance for use by this
      * {@link JitsiMeetConferenceImpl}.
      */
-    private ColibriConferenceImpl createNewColibriConference(Jid bridgeJid)
+    private ColibriConference createNewColibriConference(Jid bridgeJid)
             throws XmppStringprepException
     {
         ColibriConferenceImpl colibriConference
@@ -2401,7 +2401,7 @@ public class JitsiMeetConferenceImpl
          * The {@link ColibriConference} instance used to communicate with
          * the jitsi-videobridge represented by this {@link BridgeSession}.
          */
-        final ColibriConferenceImpl colibriConference;
+        final ColibriConference colibriConference;
 
         /**
          * The single {@link OctoParticipant} for this bridge session, if any.
