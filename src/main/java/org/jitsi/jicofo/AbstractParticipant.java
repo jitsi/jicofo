@@ -33,7 +33,7 @@ import org.jitsi.util.*;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-public class AbstractParticipant
+public abstract class AbstractParticipant
 {
     /**
      * The class logger which can be used to override logging level inherited
@@ -403,8 +403,5 @@ public class AbstractParticipant
      * update the remote state (e.g. the list of sources (SSRCs) of this
      * participant).
      */
-    public boolean isSessionEstablished()
-    {
-        return true;
-    }
+    abstract public boolean isSessionEstablished();
 }

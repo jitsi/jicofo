@@ -26,7 +26,7 @@ import org.jxmpp.jid.*;
 import java.util.*;
 
 /**
- * A thread which allocates Colibri channels and (optionally) initiates a
+ * A task which allocates Colibri channels and (optionally) initiates a
  * Jingle session with a participant.
  *
  * @author Pawel Domas
@@ -87,8 +87,8 @@ public abstract class AbstractChannelAllocator implements Runnable
     protected final boolean[] startMuted;
 
     /**
-     * Indicates whether or not this thread will be doing a "re-invite". It
-     * means that we're going to replace previous conference which has failed.
+     * Indicates whether or not this task will be doing a "re-invite". It
+     * means that we're going to replace a previous conference which has failed.
      * Channels are allocated on new JVB and peer is re-invited with
      * 'transport-replace' Jingle action as opposed to 'session-initiate' in
      * regular invite.
@@ -157,11 +157,6 @@ public abstract class AbstractChannelAllocator implements Runnable
     {
         List<ContentPacketExtension> offer;
 
-        if (canceled)
-        {
-            return;
-        }
-
         offer = createOffer();
         if (canceled)
         {
@@ -181,7 +176,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             // Notify conference about failure
             meetConference.onChannelAllocationFailed(this);
 
-            // Cancel this thread - nothing to be done after failure
+            // Cancel this task - nothing to be done after failure
             cancel();
             return;
         }
@@ -192,12 +187,7 @@ public abstract class AbstractChannelAllocator implements Runnable
         }
 
         offer = updateOffer(offer, colibriChannels);
-        if (canceled)
-        {
-            return;
-        }
-
-        if (offer == null)
+        if (offer == null || canceled)
         {
             return;
         }
