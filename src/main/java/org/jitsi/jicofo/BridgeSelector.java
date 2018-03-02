@@ -136,9 +136,9 @@ public class BridgeSelector
     private final OperationSetSubscription subscriptionOpSet;
 
     /**
-     * The map of bridge JID to <tt>BridgeState</tt>.
+     * The map of bridge JID to <tt>Bridge</tt>.
      */
-    private final Map<Jid, BridgeState> bridges = new HashMap<>();
+    private final Map<Jid, Bridge> bridges = new HashMap<>();
 
     /**
      * The <tt>EventAdmin</tt> used by this instance to fire/send
@@ -211,9 +211,9 @@ public class BridgeSelector
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
      * set of videobridges.
-     * @return the {@link BridgeState} for the bridge with the provided JID.
+     * @return the {@link Bridge} for the bridge with the provided JID.
      */
-    public BridgeState addJvbAddress(Jid bridgeJid)
+    public Bridge addJvbAddress(Jid bridgeJid)
     {
         return addJvbAddress(bridgeJid, null);
     }
@@ -228,9 +228,9 @@ public class BridgeSelector
      * set of videobridges.
      * @param version the {@link Version} IQ instance which contains the info
      * about JVB version.
-     * @return the {@link BridgeState} for the bridge with the provided JID.
+     * @return the {@link Bridge} for the bridge with the provided JID.
      */
-    synchronized public BridgeState addJvbAddress(
+    synchronized public Bridge addJvbAddress(
             Jid bridgeJid, Version version)
     {
         if (isJvbOnTheList(bridgeJid))
@@ -253,7 +253,7 @@ public class BridgeSelector
             logger.warn("No pub-sub node mapped for " + bridgeJid);
         }
 
-        BridgeState newBridge = new BridgeState(this, bridgeJid, version);
+        Bridge newBridge = new Bridge(this, bridgeJid, version);
 
         bridges.put(bridgeJid, newBridge);
 
@@ -286,7 +286,7 @@ public class BridgeSelector
     {
         logger.info("Removing JVB: " + bridgeJid);
 
-        BridgeState bridge = bridges.remove(bridgeJid);
+        Bridge bridge = bridges.remove(bridgeJid);
 
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
@@ -308,14 +308,14 @@ public class BridgeSelector
      * Selects a bridge to be used for a specific new {@link Participant} of
      * a specific {@link JitsiMeetConference}.
      *
-     * @return the selected bridge, represented by its {@link BridgeState}.
+     * @return the selected bridge, represented by its {@link Bridge}.
      * @param conference the conference for which a bridge is to be selected.
      * @param participant the participant for which a bridge is to be selected.
      */
-    synchronized public BridgeState selectVideobridge(
+    synchronized public Bridge selectBridge(
             JitsiMeetConference conference, Participant participant)
     {
-        List<BridgeState> bridges = getPrioritizedBridgesList();
+        List<Bridge> bridges = getPrioritizedBridgesList();
         return bridgeSelectionStrategy.select(bridges, conference, participant);
     }
 
@@ -323,37 +323,28 @@ public class BridgeSelector
      * Selects a bridge to be used for a specific {@link JitsiMeetConference}.
      *
      * @param conference the conference for which a bridge is to be selected.
-     * @return the selected bridge, represented by its {@link BridgeState}.
+     * @return the selected bridge, represented by its {@link Bridge}.
      */
-    public BridgeState selectVideobridge(
+    public Bridge selectBridge(
             JitsiMeetConference conference)
     {
-        return selectVideobridge(conference, null);
+        return selectBridge(conference, null);
     }
 
     /**
      * Returns the list of all known videobridges JIDs ordered by load and
      * *operational* status. Not operational bridges are at the end of the list.
      */
-    private List<BridgeState> getPrioritizedBridgesList()
+    private List<Bridge> getPrioritizedBridgesList()
     {
-        ArrayList<BridgeState> bridgeList;
+        ArrayList<Bridge> bridgeList;
         synchronized (this)
         {
             bridgeList = new ArrayList<>(bridges.values());
         }
         Collections.sort(bridgeList);
 
-        Iterator<BridgeState> bridgesIter = bridgeList.iterator();
-
-        while (bridgesIter.hasNext())
-        {
-            BridgeState bridge = bridgesIter.next();
-            if (!bridge.isOperational())
-            {
-                bridgesIter.remove();
-            }
-        }
+        bridgeList.removeIf(bridge -> !bridge.isOperational());
 
         return bridgeList;
     }
@@ -368,18 +359,18 @@ public class BridgeSelector
      */
     synchronized public Jid getBridgeForPubSubNode(String pubSubNode)
     {
-        BridgeState bridge = findBridgeForNode(pubSubNode);
+        Bridge bridge = findBridgeForNode(pubSubNode);
         return bridge != null ? bridge.getJid() : null;
     }
 
     /**
-     * Finds <tt>BridgeState</tt> for given pub-sub node.
+     * Finds <tt>Bridge</tt> for given pub-sub node.
      *
      * @param pubSubNode the name of pub-sub node to match with the bridge.
      *
-     * @return <tt>BridgeState</tt> for given pub-sub node name.
+     * @return <tt>Bridge</tt> for given pub-sub node name.
      */
-    private synchronized BridgeState findBridgeForNode(String pubSubNode)
+    private synchronized Bridge findBridgeForNode(String pubSubNode)
     {
         Jid bridgeJid = pubSubToBridge.get(pubSubNode);
         if (bridgeJid != null)
@@ -393,7 +384,7 @@ public class BridgeSelector
      * Finds pub-sub node name for given videobridge JID.
      *
      * @param bridgeJid the JID of videobridge to be matched with
-     *                  pub-sub node name.
+     * pub-sub node name.
      *
      * @return name of pub-sub node mapped for given videobridge JID.
      */
@@ -440,13 +431,13 @@ public class BridgeSelector
             return;
         }
 
-        BridgeState bridgeState = null;
+        Bridge bridge = null;
         if (node != null)
         {
-            bridgeState = findBridgeForNode(node);
+            bridge = findBridgeForNode(node);
         }
 
-        if (bridgeState == null)
+        if (bridge == null)
         {
             DomainBareJid bridgeId;
             try
@@ -463,8 +454,8 @@ public class BridgeSelector
             }
 
             // Try to figure out bridge by itemId
-            bridgeState = bridges.get(bridgeId);
-            if (bridgeState == null)
+            bridge = bridges.get(bridgeId);
+            if (bridge == null)
             {
                 logger.warn(
                         "Received PubSub update for unknown bridge: "
@@ -489,7 +480,7 @@ public class BridgeSelector
                 Integer conferenceCount = getInt(stat.getValue());
                 if (conferenceCount != null)
                 {
-                    bridgeState.setConferenceCount(conferenceCount);
+                    bridge.setConferenceCount(conferenceCount);
                 }
             }
             else if ("videochannels".equals(stat.getName()))
@@ -497,7 +488,7 @@ public class BridgeSelector
                 Integer videoChannelCount = getInt(stat.getValue());
                 if (videoChannelCount != null)
                 {
-                    bridgeState.setVideoChannelCount(videoChannelCount);
+                    bridge.setVideoChannelCount(videoChannelCount);
                 }
             }
             else if ("videostreams".equals(stat.getName()))
@@ -505,7 +496,7 @@ public class BridgeSelector
                 Integer videoStreamCount = getInt(stat.getValue());
                 if (videoStreamCount != null)
                 {
-                    bridgeState.setVideoStreamCount(videoStreamCount);
+                    bridge.setVideoStreamCount(videoStreamCount);
                 }
             }
             else if ("relay_id".equals(stat.getName()))
@@ -513,7 +504,7 @@ public class BridgeSelector
                 Object relayId = stat.getValue();
                 if (relayId != null)
                 {
-                    bridgeState.setRelayId(relayId.toString());
+                    bridge.setRelayId(relayId.toString());
                 }
             }
             else if ("region".equals(stat.getName()))
@@ -521,7 +512,7 @@ public class BridgeSelector
                 Object region = stat.getValue();
                 if (region != null)
                 {
-                    bridgeState.setRegion(region.toString());
+                    bridge.setRegion(region.toString());
                 }
             }
         }
@@ -577,7 +568,7 @@ public class BridgeSelector
     synchronized public List<Jid> listActiveJVBs()
     {
         ArrayList<Jid> listing = new ArrayList<>(bridges.size());
-        for (BridgeState bridge : bridges.values())
+        for (Bridge bridge : bridges.values())
         {
             if (bridge.isOperational())
             {
@@ -587,14 +578,14 @@ public class BridgeSelector
         return listing;
     }
 
-    private void notifyBridgeUp(BridgeState bridge)
+    private void notifyBridgeUp(Bridge bridge)
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());
 
         eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.getJid()));
     }
 
-    private void notifyBridgeDown(BridgeState bridge)
+    private void notifyBridgeDown(Bridge bridge)
     {
         logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
@@ -609,7 +600,7 @@ public class BridgeSelector
     synchronized public void handleEvent(Event event)
     {
         String topic = event.getTopic();
-        BridgeState bridgeState;
+        Bridge bridge;
         BridgeEvent bridgeEvent;
         DomainBareJid bridgeJid;
 
@@ -622,8 +613,8 @@ public class BridgeSelector
         bridgeEvent = (BridgeEvent) event;
         bridgeJid = bridgeEvent.getBridgeJid();
 
-        bridgeState = bridges.get(bridgeEvent.getBridgeJid());
-        if (bridgeState == null)
+        bridge = bridges.get(bridgeEvent.getBridgeJid());
+        if (bridge == null)
         {
             logger.warn("Unable to handle bridge event for: " + bridgeJid);
             return;
@@ -632,7 +623,7 @@ public class BridgeSelector
         switch (topic)
         {
         case BridgeEvent.VIDEOSTREAMS_CHANGED:
-            bridgeState.onVideoStreamsChanged(bridgeEvent.getVideoStreamCount());
+            bridge.onVideoStreamsChanged(bridgeEvent.getVideoStreamCount());
             break;
         }
     }
@@ -711,9 +702,9 @@ public class BridgeSelector
      */
     synchronized public Version getBridgeVersion(DomainBareJid bridgeJid)
     {
-        BridgeState bridgeState = bridges.get(bridgeJid);
+        Bridge bridge = bridges.get(bridgeJid);
 
-        return bridgeState != null ? bridgeState.getVersion() : null;
+        return bridge != null ? bridge.getVersion() : null;
     }
 
     /**
@@ -729,11 +720,11 @@ public class BridgeSelector
     }
 
     /**
-     * @return the {@link BridgeState} for the bridge with a particular XMPP
+     * @return the {@link Bridge} for the bridge with a particular XMPP
      * JID.
      * @param jid the JID of the bridge.
      */
-    public BridgeState getBridgeState(Jid jid)
+    public Bridge getBridge(Jid jid)
     {
         synchronized (bridges)
         {
@@ -758,18 +749,18 @@ public class BridgeSelector
          * @return the selected bridge, or {@code null} if no bridge is
          * available.
          */
-        private BridgeState select(
-                List<BridgeState> bridges,
+        private Bridge select(
+                List<Bridge> bridges,
                 JitsiMeetConference conference,
                 Participant participant)
         {
-            List<BridgeState> conferenceBridges
+            List<Bridge> conferenceBridges
                 = conference == null
                         ? new LinkedList<>()
                         : conference.getBridges();
             if (conferenceBridges.isEmpty())
             {
-                BridgeState bridge = selectInitial(bridges, conference, participant);
+                Bridge bridge = selectInitial(bridges, conference, participant);
                 if (logger.isDebugEnabled())
                 {
                     logger.debug(
@@ -812,9 +803,9 @@ public class BridgeSelector
          * @return the selected bridge, or {@code null} if no bridge is
          * available.
          */
-        private BridgeState selectInitial(List<BridgeState> bridges,
-                                  JitsiMeetConference conference,
-                                  Participant participant)
+        private Bridge selectInitial(List<Bridge> bridges,
+                                     JitsiMeetConference conference,
+                                     Participant participant)
         {
             // Prefer a bridge in the participant's region.
             String participantRegion
@@ -823,7 +814,7 @@ public class BridgeSelector
                     : null;
             if (participantRegion != null)
             {
-                for (BridgeState bridge : bridges)
+                for (Bridge bridge : bridges)
                 {
                     if (bridge.isOperational()
                         && participantRegion.equals(bridge.getRegion()))
@@ -833,7 +824,7 @@ public class BridgeSelector
                 }
             }
 
-            for (BridgeState bridge : bridges)
+            for (Bridge bridge : bridges)
             {
                 if (bridge.isOperational())
                 {
@@ -858,9 +849,9 @@ public class BridgeSelector
          * @return the selected bridge, or {@code null} if no bridge is
          * available.
          */
-        abstract BridgeState doSelect(
-                List<BridgeState> bridges,
-                List<BridgeState> conferenceBridges,
+        abstract Bridge doSelect(
+                List<Bridge> bridges,
+                List<Bridge> conferenceBridges,
                 JitsiMeetConference conference,
                 Participant participant);
     }
@@ -884,9 +875,9 @@ public class BridgeSelector
          * Always selects the bridge already used by the conference.
          */
         @Override
-        public BridgeState doSelect(
-                List<BridgeState> bridges,
-                List<BridgeState> conferenceBridges,
+        public Bridge doSelect(
+                List<Bridge> bridges,
+                List<Bridge> conferenceBridges,
                 JitsiMeetConference conference,
                 Participant participant)
         {
@@ -898,17 +889,17 @@ public class BridgeSelector
                 return null;
             }
 
-            BridgeState bridgeState = conferenceBridges.get(0);
-            if (!bridgeState.isOperational())
+            Bridge bridge = conferenceBridges.get(0);
+            if (!bridge.isOperational())
             {
                 logger.error(
                     "The conference already has a bridge, but it is not "
                         + "operational; conference=" + conference.getRoomName()
-                        + "; bridge=" + bridgeState);
+                        + "; bridge=" + bridge);
                 return null;
             }
 
-            return bridgeState;
+            return bridge;
         }
     }
 
@@ -932,22 +923,22 @@ public class BridgeSelector
          * Always selects the bridge already used by the conference.
          */
         @Override
-        public BridgeState doSelect(
-            List<BridgeState> bridges,
-            List<BridgeState> conferenceBridges,
+        public Bridge doSelect(
+            List<Bridge> bridges,
+            List<Bridge> conferenceBridges,
             JitsiMeetConference conference,
             Participant participant)
         {
-            for (BridgeState bridgeState : bridges)
+            for (Bridge bridge : bridges)
             {
                 // If there's an available bridge, which isn't yet used in the
                 // conference, use it.
-                if (!conferenceBridges.contains(bridgeState))
+                if (!conferenceBridges.contains(bridge))
                 {
                     logger.info(
                         "Selecting a new bridge for " + conference + ": " +
-                            bridgeState);
-                    return bridgeState;
+                            bridge);
+                    return bridge;
                 }
             }
 

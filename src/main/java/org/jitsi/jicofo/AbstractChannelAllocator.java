@@ -19,13 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
-import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 import net.java.sip.communicator.service.protocol.*;
-import org.jitsi.jicofo.discovery.*;
-import org.jitsi.jicofo.util.*;
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.util.*;
 import org.jxmpp.jid.*;
 
@@ -244,7 +238,7 @@ public abstract class AbstractChannelAllocator implements Runnable
     private ColibriConferenceIQ allocateChannels(
             List<ContentPacketExtension> contents)
     {
-        Jid jvb = bridgeSession.bridgeState.getJid();
+        Jid jvb = bridgeSession.bridge.getJid();
         if (jvb == null)
         {
             logger.error("No bridge jid");
@@ -279,7 +273,7 @@ public abstract class AbstractChannelAllocator implements Runnable
                     return null;
                 }
 
-                bridgeSession.bridgeState.setIsOperational(true);
+                bridgeSession.bridge.setIsOperational(true);
 
                 if (bridgeSession.colibriConference.hasJustAllocated())
                 {
@@ -302,7 +296,7 @@ public abstract class AbstractChannelAllocator implements Runnable
                 if (OperationFailedException.ILLEGAL_ARGUMENT
                         != exc.getErrorCode())
                 {
-                    bridgeSession.bridgeState.setIsOperational(false);
+                    bridgeSession.bridge.setIsOperational(false);
                     bridgeSession.hasFailed = true;
                 }
 

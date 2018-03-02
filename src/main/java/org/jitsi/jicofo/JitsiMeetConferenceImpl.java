@@ -592,14 +592,14 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Selects a {@link BridgeState} to use for a specific {@link Participant}.
+     * Selects a {@link Bridge} to use for a specific {@link Participant}.
      *
      * @param participant the participant for which to select a
-     * {@link BridgeState}.
-     * @return the {@link BridgeState}, or {@code null} if one could not be
-     * found or the participant already has an associated {@link BridgeState}.
+     * {@link Bridge}.
+     * @return the {@link Bridge}, or {@code null} if one could not be
+     * found or the participant already has an associated {@link Bridge}.
      */
-    private BridgeState selectBridge(Participant participant)
+    private Bridge selectBridge(Participant participant)
     {
         if (findBridgeSession(participant) != null)
         {
@@ -608,16 +608,16 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        // Select a BridgeState for the new participant.
-        BridgeState bridgeState = null;
+        // Select a Bridge for the new participant.
+        Bridge bridge = null;
         Jid enforcedVideoBridge = config.getEnforcedVideobridge();
         BridgeSelector bridgeSelector = getServices().getBridgeSelector();
 
 
         if (enforcedVideoBridge != null)
         {
-            bridgeState = bridgeSelector.getBridgeState(enforcedVideoBridge);
-            if (bridgeState == null)
+            bridge = bridgeSelector.getBridge(enforcedVideoBridge);
+            if (bridge == null)
             {
                 logger.warn("The enforced bridge is not registered with "
                                 + "BridgeSelector, will try to use a "
@@ -625,13 +625,13 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        if (bridgeState == null)
+        if (bridge == null)
         {
-            bridgeState
-                = bridgeSelector.selectVideobridge(this, participant);
+            bridge
+                = bridgeSelector.selectBridge(this, participant);
         }
 
-        if (bridgeState == null)
+        if (bridge == null)
         {
             // Can not find a bridge to use.
             logger.error(
@@ -649,7 +649,7 @@ public class JitsiMeetConferenceImpl
 
         }
 
-        return bridgeState;
+        return bridge;
     }
 
     /**
@@ -674,20 +674,20 @@ public class JitsiMeetConferenceImpl
         BridgeSession bridgeSession;
         synchronized (bridges)
         {
-            BridgeState bridgeState = selectBridge(participant);
-            if (bridgeState == null)
+            Bridge bridge = selectBridge(participant);
+            if (bridge == null)
             {
                 return;
             }
 
-            bridgeSession = findBridgeSession(bridgeState);
+            bridgeSession = findBridgeSession(bridge);
             if (bridgeSession == null)
             {
                 // The selected bridge is not yet used for this conference,
                 // so initialize a new BridgeSession
                 try
                 {
-                    bridgeSession = new BridgeSession(bridgeState);
+                    bridgeSession = new BridgeSession(bridge);
                 }
                 catch (XmppStringprepException e)
                 {
@@ -711,7 +711,7 @@ public class JitsiMeetConferenceImpl
 
             bridgeSession.participants.add(participant);
             logger.info("Added participant jid= " + participant.getMucJid()
-                            + ", bridge=" + bridgeSession.bridgeState.getJid());
+                            + ", bridge=" + bridgeSession.bridge.getJid());
             logRegions();
 
             // Colibri channel allocation and jingle invitation take time, so
@@ -760,7 +760,7 @@ public class JitsiMeetConferenceImpl
         {
             return
                 bridges.stream()
-                    .map(bridge -> bridge.bridgeState.getRelayId())
+                    .map(bridge -> bridge.bridge.getRelayId())
                     .filter(Objects::nonNull)
                     .filter(bridge -> !bridge.equals(exclude))
                     .collect(Collectors.toList());
@@ -777,7 +777,7 @@ public class JitsiMeetConferenceImpl
         {
             for (BridgeSession bridgeSession : bridges)
             {
-                sb.append("[").append(bridgeSession.bridgeState.getRegion());
+                sb.append("[").append(bridgeSession.bridge.getRegion());
                 for (Participant p : bridgeSession.participants)
                 {
                     sb.append(", ").append(p.getChatMember().getRegion());
@@ -814,19 +814,19 @@ public class JitsiMeetConferenceImpl
     /**
      * @return the {@link BridgeSession} instance used by this
      * {@link JitsiMeetConferenceImpl} which corresponds to a particular
-     * jitsi-videobridge instance represented by a {@link BridgeState}, or
-     * {@code null} if the {@link BridgeState} is not currently used in this
+     * jitsi-videobridge instance represented by a {@link Bridge}, or
+     * {@code null} if the {@link Bridge} is not currently used in this
      * conference.
      * @param state the {@link BridgeSession} which represents a particular
      * jitsi-videobridge instance for which to return the {@link BridgeSession}.
      */
-    private BridgeSession findBridgeSession(BridgeState state)
+    private BridgeSession findBridgeSession(Bridge state)
     {
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)
             {
-                if (bridgeSession.bridgeState.equals(state))
+                if (bridgeSession.bridge.equals(state))
                 {
                     return bridgeSession;
                 }
@@ -840,7 +840,7 @@ public class JitsiMeetConferenceImpl
      * @return the {@link BridgeSession} instance used by this
      * {@link JitsiMeetConferenceImpl} which corresponds to a particular
      * jitsi-videobridge instance represented by its JID, or
-     * {@code null} if the {@link BridgeState} is not currently used in this
+     * {@code null} if the {@link Bridge} is not currently used in this
      * conference.
      * @param jid the XMPP JID which represents a particular
      * jitsi-videobridge instance for which to return the {@link BridgeSession}.
@@ -851,7 +851,7 @@ public class JitsiMeetConferenceImpl
         {
             for (BridgeSession bridgeSession : bridges)
             {
-                if (bridgeSession.bridgeState.getJid().equals(jid))
+                if (bridgeSession.bridge.getJid().equals(jid))
                 {
                     return bridgeSession;
                 }
@@ -2134,7 +2134,7 @@ public class JitsiMeetConferenceImpl
         OctoChannelAllocator channelAllocator)
     {
         logger.error("Failed to allocate Octo channels.");
-        onBridgeDown(channelAllocator.getBridgeSession().bridgeState.getJid());
+        onBridgeDown(channelAllocator.getBridgeSession().bridge.getJid());
     }
 
     /**
@@ -2162,7 +2162,7 @@ public class JitsiMeetConferenceImpl
         }
         else
         {
-            onBridgeDown(bridgeSession.bridgeState.getJid());
+            onBridgeDown(bridgeSession.bridge.getJid());
         }
     }
 
@@ -2350,21 +2350,21 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public List<BridgeState> getBridges()
+    public List<Bridge> getBridges()
     {
-        List<BridgeState> bridgeStates = new LinkedList<>();
-        synchronized (bridges)
+        List<Bridge> bridges = new LinkedList<>();
+        synchronized (this.bridges)
         {
-            for (BridgeSession bridgeSession : bridges)
+            for (BridgeSession bridgeSession : this.bridges)
             {
                 // TODO: do we actually want the hasFailed check?
                 if (!bridgeSession.hasFailed)
                 {
-                    bridgeStates.add(bridgeSession.bridgeState);
+                    bridges.add(bridgeSession.bridge);
                 }
             }
         }
-        return  bridgeStates;
+        return bridges;
     }
 
 
@@ -2381,15 +2381,15 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Represents a {@link BridgeState} instance as used by this
+     * Represents a {@link Bridge} instance as used by this
      * {@link JitsiMeetConferenceImpl}.
      */
     class BridgeSession
     {
         /**
-         * The {@link BridgeState}.
+         * The {@link Bridge}.
          */
-        BridgeState bridgeState;
+        Bridge bridge;
 
         /**
          * The list of participants in the conference which use this
@@ -2417,15 +2417,15 @@ public class JitsiMeetConferenceImpl
 
         /**
          * Initializes a new {@link BridgeSession} instance.
-         * @param bridgeState the {@link BridgeState} which the new
+         * @param bridge the {@link Bridge} which the new
          * {@link BridgeSession} instance is to represent.
          */
-        BridgeSession(BridgeState bridgeState)
+        BridgeSession(Bridge bridge)
                 throws XmppStringprepException
         {
-            this.bridgeState = bridgeState;
+            this.bridge = bridge;
             this.colibriConference
-                = createNewColibriConference(bridgeState.getJid());
+                = createNewColibriConference(bridge.getJid());
         }
 
         /**
@@ -2555,7 +2555,7 @@ public class JitsiMeetConferenceImpl
                 return octoParticipant;
             }
 
-            List<String> remoteRelays = getAllRelays(bridgeState.getRelayId());
+            List<String> remoteRelays = getAllRelays(bridge.getRelayId());
             return getOctoParticipant(new LinkedList<>(remoteRelays));
         }
 
@@ -2646,12 +2646,12 @@ public class JitsiMeetConferenceImpl
         private void setRelays(List<String> allRelays)
         {
             List<String> remoteRelays = new LinkedList<>(allRelays);
-            remoteRelays.remove(bridgeState.getRelayId());
+            remoteRelays.remove(bridge.getRelayId());
 
             if (logger.isDebugEnabled())
             {
                 logger.debug(
-                    "Updating Octo relays for " + bridgeState + " in " +
+                    "Updating Octo relays for " + bridge + " in " +
                         JitsiMeetConferenceImpl.this + " to " + remoteRelays);
             }
 
@@ -2670,7 +2670,7 @@ public class JitsiMeetConferenceImpl
         private OctoParticipant createOctoParticipant(List<String> relays)
         {
             logger.info(
-                "Creating an Octo participant for " + bridgeState + " in " +
+                "Creating an Octo participant for " + bridge + " in " +
                     JitsiMeetConferenceImpl.this);
 
             OctoParticipant octoParticipant

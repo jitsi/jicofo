@@ -25,16 +25,18 @@ import org.jxmpp.jid.*;
 import java.util.*;
 
 /**
- * Class holds videobridge state and implements {@link Comparable}
- * interface to find least loaded bridge.
+ * Represents a jitsi-videobridge instance, reachable at a certain JID, which
+ * can be used by jicofo for hosting conferences. Contains the state related
+ * to the jitsi-videobridge instance, such as numbers of channels and streams,
+ * the region in which the instance resides, etc.
  *
  * @author Pawel Domas
  * @author Boris Grozev
  */
-class BridgeState
-    implements Comparable<BridgeState>
+class Bridge
+    implements Comparable<Bridge>
 {
-    private final static Logger logger = Logger.getLogger(BridgeState.class);
+    private final static Logger logger = Logger.getLogger(Bridge.class);
 
     /**
      * The parent {@link BridgeSelector}.
@@ -110,9 +112,9 @@ class BridgeState
      */
     private volatile long failureTimestamp;
 
-    BridgeState(BridgeSelector bridgeSelector,
-                Jid jid,
-                Version version)
+    Bridge(BridgeSelector bridgeSelector,
+           Jid jid,
+           Version version)
     {
         this.bridgeSelector = bridgeSelector;
         this.jid = Objects.requireNonNull(jid, "jid");
@@ -257,7 +259,7 @@ class BridgeState
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(BridgeState o)
+    public int compareTo(Bridge o)
     {
         boolean meOperational = isOperational();
         boolean otherOperational = o.isOperational();
@@ -311,7 +313,7 @@ class BridgeState
     }
 
     /**
-     * @return the region of this {@link BridgeState}.
+     * @return the region of this {@link Bridge}.
      */
     public String getRegion()
     {
@@ -319,7 +321,7 @@ class BridgeState
     }
 
     /**
-     * Sets the region (e.g. "us-east") of this {@link BridgeState}.
+     * Sets the region (e.g. "us-east") of this {@link Bridge}.
      * @param region the value to set.
      */
     public void setRegion(String region)
@@ -333,7 +335,7 @@ class BridgeState
     @Override
     public String toString()
     {
-        return "[BridgeState, jid=" + jid.toString() +
+        return "[Bridge, jid=" + jid.toString() +
             ", relayId=" + getRelayId() + ", region=" + getRegion() + "]";
     }
 }
