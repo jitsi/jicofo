@@ -47,8 +47,7 @@ import org.jxmpp.stringprep.*;
 
 import javax.net.ssl.*;
 import java.io.*;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.util.*;
 import java.util.concurrent.*;
 
