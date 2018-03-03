@@ -25,14 +25,12 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
-import org.jitsi.jicofo.FocusBundleActivator;
-import org.jitsi.jicofo.FocusManager;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
-import org.jitsi.service.configuration.ConfigurationService;
-import org.jitsi.util.Logger;
+import org.jitsi.service.configuration.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
