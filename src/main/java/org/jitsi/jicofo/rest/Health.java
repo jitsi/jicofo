@@ -121,7 +121,9 @@ public class Health
 
         do
         {
-            roomName = JidCreate.entityBareFrom(generateRoomName(),
+            roomName
+                = JidCreate.entityBareFrom(
+                    generateRoomName(),
                     mucService.asDomainBareJid());
         }
         while (focusManager.getConference(roomName) != null);

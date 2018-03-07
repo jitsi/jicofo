@@ -41,6 +41,7 @@ class BridgeState
 
     /**
      * The XMPP address of the bridge.
+     * TODO: use full JIDs
      */
     private final Jid jid;
 

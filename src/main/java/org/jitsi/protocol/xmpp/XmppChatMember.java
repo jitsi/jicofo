@@ -38,7 +38,7 @@ public interface XmppChatMember
     /**
      * Returns the user's MUC address.
      */
-    EntityFullJid getContactAddressJid();
+    EntityFullJid getOccupantJid();
 
     /**
      * Returns number based on the order of joining of the members in the room.

@@ -84,7 +84,7 @@ public class MockMultiUserChat
     @Override
     public EntityFullJid getLocalMucJid()
     {
-        return me != null ? me.getContactAddressJid() : null;
+        return me != null ? me.getOccupantJid() : null;
     }
 
     @Override

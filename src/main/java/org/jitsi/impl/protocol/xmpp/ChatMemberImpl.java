@@ -136,7 +136,7 @@ public class ChatMemberImpl
         return address.toString();
     }
 
-    public EntityFullJid getContactAddressJid()
+    public EntityFullJid getOccupantJid()
     {
         return address;
     }

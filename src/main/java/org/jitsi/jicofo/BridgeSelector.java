@@ -448,6 +448,7 @@ public class BridgeSelector
 
         if (bridgeState == null)
         {
+            // TODO: use full JIDs for bridges.
             DomainBareJid bridgeId;
             try
             {

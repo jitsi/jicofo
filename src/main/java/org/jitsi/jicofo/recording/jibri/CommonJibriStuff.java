@@ -221,8 +221,6 @@ public abstract class CommonJibriStuff
      */
     public final boolean accept(JibriIq iq)
     {
-        Jid from = iq.getFrom();
-
         // Process if it belongs to an active recording session
         JibriSession session = getJibriSessionForMeetIq(iq);
         if (session != null && session.accept(iq))
@@ -236,9 +234,9 @@ public abstract class CommonJibriStuff
             return false;
         }
 
+        Jid from = iq.getFrom();
         BareJid roomName = from.asBareJid();
-        Jid conferenceRoomName = conference.getRoomName();
-        if (!conferenceRoomName.equals(roomName))
+        if (!conference.getRoomName().equals(roomName))
         {
             return false;
         }

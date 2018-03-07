@@ -722,7 +722,7 @@ public class Participant
      */
     public EntityFullJid getMucJid()
     {
-        return roomMember.getContactAddressJid();
+        return roomMember.getOccupantJid();
     }
 
     /**
@@ -769,7 +769,7 @@ public class Participant
     public void claimSources(MediaSourceMap sourceMap)
     {
         // Mark as source owner
-        Jid roomJid = roomMember.getContactAddressJid();
+        Jid roomJid = roomMember.getOccupantJid();
 
         sourceMap
             .getMediaTypes()

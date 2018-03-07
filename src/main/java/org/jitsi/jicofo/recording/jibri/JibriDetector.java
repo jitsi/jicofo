@@ -108,49 +108,46 @@ public class JibriDetector
      * Selects first idle Jibri which can be used to start recording.
      *
      * @return XMPP address of idle Jibri instance or <tt>null</tt> if there are
-     *         no Jibris available currently.
+     * no Jibris available currently.
      */
-    public Jid selectJibri()
+    public EntityFullJid selectJibri()
     {
-        for (BrewInstance jibri : instances)
-        {
-            if (JibriStatusPacketExt.Status.IDLE.equals(
+        return instances.stream()
+            .filter(
+                jibri -> JibriStatusPacketExt.Status.IDLE.equals(
                     jibri.status.getStatus()))
-            {
-                return jibri.mucJid;
-            }
-        }
-        return null;
+            .map(jibri -> jibri.jid)
+            .findFirst()
+            .orElse(null);
     }
 
     @Override
     protected void onInstanceStatusChanged(
-        Jid mucJid,
+        EntityFullJid jid,
         JibriStatusPacketExt presenceExt)
     {
         JibriStatusPacketExt.Status status = presenceExt.getStatus();
 
         if (JibriStatusPacketExt.Status.UNDEFINED.equals(status))
         {
-            notifyInstanceOffline(mucJid);
+            notifyInstanceOffline(jid);
         }
         else if (JibriStatusPacketExt.Status.IDLE.equals(status))
         {
-            notifyJibriStatus(mucJid, true);
+            notifyJibriStatus(jid, true);
         }
         else if (JibriStatusPacketExt.Status.BUSY.equals(status))
         {
-            notifyJibriStatus(mucJid, false);
+            notifyJibriStatus(jid, false);
         }
         else
         {
-            logger.error(
-                "Unknown Jibri status: " + status + " for " + mucJid);
+            logger.error("Unknown Jibri status: " + status + " for " + jid);
         }
     }
 
     @Override
-    protected void notifyInstanceOffline(Jid jid)
+    protected void notifyInstanceOffline(EntityFullJid jid)
     {
         logger.info(getLogName() + ": " + jid + " went offline");
 
@@ -161,10 +158,12 @@ public class JibriDetector
                     JibriEvent.newWentOfflineEvent(jid, this.isSIP));
         }
         else
-            logger.error("No EventAdmin !");
+        {
+            logger.warn("No EventAdmin!");
+        }
     }
 
-    private void notifyJibriStatus(Jid jibriJid, boolean available)
+    private void notifyJibriStatus(EntityFullJid jibriJid, boolean available)
     {
         logger.info(
             getLogName() + ": " + jibriJid + " available: " + available);
@@ -177,6 +176,8 @@ public class JibriDetector
                             jibriJid, available, isSIP));
         }
         else
-            logger.error("No EventAdmin !");
+        {
+            logger.warn("No EventAdmin!");
+        }
     }
 }

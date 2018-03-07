@@ -233,10 +233,12 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
         {
             // Process offline status
-            BrewInstance instance = find(chatMember.getContactAddressJid());
+            BrewInstance instance = find(chatMember.getOccupantJid());
 
             if (instance != null)
+            {
                 removeInstance(instance);
+            }
         }
     }
 
@@ -263,69 +265,72 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         Presence presence = member.getPresence();
 
         if (presence == null)
+        {
             return;
+        }
 
         ExtensionElement ext
             = presence.getExtension(extensionElementName, extensionNamespace);
 
         // if the extension is missing skip processing
         if (ext == null)
+        {
             return;
+        }
 
-        processInstanceStatusChanged(member.getContactAddressJid(), (T) ext);
+        processInstanceStatusChanged(member.getOccupantJid(), (T) ext);
     }
 
     /**
      * Process a MUC member status presence changed. Use the presence extension
      * to notify implementors for the change. Stores instance if we do not
      * have it cached locally, otherwise just update the new status.
-     * @param mucJid the member muc address
+     * @param jid the occupant (MUC) JID of the member.
      * @param extension the presence extension representing this brewing
      * instance status.
      */
     private void processInstanceStatusChanged(
-        Jid mucJid, T extension)
+        EntityFullJid jid, T extension)
     {
-        BrewInstance instance = find(mucJid);
+        BrewInstance instance = find(jid);
 
         if (instance == null)
         {
-            instance = new BrewInstance(mucJid, extension);
+            instance = new BrewInstance(jid, extension);
             instances.add(instance);
 
-            logger.info("Added brewery instance: " + mucJid);
+            logger.info("Added brewery instance: " + jid);
         }
         else
         {
             instance.status = extension;
         }
 
-        onInstanceStatusChanged(instance.mucJid, extension);
+        onInstanceStatusChanged(instance.jid, extension);
     }
 
     /**
      * Notified for MUC service status update by providing its presence
      * extension.
      *
-     * @param mucJid the brewing instance muc address
+     * @param jid the brewing instance muc address
      * @param status the updated status for that instance
      */
-    abstract protected void onInstanceStatusChanged(Jid mucJid, T status);
+    abstract protected void onInstanceStatusChanged(
+        EntityFullJid jid, T status);
 
     /**
      * Finds instance by muc address.
      *
-     * @param mucJid the address to use while searching for muc instance.
+     * @param jid the address to use while searching for muc instance.
      * @return the brewing instance or null if not found.
      */
-    private BrewInstance find(Jid mucJid)
+    private BrewInstance find(EntityFullJid jid)
     {
-        for (BrewInstance i : instances)
-        {
-            if (i.mucJid.equals(mucJid))
-                return i;
-        }
-        return null;
+        return instances.stream()
+            .filter(i -> i.jid.equals(jid))
+            .findFirst()
+            .orElse(null);
     }
 
     /**
@@ -338,16 +343,16 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         instances.remove(i);
 
-        logger.info("Removed brewery instance: " + i.mucJid);
+        logger.info("Removed brewery instance: " + i.jid);
 
-        notifyInstanceOffline(i.mucJid);
+        notifyInstanceOffline(i.jid);
     }
 
     /**
      * Notifies that a brewing instance is going offline.
      * @param jid the instance muc address
      */
-    abstract protected void notifyInstanceOffline(Jid jid);
+    abstract protected void notifyInstanceOffline(EntityFullJid jid);
 
     /**
      * Internal structure for storing information about brewing instances.
@@ -357,16 +362,16 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         /**
          * Eg. "room@muc.server.net/nick"
          */
-        public final Jid mucJid;
+        public final EntityFullJid jid;
 
         /**
          * One of {@link ExtensionElement}
          */
         public T status;
 
-        BrewInstance(Jid mucJid, T status)
+        BrewInstance(EntityFullJid jid, T status)
         {
-            this.mucJid = mucJid;
+            this.jid = jid;
             this.status = status;
         }
     }
