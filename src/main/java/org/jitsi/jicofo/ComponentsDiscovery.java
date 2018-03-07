@@ -406,6 +406,7 @@ public class ComponentsDiscovery
         /**
          * Maps bridge JID to last received stats timestamp. Used to expire
          * bridge which do not send stats for too long.
+         * TODO: move to BridgeSelector?
          */
         private final Map<Jid, Long> bridgesMap = new HashMap<>();
 

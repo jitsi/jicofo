@@ -181,8 +181,8 @@ class ShibbolethHandler
             return;
         }
 
-        EntityBareJid fullRoom = JidCreate.entityBareFrom(
-                request.getParameter("room"));
+        EntityBareJid roomName
+            = JidCreate.entityBareFrom(request.getParameter("room"));
 
         String machineUID = request.getParameter("machineUID");
         if (StringUtils.isNullOrEmpty(machineUID))
@@ -206,7 +206,7 @@ class ShibbolethHandler
         // User authenticated
         String sessionId
             = shibbolethAuthAuthority.authenticateUser(
-                    machineUID, email, fullRoom, createPropertiesMap(request));
+                    machineUID, email, roomName, createPropertiesMap(request));
 
         if (sessionId == null)
         {
@@ -262,7 +262,7 @@ class ShibbolethHandler
         {
             // Redirect back to the conference room
             script += " window.location.href='../" +
-                    fullRoom.getLocalpart() + "';\n";
+                    roomName.getLocalpart() + "';\n";
         }
 
         responseWriter.println(script +"})();\n</script>\n");

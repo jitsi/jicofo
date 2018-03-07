@@ -108,7 +108,7 @@ public class MockMucShare
             {
                 MockRoomMember mockRoomMember
                     = (MockRoomMember) chatToNotify.findChatMember(
-                            chatRoomMember.getContactAddressJid());
+                            chatRoomMember.getOccupantJid());
                 if (mockRoomMember != null)
                 {
                     chatToNotify.mockLeave(mockRoomMember.getName());

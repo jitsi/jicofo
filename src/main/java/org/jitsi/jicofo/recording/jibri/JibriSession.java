@@ -79,7 +79,7 @@ public class JibriSession
      * The JID of the Jibri currently being used by this session or
      * <tt>null</tt> otherwise.
      */
-    private Jid currentJibriJid;
+    private EntityFullJid currentJibriJid;
 
     /**
      * The display name Jibri attribute received from Jitsi Meet to be passed
@@ -143,7 +143,7 @@ public class JibriSession
     private int retryAttempt = 0;
 
     /**
-     * Name of the MUC room (full MUC address).
+     * The (bare) JID of the MUC room.
      */
     private final EntityBareJid roomName;
 
@@ -194,17 +194,17 @@ public class JibriSession
      * select logging level for this instance {@link #logger}.
      */
     public JibriSession(
-            JibriSession.Owner          owner,
-            EntityBareJid               roomName,
-            long                        pendingTimeout,
-            XmppConnection              connection,
-            ScheduledExecutorService    scheduledExecutor,
-            JibriDetector               jibriDetector,
-            boolean                     isSIP,
-            String                      sipAddress,
-            String                      displayName,
-            String                      streamID,
-            Logger                      logLevelDelegate)
+            JibriSession.Owner owner,
+            EntityBareJid roomName,
+            long pendingTimeout,
+            XmppConnection connection,
+            ScheduledExecutorService scheduledExecutor,
+            JibriDetector jibriDetector,
+            boolean isSIP,
+            String sipAddress,
+            String displayName,
+            String streamID,
+            Logger logLevelDelegate)
     {
         this.owner = owner;
         this.roomName = roomName;
@@ -278,7 +278,9 @@ public class JibriSession
     private void sendStopIQ(XMPPError error)
     {
         if (currentJibriJid == null)
+        {
             return;
+        }
 
         JibriIq stopRequest = new JibriIq();
 
@@ -360,7 +362,9 @@ public class JibriSession
         boolean doRetry
             = error == null // on the first time there will be no error
                 || error.getExtension(
-                        "retry", "http://jitsi.org/protocol/jibri") != null;
+                        "retry",
+                        "http://jitsi.org/protocol/jibri")
+                    != null;
 
         logger.debug(
             "Do retry? " + doRetry
@@ -369,7 +373,7 @@ public class JibriSession
 
         if (doRetry && retryAttempt++ < NUM_RETRIES)
         {
-            final Jid newJibriJid = jibriDetector.selectJibri();
+            final EntityFullJid newJibriJid = jibriDetector.selectJibri();
 
             logger.debug(
                 "Selected JIBRI: " + newJibriJid + " in " + this.roomName);
@@ -382,15 +386,17 @@ public class JibriSession
             else if (error == null)
             {
                 // Classify this failure as 'service not available'
-                error = XMPPError.getBuilder(
+                error
+                    = XMPPError.getBuilder(
                         XMPPError.Condition.service_unavailable).build();
             }
         }
         if (error == null)
         {
-            error = XMPPError.from(
-                        XMPPError.Condition.internal_server_error,
-                        "Retry limit exceeded").build();
+            error
+                = XMPPError.from(
+                    XMPPError.Condition.internal_server_error,
+                    "Retry limit exceeded").build();
         }
         // No more retries, stop either with the error passed as an argument
         // or with one defined here in this method, which will provide more
@@ -440,7 +446,7 @@ public class JibriSession
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
      */
-    private void startJibri(final Jid jibriJid)
+    private void startJibri(final EntityFullJid jibriJid)
     {
         logger.info(
             "Starting Jibri " + jibriJid

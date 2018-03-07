@@ -882,7 +882,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param mucJid the full MUC address to check.
      *
-     * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
+     * @return <tt>true</tt> if given <tt>jid</tt> belongs to the focus
      *         participant or <tt>false</tt> otherwise.
      */
     @Override
@@ -1077,7 +1077,7 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getContactAddressJid().equals(
+            if (participant.getChatMember().getOccupantJid().equals(
                     jingleSession.getAddress()))
             {
                 return participant;
@@ -1102,7 +1102,7 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getContactAddressJid()
+            if (participant.getChatMember().getOccupantJid()
                     .equals(roomJid))
             {
                 return participant;

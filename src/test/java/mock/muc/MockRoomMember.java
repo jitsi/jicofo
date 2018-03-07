@@ -92,7 +92,7 @@ public class MockRoomMember
     }
 
     @Override
-    public EntityFullJid getContactAddressJid()
+    public EntityFullJid getOccupantJid()
     {
         return address;
     }

@@ -602,7 +602,7 @@ public class ChatRoomImpl
         {
             for (ChatMemberImpl member : members.values())
             {
-                if (mucJid.equals(member.getContactAddressJid()))
+                if (mucJid.equals(member.getOccupantJid()))
                 {
                     return member;
                 }
@@ -952,7 +952,7 @@ public class ChatRoomImpl
 
     public Occupant getOccupant(ChatMemberImpl chatMemeber)
     {
-        return muc.getOccupant(chatMemeber.getContactAddressJid());
+        return muc.getOccupant(chatMemeber.getOccupantJid());
     }
 
     /**
