@@ -303,8 +303,7 @@ public class JibriSession
     public boolean accept(JibriIq packet)
     {
         return currentJibriJid != null
-            && (packet.getFrom().asBareJid()
-                    .equals(currentJibriJid.asBareJid()));
+            && (packet.getFrom().equals(currentJibriJid));
     }
 
     /**
