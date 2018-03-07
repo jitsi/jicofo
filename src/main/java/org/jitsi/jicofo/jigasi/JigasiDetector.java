@@ -62,12 +62,12 @@ public class JigasiDetector
 
     @Override
     protected void onInstanceStatusChanged(
-        Jid mucJid,
+        EntityFullJid jid,
         ColibriStatsExtension status)
     {}
 
     @Override
-    protected void notifyInstanceOffline(Jid jid)
+    protected void notifyInstanceOffline(EntityFullJid jid)
     {}
 
     /**
@@ -93,6 +93,6 @@ public class JigasiDetector
             }
         }
 
-        return lessLoadedInstance != null ? lessLoadedInstance.mucJid : null;
+        return lessLoadedInstance != null ? lessLoadedInstance.jid : null;
     }
 }

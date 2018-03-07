@@ -961,7 +961,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param mucJid the full MUC address to check.
      *
-     * @return <tt>true</tt> if given <tt>mucJid</tt> belongs to the focus
+     * @return <tt>true</tt> if given <tt>jid</tt> belongs to the focus
      *         participant or <tt>false</tt> otherwise.
      */
     @Override

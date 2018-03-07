@@ -100,6 +100,14 @@ public class FocusManager
         = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
 
     /**
+     * The name of the configuration property that specifies if certificates of
+     * the XMPP domain name should be verified, or always trusted. If not
+     * provided then 'false' (should verify) is used.
+     */
+    public static final String ALWAYS_TRUST_PNAME
+        = "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED";
+
+    /**
      * The name of the property used to configure a 1-byte identifier of this
      * Jicofo instance, used for the purpose of generating conference IDs unique
      * across a set of Jicofo instances.
