@@ -36,6 +36,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.disco.packet.*;
 import org.jxmpp.jid.*;
@@ -202,6 +203,12 @@ public class XmppProtocolProvider
                 .setPort(serverPort)
                 .setXmppDomain(serviceName);
         ReconnectionManager.setEnabledPerDefault(true);
+
+        // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but tries
+        // authenticate with GSSAPI when it's offered by the server.
+        // Disable GSSAPI.
+        SASLAuthentication.unregisterSASLMechanism(
+            SASLGSSAPIMechanism.class.getName());
 
         if (jabberAccountID.isAnonymousAuthUsed())
         {
