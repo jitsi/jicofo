@@ -96,10 +96,10 @@ public class OperationSetMultiUserChatImpl
                                    Map<String, Object> roomProperties)
         throws OperationFailedException, OperationNotSupportedException
     {
-        EntityBareJid roomNameJid;
+        EntityBareJid roomJid;
         try
         {
-            roomNameJid = JidCreate.entityBareFrom(roomName);
+            roomJid = JidCreate.entityBareFrom(roomName);
         }
         catch (XmppStringprepException e)
         {
@@ -118,7 +118,7 @@ public class OperationSetMultiUserChatImpl
                     OperationFailedException.GENERAL_ERROR);
             }
 
-            ChatRoomImpl newRoom = new ChatRoomImpl(this, roomNameJid);
+            ChatRoomImpl newRoom = new ChatRoomImpl(this, roomJid);
 
             rooms.put(newRoom.getName(), newRoom);
 

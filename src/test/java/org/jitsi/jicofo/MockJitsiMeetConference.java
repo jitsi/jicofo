@@ -51,7 +51,7 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public List<BridgeState> getBridges()
+    public List<Bridge> getBridges()
     {
         return new LinkedList<>();
     }

@@ -82,7 +82,7 @@ public class MockMultiUserChat
     }
 
     @Override
-    public EntityFullJid getLocalMucJid()
+    public EntityFullJid getLocalOccupantJid()
     {
         return me != null ? me.getOccupantJid() : null;
     }
@@ -121,7 +121,7 @@ public class MockMultiUserChat
     }
 
     @Override
-    public EntityBareJid getNameAsJid()
+    public EntityBareJid getRoomJid()
     {
         return roomName;
     }

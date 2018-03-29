@@ -190,6 +190,15 @@ public class SourceGroup
         return new SourceGroup(getExtensionCopy());
     }
 
+    /**
+     * Overrides {@link Object#equals(Object)}. Two {@link SourceGroup}s are
+     * considered equal if:
+     * 1. They have the same semantics
+     * 2. They have the same sources (according to
+     * {@link SourcePacketExtension#equals(Object)}), and in the same order.
+     *
+     * @param obj the other source group.
+     */
     @Override
     public boolean equals(Object obj)
     {
@@ -199,32 +208,34 @@ public class SourceGroup
         }
 
         SourceGroup other = (SourceGroup) obj;
-        String semantics = other.group.getSemantics();
+        String semantics = other.getSemantics();
         if (StringUtils.isNullOrEmpty(semantics)
-            && !StringUtils.isNullOrEmpty(group.getSemantics()))
+            && !StringUtils.isNullOrEmpty(getSemantics()))
         {
             return false;
         }
-        if (!group.getSemantics().equals(semantics))
+
+        if (!getSemantics().equals(semantics))
         {
             return false;
         }
-        for (SourcePacketExtension sourceToFind : group.getSources())
+
+        List<SourcePacketExtension> sources = getSources();
+        List<SourcePacketExtension> otherSources = other.getSources();
+
+        if (sources.size() != otherSources.size())
         {
-            boolean found = false;
-            for (SourcePacketExtension source : other.group.getSources())
-            {
-                if (source.sourceEquals(sourceToFind))
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
+            return false;
+        }
+
+        for (int i = 0; i < sources.size(); i++)
+        {
+            if (!sources.get(i).sourceEquals(otherSources.get(i)))
             {
                 return false;
             }
         }
+
         return true;
     }
 

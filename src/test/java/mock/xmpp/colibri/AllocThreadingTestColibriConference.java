@@ -194,18 +194,18 @@ public class AllocThreadingTestColibriConference
     }
 
     @Override
-    protected boolean acquireCreateConferenceSemaphore(String endpointName)
+    protected boolean acquireCreateConferenceSemaphore(String endpointId)
         throws OperationFailedException
     {
-        createConfSemaphoreQueue.add(endpointName);
+        createConfSemaphoreQueue.add(endpointId);
 
         boolean isCreator
-            =  super.acquireCreateConferenceSemaphore(endpointName);
+            =  super.acquireCreateConferenceSemaphore(endpointId);
 
         if (isCreator)
         {
-            confCreator = endpointName;
-            confCreatorQueue.add(endpointName);
+            confCreator = endpointId;
+            confCreatorQueue.add(endpointId);
         }
 
         return isCreator;
@@ -234,11 +234,11 @@ public class AllocThreadingTestColibriConference
     }
 
     @Override
-    protected Stanza sendAllocRequest(String endpointName,
+    protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {
-        boolean isCreator = confCreator.equals(endpointName);
+        boolean isCreator = confCreator.equals(endpointId);
         synchronized (createConferenceSync)
         {
             if (isCreator && blockConferenceCreation)
@@ -254,12 +254,12 @@ public class AllocThreadingTestColibriConference
             }
         }
 
-        requestsSentQueue.add(endpointName);
+        requestsSentQueue.add(endpointId);
 
         Stanza response;
         if (responseError == null)
         {
-            response = super.sendAllocRequest(endpointName, request);
+            response = super.sendAllocRequest(endpointId, request);
         }
         else
         {
@@ -283,7 +283,7 @@ public class AllocThreadingTestColibriConference
             }
         }
 
-        responseReceivedQueue.add(endpointName);
+        responseReceivedQueue.add(endpointId);
 
         return response;
     }

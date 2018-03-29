@@ -193,8 +193,9 @@ public class MediaSourceGroupMapTest
 
     private void compareGroupMaps(MediaSourceGroupMap g1, MediaSourceGroupMap g2)
     {
-        List<String> mediaTypes1 = g1.getMediaTypes();
-        List<String> mediaTypes2 = g2.getMediaTypes();
+        // Compare as sets, because the order should not matter.
+        Set<String> mediaTypes1 = new HashSet<>(g1.getMediaTypes());
+        Set<String> mediaTypes2 = new HashSet<>(g2.getMediaTypes());
 
         assertEquals(mediaTypes1, mediaTypes2);
 

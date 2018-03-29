@@ -37,7 +37,7 @@ public interface ChatRoom2
      * Gets the name of this chat room as a JID.
      * @return the name of this chat room as a JID.
      */
-    EntityBareJid getNameAsJid();
+    EntityBareJid getRoomJid();
 
     /**
      * Finds chat member for given MUC jid.
@@ -54,7 +54,7 @@ public interface ChatRoom2
      * Returns the MUC address of our chat member.
      * @return our full MUC JID for example: room@conference.server.net/nickname
      */
-    EntityFullJid getLocalMucJid();
+    EntityFullJid getLocalOccupantJid();
 
     /**
      * @return the list of all our presence {@link ExtensionElement}s.

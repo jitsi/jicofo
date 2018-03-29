@@ -254,10 +254,13 @@ public class ColibriConferenceImpl
     @Override
     public ColibriConferenceIQ createColibriChannels(
             boolean useBundle,
-            String endpointName,
+            String endpointId,
             String statsId,
             boolean peerIsInitiator,
-            List<ContentPacketExtension> contents)
+            List<ContentPacketExtension> contents,
+            Map<String, List<SourcePacketExtension>> sourceMap,
+            Map<String, List<SourceGroupPacketExtension>> sourceGroupsMap,
+            List<String> octoRelayIds)
         throws OperationFailedException
     {
         ColibriConferenceIQ allocateRequest;
@@ -285,16 +288,19 @@ public class ColibriConferenceImpl
                 }
 
                 conferenceExisted
-                    = !acquireCreateConferenceSemaphore(endpointName);
+                    = !acquireCreateConferenceSemaphore(endpointId);
 
                 colibriBuilder.reset();
 
                 colibriBuilder.addAllocateChannelsReq(
                     useBundle,
-                    endpointName,
+                    endpointId,
                     statsId,
                     peerIsInitiator,
-                    contents);
+                    contents,
+                    sourceMap,
+                    sourceGroupsMap,
+                    octoRelayIds);
 
                 allocateRequest = colibriBuilder.getRequest(jitsiVideobridge);
             }
@@ -307,7 +313,7 @@ public class ColibriConferenceImpl
             logRequest("Channel allocate request", allocateRequest);
 
             // FIXME retry allocation on timeout ?
-            Stanza response = sendAllocRequest(endpointName, allocateRequest);
+            Stanza response = sendAllocRequest(endpointId, allocateRequest);
 
             logResponse("Channel allocate response", response);
 
@@ -369,7 +375,7 @@ public class ColibriConferenceImpl
         }
         finally
         {
-            releaseCreateConferenceSemaphore(endpointName);
+            releaseCreateConferenceSemaphore(endpointId);
         }
     }
 
@@ -457,7 +463,7 @@ public class ColibriConferenceImpl
      *
      * Methods exposed for unit test purpose.
      *
-     * @param endpointName the name of Colibri endpoint (conference participant)
+     * @param endpointId the ID of the Colibri endpoint (conference participant)
      *
      * @return <tt>true</tt> if current thread is conference creator.
      *
@@ -465,7 +471,7 @@ public class ColibriConferenceImpl
      *         to allocate new conference and current thread has been waiting
      *         to acquire the semaphore.
      */
-    protected boolean acquireCreateConferenceSemaphore(String endpointName)
+    protected boolean acquireCreateConferenceSemaphore(String endpointId)
         throws OperationFailedException
     {
         return createConfSemaphore.acquire();
@@ -475,9 +481,9 @@ public class ColibriConferenceImpl
      * Releases "create conference semaphore". Must be called to release the
      * semaphore possibly in "finally" block.
      *
-     * @param endpointName the name of colibri conference endpoint(participant)
+     * @param endpointId the ID of the colibri conference endpoint(participant)
      */
-    protected void releaseCreateConferenceSemaphore(String endpointName)
+    protected void releaseCreateConferenceSemaphore(String endpointId)
     {
         createConfSemaphore.release();
     }
@@ -489,7 +495,7 @@ public class ColibriConferenceImpl
      *
      * Exposed for unit tests purpose.
      *
-     * @param endpointName Colibri endpoint name (participant)
+     * @param endpointId The ID of the Colibri endpoint.
      * @param request Colibri IQ to be send towards the bridge.
      *
      * @return <tt>Packet</tt> which is JVB response or <tt>null</tt> if
@@ -498,7 +504,7 @@ public class ColibriConferenceImpl
      * @throws OperationFailedException see throws description of
      * {@link XmppConnection#sendPacketAndGetReply(IQ)}.
      */
-    protected Stanza sendAllocRequest(String endpointName,
+    protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)
         throws OperationFailedException
     {
@@ -610,13 +616,13 @@ public class ColibriConferenceImpl
 
             for (String contentName : descriptionMap.keySet())
             {
-                String channelId
+                ColibriConferenceIQ.Channel channel
                     = localChannelsInfo.getContent(contentName)
-                        .getChannels().get(0).getID();
+                        .getChannels().get(0);
                 colibriBuilder.addRtpDescription(
                         descriptionMap.get(contentName),
                         contentName,
-                        channelId);
+                        channel);
             }
 
             request = colibriBuilder.getRequest(jitsiVideobridge);
@@ -911,9 +917,15 @@ public class ColibriConferenceImpl
             MediaSourceGroupMap sourceGroups,
             IceUdpTransportPacketExtension bundleTransport,
             Map<String, IceUdpTransportPacketExtension> transportMap,
-            String endpointId)
+            String endpointId,
+            List<String> relays)
     {
         ColibriConferenceIQ request;
+        if (localChannelsInfo == null)
+        {
+            logger.error("Can not update channels -- null");
+            return;
+        }
 
         synchronized (syncRoot)
         {
@@ -931,13 +943,13 @@ public class ColibriConferenceImpl
             {
                 for (String contentName : descriptionMap.keySet())
                 {
-                    String channelId
+                    ColibriConferenceIQ.Channel channel
                         = localChannelsInfo.getContent(contentName)
-                            .getChannels().get(0).getID();
+                            .getChannels().get(0);
                     send |= colibriBuilder.addRtpDescription(
                             descriptionMap.get(contentName),
                             contentName,
-                            channelId);
+                            channel);
                 }
             }
             // SSRCs
@@ -965,6 +977,11 @@ public class ColibriConferenceImpl
             else if (transportMap != null
                     && colibriBuilder.addTransportUpdateReq(
                             transportMap, localChannelsInfo))
+            {
+                send = true;
+            }
+            if (relays != null
+                    && colibriBuilder.addOctoRelays(relays, localChannelsInfo))
             {
                 send = true;
             }

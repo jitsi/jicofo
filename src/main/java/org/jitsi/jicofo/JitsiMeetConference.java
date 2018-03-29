@@ -56,10 +56,10 @@ public interface JitsiMeetConference
     Participant findParticipantForRoomJid(Jid mucJid);
 
     /**
-     * @return the list of {@link BridgeState} currently used by this
+     * @return the list of {@link Bridge} currently used by this
      * conference.
      */
-    List<BridgeState> getBridges();
+    List<Bridge> getBridges();
 
     /**
      * Returns the name of conference multi-user chat room.

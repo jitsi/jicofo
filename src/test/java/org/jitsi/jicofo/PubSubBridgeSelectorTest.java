@@ -217,9 +217,9 @@ public class PubSubBridgeSelectorTest
      */
     // FIXME randomly fails
     //@Test
-    public void clearPubSubBridgeStateIssueTest()
+    public void clearPubSubBridgeIssueTest()
     {
-        System.err.println("Running clearPubSubBridgeStateIssueTest");
+        System.err.println("Running clearPubSubBridgeIssueTest");
 
         // Make sure that jvb advertises features with health-check support
         String[] features
