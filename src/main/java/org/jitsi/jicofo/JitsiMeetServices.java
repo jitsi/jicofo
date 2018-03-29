@@ -434,7 +434,7 @@ public class JitsiMeetServices
      * @return {@link Version} instance which holds the details about JVB
      *         version or <tt>null</tt> if unknown.
      */
-    public Version getBridgeVersion(DomainBareJid bridgeJid)
+    public Version getBridgeVersion(Jid bridgeJid)
     {
         return bridgeSelector.getBridgeVersion(bridgeJid);
     }

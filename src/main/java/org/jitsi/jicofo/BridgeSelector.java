@@ -439,11 +439,10 @@ public class BridgeSelector
 
         if (bridge == null)
         {
-            // TODO: use full JIDs for bridges.
-            DomainBareJid bridgeId;
+            Jid bridgeId;
             try
             {
-                bridgeId = JidCreate.domainBareFrom(itemId);
+                bridgeId = JidCreate.from(itemId);
             }
             catch (XmppStringprepException e)
             {
@@ -603,7 +602,7 @@ public class BridgeSelector
         String topic = event.getTopic();
         Bridge bridge;
         BridgeEvent bridgeEvent;
-        DomainBareJid bridgeJid;
+        Jid bridgeJid;
 
         if (!BridgeEvent.isBridgeEvent(event))
         {
@@ -652,10 +651,10 @@ public class BridgeSelector
                     continue;
                 }
 
-                DomainBareJid bridge = null;
+                Jid bridge = null;
                 try
                 {
-                    bridge = JidCreate.domainBareFrom(bridgeAndNode[0]);
+                    bridge = JidCreate.from(bridgeAndNode[0]);
                 }
                 catch (XmppStringprepException e)
                 {
@@ -701,7 +700,7 @@ public class BridgeSelector
      * @return {@link Version} instance which holds the details about JVB
      *         version or <tt>null</tt> if unknown.
      */
-    synchronized public Version getBridgeVersion(DomainBareJid bridgeJid)
+    synchronized public Version getBridgeVersion(Jid bridgeJid)
     {
         Bridge bridge = bridges.get(bridgeJid);
 

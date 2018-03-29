@@ -174,9 +174,9 @@ public class BridgeEvent
      * @return <tt>String</tt> which is a JID of the JVB for which this event
      *         instance has been created.
      */
-    public DomainBareJid getBridgeJid()
+    public Jid getBridgeJid()
     {
-        return (DomainBareJid) getProperty(JVB_JID_KEY);
+        return (Jid) getProperty(JVB_JID_KEY);
     }
 
     /**

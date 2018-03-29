@@ -371,8 +371,8 @@ public abstract class AbstractOperationSetJingle
                                 MediaSourceGroupMap ssrcGroupMap,
                                 JingleSession        session)
     {
-        JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD,
-                session.getSessionID());
+        JingleIQ addSourceIq
+            = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
 
         addSourceIq.setFrom(getOurJID());
         addSourceIq.setType(IQ.Type.set);

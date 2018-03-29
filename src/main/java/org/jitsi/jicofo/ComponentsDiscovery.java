@@ -571,7 +571,9 @@ public class ComponentsDiscovery
         synchronized public void handleEvent(Event event)
         {
             if (!(event instanceof BridgeEvent))
+            {
                 return;
+            }
 
             // We need to remove JVB mapping if the bridge went "down" for
             // external reasons, so that we will re-discover it correctly if it
@@ -579,7 +581,7 @@ public class ComponentsDiscovery
             BridgeEvent bridgeEvent = (BridgeEvent) event;
             if (BridgeEvent.BRIDGE_DOWN.equals(bridgeEvent.getTopic()))
             {
-                DomainBareJid bridgeJid = bridgeEvent.getBridgeJid();
+                Jid bridgeJid = bridgeEvent.getBridgeJid();
                 if (bridgesMap.remove(bridgeJid) != null)
                 {
                     logger.info("Cleared info about: " + bridgeJid);
@@ -639,10 +641,10 @@ public class ComponentsDiscovery
         public void onSubscriptionUpdate(
             String node, String itemId, ExtensionElement payload)
         {
-            DomainBareJid bridgeId;
+            Jid bridgeId;
             try
             {
-                bridgeId = JidCreate.domainBareFrom(itemId);
+                bridgeId = JidCreate.from(itemId);
             }
             catch (XmppStringprepException e)
             {

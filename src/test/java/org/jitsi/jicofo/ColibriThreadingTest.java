@@ -105,8 +105,7 @@ public class ColibriThreadingTest
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
-        DomainBareJid mockBridgeJid = JidCreate.domainBareFrom(
-                "some.mock.bridge.com");
+        Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 
         MockVideobridge mockBridge
             = new MockVideobridge(
@@ -223,8 +222,7 @@ public class ColibriThreadingTest
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
-        DomainBareJid mockBridgeJid = JidCreate.domainBareFrom(
-                "some.mock.bridge.com");
+        Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 
         MockVideobridge mockBridge
             = new MockVideobridge(
