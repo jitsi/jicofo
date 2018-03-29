@@ -48,9 +48,9 @@ public class BridgeSelectorTest
 {
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static DomainBareJid jvb1Jid;
-    private static DomainBareJid jvb2Jid;
-    private static DomainBareJid jvb3Jid;
+    private static Jid jvb1Jid;
+    private static Jid jvb2Jid;
+    private static Jid jvb3Jid;
     private static Bridge jvb1;
     private static Bridge jvb2;
     private static Bridge jvb3;
@@ -62,9 +62,10 @@ public class BridgeSelectorTest
     public static void setUpClass()
         throws Exception
     {
-        jvb1Jid = JidCreate.domainBareFrom("jvb1.test.domain.net");
-        jvb2Jid = JidCreate.domainBareFrom("jvb2.test.domain.net");
-        jvb3Jid = JidCreate.domainBareFrom("jvb3.test.domain.net");
+        // Everything should work regardless of the type of jid.
+        jvb1Jid = JidCreate.from("jvb.example.com");
+        jvb2Jid = JidCreate.from("jvb@example.com");
+        jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
         String bridgeMapping
             = jvb1Jid + ":" + jvb1PubSubNode + ";" +
               jvb2Jid + ":" + jvb2PubSubNode + ";" +
@@ -253,7 +254,7 @@ public class BridgeSelectorTest
         BridgeSelector selector, MockSubscriptionOpSetImpl mockSubscriptions)
             throws InterruptedException
     {
-        DomainBareJid[] nodes = new DomainBareJid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
+        Jid[] nodes = new Jid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
         Bridge[] states
             = new Bridge[] {jvb1, jvb2, jvb3};
 

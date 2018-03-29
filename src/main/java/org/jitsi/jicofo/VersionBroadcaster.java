@@ -173,8 +173,8 @@ public class VersionBroadcaster
 
         // Videobridge
         // It is not be reported for FOCUS_JOINED_ROOM_TOPIC
-        DomainBareJid bridgeJid
-                = (DomainBareJid)event.getProperty(EventFactory.BRIDGE_JID_KEY);
+        Jid bridgeJid
+                = (Jid)event.getProperty(EventFactory.BRIDGE_JID_KEY);
         Version jvbVersion
             = bridgeJid == null
                 ? null : meetServices.getBridgeVersion(bridgeJid);
