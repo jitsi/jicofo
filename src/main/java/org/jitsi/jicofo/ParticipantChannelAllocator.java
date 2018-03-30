@@ -95,6 +95,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         boolean useDtls = participant.hasDtlsSupport();
         boolean useRtx
             = config.isRtxEnabled() && participant.hasRtxSupport();
+        boolean enableRemb = config.isRembEnabled();
+        boolean enableTcc = config.isTccEnabled();
 
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();
@@ -103,7 +105,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         {
             contents.add(
                 jingleOfferFactory.createAudioContent(
-                    disableIce, useDtls, config.stereoEnabled()));
+                    disableIce, useDtls, config.stereoEnabled(),
+                    enableRemb, enableTcc));
         }
 
         if (participant.hasVideoSupport())
@@ -111,6 +114,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             contents.add(
                 jingleOfferFactory.createVideoContent(
                     disableIce, useDtls, useRtx,
+                    enableRemb, enableTcc,
                     config.getMinBitrate(),
                     config.getStartBitrate()));
         }
