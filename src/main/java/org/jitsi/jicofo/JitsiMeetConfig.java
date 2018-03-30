@@ -63,6 +63,24 @@ public class JitsiMeetConfig
     public static final String ENABLE_LIPSYNC = "enableLipSync";
 
     /**
+     * The name of the property that determines the min partcipants to start
+     * the call.
+     */
+    public static final String MIN_PARTICIPANTS_PNAME = "minParticipants";
+
+    /**
+     * The name of the property which enables the inclusion of the REMB RTCP
+     * in the offer.
+     */
+    public static final String ENABLE_REMB_PNAME = "enableRemb";
+
+    /**
+     * The name of the property which enables the inclusion of the TCC RTP
+     * header extension in the offer.
+     */
+    public static final String ENABLE_TCC_PNAME = "enableTcc";
+
+    /**
      * The name of the property that specifies JID of the bridge which should be
      * used instead of any bridges elected by <tt>BridgeSelector</tt>.
      * The property is meant to be used in a test that aims to run a conference
@@ -123,6 +141,21 @@ public class JitsiMeetConfig
      * The default value of the "startBitrate" property.
      */
     public static final int START_BITRATE_DEFAULT = 800;
+
+    /**
+     * The default value for the "minParticipants" property.
+     */
+    private static final int MIN_PARTICIPANTS_DEFAULT = 2;
+
+    /**
+     * Disable REMBs by default.
+     */
+    private static final boolean ENABLE_REMB_DEFAULT = false;
+
+    /**
+     * Enable TCC by default.
+     */
+    private static final boolean ENABLE_TCC_DEFAULT = true;
 
     private final Map<String, String> properties;
 
@@ -205,6 +238,37 @@ public class JitsiMeetConfig
         String disableRtxStr = properties.get(DISABLE_RTX_PNAME);
         return StringUtils.isNullOrEmpty(disableRtxStr)
             || !Boolean.parseBoolean(disableRtxStr);
+    }
+
+    /**
+     * Gets a boolean that indicates whether or not to enable the REMB RTP
+     * header extension in created offers.
+     */
+    public boolean isRembEnabled()
+    {
+        Boolean enableRemb = getBoolean(ENABLE_REMB_PNAME);
+        return enableRemb == null ? ENABLE_REMB_DEFAULT : enableRemb;
+    }
+
+    /**
+     * Gets a boolean that indicates whether or not to enable the TCC RTP header
+     * extension in created offers.
+     */
+    public boolean isTccEnabled()
+    {
+        Boolean enableTcc = getBoolean(ENABLE_TCC_PNAME);
+        return enableTcc == null ? ENABLE_TCC_DEFAULT : enableTcc;
+    }
+
+    /**
+     * Gets the minimum number of participants that need to be present in the
+     * call before we start it.
+     */
+    public int getMinParticipants()
+    {
+        Integer minParticipants = getInt(MIN_PARTICIPANTS_PNAME);
+        return minParticipants != null
+            ? minParticipants : MIN_PARTICIPANTS_DEFAULT;
     }
 
     /**

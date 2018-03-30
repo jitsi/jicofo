@@ -83,23 +83,10 @@ public class JingleOfferFactory
         = "org.jitsi.jicofo.ENABLE_FRAMEMARKING";
 
     /**
-     * The name of the property which enables the inclusion of the TCC RTP
-     * header extension in the offer.
-     */
-    public static final String ENABLE_TCC_PNAME = "org.jitsi.jicofo.ENABLE_TCC";
-
-    /**
      * The name of the property which enables the inclusion of the AST RTP
      * header extension in the offer.
      */
     public static final String ENABLE_AST_PNAME = "org.jitsi.jicofo.ENABLE_AST";
-
-    /**
-     * The name of the property which enables the inclusion of the REMB RTCP
-     * in the offer.
-     */
-    public static final String ENABLE_REMB_PNAME
-        = "org.jitsi.jicofo.ENABLE_REMB";
 
     /**
      * The name of the property which enables the inclusion of the TOF RTP
@@ -144,11 +131,6 @@ public class JingleOfferFactory
     private final boolean enableFrameMarking;
 
     /**
-     * Whether to enable the TCC RTP header extension in created offers.
-     */
-    private final boolean enableTcc;
-
-    /**
      * Whether to enable the AST RTP header extension in created offers.
      */
     private final boolean enableAst;
@@ -157,11 +139,6 @@ public class JingleOfferFactory
      * Whether to enable the TOF RTP header extension in created offers.
      */
     private final boolean enableTof;
-
-    /**
-     * Whether to enable the REMB RTCP in created offers.
-     */
-    private final boolean enableRemb;
 
     /**
      * Ctor.
@@ -179,15 +156,12 @@ public class JingleOfferFactory
         enableFrameMarking
             = cfg != null && cfg.getBoolean(ENABLE_FRAMEMARKING_PNAME, false);
 
-        enableTcc = cfg != null && cfg.getBoolean(ENABLE_TCC_PNAME, false);
         enableAst = cfg != null && cfg.getBoolean(ENABLE_AST_PNAME, true);
 
         // TOF is currently disabled, because we don't support it in the bridge
         // (and currently clients seem to not use it when abs-send-time is
         // available).
         enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
-
-        enableRemb = cfg != null && cfg.getBoolean(ENABLE_REMB_PNAME, true);
     }
 
     /**
@@ -203,13 +177,14 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public ContentPacketExtension createAudioContent(
-        boolean disableIce, boolean useDtls, boolean stereo)
+        boolean disableIce, boolean useDtls, boolean stereo,
+        boolean enableRemb, boolean enableTcc)
     {
         ContentPacketExtension content
             = createContentPacketExtension(
                     MediaType.AUDIO, disableIce, useDtls);
 
-        addAudioToContent(content, stereo);
+        addAudioToContent(content, stereo, enableRemb, enableTcc);
 
         return content;
     }
@@ -257,13 +232,15 @@ public class JingleOfferFactory
      */
     public ContentPacketExtension createVideoContent(
             boolean disableIce, boolean useDtls, boolean useRtx,
+            boolean enableRemb, boolean enableTcc,
             int minBitrate, int startBitrate)
     {
         ContentPacketExtension videoContentPe
             = createContentPacketExtension(
                     MediaType.VIDEO, disableIce, useDtls);
 
-        addVideoToContent(videoContentPe, useRtx, minBitrate, startBitrate);
+        addVideoToContent(videoContentPe, useRtx, enableRemb, enableTcc,
+                minBitrate, startBitrate);
 
         return videoContentPe;
     }
@@ -319,6 +296,8 @@ public class JingleOfferFactory
      */
     private void addVideoToContent(ContentPacketExtension content,
                                           boolean useRtx,
+                                          boolean enableRemb,
+                                          boolean enableTcc,
                                           int minBitrate,
                                           int startBitrate)
     {
@@ -590,22 +569,11 @@ public class JingleOfferFactory
      * Adds the video-related extensions for an offer to a
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
-     */
-    private void addAudioToContent(ContentPacketExtension content,
-                                   boolean stereo)
-    {
-        addAudioToContent(content, stereo, enableTcc);
-    }
-
-    /**
-     * Adds the video-related extensions for an offer to a
-     * {@link ContentPacketExtension}.
-     * @param content the {@link ContentPacketExtension} to add extensions to.
      * @param stereo enable transport-cc
      * @param enableTcc enable opus stereo mode
      */
     private static void addAudioToContent(ContentPacketExtension content,
-                                          boolean stereo, boolean enableTcc)
+                                          boolean stereo, boolean enableRemb, boolean enableTcc)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();

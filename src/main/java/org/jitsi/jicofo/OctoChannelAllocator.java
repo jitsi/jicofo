@@ -81,6 +81,8 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
         boolean useIce = false;
         boolean useDtls = false;
         boolean useRtx = false; // config.isRtxEnabled();
+        boolean enableRemb = false; // config.isRembEnabled();
+        boolean enableTcc = false; // config.isTccEnabled();
         boolean useSctp = false; // config.openSctp() == null || config.openSctp();
 
         JingleOfferFactory jingleOfferFactory
@@ -89,11 +91,12 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
         List<ContentPacketExtension> contents = new ArrayList<>();
         contents.add(
             jingleOfferFactory.createAudioContent(
-                    !useIce, useDtls, config.stereoEnabled()));
+                    !useIce, useDtls, config.stereoEnabled(),
+                    enableRemb, enableTcc));
 
         contents.add(
             jingleOfferFactory.createVideoContent(
-                    !useIce, useDtls, useRtx,
+                    !useIce, useDtls, useRtx, enableRemb, enableTcc,
                     -1, -1));
 
         if (useSctp)

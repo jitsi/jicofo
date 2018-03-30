@@ -505,7 +505,7 @@ public class JitsiMeetConferenceImpl
             }
 
             // Are we ready to start ?
-            if (!checkAtLeastTwoParticipants())
+            if (!checkMinParticipants())
             {
                 return;
             }
@@ -923,10 +923,11 @@ public class JitsiMeetConferenceImpl
      *
      * @return <tt>true</tt> if we have at least two non-focus participants.
      */
-    private boolean checkAtLeastTwoParticipants()
+    private boolean checkMinParticipants()
     {
-        // 2 + 1 focus
-        if (chatRoom.getMembersCount() >= (2 + 1))
+        int minParticipants = config.getMinParticipants();
+        // minParticipants + 1 focus
+        if (chatRoom.getMembersCount() >= (minParticipants + 1))
         {
             return true;
         }
@@ -940,7 +941,7 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        return realCount >= 2;
+        return realCount >= minParticipants;
     }
 
     /**
@@ -2025,7 +2026,7 @@ public class JitsiMeetConferenceImpl
         // participants to another one. Here we should re-invite everyone if
         // the conference is not running (e.g. there was a single bridge and
         // it failed, then in was brought up).
-        if (chatRoom != null && checkAtLeastTwoParticipants()
+        if (chatRoom != null && checkMinParticipants()
                 && bridges.isEmpty())
         {
             logger.info("New bridge available: " + bridgeJid
