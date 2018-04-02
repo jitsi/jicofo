@@ -23,6 +23,8 @@ import org.jitsi.jicofo.osgi.*;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
 
+import java.lang.reflect.*;
+
 /**
  * Helper class takes encapsulates OSGi specifics operations.
  *
@@ -110,6 +112,7 @@ public class OSGiHandler
         JicofoBundleConfig jicofoBundles = new JicofoBundleConfig();
         jicofoBundles.setUseMockProtocols(true);
         OSGi.setBundleConfig(jicofoBundles);
+        OSGi.setClassLoader(getPlatformClassLoader());
 
         OSGi.start(bundleActivator);
 
@@ -156,6 +159,24 @@ public class OSGiHandler
     public BundleContext bc()
     {
         return bc;
+    }
+
+    private ClassLoader getPlatformClassLoader() {
+        ClassLoader cl;
+        //JDK 9
+        try
+        {
+            Method getPlatformClassLoader =
+                    ClassLoader.class.getMethod("getPlatformClassLoader");
+            cl = (ClassLoader) getPlatformClassLoader.invoke(null);
+        }
+        catch (NoSuchMethodException | IllegalAccessException |
+                InvocationTargetException t)
+        {
+            // pre-JDK9
+            cl = ClassLoader.getSystemClassLoader();
+        }
+        return cl;
     }
 
     public boolean isDeadlocked()
