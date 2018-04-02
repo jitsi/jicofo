@@ -91,7 +91,7 @@ public class TestConference
     private void createJvbAndConference(String serverName, EntityBareJid roomName)
         throws Exception
     {
-        this.mockBridgeJid = JidCreate.domainBareFrom("mockjvb." + serverName);
+        this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
 
         MockVideobridge mockBridge
             = new MockVideobridge(

@@ -59,9 +59,9 @@ public class PubSubBridgeSelectorTest
 {
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static DomainBareJid jvb1Jid;
-    private static DomainBareJid jvb2Jid;
-    private static DomainBareJid jvb3Jid;
+    private static Jid jvb1Jid;
+    private static Jid jvb2Jid;
+    private static Jid jvb3Jid;
 
     private static String sharedPubSubNode = "sharedJvbStats";
 
@@ -159,9 +159,9 @@ public class PubSubBridgeSelectorTest
     static private void createMockJvbs()
         throws Exception
     {
-        jvb1Jid = JidCreate.domainBareFrom("jvb1.test.domain.net");
-        jvb2Jid = JidCreate.domainBareFrom("jvb2.test.domain.net");
-        jvb3Jid = JidCreate.domainBareFrom("jvb3.test.domain.net");
+        jvb1Jid = JidCreate.from("jvb1.test.domain.net");
+        jvb2Jid = JidCreate.from("jvb2.test.domain.net");
+        jvb3Jid = JidCreate.from("jvb3.test.domain.net");
         jvb1 = createMockJvb(JidCreate.from(jvb1Jid));
         jvb2 = createMockJvb(JidCreate.from(jvb2Jid));
         jvb3 = createMockJvb(JidCreate.from(jvb3Jid));
@@ -217,9 +217,9 @@ public class PubSubBridgeSelectorTest
      */
     // FIXME randomly fails
     //@Test
-    public void clearPubSubBridgeStateIssueTest()
+    public void clearPubSubBridgeIssueTest()
     {
-        System.err.println("Running clearPubSubBridgeStateIssueTest");
+        System.err.println("Running clearPubSubBridgeIssueTest");
 
         // Make sure that jvb advertises features with health-check support
         String[] features

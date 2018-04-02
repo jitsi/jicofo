@@ -84,7 +84,7 @@ public class JvbDoctorTest
     public void jvbDoctorTest()
         throws Exception
     {
-        DomainBareJid jvb1 = JidCreate.domainBareFrom("jvb1.jitsi.net");
+        Jid jvb1 = JidCreate.from("jvb1.example.com");
 
         FocusManager focusManager
             = ServiceUtils.getService(osgi.bc, FocusManager.class);

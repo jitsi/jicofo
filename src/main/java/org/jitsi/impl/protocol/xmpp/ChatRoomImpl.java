@@ -69,9 +69,9 @@ public class ChatRoomImpl
     private final OperationSetMultiUserChatImpl opSet;
 
     /**
-     * Chat room name.
+     * The room JID (e.g. "room@service").
      */
-    private final EntityBareJid roomName;
+    private final EntityBareJid roomJid;
 
     /**
      * {@link MemberListener} instance.
@@ -89,14 +89,14 @@ public class ChatRoomImpl
     private MultiUserChat muc;
 
     /**
-     * Our nickname.
+     * The resource part of our occupant JID.
      */
-    private Resourcepart myNickName;
+    private Resourcepart myResourcepart;
 
     /**
      * Our full Multi User Chat XMPP address.
      */
-    private EntityFullJid myMucAddress;
+    private EntityFullJid myOccupantJid;
 
     /**
      * Member presence listeners.
@@ -132,9 +132,9 @@ public class ChatRoomImpl
     private Presence lastPresenceSent;
 
     /**
-     * Number of participants in the chat room. That excludes the focus member.
+     * Number of members in the chat room. That excludes the focus member.
      */
-    private Integer participantNumber = 0;
+    private Integer memberCount = 0;
 
     /** The conference that is backed by this MUC room. */
     private JitsiMeetConference conference;
@@ -143,18 +143,17 @@ public class ChatRoomImpl
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param parentChatOperationSet parent multi user chat operation set.
-     * @param roomName the name of the chat room that will be handled by
-     *                 new <tt>ChatRoomImpl</tt>instance.
+     * @param roomJid the room JID (e.g. "room@service").
      */
     public ChatRoomImpl(OperationSetMultiUserChatImpl parentChatOperationSet,
-                        EntityBareJid roomName)
+                        EntityBareJid roomJid)
     {
         this.opSet = parentChatOperationSet;
-        this.roomName = roomName;
+        this.roomJid = roomJid;
 
         MultiUserChatManager manager = MultiUserChatManager
                 .getInstanceFor(parentChatOperationSet.getConnection());
-        muc = manager.getMultiUserChat(roomName);
+        muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);
         muc.addParticipantListener(this);
@@ -188,13 +187,13 @@ public class ChatRoomImpl
     @Override
     public String getName()
     {
-        return roomName.toString();
+        return roomJid.toString();
     }
 
     @Override
-    public EntityBareJid getNameAsJid()
+    public EntityBareJid getRoomJid()
     {
-        return roomName;
+        return roomJid;
     }
 
     @Override
@@ -224,8 +223,9 @@ public class ChatRoomImpl
     {
         try
         {
-            this.myNickName = Resourcepart.from(nickname);
-            this.myMucAddress = JidCreate.entityFullFrom(roomName, myNickName);
+            this.myResourcepart = Resourcepart.from(nickname);
+            this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
+                                                          myResourcepart);
 
             this.presenceInterceptor = new PresenceListener()
             {
@@ -237,7 +237,7 @@ public class ChatRoomImpl
             };
             muc.addPresenceInterceptor(presenceInterceptor);
 
-            muc.createOrJoin(myNickName);
+            muc.createOrJoin(myResourcepart);
 
             // Make the room non-anonymous, so that others can
             // recognize focus JID
@@ -402,21 +402,27 @@ public class ChatRoomImpl
     @Override
     public String getUserNickname()
     {
-        return myNickName.toString();
+        return myResourcepart.toString();
     }
 
     @Override
     public ChatRoomMemberRole getUserRole()
     {
-        if(this.role == null)
+        if (this.role == null)
         {
-            Occupant o = muc.getOccupant(myMucAddress);
+            Occupant o = muc.getOccupant(myOccupantJid);
 
-            if(o == null)
+            if (o == null)
+            {
                 return null;
+            }
             else
-                this.role = ChatRoomJabberImpl.smackRoleToScRole(
-                    o.getRole(), o.getAffiliation());
+            {
+                this.role
+                    = ChatRoomJabberImpl.smackRoleToScRole(
+                        o.getRole(),
+                        o.getAffiliation());
+            }
         }
 
         return this.role;
@@ -432,19 +438,19 @@ public class ChatRoomImpl
     }
 
     /**
-     * Resets cached role instance for given participant.
-     * @param participant full mucJID of the participant for whom we want to
-     *                    reset cached role instance.
+     * Resets cached role instance for given occupantJid.
+     * @param occupantJid full mucJID of the occupant for whom we want to
+     * reset the cached role instance.
      */
-    private void resetRoleForParticipant(EntityFullJid participant)
+    private void resetRoleForOccupant(EntityFullJid occupantJid)
     {
-        if (participant.getResourcepart().equals(myNickName))
+        if (occupantJid.getResourcepart().equals(myResourcepart))
         {
             resetCachedUserRole();
         }
         else
         {
-            ChatMemberImpl member = members.get(participant);
+            ChatMemberImpl member = members.get(occupantJid);
             if (member != null)
             {
                 member.resetCachedRole();
@@ -452,7 +458,7 @@ public class ChatRoomImpl
             else
             {
                 logger.error(
-                    "Role reset for: " + participant + " who does not exist");
+                    "Role reset for: " + occupantJid + " who does not exist");
             }
         }
     }
@@ -480,13 +486,15 @@ public class ChatRoomImpl
     {
         ChatRoomLocalUserRoleChangeEvent evt
             = new ChatRoomLocalUserRoleChangeEvent(
-            this, previousRole, newRole, isInitial);
+                this, previousRole, newRole, isInitial);
 
         if (logger.isTraceEnabled())
+        {
             logger.trace("Will dispatch the following ChatRoom event: " + evt);
+        }
 
-        for (ChatRoomLocalUserRoleListener listener : localUserRoleListeners)
-            listener.localUserRoleChanged(evt);
+        localUserRoleListeners
+            .forEach(listener -> listener.localUserRoleChanged(evt));
     }
 
     /**
@@ -586,14 +594,14 @@ public class ChatRoomImpl
     {
         synchronized (members)
         {
-            return new ArrayList<ChatRoomMember>(members.values());
+            return new ArrayList<>(members.values());
         }
     }
 
     @Override
-    public XmppChatMember findChatMember(Jid mucJid)
+    public XmppChatMember findChatMember(Jid occupantJid)
     {
-        if (mucJid == null)
+        if (occupantJid == null)
         {
             return null;
         }
@@ -602,7 +610,7 @@ public class ChatRoomImpl
         {
             for (ChatMemberImpl member : members.values())
             {
-                if (mucJid.equals(member.getOccupantJid()))
+                if (occupantJid.equals(member.getOccupantJid()))
                 {
                     return member;
                 }
@@ -613,9 +621,9 @@ public class ChatRoomImpl
     }
 
     @Override
-    public EntityFullJid getLocalMucJid()
+    public EntityFullJid getLocalOccupantJid()
     {
-        return myMucAddress;
+        return myOccupantJid;
     }
 
     @Override
@@ -768,7 +776,7 @@ public class ChatRoomImpl
         // which does not work with the Prosody.
         MUCAdmin admin = new MUCAdmin();
         admin.setType(IQ.Type.set);
-        admin.setTo(roomName);
+        admin.setTo(roomJid);
 
         Jid jidAddress;
         try
@@ -897,43 +905,34 @@ public class ChatRoomImpl
 
     }
 
-    private void notifyParticipantJoined(ChatMemberImpl member)
+    private void notifyMemberJoined(ChatMemberImpl member)
     {
         ChatRoomMemberPresenceChangeEvent event
             = new ChatRoomMemberPresenceChangeEvent(
                     this, member,
                     ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
 
-        for (ChatRoomMemberPresenceListener l : listeners)
-        {
-            l.memberPresenceChanged(event);
-        }
+        listeners.forEach(l -> l.memberPresenceChanged(event));
     }
 
-    private void notifyParticipantLeft(ChatMemberImpl member)
+    private void notifyMemberLeft(ChatMemberImpl member)
     {
         ChatRoomMemberPresenceChangeEvent event
             = new ChatRoomMemberPresenceChangeEvent(
                     this, member,
                     ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
 
-        for (ChatRoomMemberPresenceListener l : listeners)
-        {
-            l.memberPresenceChanged(event);
-        }
+        listeners.forEach(l -> l.memberPresenceChanged(event));
     }
 
-    private void notifyParticipantKicked(ChatMemberImpl member)
+    private void notifyMemberKicked(ChatMemberImpl member)
     {
         ChatRoomMemberPresenceChangeEvent event
             = new ChatRoomMemberPresenceChangeEvent(
                     this, member,
                     ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED, null);
 
-        for (ChatRoomMemberPresenceListener l : listeners)
-        {
-            l.memberPresenceChanged(event);
-        }
+        listeners.forEach(l -> l.memberPresenceChanged(event));
     }
 
     private void notifyMemberPropertyChanged(ChatMemberImpl member)
@@ -944,15 +943,12 @@ public class ChatRoomImpl
                     ChatRoomMemberPropertyChangeEvent.MEMBER_PRESENCE,
                     null, member.getPresence());
 
-        for (ChatRoomMemberPropertyChangeListener l : propListeners)
-        {
-            l.chatRoomPropertyChanged(event);
-        }
+        propListeners.forEach(l -> l.chatRoomPropertyChanged(event));
     }
 
-    public Occupant getOccupant(ChatMemberImpl chatMemeber)
+    Occupant getOccupant(ChatMemberImpl chatMember)
     {
-        return muc.getOccupant(chatMemeber.getOccupantJid());
+        return muc.getOccupant(chatMember.getOccupantJid());
     }
 
     /**
@@ -1038,19 +1034,13 @@ public class ChatRoomImpl
         // Remove old
         if (toRemove != null)
         {
-            for (ExtensionElement old : toRemove)
-            {
-                lastPresenceSent.removeExtension(old);
-            }
+            toRemove.forEach(old -> lastPresenceSent.removeExtension(old));
         }
 
         // Add new
         if (toAdd != null)
         {
-            for (ExtensionElement newExt : toAdd)
-            {
-                lastPresenceSent.addExtension(newExt);
-            }
+            toAdd.forEach(newExt -> lastPresenceSent.addExtension(newExt));
         }
 
         XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
@@ -1079,13 +1069,13 @@ public class ChatRoomImpl
                 return members.get(jid);
             }
 
-            if(!jid.equals(myMucAddress))
+            if (!jid.equals(myOccupantJid))
             {
-                participantNumber++;
+                memberCount++;
             }
 
             ChatMemberImpl newMember
-                = new ChatMemberImpl(jid, ChatRoomImpl.this, participantNumber);
+                = new ChatMemberImpl(jid, ChatRoomImpl.this, memberCount);
 
             members.put(jid, newMember);
 
@@ -1093,12 +1083,18 @@ public class ChatRoomImpl
         }
     }
 
-    Jid getMemberJid(EntityFullJid mucAddress)
+    /**
+     * Gets the "real" JID of an occupant of this room specified by its
+     * occupant JID.
+     * @param occupantJid the occupant JID.
+     * @return the "real" JID of the occupant, or {@code null}.
+     */
+    Jid getJid(EntityFullJid occupantJid)
     {
-        Occupant occupant = muc.getOccupant(mucAddress);
+        Occupant occupant = muc.getOccupant(occupantJid);
         if (occupant == null)
         {
-            logger.error("Unable to get occupant for " + mucAddress);
+            logger.error("Unable to get occupant for " + occupantJid);
             return null;
         }
         return occupant.getJid();
@@ -1121,15 +1117,15 @@ public class ChatRoomImpl
             // this is the presence for our member initial role and
             // affiliation, as smack do not fire any initial
             // events lets check it and fire events
-            ChatRoomMemberRole jitsiRole =
-                ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
+            ChatRoomMemberRole jitsiRole
+                = ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
 
-            if(!presence.isAvailable()
+            if (!presence.isAvailable()
                 && MUCAffiliation.none == affiliation
                 && MUCRole.none == role)
             {
                 Destroy destroy = mucUser.getDestroy();
-                if(destroy == null)
+                if (destroy == null)
                 {
                     // the room is unavailable to us, there is no
                     // message we will just leave
@@ -1142,8 +1138,7 @@ public class ChatRoomImpl
             }
             else
             {
-                setLocalUserRole(
-                    jitsiRole, ChatRoomImpl.this.role == null);
+                setLocalUserRole(jitsiRole, ChatRoomImpl.this.role == null);
             }
         }
     }
@@ -1176,7 +1171,7 @@ public class ChatRoomImpl
                     // do not use the ParticipantStatusListener#joined callback.
                     if (logger.isDebugEnabled())
                     {
-                        logger.debug("Joined " + jid + " room: " + roomName);
+                        logger.debug("Joined " + jid + " room: " + roomJid);
                     }
                     chatMember = addMember(jid);
                     memberIsNew = true;
@@ -1199,8 +1194,8 @@ public class ChatRoomImpl
 
                 if (memberIsNew)
                 {
-                    // Trigger participant "joined"
-                    notifyParticipantJoined(chatMember);
+                    // Trigger member "joined"
+                    notifyMemberJoined(chatMember);
                 }
 
                 notifyMemberPropertyChanged(chatMember);
@@ -1229,13 +1224,13 @@ public class ChatRoomImpl
         }
 
         // Should never happen, but log if something is broken
-        if (myMucAddress == null)
+        if (myOccupantJid == null)
         {
             logger.error(
                 "Processing presence when we're not aware of our address");
         }
 
-        if (myMucAddress != null && myMucAddress.equals(presence.getFrom()))
+        if (myOccupantJid != null && myOccupantJid.equals(presence.getFrom()))
         {
             processOwnPresence(presence);
         }
@@ -1268,68 +1263,70 @@ public class ChatRoomImpl
             }
         }
 
-        private ChatMemberImpl removeMember(EntityFullJid participant)
+        private ChatMemberImpl removeMember(EntityFullJid occupantJid)
         {
             synchronized (members)
             {
-                ChatMemberImpl removed = members.remove(participant);
+                ChatMemberImpl removed = members.remove(occupantJid);
 
                 if (removed == null)
-                    logger.error(participant + " not in " + roomName);
+                {
+                    logger.error(occupantJid + " not in " + roomJid);
+                }
 
-                participantNumber--;
+                memberCount--;
 
                 return removed;
             }
         }
 
         @Override
-        public void left(EntityFullJid participant)
+        public void left(EntityFullJid occupantJid)
         {
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
                 {
-                    logger.debug("Left " + participant + " room: " + roomName);
+                    logger.debug("Left " + occupantJid + " room: " + roomJid);
                 }
 
-                ChatMemberImpl member = removeMember(participant);
+                ChatMemberImpl member = removeMember(occupantJid);
 
                 if (member != null)
                 {
-                    notifyParticipantLeft(member);
+                    notifyMemberLeft(member);
                 }
                 else
                 {
                     logger.warn(
-                        "Member left event for non-existing participant: "
-                                    + participant);
+                        "Member left event for non-existing member: "
+                                    + occupantJid);
                 }
             }
         }
 
         @Override
-        public void kicked(EntityFullJid participant, Jid actor, String reason)
+        public void kicked(EntityFullJid occupantJid, Jid actor, String reason)
         {
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
                 {
                     logger.debug(
-                        "Kicked: " + participant + ", "
+                        "Kicked: " + occupantJid + ", "
                                 + actor + ", " + reason);
                 }
 
-                ChatMemberImpl member = removeMember(participant);
+                ChatMemberImpl member = removeMember(occupantJid);
 
                 if (member == null)
                 {
                     logger.error(
-                        "Kicked participant does not exist: " + participant);
+                        "Kicked member does not exist: " + occupantJid);
                     return;
                 }
 
-                notifyParticipantKicked(member);
+                notifyMemberKicked(member);
             }
         }
 
@@ -1337,110 +1334,132 @@ public class ChatRoomImpl
         public void voiceGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Voice granted: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void voiceRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Voice revoked: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void banned(EntityFullJid s, Jid actor, String reason)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Banned: " + s + ", " + actor + ", " + reason);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void membershipGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Membership granted: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void membershipRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Membership revoked: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void moderatorGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Moderator granted: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void moderatorRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Moderator revoked: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void ownershipGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Ownership granted: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void ownershipRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Ownership revoked: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void adminGranted(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Admin granted: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override
         public void adminRevoked(EntityFullJid s)
         {
             if (logger.isTraceEnabled())
+            {
                 logger.trace("Admin revoked: " + s);
+            }
 
             // We do not fire events - not required for now
-            resetRoleForParticipant(s);
+            resetRoleForOccupant(s);
         }
 
         @Override

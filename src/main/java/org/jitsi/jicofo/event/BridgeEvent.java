@@ -171,12 +171,11 @@ public class BridgeEvent
     /**
      * Gets bridge JID associated with this <tt>BridgeEvent</tt> instance.
      *
-     * @return <tt>String</tt> which is a JID of the JVB for which this event
-     *         instance has been created.
+     * @return The JID of the jitsi-videobridge instance for this event.
      */
-    public DomainBareJid getBridgeJid()
+    public Jid getBridgeJid()
     {
-        return (DomainBareJid) getProperty(JVB_JID_KEY);
+        return (Jid) getProperty(JVB_JID_KEY);
     }
 
     /**

@@ -31,9 +31,9 @@ public interface XmppChatMember
     extends ChatRoomMember
 {
     /**
-     * Returns the original user's connection Jabber ID and not the MUC address.
+     * Returns the JID of the user (outside the MUC), i.e. the "real" JID.
      */
-    Jid getJabberID();
+    Jid getJid();
 
     /**
      * Returns the user's MUC address.

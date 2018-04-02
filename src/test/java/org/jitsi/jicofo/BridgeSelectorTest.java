@@ -48,12 +48,12 @@ public class BridgeSelectorTest
 {
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static DomainBareJid jvb1Jid;
-    private static DomainBareJid jvb2Jid;
-    private static DomainBareJid jvb3Jid;
-    private static BridgeState jvb1State;
-    private static BridgeState jvb2State;
-    private static BridgeState jvb3State;
+    private static Jid jvb1Jid;
+    private static Jid jvb2Jid;
+    private static Jid jvb3Jid;
+    private static Bridge jvb1;
+    private static Bridge jvb2;
+    private static Bridge jvb3;
     private static String jvb1PubSubNode = "jvb1";
     private static String jvb2PubSubNode = "jvb2";
     private static String jvb3PubSubNode = "jvb3";
@@ -62,9 +62,10 @@ public class BridgeSelectorTest
     public static void setUpClass()
         throws Exception
     {
-        jvb1Jid = JidCreate.domainBareFrom("jvb1.test.domain.net");
-        jvb2Jid = JidCreate.domainBareFrom("jvb2.test.domain.net");
-        jvb3Jid = JidCreate.domainBareFrom("jvb3.test.domain.net");
+        // Everything should work regardless of the type of jid.
+        jvb1Jid = JidCreate.from("jvb.example.com");
+        jvb2Jid = JidCreate.from("jvb@example.com");
+        jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
         String bridgeMapping
             = jvb1Jid + ":" + jvb1PubSubNode + ";" +
               jvb2Jid + ":" + jvb2PubSubNode + ";" +
@@ -104,9 +105,9 @@ public class BridgeSelectorTest
         capsOpSet.addChildNode(jvb2Node);
         capsOpSet.addChildNode(jvb3Node);
 
-        jvb1State = meetServices.getBridgeSelector().addJvbAddress(jvb1Jid);
-        jvb2State = meetServices.getBridgeSelector().addJvbAddress(jvb2Jid);
-        jvb3State = meetServices.getBridgeSelector().addJvbAddress(jvb3Jid);
+        jvb1 = meetServices.getBridgeSelector().addJvbAddress(jvb1Jid);
+        jvb2 = meetServices.getBridgeSelector().addJvbAddress(jvb2Jid);
+        jvb3 = meetServices.getBridgeSelector().addJvbAddress(jvb3Jid);
     }
 
     @Test
@@ -140,39 +141,39 @@ public class BridgeSelectorTest
         workingBridges.add(jvb2Jid);
         workingBridges.add(jvb3Jid);
 
-        BridgeState bridgeState = selector.selectVideobridge(null);
+        Bridge bridgeState = selector.selectBridge(null);
         assertTrue(workingBridges.contains(bridgeState.getJid()));
 
         // Bridge 1 is down !!!
         workingBridges.remove(jvb1Jid);
-        jvb1State.setIsOperational(false);
+        jvb1.setIsOperational(false);
 
         assertTrue(workingBridges.contains(
-                selector.selectVideobridge(null).getJid()));
+                selector.selectBridge(null).getJid()));
 
         // Bridge 2 is down !!!
         workingBridges.remove(jvb2Jid);
-        jvb2State.setIsOperational(false);
+        jvb2.setIsOperational(false);
 
-        assertEquals(jvb3Jid, selector.selectVideobridge(null).getJid());
+        assertEquals(jvb3Jid, selector.selectBridge(null).getJid());
 
         // Bridge 1 is up again, but 3 is down instead
         workingBridges.add(jvb1Jid);
-        jvb1State.setIsOperational(true);
+        jvb1.setIsOperational(true);
 
         workingBridges.remove(jvb3Jid);
-        jvb3State.setIsOperational(false);
+        jvb3.setIsOperational(false);
 
-        assertEquals(jvb1Jid, selector.selectVideobridge(null).getJid());
+        assertEquals(jvb1Jid, selector.selectBridge(null).getJid());
 
         // Reset all bridges - now we'll select based on conference count
         workingBridges.clear();
         workingBridges.add(jvb1Jid);
         workingBridges.add(jvb2Jid);
         workingBridges.add(jvb3Jid);
-        jvb1State.setIsOperational(true);
-        jvb2State.setIsOperational(true);
-        jvb3State.setIsOperational(true);
+        jvb1.setIsOperational(true);
+        jvb2.setIsOperational(true);
+        jvb3.setIsOperational(true);
 
         MockSubscriptionOpSetImpl mockSubscriptions
             = mockProvider.getMockSubscriptionOpSet();
@@ -188,29 +189,29 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(0));
 
-        assertEquals(jvb3Jid, selector.selectVideobridge(null).getJid());
+        assertEquals(jvb3Jid, selector.selectBridge(null).getJid());
 
         // Now Jvb 3 gets occupied the most
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(300));
 
-        assertEquals(jvb1Jid, selector.selectVideobridge(null).getJid());
+        assertEquals(jvb1Jid, selector.selectBridge(null).getJid());
 
         // Jvb 1 is gone
-        jvb1State.setIsOperational(false);
+        jvb1.setIsOperational(false);
 
-        assertEquals(jvb2Jid, selector.selectVideobridge(null).getJid());
+        assertEquals(jvb2Jid, selector.selectBridge(null).getJid());
 
         // TEST all bridges down
-        jvb2State.setIsOperational(false);
-        jvb3State.setIsOperational(false);
-        assertEquals(null, selector.selectVideobridge(null));
+        jvb2.setIsOperational(false);
+        jvb3.setIsOperational(false);
+        assertEquals(null, selector.selectBridge(null));
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
-        jvb1State.setIsOperational(true);
-        jvb2State.setIsOperational(true);
-        jvb3State.setIsOperational(true);
+        jvb1.setIsOperational(true);
+        jvb2.setIsOperational(true);
+        jvb3.setIsOperational(true);
 
         mockSubscriptions.fireSubscriptionNotification(
                 jvb1PubSubNode, itemId, createJvbStats(1));
@@ -221,7 +222,7 @@ public class BridgeSelectorTest
 
         // JVB 1 should not be in front
         assertNotEquals(
-                jvb1PubSubNode, selector.selectVideobridge(null).getJid());
+                jvb1PubSubNode, selector.selectBridge(null).getJid());
 
         // JVB 2 least occupied
         mockSubscriptions.fireSubscriptionNotification(
@@ -231,16 +232,16 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
                 jvb3PubSubNode, itemId, createJvbStats(1));
 
-        assertEquals(jvb2Jid, selector.selectVideobridge(null).getJid());
+        assertEquals(jvb2Jid, selector.selectBridge(null).getJid());
 
         // FAILURE RESET THRESHOLD
         testFailureResetThreshold(selector, mockSubscriptions);
 
         // Test drain bridges queue
         int maxCount = selector.getKnownBridgesCount();
-        while (selector.selectVideobridge(null) != null)
+        while (selector.selectBridge(null) != null)
         {
-            BridgeState bridge = selector.selectVideobridge(null);
+            Bridge bridge = selector.selectBridge(null);
             bridge.setIsOperational(false);
             if (--maxCount < 0)
             {
@@ -253,9 +254,9 @@ public class BridgeSelectorTest
         BridgeSelector selector, MockSubscriptionOpSetImpl mockSubscriptions)
             throws InterruptedException
     {
-        DomainBareJid[] nodes = new DomainBareJid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
-        BridgeState[] states
-            = new BridgeState[] {jvb1State, jvb2State, jvb3State};
+        Jid[] nodes = new Jid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
+        Bridge[] states
+            = new Bridge[] {jvb1, jvb2, jvb3};
 
         String[] pubSubNodes
             = new String[] { jvb1PubSubNode, jvb2PubSubNode, jvb3PubSubNode};
@@ -281,13 +282,13 @@ public class BridgeSelectorTest
             // Should not be selected now
             assertNotEquals(
                     nodes[testNode],
-                    selector.selectVideobridge(null).getJid());
+                    selector.selectBridge(null).getJid());
             // Wait for faulty status reset
             Thread.sleep(150);
             // Test node should recover
             assertEquals(
                     nodes[testNode],
-                    selector.selectVideobridge(null).getJid());
+                    selector.selectBridge(null).getJid());
         }
 
         selector.setFailureResetThreshold(

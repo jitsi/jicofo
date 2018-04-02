@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import org.jitsi.jicofo.discovery.*;
@@ -33,8 +32,10 @@ import java.util.*;
  * Colibri channels allocated, Jingle session and media sources.
  *
  * @author Pawel Domas
+ * @author Boris Grozev
  */
 public class Participant
+    extends AbstractParticipant
 {
     /**
      * The class logger which can be used to override logging level inherited
@@ -67,59 +68,11 @@ public class Participant
     private JingleSession jingleSession;
 
     /**
-     * Information about Colibri channels allocated for this peer (if any).
-     */
-    private ColibriConferenceIQ colibriChannelsInfo;
-
-    /**
      * The logger for this instance. Uses the logging level either of the
      * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
      * whichever is higher.
      */
     private final Logger logger;
-
-    /**
-     * The map of the most recently received RTP description for each Colibri
-     * content.
-     */
-    private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
-
-    /**
-     * Peer's media sources.
-     */
-    private final MediaSourceMap sources = new MediaSourceMap();
-
-    /**
-     * Peer's media source groups.
-     */
-    private final MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
-
-    /**
-     * sources received from other peers scheduled for later addition, because
-     * of the Jingle session not being ready at the point when sources appeared in
-     * the conference.
-     */
-    private MediaSourceMap sourcesToAdd = new MediaSourceMap();
-
-    /**
-     * source groups received from other peers scheduled for later addition.
-     * @see #sourcesToAdd
-     */
-    private MediaSourceGroupMap sourceGroupsToAdd = new MediaSourceGroupMap();
-
-    /**
-     * sources received from other peers scheduled for later removal, because
-     * of the Jingle session not being ready at the point when sources appeared in
-     * the conference.
-     * FIXME: do we need that since these were never added ? - check
-     */
-    private MediaSourceMap sourcesToRemove = new MediaSourceMap();
-
-    /**
-     * source groups received from other peers scheduled for later removal.
-     * @see #sourcesToRemove
-     */
-    private MediaSourceGroupMap sourceGroupsToRemove = new MediaSourceGroupMap();
 
     /**
      * Stores information about bundled transport if {@link #hasBundleSupport()}
@@ -141,11 +94,6 @@ public class Participant
     private List<String> supportedFeatures = new ArrayList<>();
 
     /**
-     * Tells how many unique sources per media participant is allowed to advertise
-     */
-    private final int maxSourceCount;
-
-    /**
      * Remembers participant's muted status.
      */
     private boolean mutedStatus;
@@ -154,17 +102,6 @@ public class Participant
      * Participant's display name.
      */
     private String displayName = null;
-
-    /**
-     * Used to synchronize access to {@link #channelAllocator}.
-     */
-    private final Object channelAllocatorSyncRoot = new Object();
-
-    /**
-     * The {@link ChannelAllocator}, if any, which is currently allocating
-     * channels for this participant.
-     */
-    private ChannelAllocator channelAllocator = null;
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -179,6 +116,7 @@ public class Participant
                        XmppChatMember         roomMember,
                        int maxSourceCount)
     {
+        super(conference.getLogger());
         Objects.requireNonNull(conference, "conference");
 
         this.roomMember = Objects.requireNonNull(roomMember, "roomMember");
@@ -211,163 +149,6 @@ public class Participant
     public XmppChatMember getChatMember()
     {
         return roomMember;
-    }
-
-    /**
-     * Returns currently stored map of RTP description to Colibri content name.
-     * @return a <tt>Map<String,RtpDescriptionPacketExtension></tt> which maps
-     *         the RTP descriptions to the corresponding Colibri content names.
-     */
-    public Map<String, RtpDescriptionPacketExtension> getRtpDescriptionMap()
-    {
-        return rtpDescriptionMap;
-    }
-
-    /**
-     * Extracts and stores RTP description for each content type from given
-     * Jingle contents.
-     * @param jingleContents the list of Jingle content packet extension from
-     *        <tt>Participant</tt>'s answer.
-     */
-    public void setRTPDescription(List<ContentPacketExtension> jingleContents)
-    {
-        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
-
-        for (ContentPacketExtension content : jingleContents)
-        {
-            RtpDescriptionPacketExtension rtpDesc
-                = content.getFirstChildOfType(
-                        RtpDescriptionPacketExtension.class);
-
-            if (rtpDesc != null)
-            {
-                rtpDescMap.put(content.getName(), rtpDesc);
-            }
-        }
-
-        this.rtpDescriptionMap = rtpDescMap;
-    }
-
-    /**
-     * Removes given media sources from this peer state.
-     * @param sourceMap the source map that contains the sources to be removed.
-     * @return <tt>MediaSourceMap</tt> which contains sources removed from this map.
-     */
-    public MediaSourceMap removeSources(MediaSourceMap sourceMap)
-    {
-        return sources.remove(sourceMap);
-    }
-
-    /**
-     * Returns deep copy of this peer's media source map.
-     */
-    public MediaSourceMap getSourcesCopy()
-    {
-        return sources.copyDeep();
-    }
-
-    /**
-     * Returns deep copy of this peer's media source group map.
-     */
-    public MediaSourceGroupMap getSourceGroupsCopy()
-    {
-        return sourceGroups.copy();
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for addition.
-     */
-    public boolean hasSourcesToAdd()
-    {
-        return !sourcesToAdd.isEmpty() || !sourceGroupsToAdd.isEmpty();
-    }
-
-    /**
-     * Reset the queue that holds not synchronized sources scheduled for future
-     * addition.
-     */
-    public void clearSourcesToAdd()
-    {
-        sourcesToAdd = new MediaSourceMap();
-        sourceGroupsToAdd = new MediaSourceGroupMap();
-    }
-
-    /**
-     * Reset the queue that holds not synchronized sources scheduled for future
-     * removal.
-     */
-    public void clearSourcesToRemove()
-    {
-        sourcesToRemove = new MediaSourceMap();
-        sourceGroupsToRemove = new MediaSourceGroupMap();
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for removal.
-     */
-    public boolean hasSourcesToRemove()
-    {
-        return !sourcesToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty();
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for addition.
-     */
-    public MediaSourceMap getSourcesToAdd()
-    {
-        return sourcesToAdd;
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for removal.
-     */
-    public MediaSourceMap getSourcesToRemove()
-    {
-        return sourcesToRemove;
-    }
-
-    /**
-     * Schedules sources received from other peer for future 'source-add' update.
-     *
-     * @param sourceMap the media source map that contains sources for future updates.
-     */
-    public void scheduleSourcesToAdd(MediaSourceMap sourceMap)
-    {
-        sourcesToAdd.add(sourceMap);
-    }
-
-    /**
-     * Schedules sources received from other peer for future 'source-remove'
-     * update.
-     *
-     * @param sourceMap the media source map that contains sources for future updates.
-     */
-    public void scheduleSourcesToRemove(MediaSourceMap sourceMap)
-    {
-        sourcesToRemove.add(sourceMap);
-    }
-
-    /**
-     * Sets information about Colibri channels allocated for this participant.
-     *
-     * @param colibriChannelsInfo the IQ that holds colibri channels state.
-     */
-    public void setColibriChannelsInfo(ColibriConferenceIQ colibriChannelsInfo)
-    {
-        this.colibriChannelsInfo = colibriChannelsInfo;
-    }
-
-    /**
-     * Returns {@link ColibriConferenceIQ} that describes Colibri channels
-     * allocated for this participant.
-     */
-    public ColibriConferenceIQ getColibriChannelsInfo()
-    {
-        return colibriChannelsInfo;
     }
 
     /**
@@ -487,82 +268,6 @@ public class Participant
     public Boolean isVideoMuted()
     {
         return roomMember.hasVideoMuted();
-    }
-
-    /**
-     * Returns the list of source groups of given media type that belong ot this
-     * participant.
-     * @param media the name of media type("audio","video", ...)
-     * @return the list of {@link SourceGroup} for given media type.
-     */
-    public List<SourceGroup> getSourceGroupsForMedia(String media)
-    {
-        return sourceGroups.getSourceGroupsForMedia(media);
-    }
-
-    /**
-     * Returns <tt>MediaSourceGroupMap</tt> that contains the mapping of media
-     * source groups that describe media of this participant.
-     */
-    public MediaSourceGroupMap getSourceGroups()
-    {
-        return sourceGroups;
-    }
-
-    public void addSourcesAndGroups(MediaSourceMap         addedSources,
-                                    MediaSourceGroupMap    addedGroups)
-    {
-        this.sources.add(addedSources);
-        this.sourceGroups.add(addedGroups);
-    }
-
-    /**
-     * Schedules given media source groups for later addition.
-     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
-     *                   later addition.
-     */
-    public void scheduleSourceGroupsToAdd(MediaSourceGroupMap sourceGroups)
-    {
-        sourceGroupsToAdd.add(sourceGroups);
-    }
-
-    /**
-     * Schedules given media source groups for later removal.
-     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
-     *                   later removal.
-     */
-    public void scheduleSourceGroupsToRemove(MediaSourceGroupMap sourceGroups)
-    {
-        sourceGroupsToRemove.add(sourceGroups);
-    }
-
-    /**
-     * Returns the map of source groups that are waiting for synchronization.
-     */
-    public MediaSourceGroupMap getSourceGroupsToAdd()
-    {
-        return sourceGroupsToAdd;
-    }
-
-    /**
-     * Returns the map of source groups that are waiting for being removed from
-     * peer session.
-     */
-    public MediaSourceGroupMap getSourceGroupsToRemove()
-    {
-        return sourceGroupsToRemove;
-    }
-
-    /**
-     * Removes source groups from this participant state.
-     * @param groupsToRemove the map of source groups that will be removed
-     *                       from this participant media state description.
-     * @return <tt>MediaSourceGroupMap</tt> which contains source groups removed
-     *         from this map.
-     */
-    public MediaSourceGroupMap removeSourceGroups(MediaSourceGroupMap groupsToRemove)
-    {
-        return sourceGroups.remove(groupsToRemove);
     }
 
     /**
@@ -725,47 +430,6 @@ public class Participant
         return roomMember.getOccupantJid();
     }
 
-    /**
-     * Replaces the {@link ChannelAllocator}, which is currently allocating
-     * channels for this participant (if any) with the specified channel
-     * allocator (if any).
-     * @param channelAllocator the channel allocator to set, or {@code null}
-     * to clear it.
-     */
-    public void setChannelAllocator(ChannelAllocator channelAllocator)
-    {
-        synchronized (channelAllocatorSyncRoot)
-        {
-            if (this.channelAllocator != null)
-            {
-                // There is an ongoing thread allocating channels and sending
-                // an invite for this participant. Tell it to stop.
-                this.channelAllocator.cancel();
-                logger.warn("Canceling a ChannelAllocator.");
-            }
-
-            this.channelAllocator = channelAllocator;
-        }
-    }
-
-    /**
-     * Signals to this {@link Participant} that a specific
-     * {@link ChannelAllocator} has completed its task and its thread is about
-     * to terminate.
-     * @param channelAllocator the {@link ChannelAllocator} which has completed
-     * its task and its thread is about to terminate.
-     */
-    void channelAllocatorCompleted(ChannelAllocator channelAllocator)
-    {
-        synchronized (channelAllocatorSyncRoot)
-        {
-            if (this.channelAllocator == channelAllocator)
-            {
-                this.channelAllocator = null;
-            }
-        }
-    }
-
     public void claimSources(MediaSourceMap sourceMap)
     {
         // Mark as source owner
@@ -779,4 +443,21 @@ public class Participant
                     .forEach(
                         source -> SSRCSignaling.setSSRCOwner(source, roomJid)));
     }
+
+    /**
+     * @return {@code true} if the Jingle session with this participant has
+     * been established.
+     */
+    @Override
+    public boolean isSessionEstablished()
+    {
+        return jingleSession != null;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "[Participant endpointId=" + getEndpointId();
+    }
+
 }

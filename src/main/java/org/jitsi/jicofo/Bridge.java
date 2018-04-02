@@ -22,17 +22,21 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.util.*;
 import org.jxmpp.jid.*;
 
+import java.util.*;
+
 /**
- * Class holds videobridge state and implements {@link Comparable}
- * interface to find least loaded bridge.
+ * Represents a jitsi-videobridge instance, reachable at a certain JID, which
+ * can be used by jicofo for hosting conferences. Contains the state related
+ * to the jitsi-videobridge instance, such as numbers of channels and streams,
+ * the region in which the instance resides, etc.
  *
  * @author Pawel Domas
  * @author Boris Grozev
  */
-class BridgeState
-    implements Comparable<BridgeState>
+class Bridge
+    implements Comparable<Bridge>
 {
-    private final static Logger logger = Logger.getLogger(BridgeState.class);
+    private final static Logger logger = Logger.getLogger(Bridge.class);
 
     /**
      * The parent {@link BridgeSelector}.
@@ -41,7 +45,6 @@ class BridgeState
 
     /**
      * The XMPP address of the bridge.
-     * TODO: use full JIDs
      */
     private final Jid jid;
 
@@ -109,17 +112,12 @@ class BridgeState
      */
     private volatile long failureTimestamp;
 
-    BridgeState(BridgeSelector bridgeSelector,
-                Jid bridgeJid,
-                Version version)
+    Bridge(BridgeSelector bridgeSelector,
+           Jid jid,
+           Version version)
     {
-        if (bridgeJid == null)
-        {
-            throw new IllegalArgumentException("bridgeJid");
-        }
-
         this.bridgeSelector = bridgeSelector;
-        this.jid = bridgeJid;
+        this.jid = Objects.requireNonNull(jid, "jid");
         this.version = version;
     }
 
@@ -261,7 +259,7 @@ class BridgeState
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(BridgeState o)
+    public int compareTo(Bridge o)
     {
         boolean meOperational = isOperational();
         boolean otherOperational = o.isOperational();
@@ -315,7 +313,7 @@ class BridgeState
     }
 
     /**
-     * @return the region of this {@link BridgeState}.
+     * @return the region of this {@link Bridge}.
      */
     public String getRegion()
     {
@@ -323,7 +321,7 @@ class BridgeState
     }
 
     /**
-     * Sets the region (e.g. "us-east") of this {@link BridgeState}.
+     * Sets the region (e.g. "us-east") of this {@link Bridge}.
      * @param region the value to set.
      */
     public void setRegion(String region)
@@ -331,4 +329,13 @@ class BridgeState
         this.region = region;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return "[Bridge, jid=" + jid.toString() +
+            ", relayId=" + getRelayId() + ", region=" + getRegion() + "]";
+    }
 }

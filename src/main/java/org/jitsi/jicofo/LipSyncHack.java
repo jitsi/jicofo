@@ -19,8 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet
-          .SSRCInfoPacketExtension;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.*;
@@ -147,9 +146,11 @@ public class LipSyncHack implements OperationSetJingle
         {
             // Do not log that error for the JVB
             if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
+            {
                 logger.error(
-                        "Stream owner not a participant or not found for jid: "
-                            + ownerJid);
+                    "Stream owner not a participant or not found for jid: "
+                        + ownerJid);
+            }
             return false;
         }
 
@@ -183,9 +184,13 @@ public class LipSyncHack implements OperationSetJingle
         // The stream is merged most of the time and it's not that interesting.
         // FIXME JVBs SSRCs are not merged currently, but maybe should be ?
         if (merged || SSRCSignaling.SSRC_OWNER_JVB.equals(owner))
+        {
             logger.debug(logMsg);
+        }
         else
+        {
             logger.info(logMsg);
+        }
     }
 
     /**
@@ -238,11 +243,11 @@ public class LipSyncHack implements OperationSetJingle
      */
     @Override
     public boolean initiateSession(
-            boolean                         useBundle,
-            Jid                             address,
-            List<ContentPacketExtension>    contents,
-            JingleRequestHandler            requestHandler,
-            boolean[]                       startMuted)
+            boolean useBundle,
+            Jid address,
+            List<ContentPacketExtension> contents,
+            JingleRequestHandler requestHandler,
+            boolean[] startMuted)
         throws OperationFailedException
     {
         processAllParticipantsSSRCs(contents, address);
@@ -290,26 +295,26 @@ public class LipSyncHack implements OperationSetJingle
     {
         Jid mucJid = session.getAddress();
         // If this is source add for video only then add audio for merge process
-        for (SourcePacketExtension videoSSRC
+        for (SourcePacketExtension videoSsrc
                 : ssrcMap.getSourcesForMedia("video"))
         {
-            Jid owner = SSRCSignaling.getSSRCOwner(videoSSRC);
-            SourcePacketExtension audioSSRC
-                = ssrcMap.findSSRCforOwner("audio", owner);
-            if (audioSSRC == null)
+            Jid owner = SSRCSignaling.getSSRCOwner(videoSsrc);
+            SourcePacketExtension audioSsrc
+                = ssrcMap.findSsrcForOwner("audio", owner);
+            if (audioSsrc == null)
             {
                 // Try finding corresponding audio from the global conference
                 // state for this owner
                 MediaSourceMap allOwnersSSRCs = getParticipantSSRCMap(owner);
                 List<SourcePacketExtension> audioSSRCs
                     = allOwnersSSRCs.getSourcesForMedia("audio");
-                audioSSRC = SSRCSignaling.getFirstWithMSID(audioSSRCs);
+                audioSsrc = SSRCSignaling.getFirstWithMSID(audioSSRCs);
             }
-            if (audioSSRC != null)
+            if (audioSsrc != null)
             {
-                ssrcMap.addSource("audio", audioSSRC);
+                ssrcMap.addSource("audio", audioSsrc);
                 doMerge(mucJid, owner, ssrcMap);
-                ssrcMap.remove("audio", audioSSRC);
+                ssrcMap.remove("audio", audioSsrc);
             }
             else
             {

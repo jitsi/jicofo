@@ -151,7 +151,7 @@ public class MockRoomMember
     }
 
     @Override
-    public Jid getJabberID()
+    public Jid getJid()
     {
         return address;
     }
