@@ -254,6 +254,7 @@ public class JibriSession
         // skip stop request if its already stopped
         if (JibriIq.Status.OFF.equals(jibriStatus))
         {
+            currentJibriJid = null;
             return;
         }
 
@@ -335,7 +336,6 @@ public class JibriSession
                         XMPPError.Condition.internal_server_error,
                         "Unknown error").build();
                 }
-                this.currentJibriJid = null;
                 tryStartRestartJibri(error);
             }
             else
