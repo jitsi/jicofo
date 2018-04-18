@@ -126,6 +126,7 @@ public class JibriRecorder
         RecordingMode recordingMode = iq.getRecordingMode();
         String streamID = iq.getStreamId();
         boolean emptyStreamId = StringUtils.isNullOrEmpty(streamID);
+        String youTubeBroadcastId = iq.getYoutubeBroadcastId();
         String displayName = iq.getDisplayName();
 
         if ((!emptyStreamId
@@ -141,7 +142,7 @@ public class JibriRecorder
                     connection,
                     scheduledExecutor,
                     jibriDetector,
-                    false, null, displayName, streamID,
+                    false, null, displayName, streamID, youTubeBroadcastId,
                     classLogger);
             // Try starting Jibri on separate thread with retries
             jibriSession.start();
