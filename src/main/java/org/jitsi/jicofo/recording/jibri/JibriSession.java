@@ -26,6 +26,7 @@ import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.Logger;
 
+import org.jitsi.util.StringUtils;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -314,6 +315,25 @@ public class JibriSession
     {
         return currentJibriJid != null
             && (packet.getFrom().equals(currentJibriJid));
+    }
+
+    public JibriIq.RecordingMode getRecordingMode()
+    {
+        if (isSIP)
+        {
+            return RecordingMode.UNDEFINED;
+        }
+        else
+        {
+            if (!StringUtils.isNullOrEmpty(streamID))
+            {
+                return RecordingMode.STREAM;
+            }
+            else
+            {
+                return RecordingMode.FILE;
+            }
+        }
     }
 
     /**

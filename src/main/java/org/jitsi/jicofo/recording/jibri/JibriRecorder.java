@@ -249,6 +249,15 @@ public class JibriRecorder
 
         recordingStatus.setError(error);
 
+        if (jibriSession != null)
+        {
+            JibriIq.RecordingMode mode = jibriSession.getRecordingMode();
+            if (mode != RecordingMode.UNDEFINED)
+            {
+                recordingStatus.setMode(mode);
+            }
+        }
+
         logger.info(
             "Publish new JIBRI status: "
                 + recordingStatus.toXML() + " in: " + conference.getRoomName());
