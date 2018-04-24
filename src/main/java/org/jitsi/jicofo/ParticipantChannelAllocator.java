@@ -206,7 +206,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 // Failed to invite
                 logger.info(
                         "Expiring " + address + " channels - no RESULT for "
-                        + (reInvite ? "transport-replace" : "session-invite"));
+                        + (reInvite ? "transport-replace" : "session-initiate"));
                 expireChannels = true;
 
                 // TODO: let meetConference know that our Jingle session failed,
