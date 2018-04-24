@@ -1297,7 +1297,8 @@ public class JitsiMeetConferenceImpl
 
             // If we accepted any new sources from the participant, update
             // the state of all remote bridges.
-            if (!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty())
+            if ((!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty())
+                && participantBridge != null)
             {
                 propagateNewSourcesToOcto(
                     participantBridge, sourcesAdded, sourceGroupsAdded);
