@@ -1549,8 +1549,11 @@ public class JitsiMeetConferenceImpl
                 // TODO: how do we handle this? Re-invite?
             }
 
-            propagateNewSourcesToOcto(
-                bridgeSession, sourcesToAdd, sourceGroupsToAdd);
+            if (bridgeSession != null)
+            {
+                propagateNewSourcesToOcto(
+                    bridgeSession, sourcesToAdd, sourceGroupsToAdd);
+            }
         }
 
         propagateNewSources(participant, sourcesToAdd, sourceGroupsToAdd);
