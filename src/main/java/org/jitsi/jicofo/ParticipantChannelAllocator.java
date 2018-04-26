@@ -220,7 +220,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             // a failure to invite the participant in the jingle level, we will
             // not trigger a retry here.
             // In any case, try and expire the channels on the bridge.
-            bridgeSession.terminate(participant);
+            meetConference.onInviteFailed(this);
         }
         else if (reInvite)
         {
