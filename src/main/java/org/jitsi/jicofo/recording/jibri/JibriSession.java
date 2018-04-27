@@ -212,6 +212,7 @@ public class JibriSession
             String displayName,
             String streamID,
             String youTubeBroadcastId,
+            String sessionId,
             Logger logLevelDelegate)
     {
         this.owner = owner;

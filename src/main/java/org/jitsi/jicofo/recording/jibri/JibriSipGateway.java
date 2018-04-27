@@ -128,6 +128,7 @@ public class JibriSipGateway
         // Proceed if not empty
         if (!StringUtils.isNullOrEmpty(sipAddress))
         {
+            String sessionId = Utils.generateSessionId(SESSION_ID_LENGTH);
             JibriSession jibriSession
                 = new JibriSession(
                         this,
@@ -138,14 +139,16 @@ public class JibriSipGateway
                         jibriDetector,
                         false,
                         sipAddress,
-                        displayName, null, null,
+                        displayName, null, null, sessionId,
                         classLogger);
             sipSessions.put(sipAddress, jibriSession);
             // Try starting Jibri
             jibriSession.start();
             // This will ACK the request immediately to simplify the flow,
             // any error will be passed with the FAILED state
-            return IQ.createResultIQ(iq);
+            System.out.println("SENDING RESULT WITH SESSION ID");
+            return JibriIq.createResult(iq, sessionId);
+//            return IQ.createResultIQ(iq);
         }
         else
         {

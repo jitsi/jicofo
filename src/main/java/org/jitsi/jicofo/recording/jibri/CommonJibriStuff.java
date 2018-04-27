@@ -96,6 +96,11 @@ public abstract class CommonJibriStuff
     protected final ScheduledExecutorService scheduledExecutor;
 
     /**
+     *
+     */
+    protected static final int SESSION_ID_LENGTH = 16;
+
+    /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param isSIP indicates whether this stuff is for SIP Jibri or for regular
      *        Jibris.
