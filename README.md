@@ -94,8 +94,9 @@ from anonymous domain. Here's what has to be configured:
  ```
  b) Add new virtual host with anonymous login method for guests:<br/>
  ```
- VirtualHost guest.jitsi-meet.example.com
+ VirtualHost "guest.jitsi-meet.example.com"
      authentication = "anonymous"
+     c2s_require_encryption = false
  ```
 2 In Jitsi Meet config.js configure 'anonymousdomain':<br/>
 ```
@@ -119,6 +120,11 @@ If you have Jicofo installed from the Debian package this should go directly to
 **/etc/jitsi/jicofo/sip-communicator.properties** file:
 ```
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
+```
+
+To create users use the command:
+```
+prosodyctl register <username> jitsi-meet.example.com <password>
 ```
 
 ## Certificates
