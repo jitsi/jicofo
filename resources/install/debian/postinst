@@ -38,13 +38,21 @@ case "$1" in
 
             # generate secret only for new installs
             if [ "$OLDCONFIG" = "false" ]; then
-                # 8-chars random secret, alternative to pwgen 8
-                JICOFO_SECRET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+                db_get jicofo/jicofosecret
+                if [ -z "$RET" ] ; then
+                    # 8-chars random secret, alternative to pwgen 8
+                    RET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+                fi
+                JICOFO_SECRET="$RET"
             fi
             JICOFO_PORT=5347
             JICOFO_AUTH_DOMAIN="auth.$JICOFO_HOSTNAME"
             JICOFO_AUTH_USER="focus"
-            JICOFO_AUTH_PASSWORD=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+            db_get jicofo/jicofo-authpassword
+            if [ -z "$RET" ] ; then
+                RET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+            fi
+            JICOFO_AUTH_PASSWORD="$RET"
 
             # storing default
             echo '# Jitsi Conference Focus settings' > $CONFIG
