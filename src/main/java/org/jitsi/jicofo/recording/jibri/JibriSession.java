@@ -389,7 +389,7 @@ public class JibriSession
 
             if (newJibriJid != null)
             {
-                startJibri(newJibriJid);
+                sendJibriStartIq(newJibriJid);
                 return;
             }
             else if (error == null)
@@ -455,7 +455,7 @@ public class JibriSession
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
      */
-    private void startJibri(final EntityFullJid jibriJid)
+    private void sendJibriStartIq(final EntityFullJid jibriJid)
     {
         logger.info(
             "Starting Jibri " + jibriJid
