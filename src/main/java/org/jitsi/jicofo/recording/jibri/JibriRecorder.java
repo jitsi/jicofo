@@ -220,35 +220,36 @@ public class JibriRecorder
         // We listen to status updates coming from the current Jibri
         // through IQs if the recording is in progress(jibriSession
         // is not null)
-        if (jibriSession != null)
-            return;
-
-        if (jibriDetector.selectJibri() != null)
-        {
-            setAvailabilityStatus(JibriIq.Status.OFF);
-        }
-        else if (jibriDetector.isAnyInstanceConnected())
-        {
-            setAvailabilityStatus(JibriIq.Status.BUSY);
-        }
-        else
-        {
-            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
-        }
+//        if (jibriSession != null)
+//            return;
+//
+//        if (jibriDetector.selectJibri() != null)
+//        {
+//            setAvailabilityStatus(JibriIq.Status.OFF);
+//        }
+//        else if (jibriDetector.isAnyInstanceConnected())
+//        {
+//            setAvailabilityStatus(JibriIq.Status.BUSY);
+//        }
+//        else
+//        {
+//            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
+//        }
     }
 
-    private void setAvailabilityStatus(JibriIq.Status newStatus)
-    {
-        setAvailabilityStatus(newStatus, null);
-    }
+//    private void setAvailabilityStatus(JibriIq.Status newStatus)
+//    {
+//        setAvailabilityStatus(newStatus, null);
+//    }
 
+    //TODO: rename to remove the notion of 'availability'
     private void setAvailabilityStatus(
             JibriIq.Status newStatus, XMPPError error)
     {
         RecordingStatus recordingStatus = new RecordingStatus();
 
         recordingStatus.setStatus(newStatus);
-
+        recordingStatus.setSessionId(jibriSession.getSessionId());
         recordingStatus.setError(error);
 
         logger.info(

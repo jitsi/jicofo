@@ -197,18 +197,18 @@ public class JibriSipGateway
     @Override
     protected void updateJibriAvailability()
     {
-        if (jibriDetector.selectJibri() != null)
-        {
-            setAvailabilityStatus(JibriIq.Status.AVAILABLE);
-        }
-        else if (jibriDetector.isAnyInstanceConnected())
-        {
-            setAvailabilityStatus(JibriIq.Status.BUSY);
-        }
-        else
-        {
-            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
-        }
+//        if (jibriDetector.selectJibri() != null)
+//        {
+//            setAvailabilityStatus(JibriIq.Status.AVAILABLE);
+//        }
+//        else if (jibriDetector.isAnyInstanceConnected())
+//        {
+//            setAvailabilityStatus(JibriIq.Status.BUSY);
+//        }
+//        else
+//        {
+//            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
+//        }
     }
 
     /**

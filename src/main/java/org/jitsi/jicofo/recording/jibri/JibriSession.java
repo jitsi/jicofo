@@ -166,6 +166,8 @@ public class JibriSession
      */
     private final String streamID;
 
+    private final String sessionId;
+
     /**
      * The broadcast id of the YouTube broadcast, if available.  This is used
      * to generate and distribute the viewing url of the live stream
@@ -226,6 +228,7 @@ public class JibriSession
         this.displayName = displayName;
         this.streamID = streamID;
         this.youTubeBroadcastId = youTubeBroadcastId;
+        this.sessionId = sessionId;
         this.xmpp = connection;
         logger = Logger.getLogger(classLogger, logLevelDelegate);
     }
@@ -350,6 +353,7 @@ public class JibriSession
             }
             else
             {
+                logger.info("Setting jibri status to " + status.toString());
                 setJibriStatus(status, null);
             }
         }
@@ -469,6 +473,7 @@ public class JibriSession
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.set);
         startIq.setAction(JibriIq.Action.START);
+        startIq.setSessionId(this.sessionId);
         if (streamID != null)
         {
             startIq.setStreamId(streamID);
@@ -560,6 +565,11 @@ public class JibriSession
     public String getSipAddress()
     {
         return sipAddress;
+    }
+
+    public String getSessionId()
+    {
+        return this.sessionId;
     }
 
     /**
