@@ -358,19 +358,21 @@ public class JibriSession
 
             if (JibriIq.Status.FAILED.equals(status) && currentJibriJid != null)
             {
-                // Make sure that there is XMPPError for eventual ERROR status
-                XMPPError error = iq.getError();
-                if (JibriIq.Status.FAILED.equals(status) && error == null)
-                {
-                    error = XMPPError.from(
-                        XMPPError.Condition.internal_server_error,
-                        "Unknown error").build();
-                }
-                tryStartRestartJibri(error);
+                //TODO: re-add the retry logic?
+                setJibriStatus(status, null);
+                stop();
+//                // Make sure that there is XMPPError for eventual ERROR status
+//                XMPPError error = iq.getError();
+//                if (JibriIq.Status.FAILED.equals(status) && error == null)
+//                {
+//                    error = XMPPError.from(
+//                        XMPPError.Condition.internal_server_error,
+//                        "Unknown error").build();
+//                }
+//                tryStartRestartJibri(error);
             }
             else
             {
-                logger.info("Setting jibri status to " + status.toString());
                 setJibriStatus(status, null);
             }
         }
@@ -432,7 +434,7 @@ public class JibriSession
         // or with one defined here in this method, which will provide more
         // details about the reason
         // Stop packet processor, etc.
-        stop(error);
+//        stop(error);
     }
 
     /**
