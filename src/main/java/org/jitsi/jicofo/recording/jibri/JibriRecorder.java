@@ -146,11 +146,19 @@ public class JibriRecorder
                     false, null, displayName, streamID, youTubeBroadcastId, sessionId,
                     classLogger);
             // Try starting Jibri on separate thread with retries
-            jibriSession.start();
-            // This will ACK the request immediately to simplify the flow,
-            // any error will be passed with the FAILED state
-            System.out.println("SENDING RESULT WITH SESSION ID");
-            return JibriIq.createResult(iq, sessionId);
+            if (jibriSession.start())
+            {
+                logger.info("Started Jibri session");
+                return JibriIq.createResult(iq, sessionId, JibriIq.Status.PENDING);
+            }
+            else
+            {
+                jibriSession = null;
+                logger.info("Failed to start a Jibri session");
+                //TODO: we could check if any jibris are connected at all here and, if so, return busy instead?
+                return JibriIq.createResult(iq, sessionId, JibriIq.Status.FAILED);
+            }
+
         }
         else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
         {

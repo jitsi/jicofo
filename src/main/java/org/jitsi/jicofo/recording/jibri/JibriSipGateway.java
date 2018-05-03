@@ -143,11 +143,18 @@ public class JibriSipGateway
                         classLogger);
             sipSessions.put(sipAddress, jibriSession);
             // Try starting Jibri
-            jibriSession.start();
-            // This will ACK the request immediately to simplify the flow,
-            // any error will be passed with the FAILED state
-            System.out.println("SENDING RESULT WITH SESSION ID");
-            return JibriIq.createResult(iq, sessionId);
+            if (jibriSession.start())
+            {
+                logger.info("Started Jibri session");
+                return JibriIq.createResult(iq, sessionId, JibriIq.Status.PENDING);
+            }
+            else
+            {
+                jibriSession = null;
+                logger.info("Failed to start a Jibri session");
+                //TODO: we could check if any jibris are connected at all here and, if so, return busy instead?
+                return JibriIq.createResult(iq, sessionId, JibriIq.Status.FAILED);
+            }
 //            return IQ.createResultIQ(iq);
         }
         else

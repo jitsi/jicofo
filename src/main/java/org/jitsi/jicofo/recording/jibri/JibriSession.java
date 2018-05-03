@@ -20,6 +20,7 @@ package org.jitsi.jicofo.recording.jibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
 
+import net.java.sip.communicator.service.protocol.OperationFailedException;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
@@ -237,7 +238,7 @@ public class JibriSession
      * Starts this session. A new Jibri instance will be selected and start
      * request will be sent (in non blocking mode).
      */
-    synchronized public void start()
+    synchronized public Boolean start()
     {
         try
         {
@@ -248,7 +249,17 @@ public class JibriSession
             logger.error("Failed to start Jibri event handler: " + e, e);
         }
 
-        tryStartRestartJibri(null);
+        final EntityFullJid jibriJid = jibriDetector.selectJibri();
+        if (jibriJid != null)
+        {
+            sendJibriStartIq(jibriJid);
+            return true;
+        }
+        else
+        {
+            logger.error("Unable to find an available Jibri, can't start");
+            return false;
+        }
     }
 
     /**
@@ -303,6 +314,7 @@ public class JibriSession
         stopRequest.setAction(JibriIq.Action.STOP);
 
         logger.info("Trying to stop: " + stopRequest.toXML());
+
 
         xmpp.sendStanza(stopRequest);
 
@@ -495,18 +507,21 @@ public class JibriSession
         // Store Jibri JID to make the packet filter accept the response
         currentJibriJid = jibriJid;
 
-        // We're now in PENDING state (waiting for Jibri ON update)
-        // Setting PENDING status also blocks from accepting
-        // new start requests
-        setJibriStatus(isPreRetryStatus(jibriStatus)
-            ? JibriIq.Status.RETRYING : JibriIq.Status.PENDING, null);
-
         // We will not wait forever for the Jibri to start. This method can be
         // run multiple times on retry, so we want to restart the pending
         // timeout each time.
         reschedulePendingTimeout();
 
-        xmpp.sendStanza(startIq);
+        try
+        {
+            JibriIq result = (JibriIq)xmpp.sendPacketAndGetReply(startIq);
+            setJibriStatus(result.getStatus(), null);
+        }
+        catch (OperationFailedException e)
+        {
+            logger.error("Error sending Jibri start IQ: " + e.toString());
+            e.printStackTrace();
+        }
     }
 
     /**
