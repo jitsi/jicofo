@@ -236,6 +236,12 @@ public class MockXmppConnection
     }
 
     @Override
+    public void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+    {
+        //TODO
+    }
+
+    @Override
     public IQRequestHandler registerIQRequestHandler(IQRequestHandler iqRequestHandler)
     {
         IQRequestHandler previous = super.registerIQRequestHandler(iqRequestHandler);

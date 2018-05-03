@@ -252,6 +252,8 @@ public class XmppProtocolProvider
         }
 
         connection = new XMPPTCPConnection(connConfig.build());
+        // Jibri can take a while to reply, so give a decent-sized timeout
+        connection.setReplyTimeout(60000);
 
         if (logger.isTraceEnabled())
         {
@@ -807,6 +809,21 @@ public class XmppProtocolProvider
                     "No connection - unable to send packet: " + packet.toXML(),
                     OperationFailedException.PROVIDER_NOT_REGISTERED,
                     e);
+            }
+        }
+
+        @Override
+        public void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+        {
+            try
+            {
+                System.out.println("XmppProtocolProvider sending iq with response callback");
+                System.out.println("Connections reply timeout is: " + connection.getReplyTimeout());
+                connection.sendIqWithResponseCallback(iq, stanzaListener);
+            } catch (NotConnectedException | InterruptedException e)
+            {
+                System.out.println("Sending iq with response callback failed: " + e.toString());
+                e.printStackTrace();
             }
         }
 
