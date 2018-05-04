@@ -17,23 +17,26 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq;
+import net.java.sip.communicator.service.protocol.ChatRoomMemberRole;
+import net.java.sip.communicator.service.protocol.OperationSetJitsiMeetTools;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import org.jitsi.jicofo.JitsiMeetConferenceImpl;
+import org.jitsi.jicofo.JitsiMeetGlobalConfig;
+import org.jitsi.protocol.xmpp.XmppChatMember;
+import org.jitsi.protocol.xmpp.XmppConnection;
+import org.jitsi.util.Logger;
+import org.jivesoftware.smack.packet.IQ;
+import org.jivesoftware.smack.packet.XMPPError;
+import org.jxmpp.jid.BareJid;
+import org.jxmpp.jid.Jid;
 
-import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.*;
-import org.jitsi.osgi.*;
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.*;
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
 
-import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.jivesoftware.smack.packet.XMPPError.*;
 import static org.jivesoftware.smack.packet.XMPPError.Condition.*;
+import static org.jivesoftware.smack.packet.XMPPError.from;
+import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
 
 /**
  * Common stuff shared between {@link JibriRecorder} (which can deal with only
@@ -58,24 +61,7 @@ public abstract class CommonJibriStuff
      * The global config used by this instance to obtain some config options
      * like {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}.
      */
-    protected final JitsiMeetGlobalConfig globalConfig;
-
-    /**
-     * Indicates whether {@link JibriEventHandler} for this instance should be
-     * accepting events from SIP or non-SIP Jibris.
-     */
-    private final boolean isSIP;
-
-    /**
-     * Jibri detector which notifies about Jibri availability status changes.
-     */
-    protected final JibriDetector jibriDetector;
-
-    /**
-     * Helper class that registers for {@link JibriEvent}s in the OSGi context
-     * obtained from the {@link FocusBundleActivator}.
-     */
-    private final JibriEventHandler jibriEventHandler = new JibriEventHandler();
+    final JitsiMeetGlobalConfig globalConfig;
 
     /**
      * The logger instance pass to the constructor that wil be used by this
@@ -87,18 +73,24 @@ public abstract class CommonJibriStuff
      * Meet tools instance used to inject packet extensions to Jicofo's MUC
      * presence.
      */
-    protected final OperationSetJitsiMeetTools meetTools;
+    final OperationSetJitsiMeetTools meetTools;
+
+    /**
+     * Jibri detector which notifies about Jibri availability status changes.
+     */
+    final JibriDetector jibriDetector;
 
     /**
      * Executor service used by {@link JibriSession} to schedule pending timeout
      * tasks.
      */
-    protected final ScheduledExecutorService scheduledExecutor;
+    final ScheduledExecutorService scheduledExecutor;
 
     /**
-     *
+     * The length of the session id field we generate to uniquely identify a
+     * Jibri session
      */
-    protected static final int SESSION_ID_LENGTH = 16;
+    static final int SESSION_ID_LENGTH = 16;
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
@@ -112,7 +104,7 @@ public abstract class CommonJibriStuff
      * @param globalConfig the global config that provides some values required
      *        by <tt>JibriRecorder</tt> to work.
      */
-    public CommonJibriStuff(
+    CommonJibriStuff(
                            boolean                         isSIP,
                            JitsiMeetConferenceImpl         conference,
                            XmppConnection                  xmppConnection,
@@ -120,7 +112,6 @@ public abstract class CommonJibriStuff
                            JitsiMeetGlobalConfig           globalConfig,
                            Logger                          logger)
     {
-        this.isSIP = isSIP;
         this.connection
             = Objects.requireNonNull(xmppConnection, "xmppConnection");
         this.conference = Objects.requireNonNull(conference, "conference");
@@ -176,45 +167,11 @@ public abstract class CommonJibriStuff
     protected abstract IQ handleStartRequest(JibriIq iq);
 
     /**
-     * The method is called when Jicofo's MUC presence regarding Jibri status
-     * needs to updated. For example when the current session ends or when new
-     * Jibri connects.
-     */
-    protected abstract void updateJibriAvailability();
-
-    /**
-     * Starts listening for Jibri updates and calls
-     * {@link #updateJibriAvailability()} to update Jicofo presence.
-     */
-    public void init()
-    {
-        try
-        {
-            jibriEventHandler.start(FocusBundleActivator.bundleContext);
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to start Jibri event handler: " + e, e);
-        }
-
-        updateJibriAvailability();
-    }
-
-    /**
      * Method called by {@link JitsiMeetConferenceImpl} when the conference is
-     * being stopped. Unregisters {@link JibriEventHandler} and stops processing
-     * Jibri XMPP packets.
+     * being stopped.
      */
     public void dispose()
     {
-        try
-        {
-            jibriEventHandler.stop(FocusBundleActivator.bundleContext);
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to stop Jibri event handler: " + e, e);
-        }
     }
 
     /**
@@ -268,7 +225,7 @@ public abstract class CommonJibriStuff
      * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
      * if the user is a moderator.
      */
-    public final synchronized IQ handleIQRequest(JibriIq iq)
+    final synchronized IQ handleIQRequest(JibriIq iq)
     {
         if (logger.isDebugEnabled())
         {
@@ -337,50 +294,5 @@ public abstract class CommonJibriStuff
         }
 
         return null;
-    }
-
-    /**
-     * Helper class handles registration for the {@link JibriEvent}s which are
-     * triggered whenever Jibri availability status changes or when it
-     * disconnects. It will react only to the events that match {@link #isSIP}
-     * with {@link JibriEvent#isSIP()}.
-     */
-    private class JibriEventHandler extends EventHandlerActivator
-    {
-        private JibriEventHandler()
-        {
-            super(new String[]{
-                JibriEvent.STATUS_CHANGED, JibriEvent.WENT_OFFLINE });
-        }
-
-        @Override
-        public void handleEvent(Event event)
-        {
-            if (!JibriEvent.isJibriEvent(event))
-            {
-                logger.error("Invalid event: " + event);
-                return;
-            }
-
-            final JibriEvent jibriEvent = (JibriEvent) event;
-            final String topic = jibriEvent.getTopic();
-            if (isSIP != jibriEvent.isSIP())
-            {
-                return;
-            }
-
-            switch (topic)
-            {
-                case JibriEvent.WENT_OFFLINE:
-                case JibriEvent.STATUS_CHANGED:
-                    synchronized (CommonJibriStuff.this)
-                    {
-                        updateJibriAvailability();
-                    }
-                    break;
-                default:
-                    logger.error("Invalid topic: " + topic);
-            }
-        }
     }
 }

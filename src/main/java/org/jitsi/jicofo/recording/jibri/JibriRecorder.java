@@ -145,7 +145,6 @@ public class JibriRecorder
                     jibriDetector,
                     false, null, displayName, streamID, youTubeBroadcastId, sessionId,
                     classLogger);
-            // Try starting Jibri on separate thread with retries
             if (jibriSession.start())
             {
                 logger.info("Started Jibri session");
@@ -211,47 +210,15 @@ public class JibriRecorder
                 "onSessionStateChanged for unknown session: " + jibriSession);
             return;
         }
-
-        // FIXME go through the stop logic
-        setAvailabilityStatus(newStatus, failureReason);
+        publishJibriStatus(newStatus, failureReason);
 
         if (JibriIq.Status.OFF.equals(newStatus))
         {
             this.jibriSession = null;
-
-            updateJibriAvailability();
         }
     }
 
-    /**
-     * The method is supposed to update Jibri availability status to OFF if we
-     * have any Jibris available or to UNDEFINED if there are no any.
-     */
-    @Override
-    protected void updateJibriAvailability()
-    {
-        // We listen to status updates coming from the current Jibri
-        // through IQs if the recording is in progress(jibriSession
-        // is not null)
-//        if (jibriSession != null)
-//            return;
-//
-//        if (jibriDetector.selectJibri() != null)
-//        {
-//            setAvailabilityStatus(JibriIq.Status.OFF);
-//        }
-//        else if (jibriDetector.isAnyInstanceConnected())
-//        {
-//            setAvailabilityStatus(JibriIq.Status.BUSY);
-//        }
-//        else
-//        {
-//            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
-//        }
-    }
-
-    //TODO: rename to remove the notion of 'availability'
-    private void setAvailabilityStatus(
+    private void publishJibriStatus(
             JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         RecordingStatus recordingStatus = new RecordingStatus();
@@ -261,12 +228,11 @@ public class JibriRecorder
         recordingStatus.setSessionId(jibriSession.getSessionId());
 
         logger.info(
-                "Publish new JIBRI status: "
+                "Publishing new jibri-recording-status: "
                         + recordingStatus.toXML() + " in: " + conference.getRoomName());
 
         ChatRoom2 chatRoom2 = conference.getChatRoom();
 
-        // Publish that in the presence
         if (chatRoom2 != null)
         {
             meetTools.sendPresenceExtension(chatRoom2, recordingStatus);

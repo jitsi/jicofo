@@ -51,21 +51,6 @@ public class JibriSession
     static private final Logger classLogger
         = Logger.getLogger(JibriSession.class);
 
-//    /**
-//     * The number of times to retry connecting to a Jibri.
-//     */
-//    static private final int NUM_RETRIES = 3;
-
-//    /**
-//     * Returns <tt>true> if given <tt>status</tt> precedes the <tt>RETRYING</tt>
-//     * status or <tt>false</tt> otherwise.
-//     */
-//    static private boolean isPreRetryStatus(JibriIq.Status status)
-//    {
-//        return JibriIq.Status.ON.equals(status)
-//            || JibriIq.Status.PENDING.equals(status);
-//    }
-
     /**
      * Returns <tt>true</tt> if given <tt>status</tt> indicates that Jibri is in
      * the middle of starting of the recording process.
@@ -132,15 +117,6 @@ public class JibriSession
      * (given in seconds).
      */
     private final long pendingTimeout;
-
-//    /**
-//     * Counts retry attempts.
-//     * FIXME it makes sense to retry as long as there are Jibris available, but
-//     * currently if one Jibri will not go offline, but keep returning some error
-//     * JibriDetector may keep selecting it infinitely, as we do not blacklist
-//     * such instances yet
-//     */
-//    private int retryAttempt = 0;
 
     /**
      * The (bare) JID of the MUC room.
