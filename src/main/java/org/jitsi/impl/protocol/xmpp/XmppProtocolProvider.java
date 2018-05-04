@@ -817,12 +817,9 @@ public class XmppProtocolProvider
         {
             try
             {
-                System.out.println("XmppProtocolProvider sending iq with response callback");
-                System.out.println("Connections reply timeout is: " + connection.getReplyTimeout());
                 connection.sendIqWithResponseCallback(iq, stanzaListener);
             } catch (NotConnectedException | InterruptedException e)
             {
-                System.out.println("Sending iq with response callback failed: " + e.toString());
                 e.printStackTrace();
             }
         }

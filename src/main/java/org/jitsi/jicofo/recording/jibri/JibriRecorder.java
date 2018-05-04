@@ -149,14 +149,23 @@ public class JibriRecorder
             if (jibriSession.start())
             {
                 logger.info("Started Jibri session");
-                return JibriIq.createResult(iq, sessionId, JibriIq.Status.PENDING);
+                return JibriIq.createResult(iq, sessionId);
             }
             else
             {
+                ErrorIQ errorIq;
+                if (jibriSession.isAnyInstanceConnected())
+                {
+                    logger.info("Failed to start a Jibri session, all Jibris were busy");
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                }
+                else
+                {
+                    logger.info("Failed to start a Jibri session, no Jibris available");
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.service_unavailable);
+                }
                 jibriSession = null;
-                logger.info("Failed to start a Jibri session");
-                //TODO: we could check if any jibris are connected at all here and, if so, return busy instead?
-                return JibriIq.createResult(iq, sessionId, JibriIq.Status.FAILED);
+                return errorIq;
             }
 
         }
@@ -194,7 +203,7 @@ public class JibriRecorder
      */
     @Override
     public void onSessionStateChanged(
-        JibriSession jibriSession, JibriIq.Status newStatus, XMPPError error)
+        JibriSession jibriSession, JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         if (this.jibriSession != jibriSession)
         {
@@ -204,13 +213,9 @@ public class JibriRecorder
         }
 
         // FIXME go through the stop logic
-        boolean recordingStopped
-            = JibriIq.Status.FAILED.equals(newStatus) ||
-                    JibriIq.Status.OFF.equals(newStatus);
+        setAvailabilityStatus(newStatus, failureReason);
 
-        setAvailabilityStatus(newStatus, error);
-
-        if (recordingStopped)
+        if (JibriIq.Status.OFF.equals(newStatus))
         {
             this.jibriSession = null;
 
@@ -245,24 +250,19 @@ public class JibriRecorder
 //        }
     }
 
-//    private void setAvailabilityStatus(JibriIq.Status newStatus)
-//    {
-//        setAvailabilityStatus(newStatus, null);
-//    }
-
     //TODO: rename to remove the notion of 'availability'
     private void setAvailabilityStatus(
-            JibriIq.Status newStatus, XMPPError error)
+            JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         RecordingStatus recordingStatus = new RecordingStatus();
-
+        logger.info("Got jibri status " + newStatus + " and failure " + failureReason);
         recordingStatus.setStatus(newStatus);
+        recordingStatus.setFailureReason(failureReason);
         recordingStatus.setSessionId(jibriSession.getSessionId());
-        recordingStatus.setError(error);
 
         logger.info(
-            "Publish new JIBRI status: "
-                + recordingStatus.toXML() + " in: " + conference.getRoomName());
+                "Publish new JIBRI status: "
+                        + recordingStatus.toXML() + " in: " + conference.getRoomName());
 
         ChatRoom2 chatRoom2 = conference.getChatRoom();
 

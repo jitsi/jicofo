@@ -150,12 +150,19 @@ public class JibriSipGateway
             }
             else
             {
-                jibriSession = null;
                 logger.info("Failed to start a Jibri session");
-                //TODO: we could check if any jibris are connected at all here and, if so, return busy instead?
-                return JibriIq.createResult(iq, sessionId, JibriIq.Status.FAILED);
+                ErrorIQ errorIq;
+                if (jibriSession.isAnyInstanceConnected())
+                {
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                }
+                else
+                {
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.internal_server_error);
+                }
+                jibriSession = null;
+                return errorIq;
             }
-//            return IQ.createResultIQ(iq);
         }
         else
         {
@@ -170,7 +177,7 @@ public class JibriSipGateway
 
     @Override
     public void onSessionStateChanged(
-        JibriSession jibriSession, JibriIq.Status newStatus, XMPPError error)
+        JibriSession jibriSession, JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         if (!sipSessions.values().contains(jibriSession))
         {
@@ -179,13 +186,10 @@ public class JibriSipGateway
             return;
         }
 
-        boolean sessionStopped
-            = JibriIq.Status.FAILED.equals(newStatus)
-                    || JibriIq.Status.OFF.equals(newStatus);
+        //TODO: pass through failure reason
+        setJibriStatus(jibriSession, newStatus, null);
 
-        setJibriStatus(jibriSession, newStatus, error);
-
-        if (sessionStopped)
+        if (JibriIq.Status.OFF.equals(newStatus))
         {
             String sipAddress = jibriSession.getSipAddress();
             sipSessions.remove(sipAddress);
@@ -196,11 +200,11 @@ public class JibriSipGateway
         }
     }
 
-    /**
-     * The method is supposed to update SIP Jibri availability status to
-     * AVAILABLE if there any Jibris available or to UNDEFINED if there are no
-     * any. If all instances are BUSY, {@link JibriIq.Status#BUSY} will be set.
-     */
+//    /**
+//     * The method is supposed to update SIP Jibri availability status to
+//     * AVAILABLE if there any Jibris available or to UNDEFINED if there are no
+//     * any. If all instances are BUSY, {@link JibriIq.Status#BUSY} will be set.
+//     */
     @Override
     protected void updateJibriAvailability()
     {
@@ -251,6 +255,7 @@ public class JibriSipGateway
      * @param newStatus the new status
      * @param error option error for FAILED state
      */
+    //TODO: change error to FailureReason
     private void setJibriStatus(JibriSession session,
                                 JibriIq.Status newStatus, XMPPError error)
     {
