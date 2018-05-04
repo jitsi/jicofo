@@ -215,18 +215,17 @@ public class JibriSession
      */
     synchronized public Boolean start()
     {
-        try
-        {
-            jibriEventHandler.start(FocusBundleActivator.bundleContext);
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to start Jibri event handler: " + e, e);
-        }
-
         final EntityFullJid jibriJid = jibriDetector.selectJibri();
         if (jibriJid != null)
         {
+            try
+            {
+                jibriEventHandler.start(FocusBundleActivator.bundleContext);
+            }
+            catch (Exception e)
+            {
+                logger.error("Failed to start Jibri event handler: " + e, e);
+            }
             sendJibriStartIq(jibriJid);
             return true;
         }
