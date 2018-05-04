@@ -257,7 +257,6 @@ public class JibriSession
         logger.info("Trying to stop: " + stopRequest.toXML());
 
         xmpp.sendIqWithResponseCallback(stopRequest, stanza -> {
-            logger.info("Got stop response, updating status");
             JibriIq resp = (JibriIq)stanza;
             setJibriStatus(resp.getStatus(), null);
             cleanupSession();
