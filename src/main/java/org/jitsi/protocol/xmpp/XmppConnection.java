@@ -18,8 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
-
-import org.jivesoftware.smack.StanzaListener;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -63,5 +62,6 @@ public interface XmppConnection
 
     IQRequestHandler unregisterIQRequestHandler(IQRequestHandler handler);
 
-    void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener);
+    void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+        throws SmackException.NotConnectedException, InterruptedException;
 }

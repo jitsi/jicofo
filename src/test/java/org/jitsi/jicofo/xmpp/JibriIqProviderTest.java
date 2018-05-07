@@ -27,9 +27,7 @@ import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * Few basic tests for parsing JibriIQ
@@ -49,62 +47,21 @@ public class JibriIqProviderTest
         String iqXml =
             "<iq to='t' from='f' type='set'>" +
                 "<jibri xmlns='http://jitsi.org/protocol/jibri'" +
-                "       status='busy' action='stop'/>" +
+                "   status='off' action='stop' failure_reason='error'" +
+                "   session_id='abcd'" +
+                "/>" +
+
                 "</iq>";
 
         JibriIq jibriIq = IQUtils.parse(iqXml, provider);
 
         assertNotNull(jibriIq);
 
-        assertEquals(JibriIq.Status.BUSY, jibriIq.getStatus());
+        assertEquals(JibriIq.Status.OFF, jibriIq.getStatus());
         assertEquals(JibriIq.Action.STOP, jibriIq.getAction());
+        assertEquals(JibriIq.FailureReason.ERROR, jibriIq.getFailureReason());
+        assertTrue(jibriIq.getSessionId().equalsIgnoreCase("abcd"));
 
         assertNull(jibriIq.getError());
-    }
-
-    @Test
-    public void testParseError()
-        throws Exception
-    {
-        JibriIqProvider provider = new JibriIqProvider();
-
-        // JibriIq
-        String iqXml =
-            "<iq to='t' from='f' type='error'>" +
-                "<jibri xmlns='http://jitsi.org/protocol/jibri'" +
-                "       status='failed'>" +
-                "<error xmlns='urn:ietf:params:xml:ns:xmpp-stanzas' " +
-                "       type='wait'>" +
-                "<remote-server-timeout" +
-                "       xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>" +
-                "<text>Youtube request timeout</text>" +
-                "</error>" +
-                "</jibri>" +
-                "</iq>";
-
-        JibriIq jibriIq = IQUtils.parse(iqXml, provider);
-
-        assertNotNull(jibriIq);
-
-        assertEquals(JibriIq.Status.FAILED, jibriIq.getStatus());
-
-        XMPPError error = jibriIq.getError();
-        assertNotNull(error);
-
-        assertEquals(XMPPError.Type.WAIT, error.getType());
-
-        // FIXME smack4: workaround for Smack#160
-        String result = error.getDescriptiveText() != null
-                ? error.getDescriptiveText()
-                : error.getDescriptiveText(null);
-        assertEquals("Youtube request timeout", result);
-
-        XMPPError.Condition condition = error.getCondition();
-
-        assertNotNull(condition);
-
-        assertEquals(
-                XMPPError.Condition.remote_server_timeout,
-                condition);
     }
 }

@@ -814,14 +814,9 @@ public class XmppProtocolProvider
 
         @Override
         public void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+            throws NotConnectedException, InterruptedException
         {
-            try
-            {
-                connection.sendIqWithResponseCallback(iq, stanzaListener);
-            } catch (NotConnectedException | InterruptedException e)
-            {
-                e.printStackTrace();
-            }
+            connection.sendIqWithResponseCallback(iq, stanzaListener);
         }
 
         @Override

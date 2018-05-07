@@ -237,8 +237,12 @@ public class MockXmppConnection
 
     @Override
     public void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+        throws NotConnectedException, InterruptedException
     {
-        //TODO
+        Objects.requireNonNull(iq);
+        Objects.requireNonNull(stanzaListener);
+
+        super.sendIqWithResponseCallback(iq, stanzaListener);
     }
 
     @Override

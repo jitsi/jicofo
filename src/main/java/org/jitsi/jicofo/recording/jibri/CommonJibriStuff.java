@@ -17,22 +17,16 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq;
-import net.java.sip.communicator.service.protocol.ChatRoomMemberRole;
-import net.java.sip.communicator.service.protocol.OperationSetJitsiMeetTools;
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import org.jitsi.jicofo.JitsiMeetConferenceImpl;
-import org.jitsi.jicofo.JitsiMeetGlobalConfig;
-import org.jitsi.protocol.xmpp.XmppChatMember;
-import org.jitsi.protocol.xmpp.XmppConnection;
-import org.jitsi.util.Logger;
-import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.XMPPError;
-import org.jxmpp.jid.BareJid;
-import org.jxmpp.jid.Jid;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.jicofo.*;
+import org.jitsi.protocol.xmpp.*;
+import org.jitsi.util.*;
+import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
 
-import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static org.jivesoftware.smack.packet.XMPPError.Condition.*;
 import static org.jivesoftware.smack.packet.XMPPError.from;

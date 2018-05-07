@@ -15,7 +15,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author bbaldino

@@ -210,7 +210,7 @@ public class JibriRecorder
                 "onSessionStateChanged for unknown session: " + jibriSession);
             return;
         }
-        publishJibriStatus(newStatus, failureReason);
+        publishJibriRecordingStatus(newStatus, failureReason);
 
         if (JibriIq.Status.OFF.equals(newStatus))
         {
@@ -218,7 +218,7 @@ public class JibriRecorder
         }
     }
 
-    private void publishJibriStatus(
+    private void publishJibriRecordingStatus(
             JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         RecordingStatus recordingStatus = new RecordingStatus();

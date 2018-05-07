@@ -18,15 +18,14 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
-
-import net.java.sip.communicator.service.protocol.OperationFailedException;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.*;
+import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.Logger;
-
+import org.jitsi.util.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -256,11 +255,20 @@ public class JibriSession
 
         logger.info("Trying to stop: " + stopRequest.toXML());
 
-        xmpp.sendIqWithResponseCallback(stopRequest, stanza -> {
-            JibriIq resp = (JibriIq)stanza;
-            setJibriStatus(resp.getStatus(), null);
-            cleanupSession();
-        });
+        // When we send stop, we won't get an OFF presence back (just
+        // a response to this message) so clean up the session
+        // in the processing of the response.
+        try
+        {
+            xmpp.sendIqWithResponseCallback(stopRequest, stanza -> {
+                JibriIq resp = (JibriIq)stanza;
+                setJibriStatus(resp.getStatus(), null);
+                cleanupSession();
+            });
+        } catch (SmackException.NotConnectedException | InterruptedException e)
+        {
+            logger.error("Error sending stop iq: " + e.toString());
+        }
     }
 
     private void cleanupSession()
@@ -284,8 +292,6 @@ public class JibriSession
      */
     public boolean accept(JibriIq packet)
     {
-        logger.info("Jibri session checking if we accept, currentJibriJid = " + currentJibriJid +
-         " packet from = " + packet.getFrom());
         return currentJibriJid != null
             && (packet.getFrom().equals(currentJibriJid));
     }
@@ -375,7 +381,6 @@ public class JibriSession
         catch (OperationFailedException e)
         {
             logger.error("Error sending Jibri start IQ: " + e.toString());
-            e.printStackTrace();
         }
     }
 
