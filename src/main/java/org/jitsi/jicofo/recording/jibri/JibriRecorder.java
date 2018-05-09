@@ -18,12 +18,10 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
-
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-
 import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;
@@ -134,7 +132,7 @@ public class JibriRecorder
                     || recordingMode.equals(RecordingMode.UNDEFINED))
             || (emptyStreamId && recordingMode.equals(RecordingMode.FILE)))
         {
-            String sessionId = Utils.generateSessionId(SESSION_ID_LENGTH);
+            String sessionId = generateSessionId();
             jibriSession
                 = new JibriSession(
                     this,

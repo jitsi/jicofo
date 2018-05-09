@@ -299,4 +299,9 @@ public abstract class CommonJibriStuff
 
         return null;
     }
+
+    protected String generateSessionId()
+    {
+        return Utils.generateSessionId(SESSION_ID_LENGTH);
+    }
 }

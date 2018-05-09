@@ -18,11 +18,9 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -128,7 +126,7 @@ public class JibriSipGateway
         // Proceed if not empty
         if (!StringUtils.isNullOrEmpty(sipAddress))
         {
-            String sessionId = Utils.generateSessionId(SESSION_ID_LENGTH);
+            String sessionId = generateSessionId();
             JibriSession jibriSession
                 = new JibriSession(
                         this,
