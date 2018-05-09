@@ -235,8 +235,6 @@ public class JibriSession
         }
     }
 
-    synchronized boolean isAnyInstanceConnected() { return this.jibriDetector.isAnyInstanceConnected(); }
-
     /**
      * Stops this session if it's not already stopped.
      */

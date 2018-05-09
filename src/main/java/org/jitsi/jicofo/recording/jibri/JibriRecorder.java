@@ -153,7 +153,7 @@ public class JibriRecorder
             else
             {
                 ErrorIQ errorIq;
-                if (jibriSession.isAnyInstanceConnected())
+                if (jibriDetector.isAnyInstanceConnected())
                 {
                     logger.info("Failed to start a Jibri session, all Jibris were busy");
                     errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);

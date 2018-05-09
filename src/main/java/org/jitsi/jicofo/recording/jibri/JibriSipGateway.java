@@ -153,7 +153,7 @@ public class JibriSipGateway
                 logger.info("Failed to start a Jibri session");
                 sipSessions.remove(sipAddress);
                 ErrorIQ errorIq;
-                if (jibriSession.isAnyInstanceConnected())
+                if (jibriDetector.isAnyInstanceConnected())
                 {
                     errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
                 }
