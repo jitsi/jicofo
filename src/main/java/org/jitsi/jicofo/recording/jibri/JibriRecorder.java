@@ -226,6 +226,11 @@ public class JibriRecorder
         recordingStatus.setStatus(newStatus);
         recordingStatus.setFailureReason(failureReason);
         recordingStatus.setSessionId(jibriSession.getSessionId());
+        JibriIq.RecordingMode recordingMode = jibriSession.getRecordingMode();
+        if (recordingMode != RecordingMode.UNDEFINED)
+        {
+            recordingStatus.setRecordingMode(recordingMode);
+        }
 
         logger.info(
                 "Publishing new jibri-recording-status: "

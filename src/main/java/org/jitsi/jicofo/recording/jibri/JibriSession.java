@@ -329,6 +329,19 @@ public class JibriSession
         return IQ.createResultIQ(iq);
     }
 
+    public JibriIq.RecordingMode getRecordingMode()
+    {
+        if (sipAddress != null)
+        {
+            return RecordingMode.UNDEFINED;
+        }
+        else if (streamID != null)
+        {
+            return RecordingMode.STREAM;
+        }
+        return RecordingMode.FILE;
+    }
+
     /**
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
