@@ -167,6 +167,12 @@ public class JibriSession
     private final String streamID;
 
     /**
+     * The broadcast id of the YouTube broadcast, if available.  This is used
+     * to generate and distribute the viewing url of the live stream
+     */
+    private final String youTubeBroadcastId;
+
+    /**
      * {@link XmppConnection} instance used to send/listen for XMPP packets.
      */
     private final XmppConnection xmpp;
@@ -190,6 +196,7 @@ public class JibriSession
      * @param displayName a display name to be used by Jibri participant
      * entering the conference once the session starts.
      * @param streamID a live streaming ID if it's not a SIP session
+     * @param youTubeBroadcastId the YouTube broadcast id (optional)
      * @param logLevelDelegate logging level delegate which will be used to
      * select logging level for this instance {@link #logger}.
      */
@@ -204,6 +211,7 @@ public class JibriSession
             String sipAddress,
             String displayName,
             String streamID,
+            String youTubeBroadcastId,
             Logger logLevelDelegate)
     {
         this.owner = owner;
@@ -216,6 +224,7 @@ public class JibriSession
         this.sipAddress = sipAddress;
         this.displayName = displayName;
         this.streamID = streamID;
+        this.youTubeBroadcastId = youTubeBroadcastId;
         this.xmpp = connection;
         logger = Logger.getLogger(classLogger, logLevelDelegate);
     }
@@ -463,6 +472,9 @@ public class JibriSession
         {
             startIq.setStreamId(streamID);
             startIq.setRecordingMode(RecordingMode.STREAM);
+            if (youTubeBroadcastId != null) {
+                startIq.setYouTubeBroadcastId(youTubeBroadcastId);
+            }
         }
         else
         {

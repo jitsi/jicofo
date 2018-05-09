@@ -138,7 +138,7 @@ public class JibriSipGateway
                         jibriDetector,
                         false,
                         sipAddress,
-                        displayName, null,
+                        displayName, null, null,
                         classLogger);
             sipSessions.put(sipAddress, jibriSession);
             // Try starting Jibri
