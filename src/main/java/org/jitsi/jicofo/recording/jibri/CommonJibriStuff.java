@@ -250,10 +250,20 @@ public abstract class CommonJibriStuff
         JibriSession jibriSession = getJibriSessionForMeetIq(iq);
 
         // start ?
-        if (JibriIq.Action.START.equals(action) &&
-            jibriSession == null)
+        if (JibriIq.Action.START.equals(action))
         {
-            return handleStartRequest(iq);
+            if (jibriSession == null)
+            {
+                return handleStartRequest(iq);
+            }
+            else
+            {
+                // If there's a session active, we know there are Jibri's connected
+                // (so it isn't XMPPError.Condition.service_unavailable), so it
+                // must be that they're all busy.
+                logger.info("Failed to start a Jibri session, all Jibris were busy");
+                return IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+            }
         }
         // stop ?
         else if (JibriIq.Action.STOP.equals(action) &&
@@ -267,7 +277,7 @@ public abstract class CommonJibriStuff
 
         // Bad request
         return IQ.createErrorResponse(
-            iq, from(bad_request, "Unable to handle: '" + action));
+            iq, from(bad_request, "Unable to handle: " + action));
     }
 
     private XMPPError verifyModeratorRole(JibriIq iq)
