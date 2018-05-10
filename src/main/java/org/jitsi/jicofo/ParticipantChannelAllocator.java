@@ -219,7 +219,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             // Whether another thread intentionally canceled us, or there was
             // a failure to invite the participant on the jingle level, we will
             // not trigger a retry here.
-            meetConference.onChannelAllocationFailed(this, false);
+            meetConference.onChannelAllocationFailed(this, /* retry */ false);
         }
         else if (reInvite)
         {
