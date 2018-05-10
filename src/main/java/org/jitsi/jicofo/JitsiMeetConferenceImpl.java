@@ -2167,6 +2167,10 @@ public class JitsiMeetConferenceImpl
         }
         else
         {
+            terminateParticipant(
+                participant,
+                Reason.GENERAL_ERROR,
+                "channel allocation or jingle session failed");
             onBridgeDown(bridgeSession.bridge.getJid());
         }
     }
