@@ -93,7 +93,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * 'transport-replace' Jingle action as opposed to 'session-initiate' in
      * regular invite.
      */
-    protected final boolean reInvite;
+    protected boolean reInvite;
 
     /**
      * Initializes a new {@link AbstractChannelAllocator} instance which is to
@@ -174,7 +174,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             logger.error("Channel allocator failed: " + participant);
 
             // Notify conference about failure
-            meetConference.onChannelAllocationFailed(this);
+            meetConference.onChannelAllocationFailed(this, !isReInvite());
 
             // Cancel this task - nothing to be done after failure
             cancel();

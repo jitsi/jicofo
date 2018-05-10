@@ -217,10 +217,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         if (expireChannels || canceled)
         {
             // Whether another thread intentionally canceled us, or there was
-            // a failure to invite the participant in the jingle level, we will
+            // a failure to invite the participant on the jingle level, we will
             // not trigger a retry here.
-            // In any case, try and expire the channels on the bridge.
-            meetConference.onInviteFailed(this);
+            meetConference.onChannelAllocationFailed(this, /* retry */ false);
         }
         else if (reInvite)
         {
