@@ -1089,10 +1089,9 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private void terminateParticipant(
-        Participant participant,
-        Reason reason,
-        String message)
+    private void terminateParticipant(Participant    participant,
+                                      Reason         reason,
+                                      String         message)
     {
         synchronized (participantLock)
         {
@@ -2102,16 +2101,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * A callback called by {@link ParticipantChannelAllocator} when
-     * establishing the Jingle session with its participant fails.
-     * @param channelAllocator the channel allocator which failed.
-     */
-    void onInviteFailed(ParticipantChannelAllocator channelAllocator)
-    {
-        onParticipantChannelAllocationFailed(channelAllocator, false);
-    }
-
-    /**
      * Method called by {@link AbstractChannelAllocator} when it fails to
      * allocate channels with {@link OperationFailedException}. We need to make
      * some decisions here.
@@ -2119,7 +2108,8 @@ public class JitsiMeetConferenceImpl
      * @param channelAllocator the {@link AbstractChannelAllocator} instance
      * which is reporting the error.
      */
-    void onChannelAllocationFailed(AbstractChannelAllocator channelAllocator)
+    void onChannelAllocationFailed(
+            AbstractChannelAllocator channelAllocator)
     {
         // We're gonna handle this, no more work for this
         // AbstractChannelAllocator.
@@ -2128,8 +2118,7 @@ public class JitsiMeetConferenceImpl
         if (channelAllocator instanceof ParticipantChannelAllocator)
         {
             onParticipantChannelAllocationFailed(
-                (ParticipantChannelAllocator) channelAllocator,
-                true);
+                (ParticipantChannelAllocator) channelAllocator);
         }
         else if (channelAllocator instanceof OctoChannelAllocator)
         {
@@ -2159,8 +2148,7 @@ public class JitsiMeetConferenceImpl
      * failed.
      */
     private void onParticipantChannelAllocationFailed(
-        ParticipantChannelAllocator channelAllocator,
-        boolean bridgeFailure)
+        ParticipantChannelAllocator channelAllocator)
     {
 
         BridgeSession bridgeSession = channelAllocator.getBridgeSession();
@@ -2179,12 +2167,7 @@ public class JitsiMeetConferenceImpl
         }
         else
         {
-            terminateParticipant(participant, null, "jingle session failed");
-
-            if (bridgeFailure)
-            {
-                onBridgeDown(bridgeSession.bridge.getJid());
-            }
+            onBridgeDown(bridgeSession.bridge.getJid());
         }
     }
 
