@@ -2109,7 +2109,8 @@ public class JitsiMeetConferenceImpl
      * which is reporting the error.
      */
     void onChannelAllocationFailed(
-            AbstractChannelAllocator channelAllocator)
+            AbstractChannelAllocator channelAllocator,
+            boolean retry)
     {
         // We're gonna handle this, no more work for this
         // AbstractChannelAllocator.
@@ -2118,7 +2119,8 @@ public class JitsiMeetConferenceImpl
         if (channelAllocator instanceof ParticipantChannelAllocator)
         {
             onParticipantChannelAllocationFailed(
-                (ParticipantChannelAllocator) channelAllocator);
+                (ParticipantChannelAllocator) channelAllocator,
+                retry);
         }
         else if (channelAllocator instanceof OctoChannelAllocator)
         {
@@ -2148,16 +2150,13 @@ public class JitsiMeetConferenceImpl
      * failed.
      */
     private void onParticipantChannelAllocationFailed(
-        ParticipantChannelAllocator channelAllocator)
+        ParticipantChannelAllocator channelAllocator,
+        boolean retry)
     {
 
         BridgeSession bridgeSession = channelAllocator.getBridgeSession();
         Participant participant = channelAllocator.getParticipant();
         bridgeSession.terminate(participant);
-
-        // Retry once.
-        // TODO: be smarter about re-trying
-        boolean retry = !channelAllocator.isReInvite();
 
         if (retry)
         {

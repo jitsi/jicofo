@@ -174,7 +174,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             logger.error("Channel allocator failed: " + participant);
 
             // Notify conference about failure
-            meetConference.onChannelAllocationFailed(this);
+            meetConference.onChannelAllocationFailed(this, !isReInvite());
 
             // Cancel this task - nothing to be done after failure
             cancel();
