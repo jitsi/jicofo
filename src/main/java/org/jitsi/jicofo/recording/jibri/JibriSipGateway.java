@@ -157,7 +157,7 @@ public class JibriSipGateway
                 }
                 else
                 {
-                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.internal_server_error);
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.service_unavailable);
                 }
                 return errorIq;
             }
