@@ -2118,9 +2118,10 @@ public class JitsiMeetConferenceImpl
 
         if (channelAllocator instanceof ParticipantChannelAllocator)
         {
-            onParticipantChannelAllocationFailed(
+            onParticipantInviteFailed(
                 (ParticipantChannelAllocator) channelAllocator,
-                retry);
+                retry,
+                /* bridgeFailure */ true);
         }
         else if (channelAllocator instanceof OctoChannelAllocator)
         {
@@ -2145,15 +2146,34 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles a failure to allocate channels for a conference participant.
+     * A callback called by {@link ParticipantChannelAllocator} when
+     * establishing the Jingle session with its participant fails.
+     * @param channelAllocator the channel allocator which failed.
+     */
+    void onInviteFailed(ParticipantChannelAllocator channelAllocator)
+    {
+        onParticipantInviteFailed(
+            channelAllocator,
+            /* retry */ false,
+            /* bridge failure */ false);
+    }
+
+    /**
+     * Handles a failure to invite a participant to the conference. This could
+     * be due to a failure to allocate colibri channels, or a Jingle failure.
+     *
      * @param channelAllocator the {@link ParticipantChannelAllocator} which
      * failed.
+     * @param retry whether we should re-try to invite the participant.
+     * @param bridgeFailure Whether the failure was a result of a problem with
+     * the jitsi-videobridge instance, in which case we should consider the
+     * bridge unhealthy.
      */
-    private void onParticipantChannelAllocationFailed(
+    private void onParticipantInviteFailed(
         ParticipantChannelAllocator channelAllocator,
-        boolean retry)
+        boolean retry,
+        boolean bridgeFailure)
     {
-
         BridgeSession bridgeSession = channelAllocator.getBridgeSession();
         Participant participant = channelAllocator.getParticipant();
         bridgeSession.terminate(participant);
@@ -2170,7 +2190,11 @@ public class JitsiMeetConferenceImpl
                 participant,
                 Reason.GENERAL_ERROR,
                 "channel allocation or jingle session failed");
-            onBridgeDown(bridgeSession.bridge.getJid());
+
+            if (bridgeFailure)
+            {
+                onBridgeDown(bridgeSession.bridge.getJid());
+            }
         }
     }
 
