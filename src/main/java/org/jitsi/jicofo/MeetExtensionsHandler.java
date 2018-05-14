@@ -245,6 +245,12 @@ public class MeetExtensionsHandler
         {
             IQ reply = connection.sendPacketAndGetReply(forwardDialIq);
 
+            if (reply == null)
+            {
+                return IQ.createErrorResponse(dialIq, XMPPError
+                    .getBuilder(XMPPError.Condition.remote_server_timeout));
+            }
+
             // Send Jigasi response back to the client
             reply.setFrom((Jid)null);
             reply.setTo(from);
