@@ -211,8 +211,9 @@ public class JibriSession
     /**
      * Starts this session. A new Jibri instance will be selected and start
      * request will be sent (in non blocking mode).
+     * @return true if the start is successful, false otherwise
      */
-    synchronized public Boolean start()
+    synchronized public boolean start()
     {
         final EntityFullJid jibriJid = jibriDetector.selectJibri();
         if (jibriJid != null)
@@ -220,19 +221,19 @@ public class JibriSession
             try
             {
                 jibriEventHandler.start(FocusBundleActivator.bundleContext);
+                sendJibriStartIq(jibriJid);
+                return true;
             }
             catch (Exception e)
             {
                 logger.error("Failed to start Jibri event handler: " + e, e);
             }
-            sendJibriStartIq(jibriJid);
-            return true;
         }
         else
         {
             logger.error("Unable to find an available Jibri, can't start");
-            return false;
         }
+        return false;
     }
 
     /**
@@ -258,11 +259,17 @@ public class JibriSession
         // in the processing of the response.
         try
         {
-            xmpp.sendIqWithResponseCallback(stopRequest, stanza -> {
-                JibriIq resp = (JibriIq)stanza;
-                setJibriStatus(resp.getStatus(), null);
-                cleanupSession();
-            });
+            xmpp.sendIqWithResponseCallback(
+                    stopRequest,
+                    stanza -> {
+                        JibriIq resp = (JibriIq)stanza;
+                        setJibriStatus(resp.getStatus(), null);
+                        cleanupSession();
+                    },
+                    exception -> {
+                        logger.error("Error sending stop iq: " + exception.toString());
+                    },
+                    60000);
         } catch (SmackException.NotConnectedException | InterruptedException e)
         {
             logger.error("Error sending stop iq: " + e.toString());
@@ -327,7 +334,13 @@ public class JibriSession
         return IQ.createResultIQ(iq);
     }
 
-    public JibriIq.RecordingMode getRecordingMode()
+    /**
+     * Gets the recording mode of this jibri session
+     * @return the recording mode for this session (STREAM, FILE or UNDEFINED
+     * in the case that this isn't a recording session but actually a SIP
+     * session)
+     */
+    JibriIq.RecordingMode getRecordingMode()
     {
         if (sipAddress != null)
         {
@@ -448,6 +461,15 @@ public class JibriSession
         return sipAddress;
     }
 
+    /**
+     * Get the unique ID for this session.  This is used to uniquely
+     * identify a Jibri session instance, even of the same type (meaning,
+     * for example, that two file recordings would have different session
+     * IDs).  It will be passed to Jibri and Jibri will put the session ID
+     * in its presence, so the Jibri user for a particular session can
+     * be identified by the clients.
+     * @return the session ID
+     */
     public String getSessionId()
     {
         return this.sessionId;

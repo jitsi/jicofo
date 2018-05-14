@@ -20,9 +20,15 @@ import java.util.*;
 /**
  * @author bbaldino
  */
-public class Utils
+class Utils
 {
-    public static String generateSessionId(int length) {
+    /**
+     * Generated a session id of the given length
+     * @param length the desired length, in characters, for the session ID
+     * @return the generated session ID
+     */
+    static String generateSessionId(int length)
+    {
         int leftLimit = 97; // letter 'a'
         int rightLimit = 122; // letter 'z'
         Random random = new Random();

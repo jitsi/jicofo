@@ -219,8 +219,16 @@ public class JibriRecorder
     private void publishJibriRecordingStatus(
             JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
-        RecordingStatus recordingStatus = new RecordingStatus();
         logger.info("Got jibri status " + newStatus + " and failure " + failureReason);
+        if (jibriSession == null)
+        {
+            // It's possible back-to-back 'stop' requests could be received, and while processing
+            // the result of the first we set jibriSession to null, so in the processing
+            // of the second one it will already be null.
+            logger.info("Jibri session was already cleaned up, not sending new status");
+            return;
+        }
+        RecordingStatus recordingStatus = new RecordingStatus();
         recordingStatus.setStatus(newStatus);
         recordingStatus.setFailureReason(failureReason);
         recordingStatus.setSessionId(jibriSession.getSessionId());

@@ -252,8 +252,6 @@ public class XmppProtocolProvider
         }
 
         connection = new XMPPTCPConnection(connConfig.build());
-        // Jibri can take a while to reply, so give a decent-sized timeout
-        connection.setReplyTimeout(60000);
 
         if (logger.isTraceEnabled())
         {
@@ -813,10 +811,14 @@ public class XmppProtocolProvider
         }
 
         @Override
-        public void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+        public void sendIqWithResponseCallback(
+                IQ iq,
+                StanzaListener stanzaListener,
+                ExceptionCallback exceptionCallback,
+                long timeout)
             throws NotConnectedException, InterruptedException
         {
-            connection.sendIqWithResponseCallback(iq, stanzaListener);
+            connection.sendIqWithResponseCallback(iq, stanzaListener, exceptionCallback, timeout);
         }
 
         @Override

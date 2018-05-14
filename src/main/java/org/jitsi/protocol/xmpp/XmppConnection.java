@@ -62,6 +62,13 @@ public interface XmppConnection
 
     IQRequestHandler unregisterIQRequestHandler(IQRequestHandler handler);
 
-    void sendIqWithResponseCallback(IQ iq, StanzaListener stanzaListener)
+    /**
+     * See {@link XMPPConnection#sendIqWithResponseCallback(IQ, StanzaListener, ExceptionCallback, long)}
+     */
+    void sendIqWithResponseCallback(
+            IQ iq,
+            StanzaListener stanzaListener,
+            ExceptionCallback exceptionCallback,
+            long timeout)
         throws SmackException.NotConnectedException, InterruptedException;
 }
