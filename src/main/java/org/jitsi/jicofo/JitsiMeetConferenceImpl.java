@@ -347,7 +347,6 @@ public class JitsiMeetConferenceImpl
                             this, getXmppConnection(), executor, globalConfig);
 
                 jibriOpSet.addJibri(jibriRecorder);
-                jibriRecorder.init();
             }
 
             JibriDetector sipJibriDetector = services.getSipJibriDetector();
@@ -361,7 +360,6 @@ public class JitsiMeetConferenceImpl
                             globalConfig);
 
                 jibriOpSet.addJibri(jibriSipGateway);
-                jibriSipGateway.init();
             }
         }
         catch (Exception e)

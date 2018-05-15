@@ -18,12 +18,10 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.RecordingMode;
-
+import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-
 import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;
@@ -134,6 +132,7 @@ public class JibriRecorder
                     || recordingMode.equals(RecordingMode.UNDEFINED))
             || (emptyStreamId && recordingMode.equals(RecordingMode.FILE)))
         {
+            String sessionId = generateSessionId();
             jibriSession
                 = new JibriSession(
                     this,
@@ -142,13 +141,30 @@ public class JibriRecorder
                     connection,
                     scheduledExecutor,
                     jibriDetector,
-                    false, null, displayName, streamID, youTubeBroadcastId,
+                    false, null, displayName, streamID, youTubeBroadcastId, sessionId,
                     classLogger);
-            // Try starting Jibri on separate thread with retries
-            jibriSession.start();
-            // This will ACK the request immediately to simplify the flow,
-            // any error will be passed with the FAILED state
-            return IQ.createResultIQ(iq);
+            if (jibriSession.start())
+            {
+                logger.info("Started Jibri session");
+                return JibriIq.createResult(iq, sessionId);
+            }
+            else
+            {
+                ErrorIQ errorIq;
+                if (jibriDetector.isAnyInstanceConnected())
+                {
+                    logger.info("Failed to start a Jibri session, all Jibris were busy");
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                }
+                else
+                {
+                    logger.info("Failed to start a Jibri session, no Jibris available");
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.service_unavailable);
+                }
+                jibriSession = null;
+                return errorIq;
+            }
+
         }
         else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
         {
@@ -184,7 +200,7 @@ public class JibriRecorder
      */
     @Override
     public void onSessionStateChanged(
-        JibriSession jibriSession, JibriIq.Status newStatus, XMPPError error)
+        JibriSession jibriSession, JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         if (this.jibriSession != jibriSession)
         {
@@ -192,70 +208,42 @@ public class JibriRecorder
                 "onSessionStateChanged for unknown session: " + jibriSession);
             return;
         }
+        publishJibriRecordingStatus(newStatus, failureReason);
 
-        // FIXME go through the stop logic
-        boolean recordingStopped
-            = JibriIq.Status.FAILED.equals(newStatus) ||
-                    JibriIq.Status.OFF.equals(newStatus);
-
-        setAvailabilityStatus(newStatus, error);
-
-        if (recordingStopped)
+        if (JibriIq.Status.OFF.equals(newStatus))
         {
             this.jibriSession = null;
-
-            updateJibriAvailability();
         }
     }
 
-    /**
-     * The method is supposed to update Jibri availability status to OFF if we
-     * have any Jibris available or to UNDEFINED if there are no any.
-     */
-    @Override
-    protected void updateJibriAvailability()
+    private void publishJibriRecordingStatus(
+            JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
-        // We listen to status updates coming from the current Jibri
-        // through IQs if the recording is in progress(jibriSession
-        // is not null)
-        if (jibriSession != null)
+        logger.info("Got jibri status " + newStatus + " and failure " + failureReason);
+        if (jibriSession == null)
+        {
+            // It's possible back-to-back 'stop' requests could be received, and while processing
+            // the result of the first we set jibriSession to null, so in the processing
+            // of the second one it will already be null.
+            logger.info("Jibri session was already cleaned up, not sending new status");
             return;
-
-        if (jibriDetector.selectJibri() != null)
-        {
-            setAvailabilityStatus(JibriIq.Status.OFF);
         }
-        else if (jibriDetector.isAnyInstanceConnected())
-        {
-            setAvailabilityStatus(JibriIq.Status.BUSY);
-        }
-        else
-        {
-            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
-        }
-    }
-
-    private void setAvailabilityStatus(JibriIq.Status newStatus)
-    {
-        setAvailabilityStatus(newStatus, null);
-    }
-
-    private void setAvailabilityStatus(
-            JibriIq.Status newStatus, XMPPError error)
-    {
         RecordingStatus recordingStatus = new RecordingStatus();
-
         recordingStatus.setStatus(newStatus);
-
-        recordingStatus.setError(error);
+        recordingStatus.setFailureReason(failureReason);
+        recordingStatus.setSessionId(jibriSession.getSessionId());
+        JibriIq.RecordingMode recordingMode = jibriSession.getRecordingMode();
+        if (recordingMode != RecordingMode.UNDEFINED)
+        {
+            recordingStatus.setRecordingMode(recordingMode);
+        }
 
         logger.info(
-            "Publish new JIBRI status: "
-                + recordingStatus.toXML() + " in: " + conference.getRoomName());
+                "Publishing new jibri-recording-status: "
+                        + recordingStatus.toXML() + " in: " + conference.getRoomName());
 
         ChatRoom2 chatRoom2 = conference.getChatRoom();
 
-        // Publish that in the presence
         if (chatRoom2 != null)
         {
             meetTools.sendPresenceExtension(chatRoom2, recordingStatus);

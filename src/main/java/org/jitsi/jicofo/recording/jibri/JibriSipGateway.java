@@ -18,11 +18,9 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
-
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.util.*;
-
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -128,6 +126,7 @@ public class JibriSipGateway
         // Proceed if not empty
         if (!StringUtils.isNullOrEmpty(sipAddress))
         {
+            String sessionId = generateSessionId();
             JibriSession jibriSession
                 = new JibriSession(
                         this,
@@ -138,14 +137,30 @@ public class JibriSipGateway
                         jibriDetector,
                         false,
                         sipAddress,
-                        displayName, null, null,
+                        displayName, null, null, sessionId,
                         classLogger);
             sipSessions.put(sipAddress, jibriSession);
             // Try starting Jibri
-            jibriSession.start();
-            // This will ACK the request immediately to simplify the flow,
-            // any error will be passed with the FAILED state
-            return IQ.createResultIQ(iq);
+            if (jibriSession.start())
+            {
+                logger.info("Started Jibri session");
+                return JibriIq.createResult(iq, sessionId);
+            }
+            else
+            {
+                logger.info("Failed to start a Jibri session");
+                sipSessions.remove(sipAddress);
+                ErrorIQ errorIq;
+                if (jibriDetector.isAnyInstanceConnected())
+                {
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                }
+                else
+                {
+                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.service_unavailable);
+                }
+                return errorIq;
+            }
         }
         else
         {
@@ -160,7 +175,7 @@ public class JibriSipGateway
 
     @Override
     public void onSessionStateChanged(
-        JibriSession jibriSession, JibriIq.Status newStatus, XMPPError error)
+        JibriSession jibriSession, JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         if (!sipSessions.values().contains(jibriSession))
         {
@@ -169,67 +184,14 @@ public class JibriSipGateway
             return;
         }
 
-        boolean sessionStopped
-            = JibriIq.Status.FAILED.equals(newStatus)
-                    || JibriIq.Status.OFF.equals(newStatus);
+        publishJibriSipCallState(jibriSession, newStatus, failureReason);
 
-        setJibriStatus(jibriSession, newStatus, error);
-
-        if (sessionStopped)
+        if (JibriIq.Status.OFF.equals(newStatus))
         {
             String sipAddress = jibriSession.getSipAddress();
             sipSessions.remove(sipAddress);
 
             logger.info("Removing SIP call: " + sipAddress);
-
-            updateJibriAvailability();
-        }
-    }
-
-    /**
-     * The method is supposed to update SIP Jibri availability status to
-     * AVAILABLE if there any Jibris available or to UNDEFINED if there are no
-     * any. If all instances are BUSY, {@link JibriIq.Status#BUSY} will be set.
-     */
-    @Override
-    protected void updateJibriAvailability()
-    {
-        if (jibriDetector.selectJibri() != null)
-        {
-            setAvailabilityStatus(JibriIq.Status.AVAILABLE);
-        }
-        else if (jibriDetector.isAnyInstanceConnected())
-        {
-            setAvailabilityStatus(JibriIq.Status.BUSY);
-        }
-        else
-        {
-            setAvailabilityStatus(JibriIq.Status.UNDEFINED);
-        }
-    }
-
-    /**
-     * Publishes new SIP Jibri availability status which informs Jitsi Meet
-     * whether or not there are any SIP Jibri instances available.
-     * @param newStatus the new availability status to be advertised
-     */
-    private void setAvailabilityStatus(JibriIq.Status newStatus)
-    {
-        SipGatewayStatus sipGatewayStatus = new SipGatewayStatus();
-
-        sipGatewayStatus.setStatus(newStatus);
-
-        logger.info(
-            "Publish new SIP JIBRI status: "
-                + sipGatewayStatus.toXML()
-                + " in: " + conference.getRoomName());
-
-        ChatRoom2 chatRoom2 = conference.getChatRoom();
-
-        // Publish that in the presence
-        if (chatRoom2 != null)
-        {
-            meetTools.sendPresenceExtension(chatRoom2, sipGatewayStatus);
         }
     }
 
@@ -239,21 +201,19 @@ public class JibriSipGateway
      * each active SIP Jibri session.
      * @param session the session for which the new status will be set
      * @param newStatus the new status
-     * @param error option error for FAILED state
+     * @param failureReason option error for OFF state
      */
-    private void setJibriStatus(JibriSession session,
-                                JibriIq.Status newStatus, XMPPError error)
+    private void publishJibriSipCallState(JibriSession session,
+                                          JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
         SipCallState sipCallState = new SipCallState();
-
         sipCallState.setState(newStatus);
-
-        sipCallState.setError(error);
-
+        sipCallState.setFailureReason(failureReason);
         sipCallState.setSipAddress(session.getSipAddress());
+        sipCallState.setSessionId(session.getSessionId());
 
         logger.info(
-            "Publish new Jibri SIP status for: " + session.getSipAddress()
+            "Publishing new jibri-sip-call-state: " + session.getSipAddress()
                 + sipCallState.toXML() + " in: " + conference.getRoomName());
 
         ChatRoom2 chatRoom2 = conference.getChatRoom();

@@ -811,6 +811,17 @@ public class XmppProtocolProvider
         }
 
         @Override
+        public void sendIqWithResponseCallback(
+                IQ iq,
+                StanzaListener stanzaListener,
+                ExceptionCallback exceptionCallback,
+                long timeout)
+            throws NotConnectedException, InterruptedException
+        {
+            connection.sendIqWithResponseCallback(iq, stanzaListener, exceptionCallback, timeout);
+        }
+
+        @Override
         public IQRequestHandler registerIQRequestHandler(IQRequestHandler handler)
         {
             return connection.registerIQRequestHandler(handler);
