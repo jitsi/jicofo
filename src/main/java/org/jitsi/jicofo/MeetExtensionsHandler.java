@@ -245,6 +245,14 @@ public class MeetExtensionsHandler
         {
             IQ reply = connection.sendPacketAndGetReply(forwardDialIq);
 
+            if (reply == null)
+            {
+                return IQ.createErrorResponse(
+                    dialIq,
+                    XMPPError.getBuilder(
+                            XMPPError.Condition.remote_server_timeout));
+            }
+
             // Send Jigasi response back to the client
             reply.setFrom((Jid)null);
             reply.setTo(from);
@@ -254,9 +262,11 @@ public class MeetExtensionsHandler
         catch (OperationFailedException e)
         {
             logger.error("Failed to send DialIq - XMPP disconnected", e);
-            return IQ.createErrorResponse(dialIq, XMPPError
-                .getBuilder(XMPPError.Condition.internal_server_error)
-                .setDescriptiveEnText("Failed to forward DialIq"));
+            return IQ.createErrorResponse(
+                dialIq,
+                XMPPError.getBuilder(
+                        XMPPError.Condition.internal_server_error)
+                    .setDescriptiveEnText("Failed to forward DialIq"));
         }
     }
 }
