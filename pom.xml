@@ -20,7 +20,7 @@
   <properties>
     <assembly.skipAssembly>true</assembly.skipAssembly>
     <jetty.version>8.1.16.v20140903</jetty.version>
-    <smack.version>4.2.2</smack.version>
+    <smack.version>4.2.2-b1c107f</smack.version>
     <jitsi-desktop.version>2.13.990f578</jitsi-desktop.version>
   </properties>
 
@@ -63,6 +63,11 @@
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
       <artifactId>smack-extensions</artifactId>
+      <version>${smack.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.igniterealtime.smack</groupId>
+      <artifactId>smack-core</artifactId>
       <version>${smack.version}</version>
     </dependency>
     <dependency>
