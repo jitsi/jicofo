@@ -126,6 +126,8 @@ public class JibriDetector
         EntityFullJid jid,
         JibriStatusPacketExt presenceExt)
     {
+        logger.info("Received Jibri status " + presenceExt.toXML());
+
         JibriStatusPacketExt.Status status = presenceExt.getStatus();
 
         if (JibriStatusPacketExt.Status.UNDEFINED.equals(status))
