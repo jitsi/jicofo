@@ -92,33 +92,6 @@ public class BridgeSelector
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
 
     /**
-     * Tries to parse an object as an integer, return null on failure.
-     * @param obj the object to parse.
-     */
-    private static Integer getInt(Object obj)
-    {
-        if (obj == null)
-        {
-            return null;
-        }
-        if (obj instanceof Integer)
-        {
-            return (Integer) obj;
-        }
-
-        String str = obj.toString();
-        try
-        {
-            return Integer.valueOf(str);
-        }
-        catch (NumberFormatException e)
-        {
-            logger.error("Error parsing an int: " + obj);
-        }
-        return null;
-    }
-
-    /**
      * Stores reference to <tt>EventHandler</tt> registration, so that it can be
      * unregistered on {@link #dispose()}.
      */
@@ -465,51 +438,7 @@ public class BridgeSelector
             }
         }
 
-        ColibriStatsExtension stats = (ColibriStatsExtension) payload;
-        for (ColibriStatsExtension.Stat stat
-            : stats.getChildExtensionsOfType(ColibriStatsExtension.Stat.class))
-        {
-            if ("conferences".equals(stat.getName()))
-            {
-                Integer conferenceCount = getInt(stat.getValue());
-                if (conferenceCount != null)
-                {
-                    bridge.setConferenceCount(conferenceCount);
-                }
-            }
-            else if ("videochannels".equals(stat.getName()))
-            {
-                Integer videoChannelCount = getInt(stat.getValue());
-                if (videoChannelCount != null)
-                {
-                    bridge.setVideoChannelCount(videoChannelCount);
-                }
-            }
-            else if ("videostreams".equals(stat.getName()))
-            {
-                Integer videoStreamCount = getInt(stat.getValue());
-                if (videoStreamCount != null)
-                {
-                    bridge.setVideoStreamCount(videoStreamCount);
-                }
-            }
-            else if ("relay_id".equals(stat.getName()))
-            {
-                Object relayId = stat.getValue();
-                if (relayId != null)
-                {
-                    bridge.setRelayId(relayId.toString());
-                }
-            }
-            else if ("region".equals(stat.getName()))
-            {
-                Object region = stat.getValue();
-                if (region != null)
-                {
-                    bridge.setRegion(region.toString());
-                }
-            }
-        }
+        bridge.setStats((ColibriStatsExtension) payload);
     }
 
     /**
