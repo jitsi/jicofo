@@ -72,7 +72,7 @@ public class JibriDetector
      * Indicates whether this instance detects SIP gateway Jibris or regular
      * live streaming Jibris.
      */
-    private final boolean isSIP;
+    private final boolean isSip;
 
     /**
      * Creates new instance of <tt>JibriDetector</tt>
@@ -80,12 +80,12 @@ public class JibriDetector
      *        for Jicofo's XMPP connection.
      * @param jibriBreweryName the name of the Jibri brewery MUC room where all
      *        Jibris will gather.
-     * @param isSIP <tt>true</tt> if this instance will work with SIP gateway
+     * @param isSip <tt>true</tt> if this instance will work with SIP gateway
      *        Jibris or <tt>false</tt> for live streaming Jibris
      */
     public JibriDetector(ProtocolProviderHandler protocolProvider,
                          String jibriBreweryName,
-                         boolean isSIP)
+                         boolean isSip)
     {
         super(
             protocolProvider,
@@ -96,12 +96,21 @@ public class JibriDetector
         this.eventAdminRef
             = new OSGIServiceRef<>(
                     FocusBundleActivator.bundleContext, EventAdmin.class);
-        this.isSIP = isSIP;
+        this.isSip = isSip;
+    }
+
+    /**
+     * Checks whether this instance detects Jibri instances running in SIP
+     * Gateway mode, or live-streaming mode.
+     */
+    public boolean isSip()
+    {
+        return isSip;
     }
 
     private String getLogName()
     {
-        return isSIP ? "SIP Jibri" : "Jibri";
+        return isSip ? "SIP Jibri" : "Jibri";
     }
 
     /**
@@ -157,7 +166,7 @@ public class JibriDetector
         if (eventAdmin != null)
         {
             eventAdmin.postEvent(
-                    JibriEvent.newWentOfflineEvent(jid, this.isSIP));
+                    JibriEvent.newWentOfflineEvent(jid, this.isSip));
         }
         else
         {
@@ -175,7 +184,7 @@ public class JibriDetector
         {
             eventAdmin.postEvent(
                     JibriEvent.newStatusChangedEvent(
-                            jibriJid, available, isSIP));
+                        jibriJid, available, isSip));
         }
         else
         {
