@@ -466,15 +466,9 @@ public class BridgeSelector
         }
 
         ColibriStatsExtension stats = (ColibriStatsExtension) payload;
-        for (ExtensionElement child : stats.getChildExtensions())
+        for (ColibriStatsExtension.Stat stat
+            : stats.getChildExtensionsOfType(ColibriStatsExtension.Stat.class))
         {
-            if (!(child instanceof ColibriStatsExtension.Stat))
-            {
-                continue;
-            }
-
-            ColibriStatsExtension.Stat stat
-                = (ColibriStatsExtension.Stat) child;
             if ("conferences".equals(stat.getName()))
             {
                 Integer conferenceCount = getInt(stat.getValue());
