@@ -27,6 +27,7 @@ import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
@@ -97,21 +98,7 @@ public class JitsiMeetServices
      */
     private final BridgeSelector bridgeSelector;
 
-    /**
-     * Instance of {@link JibriDetector} which manages Jibri instances.
-     */
-    private JibriDetector jibriDetector;
-
-    /**
-     * Instance of {@link JigasiDetector} which manages Jigasi instances.
-     */
-    private JigasiDetector jigasiDetector;
-
-    /**
-     * {@link JibriDetector} which manages Jibri SIP instances
-     * (video SIP gateway).
-     */
-    private JibriDetector sipJibriDetector;
+    private Set<BaseBrewery> breweryDetectors = new HashSet<>();
 
     /**
      * The name of XMPP domain to which Jicofo user logs in.
@@ -285,7 +272,11 @@ public class JitsiMeetServices
      */
     public JibriDetector getSipJibriDetector()
     {
-        return sipJibriDetector;
+        return breweryDetectors.stream()
+            .filter(d -> d instanceof JibriDetector)
+            .map(d -> ((JibriDetector) d))
+            .filter(JibriDetector::isSip)
+            .findFirst().orElse(null);
     }
 
     /**
@@ -295,7 +286,11 @@ public class JitsiMeetServices
      */
     public JibriDetector getJibriDetector()
     {
-        return jibriDetector;
+        return breweryDetectors.stream()
+            .filter(d -> d instanceof JibriDetector)
+            .map(d -> ((JibriDetector) d))
+            .filter(d -> !d.isSip())
+            .findFirst().orElse(null);
     }
 
     /**
@@ -305,7 +300,10 @@ public class JitsiMeetServices
      */
     public JigasiDetector getJigasiDetector()
     {
-        return jigasiDetector;
+        return breweryDetectors.stream()
+            .filter(d -> d instanceof JigasiDetector)
+            .map(d -> ((JigasiDetector) d))
+            .findFirst().orElse(null);
     }
 
     /**
@@ -348,30 +346,52 @@ public class JitsiMeetServices
 
         if (!StringUtils.isNullOrEmpty(jibriBreweryName))
         {
-            jibriDetector
+            JibriDetector jibriDetector
                 = new JibriDetector(protocolProvider, jibriBreweryName, false);
+            logger.info("Using a Jibri detector with MUC: " + jibriBreweryName);
 
             jibriDetector.init();
+            breweryDetectors.add(jibriDetector);
         }
 
         String jigasiBreweryName
             = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
         if (!StringUtils.isNullOrEmpty(jigasiBreweryName))
         {
-            jigasiDetector
+            JigasiDetector jigasiDetector
                 = new JigasiDetector(protocolProvider, jigasiBreweryName);
+            logger.info("Using a Jigasi detector with MUC: " + jigasiBreweryName);
 
             jigasiDetector.init();
+            breweryDetectors.add(jigasiDetector);
         }
 
         String jibriSipBreweryName
             = config.getString(JibriDetector.JIBRI_SIP_ROOM_PNAME);
         if (!StringUtils.isNullOrEmpty(jibriSipBreweryName))
         {
-            sipJibriDetector
+            JibriDetector sipJibriDetector
                 = new JibriDetector(
                         protocolProvider, jibriSipBreweryName, true);
+            logger.info(
+                "Using a SIP Jibri detector with MUC: " + jibriSipBreweryName);
+
             sipJibriDetector.init();
+            breweryDetectors.add(sipJibriDetector);
+        }
+
+        String bridgeBreweryName
+            = config.getString(BridgeMucDetector.BRIDGE_MUC_PNAME);
+        if (!StringUtils.isNullOrEmpty(bridgeBreweryName))
+        {
+            BridgeMucDetector bridgeMucDetector
+                = new BridgeMucDetector(
+                    protocolProvider, bridgeBreweryName, bridgeSelector);
+            logger.info(
+                "Using a Bridge MUC detector with MUC: " + bridgeBreweryName);
+
+            bridgeMucDetector.init();
+            breweryDetectors.add(bridgeMucDetector);
         }
     }
 
@@ -379,23 +399,8 @@ public class JitsiMeetServices
     public void stop(BundleContext bundleContext)
         throws Exception
     {
-        if (jibriDetector != null)
-        {
-            jibriDetector.dispose();
-            jibriDetector = null;
-        }
-
-        if (jigasiDetector != null)
-        {
-            jigasiDetector.dispose();
-            jigasiDetector = null;
-        }
-
-        if (sipJibriDetector != null)
-        {
-            sipJibriDetector.dispose();
-            sipJibriDetector = null;
-        }
+        breweryDetectors.forEach(BaseBrewery::dispose);
+        breweryDetectors.clear();
 
         bridgeSelector.dispose();
 

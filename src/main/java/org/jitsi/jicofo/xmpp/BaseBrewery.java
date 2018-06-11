@@ -50,10 +50,9 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     private static final Logger logger = Logger.getLogger(BaseBrewery.class);
 
     /**
-     * The name fo XMPP MUC room where all service instances gather to brew
-     * together.
+     * The MUC JID of the room which this detector will join.
      */
-    private final String breweryName;
+    private final String breweryJid;
 
     /**
      * The <tt>ProtocolProviderHandler</tt> for Jicofo's XMPP connection.
@@ -82,26 +81,25 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
     /**
      * Creates new instance of <tt>BaseBrewery</tt>
-     * @param protocolProvider the instance fo <tt>ProtocolProviderHandler</tt>
-     * for Jicofo's XMPP connection.
-     * @param breweryName the name of the brewery MUC room where all
-     * brewing instance will gather. Can be just roomName or the full room id:
-     * roomName@muc-servicename.jabserver.com. In case of just room name a
-     * the muc service will be discovered from server and in case of multiple
-     * will use the first one.
+     * @param protocolProvider the {@link ProtocolProviderHandler} instance
+     * to which this detector will attach.
+     * @param breweryJid the MUC JID of the room which this detector will join,
+     * e.g. {@code roomName@muc-servicename.jabserver.com}.
      * @param presenceExtensionElementName the element name of the extension
+     * which this brewery will look for.
      * @param presenceExtensionNamespace the namespace of the extension
+     * which this brewery will look for.
      */
     public BaseBrewery(ProtocolProviderHandler protocolProvider,
-        String breweryName,
+        String breweryJid,
         String presenceExtensionElementName,
         String presenceExtensionNamespace)
     {
         this.protocolProvider
             = Objects.requireNonNull(protocolProvider, "protocolProvider");
-        Assert.notNullNorEmpty(breweryName, "breweryName");
+        Assert.notNullNorEmpty(breweryJid, "breweryJid");
 
-        this.breweryName = breweryName;
+        this.breweryJid = breweryJid;
         this.extensionElementName = presenceExtensionElementName;
         this.extensionNamespace = presenceExtensionNamespace;
     }
@@ -180,16 +178,16 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
             Objects.requireNonNull(muc, "OperationSetMultiUserChat");
 
-            chatRoom = muc.createChatRoom(breweryName, null);
+            chatRoom = muc.createChatRoom(breweryJid, null);
             chatRoom.addMemberPresenceListener(this);
             chatRoom.addMemberPropertyChangeListener(this);
             chatRoom.join();
 
-            logger.info("Joined brewery room: " + breweryName);
+            logger.info("Joined brewery room: " + breweryJid);
         }
         catch (OperationFailedException | OperationNotSupportedException e)
         {
-            logger.error("Failed to create room: " + breweryName, e);
+            logger.error("Failed to create room: " + breweryJid, e);
         }
     }
 
@@ -205,7 +203,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             chatRoom.leave();
             chatRoom = null;
 
-            logger.info("Left brewery room: " + breweryName);
+            logger.info("Left brewery room: " + breweryJid);
         }
 
         // Clean up the list of service instances
