@@ -43,33 +43,6 @@ class Bridge
     private final static Logger logger = Logger.getLogger(Bridge.class);
 
     /**
-     * Tries to parse an object as an integer, returns null on failure.
-     * @param obj the object to parse.
-     */
-    private static Integer getInt(Object obj)
-    {
-        if (obj == null)
-        {
-            return null;
-        }
-        if (obj instanceof Integer)
-        {
-            return (Integer) obj;
-        }
-
-        String str = obj.toString();
-        try
-        {
-            return Integer.valueOf(str);
-        }
-        catch (NumberFormatException e)
-        {
-            logger.error("Error parsing an int: " + obj);
-        }
-        return null;
-    }
-
-    /**
      * The parent {@link BridgeSelector}.
      */
     private BridgeSelector bridgeSelector;
@@ -122,7 +95,7 @@ class Bridge
     /**
      * The last known {@link ColibriStatsExtension} reported by this bridge.
      */
-    private ColibriStatsExtension stats = null;
+    private ColibriStatsExtension stats = new ColibriStatsExtension();
 
     /**
      * Notifies this instance that a new {@link ColibriStatsExtension} was
@@ -132,9 +105,10 @@ class Bridge
      */
     void setStats(ColibriStatsExtension stats)
     {
+        Objects.requireNonNull(stats, "stats");
         this.stats = ColibriStatsExtension.clone(stats);
 
-        Integer videoStreamCount = getStatAsInt("videostreams");
+        Integer videoStreamCount = stats.getValueAsInt("videostreams");
         if (videoStreamCount != null)
         {
             // We have extra logic for keeping track of the number of video
@@ -154,39 +128,8 @@ class Bridge
 
     public int getConferenceCount()
     {
-        Integer conferenceCount = getStatAsInt("conferences");
+        Integer conferenceCount = stats.getValueAsInt("conferences");
         return conferenceCount == null ? 0 : conferenceCount;
-    }
-
-    /**
-     * Tries to get one of the statistics associated with this bridge as an
-     * {@link Integer}.
-     * @param name the name of the stat.
-     * @return an {@link Integer} which represents the value of the stat, or
-     * {@code null}.
-     */
-    private Integer getStatAsInt(String name)
-    {
-        ColibriStatsExtension stats = this.stats;
-        return getInt(stats == null ? null : stats.getStatValue(name));
-    }
-
-    /**
-     * Tries to get one of the statistics associated with this bridge as a
-     * {@link String}.
-     * @param name the name of the stat.
-     * @return a {@link String} which represents the value of the stat, or
-     * {@code null}.
-     */
-    private String getStatAsString(String name)
-    {
-        ColibriStatsExtension stats = this.stats;
-        Object o = stats.getStatValue(name);
-        if (o != null)
-        {
-            return (o instanceof String) ? (String) o : o.toString();
-        }
-        return null;
     }
 
     /**
@@ -195,7 +138,7 @@ class Bridge
      */
     public int getVideoChannelCount()
     {
-        Integer videoChannelCount = getStatAsInt("videochannels");
+        Integer videoChannelCount = stats.getValueAsInt("videochannels");
         return videoChannelCount == null ? 0 : videoChannelCount;
     }
 
@@ -205,7 +148,7 @@ class Bridge
      */
     public String getRelayId()
     {
-        return getStatAsString("relay_id");
+        return stats.getValueAsString("relay_id");
     }
 
     /**
@@ -354,7 +297,7 @@ class Bridge
      */
     public String getRegion()
     {
-        return getStatAsString("region");
+        return stats.getValueAsString("region");
     }
 
     /**
