@@ -364,7 +364,18 @@ public class JitsiMeetConferenceImpl
         }
         catch (Exception e)
         {
-            stop();
+            try
+            {
+                stop();
+            }
+            catch (Exception x)
+            {
+                logger.warn("An exception was caught while invoking stop()"
+                    + " as part of handling another exception that occurred"
+                    + " while invoking start(). This is the exception that"
+                    + " stop() threw (start()'s exception will be thrown"
+                    + " next).", x);
+            }
 
             throw e;
         }
