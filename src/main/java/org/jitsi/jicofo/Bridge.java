@@ -40,7 +40,31 @@ class Bridge
     /**
      * The {@link Logger} used by the {@link Bridge} class and its instances.
      */
-    private final static Logger logger = Logger.getLogger(Bridge.class);
+    private static final Logger logger = Logger.getLogger(Bridge.class);
+
+    /**
+     * The name of the stat used by jitsi-videobridge to indicate the number of
+     * video streams. This should match
+     * {@code VideobridgeStatistics.VIDEOSTREAMS}, but is defined separately
+     * to avoid depending on the {@code jitsi-videobridge} maven package.
+     */
+    private static final String STAT_NAME_VIDEO_STREAMS = "videostreams";
+
+    /**
+     * The name of the stat used by jitsi-videobridge to indicate its region.
+     * This should match {@code VideobridgeStatistics.REGION}, but is defined
+     * separately to avoid depending on the {@code jitsi-videobridge} maven
+     * package.
+     */
+    private static final String STAT_NAME_REGION = "region";
+
+    /**
+     * The name of the stat used by jitsi-videobridge to indicate its Octo relay
+     * ID. This should match {@code VideobridgeStatistics.RELAY_ID}, but is
+     * defined separately to avoid depending on the {@code jitsi-videobridge}
+     * maven package.
+     */
+    private static final String STAT_NAME_RELAY_ID = "relay_id";
 
     /**
      * The parent {@link BridgeSelector}.
@@ -108,7 +132,7 @@ class Bridge
         Objects.requireNonNull(stats, "stats");
         this.stats = ColibriStatsExtension.clone(stats);
 
-        Integer videoStreamCount = stats.getValueAsInt("videostreams");
+        Integer videoStreamCount = stats.getValueAsInt(STAT_NAME_VIDEO_STREAMS);
         if (videoStreamCount != null)
         {
             // We have extra logic for keeping track of the number of video
@@ -126,38 +150,13 @@ class Bridge
         this.version = version;
     }
 
-    public int getConferenceCount()
-    {
-        Integer conferenceCount = stats.getValueAsInt("conferences");
-        return conferenceCount == null ? 0 : conferenceCount;
-    }
-
-    /**
-     * Return the number of channels used.
-     * @return the number of channels used.
-     */
-    public int getVideoChannelCount()
-    {
-        Integer videoChannelCount = stats.getValueAsInt("videochannels");
-        return videoChannelCount == null ? 0 : videoChannelCount;
-    }
-
     /**
      * @return the relay ID advertised by the bridge, or {@code null} if
      * none was advertised.
      */
     public String getRelayId()
     {
-        return stats.getValueAsString("relay_id");
-    }
-
-    /**
-     * Returns the number of streams used.
-     * @return the number of streams used.
-     */
-    public int getVideoStreamCount()
-    {
-        return videoStreamCount;
+        return stats.getValueAsString(STAT_NAME_RELAY_ID);
     }
 
     /**
@@ -185,7 +184,6 @@ class Bridge
             videoStreamCountDiff = 0;
             logger.info(
                 "Reset video stream diff on " + this.jid
-                    + " video channels: " + getVideoChannelCount()
                     + " video streams: " + this.videoStreamCount
                     + " (estimation error: "
                     // FIXME estimation error is often invalid wrong,
@@ -276,7 +274,6 @@ class Bridge
         logger.info(
             (adding ? "Adding " : "Removing ") + Math.abs(videoStreamCount)
                 + " video streams on " + this.jid
-                + " video channels: " + getVideoChannelCount()
                 + " video streams: " + this.videoStreamCount
                 + " diff: " + videoStreamCountDiff
                 + " (estimated: " + getEstimatedVideoStreamCount() + ")");
@@ -297,7 +294,7 @@ class Bridge
      */
     public String getRegion()
     {
-        return stats.getValueAsString("region");
+        return stats.getValueAsString(STAT_NAME_REGION);
     }
 
     /**
