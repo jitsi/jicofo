@@ -67,6 +67,12 @@ class Bridge
     private static final String STAT_NAME_RELAY_ID = "relay_id";
 
     /**
+     * A {@link ColibriStatsExtension} instance with no stats.
+     */
+    private static final ColibriStatsExtension EMPTY_STATS
+        = new ColibriStatsExtension();
+
+    /**
      * The parent {@link BridgeSelector}.
      */
     private BridgeSelector bridgeSelector;
@@ -119,7 +125,7 @@ class Bridge
     /**
      * The last known {@link ColibriStatsExtension} reported by this bridge.
      */
-    private ColibriStatsExtension stats = new ColibriStatsExtension();
+    private ColibriStatsExtension stats = EMPTY_STATS;
 
     /**
      * Notifies this instance that a new {@link ColibriStatsExtension} was
@@ -129,8 +135,15 @@ class Bridge
      */
     void setStats(ColibriStatsExtension stats)
     {
-        Objects.requireNonNull(stats, "stats");
-        this.stats = ColibriStatsExtension.clone(stats);
+        if (stats == null)
+        {
+            this.stats = EMPTY_STATS;
+        }
+        else
+        {
+            this.stats = ColibriStatsExtension.clone(stats);
+        }
+        stats = this.stats;
 
         Integer videoStreamCount = stats.getValueAsInt(STAT_NAME_VIDEO_STREAMS);
         if (videoStreamCount != null)
