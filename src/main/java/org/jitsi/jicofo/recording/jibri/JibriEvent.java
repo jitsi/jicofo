@@ -78,7 +78,7 @@ public class JibriEvent
      *        for live streaming type of Jibri.
      */
     static private Dictionary<String, Object> initDictionary(
-        EntityFullJid jibriJid,
+        Jid jibriJid,
         Boolean isIdle,
         boolean isSIP)
     {
@@ -105,7 +105,7 @@ public class JibriEvent
      * <tt>jibriJid</tt>.
      */
     static public JibriEvent newStatusChangedEvent(
-        EntityFullJid jibriJid,
+        Jid jibriJid,
         boolean isIdle,
         boolean isSIP)
     {
@@ -123,7 +123,7 @@ public class JibriEvent
      * <tt>jibriJid</tt>.
      */
     static public JibriEvent newWentOfflineEvent(
-        EntityFullJid jibriJid, boolean isSIP)
+        Jid jibriJid, boolean isSIP)
     {
         return new JibriEvent(WENT_OFFLINE, jibriJid, null, isSIP);
     }
@@ -149,7 +149,7 @@ public class JibriEvent
     }
 
     private JibriEvent(String topic,
-        EntityFullJid jibriJid, Boolean isIdle, boolean isSIP)
+        Jid jibriJid, Boolean isIdle, boolean isSIP)
     {
         super(topic, initDictionary(jibriJid, isIdle, isSIP));
     }

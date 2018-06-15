@@ -79,7 +79,7 @@ public class BridgeMucDetector
      */
     @Override
     protected void onInstanceStatusChanged(
-        EntityFullJid jid,
+        Jid jid,
         ColibriStatsExtension stats)
     {
         if (logger.isDebugEnabled())
@@ -92,7 +92,7 @@ public class BridgeMucDetector
     }
 
     @Override
-    protected void notifyInstanceOffline(EntityFullJid jid)
+    protected void notifyInstanceOffline(Jid jid)
     {
         logger.info("A bridge left the MUC: " + jid);
         bridgeSelector.removeJvbAddress(jid);

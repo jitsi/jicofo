@@ -62,12 +62,12 @@ public class JigasiDetector
 
     @Override
     protected void onInstanceStatusChanged(
-        EntityFullJid jid,
+        Jid jid,
         ColibriStatsExtension status)
     {}
 
     @Override
-    protected void notifyInstanceOffline(EntityFullJid jid)
+    protected void notifyInstanceOffline(Jid jid)
     {}
 
     /**

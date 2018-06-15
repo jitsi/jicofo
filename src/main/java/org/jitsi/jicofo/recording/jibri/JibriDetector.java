@@ -119,7 +119,7 @@ public class JibriDetector
      * @return XMPP address of idle Jibri instance or <tt>null</tt> if there are
      * no Jibris available currently.
      */
-    public EntityFullJid selectJibri()
+    public Jid selectJibri()
     {
         return instances.stream()
             .filter(
@@ -132,7 +132,7 @@ public class JibriDetector
 
     @Override
     protected void onInstanceStatusChanged(
-        EntityFullJid jid,
+        Jid jid,
         JibriStatusPacketExt presenceExt)
     {
         logger.info("Received Jibri status " + presenceExt.toXML());
@@ -158,7 +158,7 @@ public class JibriDetector
     }
 
     @Override
-    protected void notifyInstanceOffline(EntityFullJid jid)
+    protected void notifyInstanceOffline(Jid jid)
     {
         logger.info(getLogName() + ": " + jid + " went offline");
 
@@ -174,7 +174,7 @@ public class JibriDetector
         }
     }
 
-    private void notifyJibriStatus(EntityFullJid jibriJid, boolean available)
+    private void notifyJibriStatus(Jid jibriJid, boolean available)
     {
         logger.info(
             getLogName() + ": " + jibriJid + " available: " + available);
