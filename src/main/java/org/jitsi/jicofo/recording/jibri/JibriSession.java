@@ -63,7 +63,7 @@ public class JibriSession
      * The JID of the Jibri currently being used by this session or
      * <tt>null</tt> otherwise.
      */
-    private EntityFullJid currentJibriJid;
+    private Jid currentJibriJid;
 
     /**
      * The display name Jibri attribute received from Jitsi Meet to be passed
@@ -215,7 +215,7 @@ public class JibriSession
      */
     synchronized public boolean start()
     {
-        final EntityFullJid jibriJid = jibriDetector.selectJibri();
+        final Jid jibriJid = jibriDetector.selectJibri();
         if (jibriJid != null)
         {
             try
@@ -357,7 +357,7 @@ public class JibriSession
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
      */
-    private void sendJibriStartIq(final EntityFullJid jibriJid)
+    private void sendJibriStartIq(final Jid jibriJid)
     {
         // Store Jibri JID to make the packet filter accept the response
         currentJibriJid = jibriJid;
