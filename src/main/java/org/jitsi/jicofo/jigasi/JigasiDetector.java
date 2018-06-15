@@ -58,6 +58,10 @@ public class JigasiDetector
             breweryName,
             ColibriStatsExtension.ELEMENT_NAME,
             ColibriStatsExtension.NAMESPACE);
+
+        // We prefer to communicate with jitsi-videobridge without going
+        // through the MUC.
+        setUseOccupantJid(false);
     }
 
     @Override
