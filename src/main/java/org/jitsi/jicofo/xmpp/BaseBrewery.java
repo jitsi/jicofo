@@ -237,7 +237,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
         {
             // Process offline status
-            BrewInstance instance = find(chatMember.getOccupantJid());
+            BrewInstance instance = find(getJid(chatMember));
 
             if (instance != null)
             {
@@ -282,8 +282,25 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return;
         }
 
-        Jid jid = useOccupantJid ? member.getOccupantJid() : member.getJid();
-        processInstanceStatusChanged(jid, (T) ext);
+        processInstanceStatusChanged(getJid(member), (T) ext);
+    }
+
+    /**
+     * Gets the JID from an {@link XmppChatMember}, which is to be used for
+     * a {@link BrewInstance}. Which JID to use (real vs occupant) depends on
+     * this instance's configuration.
+     *
+     * @param member the member for which to get the JID.
+     * @return the JID of {@code member} to use for {@link BrewInstance}s.
+     */
+    private Jid getJid(XmppChatMember member)
+    {
+        if (member == null)
+        {
+            return null;
+        }
+
+        return useOccupantJid ? member.getOccupantJid() : member.getJid();
     }
 
     /**
