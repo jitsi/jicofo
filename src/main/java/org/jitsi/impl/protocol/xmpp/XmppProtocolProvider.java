@@ -32,6 +32,7 @@ import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
 
+import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -220,35 +221,8 @@ public class XmppProtocolProvider
         {
             logger.warn("The always_trust config option is enabled. All" +
                         " XMPP server provided certificates are accepted.");
-            connConfig.setCustomX509TrustManager(new X509TrustManager()
-            {
-                @Override
-                public void checkClientTrusted(X509Certificate[] c, String s)
-                    throws CertificateException
-                {
-                }
-
-                @Override
-                public void checkServerTrusted(X509Certificate[] c, String s)
-                    throws CertificateException
-                {
-                }
-
-                @Override
-                public X509Certificate[] getAcceptedIssuers()
-                {
-                    return new X509Certificate[0];
-                }
-            } );
-
-            connConfig.setHostnameVerifier(new HostnameVerifier()
-            {
-                @Override
-                public boolean verify(String s, SSLSession sslSession)
-                {
-                    return true;
-                }
-            } );
+            connConfig.setCustomX509TrustManager(new TrustAllX509TrustManager());
+            connConfig.setHostnameVerifier(new TrustAllHostnameVerifier());
         }
 
         connection = new XMPPTCPConnection(connConfig.build());
