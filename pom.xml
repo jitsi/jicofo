@@ -170,7 +170,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.1-20180326.225338-45</version>
+      <version>1.1-20180705.215721-75</version>
       <scope>test</scope>
     </dependency>
     <dependency>
