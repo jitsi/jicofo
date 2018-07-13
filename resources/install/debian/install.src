@@ -1,5 +1,3 @@
 lib/*.jar usr/share/jicofo/lib
 lib/*.properties usr/share/jicofo/lib
 jicofo.jar usr/share/jicofo
-debian/usr/share/doc/* /usr/share/doc/
-
