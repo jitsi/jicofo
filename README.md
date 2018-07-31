@@ -142,9 +142,11 @@ org.jitsi.jigasi.xmpp.acc.ANONYMOUS_AUTH=false
 
 The password is the actual plaintext password, not a base64 encoding.
 
-b) If you are using Let's Encrypt for your tls certificate, you may also need to uncomment the following line, also in sip-communicator.properties:
+b) If you experience problems with a certificate chain, you may also need to uncomment the following line, also in sip-communicator.properties:
 
 net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
+
+Note that this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
 
 
 ## Certificates
