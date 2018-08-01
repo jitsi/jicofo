@@ -18,6 +18,9 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
+import org.jivesoftware.smack.packet.*;
+
+import java.util.*;
 
 /**
  * A {@link org.xmpp.packet.PacketExtension} that represents a list of
@@ -57,6 +60,24 @@ public class ConferenceProperties
      */
     public void put(String key, String value)
     {
+        List<? extends ExtensionElement> children = this.getChildExtensions();
+        for (ExtensionElement child : children)
+        {
+            if (!(child instanceof AbstractPacketExtension))
+            {
+                continue;
+            }
+
+            AbstractPacketExtension child2 = (AbstractPacketExtension) child;
+            if (key.equalsIgnoreCase(child2.getAttributeAsString("key")))
+            {
+                // updating the existing extension element.
+                child2.setAttribute("value", value);
+                return;
+            }
+        }
+
+        // adding a new extension element.
         addChildExtension(new ConferenceProperty(key, value));
     }
 
