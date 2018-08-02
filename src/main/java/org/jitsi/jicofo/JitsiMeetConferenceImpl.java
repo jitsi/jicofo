@@ -461,6 +461,18 @@ public class JitsiMeetConferenceImpl
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
 
+        ConferenceProperties conferenceProperties = new ConferenceProperties();
+
+        // Advertise the conference creation time in the conference properties.
+        conferenceProperties.put(
+            "created-ms", Long.toString(System.currentTimeMillis()));
+
+        // Advertise whether octo is enabled/disabled in the conference
+        // properties.
+        conferenceProperties.put("octo-enabled", "false");
+
+        meetTools.sendPresenceExtension(chatRoom, conferenceProperties);
+
         // Trigger focus joined room event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
