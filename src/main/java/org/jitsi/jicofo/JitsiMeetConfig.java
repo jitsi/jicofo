@@ -132,6 +132,11 @@ public class JitsiMeetConfig
     public static final String PNAME_STEREO = "stereo";
 
     /**
+     * The name of the "octo" property.
+     */
+    public static final String PNAME_OCTO = "octo";
+
+    /**
      * The name of the "useRoomAsSharedDocumentName" config property.
      */
     public static final String PNAME_USE_ROOM_AS_SHARED_DOC_NAME
@@ -362,6 +367,13 @@ public class JitsiMeetConfig
     {
         Boolean stereo = getBoolean(PNAME_STEREO);
         return stereo != null && stereo;
+    }
+
+    public boolean isOctoEnabled()
+    {
+        Boolean octo = getBoolean(PNAME_OCTO);
+        return octo != null && octo;
+
     }
 
     /**

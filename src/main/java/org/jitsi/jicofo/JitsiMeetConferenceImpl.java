@@ -220,6 +220,12 @@ public class JitsiMeetConferenceImpl
     private final List<BridgeSession> bridges = new LinkedList<>();
 
     /**
+     * The conference properties that we advertise in presence in the XMPP MUC.
+     */
+    private final ConferenceProperties conferenceProperties
+        = new ConferenceProperties();
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -461,17 +467,16 @@ public class JitsiMeetConferenceImpl
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
 
-        ConferenceProperties conferenceProperties = new ConferenceProperties();
+        // Advertise the conference creation time in presence
+        setConferenceProperty(
+            ConferenceProperties.KEY_CREATED_MS,
+            Long.toString(System.currentTimeMillis()),
+            false);
 
-        // Advertise the conference creation time in the conference properties.
-        conferenceProperties.put(
-            "created-ms", Long.toString(System.currentTimeMillis()));
-
-        // Advertise whether octo is enabled/disabled in the conference
-        // properties.
-        conferenceProperties.put("octo-enabled", "false");
-
-        meetTools.sendPresenceExtension(chatRoom, conferenceProperties);
+        // Advertise whether octo is enabled/disabled in presence
+        setConferenceProperty(
+            ConferenceProperties.KEY_OCTO_ENABLED,
+            Boolean.toString(config.isOctoEnabled()));
 
         // Trigger focus joined room event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
@@ -481,6 +486,39 @@ public class JitsiMeetConferenceImpl
                     EventFactory.focusJoinedRoom(
                             roomName,
                             getId()));
+        }
+    }
+
+    /**
+     * Sets a conference property and sends an updated presence stanza in the
+     * MUC.
+     * @param key the key of the property.
+     * @param value the value of the property.
+     */
+    private void setConferenceProperty(String key, String value)
+    {
+        setConferenceProperty(key, value, true);
+    }
+
+    /**
+     * Sets a conference property and optionally (depending on
+     * {@code updatePresence}) sends an updated presence stanza in the
+     * MUC.
+     * @param key the key of the property.
+     * @param value the value of the property.
+     * @param updatePresence {@code true} to send an updated presence stanza,
+     * and {@code false} to only add the property locally. This is useful to
+     * allow updating multiple properties but sending a single presence update.
+     */
+    private void setConferenceProperty(
+        String key, String value, boolean updatePresence)
+    {
+        conferenceProperties.put(key, value);
+        if (updatePresence)
+        {
+            meetTools.sendPresenceExtension(
+                chatRoom,
+                ConferenceProperties.clone(conferenceProperties));
         }
     }
 
@@ -717,8 +755,9 @@ public class JitsiMeetConferenceImpl
                 }
 
                 bridges.add(bridgeSession);
-                // TODO: if the number of bridges changes 1->2 or 2->1, then
-                // we need to enable/disable relaying.
+                setConferenceProperty(
+                    ConferenceProperties.KEY_BRIDGE_COUNT,
+                    Integer.toString(bridges.size()));
 
                 if (bridges.size() >= 2)
                 {
@@ -1054,6 +1093,9 @@ public class JitsiMeetConferenceImpl
                 bridgeSession.dispose();
             }
             bridges.clear();
+            setConferenceProperty(
+                ConferenceProperties.KEY_BRIDGE_COUNT,
+                "0");
         }
 
         // TODO: what about removing the participants and ending their jingle
@@ -2086,6 +2128,9 @@ public class JitsiMeetConferenceImpl
                     = bridgeSession.terminateAll();
 
                 bridges.remove(bridgeSession);
+                setConferenceProperty(
+                    ConferenceProperties.KEY_BRIDGE_COUNT,
+                    Integer.toString(bridges.size()));
 
                 updateOctoRelays();
 
