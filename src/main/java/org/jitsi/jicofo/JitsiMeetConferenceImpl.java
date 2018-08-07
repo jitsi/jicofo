@@ -720,11 +720,11 @@ public class JitsiMeetConferenceImpl
                 // TODO: if the number of bridges changes 1->2 or 2->1, then
                 // we need to enable/disable relaying.
 
-                if (bridges.size() > 2)
+                if (bridges.size() >= 2)
                 {
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
-                    // the list of relays for each bridge (may) need to be
+                    // the list of relays for each bridge may need to be
                     // updated.
                     updateOctoRelays();
                 }
