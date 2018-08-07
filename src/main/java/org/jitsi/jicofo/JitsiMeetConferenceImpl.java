@@ -793,7 +793,12 @@ public class JitsiMeetConferenceImpl
      */
     private void logRegions()
     {
-        StringBuilder sb = new StringBuilder("Region info, conference=" + getId() + ": [");
+
+        StringBuilder sb
+            = new StringBuilder(
+                "Region info, conference=" + getId()
+                    + " octo_enabled= " + config.isOctoEnabled()
+                    + ": [");
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)
