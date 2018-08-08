@@ -292,7 +292,10 @@ public class BridgeSelector
             String participantRegion,
             boolean allowMultiBridge)
     {
-        List<Bridge> bridges = getPrioritizedBridgesList();
+        List<Bridge> bridges
+            = getPrioritizedBridgesList().stream()
+                .filter(Bridge::isOperational)
+                .collect(Collectors.toList());
         return bridgeSelectionStrategy.select(
             bridges,
             conference,
