@@ -283,13 +283,17 @@ public class BridgeSelector
      *
      * @return the selected bridge, represented by its {@link Bridge}.
      * @param conference the conference for which a bridge is to be selected.
-     * @param participant the participant for which a bridge is to be selected.
+     * @param participantRegion the region of the participant for which a
+     * bridge is to be selected.
      */
     synchronized public Bridge selectBridge(
-            JitsiMeetConference conference, Participant participant)
+            JitsiMeetConference conference, String participantRegion)
     {
         List<Bridge> bridges = getPrioritizedBridgesList();
-        return bridgeSelectionStrategy.select(bridges, conference, participant);
+        return bridgeSelectionStrategy.select(
+            bridges,
+            conference,
+            participantRegion);
     }
 
     /**
@@ -667,15 +671,15 @@ public class BridgeSelector
          * @param bridges the list of bridges to select from.
          * @param conference the conference for which a bridge is to be
          * selected.
-         * @param participant the participant for which a bridge is to be
-         * selected.
+         * @param participantRegion the region of the participant for which
+         * a bridge is to be selected.
          * @return the selected bridge, or {@code null} if no bridge is
          * available.
          */
         private Bridge select(
                 List<Bridge> bridges,
                 JitsiMeetConference conference,
-                Participant participant)
+                String participantRegion)
         {
             List<Bridge> conferenceBridges
                 = conference == null
@@ -683,7 +687,8 @@ public class BridgeSelector
                         : conference.getBridges();
             if (conferenceBridges.isEmpty())
             {
-                Bridge bridge = selectInitial(bridges, conference, participant);
+                Bridge bridge
+                    = selectInitial(bridges, conference, participantRegion);
                 if (logger.isDebugEnabled())
                 {
                     logger.debug(
@@ -708,7 +713,7 @@ public class BridgeSelector
 
                 return doSelect(
                         bridges, conferenceBridges,
-                        conference, participant);
+                        conference, participantRegion);
             }
         }
 
@@ -721,20 +726,16 @@ public class BridgeSelector
          * @param bridges the list of bridges to select from.
          * @param conference the conference for which a bridge is to be
          * selected.
-         * @param participant the participant for which a bridge is to be
-         * selected.
+         * @param participantRegion the region of the participant for which a
+         * bridge is to be selected.
          * @return the selected bridge, or {@code null} if no bridge is
          * available.
          */
         private Bridge selectInitial(List<Bridge> bridges,
                                      JitsiMeetConference conference,
-                                     Participant participant)
+                                     String participantRegion)
         {
             // Prefer a bridge in the participant's region.
-            String participantRegion
-                = participant != null
-                    ? participant.getChatMember().getRegion()
-                    : null;
             if (participantRegion != null)
             {
                 for (Bridge bridge : bridges)
@@ -767,8 +768,8 @@ public class BridgeSelector
          * conference.
          * @param conference the conference for which a bridge is to be
          * selected.
-         * @param participant the participant for which a bridge is to be
-         * selected.
+         * @param participantRegion the region of the participant for which a
+         * bridge is to be selected.
          * @return the selected bridge, or {@code null} if no bridge is
          * available.
          */
@@ -776,7 +777,7 @@ public class BridgeSelector
                 List<Bridge> bridges,
                 List<Bridge> conferenceBridges,
                 JitsiMeetConference conference,
-                Participant participant);
+                String participantRegion);
     }
 
     /**
@@ -802,7 +803,7 @@ public class BridgeSelector
                 List<Bridge> bridges,
                 List<Bridge> conferenceBridges,
                 JitsiMeetConference conference,
-                Participant participant)
+                String participantRegion)
         {
             if (conferenceBridges.size() != 1)
             {
@@ -850,7 +851,7 @@ public class BridgeSelector
             List<Bridge> bridges,
             List<Bridge> conferenceBridges,
             JitsiMeetConference conference,
-            Participant participant)
+            String participantRegion)
         {
             for (Bridge bridge : bridges)
             {
