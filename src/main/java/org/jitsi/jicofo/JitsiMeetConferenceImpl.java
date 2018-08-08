@@ -690,7 +690,8 @@ public class JitsiMeetConferenceImpl
             bridge
                 = bridgeSelector.selectBridge(
                     this,
-                    participant.getChatMember().getRegion());
+                    participant.getChatMember().getRegion(),
+                    config.isOctoEnabled());
         }
 
         if (bridge == null)

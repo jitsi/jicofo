@@ -287,13 +287,16 @@ public class BridgeSelector
      * bridge is to be selected.
      */
     synchronized public Bridge selectBridge(
-            JitsiMeetConference conference, String participantRegion)
+            JitsiMeetConference conference,
+            String participantRegion,
+            boolean allowMultiBridge)
     {
         List<Bridge> bridges = getPrioritizedBridgesList();
         return bridgeSelectionStrategy.select(
             bridges,
             conference,
-            participantRegion);
+            participantRegion,
+            allowMultiBridge);
     }
 
     /**
@@ -305,7 +308,7 @@ public class BridgeSelector
     public Bridge selectBridge(
             JitsiMeetConference conference)
     {
-        return selectBridge(conference, null);
+        return selectBridge(conference, null, false);
     }
 
     /**
@@ -679,7 +682,8 @@ public class BridgeSelector
         private Bridge select(
                 List<Bridge> bridges,
                 JitsiMeetConference conference,
-                String participantRegion)
+                String participantRegion,
+                boolean allowMultiBridge)
         {
             List<Bridge> conferenceBridges
                 = conference == null
@@ -699,7 +703,8 @@ public class BridgeSelector
             }
             else
             {
-                if (conferenceBridges.get(0).getRelayId() == null)
+                if (!allowMultiBridge
+                    || conferenceBridges.get(0).getRelayId() == null)
                 {
                     if (logger.isDebugEnabled())
                     {
