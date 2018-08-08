@@ -663,7 +663,8 @@ public class JitsiMeetConferenceImpl
         if (findBridgeSession(participant) != null)
         {
             // This should never happen.
-            logger.error("The participant already has a bridge?");
+            logger.error("The participant already has a bridge:"
+                             + participant.getMucJid());
             return null;
         }
 
@@ -687,7 +688,9 @@ public class JitsiMeetConferenceImpl
         if (bridge == null)
         {
             bridge
-                = bridgeSelector.selectBridge(this, participant);
+                = bridgeSelector.selectBridge(
+                    this,
+                    participant.getChatMember().getRegion());
         }
 
         if (bridge == null)
