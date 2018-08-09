@@ -2632,7 +2632,8 @@ public class JitsiMeetConferenceImpl
             }
 
             ColibriConferenceIQ channelsInfo
-                = participant.getColibriChannelsInfo();
+                = participant != null
+                    ? participant.getColibriChannelsInfo() : null;
 
             if (channelsInfo != null && !hasFailed)
             {
