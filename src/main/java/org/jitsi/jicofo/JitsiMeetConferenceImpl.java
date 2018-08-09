@@ -1165,6 +1165,7 @@ public class JitsiMeetConferenceImpl
                                       Reason         reason,
                                       String         message)
     {
+        BridgeSession bridgeSession;
         synchronized (participantLock)
         {
             Jid contactAddress = participant.getMucJid();
@@ -1184,7 +1185,7 @@ public class JitsiMeetConferenceImpl
 
             // Cancel any threads currently trying to invite the participant.
             participant.setChannelAllocator(null);
-            BridgeSession bridgeSession = findBridgeSession(participant);
+            bridgeSession = findBridgeSession(participant);
             if (bridgeSession != null)
             {
                 bridgeSession.terminate(participant);
@@ -1193,6 +1194,33 @@ public class JitsiMeetConferenceImpl
             boolean removed = participants.remove(participant);
             logger.info(
                 "Removed participant: " + removed + ", " + contactAddress);
+        }
+
+        if (bridgeSession != null)
+        {
+            maybeExpireBridgeSession(bridgeSession);
+        }
+    }
+
+    /**
+     * Expires the session with a particular bridge if it has no real (non-octo)
+     * participants left.
+     * @param bridgeSession the bridge session to expire.
+     */
+    private void maybeExpireBridgeSession(BridgeSession bridgeSession)
+    {
+        synchronized (bridges)
+        {
+            if (bridgeSession.participants.isEmpty())
+            {
+                bridgeSession.terminateAll();
+                bridges.remove(bridgeSession);
+                setConferenceProperty(
+                    ConferenceProperties.KEY_BRIDGE_COUNT,
+                    Integer.toString(bridges.size()));
+
+                updateOctoRelays();
+            }
         }
     }
 
@@ -2557,10 +2585,11 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Expires the COLIBRI channels (via {@link #terminate(Participant)})
-         * for all participants.
+         * Expires the COLIBRI channels (via
+         * {@link #terminate(AbstractParticipant)}) for all participants.
          * @return the list of participants which were removed from
-         * {@link #participants} as a result of this call.
+         * {@link #participants} as a result of this call (does not include
+         * the Octo participant).
          */
         private List<Participant> terminateAll()
         {
@@ -2572,6 +2601,11 @@ public class JitsiMeetConferenceImpl
                 {
                     terminatedParticipants.add(participant);
                 }
+            }
+
+            if (octoParticipant != null)
+            {
+                terminate(octoParticipant);
             }
 
             return terminatedParticipants;
@@ -2587,11 +2621,11 @@ public class JitsiMeetConferenceImpl
          * {@link #participants} and was removed as a result of this call, and
          * {@code false} otherwise.
          */
-        public boolean terminate(Participant participant)
+        public boolean terminate(AbstractParticipant participant)
         {
             //TODO synchronize?
-            // TODO: make sure this does not block waiting for a response
-            boolean removed = participants.remove(participant);
+            boolean octo = participant == this.octoParticipant;
+            boolean removed = octo || participants.remove(participant);
             if (removed)
             {
                 logRegions();
@@ -2602,10 +2636,17 @@ public class JitsiMeetConferenceImpl
 
             if (channelsInfo != null && !hasFailed)
             {
-                logger.info("Expiring channels for: " + participant.getMucJid());
+                String id
+                    = (participant instanceof Participant)
+                        ? ((Participant) participant).getMucJid().toString()
+                        : "octo";
+                logger.info("Expiring channels for: " + id);
                 colibriConference.expireChannels(channelsInfo);
+            }
 
-                // TODO: what do we do when the last participant is removed?
+            if (octo)
+            {
+                this.octoParticipant = null;
             }
 
             return removed;
