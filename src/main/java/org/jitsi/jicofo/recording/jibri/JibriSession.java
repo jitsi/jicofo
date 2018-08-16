@@ -150,6 +150,11 @@ public class JibriSession
     private final String youTubeBroadcastId;
 
     /**
+     * A JSON-encoded string containing arbitrary application data for Jibri
+     */
+    private final String applicationData;
+
+    /**
      * {@link XmppConnection} instance used to send/listen for XMPP packets.
      */
     private final XmppConnection xmpp;
@@ -174,6 +179,8 @@ public class JibriSession
      * entering the conference once the session starts.
      * @param streamID a live streaming ID if it's not a SIP session
      * @param youTubeBroadcastId the YouTube broadcast id (optional)
+     * @param applicationData a JSON-encoded string containing application-specific
+     * data for Jibri
      * @param logLevelDelegate logging level delegate which will be used to
      * select logging level for this instance {@link #logger}.
      */
@@ -190,6 +197,7 @@ public class JibriSession
             String streamID,
             String youTubeBroadcastId,
             String sessionId,
+            String applicationData,
             Logger logLevelDelegate)
     {
         this.owner = owner;
@@ -204,6 +212,7 @@ public class JibriSession
         this.streamID = streamID;
         this.youTubeBroadcastId = youTubeBroadcastId;
         this.sessionId = sessionId;
+        this.applicationData = applicationData;
         this.xmpp = connection;
         logger = Logger.getLogger(classLogger, logLevelDelegate);
     }
@@ -374,6 +383,8 @@ public class JibriSession
         startIq.setType(IQ.Type.set);
         startIq.setAction(JibriIq.Action.START);
         startIq.setSessionId(this.sessionId);
+        logger.debug("Passing on jibri application data: " + this.applicationData);
+        startIq.setAppData(this.applicationData);
         if (streamID != null)
         {
             startIq.setStreamId(streamID);
