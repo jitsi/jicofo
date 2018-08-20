@@ -381,7 +381,6 @@ public class JingleOfferFactory
         // a=rtcp-fb:107 nack pli
         h264.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
-
         if (minBitrate != -1)
         {
             addParameterExtension(
@@ -393,6 +392,11 @@ public class JingleOfferFactory
             addParameterExtension(
                 h264, "x-google-start-bitrate", String.valueOf(startBitrate));
         }
+
+        addParameterExtension(
+            h264,
+            "profile-level-id",
+            "42e01f;level-asymmetry-allowed=1;packetization-mode=1;");
 
         // a=rtpmap:101 VP9/90000
         PayloadTypePacketExtension vp9
