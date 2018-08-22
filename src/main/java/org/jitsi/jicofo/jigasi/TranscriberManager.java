@@ -29,6 +29,8 @@ import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Presence;
 import org.jxmpp.jid.*;
 
+import java.util.concurrent.*;
+
 /**
  * The {@link TranscriberManager} class is responsible for listening to
  * {@link ChatRoomMemberPropertyChangeEvent}s to see whether a
@@ -68,6 +70,12 @@ public class TranscriberManager
     private volatile boolean active;
 
     /**
+     * A single-threaded {@link ExecutorService} to offload inviting the
+     * Transcriber from the smack thread updating presence.
+     */
+    private ExecutorService executorService;
+
+    /**
      * Create a {@link TranscriberManager} responsible for inviting Jigasi as
      * a transcriber when this is desired.
      *
@@ -94,9 +102,16 @@ public class TranscriberManager
      */
     public void init()
     {
+        if(executorService != null)
+        {
+            executorService.shutdown();
+            executorService = null;
+        }
+
+        executorService = Executors.newSingleThreadExecutor();
         chatRoom.addMemberPropertyChangeListener(this);
 
-        logger.info("initialised transcriber manager");
+        logger.debug("initialised transcriber manager");
     }
 
     /**
@@ -105,9 +120,11 @@ public class TranscriberManager
      */
     public void dispose()
     {
+        executorService.shutdown();
+        executorService = null;
         chatRoom.removeMemberPropertyChangeListener(this);
 
-        logger.info("disposed transcriber manager");
+        logger.debug("disposed transcriber manager");
     }
 
     /**
@@ -147,7 +164,7 @@ public class TranscriberManager
         }
         if(isRequestingTranscriber(presence) && !active)
         {
-            startTranscribing();
+            executorService.submit(this::startTranscribing);
         }
     }
 
@@ -171,9 +188,21 @@ public class TranscriberManager
      */
     private synchronized void startTranscribing()
     {
+        if(active)
+        {
+            return;
+        }
+
         logger.info("Attempting to invite transcriber");
 
         Jid jigasiJid = jigasiDetector.selectJigasi();
+
+        if(jigasiJid == null)
+        {
+            logger.warn("Unable to invite transcriber due to no " +
+                            "Jigasi instances being available");
+            return;
+        }
 
         RayoIqProvider.DialIq dialIq = new RayoIqProvider.DialIq();
         dialIq.setDestination("jitsi_meet_transcribe");
@@ -194,6 +223,7 @@ public class TranscriberManager
                 }
                 else
                 {
+                    //todo attempt again?
                     logger.warn("failed to invite transcriber. Got error: " +
                         response.getError().getErrorGenerator());
                 }
