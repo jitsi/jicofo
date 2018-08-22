@@ -89,10 +89,11 @@ public class XmppProtocolActivator
 
         //Add the extensions used for handling the inviting of transcriber
         ProviderManager.addExtensionProvider(
-            TranscriptionLanguageExtension.ELEMENT_NAME,
-            TranscriptionLanguageExtension.NAMESPACE,
+            TranscriptionRequestExtension.ELEMENT_NAME,
+            TranscriptionRequestExtension.NAMESPACE,
             new DefaultPacketExtensionProvider<>(
-                TranscriptionLanguageExtension.class)
+                TranscriptionRequestExtension.class
+            )
         );
         ProviderManager.addExtensionProvider(
             TranscriptionStatusExtension.ELEMENT_NAME,
@@ -101,7 +102,6 @@ public class XmppProtocolActivator
                 TranscriptionStatusExtension.class
             )
         );
-
 
         // Override original Smack Version IQ class
         ProviderManager.addIQProvider(

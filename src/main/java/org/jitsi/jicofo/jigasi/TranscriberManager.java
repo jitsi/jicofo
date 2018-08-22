@@ -145,7 +145,7 @@ public class TranscriberManager
         {
             maybeStoppedTranscribing(presence);
         }
-        else if(isRequestingTranscriber(presence) && !active)
+        if(isRequestingTranscriber(presence) && !active)
         {
             startTranscribing();
         }
@@ -153,7 +153,7 @@ public class TranscriberManager
 
     /**
      * Check whether the given {@link Presence} contains a
-     * {@link TranscriptionStatusExtension}
+     * {@link TranscriptionRequestExtension}
      *
      * @param p the given {@link Presence} to check
      * @return true when it contains the extension, false otherwise
@@ -161,8 +161,8 @@ public class TranscriberManager
     private boolean containsTranscriptionStatus(Presence p)
     {
         return p.hasExtension(
-            TranscriptionStatusExtension.ELEMENT_NAME,
-            TranscriptionStatusExtension.NAMESPACE
+            TranscriptionRequestExtension.ELEMENT_NAME,
+            TranscriptionRequestExtension.NAMESPACE
         );
     }
 
@@ -228,7 +228,6 @@ public class TranscriberManager
         {
             return;
         }
-
         if(TranscriptionStatusExtension.Status.OFF.equals(ext.getStatus()))
         {
             active = false;
@@ -252,25 +251,16 @@ public class TranscriberManager
             return false;
         }
 
-        TranscriptionLanguageExtension ext =  presence.getExtension(
-            TranscriptionLanguageExtension.ELEMENT_NAME,
-            TranscriptionLanguageExtension.NAMESPACE);
+        TranscriptionRequestExtension ext =  presence.getExtension(
+            TranscriptionRequestExtension.ELEMENT_NAME,
+            TranscriptionRequestExtension.NAMESPACE);
 
         if(ext == null)
         {
             return false;
         }
 
-        String lang = ext.getTranscriptionLanguage();
-
-        if(lang == null)
-        {
-            return false;
-        }
-        else
-        {
-            return !lang.isEmpty();
-        }
+        return Boolean.valueOf(ext.getText());
     }
 
     /**
