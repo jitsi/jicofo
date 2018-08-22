@@ -178,8 +178,8 @@ public class TranscriberManager
     private boolean containsTranscriptionStatus(Presence p)
     {
         return p.hasExtension(
-            TranscriptionRequestExtension.ELEMENT_NAME,
-            TranscriptionRequestExtension.NAMESPACE
+            TranscriptionStatusExtension.ELEMENT_NAME,
+            TranscriptionStatusExtension.NAMESPACE
         );
     }
 
