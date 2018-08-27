@@ -227,6 +227,12 @@ public class JitsiMeetConferenceImpl
     private final List<BridgeSession> bridges = new LinkedList<>();
 
     /**
+     * The conference properties that we advertise in presence in the XMPP MUC.
+     */
+    private final ConferenceProperties conferenceProperties
+        = new ConferenceProperties();
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -473,6 +479,17 @@ public class JitsiMeetConferenceImpl
         meetTools.sendPresenceExtension(
             chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
 
+        // Advertise the conference creation time in presence
+        setConferenceProperty(
+            ConferenceProperties.KEY_CREATED_MS,
+            Long.toString(System.currentTimeMillis()),
+            false);
+
+        // Advertise whether octo is enabled/disabled in presence
+        setConferenceProperty(
+            ConferenceProperties.KEY_OCTO_ENABLED,
+            Boolean.toString(config.isOctoEnabled()));
+
         // Trigger focus joined room event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin != null)
@@ -481,6 +498,39 @@ public class JitsiMeetConferenceImpl
                     EventFactory.focusJoinedRoom(
                             roomName,
                             getId()));
+        }
+    }
+
+    /**
+     * Sets a conference property and sends an updated presence stanza in the
+     * MUC.
+     * @param key the key of the property.
+     * @param value the value of the property.
+     */
+    private void setConferenceProperty(String key, String value)
+    {
+        setConferenceProperty(key, value, true);
+    }
+
+    /**
+     * Sets a conference property and optionally (depending on
+     * {@code updatePresence}) sends an updated presence stanza in the
+     * MUC.
+     * @param key the key of the property.
+     * @param value the value of the property.
+     * @param updatePresence {@code true} to send an updated presence stanza,
+     * and {@code false} to only add the property locally. This is useful to
+     * allow updating multiple properties but sending a single presence update.
+     */
+    private void setConferenceProperty(
+        String key, String value, boolean updatePresence)
+    {
+        conferenceProperties.put(key, value);
+        if (updatePresence)
+        {
+            meetTools.sendPresenceExtension(
+                chatRoom,
+                ConferenceProperties.clone(conferenceProperties));
         }
     }
 
@@ -630,7 +680,8 @@ public class JitsiMeetConferenceImpl
         if (findBridgeSession(participant) != null)
         {
             // This should never happen.
-            logger.error("The participant already has a bridge?");
+            logger.error("The participant already has a bridge:"
+                             + participant.getMucJid());
             return null;
         }
 
@@ -654,7 +705,10 @@ public class JitsiMeetConferenceImpl
         if (bridge == null)
         {
             bridge
-                = bridgeSelector.selectBridge(this, participant);
+                = bridgeSelector.selectBridge(
+                    this,
+                    participant.getChatMember().getRegion(),
+                    config.isOctoEnabled());
         }
 
         if (bridge == null)
@@ -722,14 +776,15 @@ public class JitsiMeetConferenceImpl
                 }
 
                 bridges.add(bridgeSession);
-                // TODO: if the number of bridges changes 1->2 or 2->1, then
-                // we need to enable/disable relaying.
+                setConferenceProperty(
+                    ConferenceProperties.KEY_BRIDGE_COUNT,
+                    Integer.toString(bridges.size()));
 
-                if (bridges.size() > 2)
+                if (bridges.size() >= 2)
                 {
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
-                    // the list of relays for each bridge (may) need to be
+                    // the list of relays for each bridge may need to be
                     // updated.
                     updateOctoRelays();
                 }
@@ -798,7 +853,12 @@ public class JitsiMeetConferenceImpl
      */
     private void logRegions()
     {
-        StringBuilder sb = new StringBuilder("Region info, conference=" + getId() + ": [");
+
+        StringBuilder sb
+            = new StringBuilder(
+                "Region info, conference=" + getId()
+                    + " octo_enabled= " + config.isOctoEnabled()
+                    + ": [");
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)
@@ -1054,6 +1114,9 @@ public class JitsiMeetConferenceImpl
                 bridgeSession.dispose();
             }
             bridges.clear();
+            setConferenceProperty(
+                ConferenceProperties.KEY_BRIDGE_COUNT,
+                "0");
         }
 
         // TODO: what about removing the participants and ending their jingle
@@ -1119,6 +1182,7 @@ public class JitsiMeetConferenceImpl
                                       Reason         reason,
                                       String         message)
     {
+        BridgeSession bridgeSession;
         synchronized (participantLock)
         {
             Jid contactAddress = participant.getMucJid();
@@ -1138,7 +1202,7 @@ public class JitsiMeetConferenceImpl
 
             // Cancel any threads currently trying to invite the participant.
             participant.setChannelAllocator(null);
-            BridgeSession bridgeSession = findBridgeSession(participant);
+            bridgeSession = findBridgeSession(participant);
             if (bridgeSession != null)
             {
                 bridgeSession.terminate(participant);
@@ -1147,6 +1211,33 @@ public class JitsiMeetConferenceImpl
             boolean removed = participants.remove(participant);
             logger.info(
                 "Removed participant: " + removed + ", " + contactAddress);
+        }
+
+        if (bridgeSession != null)
+        {
+            maybeExpireBridgeSession(bridgeSession);
+        }
+    }
+
+    /**
+     * Expires the session with a particular bridge if it has no real (non-octo)
+     * participants left.
+     * @param bridgeSession the bridge session to expire.
+     */
+    private void maybeExpireBridgeSession(BridgeSession bridgeSession)
+    {
+        synchronized (bridges)
+        {
+            if (bridgeSession.participants.isEmpty())
+            {
+                bridgeSession.terminateAll();
+                bridges.remove(bridgeSession);
+                setConferenceProperty(
+                    ConferenceProperties.KEY_BRIDGE_COUNT,
+                    Integer.toString(bridges.size()));
+
+                updateOctoRelays();
+            }
         }
     }
 
@@ -2086,6 +2177,9 @@ public class JitsiMeetConferenceImpl
                     = bridgeSession.terminateAll();
 
                 bridges.remove(bridgeSession);
+                setConferenceProperty(
+                    ConferenceProperties.KEY_BRIDGE_COUNT,
+                    Integer.toString(bridges.size()));
 
                 updateOctoRelays();
 
@@ -2508,10 +2602,11 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Expires the COLIBRI channels (via {@link #terminate(Participant)})
-         * for all participants.
+         * Expires the COLIBRI channels (via
+         * {@link #terminate(AbstractParticipant)}) for all participants.
          * @return the list of participants which were removed from
-         * {@link #participants} as a result of this call.
+         * {@link #participants} as a result of this call (does not include
+         * the Octo participant).
          */
         private List<Participant> terminateAll()
         {
@@ -2523,6 +2618,11 @@ public class JitsiMeetConferenceImpl
                 {
                     terminatedParticipants.add(participant);
                 }
+            }
+
+            if (octoParticipant != null)
+            {
+                terminate(octoParticipant);
             }
 
             return terminatedParticipants;
@@ -2538,25 +2638,33 @@ public class JitsiMeetConferenceImpl
          * {@link #participants} and was removed as a result of this call, and
          * {@code false} otherwise.
          */
-        public boolean terminate(Participant participant)
+        public boolean terminate(AbstractParticipant participant)
         {
             //TODO synchronize?
-            // TODO: make sure this does not block waiting for a response
-            boolean removed = participants.remove(participant);
+            boolean octo = participant == this.octoParticipant;
+            boolean removed = octo || participants.remove(participant);
             if (removed)
             {
                 logRegions();
             }
 
             ColibriConferenceIQ channelsInfo
-                = participant.getColibriChannelsInfo();
+                = participant != null
+                    ? participant.getColibriChannelsInfo() : null;
 
             if (channelsInfo != null && !hasFailed)
             {
-                logger.info("Expiring channels for: " + participant.getMucJid());
+                String id
+                    = (participant instanceof Participant)
+                        ? ((Participant) participant).getMucJid().toString()
+                        : "octo";
+                logger.info("Expiring channels for: " + id);
                 colibriConference.expireChannels(channelsInfo);
+            }
 
-                // TODO: what do we do when the last participant is removed?
+            if (octo)
+            {
+                this.octoParticipant = null;
             }
 
             return removed;
