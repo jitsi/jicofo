@@ -425,21 +425,23 @@ public class FocusManager
         conferences.put(room, conference);
         conferenceIds.add(id);
 
-        StringBuilder options = new StringBuilder();
-        for (Map.Entry<String, String> option : properties.entrySet())
-        {
-            options.append("\n    ")
-                .append(option.getKey())
-                .append(": ")
-                .append(option.getValue());
-
-        }
-
         if (conference.getLogger().isInfoEnabled())
-            logger.info(
-                    "Created new focus for " + room + "@" + focusUserDomain
-                        + " conferences count: " + conferences.size()
-                        + " options:" + options.toString());
+        {
+            StringBuilder sb = new StringBuilder("Created new focus for ");
+            sb.append(room).append("@").append(focusUserDomain);
+            sb.append(". Conference count ").append(conferences.size());
+            sb.append(",").append("options: ");
+            StringBuilder options = new StringBuilder();
+            for (Map.Entry<String, String> option : properties.entrySet())
+            {
+                options.append(option.getKey())
+                    .append("=")
+                    .append(option.getValue())
+                    .append(" ");
+            }
+
+            logger.info(sb);
+        }
 
         // Send focus created event
         EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
