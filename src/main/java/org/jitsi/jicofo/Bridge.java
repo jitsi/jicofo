@@ -51,6 +51,16 @@ class Bridge
     private static final String STAT_NAME_VIDEO_STREAMS = "videostreams";
 
     /**
+     * The name of the stat that indicates the bridge has entered graceful
+     * shutdown mode.
+     * {@code VideobridgeStatistics.SHUTDOWN_IN_PROGRESS}, but is defined
+     * separately to avoid depending on the {@code jitsi-videobridge} maven
+     * package.
+     */
+    public static final String STAT_NAME_SHUTDOWN_IN_PROGRESS
+        = "graceful_shutdown";
+
+    /**
      * The name of the stat used by jitsi-videobridge to indicate its region.
      * This should match {@code VideobridgeStatistics.REGION}, but is defined
      * separately to avoid depending on the {@code jitsi-videobridge} maven
@@ -152,6 +162,9 @@ class Bridge
             // streams.
             setVideoStreamCount(videoStreamCount);
         }
+
+        setIsOperational(!Boolean.valueOf(
+            stats.getValueAsString(STAT_NAME_SHUTDOWN_IN_PROGRESS)));
     }
 
     Bridge(BridgeSelector bridgeSelector,
