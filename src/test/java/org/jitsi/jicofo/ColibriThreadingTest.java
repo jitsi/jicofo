@@ -45,10 +45,10 @@ import static org.junit.Assert.*;
  * Here we test the multithreading of colibri channels allocation. What we want
  * to have is to allow all threads to send their request at the same time and
  * wait for their responses independently. The only exception is when the
- * conference does no exist yet. In this case the first thread to send it's
+ * conference does not exist yet. In this case the first thread to send its
  * request is considered a conference creator and all other threads are
- * suspended until it finishes it's job. Once we have conference ID all threads
- * are allowed to go through.
+ * suspended until it finishes its job. Once we have the conference ID all
+ * threads are allowed to go through.
  *
  * @author Pawel Domas
  */
