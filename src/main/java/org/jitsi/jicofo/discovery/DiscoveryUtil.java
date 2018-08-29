@@ -143,10 +143,13 @@ public class DiscoveryUtil
             return getDefaultParticipantFeatureSet();
         }
 
-        logger.info(address +", features: ");
-        for (String feature : participantFeatures)
+        if (logger.isDebugEnabled())
         {
-            logger.info(feature);
+            StringBuilder sb
+                = new StringBuilder(address)
+                .append(", features: ")
+                .append(String.join(", ", participantFeatures));
+            logger.debug(sb);
         }
 
         return participantFeatures;
