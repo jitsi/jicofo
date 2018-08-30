@@ -87,6 +87,22 @@ public class XmppProtocolActivator
                 StatsId.NAMESPACE,
                 new StatsId.Provider());
 
+        //Add the extensions used for handling the inviting of transcriber
+        ProviderManager.addExtensionProvider(
+            TranscriptionRequestExtension.ELEMENT_NAME,
+            TranscriptionRequestExtension.NAMESPACE,
+            new DefaultPacketExtensionProvider<>(
+                TranscriptionRequestExtension.class
+            )
+        );
+        ProviderManager.addExtensionProvider(
+            TranscriptionStatusExtension.ELEMENT_NAME,
+            TranscriptionStatusExtension.NAMESPACE,
+            new DefaultPacketExtensionProvider<>(
+                TranscriptionStatusExtension.class
+            )
+        );
+
         // Override original Smack Version IQ class
         ProviderManager.addIQProvider(
                 Version.ELEMENT,

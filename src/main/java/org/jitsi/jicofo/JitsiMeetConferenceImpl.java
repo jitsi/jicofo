@@ -26,6 +26,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
@@ -159,6 +160,12 @@ public class JitsiMeetConferenceImpl
      * services for this conference.
      */
     private JibriSipGateway jibriSipGateway;
+
+    /**
+     * The {@link TranscriberManager} who listens for participants requesting
+     * transcription and, when necessary, dialing the transcriber instance.
+     */
+    private TranscriberManager transcriberManager;
 
     /**
      * Information about Jitsi Meet conference services like videobridge,
@@ -461,6 +468,11 @@ public class JitsiMeetConferenceImpl
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
         rolesAndPresence.init();
 
+        transcriberManager = new TranscriberManager(protocolProviderHandler,
+            chatOpSet.findRoom(roomName.toString()),
+            services.getJigasiDetector());
+        transcriberManager.init();
+
         chatRoom.join();
 
         // Advertise shared Etherpad document
@@ -537,6 +549,11 @@ public class JitsiMeetConferenceImpl
         {
             rolesAndPresence.dispose();
             rolesAndPresence = null;
+        }
+        if(transcriberManager != null)
+        {
+            transcriberManager.dispose();
+            transcriberManager = null;
         }
 
         chatRoom.leave();
