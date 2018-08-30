@@ -42,6 +42,25 @@ public class JigasiDetector
         = "org.jitsi.jicofo.jigasi.BREWERY";
 
     /**
+     * The name of the stat used by the instance to indicate the number of
+     * participants. This should match
+     * {@code VideobridgeStatistics.NUMBEROFPARTICIPANTS}, but is defined
+     * separately to avoid depending on the {@code jitsi-videobridge}
+     * maven package.
+     */
+    private static final String STAT_NAME_PARTICIPANTS = "participants";
+
+    /**
+     * The name of the stat that indicates the instance has entered graceful
+     * shutdown mode.
+     * {@code VideobridgeStatistics.SHUTDOWN_IN_PROGRESS}, but is defined
+     * separately to avoid depending on the {@code jitsi-videobridge} maven
+     * package.
+     */
+    public static final String STAT_NAME_SHUTDOWN_IN_PROGRESS
+        = "graceful_shutdown";
+
+    /**
      * Constructs new JigasiDetector.
      *
      * @param protocolProvider the xmpp protocol provider
@@ -82,9 +101,17 @@ public class JigasiDetector
         int numberOfParticipants = Integer.MAX_VALUE;
         for (BrewInstance jigasi : instances)
         {
+            if(jigasi.status != null
+                && Boolean.valueOf(jigasi.status.getValueAsString(
+                    STAT_NAME_SHUTDOWN_IN_PROGRESS)))
+            {
+                // skip instance which is shutting down
+                continue;
+            }
+
             int currentParticipants
                 = jigasi.status != null ?
-                    jigasi.status.getAttributeAsInt("participants")
+                    jigasi.status.getValueAsInt(STAT_NAME_PARTICIPANTS)
                     : 0;
             if (currentParticipants < numberOfParticipants)
             {

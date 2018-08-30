@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.util.*;
 import org.jxmpp.jid.*;
 
@@ -152,6 +153,9 @@ class Bridge
             // streams.
             setVideoStreamCount(videoStreamCount);
         }
+
+        setIsOperational(!Boolean.valueOf(stats.getValueAsString(
+            JigasiDetector.STAT_NAME_SHUTDOWN_IN_PROGRESS)));
     }
 
     Bridge(BridgeSelector bridgeSelector,
