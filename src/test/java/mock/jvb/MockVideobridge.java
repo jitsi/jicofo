@@ -236,7 +236,10 @@ public class MockVideobridge
 
     public int getConferenceCount()
     {
-        return bridge.getConferenceCount();
+        // Filter out conferences created for health checks
+        return (int) Arrays.stream(bridge.getConferences())
+            .filter(Conference::includeInStatistics)
+            .count();
     }
 
     public boolean isReturnServerError()
