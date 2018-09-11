@@ -158,9 +158,16 @@ public class TranscriberManager
             return;
         }
 
-        if(containsTranscriptionStatus(presence))
+        TranscriptionStatusExtension transcriptionStatusExtension
+            = getTranscriptionStatus(presence);
+        if(transcriptionStatusExtension != null
+            && TranscriptionStatusExtension.Status.OFF.equals(
+                    transcriptionStatusExtension.getStatus()))
         {
-            maybeStoppedTranscribing(presence);
+            // puts the stopping in the single threaded executor
+            // so we can order the events and avoid indicating active = false
+            // while we are starting due to concurrent presences processed
+            executorService.submit(this::stopTranscribing);
         }
         if(isRequestingTranscriber(presence) && !active)
         {
@@ -169,15 +176,15 @@ public class TranscriberManager
     }
 
     /**
-     * Check whether the given {@link Presence} contains a
-     * {@link TranscriptionRequestExtension}
+     * Returns the {@link TranscriptionStatusExtension} if any from
+     * the given {@link Presence}.
      *
      * @param p the given {@link Presence} to check
-     * @return true when it contains the extension, false otherwise
+     * @return Returns the {@link TranscriptionStatusExtension} if any.
      */
-    private boolean containsTranscriptionStatus(Presence p)
+    private TranscriptionStatusExtension getTranscriptionStatus(Presence p)
     {
-        return p.hasExtension(
+        return p.getExtension(
             TranscriptionStatusExtension.ELEMENT_NAME,
             TranscriptionStatusExtension.NAMESPACE
         );
@@ -186,7 +193,7 @@ public class TranscriberManager
     /**
      * Method which is able to invite the transcriber by dialing Jigasi
      */
-    private synchronized void startTranscribing()
+    private void startTranscribing()
     {
         if(active)
         {
@@ -236,35 +243,18 @@ public class TranscriberManager
         }
         catch (OperationFailedException e)
         {
-            e.printStackTrace();
+            logger.error("Failed sending dialIq to transcriber", e);
         }
     }
 
     /**
-     * Checks whether the given {@link Presence} and
-     * {@link TranscriptionStatusExtension} indicate transcription has stopped,
-     * and when it has, sets {@link this#active} to false.
-     *
-     * @param p the {@link Presence}
+     * Indicate transcription has stopped and sets {@link this#active} to false.
      */
-    private void maybeStoppedTranscribing(Presence p)
+    private void stopTranscribing()
     {
-        TranscriptionStatusExtension ext = p.getExtension(
-            TranscriptionStatusExtension.ELEMENT_NAME,
-            TranscriptionStatusExtension.NAMESPACE
-        );
-
-        if(ext == null)
-        {
-            return;
-        }
-        if(TranscriptionStatusExtension.Status.OFF.equals(ext.getStatus()))
-        {
-            active = false;
-            logger.info("detected transcription status being turned off.");
-        }
+        active = false;
+        logger.info("detected transcription status being turned off.");
     }
-
 
     /**
      * Checks whether the given {@link Presence} indicates a conference
