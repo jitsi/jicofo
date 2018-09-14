@@ -21,6 +21,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -242,6 +243,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         {
             JingleUtils.addStartMutedExtension(
                 jingleIQ, startMuted[0], startMuted[1]);
+        }
+        String serverRegion = bridgeSession.bridge.getRegion();
+        if (serverRegion != null)
+        {
+            jingleIQ.addExtension(new ServerRegionPacketExtension(serverRegion));
         }
 
         if (initiateSession)
