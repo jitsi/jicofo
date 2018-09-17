@@ -77,6 +77,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected List<ContentPacketExtension> createOffer()
     {
@@ -131,6 +134,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         return contents;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected ColibriConferenceIQ doAllocateChannels(
         List<ContentPacketExtension> offer)
@@ -144,6 +150,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             offer);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void invite(List<ContentPacketExtension> offer)
         throws OperationFailedException
@@ -180,7 +189,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         }
         else if (!canceled)
         {
-            if (!sendJingleIq(address, offer))
+            if (!doInviteOrReinvite(address, offer))
             {
                 expireChannels = true;
             }
@@ -206,9 +215,12 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     }
 
     /**
-     * Creates and sends a Jingle IQ (either {@code session-accept} or
-     * {@code transport-replace}) and sends it to the {@code participant}.
-     * Blocks until a response is received or a timeout occurs.
+     * Invites or re-invites (based on the value of {@link #reInvite}) the
+     * {@code participant} to the jingle session.
+     * Creates and sends the appropriate Jingle IQ ({@code session-initiate} for
+     * and invite or {@code transport-replace} for a re-invite) and sends it to
+     * the {@code participant}. Blocks until a response is received or a timeout
+     * occurs.
      *
      * @param address the destination JID.
      * @param contents the list of contents to include.
@@ -216,7 +228,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * @throws OperationFailedException if we are unable to send a packet
      * because the XMPP connection is broken.
      */
-    private boolean sendJingleIq(
+    private boolean doInviteOrReinvite(
         Jid address, List<ContentPacketExtension> contents)
         throws OperationFailedException
     {
