@@ -243,17 +243,13 @@ public class LipSyncHack implements OperationSetJingle
      */
     @Override
     public boolean initiateSession(
-            boolean useBundle,
-            Jid address,
-            List<ContentPacketExtension> contents,
-            JingleRequestHandler requestHandler,
-            boolean[] startMuted)
+        JingleIQ jingleIQ,
+        JingleRequestHandler requestHandler)
         throws OperationFailedException
     {
-        processAllParticipantsSSRCs(contents, address);
+        processAllParticipantsSSRCs(jingleIQ.getContentList(), jingleIQ.getTo());
 
-        return jingleImpl.initiateSession(
-                useBundle, address, contents, requestHandler, startMuted);
+        return jingleImpl.initiateSession(jingleIQ, requestHandler);
     }
 
     /**
@@ -263,17 +259,36 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(
-            boolean                         useBundle,
-            JingleSession                   session,
-            List<ContentPacketExtension>    contents,
-            boolean[]                       startMuted)
+    public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
         throws OperationFailedException
     {
-        processAllParticipantsSSRCs(contents, session.getAddress());
+        processAllParticipantsSSRCs(
+            jingleIQ.getContentList(),
+            session.getAddress());
 
-        return jingleImpl.replaceTransport(
-                useBundle, session, contents, startMuted);
+        return jingleImpl.replaceTransport(jingleIQ, session);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JingleIQ createTransportReplace(
+        JingleSession session,
+        List<ContentPacketExtension> contents)
+    {
+        return jingleImpl.createTransportReplace(session, contents);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JingleIQ createSessionInitiate(
+        Jid address,
+        List<ContentPacketExtension> contents)
+    {
+        return jingleImpl.createSessionInitiate(address, contents);
     }
 
     /**

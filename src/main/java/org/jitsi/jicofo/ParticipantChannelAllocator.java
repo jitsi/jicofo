@@ -22,6 +22,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
 import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
@@ -76,6 +77,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected List<ContentPacketExtension> createOffer()
     {
@@ -130,6 +134,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         return contents;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected ColibriConferenceIQ doAllocateChannels(
         List<ContentPacketExtension> offer)
@@ -143,6 +150,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             offer);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void invite(List<ContentPacketExtension> offer)
         throws OperationFailedException
@@ -179,38 +189,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         }
         else if (!canceled)
         {
-            OperationSetJingle jingle = meetConference.getJingle();
-            boolean ack;
-            JingleSession jingleSession = participant.getJingleSession();
-            if (!reInvite || jingleSession == null)
+            if (!doInviteOrReinvite(address, offer))
             {
-                // will throw OperationFailedExc if XMPP connection is broken
-                ack = jingle.initiateSession(
-                        participant.hasBundleSupport(),
-                        address,
-                        offer,
-                        meetConference,
-                        startMuted);
-            }
-            else
-            {
-                // will throw OperationFailedExc if XMPP connection is broken
-                ack = jingle.replaceTransport(
-                        participant.hasBundleSupport(),
-                        jingleSession,
-                        offer,
-                        startMuted);
-            }
-            if (!ack)
-            {
-                // Failed to invite
-                logger.info(
-                        "Expiring " + address + " channels - no RESULT for "
-                        + (reInvite ? "transport-replace" : "session-initiate"));
                 expireChannels = true;
-
-                // TODO: let meetConference know that our Jingle session failed,
-                // so it can either retry or remove the participant?
             }
         }
 
@@ -231,6 +212,78 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy());
         }
+    }
+
+    /**
+     * Invites or re-invites (based on the value of {@link #reInvite}) the
+     * {@code participant} to the jingle session.
+     * Creates and sends the appropriate Jingle IQ ({@code session-initiate} for
+     * and invite or {@code transport-replace} for a re-invite) and sends it to
+     * the {@code participant}. Blocks until a response is received or a timeout
+     * occurs.
+     *
+     * @param address the destination JID.
+     * @param contents the list of contents to include.
+     * @return {@code false} on failure.
+     * @throws OperationFailedException if we are unable to send a packet
+     * because the XMPP connection is broken.
+     */
+    private boolean doInviteOrReinvite(
+        Jid address, List<ContentPacketExtension> contents)
+        throws OperationFailedException
+    {
+        OperationSetJingle jingle = meetConference.getJingle();
+        JingleSession jingleSession = participant.getJingleSession();
+        boolean initiateSession = !reInvite || jingleSession == null;
+        boolean ack;
+        JingleIQ jingleIQ;
+
+        if (initiateSession)
+        {
+            // will throw OperationFailedExc if XMPP connection is broken
+            jingleIQ = jingle.createSessionInitiate(address, contents);
+        }
+        else
+        {
+            jingleIQ = jingle.createTransportReplace(jingleSession, contents);
+        }
+
+        if (participant.hasBundleSupport())
+        {
+            JicofoJingleUtils.addBundleExtensions(jingleIQ);
+        }
+        if (startMuted[0] || startMuted[1])
+        {
+            JicofoJingleUtils.addStartMutedExtension(
+                jingleIQ, startMuted[0], startMuted[1]);
+        }
+        String serverRegion = bridgeSession.bridge.getRegion();
+        if (serverRegion != null)
+        {
+            jingleIQ.addExtension(new ServerRegionPacketExtension(serverRegion));
+        }
+
+        if (initiateSession)
+        {
+            ack = jingle.initiateSession(jingleIQ, meetConference);
+        }
+        else
+        {
+            // will throw OperationFailedExc if XMPP connection is broken
+            ack = jingle.replaceTransport(jingleIQ, jingleSession);
+        }
+
+        if (!ack)
+        {
+            // Failed to invite
+            logger.info(
+                "Expiring " + address + " channels - no RESULT for "
+                    + (initiateSession ? "session-initiate"
+                    : "transport-replace"));
+            return false;
+        }
+
+        return true;
     }
 
     /**

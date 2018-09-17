@@ -36,57 +36,67 @@ public interface OperationSetJingle
     extends OperationSet
 {
     /**
-     * Start new session by sending 'session-initiate' IQ to given XMPP address.
+     * Initiates a Jingle session by sending the provided
+     * {@code session-initiate} IQ. Blocks until a response is received or
+     * until a timeout is reached.
      *
-     * @param useBundle <tt>true</tt> if contents description in the IQ sent
-     *                  should contain additional signaling required for RTP
-     *                  bundle usage in Jitsi Meet.
-     * @param address the XMPP address that will be remote destination of new
-     *                Jingle session.
-     * @param contents media contents description of our offer.
+     * @param jingleIQ the IQ to send.
      * @param requestHandler <tt>JingleRequestHandler</tt> that will be bound
-     *                       to new Jingle session instance.
-     * @param startMuted if the first element is <tt>true</tt> the participant
-     * will start audio muted. if the second element is <tt>true</tt> the
-     * participant will start video muted.
+     * to new Jingle session instance.
      *
-     * @return <tt>true</tt> if have have received RESULT response to
-     *         session-initiate IQ.
+     * @return {@code true} if a response of type {@code result} is received
+     * before the timeout.
      *
      * @throws OperationFailedException with
      * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} if the operation
      * fails, because the XMPP connection is broken.
      */
     boolean initiateSession(
-            boolean useBundle,
-            Jid address,
-            List<ContentPacketExtension> contents,
-            JingleRequestHandler requestHandler,
-            boolean[] startMuted)
+        JingleIQ jingleIQ,
+        JingleRequestHandler requestHandler)
         throws OperationFailedException;
 
     /**
-     * Sends 'transport-replace' IQ to the client.
+     * Creates a {@code session-initiate} IQ for a specific address and adds
+     * a list of {@link ContentPacketExtension} to it.
      *
-     * @param useBundle <tt>true</tt> if bundled transport is being used or
-     * <tt>false</tt> otherwise
-     * @param session the <tt>JingleSession</tt> used to send the notification.
-     * @param contents the list of Jingle contents which describes the actual
-     * offer
-     * @param startMuted an array where the first value stands for "start with
-     * audio muted" and the seconds one for "start video muted"
+     * @param address the destination JID.
+     * @param contents the list of contents to add.
      *
-     * @return <tt>true</tt> if have have received RESULT response to the IQ.
+     * @return the IQ which was created.
+     */
+    JingleIQ createSessionInitiate(
+        Jid address,
+        List<ContentPacketExtension> contents);
+
+    /**
+     * Sends a 'transport-replace' IQ to the client. Blocks waiting for a
+     * response and returns {@code true} if a response with type {@code result}
+     * is received before a certain timeout.
+     *
+     * @param jingleIQ the IQ which to be sent.
+     * @param session the <tt>JingleSession</tt> for which the IQ will be sent.
+     *
+     * @return {@code true} if an IQ of type {@code result} is received.
      *
      * @throws OperationFailedException with
      * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} if the operation
      * fails, because the XMPP connection is broken.
      */
-    boolean replaceTransport(boolean                         useBundle,
-                             JingleSession                   session,
-                             List<ContentPacketExtension>    contents,
-                             boolean[]                       startMuted)
+    boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
         throws OperationFailedException;
+
+    /**
+     * Creates a {@code transport-replace} packet for a particular
+     * {@link JingleSession}.
+     *
+     * @param session the {@link JingleSession}.
+     * @param contents the list of {@code content}s to include.
+     * @return the IQ which was created.
+     */
+    JingleIQ createTransportReplace(
+        JingleSession session,
+        List<ContentPacketExtension> contents);
 
     /**
      * Sends 'source-add' proprietary notification.

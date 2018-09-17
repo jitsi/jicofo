@@ -58,7 +58,7 @@ public abstract class AbstractOperationSetJingle
     protected AbstractOperationSetJingle()
     {
         super(JingleIQ.ELEMENT_NAME, JingleIQ.NAMESPACE,
-                IQ.Type.set, Mode.sync);
+              IQ.Type.set, Mode.sync);
     }
 
     @Override
@@ -69,7 +69,9 @@ public abstract class AbstractOperationSetJingle
         if (session == null)
         {
             logger.error("No session found for SID " + packet.getSID());
-            return IQ.createErrorResponse(packet,
+            return
+                IQ.createErrorResponse(
+                    packet,
                     XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
 
@@ -94,9 +96,8 @@ public abstract class AbstractOperationSetJingle
      * Finds Jingle session for given session identifier.
      *
      * @param sid the identifier of the session which we're looking for.
-     *
-     * @return Jingle session for given session identifier or <tt>null</tt>
-     *         if no such session exists.
+     * @return Jingle session for given session identifier or <tt>null</tt> if
+     * no such session exists.
      */
     public JingleSession getSession(String sid)
     {
@@ -104,41 +105,44 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Sends 'session-initiate' to the peer identified by given <tt>address</tt>
-     *
-     * @param useBundle <tt>true</tt> if invite IQ should include
-     *                  {@link GroupPacketExtension}
-     * @param address the XMPP address where 'session-initiate' will be sent.
-     * @param contents the list of <tt>ContentPacketExtension</tt> describing
-     *                 media offer.
-     * @param requestHandler <tt>JingleRequestHandler</tt> that will be used
-     *                       to process request related to newly created
-     *                       JingleSession.
-     * @param startMuted if the first element is <tt>true</tt> the participant
-     * will start audio muted. if the second element is <tt>true</tt> the
-     * participant will start video muted.
      * {@inheritDoc}
      */
     @Override
-    public boolean initiateSession(boolean                      useBundle,
-                                   Jid                          address,
-                                   List<ContentPacketExtension> contents,
-                                   JingleRequestHandler         requestHandler,
-                                   boolean[]                    startMuted)
+    public JingleIQ createSessionInitiate(
+        Jid address, List<ContentPacketExtension> contents)
+    {
+        String sid = JingleIQ.generateSID();
+        JingleIQ jingleIQ = new JingleIQ(JingleAction.SESSION_INITIATE, sid);
+
+        jingleIQ.setTo(address);
+        jingleIQ.setFrom(getOurJID());
+        jingleIQ.setInitiator(getOurJID());
+        jingleIQ.setType(IQ.Type.set);
+
+        for (ContentPacketExtension content : contents)
+        {
+            jingleIQ.addContent(content);
+        }
+
+        return jingleIQ;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean initiateSession(
+        JingleIQ inviteIQ,
+        JingleRequestHandler requestHandler)
         throws OperationFailedException
     {
-        logger.info("INVITE PEER: " + address);
-
-        String sid = JingleIQ.generateSID();
-        JingleSession session = new JingleSession(sid, address, requestHandler);
+        String sid = inviteIQ.getSID();
+        JingleSession session
+            = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
 
         sessions.put(sid, session);
 
-        JingleIQ inviteIQ
-            = createInviteIQ(JingleAction.SESSION_INITIATE,
-                sid, useBundle, address, contents, startMuted);
-
-        IQ reply = (IQ) getConnection().sendPacketAndGetReply(inviteIQ);
+        IQ reply = getConnection().sendPacketAndGetReply(inviteIQ);
 
         return wasInviteAccepted(session, reply);
     }
@@ -262,10 +266,32 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(boolean                         useBundle,
-                                    JingleSession                   session,
-                                    List<ContentPacketExtension>    contents,
-                                    boolean[]                       startMuted)
+    public JingleIQ createTransportReplace(
+        JingleSession session, List<ContentPacketExtension> contents)
+    {
+        JingleIQ jingleIQ
+            = new JingleIQ(
+                JingleAction.TRANSPORT_REPLACE, session.getSessionID());
+        jingleIQ.setTo(session.getAddress());
+        jingleIQ.setFrom(getOurJID());
+        jingleIQ.setInitiator(getOurJID());
+        jingleIQ.setType(IQ.Type.set);
+
+        for (ContentPacketExtension content : contents)
+        {
+            jingleIQ.addContent(content);
+        }
+
+        return jingleIQ;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean replaceTransport(
+        JingleIQ jingleIQ,
+        JingleSession session)
         throws OperationFailedException
     {
         Jid address = session.getAddress();
@@ -281,12 +307,7 @@ public abstract class AbstractOperationSetJingle
         // Reset 'accepted' flag on the session
         session.setAccepted(false);
 
-        JingleIQ inviteIQ
-            =  createInviteIQ(JingleAction.TRANSPORT_REPLACE,
-                    session.getSessionID(), useBundle, address,
-                    contents, startMuted);
-
-        IQ reply = getConnection().sendPacketAndGetReply(inviteIQ);
+        IQ reply = getConnection().sendPacketAndGetReply(jingleIQ);
 
         return wasInviteAccepted(session, reply);
     }
