@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp;
+package org.jitsi.protocol.xmpp.util;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
@@ -26,13 +26,13 @@ import org.jitsi.impl.protocol.xmpp.extensions.*;
  *
  * @author Boris Grozev
  */
-public class JingleUtils
+public class JicofoJingleUtils
 {
     /**
      * Adds a group packet extension to a {@link JingleIQ}, and a
      * {@link BundlePacketExtension} to each of its contents. I.e. adds
-     * everything that we deem necessary to turn enable {@code bundle} in an
-     * offer. It is unclear how much of this is actually necessary for
+     * everything that we deem necessary to enable {@code bundle} in an offer.
+     * It is unclear how much of this is actually necessary for
      * {@code jitsi-meet}.
      *
      * @param jingleIQ the IQ to add extensions to.
@@ -61,8 +61,6 @@ public class JingleUtils
     public static void addStartMutedExtension(
         JingleIQ jingleIQ, boolean audioMute, boolean videoMute)
     {
-        // FIXME Move this to a place where offer's contents are created or
-        // convert the array to a list of extra PacketExtensions
         StartMutedPacketExtension startMutedExt
             = new StartMutedPacketExtension();
         startMutedExt.setAudioMute(audioMute);

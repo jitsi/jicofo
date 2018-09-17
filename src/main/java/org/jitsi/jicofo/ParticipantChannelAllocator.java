@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jitsimeet.*;
+import net.java.sip.communicator.impl.protocol.jabber.jinglesdp.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.discovery.*;
@@ -237,11 +238,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
         if (participant.hasBundleSupport())
         {
-            JingleUtils.addBundleExtensions(jingleIQ);
+            JicofoJingleUtils.addBundleExtensions(jingleIQ);
         }
         if (startMuted[0] || startMuted[1])
         {
-            JingleUtils.addStartMutedExtension(
+            JicofoJingleUtils.addStartMutedExtension(
                 jingleIQ, startMuted[0], startMuted[1]);
         }
         String serverRegion = bridgeSession.bridge.getRegion();
@@ -403,8 +404,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             }
             // Existing peers SSRCs
             RtpDescriptionPacketExtension rtpDescPe
-                = net.java.sip.communicator.impl.protocol.jabber.jinglesdp
-                    .JingleUtils.getRtpDescription(cpe);
+                = JingleUtils.getRtpDescription(cpe);
             if (rtpDescPe != null)
             {
                 if (useBundle)
