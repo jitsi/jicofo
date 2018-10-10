@@ -19,6 +19,7 @@ package org.jitsi.jicofo.auth;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
@@ -138,6 +139,25 @@ public abstract class AbstractAuthAuthority
     }
 
     /**
+     * Finds an {@link AuthenticationSession} session.
+     *
+     * @param selector - Must return <tt>true</tt> when a match is found.
+     * @return the first {@link AuthenticationSession} that matches given
+     * predicate or <tt>null</tt>.
+     */
+    protected AuthenticationSession findSession(
+        Predicate<AuthenticationSession> selector)
+    {
+        ArrayList<AuthenticationSession> sessions
+            = new ArrayList<>(authenticationSessions.values());
+
+        return sessions
+            .stream()
+            .filter(selector)
+            .findFirst().orElse(null);
+    }
+
+    /**
      * Creates new <tt>AuthenticationSession</tt> for given parameters.
      *
      * @param machineUID unique machine identifier for new session.
@@ -236,19 +256,10 @@ public abstract class AbstractAuthAuthority
         {
             return null;
         }
-        synchronized (syncRoot)
-        {
-            for (AuthenticationSession session
-                    : authenticationSessions.values())
-            {
-                if (session.getUserIdentity().equals(authIdentity)
-                        && session.getMachineUID().equals(machineUID))
-                {
-                    return session;
-                }
-            }
-            return null;
-        }
+
+        return findSession(
+            session -> session.getUserIdentity().equals(authIdentity)
+                            && session.getMachineUID().equals(machineUID));
     }
 
     /**
@@ -266,17 +277,9 @@ public abstract class AbstractAuthAuthority
         {
             return null;
         }
-        synchronized (syncRoot)
-        {
-            for(AuthenticationSession session : authenticationSessions.values())
-            {
-                if (jabberId.equals(session.getUserJabberId()))
-                {
-                    return session;
-                }
-            }
-        }
-        return null;
+
+        return findSession(
+            session -> jabberId.equals(session.getUserJabberId()));
     }
 
     /**
