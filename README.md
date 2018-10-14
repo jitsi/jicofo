@@ -101,6 +101,9 @@ from anonymous domain. Here's what has to be configured:
      c2s_require_encryption = false
  ```
 2 In Jitsi Meet config.js configure 'anonymousdomain':<br/>
+
+(If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/jitsi/meet/[your-hostname]-config.js)
+
 ```
 var config = {
     hosts: {
