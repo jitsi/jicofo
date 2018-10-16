@@ -135,7 +135,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>ice4j</artifactId>
-      <version>2.0.0-20180516.224537-8</version>
+      <version>2.0.0-20181005.221549-11</version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
@@ -170,7 +170,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.1-20180705.215721-75</version>
+      <version>1.1-20181016.012250-91</version>
       <scope>test</scope>
     </dependency>
     <dependency>
