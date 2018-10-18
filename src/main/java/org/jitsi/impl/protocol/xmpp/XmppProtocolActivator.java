@@ -66,6 +66,8 @@ public class XmppProtocolActivator
         ProviderManager.addIQProvider(
                 JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, new JibriIqProvider());
         JibriStatusPacketExt.registerExtensionProvider();
+        JibriBusyStatusPacketExt.registerExtensionProvider();
+        HealthStatusPacketExt.registerExtensionProvider();
         // User info
         ProviderManager.addExtensionProvider(
                 UserInfoPacketExt.ELEMENT_NAME,
