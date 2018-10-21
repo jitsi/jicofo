@@ -122,9 +122,7 @@ public class JibriDetector
     public Jid selectJibri()
     {
         return instances.stream()
-            .filter(
-                jibri -> JibriStatusPacketExt.Status.IDLE.equals(
-                    jibri.status.getStatus()))
+            .filter(jibri -> jibri.status.isAvailable())
             .map(jibri -> jibri.jid)
             .findFirst()
             .orElse(null);
@@ -137,23 +135,20 @@ public class JibriDetector
     {
         logger.info("Received Jibri status " + presenceExt.toXML());
 
-        JibriStatusPacketExt.Status status = presenceExt.getStatus();
-
-        if (JibriStatusPacketExt.Status.UNDEFINED.equals(status))
-        {
-            notifyInstanceOffline(jid);
-        }
-        else if (JibriStatusPacketExt.Status.IDLE.equals(status))
+        if (presenceExt.isAvailable())
         {
             notifyJibriStatus(jid, true);
         }
-        else if (JibriStatusPacketExt.Status.BUSY.equals(status))
-        {
-            notifyJibriStatus(jid, false);
-        }
         else
         {
-            logger.error("Unknown Jibri status: " + status + " for " + jid);
+            if (presenceExt.getBusyStatus() == null || presenceExt.getHealthStatus() == null)
+            {
+                notifyInstanceOffline(jid);
+            }
+            else
+            {
+                notifyJibriStatus(jid, false);
+            }
         }
     }
 
