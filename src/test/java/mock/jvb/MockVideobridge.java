@@ -34,6 +34,7 @@ import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -197,10 +198,23 @@ public class MockVideobridge
         return Arrays.asList(layers);
     }
 
+    /**
+     * Return all conferences that were not created by health checks
+     * @return a list of the currently active conferences that were not created by
+     * health checks
+     */
+    public List<Conference> getNonHealthCheckConferences()
+    {
+        // Filter out conferences created for health checks
+        return Arrays.stream(bridge.getConferences())
+                .filter(Conference::includeInStatistics)
+                .collect(Collectors.toList());
+    }
+
     public int getChannelsCount()
     {
         int count = 0;
-        for (Conference conference : bridge.getConferences())
+        for (Conference conference : getNonHealthCheckConferences())
         {
             for (Content content: conference.getContents())
             {
@@ -236,10 +250,7 @@ public class MockVideobridge
 
     public int getConferenceCount()
     {
-        // Filter out conferences created for health checks
-        return (int) Arrays.stream(bridge.getConferences())
-            .filter(Conference::includeInStatistics)
-            .count();
+        return getNonHealthCheckConferences().size();
     }
 
     public boolean isReturnServerError()
