@@ -133,7 +133,7 @@ public class JibriDetector
         Jid jid,
         JibriStatusPacketExt presenceExt)
     {
-        logger.info("Received Jibri status " + presenceExt.toXML());
+        logger.info("Received Jibri " + jid + " status " + presenceExt.toXML());
 
         if (presenceExt.isAvailable())
         {
