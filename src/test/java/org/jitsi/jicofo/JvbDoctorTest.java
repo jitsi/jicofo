@@ -45,7 +45,6 @@ import static org.mockito.Mockito.*;
  * Tests for {@link JvbDoctor} class.
  *
  * @author Pawel Domas
- * FIXME jvbDoctorTest fail randomly on ci (works locally on dev machine)
  */
 public class JvbDoctorTest
 {
@@ -79,8 +78,8 @@ public class JvbDoctorTest
      * {@link BridgeEvent#BRIDGE_DOWN}. The last event is handled by all
      * {@link JitsiMeetConference} which will restart if are found to be using
      * faulty bridge.
-     * FIXME this tests fail randomly on ci (works locally on dev machine)
      */
+    @Test
     public void jvbDoctorTest()
         throws Exception
     {
@@ -115,20 +114,32 @@ public class JvbDoctorTest
         JitsiMeetServices meetServices
             = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
 
-        EventHandler eventSpy = mock(EventHandler.class);
+        /* Event dispatch is asynchronous and mockito verify with timeout will verify on the first method invocation, regardless of the provided argument.
+         Therefore, we need separate event handlers for separate event types. */
+        EventHandler eventSpyUp = mock(EventHandler.class, withSettings().verboseLogging());
         EventUtil.registerEventHandler(
             osgi.bc,
-            new String[] {
-                BridgeEvent.BRIDGE_UP,
-                BridgeEvent.BRIDGE_DOWN,
-                BridgeEvent.HEALTH_CHECK_FAILED },
-            eventSpy);
+            new String[] { BridgeEvent.BRIDGE_UP },
+                eventSpyUp);
+        EventHandler eventSpyDown = mock(EventHandler.class,withSettings().verboseLogging());
+        EventUtil.registerEventHandler(
+            osgi.bc,
+            new String[] { BridgeEvent.BRIDGE_DOWN },
+                eventSpyDown);
+        EventHandler eventSpyHcFailed = mock(EventHandler.class,withSettings().verboseLogging());
+        EventUtil.registerEventHandler(
+                osgi.bc,
+                new String[] { BridgeEvent.HEALTH_CHECK_FAILED },
+                eventSpyHcFailed);
+
+        // EventHandler registration is asynchronous (via org.jitsi.impl.osgi.framework.launch.EventDispatcher), wait a little until EventAdminImpl.serviceChanged has been called
+        Thread.sleep(10);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
         selector.addJvbAddress(jvb1);
 
         // Verify that BridgeSelector has triggered bridge up event
-        verify(eventSpy, timeout(5000))
+        verify(eventSpyUp, timeout(5000))
             .handleEvent(BridgeEvent.createBridgeUp(jvb1));
 
         TestConference[] testConfs = new TestConference[5];
@@ -155,12 +166,12 @@ public class JvbDoctorTest
 
         // Here we verify that first there was HEALTH_CHECK_FAILED event
         // send by JvbDoctor
-        verify(eventSpy, timeout(HEALTH_CHECK_INT + 100))
-            .handleEvent(BridgeEvent.createHealthFailed(jvb1));
+        verify(eventSpyHcFailed, timeout(HEALTH_CHECK_INT + 100))
+            .handleEvent(eq(BridgeEvent.createHealthFailed(jvb1)));
         // and after that BRIDGE_DOWN should be triggered
         // by BridgeSelector
-        verify(eventSpy, timeout(100))
-            .handleEvent(BridgeEvent.createBridgeDown(jvb1));
+        verify(eventSpyDown, timeout(100))
+            .handleEvent(eq(BridgeEvent.createBridgeDown(jvb1)));
 
         // We have no secondary bridge, so all restarts should fail
         // We'll know that by having null returned for currently used bridge in

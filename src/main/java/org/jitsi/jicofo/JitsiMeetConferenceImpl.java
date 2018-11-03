@@ -806,7 +806,7 @@ public class JitsiMeetConferenceImpl
                         reInvite);
 
             participant.setChannelAllocator(channelAllocator);
-            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+            FocusBundleActivator.getSharedThreadPool().execute(channelAllocator);
         }
     }
 
@@ -2852,7 +2852,7 @@ public class JitsiMeetConferenceImpl
                     JitsiMeetConferenceImpl.this, this, octoParticipant);
             octoParticipant.setChannelAllocator(channelAllocator);
 
-            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+            FocusBundleActivator.getSharedThreadPool().execute(channelAllocator);
 
             return octoParticipant;
         }
