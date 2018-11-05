@@ -943,13 +943,20 @@ public class ColibriConferenceImpl
             {
                 for (String contentName : descriptionMap.keySet())
                 {
-                    ColibriConferenceIQ.Channel channel
-                        = localChannelsInfo.getContent(contentName)
-                            .getChannels().get(0);
-                    send |= colibriBuilder.addRtpDescription(
-                            descriptionMap.get(contentName),
-                            contentName,
-                            channel);
+                    ColibriConferenceIQ.Content content = localChannelsInfo.getContent(contentName);
+                    if (content != null)
+                    {
+                        if (content.getChannelCount() > 0)
+                        {
+                            ColibriConferenceIQ.Channel channel
+                                    = localChannelsInfo.getContent(contentName)
+                                        .getChannels().get(0);
+                            send |= colibriBuilder.addRtpDescription(
+                                    descriptionMap.get(contentName),
+                                    contentName,
+                                    channel);
+                        }
+                    }
                 }
             }
             // SSRCs
