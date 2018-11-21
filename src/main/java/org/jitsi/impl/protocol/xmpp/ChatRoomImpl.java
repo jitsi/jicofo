@@ -339,17 +339,18 @@ public class ChatRoomImpl
 
         // Simulate member left events
         // No need to do this - we dispose whole conference anyway on stop
-        /*HashMap<String, ChatMemberImpl> membersCopy;
+        HashMap<EntityFullJid, ChatMemberImpl> membersCopy;
         synchronized (members)
         {
             membersCopy
-                = new HashMap<String, ChatMemberImpl>(members);
+                = new HashMap<EntityFullJid, ChatMemberImpl>(members);
         }
 
-        for (ChatMemberImpl member : membersCopy.values())
+        for (EntityFullJid member : membersCopy.keySet())
         {
-            memberListener.left(member.getContactAddress());
-        }*/
+            logger.info("Simulating leaving for: " + member);
+            memberListener.left(member);
+        }
 
         /*
         FIXME: we do not care about local user left for now
