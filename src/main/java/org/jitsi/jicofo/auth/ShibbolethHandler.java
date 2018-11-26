@@ -242,8 +242,23 @@ class ShibbolethHandler
                 "(function() {\n" +
                 " var sessionId = '" + sessionId + "';\n" +
                 " localStorage.setItem('sessionId', sessionId);\n" +
-                " console.info('sessionID :' + sessionId);\n";
-
+                " console.info('sessionID :' + sessionId);\n" +
+                " var displayName = '" + displayName + "';\n" +
+                " console.info('displayName :' + displayName);\n" +
+                " var settings = localStorage.getItem('features/base/settings');\n" +
+                " console.info('settings :' + settings);\n" +
+                " if (settings){\n" +
+                "     try {\n" +
+                "	        var settingsObj = JSON.parse(settings);\n" +
+                "	        if ( settingsObj != null && settingsObj.displayName != null && settingsObj.displayName == \"\" ) {\n" +
+                "	            settingsObj.displayName = displayName;\n" +
+                "	            localStorage.setItem('features/base/settings', JSON.stringify(settingsObj));\n" +
+                "         }\n" +
+                "     }\n" +
+                "   catch(e){\n" +
+                "     console.error('Unable to parse settings JSON');\n" +
+                "   }\n" +
+                " }\n" ;
         if (close)
         {
             // Pass session id and close the popup
