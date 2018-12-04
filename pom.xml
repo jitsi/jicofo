@@ -135,9 +135,9 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>libjitsi</artifactId>
-      <version>1.0-20180829.231707-362</version>
+      <version>1.0-20181119.181042-364</version>
     </dependency>
-    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->  
+    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>ice4j</artifactId>
@@ -176,7 +176,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.1-20181016.012250-91</version>
+      <version>1.1-20181017.180330-93</version>
       <scope>test</scope>
     </dependency>
     <dependency>
