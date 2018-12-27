@@ -142,4 +142,10 @@ public class OctoParticipant
 
         return changed;
     }
+
+    @Override
+    public String toString()
+    {
+        return "OctoParticipant[relays=" + relays + "]@" + hashCode();
+    }
 }
