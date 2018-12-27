@@ -320,7 +320,10 @@ class Bridge
     @Override
     public String toString()
     {
-        return "[Bridge, jid=" + jid.toString() +
-            ", relayId=" + getRelayId() + ", region=" + getRegion() + "]";
+        return String.format(
+                "Bridge[jid=%s, relayId=%s, region=%s]",
+                     jid.toString(),
+                     getRelayId(),
+                     getRegion());
     }
 }

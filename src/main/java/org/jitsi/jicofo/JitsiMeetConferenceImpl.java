@@ -2865,6 +2865,9 @@ public class JitsiMeetConferenceImpl
     public String toString()
     {
         return
-            "[JitsiMeetConferenceImpl, name=" + getRoomName().toString() + "]";
+            String.format(
+                    "JitsiMeetConferenceImpl[id=%s, name=%s]",
+                    id,
+                    getRoomName().toString());
     }
 }

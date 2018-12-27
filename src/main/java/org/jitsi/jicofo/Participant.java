@@ -457,7 +457,7 @@ public class Participant
     @Override
     public String toString()
     {
-        return "[Participant endpointId=" + getEndpointId();
+        return "Participant[endpointId=" + getEndpointId() + "]";
     }
 
 }
