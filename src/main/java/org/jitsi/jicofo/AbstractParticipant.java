@@ -363,8 +363,8 @@ public abstract class AbstractParticipant
             {
                 // There is an ongoing thread allocating channels and sending
                 // an invite for this participant. Tell it to stop.
+                logger.warn("Canceling " + this.channelAllocator);
                 this.channelAllocator.cancel();
-                logger.warn("Canceling a ChannelAllocator.");
             }
 
             this.channelAllocator = channelAllocator;

@@ -2541,7 +2541,7 @@ public class JitsiMeetConferenceImpl
         /**
          * The {@link Bridge}.
          */
-        Bridge bridge;
+        final Bridge bridge;
 
         /**
          * The list of participants in the conference which use this
@@ -2575,7 +2575,7 @@ public class JitsiMeetConferenceImpl
         BridgeSession(Bridge bridge)
                 throws XmppStringprepException
         {
-            this.bridge = bridge;
+            this.bridge = Objects.requireNonNull(bridge, "bridge");
             this.colibriConference
                 = createNewColibriConference(bridge.getJid());
         }
@@ -2658,7 +2658,7 @@ public class JitsiMeetConferenceImpl
                     = (participant instanceof Participant)
                         ? ((Participant) participant).getMucJid().toString()
                         : "octo";
-                logger.info("Expiring channels for: " + id);
+                logger.info("Expiring channels for: " + id + " on: " + bridge);
                 colibriConference.expireChannels(channelsInfo);
             }
 
