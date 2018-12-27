@@ -62,6 +62,12 @@ public class XmppProtocolActivator
         new ColibriIQProvider();
         // HealthChecks
         HealthCheckIQProvider.registerIQProvider();
+        // ice-state
+        ProviderManager.addExtensionProvider(
+                IceStatePacketExtension.ELEMENT_NAME,
+                IceStatePacketExtension.NAMESPACE,
+                new DefaultPacketExtensionProvider<>(
+                        IceStatePacketExtension.class));
         // Jibri IQs
         ProviderManager.addIQProvider(
                 JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, new JibriIqProvider());

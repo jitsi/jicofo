@@ -67,6 +67,14 @@ public class DefaultJingleRequestHandler
     }
 
     @Override
+    public XMPPError onSessionInfo(JingleSession session, JingleIQ iq)
+    {
+        logger.warn("Ignored Jingle 'session-info'");
+
+        return null;
+    }
+
+    @Override
     public XMPPError onTransportAccept(JingleSession jingleSession,
                                   List<ContentPacketExtension> contents)
     {

@@ -345,6 +345,9 @@ public abstract class AbstractOperationSetJingle
         case SESSION_ACCEPT:
             error = requestHandler.onSessionAccept(session, iq.getContentList());
             break;
+        case SESSION_INFO:
+            error = requestHandler.onSessionInfo(session, iq);
+            break;
         case TRANSPORT_ACCEPT:
             error = requestHandler.onTransportAccept(session, iq.getContentList());
             break;
