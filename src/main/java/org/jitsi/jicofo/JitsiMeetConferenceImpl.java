@@ -1483,6 +1483,70 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Will re-allocate channels on the bridge for participant who signals ICE
+     * state 'failed'. New transport is sent in the 'transport-info' message
+     * similar to the conference migration scenario.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public XMPPError onSessionInfo(JingleSession session, JingleIQ iq)
+    {
+        Jid address = session.getAddress();
+        Participant participant = findParticipantForJingleSession(session);
+
+        // FIXME: (duplicate) there's very similar logic in onSessionAccept
+        if (participant == null)
+        {
+            String errorMsg = "No session for " + address;
+
+            logger.error("onSessionInfo: " + errorMsg);
+
+            return XMPPError.from(
+                    XMPPError.Condition.item_not_found, errorMsg).build();
+        }
+
+        IceStatePacketExtension iceStatePE
+                = iq.getExtension(
+                        IceStatePacketExtension.ELEMENT_NAME,
+                        IceStatePacketExtension.NAMESPACE);
+        String iceState = iceStatePE != null ? iceStatePE.getText() : null;
+
+        if (!"failed".equalsIgnoreCase(iceState))
+        {
+            logger.info(String.format(
+                    "Ignored 'ice-state' update for participant: %s state: %s",
+                    address,
+                    iceState));
+
+            return null;
+        }
+
+        logger.info("Received ICE failed notification from " + address);
+
+        synchronized (participantLock)
+        {
+            BridgeSession bridgeSession = findBridgeSession(participant);
+            if (bridgeSession != null)
+            {
+                logger.info(String.format(
+                        "Received ICE failed notification from %s",
+                        address));
+                reInviteParticipant(participant);
+            }
+            else
+            {
+                logger.info(String.format(
+                        "Ignored ICE failed notification for invalid session,"
+                            + " participant: %s",
+                        address));
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Advertises new sources across all conference participants by using
      * 'source-add' Jingle notification.
      *
