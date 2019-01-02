@@ -791,6 +791,7 @@ public class JitsiMeetConferenceImpl
             }
 
             bridgeSession.participants.add(participant);
+            participant.setBridgeSession(bridgeSession);
             logger.info("Added participant jid= " + participant.getMucJid()
                             + ", bridge=" + bridgeSession.bridge.getJid());
             logRegions();
@@ -1200,13 +1201,7 @@ public class JitsiMeetConferenceImpl
                     false /* no JVB update - will expire */);
             }
 
-            // Cancel any threads currently trying to invite the participant.
-            participant.setChannelAllocator(null);
-            bridgeSession = findBridgeSession(participant);
-            if (bridgeSession != null)
-            {
-                bridgeSession.terminate(participant);
-            }
+            bridgeSession = participant.terminateBridgeSession();
 
             boolean removed = participants.remove(participant);
             logger.info(
@@ -2153,8 +2148,12 @@ public class JitsiMeetConferenceImpl
             logger.info("New bridge available: " + bridgeJid
                         + " will try to restart: " + getRoomName());
 
-            // Trigger restart
-            restartConference();
+            logger.warn("Restarting the conference for room: " + getRoomName());
+
+            synchronized (participantLock)
+            {
+                reInviteParticipants(participants);
+            }
         }
     }
 
@@ -2183,39 +2182,7 @@ public class JitsiMeetConferenceImpl
 
                 updateOctoRelays();
 
-                for (Participant participant : participantsToReinvite)
-                {
-                    // Cancel the thread early.
-                    participant.setChannelAllocator(null);
-                    inviteParticipant(
-                            participant,
-                            true,
-                            hasToStartMuted(participant, false));
-                }
-            }
-        }
-    }
-
-    private void restartConference()
-    {
-        logger.warn("Restarting the conference for room: " + getRoomName());
-
-        disposeConference();
-
-        synchronized (participantLock)
-        {
-            for (Participant participant : participants)
-            {
-                // Cancel all threads early.
-                participant.setChannelAllocator(null);
-            }
-            // Invite all not invited yet
-            for (Participant participant : participants)
-            {
-                inviteParticipant(
-                        participant,
-                        true,
-                        hasToStartMuted(participant, false));
+                reInviteParticipants(participantsToReinvite);
             }
         }
     }
@@ -2238,6 +2205,8 @@ public class JitsiMeetConferenceImpl
 
         if (channelAllocator instanceof ParticipantChannelAllocator)
         {
+            // FIXME get rid of bridgeFailure argument and do separate method
+            // call.
             onParticipantInviteFailed(
                 (ParticipantChannelAllocator) channelAllocator,
                 retry,
@@ -2294,15 +2263,11 @@ public class JitsiMeetConferenceImpl
         boolean retry,
         boolean bridgeFailure)
     {
-        BridgeSession bridgeSession = channelAllocator.getBridgeSession();
         Participant participant = channelAllocator.getParticipant();
-        bridgeSession.terminate(participant);
 
         if (retry)
         {
-            inviteParticipant(participant,
-                              true,
-                              channelAllocator.getStartMuted());
+            reInviteParticipant(participant);
         }
         else
         {
@@ -2313,7 +2278,8 @@ public class JitsiMeetConferenceImpl
 
             if (bridgeFailure)
             {
-                onBridgeDown(bridgeSession.bridge.getJid());
+                onBridgeDown(
+                    channelAllocator.getBridgeSession().bridge.getJid());
             }
         }
     }
@@ -2404,6 +2370,44 @@ public class JitsiMeetConferenceImpl
         else
         {
             return UUID.randomUUID().toString().replaceAll("-", "");
+        }
+    }
+
+    /**
+     * An adapter for {@link #reInviteParticipants(List)}.
+     *
+     * @param participant the {@link Participant} to be re invited into the
+     * conference.
+     */
+    private void reInviteParticipant(Participant participant)
+    {
+        ArrayList<Participant> l = new ArrayList<>(1);
+
+        l.add(participant);
+
+        reInviteParticipants(l);
+    }
+
+    /**
+     * Re-invites {@link Participant}s into the conference.
+     *
+     * @param participants the list of {@link Participant}s to be re-invited.
+     */
+    private void reInviteParticipants(List<Participant> participants)
+    {
+        synchronized (participantLock)
+        {
+            for (Participant participant : participants)
+            {
+                participant.terminateBridgeSession();
+            }
+            for (Participant participant : participants)
+            {
+                inviteParticipant(
+                        participant,
+                        true,
+                        hasToStartMuted(participant, false));
+            }
         }
     }
 
@@ -2614,7 +2618,7 @@ public class JitsiMeetConferenceImpl
             // sync on what?
             for (Participant participant : new LinkedList<>(participants))
             {
-                if (terminate(participant))
+                if (participant.terminateBridgeSession() != null)
                 {
                     terminatedParticipants.add(participant);
                 }
