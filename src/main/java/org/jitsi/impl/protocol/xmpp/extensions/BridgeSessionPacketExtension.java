@@ -1,7 +1,5 @@
 /*
- * Jicofo, the Jitsi Conference Focus.
- *
- * Copyright @ 2018 Atlassian Pty Ltd
+ * Copyright @ 2019 8x8, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +16,30 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
+import org.jitsi.jicofo.*;
 
 /**
- * A packet extension which contains the server's region.
+ * A packet extension which contains the information about the current
+ * {@link JitsiMeetConferenceImpl.BridgeSession}.
  *
  * @author Boris Grozev
+ * @author Pawel Domas
  */
-public class ServerRegionPacketExtension
+public class BridgeSessionPacketExtension
     extends AbstractPacketExtension
 {
     /**
-     * The name of the {@code server-region} element.
+     * The name of the {@code bridge-session} element.
      */
-    public static final String ELEMENT_NAME = "server-region";
+    public static final String ELEMENT_NAME = "bridge-session";
 
     /**
-     * The namespace for the {@code server-region} element.
+     * The name of the attribute which carries the bridge session's ID.
+     */
+    public static final String ID_ATTR_NAME = "id";
+
+    /**
+     * The namespace for the {@code bridge-session} element.
      */
     public static final String NAMESPACE = ConferenceIq.NAMESPACE;
 
@@ -43,22 +49,17 @@ public class ServerRegionPacketExtension
     public static final String REGION_ATTR_NAME = "region";
 
     /**
-     * Creates an {@link AbstractPacketExtension} instance for the specified
-     * <tt>namespace</tt> and <tt>elementName</tt>.
-     *
-     * @param namespace the XML namespace for this element.
-     * @param elementName the name of the element
+     * Creates new instance of {@code BridgeSessionPacketExtension}.
      */
-    protected ServerRegionPacketExtension(String namespace,
-                                          String elementName)
+    public BridgeSessionPacketExtension()
     {
-        super(namespace, elementName);
+        super(NAMESPACE, ELEMENT_NAME);
     }
 
-    public ServerRegionPacketExtension(String region)
+    public BridgeSessionPacketExtension(String id, String region)
     {
-        this(NAMESPACE, ELEMENT_NAME);
-
+        this();
+        setId(id);
         setRegion(region);
     }
 
@@ -77,5 +78,24 @@ public class ServerRegionPacketExtension
     public void setRegion(String region)
     {
         setAttribute(REGION_ATTR_NAME, region);
+    }
+
+    /**
+     * @return the id.
+     * @see org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession#id
+     */
+    public String getId()
+    {
+        return getAttributeAsString(ID_ATTR_NAME);
+    }
+
+    /**
+     * Sets the id.
+     * @param id the value to set.
+     * @see org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession#id
+     */
+    public void setId(String id)
+    {
+        setAttribute(ID_ATTR_NAME, id);
     }
 }

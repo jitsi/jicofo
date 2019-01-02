@@ -67,6 +67,11 @@ public class JitsiMeetConferenceImpl
         = Logger.getLogger(JitsiMeetConferenceImpl.class);
 
     /**
+     * A random generator.
+     */
+    private final static Random RANDOM = new Random();
+
+    /**
      * An identifier of this {@link JitsiMeetConferenceImpl}.
      */
     private final String id;
@@ -1522,7 +1527,11 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        logger.info("Received ICE failed notification from " + address);
+        BridgeSessionPacketExtension bsPE
+                = iq.getExtension(
+                        BridgeSessionPacketExtension.ELEMENT_NAME,
+                        BridgeSessionPacketExtension.NAMESPACE);
+        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
 
         synchronized (participantLock)
         {
@@ -1530,16 +1539,18 @@ public class JitsiMeetConferenceImpl
             if (bridgeSession != null)
             {
                 logger.info(String.format(
-                        "Received ICE failed notification from %s",
-                        address));
+                        "Received ICE failed notification from %s, session: %s",
+                        address,
+                        bridgeSession));
                 reInviteParticipant(participant);
             }
             else
             {
                 logger.info(String.format(
                         "Ignored ICE failed notification for invalid session,"
-                            + " participant: %s",
-                        address));
+                            + " participant: %s, bridge session ID: %s",
+                        address,
+                        bridgeSessionId));
             }
         }
 
@@ -2566,6 +2577,22 @@ public class JitsiMeetConferenceImpl
         final Bridge bridge;
 
         /**
+         * The bridge session's id.
+         *
+         * At the time of this writing it's used to distinguish between current
+         * and outdated ICE failed notifications coming from the client.
+         *
+         * It can often happen that during a bridge failure multiple clients
+         * will send ICE failed messages because all of them will have
+         * connectivity broken. Jicofo will mark the bridge as unhealthy when
+         * processing the first notification and any following ones should be
+         * discarded.
+         */
+        final String id
+            = JitsiMeetConferenceImpl.this.id
+                    + "_" +Integer.toHexString(RANDOM.nextInt(0x1_0000));
+
+        /**
          * The list of participants in the conference which use this
          * {@link BridgeSession}.
          */
@@ -2877,6 +2904,16 @@ public class JitsiMeetConferenceImpl
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
 
             return octoParticipant;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format(
+                    "BridgeSession[id=%s, bridge=%s]@%d",
+                    id,
+                    bridge,
+                    hashCode());
         }
     }
 
