@@ -257,11 +257,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             JicofoJingleUtils.addStartMutedExtension(
                 jingleIQ, startMuted[0], startMuted[1]);
         }
-        String serverRegion = bridgeSession.bridge.getRegion();
-        if (serverRegion != null)
-        {
-            jingleIQ.addExtension(new ServerRegionPacketExtension(serverRegion));
-        }
+
+        // Include info about the BridgeSession which provides the transport
+        jingleIQ.addExtension(
+            new BridgeSessionPacketExtension(
+                    bridgeSession.id, bridgeSession.bridge.getRegion()));
 
         if (initiateSession)
         {
