@@ -174,9 +174,6 @@ public abstract class AbstractChannelAllocator implements Runnable
         {
             logger.error("Channel allocator failed: " + participant);
 
-            // Notify conference about failure
-            meetConference.onChannelAllocationFailed(this, !isReInvite());
-
             // Cancel this task - nothing to be done after failure
             cancel();
             return;
@@ -295,12 +292,12 @@ public abstract class AbstractChannelAllocator implements Runnable
                 if (!StringUtils.isNullOrEmpty(
                     bridgeSession.colibriConference.getConferenceId()))
                 {
+                    // Cancel this instance
+                    cancel();
+
                     // Notify the conference that this ColibriConference is now
                     // broken.
                     meetConference.onBridgeDown(jvb);
-
-                    // This thread will end after returning null here
-                    cancel();
                     return null;
                 }
             }

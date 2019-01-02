@@ -2188,100 +2188,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Method called by {@link AbstractChannelAllocator} when it fails to
-     * allocate channels with {@link OperationFailedException}. We need to make
-     * some decisions here.
-     *
-     * @param channelAllocator the {@link AbstractChannelAllocator} instance
-     * which is reporting the error.
-     */
-    void onChannelAllocationFailed(
-            AbstractChannelAllocator channelAllocator,
-            boolean retry)
-    {
-        // We're gonna handle this, no more work for this
-        // AbstractChannelAllocator.
-        channelAllocator.cancel();
-
-        if (channelAllocator instanceof ParticipantChannelAllocator)
-        {
-            // FIXME get rid of bridgeFailure argument and do separate method
-            // call.
-            onParticipantInviteFailed(
-                (ParticipantChannelAllocator) channelAllocator,
-                retry,
-                /* bridgeFailure */ true);
-        }
-        else if (channelAllocator instanceof OctoChannelAllocator)
-        {
-            onOctoChannelAllocationFailed(
-                (OctoChannelAllocator) channelAllocator);
-        }
-        else
-        {
-            logger.error("Unknown allocator type:");
-        }
-    }
-
-    /**
-     * Handles a failure to allocate channels for Octo.
-     * @param channelAllocator the {@link OctoChannelAllocator} which failed.
-     */
-    private void onOctoChannelAllocationFailed(
-        OctoChannelAllocator channelAllocator)
-    {
-        logger.error("Failed to allocate Octo channels.");
-        onBridgeDown(channelAllocator.getBridgeSession().bridge.getJid());
-    }
-
-    /**
      * A callback called by {@link ParticipantChannelAllocator} when
      * establishing the Jingle session with its participant fails.
      * @param channelAllocator the channel allocator which failed.
      */
     void onInviteFailed(ParticipantChannelAllocator channelAllocator)
     {
-        onParticipantInviteFailed(
-            channelAllocator,
-            /* retry */ false,
-            /* bridge failure */ false);
-    }
-
-    /**
-     * Handles a failure to invite a participant to the conference. This could
-     * be due to a failure to allocate colibri channels, or a Jingle failure.
-     *
-     * @param channelAllocator the {@link ParticipantChannelAllocator} which
-     * failed.
-     * @param retry whether we should re-try to invite the participant.
-     * @param bridgeFailure Whether the failure was a result of a problem with
-     * the jitsi-videobridge instance, in which case we should consider the
-     * bridge unhealthy.
-     */
-    private void onParticipantInviteFailed(
-        ParticipantChannelAllocator channelAllocator,
-        boolean retry,
-        boolean bridgeFailure)
-    {
-        Participant participant = channelAllocator.getParticipant();
-
-        if (retry)
-        {
-            reInviteParticipant(participant);
-        }
-        else
-        {
-            terminateParticipant(
-                participant,
+        terminateParticipant(
+                channelAllocator.getParticipant(),
                 Reason.GENERAL_ERROR,
-                "channel allocation or jingle session failed");
-
-            if (bridgeFailure)
-            {
-                onBridgeDown(
-                    channelAllocator.getBridgeSession().bridge.getJid());
-            }
-        }
+                "jingle session failed");
     }
 
     /**
