@@ -22,6 +22,8 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jxmpp.jid.*;
 
+import java.util.*;
+
 /**
  * <tt>JigasiDetector</tt> manages the pool of Jigasi instances which exist in
  * the current session. Does that by joining "brewery" room where Jigasi connect
@@ -97,10 +99,29 @@ public class JigasiDetector
      */
     public Jid selectJigasi()
     {
+        return this.selectJigasi(null);
+    }
+
+    /**
+     * Selects the jigasi instance that is less loaded.
+     *
+     * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
+     * available Jigasi instances. List that we do not want as a result.
+     * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
+     * no Jigasis available currently.
+     */
+    public Jid selectJigasi(List<Jid> filter)
+    {
         BrewInstance lessLoadedInstance = null;
         int numberOfParticipants = Integer.MAX_VALUE;
         for (BrewInstance jigasi : instances)
         {
+            // filter instances
+            if (filter != null && filter.contains(jigasi.jid))
+            {
+                continue;
+            }
+
             if(jigasi.status != null
                 && Boolean.valueOf(jigasi.status.getValueAsString(
                     STAT_NAME_SHUTDOWN_IN_PROGRESS)))
