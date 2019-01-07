@@ -29,6 +29,8 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
 import org.jxmpp.jid.*;
 
+import java.util.*;
+
 /**
  * Class handles various Jitsi Meet extensions IQs like {@link MuteIq}.
  *
@@ -116,7 +118,10 @@ public class MeetExtensionsHandler
         @Override
         public IQ handleIQRequest(IQ iqRequest)
         {
-            return handleRayoIQ((RayoIqProvider.DialIq) iqRequest);
+            // let's retry 2 times sending the rayo
+            // by default we have 15 seconds timeout waiting for reply
+            // 3 timeouts will give us 45 seconds to reply to user with an error
+            return handleRayoIQ((RayoIqProvider.DialIq) iqRequest, 2, null);
         }
     }
 
@@ -191,7 +196,20 @@ public class MeetExtensionsHandler
         return result;
     }
 
-    private IQ handleRayoIQ(RayoIqProvider.DialIq dialIq)
+    /**
+     * Checks whether sending the rayo message is ok (checks member, moderators)
+     * and sends the message to the selected jigasi (from brewery muc or to the
+     * component service).
+     * @param dialIq the iq to send.
+     * @param retryCount the number of attempts to be made for sending this iq,
+     * if no reply is received from the remote side.
+     * @param filterJigasis <tt>null</tt> or a list of jigasi Jids which
+     * we already tried sending in attempt to retry.
+     *
+     * @return the iq to be sent as a reply.
+     */
+    private IQ handleRayoIQ(RayoIqProvider.DialIq dialIq, int retryCount,
+                            List<Jid> filterJigasis)
     {
         Jid from = dialIq.getFrom();
 
@@ -199,7 +217,7 @@ public class MeetExtensionsHandler
 
         if (conference == null)
         {
-            logger.debug("Mute error: room not found for JID: " + from);
+            logger.debug("Dial error: room not found for JID: " + from);
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(
                 XMPPError.Condition.item_not_found));
         }
@@ -223,8 +241,11 @@ public class MeetExtensionsHandler
         // Check if Jigasi is available
         Jid jigasiJid;
         JigasiDetector detector = conference.getServices().getJigasiDetector();
-        if (detector == null || (jigasiJid = detector.selectJigasi()) == null)
+        if (detector == null
+            || (jigasiJid = detector.selectJigasi(filterJigasis)) == null)
+        {
             jigasiJid = conference.getServices().getSipGateway();
+        }
 
         if (jigasiJid == null)
         {
@@ -247,10 +268,25 @@ public class MeetExtensionsHandler
 
             if (reply == null)
             {
-                return IQ.createErrorResponse(
-                    dialIq,
-                    XMPPError.getBuilder(
+                if (retryCount > 0)
+                {
+                    if (filterJigasis == null)
+                    {
+                        filterJigasis = new ArrayList<>();
+                    }
+                    filterJigasis.add(jigasiJid);
+
+                    // let's retry lowering the number of attempts
+                    return this.handleRayoIQ(
+                        dialIq, retryCount - 1, filterJigasis);
+                }
+                else
+                {
+                    return IQ.createErrorResponse(
+                        dialIq,
+                        XMPPError.getBuilder(
                             XMPPError.Condition.remote_server_timeout));
+                }
             }
 
             // Send Jigasi response back to the client
