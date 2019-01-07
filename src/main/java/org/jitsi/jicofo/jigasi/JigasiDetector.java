@@ -105,6 +105,8 @@ public class JigasiDetector
     /**
      * Selects the jigasi instance that is less loaded.
      *
+     * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
+     * available Jigasi instances. List that we do not want as a result.
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
