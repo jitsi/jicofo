@@ -161,6 +161,16 @@ public class JibriSession
     private final XmppConnection xmpp;
 
     /**
+     * The maximum amount of retries we'll attempt
+     */
+    private final int maxNumRetries;
+
+    /**
+     * How many times we've retried this request to another Jibri
+     */
+    private int numRetries = 0;
+
+    /**
      * Creates new {@link JibriSession} instance.
      * @param owner the session owner which will be notified about this session
      * state changes.
@@ -189,6 +199,7 @@ public class JibriSession
             JibriSession.Owner owner,
             EntityBareJid roomName,
             long pendingTimeout,
+            int maxNumRetries,
             XmppConnection connection,
             ScheduledExecutorService scheduledExecutor,
             JibriDetector jibriDetector,
@@ -206,6 +217,7 @@ public class JibriSession
         this.scheduledExecutor
             = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.pendingTimeout = pendingTimeout;
+        this.maxNumRetries = maxNumRetries;
         this.isSIP = isSIP;
         this.jibriDetector = jibriDetector;
         this.sipAddress = sipAddress;
@@ -476,7 +488,13 @@ public class JibriSession
         {
             // There was an error with the current Jibri, see if we can resume the session with another Jibri
             logger.info("Jibri failed, trying to fall back to another Jibri");
-            if (!start())
+            if (maxNumRetries >= 0 && numRetries >= maxNumRetries)
+            {
+                logger.info("Max amount of retries (" + maxNumRetries + ") reached, giving up");
+                owner.onSessionStateChanged(this, newStatus, failureReason);
+                cleanupSession();
+            }
+            else if (!start())
             {
                 logger.info("Failed to fall back to another Jibri, this session has now failed");
                 // Propagate up that the session has failed entirely.  We'll pass the original failure reason.
@@ -487,6 +505,7 @@ public class JibriSession
             {
                 // The fallback to another Jibri succeeded.
                 logger.info("Successfully resumed session with another Jibri");
+                numRetries++;
             }
         }
         else if (Status.OFF.equals(newStatus))

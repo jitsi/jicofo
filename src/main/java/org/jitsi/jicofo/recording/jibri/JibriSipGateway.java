@@ -132,6 +132,7 @@ public class JibriSipGateway
                         this,
                         conference.getRoomName(),
                         globalConfig.getJibriPendingTimeout(),
+                        globalConfig.getNumJibriRetries(),
                         connection,
                         scheduledExecutor,
                         jibriDetector,

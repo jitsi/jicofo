@@ -139,6 +139,7 @@ public class JibriRecorder
                     this,
                     conference.getRoomName(),
                     globalConfig.getJibriPendingTimeout(),
+                    globalConfig.getNumJibriRetries(),
                     connection,
                     scheduledExecutor,
                     jibriDetector,
