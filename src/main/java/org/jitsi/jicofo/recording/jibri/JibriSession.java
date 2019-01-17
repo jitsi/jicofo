@@ -581,7 +581,12 @@ public class JibriSession
                 {
                     logger.error(
                         nickname() + " pending timeout! " + roomName);
+                    // If a Jibri times out during the pending phase, it's likely hung or having
+                    // some issue.  We'll send a stop (so if/when it does 'recover', it knows to
+                    // stop) and simulate an error status (like we do in JibriEventHandler#handleEvent
+                    // when a Jibri goes offline) to trigger the fallback logic.
                     stop();
+                    handleJibriStatusUpdate(currentJibriJid, Status.OFF, FailureReason.ERROR);
                 }
             }
         }
