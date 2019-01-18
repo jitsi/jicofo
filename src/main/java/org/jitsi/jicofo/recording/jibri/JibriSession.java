@@ -274,7 +274,7 @@ public class JibriSession
                     stopRequest,
                     stanza -> {
                         JibriIq resp = (JibriIq)stanza;
-                        handleJibriStatusUpdate(currentJibriJid, resp.getStatus(), resp.getFailureReason());
+                        handleJibriStatusUpdate(resp.getFrom(), resp.getStatus(), resp.getFailureReason());
                     },
                     exception -> {
                         logger.error("Error sending stop iq: " + exception.toString());
@@ -408,7 +408,7 @@ public class JibriSession
         try
         {
             JibriIq result = (JibriIq)xmpp.sendPacketAndGetReply(startIq);
-            handleJibriStatusUpdate(jibriJid, result.getStatus(), result.getFailureReason());
+            handleJibriStatusUpdate(result.getFrom(), result.getStatus(), result.getFailureReason());
         }
         catch (OperationFailedException e)
         {
@@ -457,6 +457,12 @@ public class JibriSession
         jibriStatus = newStatus;
         logger.info("Got Jibri status update: Jibri " + jibriJid + " has status " + newStatus +
                 " and failure reason " + failureReason);
+        if (jibriJid != currentJibriJid)
+        {
+            logger.info("This status update is from " + jibriJid +
+                    "but the current Jibri is " + currentJibriJid + ", ignoring");
+            return;
+        }
         // First: if we're no longer pending (regardless of the Jibri's new state), make sure we stop
         // the pending timeout task
         if (pendingTimeoutTask != null && !Status.PENDING.equals(newStatus))
