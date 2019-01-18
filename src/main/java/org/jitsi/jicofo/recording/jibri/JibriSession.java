@@ -161,6 +161,16 @@ public class JibriSession
     private final XmppConnection xmpp;
 
     /**
+     * The maximum amount of retries we'll attempt
+     */
+    private final int maxNumRetries;
+
+    /**
+     * How many times we've retried this request to another Jibri
+     */
+    private int numRetries = 0;
+
+    /**
      * Creates new {@link JibriSession} instance.
      * @param owner the session owner which will be notified about this session
      * state changes.
@@ -189,6 +199,7 @@ public class JibriSession
             JibriSession.Owner owner,
             EntityBareJid roomName,
             long pendingTimeout,
+            int maxNumRetries,
             XmppConnection connection,
             ScheduledExecutorService scheduledExecutor,
             JibriDetector jibriDetector,
@@ -206,6 +217,7 @@ public class JibriSession
         this.scheduledExecutor
             = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.pendingTimeout = pendingTimeout;
+        this.maxNumRetries = maxNumRetries;
         this.isSIP = isSIP;
         this.jibriDetector = jibriDetector;
         this.sipAddress = sipAddress;
@@ -290,6 +302,7 @@ public class JibriSession
     {
         logger.info("Cleaning up current JibriSession");
         currentJibriJid = null;
+        numRetries = 0;
         try
         {
             jibriEventHandler.stop(FocusBundleActivator.bundleContext);
@@ -440,6 +453,26 @@ public class JibriSession
     }
 
     /**
+     * Check whether or not we should retry the current request to another Jibri
+     * @return true if we should retry again, false otherwise
+     */
+    private boolean shouldRetryRequest()
+    {
+        return (maxNumRetries < 0 || numRetries < maxNumRetries);
+    }
+
+    /**
+     * Retry the current request with another Jibri (if one is available)
+     * @return true if we were able to find another Jibri to retry the request with,
+     * false otherwise
+     */
+    private boolean retryRequestWithAnotherJibri()
+    {
+        numRetries++;
+        return start();
+    }
+
+    /**
      * Handle a Jibri status update (this could come from an IQ response, a new IQ from Jibri, an XMPP event, etc.).
      * This will handle:
      * 1) Retrying with a new Jibri in case of an error
@@ -474,19 +507,30 @@ public class JibriSession
         // Now, if there was a failure of any kind we'll try and find another Jibri to keep things going
         if (failureReason != null)
         {
-            // There was an error with the current Jibri, see if we can resume the session with another Jibri
-            logger.info("Jibri failed, trying to fall back to another Jibri");
-            if (!start())
+            // There was an error with the current Jibri, see if we should retry
+            if (shouldRetryRequest())
             {
-                logger.info("Failed to fall back to another Jibri, this session has now failed");
-                // Propagate up that the session has failed entirely.  We'll pass the original failure reason.
-                owner.onSessionStateChanged(this, newStatus, failureReason);
-                cleanupSession();
+                logger.info("Jibri failed, trying to fall back to another Jibri");
+                if (retryRequestWithAnotherJibri())
+                {
+                    // The fallback to another Jibri succeeded.
+                    logger.info("Successfully resumed session with another Jibri");
+                }
+                else
+                {
+                    logger.info("Failed to fall back to another Jibri, this session has now failed");
+                    // Propagate up that the session has failed entirely.  We'll pass the original failure reason.
+                    owner.onSessionStateChanged(this, newStatus, failureReason);
+                    cleanupSession();
+                }
             }
             else
             {
-                // The fallback to another Jibri succeeded.
-                logger.info("Successfully resumed session with another Jibri");
+                // The Jibri we tried failed and we've reached the maxmium amount of retries we've been
+                // configured to attempt, so we'll give up trying to handle this request.
+                logger.info("Jibri failed, but max amount of retries (" + maxNumRetries + ") reached, giving up");
+                owner.onSessionStateChanged(this, newStatus, failureReason);
+                cleanupSession();
             }
         }
         else if (Status.OFF.equals(newStatus))

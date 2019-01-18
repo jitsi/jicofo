@@ -77,6 +77,20 @@ public class JitsiMeetGlobalConfig
     private static final int JIBRI_DEFAULT_PENDING_TIMEOUT = 90;
 
     /**
+     * The name of the config property which specifies how many times
+     * we'll retry a given Jibri request before giving up.  Set to
+     * -1 to allow infinite retries.
+     */
+    public static final String NUM_JIBRI_RETRIES_PNAME
+            = "org.jitsi.jicofo.NUM_JIBRI_RETRIES";
+
+    /**
+     * The default value for {@link #NUM_JIBRI_RETRIES_PNAME}
+     */
+    private static final int DEFAULT_NUM_JIBRI_RETRIES = 5;
+
+
+    /**
      * Flag indicates whether auto owner feature is active. First participant to
      * join the room will become conference owner. When the owner leaves the
      * room next participant be selected as new owner.
@@ -89,6 +103,12 @@ public class JitsiMeetGlobalConfig
      * disabled in the current session.
      */
     private int jibriPendingTimeout;
+
+    /**
+     * How many attempts we'll make to retry a given Jibri request if the Jibri
+     * fails.
+     */
+    private int numJibriRetries;
 
     /**
      * Maximal amount of sources per media that can be advertised by
@@ -189,6 +209,17 @@ public class JitsiMeetGlobalConfig
             logger.warn("Jibri PENDING timeouts are disabled");
         }
 
+        numJibriRetries = configService.getInt(NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
+        if (numJibriRetries >= 0)
+        {
+            logger.info("Will attempt a maximum of " + numJibriRetries +
+                    " Jibri retries after failure");
+        }
+        else
+        {
+            logger.info("Will retry Jibri requests infinitely (if a Jibri is available)");
+        }
+
         singleParticipantTimeout
             = configService.getLong(
                     SINGLE_PARTICIPANT_TIMEOUT_CONFIG_PNAME,
@@ -243,6 +274,16 @@ public class JitsiMeetGlobalConfig
     public int getJibriPendingTimeout()
     {
         return jibriPendingTimeout;
+    }
+
+    /**
+     * Tells how many retry attempts we'll make for a Jibri request when a Jibri fails
+     * @return the amount of retry attempts we'll make for a Jibri request when
+     * a Jibri fails
+     */
+    public int getNumJibriRetries()
+    {
+        return numJibriRetries;
     }
 
     /**
