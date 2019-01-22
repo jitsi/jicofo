@@ -296,6 +296,25 @@ public interface ColibriConference
     void expireChannels(ColibriConferenceIQ channelInfo);
 
     /**
+     * Expires the channels described by given <tt>ColibriConferenceIQ</tt>.
+     * Optionally will wait for the response if <tt>synchronous</tt> is set to
+     * <tt>true</tt>.
+     *
+     * The method is deprecated to discourage it's usage. It's been added to
+     * mitigate temporarily JVB's out of order processing issue where it can
+     * happen that two packets regarding one conference will be processed not in
+     * the order in which they were received. The issues is to be fixed on
+     * the JVB side.
+     *
+     * @param channelInfo the <tt>ColibriConferenceIQ</tt> that contains
+     * information about the channel to be expired.
+     * @param synchronous if <tt>true</tt> the current thread must be blocked
+     * until the response packet is received.
+     */
+    @Deprecated
+    void expireChannels(ColibriConferenceIQ channelInfo, boolean synchronous);
+
+    /**
      * Expires all channels in current conference and this instance goes into
      * disposed state(like calling {@link #dispose()} method). It must not be
      * used anymore.
