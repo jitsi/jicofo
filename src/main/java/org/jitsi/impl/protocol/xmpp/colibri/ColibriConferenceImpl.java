@@ -553,10 +553,20 @@ public class ColibriConferenceImpl
     /**
      * {@inheritDoc}
      * </t>
-     * Does not block or wait for a response.
+     * Does not block nor wait for a response.
      */
     @Override
     public void expireChannels(ColibriConferenceIQ channelInfo)
+    {
+        expireChannels(channelInfo, false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void expireChannels(ColibriConferenceIQ channelInfo,
+                               boolean             synchronous)
     {
         ColibriConferenceIQ request;
 
@@ -579,7 +589,23 @@ public class ColibriConferenceImpl
         {
             logRequest("Expire peer channels", request);
 
-            connection.sendStanza(request);
+            if (synchronous)
+            {
+                // Send and wait for the RESULT packet
+                try
+                {
+                    connection.sendPacketAndGetReply(request);
+                }
+                catch (OperationFailedException e)
+                {
+                    logger.error("Channel expire error", e);
+                }
+            }
+            else
+            {
+                // Send and forget
+                connection.sendStanza(request);
+            }
 
             synchronized (stateEstimationSync)
             {
