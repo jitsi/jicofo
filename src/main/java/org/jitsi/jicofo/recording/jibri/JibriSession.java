@@ -490,10 +490,10 @@ public class JibriSession
         jibriStatus = newStatus;
         logger.info("Got Jibri status update: Jibri " + jibriJid + " has status " + newStatus +
                 " and failure reason " + failureReason);
-        if (jibriJid != currentJibriJid)
+        if (jibriJid.compareTo(currentJibriJid) != 0)
         {
             logger.info("This status update is from " + jibriJid +
-                    "but the current Jibri is " + currentJibriJid + ", ignoring");
+                    " but the current Jibri is " + currentJibriJid + ", ignoring");
             return;
         }
         // First: if we're no longer pending (regardless of the Jibri's new state), make sure we stop
