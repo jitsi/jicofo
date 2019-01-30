@@ -20,7 +20,7 @@ package org.jitsi.jicofo.recording.jibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq.*;
 import net.java.sip.communicator.service.protocol.*;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
@@ -483,13 +483,18 @@ public class JibriSession
      * @param failureReason the jibri's failure reason, if any (otherwise null)
      */
     private void handleJibriStatusUpdate(
-            Jid jibriJid,
+            @NotNull Jid jibriJid,
             JibriIq.Status newStatus,
             @Nullable JibriIq.FailureReason failureReason)
     {
         jibriStatus = newStatus;
         logger.info("Got Jibri status update: Jibri " + jibriJid + " has status " + newStatus +
-                " and failure reason " + failureReason);
+                " and failure reason " + failureReason + ", current Jibri jid is " + currentJibriJid);
+        if (currentJibriJid == null)
+        {
+            logger.info("Current session has already been cleaned up, ignoring");
+            return;
+        }
         if (jibriJid.compareTo(currentJibriJid) != 0)
         {
             logger.info("This status update is from " + jibriJid +
