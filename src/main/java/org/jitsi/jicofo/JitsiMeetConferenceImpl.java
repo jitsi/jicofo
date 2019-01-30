@@ -409,15 +409,29 @@ public class JitsiMeetConferenceImpl
 
         if (jibriSipGateway != null)
         {
-            jibriSipGateway.dispose();
-            jibriOpSet.removeJibri(jibriSipGateway);
+            try
+            {
+                jibriSipGateway.dispose();
+                jibriOpSet.removeJibri(jibriSipGateway);
+            }
+            catch (Exception e)
+            {
+                logger.error("jibriSipGateway.dispose error", e);
+            }
             jibriSipGateway = null;
         }
 
         if (jibriRecorder != null)
         {
-            jibriRecorder.dispose();
-            jibriOpSet.removeJibri(jibriRecorder);
+            try
+            {
+                jibriRecorder.dispose();
+                jibriOpSet.removeJibri(jibriRecorder);
+            }
+            catch (Exception e)
+            {
+                logger.error("jibriRecorder.dispose error", e);
+            }
             jibriRecorder = null;
         }
 
@@ -429,13 +443,34 @@ public class JitsiMeetConferenceImpl
 
         protocolProviderHandler.removeRegistrationListener(this);
 
-        disposeConference();
+        try
+        {
+            disposeConference();
+        }
+        catch (Exception e)
+        {
+            logger.error("disposeConference error", e);
+        }
 
-        leaveTheRoom();
+        try
+        {
+            leaveTheRoom();
+        }
+        catch (Exception e)
+        {
+            logger.error("leaveTheRoom error", e);
+        }
 
         if (jingle != null)
         {
-            jingle.terminateHandlersSessions(this);
+            try
+            {
+                jingle.terminateHandlersSessions(this);
+            }
+            catch (Exception e)
+            {
+                logger.error("terminateHandlersSessions error", e);
+            }
         }
 
         if (listener != null)
