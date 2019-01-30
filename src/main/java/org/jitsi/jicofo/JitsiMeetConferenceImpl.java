@@ -591,8 +591,11 @@ public class JitsiMeetConferenceImpl
             transcriberManager = null;
         }
 
-        chatRoom.leave();
+        if (chatRoom.isJoined()) {
+            chatRoom.leave();
+        }
 
+        chatRoom.setConference(null);
         chatRoom = null;
     }
 

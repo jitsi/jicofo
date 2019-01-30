@@ -165,7 +165,7 @@ public class ChatRoomImpl
      */
     public void setConference(JitsiMeetConference conference)
     {
-        if (this.conference != null)
+        if (this.conference != null && conference != null)
         {
             throw new IllegalStateException("Conference is already set!");
         }
@@ -329,11 +329,30 @@ public class ChatRoomImpl
         {
             try
             {
+                // FIXME smack4: there used to be a custom dispose() method
+                // if leave() fails, there might still be some listeners
+                // lingering around
                 muc.leave();
             }
             catch (NotConnectedException | InterruptedException e)
             {
                 logger.error("Failed to properly leave " + muc.toString(), e);
+            }
+            finally
+            {
+                if (presenceInterceptor != null)
+                {
+                    muc.removePresenceInterceptor(presenceInterceptor);
+                }
+
+                if (memberListener != null)
+                {
+                    muc.removeParticipantStatusListener(memberListener);
+                }
+
+                muc.removeParticipantListener(this);
+
+                opSet.removeRoom(this);
             }
         }
 
@@ -358,32 +377,6 @@ public class ChatRoomImpl
                 LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
                 reason,
                 alternateAddress);*/
-
-        if (presenceInterceptor != null)
-        {
-            muc.removePresenceInterceptor(presenceInterceptor);
-        }
-
-        if (memberListener != null)
-        {
-            muc.removeParticipantStatusListener(memberListener);
-        }
-
-        muc.removeParticipantListener(this);
-
-        try
-        {
-            // FIXME smack4: there used to be a custom dispose() method
-            // if leave() fails, there might still be some listeners lingering
-            // around
-            muc.leave();
-        }
-        catch (NotConnectedException | InterruptedException e)
-        {
-            logger.warn("Could not properly leave " + muc.toString(), e);
-        }
-
-        opSet.removeRoom(this);
     }
 
     @Override
