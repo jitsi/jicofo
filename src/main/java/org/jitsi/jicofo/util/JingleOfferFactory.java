@@ -102,12 +102,6 @@ public class JingleOfferFactory
         = "org.jitsi.jicofo.ENABLE_VIDEO_CONTENT_TYPE";
 
     /**
-     * The name of the property which enables the inclusion of the RID RTP
-     * header extension.
-     */
-    public static final String ENABLE_RID_PNAME = "org.jitsi.jicofo.ENABLE_RID";
-
-    /**
      * The VP8 payload type to include in the Jingle session-invite.
      */
     private final int VP8_PT;
@@ -160,11 +154,6 @@ public class JingleOfferFactory
     private final boolean enableVideoContentType;
 
     /**
-     * Whether to enable the RID header extension in created offers.
-     */
-    private final boolean enableRid;
-
-    /**
      * Ctor.
      *
      * @param cfg the {@link ConfigurationService} to pull config options from.
@@ -186,11 +175,8 @@ public class JingleOfferFactory
         // (and currently clients seem to not use it when abs-send-time is
         // available).
         enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
-
         enableVideoContentType = cfg != null
             && cfg.getBoolean(ENABLE_VIDEO_CONTENT_TYPE_PNAME, false);
-
-        enableRid = cfg != null && cfg.getBoolean(ENABLE_RID_PNAME, false);
     }
 
     /**
@@ -374,13 +360,10 @@ public class JingleOfferFactory
             rtpDesc.addExtmap(videoContentType);
         }
 
-        if (enableRid)
-        {
-            RTPHdrExtPacketExtension rtpStreamId = new RTPHdrExtPacketExtension();
-            rtpStreamId.setID("4");
-            rtpStreamId.setURI(URI.create(RTPExtension.RTP_STREAM_ID_URN));
-            rtpDesc.addExtmap(rtpStreamId);
-        }
+        RTPHdrExtPacketExtension rtpStreamId = new RTPHdrExtPacketExtension();
+        rtpStreamId.setID("4");
+        rtpStreamId.setURI(URI.create(RTPExtension.RTP_STREAM_ID_URN));
+        rtpDesc.addExtmap(rtpStreamId);
 
         // a=rtpmap:100 VP8/90000
         PayloadTypePacketExtension vp8
