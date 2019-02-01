@@ -95,13 +95,6 @@ public class JingleOfferFactory
     public static final String ENABLE_TOF_PNAME = "org.jitsi.jicofo.ENABLE_TOF";
 
     /**
-     * The name of the property which enables the inclusion of the video content
-     * type RTP header extension.
-     */
-    public static final String ENABLE_VIDEO_CONTENT_TYPE_PNAME
-        = "org.jitsi.jicofo.ENABLE_VIDEO_CONTENT_TYPE";
-
-    /**
      * The VP8 payload type to include in the Jingle session-invite.
      */
     private final int VP8_PT;
@@ -148,12 +141,6 @@ public class JingleOfferFactory
     private final boolean enableTof;
 
     /**
-     * Whether to enable the video content type header extension in created
-     * offers.
-     */
-    private final boolean enableVideoContentType;
-
-    /**
      * Ctor.
      *
      * @param cfg the {@link ConfigurationService} to pull config options from.
@@ -175,8 +162,6 @@ public class JingleOfferFactory
         // (and currently clients seem to not use it when abs-send-time is
         // available).
         enableTof = cfg != null && cfg.getBoolean(ENABLE_TOF_PNAME, false);
-        enableVideoContentType = cfg != null
-            && cfg.getBoolean(ENABLE_VIDEO_CONTENT_TYPE_PNAME, false);
     }
 
     /**
@@ -348,16 +333,6 @@ public class JingleOfferFactory
             framemarking.setID("9");
             framemarking.setURI(URI.create(RTPExtension.FRAME_MARKING_URN));
             rtpDesc.addExtmap(framemarking);
-        }
-
-        if (enableVideoContentType)
-        {
-            // http://www.webrtc.org/experiments/rtp-hdrext/video-content-type
-            RTPHdrExtPacketExtension videoContentType
-                = new RTPHdrExtPacketExtension();
-            videoContentType.setID("7");
-            videoContentType.setURI(URI.create(RTPExtension.VIDEO_CONTENT_TYPE_URN));
-            rtpDesc.addExtmap(videoContentType);
         }
 
         RTPHdrExtPacketExtension rtpStreamId = new RTPHdrExtPacketExtension();
