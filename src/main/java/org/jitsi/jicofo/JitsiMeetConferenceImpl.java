@@ -1532,26 +1532,23 @@ public class JitsiMeetConferenceImpl
                         BridgeSessionPacketExtension.ELEMENT_NAME,
                         BridgeSessionPacketExtension.NAMESPACE);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
+        BridgeSession bridgeSession = findBridgeSession(participant);
 
-        synchronized (participantLock)
+        if (bridgeSession != null)
         {
-            BridgeSession bridgeSession = findBridgeSession(participant);
-            if (bridgeSession != null)
-            {
-                logger.info(String.format(
-                        "Received ICE failed notification from %s, session: %s",
-                        address,
-                        bridgeSession));
-                reInviteParticipant(participant);
-            }
-            else
-            {
-                logger.info(String.format(
-                        "Ignored ICE failed notification for invalid session,"
-                            + " participant: %s, bridge session ID: %s",
-                        address,
-                        bridgeSessionId));
-            }
+            logger.info(String.format(
+                    "Received ICE failed notification from %s, session: %s",
+                    address,
+                    bridgeSession));
+            reInviteParticipant(participant);
+        }
+        else
+        {
+            logger.info(String.format(
+                    "Ignored ICE failed notification for invalid session,"
+                        + " participant: %s, bridge session ID: %s",
+                    address,
+                    bridgeSessionId));
         }
 
         return null;
