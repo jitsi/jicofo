@@ -2603,7 +2603,7 @@ public class JitsiMeetConferenceImpl
          */
         final String id
             = JitsiMeetConferenceImpl.this.id
-                    + "_" +Integer.toHexString(RANDOM.nextInt(0x1_0000));
+                    + "_" +Integer.toHexString(RANDOM.nextInt(0x1_000000));
 
         /**
          * The list of participants in the conference which use this
