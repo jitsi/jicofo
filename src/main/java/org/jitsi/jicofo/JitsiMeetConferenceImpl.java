@@ -51,6 +51,18 @@ import java.util.stream.*;
  * participants, as well as the COLIBRI session with the jitsi-videobridge
  * instances used for the conference.
  *
+ * A note on synchronization: this class uses a lot of 'synchronized' blocks,
+ * on 4 different objects ({@link #bridges}, {@link #participantLock},
+ * {@code this} and {@link BridgeSession#octoParticipant}). At the time of this
+ * writing it seems that multiple locks are acquired only in the following
+ * orders:
+ * {@code participantsLock} -> {@code bridges}, and
+ * {@code participantsLock} -> {@code this} -> {@code bridges}.
+ *
+ * This seems safe, but it is hard to maintain this way, and we should
+ * re-factor to simplify.
+ *
+ *
  * @author Pawel Domas
  * @author Boris Grozev
  */
@@ -151,6 +163,11 @@ public class JitsiMeetConferenceImpl
 
     /**
      * This lock is used to synchronise write access to {@link #participants}.
+     *
+     * WARNING: To avoid deadlocks we must make sure that any code paths that
+     * lock both {@link #bridges} and {@link #participantLock} does so in the
+     * correct order. The lock on {@link #participantLock} must be acquired
+     * first.
      */
     private final Object participantLock = new Object();
 
@@ -228,6 +245,12 @@ public class JitsiMeetConferenceImpl
 
     /**
      * The list of {@link BridgeSession} currently in use by this conference.
+     *
+     * WARNING: To avoid deadlocks we must make sure that any code paths that
+     * lock both {@link #bridges} and {@link #participantLock} does so in the
+     * correct order. The lock on {@link #participantLock} must be acquired
+     * first.
+     *
      */
     private final List<BridgeSession> bridges = new LinkedList<>();
 
@@ -2273,6 +2296,8 @@ public class JitsiMeetConferenceImpl
      */
     void onBridgeDown(Jid bridgeJid)
     {
+        List<Participant> participantsToReinvite = Collections.EMPTY_LIST;
+
         synchronized (bridges)
         {
             BridgeSession bridgeSession = findBridgeSession(bridgeJid);
@@ -2282,8 +2307,7 @@ public class JitsiMeetConferenceImpl
 
                 // Note: the Jingle sessions are still alive, we'll just
                 // (try to) move to a new bridge and send transport-replace.
-                List<Participant> participantsToReinvite
-                    = bridgeSession.terminateAll();
+                participantsToReinvite = bridgeSession.terminateAll();
 
                 bridges.remove(bridgeSession);
                 setConferenceProperty(
@@ -2291,9 +2315,12 @@ public class JitsiMeetConferenceImpl
                     Integer.toString(bridges.size()));
 
                 updateOctoRelays();
-
-                reInviteParticipants(participantsToReinvite);
             }
+        }
+
+        if (!participantsToReinvite.isEmpty())
+        {
+            reInviteParticipants(participantsToReinvite);
         }
     }
 
@@ -2707,7 +2734,6 @@ public class JitsiMeetConferenceImpl
         public boolean terminate(AbstractParticipant participant,
                                  boolean syncExpire)
         {
-            //TODO synchronize?
             boolean octo = participant == this.octoParticipant;
             boolean removed = octo || participants.remove(participant);
             if (removed)
