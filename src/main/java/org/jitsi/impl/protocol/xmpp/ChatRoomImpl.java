@@ -325,7 +325,7 @@ public class ChatRoomImpl
     public void leave()
     {
         XMPPConnection connection = opSet.getConnection();
-        if (connection != null && connection.isConnected())
+        if (connection != null)
         {
             try
             {
@@ -336,7 +336,14 @@ public class ChatRoomImpl
             }
             catch (NotConnectedException | InterruptedException e)
             {
-                logger.error("Failed to properly leave " + muc.toString(), e);
+                // when the connection is not connected and
+                // we get NotConnectedException, this is expected (skip log)
+                if (connection.isConnected()
+                    || e instanceof InterruptedException)
+                {
+                    logger.error(
+                        "Failed to properly leave " + muc.toString(), e);
+                }
             }
             finally
             {
