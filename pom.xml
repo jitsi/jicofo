@@ -20,8 +20,8 @@
   <properties>
     <assembly.skipAssembly>true</assembly.skipAssembly>
     <jetty.version>8.1.16.v20140903</jetty.version>
-    <smack.version>4.2.2-b1c107f</smack.version>
-    <jitsi-desktop.version>2.13.b72220a</jitsi-desktop.version>
+    <smack.version>4.2.4-47d17fc</smack.version>
+    <jitsi-desktop.version>2.13.f4d340d</jitsi-desktop.version>
   </properties>
 
   <dependencies>
@@ -71,6 +71,12 @@
       <version>${smack.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.igniterealtime.smack</groupId>
+      <artifactId>smack-tcp</artifactId>
+      <version>${smack.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.igniterealtime.whack</groupId>
       <artifactId>core</artifactId>
       <version>2.0.1</version>
@@ -85,7 +91,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.1-20180710.162527-5</version>
+      <version>1.1-20190329.151034-12</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -134,14 +140,18 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>libjitsi</artifactId>
-      <version>1.0-20190130.211714-376</version>
+      <artifactId>jitsi-utils</artifactId>
+      <version>1.0-20190329.111334-6</version>
     </dependency>
-    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>ice4j</artifactId>
       <version>2.0.0-20181005.221549-11</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>libjitsi</artifactId>
+      <version>1.0-20190329.124239-380</version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
@@ -176,7 +186,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.1-20181204.211501-94</version>
+      <version>1.1-20190329.155031-110</version>
       <scope>test</scope>
     </dependency>
     <dependency>
