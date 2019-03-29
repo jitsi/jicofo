@@ -25,6 +25,7 @@ import net.java.sip.communicator.service.shutdown.*;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.util.*;
 
 import org.junit.*;
@@ -73,8 +74,7 @@ public class ShutdownTest
 
         focusComponent = MockMainMethodActivator.getFocusComponent();
 
-        conf1 = TestConference.allocate(
-        osgi.bc, serverName, roomName);
+        conf1 = TestConference.allocate(osgi.bc, serverName, roomName);
 
         conf1User1 = new MockParticipant("C1U1");
         conf1User2 = new MockParticipant("C1U2");
