@@ -18,7 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 
 import org.jivesoftware.smack.provider.*;
 

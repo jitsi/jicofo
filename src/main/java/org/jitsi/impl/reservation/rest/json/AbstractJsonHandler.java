@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.reservation.rest.json;
 
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 import org.json.simple.parser.*;
 
 import java.io.*;

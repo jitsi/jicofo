@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;

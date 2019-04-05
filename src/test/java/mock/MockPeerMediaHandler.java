@@ -20,6 +20,7 @@ package mock;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.media.*;
 import org.jitsi.service.neomedia.event.*;
+import org.jitsi.utils.event.*;
 
 /**
  * @author Pawel Domas

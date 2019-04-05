@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
@@ -31,7 +30,8 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
+import org.jitsi.utils.logging.*;
 
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;

@@ -18,13 +18,13 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
+import org.jitsi.utils.logging.Logger;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.pubsub.*;
 import org.jivesoftware.smackx.pubsub.PubSubException.NotAPubSubNodeException;

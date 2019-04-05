@@ -18,7 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.extensions;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 
 /**
  * Packet extension included in Jitsi-Meet MUC presence to signal extra

@@ -25,7 +25,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.util.Logger;
+import org.jitsi.utils.logging.Logger;
 
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
