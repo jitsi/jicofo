@@ -21,8 +21,8 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.util.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.logging.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;

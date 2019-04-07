@@ -18,11 +18,11 @@
 package org.jitsi.impl.reservation.rest;
 
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
+import org.jitsi.utils.logging.Logger;
 import org.osgi.framework.*;
 
 /**

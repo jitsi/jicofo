@@ -21,7 +21,7 @@ import org.jitsi.cmd.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 
 /**
  * Provides the <tt>main</tt> entry point of Jitsi Meet conference focus.

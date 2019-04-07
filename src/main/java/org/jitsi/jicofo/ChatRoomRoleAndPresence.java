@@ -24,7 +24,7 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.Logger;
+import org.jitsi.utils.logging.Logger;
 import org.jitsi.eventadmin.*;
 import org.jxmpp.jid.*;
 

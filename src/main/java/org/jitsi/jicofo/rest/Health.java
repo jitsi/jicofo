@@ -20,7 +20,6 @@ package org.jitsi.jicofo.rest;
 import java.io.*;
 import java.lang.management.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.logging.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -28,7 +27,7 @@ import javax.servlet.http.*;
 import org.eclipse.jetty.server.*;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.util.Logger;
+import org.jitsi.utils.logging.Logger;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;

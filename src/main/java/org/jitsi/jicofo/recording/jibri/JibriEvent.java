@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;

@@ -17,11 +17,11 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.Logger;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 

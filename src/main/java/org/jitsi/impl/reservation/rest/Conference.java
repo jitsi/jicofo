@@ -18,7 +18,7 @@
 package org.jitsi.impl.reservation.rest;
 
 import org.jitsi.impl.reservation.rest.json.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 

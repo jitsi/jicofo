@@ -21,7 +21,7 @@ import java.util.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.logging.*;
 
 /**
  * Represents an entity in a {@link JitsiMeetConferenceImpl} which has

@@ -20,7 +20,6 @@ package org.jitsi.impl.protocol.xmpp.colibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
@@ -30,7 +29,8 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
+import org.jitsi.utils.logging.Logger;
 import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;

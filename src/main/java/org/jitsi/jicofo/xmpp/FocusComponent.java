@@ -19,7 +19,6 @@ package org.jitsi.jicofo.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.Logger;
 
 import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
@@ -27,7 +26,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.meet.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.component.*;
 import org.jitsi.xmpp.util.*;
 

@@ -20,7 +20,8 @@ package org.jitsi.jicofo.recording.jibri;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.util.*;
+import org.jitsi.utils.*;
+import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
