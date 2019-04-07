@@ -17,7 +17,7 @@
     <jetty.version>8.1.16.v20140903</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.2.4-47d17fc</smack.version>
-    <jitsi-desktop.version>2.13.f4d340d</jitsi-desktop.version>
+    <jitsi-desktop.version>2.13.2bc6ccf</jitsi-desktop.version>
   </properties>
 
   <dependencies>
@@ -102,7 +102,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.1-20190329.151034-12</version>
+      <version>1.1-20190407.140606-13</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
