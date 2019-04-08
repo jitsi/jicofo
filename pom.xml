@@ -17,7 +17,7 @@
     <jetty.version>8.1.16.v20140903</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.2.4-47d17fc</smack.version>
-    <jitsi-desktop.version>2.13.ca86bac</jitsi-desktop.version>
+    <jitsi-desktop.version>2.13.b5f2aa0</jitsi-desktop.version>
   </properties>
 
   <dependencies>
