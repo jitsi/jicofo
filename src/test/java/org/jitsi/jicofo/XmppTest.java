@@ -19,7 +19,7 @@ package org.jitsi.jicofo;
 
 import mock.*;
 
-import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.util.*;
 

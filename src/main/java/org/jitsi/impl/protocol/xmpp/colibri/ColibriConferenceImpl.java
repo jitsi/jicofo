@@ -17,8 +17,8 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
@@ -890,7 +890,8 @@ public class ColibriConferenceImpl
             requestChannel.setID(channel.getID());
 
             requestChannel.setDirection(
-                    mute ? MediaDirection.SENDONLY : MediaDirection.SENDRECV);
+                    mute ? MediaDirection.SENDONLY.toString()
+                        : MediaDirection.SENDRECV.toString());
 
             requestContent.addChannel(requestChannel);
         }

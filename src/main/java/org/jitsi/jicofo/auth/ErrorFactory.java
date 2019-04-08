@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.auth;
 
-import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jivesoftware.smack.packet.*;
 

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.reservation;
 
-import org.jitsi.impl.protocol.xmpp.extensions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jxmpp.jid.*;
@@ -66,7 +65,7 @@ public interface ReservationSystem
      * @return <tt>Result</tt> with code {@link #RESULT_OK} if conference has
      * been created successfully or another code with error details if something
      * went wrong. Error details will be returned in XMPP error IQ containing
-     * {@link ReservationErrorPacketExt}.
+     * {@link org.jitsi.xmpp.extensions.jitsimeet.ReservationErrorPacketExt}.
      */
     public Result createConference(String owner, EntityBareJid name);
 

@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.discovery;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
+import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
@@ -39,7 +39,7 @@ public class DiscoveryUtil
     /**
      * The logger
      */
-    private final static Logger logger 
+    private final static Logger logger
         = Logger.getLogger(DiscoveryUtil.class);
 
     /**
@@ -48,25 +48,25 @@ public class DiscoveryUtil
     private static ArrayList<String> defaultFeatures;
 
     /**
-     * Audio RTP feature name.  
+     * Audio RTP feature name.
      */
     public final static String FEATURE_AUDIO
             = "urn:xmpp:jingle:apps:rtp:audio";
 
     /**
-     * Video RTP feature name.  
+     * Video RTP feature name.
      */
     public final static String FEATURE_VIDEO
             = "urn:xmpp:jingle:apps:rtp:video";
 
     /**
-     * ICE feature name.  
+     * ICE feature name.
      */
     public final static String FEATURE_ICE
             = "urn:xmpp:jingle:transports:ice-udp:1";
 
     /**
-     * DTLS/SCTP feature name.  
+     * DTLS/SCTP feature name.
      */
     public final static String FEATURE_SCTP
             = "urn:xmpp:jingle:transports:dtls-sctp:1";
@@ -83,12 +83,12 @@ public class DiscoveryUtil
     public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
 
     /**
-     * RTCP mux feature name.  
+     * RTCP mux feature name.
      */
     public final static String FEATURE_RTCP_MUX = "urn:ietf:rfc:5761";
 
     /**
-     * RTP bundle feature name. 
+     * RTP bundle feature name.
      */
     public final static String FEATURE_RTP_BUNDLE = "urn:ietf:rfc:5888";
 
@@ -114,7 +114,7 @@ public class DiscoveryUtil
         };
 
     /**
-     * Gets the list of features supported by participant. If we fail to 
+     * Gets the list of features supported by participant. If we fail to
      * obtain it due to network failure default feature list is returned.
      * @param protocolProvider protocol provider service instance that will
      *        be used for discovery.
@@ -123,7 +123,7 @@ public class DiscoveryUtil
     public static List<String> discoverParticipantFeatures
         (ProtocolProviderService protocolProvider, EntityFullJid address)
     {
-        OperationSetSimpleCaps disco 
+        OperationSetSimpleCaps disco
             = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
         if (disco == null)
         {
@@ -131,15 +131,15 @@ public class DiscoveryUtil
                 "Service discovery not supported by " + protocolProvider);
             return getDefaultParticipantFeatureSet();
         }
-        
+
         // Discover participant feature set
         List<String> participantFeatures = disco.getFeatures(address);
         if (participantFeatures == null)
         {
             logger.error(
-                "Failed to discover features for "+ address 
+                "Failed to discover features for "+ address
                         + " assuming default feature set.");
-            
+
             return getDefaultParticipantFeatureSet();
         }
 

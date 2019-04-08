@@ -19,7 +19,7 @@ package org.jitsi.jicofo.auth;
 
 import mock.*;
 import net.java.sip.communicator.util.*;
-import org.jitsi.impl.protocol.xmpp.extensions.*;
+import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jivesoftware.smack.packet.*;

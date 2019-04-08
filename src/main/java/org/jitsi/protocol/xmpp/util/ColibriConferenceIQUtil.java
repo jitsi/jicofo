@@ -17,7 +17,7 @@
  */
 package org.jitsi.protocol.xmpp.util;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.colibri.*;
 
 /**
  * Utility operations for {@link ColibriConferenceIQUtil}.
