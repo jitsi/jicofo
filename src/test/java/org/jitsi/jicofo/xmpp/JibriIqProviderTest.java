@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import org.jitsi.xmpp.extensions.jibri.*;
 
 import org.jitsi.xmpp.util.*;
 

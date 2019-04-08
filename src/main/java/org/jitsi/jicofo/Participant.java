@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
@@ -97,7 +97,7 @@ public class Participant
         = new HashMap<>();
 
     /**
-     * The list of XMPP features supported by this participant. 
+     * The list of XMPP features supported by this participant.
      */
     private List<String> supportedFeatures = new ArrayList<>();
 
@@ -214,11 +214,11 @@ public class Participant
     }
 
     /**
-     * FIXME: we need to remove "is SIP gateway code", but there are still 
+     * FIXME: we need to remove "is SIP gateway code", but there are still
      * situations where we need to know whether given peer is a human or not.
      * For example when we close browser window and only SIP gateway stays
      * we should destroy the conference and close SIP connection.
-     *  
+     *
      * Returns <tt>true</tt> if this participant belongs to SIP gateway service.
      */
     public boolean isSipGateway()
@@ -251,7 +251,7 @@ public class Participant
     }
 
     /**
-     * Returns <tt>true</tt> if this peer supports DTLS/SCTP. 
+     * Returns <tt>true</tt> if this peer supports DTLS/SCTP.
      */
     public boolean hasSctpSupport()
     {
@@ -260,7 +260,7 @@ public class Participant
 
     /**
      * Sets the list of features supported by this participant.
-     * @see DiscoveryUtil for the list of predefined feature constants. 
+     * @see DiscoveryUtil for the list of predefined feature constants.
      * @param supportedFeatures the list of features to set.
      */
     public void setSupportedFeatures(List<String> supportedFeatures)

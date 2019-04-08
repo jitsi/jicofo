@@ -17,7 +17,7 @@
     <jetty.version>8.1.16.v20140903</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.2.4-47d17fc</smack.version>
-    <jitsi-desktop.version>2.13.2bc6ccf</jitsi-desktop.version>
+    <jitsi-desktop.version>2.13.ca86bac</jitsi-desktop.version>
   </properties>
 
   <dependencies>
@@ -156,6 +156,12 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>jitsi-xmpp-extensions</artifactId>
+      <version>1.0-20190404.082724-1</version>
+    </dependency>
+    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>ice4j</artifactId>
       <version>2.0.0-20181005.221549-11</version>
     </dependency>
@@ -172,6 +178,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jdk14</artifactId>
+      <version>1.7.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
       <version>1.7.7</version>
     </dependency>
     <dependency>
@@ -202,7 +213,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.1-20190407.144758-111</version>
+      <version>1.1-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>

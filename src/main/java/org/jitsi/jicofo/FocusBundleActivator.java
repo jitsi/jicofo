@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.caps.*;
+import net.java.sip.communicator.impl.protocol.jabber.caps.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.util.*;

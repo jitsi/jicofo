@@ -17,8 +17,8 @@
  */
 package mock.jvb;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.colibri.*;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.health.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.neomedia.rtp.*;

@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.*;
+import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
