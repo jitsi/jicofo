@@ -133,6 +133,8 @@ public class XmppProtocolProvider
     {
         this.jabberAccountID = (JabberAccountID) accountID;
 
+        ScServiceDiscoveryManager.initIdentity();
+
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
 
@@ -242,20 +244,7 @@ public class XmppProtocolProvider
         // FIXME we could make retry interval configurable, but we do not have
         // control over retries executed by smack after first connect, so...
         connectRetry.runRetryingTask(
-            new SimpleRetryTask(0, 5000L, true, getConnectCallable()));
-    }
-
-    private Callable<Boolean> getConnectCallable()
-    {
-        return new Callable<Boolean>()
-        {
-            @Override
-            public Boolean call()
-                throws Exception
-            {
-                return doConnect();
-            }
-        };
+            new SimpleRetryTask(0, 5000L, true, this::doConnect));
     }
 
     /**
@@ -283,6 +272,7 @@ public class XmppProtocolProvider
             discoInfoManager
                 = new ScServiceDiscoveryManager(
                     XmppProtocolProvider.this,
+                    FocusBundleActivator.getConfigService(),
                     connection,
                     new String[]{},
                     new String[]{},
