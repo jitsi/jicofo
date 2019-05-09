@@ -9,6 +9,6 @@ Homepage: https://jitsi.org/meet
 
 Package: jicofo
 Architecture: any
-Depends: ${misc:Depends}, openjdk-8-jre-headless
+Depends: ${misc:Depends}, openjdk-8-jre-headless | openjdk-11-jre-headless
 Description: JItsi Meet COnference FOcus
  Jicofo is a conference focus for Jitsi Meet application.
