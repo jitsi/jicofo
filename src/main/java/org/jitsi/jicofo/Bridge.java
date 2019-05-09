@@ -52,6 +52,24 @@ class Bridge
     private static final String STAT_NAME_VIDEO_STREAMS = "videostreams";
 
     /**
+     * The name of the stat used by jitsi-videobridge to indicate the current
+     * upload bitrate in Kbps.
+     * video streams. This should match
+     * {@code VideobridgeStatistics.BITRATE_UPLOAD}, but is defined separately
+     * to avoid depending on the {@code jitsi-videobridge} maven package.
+     */
+    private static final String STAT_NAME_BITRATE_UP = "bit_rate_upload";
+
+    /**
+     * The name of the stat used by jitsi-videobridge to indicate the current
+     * download bitrate in Kbps.
+     * video streams. This should match
+     * {@code VideobridgeStatistics.BITRATE_DOWNLOAD}, but is defined separately
+     * to avoid depending on the {@code jitsi-videobridge} maven package.
+     */
+    private static final String STAT_NAME_BITRATE_DOWN = "bit_rate_download";
+
+    /**
      * The name of the stat used by jitsi-videobridge to indicate its region.
      * This should match {@code VideobridgeStatistics.REGION}, but is defined
      * separately to avoid depending on the {@code jitsi-videobridge} maven
@@ -100,6 +118,11 @@ class Bridge
      * arrives.
      */
     private int videoStreamCountDiff = 0;
+
+    /**
+     * The last reported bitrate in Kbps.
+     */
+    private int lastReportedBitrateKbps = 0;
 
     /**
      * Holds bridge version (if known - not all bridge version are capable of
@@ -152,6 +175,13 @@ class Bridge
             // We have extra logic for keeping track of the number of video
             // streams.
             setVideoStreamCount(videoStreamCount);
+        }
+
+        Integer bitrateUpKbps = stats.getValueAsInt(STAT_NAME_BITRATE_UP);
+        Integer bitrateDownKbps = stats.getValueAsInt(STAT_NAME_BITRATE_DOWN);
+        if (bitrateUpKbps != null && bitrateDownKbps != null)
+        {
+            lastReportedBitrateKbps = bitrateDownKbps + bitrateUpKbps;
         }
 
         setIsOperational(!Boolean.valueOf(stats.getValueAsString(
@@ -249,7 +279,8 @@ class Bridge
     }
 
     /**
-     * The least value is returned the least the bridge is loaded.
+     * The least value is returned the least the bridge is loaded. Currently
+     * we use the bitrate to estimate load.
      * <p>
      * {@inheritDoc}
      */
@@ -268,8 +299,7 @@ class Bridge
             return 1;
         }
 
-        return this.getEstimatedVideoStreamCount()
-            - o.getEstimatedVideoStreamCount();
+        return this.lastReportedBitrateKbps - o.lastReportedBitrateKbps;
     }
 
     private int getEstimatedVideoStreamCount()
