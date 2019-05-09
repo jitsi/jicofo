@@ -295,13 +295,16 @@ public class BridgeSelectorTest
             BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
     }
 
-    ExtensionElement createJvbStats(int videoStreamCount)
+    ExtensionElement createJvbStats(int bitrate)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                VideobridgeStatistics.VIDEOSTREAMS, "" + videoStreamCount));
+                VideobridgeStatistics.BITRATE_DOWNLOAD, bitrate));
+        statsExtension.addStat(
+                new ColibriStatsExtension.Stat(
+                VideobridgeStatistics.BITRATE_UPLOAD, bitrate));
 
         return statsExtension;
     }
