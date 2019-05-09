@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import net.java.sip.communicator.impl.configuration.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
-
-import java.lang.reflect.*;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.
@@ -112,7 +110,7 @@ public class OSGiHandler
         JicofoBundleConfig jicofoBundles = new JicofoBundleConfig();
         jicofoBundles.setUseMockProtocols(true);
         OSGi.setBundleConfig(jicofoBundles);
-        OSGi.setClassLoader(getPlatformClassLoader());
+        OSGi.setClassLoader(ClassLoader.getSystemClassLoader());
 
         OSGi.start(bundleActivator);
 
@@ -159,24 +157,6 @@ public class OSGiHandler
     public BundleContext bc()
     {
         return bc;
-    }
-
-    private ClassLoader getPlatformClassLoader() {
-        ClassLoader cl;
-        //JDK 9
-        try
-        {
-            Method getPlatformClassLoader =
-                    ClassLoader.class.getMethod("getPlatformClassLoader");
-            cl = (ClassLoader) getPlatformClassLoader.invoke(null);
-        }
-        catch (NoSuchMethodException | IllegalAccessException |
-                InvocationTargetException t)
-        {
-            // pre-JDK9
-            cl = ClassLoader.getSystemClassLoader();
-        }
-        return cl;
     }
 
     public boolean isDeadlocked()
