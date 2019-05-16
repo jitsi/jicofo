@@ -1156,7 +1156,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        chatRoom.destroy(reason, null);
+        chatRoom.destroy(reason, getFocusJid().asEntityBareJidString());
     }
 
     /**
