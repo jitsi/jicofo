@@ -355,7 +355,8 @@ public class RESTReservations
                     // Convert duration to millis
                     duration = duration * 1000L;
                     long now = System.currentTimeMillis();
-                    if (now - startTime > duration - EXPIRE_INTERVAL)
+                    if (duration > 0 &&
+                        now - startTime > duration - EXPIRE_INTERVAL)
                     {
                         // Destroy the conference
                         EntityBareJid mucRoomName = conference.getMucRoomName();
