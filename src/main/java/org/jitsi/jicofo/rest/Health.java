@@ -56,6 +56,17 @@ public class Health
     private static final String LIST_JVB_PARAM_NAME = "list_jvb";
 
     /**
+     * The name of the parameter that triggers the count of all running
+     * conferences in health check response;
+     */
+    private static final String COUNT_PARAM_NAME = "count";
+
+    /**
+     * The name of the parameter that destroy the specified room.
+     */
+    private static final String DESTROY_ROOM_PARAM_NAME = "destroy_room";
+
+    /**
      * The {@code Logger} utilized by the {@code Health} class to print
      * debug-related information.
      */
@@ -190,6 +201,9 @@ public class Health
             // Callers may ask us to return the list of healthy bridges that
             // Jicofo knows about.
             String listJvbParam = request.getParameter(LIST_JVB_PARAM_NAME);
+            String countParam = request.getParameter(COUNT_PARAM_NAME);
+            String destroyRoomParam =
+                    request.getParameter(DESTROY_ROOM_PARAM_NAME);
 
             if (Boolean.parseBoolean(listJvbParam))
             {
@@ -213,6 +227,20 @@ public class Health
                     jsonRoot.put("jvbs", activeJVBs);
                     response.getWriter().append(jsonRoot.toJSONString());
                 }
+            }
+            else if (Boolean.parseBoolean(countParam))
+            {
+                int conferenceCount = focusManager.getConferenceCount();
+                response.getWriter().append(String.valueOf(conferenceCount));
+            }
+            else if (destroyRoomParam != null && !destroyRoomParam.isEmpty())
+            {
+                JitsiMeetServices services = focusManager.getJitsiMeetServices();
+                EntityBareJid roomJid = JidCreate.entityBareFrom(
+                        Localpart.from(destroyRoomParam),
+                        services.getMucService().getDomain());
+                String reason = request.getParameter("reason");
+                focusManager.destroyConference(roomJid, reason);
             }
 
             //now check Jicofo's health .. unless if we just did that in which
