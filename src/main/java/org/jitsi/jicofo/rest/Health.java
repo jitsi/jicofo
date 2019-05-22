@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.rest;
 
 import java.io.*;
-import java.lang.management.*;
 import java.util.*;
 import java.util.logging.*;
 import javax.servlet.*;
@@ -27,6 +26,7 @@ import javax.servlet.http.*;
 import org.eclipse.jetty.server.*;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.logging.Logger;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -95,7 +95,7 @@ public class Health
      * of
      * @throws Exception if an error occurs while checking the health (status)
      * of {@code focusManager} or the check determines that {@code focusManager}
-     * is not healthy 
+     * is not healthy
      */
     private static void check(FocusManager focusManager)
         throws Exception
@@ -328,58 +328,12 @@ public class Health
 
             // this monitoring was not stopped before the bad interval
             // this means it takes too much time
-            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-            ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(
-                    threadMXBean.getAllThreadIds(), 100);
-            StringBuilder dbg = new StringBuilder();
-            for (ThreadInfo threadInfo : threadInfos)
-            {
-                dbg.append('"').append(threadInfo.getThreadName()).append('"');
+            String threadDump = ThreadDump.takeThreadDump();
 
-                Thread.State state = threadInfo.getThreadState();
-                dbg.append("\n   java.lang.Thread.State: ").append(state);
-
-                if (threadInfo.getLockName() != null)
-                {
-                    dbg.append(" on ").append(threadInfo.getLockName());
-                }
-                dbg.append('\n');
-
-                StackTraceElement[] stackTraceElements
-                    = threadInfo.getStackTrace();
-                for (int i = 0; i < stackTraceElements.length; i++)
-                {
-                    StackTraceElement ste = stackTraceElements[i];
-                    dbg.append("\tat " + ste.toString());
-                    dbg.append('\n');
-                    if (i == 0 && threadInfo.getLockInfo() != null)
-                    {
-                        Thread.State ts = threadInfo.getThreadState();
-                        if (ts == Thread.State.BLOCKED
-                            || ts == Thread.State.WAITING
-                            || ts == Thread.State.TIMED_WAITING)
-                        {
-                            dbg.append("\t-  " + ts + " on "
-                                + threadInfo.getLockInfo());
-                            dbg.append('\n');
-                        }
-                    }
-
-                    for (MonitorInfo mi
-                            : threadInfo.getLockedMonitors())
-                    {
-                        if (mi.getLockedStackDepth() == i) {
-                            dbg.append("\t-  locked " + mi);
-                            dbg.append('\n');
-                        }
-                    }
-                }
-                dbg.append("\n\n");
-            }
             logger.error("Health check took "
                 + (System.currentTimeMillis() - this.startedAt)
                 + " ms. \n"
-                + dbg.toString());
+                + threadDump);
         }
 
         /**
