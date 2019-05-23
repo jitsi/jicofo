@@ -2204,6 +2204,14 @@ public class JitsiMeetConferenceImpl
             return false;
         }
 
+        // we do not want to remotely mute jigasi as currently
+        // there is no way for it to unmute
+        if (doMute && participant.isSipGateway())
+        {
+            logger.warn("Blocking mute request to jigasi.");
+            return false;
+        }
+
         logger.info(
             "Will " + (doMute ? "mute" : "unmute")
                 + " " + toBeMutedJid + " on behalf of " + fromJid);
