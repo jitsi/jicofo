@@ -88,6 +88,12 @@ public class BridgeSelector
         = "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD";
 
     /**
+     * The name of the property which configured the local region.
+     */
+    public static final String LOCAL_REGION_PNAME
+        = "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION";
+
+    /**
      * Five minutes.
      */
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
@@ -129,6 +135,11 @@ public class BridgeSelector
      * The bridge selection strategy.
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy;
+
+    /**
+     * The local region of the jicofo instance.
+     */
+    private String localRegion = null;
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -606,9 +617,11 @@ public class BridgeSelector
                 config.getLong(
                         BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
                         DEFAULT_FAILURE_RESET_THRESHOLD));
-
         logger.info(
             "Bridge failure reset threshold: " + getFailureResetThreshold());
+
+        localRegion = config.getString(LOCAL_REGION_PNAME, null);
+        logger.info("Local region: " + localRegion);
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
