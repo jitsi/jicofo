@@ -70,6 +70,26 @@ class Bridge
     private static final String STAT_NAME_BITRATE_DOWN = "bit_rate_download";
 
     /**
+     * The name of the stat used by jitsi-videobridge to indicate the current
+     * Octo receive bitrate in Kbps.
+     * video streams. This should match
+     * {@code VideobridgeStatistics.BITRATE_DOWNLOAD}, but is defined separately
+     * to avoid depending on the {@code jitsi-videobridge} maven package.
+     */
+    private static final String STAT_NAME_OCTO_RECEIVE_BITRATE
+        = "octo_receive_bitrate";
+
+    /**
+     * The name of the stat used by jitsi-videobridge to indicate the current
+     * Octo send bitrate in Kbps.
+     * video streams. This should match
+     * {@code VideobridgeStatistics.BITRATE_DOWNLOAD}, but is defined separately
+     * to avoid depending on the {@code jitsi-videobridge} maven package.
+     */
+    private static final String STAT_NAME_OCTO_SEND_BITRATE
+            = "octo_send_bitrate";
+
+    /**
      * The name of the stat used by jitsi-videobridge to indicate its region.
      * This should match {@code VideobridgeStatistics.REGION}, but is defined
      * separately to avoid depending on the {@code jitsi-videobridge} maven
@@ -177,11 +197,35 @@ class Bridge
             setVideoStreamCount(videoStreamCount);
         }
 
-        Integer bitrateUpKbps = stats.getValueAsInt(STAT_NAME_BITRATE_UP);
-        Integer bitrateDownKbps = stats.getValueAsInt(STAT_NAME_BITRATE_DOWN);
+        Integer bitrateUpKbps = null;
+        Integer bitrateDownKbps = null;
+        Integer octoReceiveBitrate = null;
+        Integer octoSendBitrate = null;
+        try
+        {
+            bitrateUpKbps = stats.getValueAsInt(STAT_NAME_BITRATE_UP);
+            bitrateDownKbps = stats.getValueAsInt(STAT_NAME_BITRATE_DOWN);
+            octoReceiveBitrate
+                    = stats.getValueAsInt(STAT_NAME_OCTO_RECEIVE_BITRATE);
+            octoSendBitrate = stats.getValueAsInt(STAT_NAME_OCTO_SEND_BITRATE);
+        }
+        catch (NumberFormatException nfe)
+        {
+        }
+
         if (bitrateUpKbps != null && bitrateDownKbps != null)
         {
-            lastReportedBitrateKbps = bitrateDownKbps + bitrateUpKbps;
+            int bitrate = bitrateDownKbps + bitrateUpKbps;
+            if (octoReceiveBitrate != null)
+            {
+                bitrate += octoReceiveBitrate;
+            }
+            if (octoSendBitrate != null)
+            {
+                bitrate += octoSendBitrate;
+            }
+
+            lastReportedBitrateKbps = bitrate;
         }
 
         setIsOperational(!Boolean.valueOf(stats.getValueAsString(
