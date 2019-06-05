@@ -137,11 +137,6 @@ public class BridgeSelector
     private final BridgeSelectionStrategy bridgeSelectionStrategy;
 
     /**
-     * The local region of the jicofo instance.
-     */
-    private String localRegion = null;
-
-    /**
      * Creates new instance of {@link BridgeSelector}.
      *
      * @param subscriptionOpSet the operations set that will be used by this
@@ -189,12 +184,10 @@ public class BridgeSelector
 
         if (strategy == null)
         {
-            logger.info("Using SingleBridgeSelectionStrategy");
             strategy = new SingleBridgeSelectionStrategy();
         }
 
 
-        strategy.localRegion = localRegion;
         return strategy;
     }
 
@@ -630,8 +623,9 @@ public class BridgeSelector
         logger.info(
             "Bridge failure reset threshold: " + getFailureResetThreshold());
 
-        localRegion = config.getString(LOCAL_REGION_PNAME, null);
-        logger.info("Local region: " + localRegion);
+        bridgeSelectionStrategy.localRegion
+                = config.getString(LOCAL_REGION_PNAME, null);
+        logger.info("Local region: " + bridgeSelectionStrategy.localRegion);
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
