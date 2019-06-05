@@ -163,6 +163,8 @@ public class BridgeSelector
      */
     private BridgeSelectionStrategy createBridgeSelectionStrategy()
     {
+        BridgeSelectionStrategy strategy = null;
+
         ConfigurationService config = FocusBundleActivator.getConfigService();
         if (config != null)
         {
@@ -175,7 +177,8 @@ public class BridgeSelector
                 try
                 {
                     Class clazz = Class.forName(clazzName);
-                    return (BridgeSelectionStrategy)clazz.newInstance();
+                    strategy = (BridgeSelectionStrategy)clazz.newInstance();
+                    logger.info("Using " + clazzName);
                 }
                 catch (Exception e)
                 {
@@ -184,8 +187,15 @@ public class BridgeSelector
             }
         }
 
-        logger.info("Using SingleBridgeSelectionStrategy");
-        return new SingleBridgeSelectionStrategy();
+        if (strategy == null)
+        {
+            logger.info("Using SingleBridgeSelectionStrategy");
+            strategy = new SingleBridgeSelectionStrategy();
+        }
+
+
+        strategy.localRegion = localRegion;
+        return strategy;
     }
 
     /**
@@ -685,6 +695,11 @@ public class BridgeSelector
     private static abstract class BridgeSelectionStrategy
     {
         /**
+         * The local region of the jicofo instance.
+         */
+        private String localRegion = null;
+
+        /**
          * Selects a bridge to be used for a specific
          * {@link JitsiMeetConference} and a specific {@link Participant}.
          *
@@ -757,28 +772,42 @@ public class BridgeSelector
                                      JitsiMeetConference conference,
                                      String participantRegion)
         {
+            Bridge bridge = null;
+
             // Prefer a bridge in the participant's region.
             if (participantRegion != null)
             {
-                for (Bridge bridge : bridges)
-                {
-                    if (bridge.isOperational()
-                        && participantRegion.equals(bridge.getRegion()))
-                    {
-                        return bridge;
-                    }
-                }
+                bridge = findFirstOperationalInRegion(bridges, participantRegion);
             }
 
-            for (Bridge bridge : bridges)
+            // Otherwise, prefer a bridge in the local region.
+            if (bridge == null)
             {
-                if (bridge.isOperational())
-                {
-                    return bridge;
-                }
+                bridge = findFirstOperationalInRegion(bridges, localRegion);
             }
 
-            return null;
+            return bridge;
+        }
+
+        /**
+         * Returns the first operational bridge in the given list which matches
+         * the given region (if the given regio is {@code null} the region is
+         * not matched).
+         *
+         * @param bridges
+         * @param region
+         * @return
+         */
+        private Bridge findFirstOperationalInRegion(
+                List<Bridge> bridges,
+                String region)
+        {
+            return bridges.stream()
+                    .filter(Bridge::isOperational)
+                    .filter(
+                        b -> region == null || region.equals(b.getRegion()))
+                    .findFirst()
+                    .orElse(null);
         }
 
         /**
