@@ -958,7 +958,7 @@ public class BridgeSelector
             {
                 // We don't know the participant's region. Use the least loaded
                 // existing bridge in the conference.
-                return selectFirst(bridges, conferenceBridges);
+                return findFirst(bridges, conferenceBridges);
             }
 
             // We know the participant's region.
@@ -969,7 +969,7 @@ public class BridgeSelector
                     .collect(Collectors.toList());
             if (!conferenceBridgesInRegion.isEmpty())
             {
-                return selectFirst(bridges, conferenceBridgesInRegion);
+                return findFirst(bridges, conferenceBridgesInRegion);
             }
 
             // The conference has no bridges in the participant region. Try
@@ -987,7 +987,7 @@ public class BridgeSelector
             // least loaded of the existing conference bridges.
             // TODO: perhaps use a bridge in a nearby region (if we have data
             // about the topology of the regions).
-            return selectFirst(bridges, conferenceBridges);
+            return findFirst(bridges, conferenceBridges);
         }
 
         /**
@@ -999,7 +999,7 @@ public class BridgeSelector
          * @return the bridge from {@code selectFrom} which occurs first in
          * {@code order}.
          */
-        private Bridge selectFirst(
+        private Bridge findFirst(
             List<Bridge> selectFrom, List<Bridge> order)
         {
             return order.stream()
