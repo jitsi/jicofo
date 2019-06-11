@@ -780,6 +780,12 @@ public class BridgeSelector
                 bridge = findFirstOperationalInRegion(bridges, localRegion);
             }
 
+            // Otherwise, just find the first operational bridge.
+            if (bridge == null)
+            {
+                bridge = findFirstOperationalInRegion(bridges, null);
+            }
+
             return bridge;
         }
 
