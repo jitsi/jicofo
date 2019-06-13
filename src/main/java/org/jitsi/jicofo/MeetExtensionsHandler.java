@@ -177,7 +177,7 @@ public class MeetExtensionsHandler
             if (!muteIq.getFrom().equals(jid))
             {
                 MuteIq muteStatusUpdate = new MuteIq();
-                muteStatusUpdate.setJid(jid);
+                muteStatusUpdate.setActor(from);
                 muteStatusUpdate.setType(IQ.Type.set);
                 muteStatusUpdate.setTo(jid);
 
