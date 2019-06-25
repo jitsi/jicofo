@@ -485,7 +485,8 @@ public class FocusManager
             {
                 id
                     = jicofoShortId +
-                        Integer.toHexString(RANDOM.nextInt(0x1_0000));
+                        String.format(
+                            "%4h", RANDOM.nextInt(0x1_0000)).replace(' ', '0');
             }
             while (conferenceIds.contains(id));
         }
