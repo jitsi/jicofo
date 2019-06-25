@@ -133,7 +133,7 @@ public class OctoParticipant
             changed = true;
         }
 
-        if (!sourceGroupsToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty())
+        if (!sourcesToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty())
         {
             removeSources(sourcesToRemove);
             removeSourceGroups(sourceGroupsToRemove);
