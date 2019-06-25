@@ -136,7 +136,13 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
             participant.setColibriChannelsInfo(result);
 
             // Check if the sources of the participant need an update.
-            boolean update = participant.updateSources();
+            boolean update = false;
+
+            if (participant.updateSources())
+            {
+                update = true;
+                logger.info("Will update the sources of the Octo participant " + this);
+            }
 
             // Check if the relays need an update. We always use the same set
             // of relays for the audio and video channels, so just check video.
@@ -158,12 +164,9 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
                 {
                     update = true;
 
-                    if (logger.isDebugEnabled())
-                    {
-                        logger.debug(
+                    logger.info(
                             "Relays need updating. Response: " + responseRelays
                                 + ", participant:" + participant.getRelays());
-                    }
                 }
             }
 

@@ -1717,8 +1717,7 @@ public class JitsiMeetConferenceImpl
         Participant p = findParticipantForJingleSession(jingleSession);
         if (p == null)
         {
-            logger.error(
-                    "No participant for " + Objects.toString(jingleSession));
+            logger.error("No participant for " + jingleSession);
             return;
         }
 
@@ -1787,17 +1786,14 @@ public class JitsiMeetConferenceImpl
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
                     participant.getColibriChannelsInfo());
+
+                propagateNewSourcesToOcto(
+                        bridgeSession, sourcesToAdd, sourceGroupsToAdd);
             }
             else
             {
                 logger.warn("No bridge for a participant.");
                 // TODO: how do we handle this? Re-invite?
-            }
-
-            if (bridgeSession != null)
-            {
-                propagateNewSourcesToOcto(
-                    bridgeSession, sourcesToAdd, sourceGroupsToAdd);
             }
         }
 
