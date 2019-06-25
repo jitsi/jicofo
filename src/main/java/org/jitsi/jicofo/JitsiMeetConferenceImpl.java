@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -1433,12 +1434,34 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(answer);
         participant.addTransportFromJingle(answer);
 
+        MediaSourceMap sourcesAdvertised
+                = MediaSourceMap.getSourcesFromContent(answer);
+        MediaSourceGroupMap sourceGroupsAdvertised
+                = MediaSourceGroupMap.getSourceGroupsForContents(answer);
+        if (sourcesAdvertised.isEmpty())
+        {
+            // We inject an SSRC in order to insure that the participant has
+            // at least one SSRC advertised. Otherwise, non-local bridges in the
+            // conference will not be aware of the participant. We intentionally
+            // use a negative value, because this is an invalid SSRC and will
+            // not be actually used on the wire.
+            SourcePacketExtension sourcePacketExtension
+                    = new SourcePacketExtension();
+            long ssrc = RANDOM.nextInt() & 0xffff_ffffl;
+            logger.info(participant
+                    + " did not advertise any SSRCs. Injecting " + ssrc);
+            sourcePacketExtension.setSSRC(ssrc);
+            sourcesAdvertised.addSource(
+                    MediaType.AUDIO.toString(),
+                    sourcePacketExtension);
+        }
         MediaSourceMap sourcesAdded;
         MediaSourceGroupMap sourceGroupsAdded;
         try
         {
             Object[] sourcesAndGroupsAdded
-                = tryAddSourcesToParticipant(participant, answer);
+                = tryAddSourcesToParticipant(
+                        participant, sourcesAdvertised, sourceGroupsAdvertised);
             sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
             sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
         }
@@ -1924,7 +1947,7 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Will try to add sources and groups described by the given list of Jingle
+     * Adds the sources and groups described by the given list of Jingle
      * {@link ContentPacketExtension} to the given participant.
      *
      * @param participant - The {@link Participant} instance to which sources
@@ -1936,8 +1959,31 @@ public class JitsiMeetConferenceImpl
      * @throws InvalidSSRCsException See throws description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
      */
     private Object[] tryAddSourcesToParticipant(
-            Participant                     participant,
-            List<ContentPacketExtension>    contents)
+            Participant participant,
+            List<ContentPacketExtension> contents)
+        throws InvalidSSRCsException
+    {
+        return tryAddSourcesToParticipant(
+                participant,
+                MediaSourceMap.getSourcesFromContent(contents),
+                MediaSourceGroupMap.getSourceGroupsForContents(contents));
+    }
+
+    /**
+     * Adds the given sources and groups to the given participant.
+     *
+     * @param participant - The {@link Participant} instance to which sources
+     * and groups will be added.
+     * @param contents - The list of Jingle 'content' packet extensions which
+     * describe media sources and groups.
+     *
+     * @return See returns description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
+     * @throws InvalidSSRCsException See throws description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
+     */
+    private Object[] tryAddSourcesToParticipant(
+            Participant participant,
+            MediaSourceMap newSources,
+            MediaSourceGroupMap newGroups)
         throws InvalidSSRCsException
     {
         MediaSourceMap conferenceSources = getAllSources();
@@ -1950,11 +1996,6 @@ public class JitsiMeetConferenceImpl
                     conferenceSourceGroups,
                     globalConfig.getMaxSourcesPerUser(),
                     this.logger);
-
-        MediaSourceMap newSources
-            = MediaSourceMap.getSourcesFromContent(contents);
-        MediaSourceGroupMap newGroups
-            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
 
         // Claim the new sources by injecting owner tag into packet extensions,
         // so that the validator will be able to tell who owns which sources.
