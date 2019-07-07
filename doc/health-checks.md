@@ -1,4 +1,6 @@
-The REST API allows querying Jicofo whether it deems itself in a healthy state (i.e. the application is operational and the functionality it provides should perform as expected) at the time of the query or not. Videorbidge will run an internal test in response to the request to determine its current health status.
+The REST API allows querying Jicofo whether it deems itself in a healthy state (i.e. the application is operational and the functionality it provides should perform as expected) at the time of the query or not. Videobridge will run an internal test in response to the request to determine its current health status.
+
+The default port for the REST API is `8888` to have Videobridge and Jicofo running on the same machine with their defaults without them clashing.
 
 <table>
   <tr>
