@@ -483,10 +483,8 @@ public class FocusManager
         {
             do
             {
-                id
-                    = jicofoShortId +
-                        String.format(
-                            "%4h", RANDOM.nextInt(0x1_0000)).replace(' ', '0');
+                id = jicofoShortId +
+                        String.format("%04x", RANDOM.nextInt(0x1_0000));
             }
             while (conferenceIds.contains(id));
         }
