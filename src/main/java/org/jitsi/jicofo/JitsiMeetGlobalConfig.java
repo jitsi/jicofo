@@ -36,6 +36,14 @@ public class JitsiMeetGlobalConfig
         = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
+     * The name of the property which controls whether jicofo will inject a
+     * random SSRC for endpoints which don't advertise any SSRCs. This is a
+     * temporary workaround for an issue with signaling endpoints for Octo.
+     */
+    private final static String INJECT_SSRC_FOR_RECVONLY_ENDPOINTS
+            = "org.jitsi.jicofo.INJECT_SSRC_FOR_RECVONLY_ENDPOINTS";
+
+    /**
      * The name of configuration property that disable auto owner role granting.
      */
     private final static String DISABLE_AUTO_OWNER_PNAME
@@ -130,6 +138,13 @@ public class JitsiMeetGlobalConfig
      * OSGi service registration instance.
      */
     private ServiceRegistration<JitsiMeetGlobalConfig> serviceRegistration;
+
+    /**
+     * Whether jicofo should inject a random SSRC for endpoints which don't
+     * advertise any SSRCs. This is a temporary workaround for an issue with
+     * signaling endpoints for Octo.
+     */
+    boolean injectSsrcForRecvOnlyEndpoints = false;
 
     /**
      * Runs <tt>JitsiMeetGlobalConfig</tt> service on given OSGi context.
@@ -228,6 +243,10 @@ public class JitsiMeetGlobalConfig
         logger.info(
                 "Lonely participants will be \"terminated\" after "
                     + singleParticipantTimeout +" milliseconds");
+
+        injectSsrcForRecvOnlyEndpoints
+                = configService.getBoolean(
+                        INJECT_SSRC_FOR_RECVONLY_ENDPOINTS, false);
     }
 
     /**
