@@ -1438,7 +1438,8 @@ public class JitsiMeetConferenceImpl
                 = MediaSourceMap.getSourcesFromContent(answer);
         MediaSourceGroupMap sourceGroupsAdvertised
                 = MediaSourceGroupMap.getSourceGroupsForContents(answer);
-        if (sourcesAdvertised.isEmpty())
+        if (sourcesAdvertised.isEmpty()
+            && globalConfig.injectSsrcForRecvOnlyEndpoints)
         {
             // We inject an SSRC in order to insure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
