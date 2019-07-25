@@ -209,7 +209,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>1.1-20190408.175802-112</version>
+      <version>1.1-20190724.135847-118</version>
       <scope>test</scope>
     </dependency>
     <dependency>
