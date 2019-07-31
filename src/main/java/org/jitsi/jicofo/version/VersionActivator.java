@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.version;
 
+import org.jitsi.utils.version.*;
 import org.jitsi.version.*;
 
 /**
@@ -27,18 +28,11 @@ public class VersionActivator
     extends AbstractVersionActivator
 {
     /**
-     * The {@code CurrentVersionImpl} instance describing the current version
-     * of Jicofo.
-     */
-    private static final CurrentVersionImpl CURRENT_VERSION
-        = new CurrentVersionImpl();
-
-    /**
      * {@inheritDoc}
      */
     @Override
-    protected CurrentVersion getCurrentVersion()
+    protected Version getCurrentVersion()
     {
-        return CURRENT_VERSION;
+        return CurrentVersionImpl.VERSION;
     }
 }

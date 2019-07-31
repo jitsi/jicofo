@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.utils.version.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
@@ -25,7 +26,6 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.osgi.*;
-import org.jitsi.service.version.*;
 
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
@@ -163,7 +163,7 @@ public class VersionBroadcaster
         }
 
         // Conference focus
-        org.jitsi.service.version.Version jicofoVersion
+        org.jitsi.utils.version.Version jicofoVersion
             = versionService.getCurrentVersion();
         versionsExtension.addComponentVersion(
                 ComponentVersionsExtension.COMPONENT_FOCUS,
