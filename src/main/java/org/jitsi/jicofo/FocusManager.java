@@ -19,11 +19,11 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.service.shutdown.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.meet.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger;
@@ -599,8 +599,8 @@ public class FocusManager
                 // multiple times.
                 ShutdownService shutdownService
                     = ServiceUtils.getService(
-                    FocusBundleActivator.bundleContext,
-                    ShutdownService.class);
+                        FocusBundleActivator.bundleContext,
+                        ShutdownService.class);
 
                 shutdownService.beginShutdown();
             }
