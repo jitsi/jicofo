@@ -153,7 +153,6 @@ public class ColibriTest
         Thread.sleep(1000);
 
         assertEquals(0 , mockBridge.getChannelsCount());
-        System.err.println("Yeppers");
 
         testConference.stop();
     }
