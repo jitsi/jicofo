@@ -36,164 +36,165 @@ import java.util.*;
 /**
  *
  */
-public class TestConference
-{
-    private final BundleContext bc;
-
-    private String serverName;
-
-    private EntityBareJid roomName;
-
-    private final OSGIServiceRef<JitsiMeetServices> meetServicesRef;
-
-    private Jid mockBridgeJid;
-
-    private final OSGIServiceRef<FocusManager> focusManagerRef;
-
-    private MockProtocolProvider focusProtocolProvider;
-
-    public JitsiMeetConferenceImpl conference;
-
-    private MockVideobridge mockBridge;
-
-    private MockMultiUserChat chat;
-
-    static public TestConference allocate(
-        BundleContext ctx, String serverName, EntityBareJid roomName)
-        throws Exception
-    {
-        TestConference newConf = new TestConference(ctx);
-
-        newConf.createJvbAndConference(serverName, roomName);
-
-        return newConf;
-    }
-
-    static public TestConference allocate(
-        BundleContext ctx, String serverName, EntityBareJid roomName,
-        MockVideobridge mockBridge)
-        throws Exception
-    {
-        TestConference newConf = new TestConference(ctx);
-
-        newConf.createConferenceRoom(serverName, roomName, mockBridge);
-
-        return newConf;
-    }
-
-    public TestConference(BundleContext osgi)
-    {
-        this.bc = osgi;
-        this.meetServicesRef
-            = new OSGIServiceRef<>(osgi, JitsiMeetServices.class);
-        this.focusManagerRef = new OSGIServiceRef<>(osgi, FocusManager.class);
-    }
-
-    private void createJvbAndConference(String serverName, EntityBareJid roomName)
-        throws Exception
-    {
-        this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
-
-        MockVideobridge mockBridge
-            = new MockVideobridge(
-                    new MockXmppConnection(mockBridgeJid),
-                    mockBridgeJid);
-
-        mockBridge.start(bc);
-
-        meetServicesRef.get().getBridgeSelector().addJvbAddress(mockBridgeJid);
-
-        createConferenceRoom(serverName, roomName, mockBridge);
-    }
-
-    public void stop()
-        throws Exception
-    {
-        mockBridge.stop(bc);
-    }
-
-    private void createConferenceRoom(String serverName, EntityBareJid roomName,
-                                      MockVideobridge mockJvb)
-        throws Exception
-    {
-        this.serverName = serverName;
-        this.roomName = roomName;
-        this.mockBridge = mockJvb;
-        this.mockBridgeJid = mockJvb.getBridgeJid();
-
-        HashMap<String,String> properties = new HashMap<>();
-
-        focusManagerRef.get().conferenceRequest(roomName, properties);
-
-        this.conference = focusManagerRef.get().getConference(roomName);
-
-        MockMultiUserChatOpSet mucOpSet
-            = getFocusProtocolProvider().getMockChatOpSet();
-
-        this.chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
-    }
-
-    public MockProtocolProvider getFocusProtocolProvider()
-    {
-        if (focusProtocolProvider == null)
-        {
-            focusProtocolProvider
-                = (MockProtocolProvider) focusManagerRef
-                        .get().getProtocolProvider();
-        }
-        return focusProtocolProvider;
-    }
-
-    public MockVideobridge getMockVideoBridge()
-    {
-        return mockBridge;
-    }
-
-    public void addParticipant(MockParticipant user)
-    {
-        user.join(chat);
-    }
-
-    public MockParticipant addParticipant()
-    {
-        MockParticipant newParticipant
-            = new MockParticipant(StringGenerator.nextRandomStr());
-
-        newParticipant.join(chat);
-
-        return newParticipant;
-    }
-
-    public ConferenceUtility getConferenceUtility()
-    {
-        return new ConferenceUtility(conference);
-    }
-
-    public long[] getSimulcastLayersSSRCs(Jid peerJid)
-    {
-        ConferenceUtility confUtility = getConferenceUtility();
-        String conferenceId = conference.getJvbConferenceId();
-        String videoChannelId
-            = confUtility.getParticipantVideoChannelId(peerJid);
-        List<RTPEncodingDesc> layers
-            = mockBridge.getSimulcastLayers(conferenceId, videoChannelId);
-
-        long[] ssrcs = new long[layers.size()];
-        int idx = 0;
-        for (RTPEncodingDesc layer : layers)
-        {
-            ssrcs[idx++] = layer.getPrimarySSRC();
-        }
-        return ssrcs;
-    }
-
-    public int getParticipantCount()
-    {
-        return conference.getParticipantCount();
-    }
-
-    public EntityBareJid getRoomName()
-    {
-        return roomName;
-    }
-}
+//TODO(brian): See note in MockVideobridge.java
+//public class TestConference
+//{
+//    private final BundleContext bc;
+//
+//    private String serverName;
+//
+//    private EntityBareJid roomName;
+//
+//    private final OSGIServiceRef<JitsiMeetServices> meetServicesRef;
+//
+//    private Jid mockBridgeJid;
+//
+//    private final OSGIServiceRef<FocusManager> focusManagerRef;
+//
+//    private MockProtocolProvider focusProtocolProvider;
+//
+//    public JitsiMeetConferenceImpl conference;
+//
+//    private MockVideobridge mockBridge;
+//
+//    private MockMultiUserChat chat;
+//
+//    static public TestConference allocate(
+//        BundleContext ctx, String serverName, EntityBareJid roomName)
+//        throws Exception
+//    {
+//        TestConference newConf = new TestConference(ctx);
+//
+//        newConf.createJvbAndConference(serverName, roomName);
+//
+//        return newConf;
+//    }
+//
+//    static public TestConference allocate(
+//        BundleContext ctx, String serverName, EntityBareJid roomName,
+//        MockVideobridge mockBridge)
+//        throws Exception
+//    {
+//        TestConference newConf = new TestConference(ctx);
+//
+//        newConf.createConferenceRoom(serverName, roomName, mockBridge);
+//
+//        return newConf;
+//    }
+//
+//    public TestConference(BundleContext osgi)
+//    {
+//        this.bc = osgi;
+//        this.meetServicesRef
+//            = new OSGIServiceRef<>(osgi, JitsiMeetServices.class);
+//        this.focusManagerRef = new OSGIServiceRef<>(osgi, FocusManager.class);
+//    }
+//
+//    private void createJvbAndConference(String serverName, EntityBareJid roomName)
+//        throws Exception
+//    {
+//        this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
+//
+//        MockVideobridge mockBridge
+//            = new MockVideobridge(
+//                    new MockXmppConnection(mockBridgeJid),
+//                    mockBridgeJid);
+//
+//        mockBridge.start(bc);
+//
+//        meetServicesRef.get().getBridgeSelector().addJvbAddress(mockBridgeJid);
+//
+//        createConferenceRoom(serverName, roomName, mockBridge);
+//    }
+//
+//    public void stop()
+//        throws Exception
+//    {
+//        mockBridge.stop(bc);
+//    }
+//
+//    private void createConferenceRoom(String serverName, EntityBareJid roomName,
+//                                      MockVideobridge mockJvb)
+//        throws Exception
+//    {
+//        this.serverName = serverName;
+//        this.roomName = roomName;
+//        this.mockBridge = mockJvb;
+//        this.mockBridgeJid = mockJvb.getBridgeJid();
+//
+//        HashMap<String,String> properties = new HashMap<>();
+//
+//        focusManagerRef.get().conferenceRequest(roomName, properties);
+//
+//        this.conference = focusManagerRef.get().getConference(roomName);
+//
+//        MockMultiUserChatOpSet mucOpSet
+//            = getFocusProtocolProvider().getMockChatOpSet();
+//
+//        this.chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+//    }
+//
+//    public MockProtocolProvider getFocusProtocolProvider()
+//    {
+//        if (focusProtocolProvider == null)
+//        {
+//            focusProtocolProvider
+//                = (MockProtocolProvider) focusManagerRef
+//                        .get().getProtocolProvider();
+//        }
+//        return focusProtocolProvider;
+//    }
+//
+//    public MockVideobridge getMockVideoBridge()
+//    {
+//        return mockBridge;
+//    }
+//
+//    public void addParticipant(MockParticipant user)
+//    {
+//        user.join(chat);
+//    }
+//
+//    public MockParticipant addParticipant()
+//    {
+//        MockParticipant newParticipant
+//            = new MockParticipant(StringGenerator.nextRandomStr());
+//
+//        newParticipant.join(chat);
+//
+//        return newParticipant;
+//    }
+//
+//    public ConferenceUtility getConferenceUtility()
+//    {
+//        return new ConferenceUtility(conference);
+//    }
+//
+//    public long[] getSimulcastLayersSSRCs(Jid peerJid)
+//    {
+//        ConferenceUtility confUtility = getConferenceUtility();
+//        String conferenceId = conference.getJvbConferenceId();
+//        String videoChannelId
+//            = confUtility.getParticipantVideoChannelId(peerJid);
+//        List<RTPEncodingDesc> layers
+//            = mockBridge.getSimulcastLayers(conferenceId, videoChannelId);
+//
+//        long[] ssrcs = new long[layers.size()];
+//        int idx = 0;
+//        for (RTPEncodingDesc layer : layers)
+//        {
+//            ssrcs[idx++] = layer.getPrimarySSRC();
+//        }
+//        return ssrcs;
+//    }
+//
+//    public int getParticipantCount()
+//    {
+//        return conference.getParticipantCount();
+//    }
+//
+//    public EntityBareJid getRoomName()
+//    {
+//        return roomName;
+//    }
+//}
