@@ -20,12 +20,11 @@ package org.jitsi.jicofo;
 import mock.*;
 import mock.util.*;
 
+import org.jitsi.meet.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import net.java.sip.communicator.service.shutdown.*;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.utils.*;
 import org.jitsi.xmpp.util.*;
 
 import org.junit.*;

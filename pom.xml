@@ -17,7 +17,7 @@
     <jetty.version>9.4.15.v20190215</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.2.4-47d17fc</smack.version>
-    <jitsi-desktop.version>2.13.3ee5751</jitsi-desktop.version>
+    <jitsi-desktop.version>2.13.cb5485e</jitsi-desktop.version>
     <slf4j.version>1.7.26</slf4j.version>
   </properties>
 
@@ -98,7 +98,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.1-20190509.130302-15</version>
+      <version>1.1-1-ge7184ab</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -137,23 +137,18 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>jitsi-ui-service</artifactId>
-      <version>${jitsi-desktop.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-util</artifactId>
       <version>${jitsi-desktop.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-utils</artifactId>
-      <version>1.0-20190723.110846-12</version>
+      <version>1.0-1-gaca0e20</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-20190613.110850-6</version>
+      <version>1.0-0-gf132d05 </version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
