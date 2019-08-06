@@ -21,12 +21,12 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.impl.neomedia.rtp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.Logger;
 import org.jitsi.videobridge.*;
 
+import org.jitsi_modified.impl.neomedia.rtp.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -176,17 +176,12 @@ public class MockVideobridge
     }
 
     public List<RTPEncodingDesc> getSimulcastLayers(
-            String confId, String channelId)
+            String confId, String endpointId)
     {
         Conference conference = bridge.getConference(confId, null);
-        Content videoContent = conference.getOrCreateContent("video");
-        VideoChannel videoChannel
-            = (VideoChannel) videoContent.getChannel(channelId);
+        Endpoint endpoint = conference.getOrCreateLocalEndpoint(endpointId);
 
-        MediaStreamTrackDesc[] tracks = videoChannel
-            .getStream()
-            .getMediaStreamTrackReceiver()
-            .getMediaStreamTracks();
+        MediaStreamTrackDesc[] tracks = endpoint.getMediaStreamTracks();
 
         if (ArrayUtils.isNullOrEmpty(tracks))
             return new ArrayList<>();
@@ -213,34 +208,7 @@ public class MockVideobridge
 
     public int getChannelsCount()
     {
-        int count = 0;
-        for (Conference conference : getNonHealthCheckConferences())
-        {
-            for (Content content: conference.getContents())
-            {
-                count += content.getChannelCount();
-            }
-        }
-        return count;
-    }
-
-    public int getChannelCountByContent(String contentName)
-    {
-        int count = 0;
-        boolean any = false;
-
-        for (Conference conference : bridge.getConferences())
-        {
-            for (Content content: conference.getContents())
-            {
-                if (contentName.equals(content.getName()))
-                {
-                    any = true;
-                    count += content.getChannelCount();
-                }
-            }
-        }
-        return any ? count : -1;
+        return bridge.getChannelCount();
     }
 
     public Jid getBridgeJid()
