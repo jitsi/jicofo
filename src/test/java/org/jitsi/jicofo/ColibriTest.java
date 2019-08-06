@@ -70,11 +70,11 @@ public class ColibriTest
         EntityBareJid roomName = JidCreate.entityBareFrom(
                 "testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        JitsiMeetConfig config
-            = new JitsiMeetConfig(new HashMap<String,String>());
+        JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
         TestConference testConference
             = TestConference.allocate(osgi.bc, serverName, roomName);
+        MockVideobridge mockBridge = testConference.getMockVideoBridge();
 
         MockProtocolProvider pps
             = testConference.getFocusProtocolProvider();
@@ -86,8 +86,7 @@ public class ColibriTest
 
         colibriConf.setConfig(config);
 
-        colibriConf.setJitsiVideobridge(
-            testConference.getMockVideoBridge().getBridgeJid());
+        colibriConf.setJitsiVideobridge(mockBridge.getBridgeJid());
 
         List<ContentPacketExtension> contents = new ArrayList<>();
 
@@ -105,8 +104,6 @@ public class ColibriTest
         contents.add(audio);
         contents.add(video);
         contents.add(data);
-
-        MockVideobridge mockBridge = testConference.getMockVideoBridge();
 
         boolean peer1UseBundle = true;
         String peer1 = "endpoint1";

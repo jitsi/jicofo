@@ -90,7 +90,7 @@ public class BundleTest
 
         user1.join(chat);
 
-        MockParticipant user2 = new MockParticipant("user2", false);
+        MockParticipant user2 = new MockParticipant("user2", true);
 
         user2.join(chat);
 
@@ -107,7 +107,7 @@ public class BundleTest
         //logger.info("User1 transport info: " + user1Transport.toXML());
 
         JingleIQ user2Invite = user2.acceptInvite(4000)[0];
-        validateSessionInit(user2Invite, false);
+        validateSessionInit(user2Invite, true);
 
         user1.leave();
         user2.leave();
