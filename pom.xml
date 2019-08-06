@@ -155,7 +155,6 @@
       <artifactId>jitsi-xmpp-extensions</artifactId>
       <version>1.0-20190613.110850-6</version>
     </dependency>
-    <!-- TODO it should not be here, but for some reason ice4j version 1.0 is loaded without explicit declaration -->
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.core</artifactId>
