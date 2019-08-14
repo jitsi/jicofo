@@ -136,7 +136,7 @@ public class DiscoveryUtil
         List<String> participantFeatures = disco.getFeatures(address);
         if (participantFeatures == null)
         {
-            logger.error(
+            logger.warn(
                 "Failed to discover features for "+ address
                         + " assuming default feature set.");
 
