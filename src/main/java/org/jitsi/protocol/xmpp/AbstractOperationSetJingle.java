@@ -67,7 +67,7 @@ public abstract class AbstractOperationSetJingle
         JingleSession session = getSession(packet.getSID());
         if (session == null)
         {
-            logger.error("No session found for SID " + packet.getSID());
+            logger.warn("No session found for SID " + packet.getSID());
             return
                 IQ.createErrorResponse(
                     packet,
@@ -240,7 +240,7 @@ public abstract class AbstractOperationSetJingle
             }
             else
             {
-                logger.error(
+                logger.warn(
                         "Timeout waiting for RESULT response to "
                             + "'session-initiate' request from "
                             + session.getAddress());
@@ -330,7 +330,7 @@ public abstract class AbstractOperationSetJingle
 
         if (session == null)
         {
-            logger.error(
+            logger.warn(
                 "Action: " + action
                     + ", no session found for SID " + iq.getSID());
             return IQ.createErrorResponse(
