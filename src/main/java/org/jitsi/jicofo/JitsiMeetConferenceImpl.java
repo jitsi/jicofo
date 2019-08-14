@@ -1407,7 +1407,7 @@ public class JitsiMeetConferenceImpl
         {
             String errorMsg
                 = "No participant found for: " + participantJid;
-            logger.error(errorMsg);
+            logger.warn(errorMsg);
             return XMPPError.from(XMPPError.Condition.item_not_found,
                     errorMsg).build();
         }
@@ -1552,7 +1552,7 @@ public class JitsiMeetConferenceImpl
         {
             String errorMsg = "No session for " + address;
 
-            logger.error("onSessionInfo: " + errorMsg);
+            logger.warn("onSessionInfo: " + errorMsg);
 
             return XMPPError.from(
                     XMPPError.Condition.item_not_found, errorMsg).build();
@@ -1674,7 +1674,7 @@ public class JitsiMeetConferenceImpl
         Participant participant = findParticipantForJingleSession(session);
         if (participant == null)
         {
-            logger.error("Failed to process transport-info," +
+            logger.warn("Failed to process transport-info," +
                              " no session for: " + session.getAddress());
             return;
         }
@@ -1741,7 +1741,7 @@ public class JitsiMeetConferenceImpl
         Participant p = findParticipantForJingleSession(jingleSession);
         if (p == null)
         {
-            logger.error("No participant for " + jingleSession);
+            logger.warn("No participant for " + jingleSession);
             return;
         }
 
@@ -1771,7 +1771,7 @@ public class JitsiMeetConferenceImpl
         if (participant == null)
         {
             String errorMsg = "Add-source: no state for " + address;
-            logger.error(errorMsg);
+            logger.warn(errorMsg);
             return XMPPError.from(
                     XMPPError.Condition.item_not_found, errorMsg).build();
         }
@@ -1870,7 +1870,7 @@ public class JitsiMeetConferenceImpl
         Jid participantJid = sourceJingleSession.getAddress();
         if (participant == null)
         {
-            logger.error("Remove-source: no session for " + participantJid);
+            logger.warn("Remove-source: no session for " + participantJid);
             return;
         }
 
@@ -2213,7 +2213,7 @@ public class JitsiMeetConferenceImpl
         Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
-            logger.error(
+            logger.warn(
                 "Failed to perform mute operation - " + fromJid
                     +" not exists in the conference.");
             return false;
@@ -2223,7 +2223,7 @@ public class JitsiMeetConferenceImpl
             && ChatRoomMemberRole.MODERATOR.compareTo(
                 principal.getChatMember().getRole()) < 0)
         {
-            logger.error(
+            logger.warn(
                 "Permission denied for mute operation from " + fromJid);
             return false;
         }
@@ -2231,7 +2231,7 @@ public class JitsiMeetConferenceImpl
         Participant participant = findParticipantForRoomJid(toBeMutedJid);
         if (participant == null)
         {
-            logger.error("Participant for jid: " + toBeMutedJid + " not found");
+            logger.warn("Participant for jid: " + toBeMutedJid + " not found");
             return false;
         }
 
