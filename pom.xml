@@ -26,6 +26,14 @@
       <groupId>com.googlecode.json-simple</groupId>
       <artifactId>json-simple</artifactId>
       <version>1.1.1</version>
+      <!-- json-simple 1.1.1 incorrectly listed junit as a compile dependency rather than a test dependency.
+	   This has been fixed in its github repo but a new release hasn't been pushed to maven. -->
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>dom4j</groupId>
@@ -143,7 +151,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-utils</artifactId>
-      <version>1.0-1-gaca0e20</version>
+      <version>1.0-2-g27c4398</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
