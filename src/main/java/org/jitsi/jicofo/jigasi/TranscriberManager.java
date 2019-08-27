@@ -24,12 +24,12 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Presence;
 import org.jxmpp.jid.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -201,14 +201,26 @@ public class TranscriberManager
             return;
         }
 
+        selectTranscriber(2, null);
+    }
+
+    /**
+     * Sends the message to the selected jigasi (from brewery muc).
+     * @param retryCount the number of attempts to be made for sending this iq,
+     * if no reply is received from the remote side.
+     * @param filterJigasi <tt>null</tt> or a list of jigasi Jids which
+     * we already tried sending in attempt to retry.
+     */
+    private void selectTranscriber(int retryCount, List<Jid> filterJigasi)
+    {
         logger.info("Attempting to invite transcriber");
 
-        Jid jigasiJid = jigasiDetector.selectJigasi();
+        Jid jigasiJid = jigasiDetector.selectJigasi(filterJigasi);
 
         if(jigasiJid == null)
         {
             logger.warn("Unable to invite transcriber due to no " +
-                            "Jigasi instances being available");
+                "Jigasi instances being available");
             return;
         }
 
@@ -222,6 +234,7 @@ public class TranscriberManager
         {
             IQ response = this.connection.sendPacketAndGetReply(dialIq);
 
+            boolean retry = false;
             if (response != null)
             {
                 if (response.getError() == null)
@@ -231,15 +244,27 @@ public class TranscriberManager
                 }
                 else
                 {
-                    //todo attempt again?
                     logger.warn("failed to invite transcriber. Got error: " +
                         response.getError().getErrorGenerator());
+                    retry = true;
                 }
             }
             else
             {
                 logger.warn("failed to invite transcriber; lack of response" +
                     " from XmmpConnection");
+                retry = true;
+            }
+
+            if (retry && retryCount > 0)
+            {
+                if (filterJigasi == null)
+                {
+                    filterJigasi = new ArrayList<>();
+                }
+                filterJigasi.add(jigasiJid);
+
+                selectTranscriber(retryCount - 1, filterJigasi);
             }
         }
         catch (OperationFailedException e)
