@@ -35,7 +35,7 @@ import java.util.*;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-class Bridge
+public class Bridge
     implements Comparable<Bridge>
 {
     /**
@@ -95,7 +95,7 @@ class Bridge
      * separately to avoid depending on the {@code jitsi-videobridge} maven
      * package.
      */
-    private static final String STAT_NAME_REGION = "region";
+    public static final String STAT_NAME_REGION = "region";
 
     /**
      * The name of the stat used by jitsi-videobridge to indicate its Octo relay

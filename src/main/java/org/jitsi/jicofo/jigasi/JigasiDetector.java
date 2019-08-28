@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jxmpp.jid.*;
+import static org.jitsi.jicofo.Bridge.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * <tt>JigasiDetector</tt> manages the pool of Jigasi instances which exist in
@@ -50,7 +52,7 @@ public class JigasiDetector
      * separately to avoid depending on the {@code jitsi-videobridge}
      * maven package.
      */
-    private static final String STAT_NAME_PARTICIPANTS = "participants";
+    public static final String STAT_NAME_PARTICIPANTS = "participants";
 
     /**
      * The name of the stat that indicates the instance has entered graceful
@@ -63,6 +65,21 @@ public class JigasiDetector
         = "graceful_shutdown";
 
     /**
+     * The name of the stat that indicates the instance is or not a transcriber.
+     */
+    public static final String STAT_NAME_TRANSCRIBER = "transcriber";
+
+    /**
+     * The name of the stat that indicates the instance is or not sipgw.
+     */
+    public static final String STAT_NAME_SIPGW = "sipgw";
+
+    /**
+     * The local region of the this jicofo instance.
+     */
+    private final String localRegion;
+
+    /**
      * Constructs new JigasiDetector.
      *
      * @param protocolProvider the xmpp protocol provider
@@ -73,12 +90,15 @@ public class JigasiDetector
      */
     public JigasiDetector(
         ProtocolProviderHandler protocolProvider,
-        String breweryName)
+        String breweryName,
+        String localRegion)
     {
         super(protocolProvider,
             breweryName,
             ColibriStatsExtension.ELEMENT_NAME,
             ColibriStatsExtension.NAMESPACE);
+
+        this.localRegion = localRegion;
     }
 
     @Override
@@ -93,13 +113,15 @@ public class JigasiDetector
 
     /**
      * Selects the jigasi instance that is less loaded.
-     *
+     * @param preferredRegions a list of preferred regions.
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi()
+    public Jid selectTranscriber(
+        List<Jid> filter, List<String> preferredRegions)
     {
-        return this.selectJigasi(null);
+        return this.selectJigasi(
+            instances, filter, preferredRegions, localRegion, true);
     }
 
     /**
@@ -107,29 +129,103 @@ public class JigasiDetector
      *
      * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
      * available Jigasi instances. List that we do not want as a result.
+     * @param preferredRegions a list of preferred regions.
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi(List<Jid> filter)
+    public Jid selectJigasi(List<Jid> filter, List<String> preferredRegions)
     {
+        return selectJigasi(
+            instances, filter, preferredRegions, localRegion, false);
+    }
+
+    /**
+     * Selects the jigasi instance that is less loaded.
+     *
+     * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
+     * available Jigasi instances. List that we do not want as a result.
+     * @param preferredRegions a list of preferred regions.
+     * @param transcriber Whether we need to select a transcriber or sipgw
+     * jigasi instance.
+     * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
+     * no Jigasis available currently.
+     */
+    public static Jid selectJigasi(
+        List<BrewInstance> instances,
+        List<Jid> filter,
+        List<String> preferredRegions,
+        String localRegion,
+        boolean transcriber)
+    {
+        // let's filter using the provided filter and those in graceful shutdown
+        List<BrewInstance> filteredInstances = instances.stream()
+            .filter(j -> filter == null || !filter.contains(j.jid))
+            .filter(j -> j.status == null
+                || !Boolean.parseBoolean(j.status.getValueAsString(
+                        STAT_NAME_SHUTDOWN_IN_PROGRESS)))
+            .collect(Collectors.toList());
+
+        // let's select by type, is it transcriber or sipgw
+        List<BrewInstance> selectedByCap =
+            filteredInstances.stream()
+            .filter(j ->  j.status != null
+                    && transcriber ?
+                        Boolean.parseBoolean(
+                            j.status.getValueAsString(STAT_NAME_TRANSCRIBER))
+                        : Boolean.parseBoolean(
+                            j.status.getValueAsString(STAT_NAME_SIPGW)))
+            .collect(Collectors.toList());
+
+        if (selectedByCap.isEmpty())
+        {
+            // maybe old jigasi instances are used where there is no stat
+            // with info is it transcriber or sipgw so let's check are we in
+            // this legacy mode
+
+            boolean legacyMode =
+                filteredInstances.stream().anyMatch(
+                    j -> j.status != null
+                        && (j.status.getValue(STAT_NAME_TRANSCRIBER) == null
+                            && j.status.getValue(STAT_NAME_SIPGW) == null));
+
+            if (legacyMode)
+            {
+                selectedByCap = filteredInstances;
+            }
+        }
+
+        // let's select by region
+        // Prefer a jigasi in the participant's region.
+        List<BrewInstance> filteredByRegion = new ArrayList<>();
+        if (preferredRegions != null && !preferredRegions.isEmpty())
+        {
+            filteredByRegion = selectedByCap.stream()
+                .filter(j -> j.status == null
+                            || preferredRegions.contains(
+                                j.status.getValueAsString(STAT_NAME_REGION)))
+                .collect(Collectors.toList());
+        }
+
+        // Otherwise, prefer a jigasi in the local region.
+        if (filteredByRegion.isEmpty() && localRegion != null)
+        {
+            filteredByRegion = selectedByCap.stream()
+                .filter(j -> j.status == null
+                    || j.status.getValueAsString(STAT_NAME_REGION)
+                        .equals(localRegion))
+                .collect(Collectors.toList());
+        }
+
+        // Otherwise, just ignore region filtering
+        if (filteredByRegion.isEmpty())
+        {
+            filteredByRegion = selectedByCap;
+        }
+
         BrewInstance lessLoadedInstance = null;
         int numberOfParticipants = Integer.MAX_VALUE;
-        for (BrewInstance jigasi : instances)
+        for (BrewInstance jigasi : filteredByRegion)
         {
-            // filter instances
-            if (filter != null && filter.contains(jigasi.jid))
-            {
-                continue;
-            }
-
-            if(jigasi.status != null
-                && Boolean.valueOf(jigasi.status.getValueAsString(
-                    STAT_NAME_SHUTDOWN_IN_PROGRESS)))
-            {
-                // skip instance which is shutting down
-                continue;
-            }
-
             int currentParticipants
                 = jigasi.status != null ?
                     jigasi.status.getValueAsInt(STAT_NAME_PARTICIPANTS)

@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.jivesoftware.smack.packet.id.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * Class handles various Jitsi Meet extensions IQs like {@link MuteIq}.
@@ -238,11 +239,16 @@ public class MeetExtensionsHandler
                 dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
         }
 
+
+        List<String> bridgeRegions = conference.getBridges()
+            .stream().map(b -> b.getRegion()).collect(Collectors.toList());
+
         // Check if Jigasi is available
         Jid jigasiJid;
         JigasiDetector detector = conference.getServices().getJigasiDetector();
         if (detector == null
-            || (jigasiJid = detector.selectJigasi(filterJigasis)) == null)
+            || (jigasiJid = detector.selectJigasi(
+                    filterJigasis, bridgeRegions)) == null)
         {
             jigasiJid = conference.getServices().getSipGateway();
         }
