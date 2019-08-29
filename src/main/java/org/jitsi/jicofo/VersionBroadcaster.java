@@ -31,6 +31,7 @@ import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * The class listens for "focus joined room" and "conference created" events
@@ -171,18 +172,16 @@ public class VersionBroadcaster
                     + "(" + jicofoVersion.toString() + ","
                     + System.getProperty("os.name") + ")");
 
-        // Videobridge
-        // It is not be reported for FOCUS_JOINED_ROOM_TOPIC
-        Jid bridgeJid
-                = (Jid)event.getProperty(EventFactory.BRIDGE_JID_KEY);
-        Version jvbVersion
-            = bridgeJid == null
-                ? null : meetServices.getBridgeVersion(bridgeJid);
-        if (jvbVersion != null)
+        String jvbVersions = conference.getBridges().stream()
+            .map(b -> b.getVersion())
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(", "));
+
+        if (jvbVersions.length() > 0)
         {
             versionsExtension.addComponentVersion(
                     ComponentVersionsExtension.COMPONENT_VIDEOBRIDGE,
-                    jvbVersion.getNameVersionOsString());
+                    String.join(",", jvbVersions));
         }
 
         meetTools.sendPresenceExtension(chatRoom, versionsExtension);

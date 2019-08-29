@@ -106,6 +106,14 @@ public class Bridge
     private static final String STAT_NAME_RELAY_ID = "relay_id";
 
     /**
+     * The name of the stat used by jitsi-videobridge to indicate the version.
+     * This should match {@code VideobridgeStatistics.VERSION}, but is
+     * defined separately to avoid depending on the {@code jitsi-videobridge}
+     * maven package.
+     */
+    public static final String STAT_NAME_VERSION = "version";
+
+    /**
      * A {@link ColibriStatsExtension} instance with no stats.
      */
     private static final ColibriStatsExtension EMPTY_STATS
@@ -148,7 +156,7 @@ public class Bridge
      * Holds bridge version (if known - not all bridge version are capable of
      * reporting it).
      */
-    private final Version version;
+    private String version = null;
 
     /**
      * Stores the {@code operational} status of the bridge, which is
@@ -228,8 +236,14 @@ public class Bridge
             lastReportedBitrateKbps = bitrate;
         }
 
-        setIsOperational(!Boolean.valueOf(stats.getValueAsString(
+        setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
             JigasiDetector.STAT_NAME_SHUTDOWN_IN_PROGRESS)));
+
+        String newVersion = stats.getValueAsString(STAT_NAME_VERSION);
+        if (newVersion != null)
+        {
+            version = newVersion;
+        }
     }
 
     Bridge(BridgeSelector bridgeSelector,
@@ -238,7 +252,10 @@ public class Bridge
     {
         this.bridgeSelector = bridgeSelector;
         this.jid = Objects.requireNonNull(jid, "jid");
-        this.version = version;
+        if (version != null)
+        {
+            this.version = version.getVersion();
+        }
     }
 
     /**
@@ -375,7 +392,7 @@ public class Bridge
         return jid;
     }
 
-    public Version getVersion()
+    public String getVersion()
     {
         return version;
     }
