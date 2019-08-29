@@ -23,7 +23,7 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-import static org.jitsi.jicofo.Bridge.*;
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 import java.util.*;
 
@@ -71,32 +71,30 @@ public class JigasiSelectorTest
         if (numberOfParticipants > -1)
         {
             stats.addStat(new ColibriStatsExtension.Stat(
-                JigasiDetector.STAT_NAME_PARTICIPANTS, numberOfParticipants));
+                PARTICIPANTS, numberOfParticipants));
         }
 
         if (region != null)
         {
-            stats.addStat(
-                new ColibriStatsExtension.Stat(STAT_NAME_REGION, region));
+            stats.addStat(new ColibriStatsExtension.Stat(REGION, region));
         }
 
         if (inGracefulShutdown != null)
         {
             stats.addStat(new ColibriStatsExtension.Stat(
-                JigasiDetector.STAT_NAME_SHUTDOWN_IN_PROGRESS,
+                SHUTDOWN_IN_PROGRESS,
                 inGracefulShutdown));
         }
 
         if (transcriber != null)
         {
             stats.addStat(new ColibriStatsExtension.Stat(
-                JigasiDetector.STAT_NAME_TRANSCRIBER, transcriber));
+                SUPPORTS_TRANSCRIPTION, transcriber));
         }
 
         if (sipgw != null)
         {
-            stats.addStat(new ColibriStatsExtension.Stat(
-                JigasiDetector.STAT_NAME_SIPGW, sipgw));
+            stats.addStat(new ColibriStatsExtension.Stat(SUPPORTS_SIP, sipgw));
         }
 
         brewery.updateInstanceStats(jid, stats);

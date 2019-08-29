@@ -18,10 +18,11 @@
 package org.jitsi.jicofo.jigasi;
 
 import org.jitsi.xmpp.extensions.colibri.*;
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
+
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jxmpp.jid.*;
-import static org.jitsi.jicofo.Bridge.*;
 
 import java.util.*;
 import java.util.stream.*;
@@ -44,35 +45,6 @@ public class JigasiDetector
      */
     public static final String JIGASI_ROOM_PNAME
         = "org.jitsi.jicofo.jigasi.BREWERY";
-
-    /**
-     * The name of the stat used by the instance to indicate the number of
-     * participants. This should match
-     * {@code VideobridgeStatistics.NUMBEROFPARTICIPANTS}, but is defined
-     * separately to avoid depending on the {@code jitsi-videobridge}
-     * maven package.
-     */
-    public static final String STAT_NAME_PARTICIPANTS = "participants";
-
-    /**
-     * The name of the stat that indicates the instance has entered graceful
-     * shutdown mode.
-     * {@code VideobridgeStatistics.SHUTDOWN_IN_PROGRESS}, but is defined
-     * separately to avoid depending on the {@code jitsi-videobridge} maven
-     * package.
-     */
-    public static final String STAT_NAME_SHUTDOWN_IN_PROGRESS
-        = "graceful_shutdown";
-
-    /**
-     * The name of the stat that indicates the instance is or not a transcriber.
-     */
-    public static final String STAT_NAME_TRANSCRIBER = "transcriber";
-
-    /**
-     * The name of the stat that indicates the instance is or not sipgw.
-     */
-    public static final String STAT_NAME_SIPGW = "sipgw";
 
     /**
      * The local region of the this jicofo instance.
@@ -162,7 +134,7 @@ public class JigasiDetector
             .filter(j -> filter == null || !filter.contains(j.jid))
             .filter(j -> j.status == null
                 || !Boolean.parseBoolean(j.status.getValueAsString(
-                        STAT_NAME_SHUTDOWN_IN_PROGRESS)))
+                        SHUTDOWN_IN_PROGRESS)))
             .collect(Collectors.toList());
 
         // let's select by type, is it transcriber or sipgw
@@ -171,9 +143,9 @@ public class JigasiDetector
             .filter(j ->  j.status != null
                     && transcriber ?
                         Boolean.parseBoolean(
-                            j.status.getValueAsString(STAT_NAME_TRANSCRIBER))
+                            j.status.getValueAsString(SUPPORTS_TRANSCRIPTION))
                         : Boolean.parseBoolean(
-                            j.status.getValueAsString(STAT_NAME_SIPGW)))
+                            j.status.getValueAsString(SUPPORTS_SIP)))
             .collect(Collectors.toList());
 
         if (selectedByCap.isEmpty())
@@ -185,8 +157,10 @@ public class JigasiDetector
             boolean legacyMode =
                 filteredInstances.stream().anyMatch(
                     j -> j.status != null
-                        && (j.status.getValue(STAT_NAME_TRANSCRIBER) == null
-                            && j.status.getValue(STAT_NAME_SIPGW) == null));
+                        && (j.status.getValue(SUPPORTS_TRANSCRIPTION)
+                                == null
+                            && j.status.getValue(SUPPORTS_SIP)
+                                == null));
 
             if (legacyMode)
             {
@@ -202,7 +176,7 @@ public class JigasiDetector
             filteredByRegion = selectedByCap.stream()
                 .filter(j -> j.status == null
                             || preferredRegions.contains(
-                                j.status.getValueAsString(STAT_NAME_REGION)))
+                                j.status.getValueAsString(REGION)))
                 .collect(Collectors.toList());
         }
 
@@ -211,7 +185,7 @@ public class JigasiDetector
         {
             filteredByRegion = selectedByCap.stream()
                 .filter(j -> j.status == null
-                    || j.status.getValueAsString(STAT_NAME_REGION)
+                    || j.status.getValueAsString(REGION)
                         .equals(localRegion))
                 .collect(Collectors.toList());
         }
@@ -228,7 +202,7 @@ public class JigasiDetector
         {
             int currentParticipants
                 = jigasi.status != null ?
-                    jigasi.status.getValueAsInt(STAT_NAME_PARTICIPANTS)
+                    jigasi.status.getValueAsInt(PARTICIPANTS)
                     : 0;
             if (currentParticipants < numberOfParticipants)
             {
