@@ -247,20 +247,20 @@ public class TranscriberManager
     }
 
     /**
-     * Sends the message to the selected jigasi (from brewery muc).
+     * Sends the dial iq to the selected jigasi (from brewery muc).
      * @param retryCount the number of attempts to be made for sending this iq,
      * if no reply is received from the remote side.
-     * @param filterJigasi <tt>null</tt> or a list of jigasi Jids which
+     * @param exclude <tt>null</tt> or a list of jigasi Jids which
      * we already tried sending in attempt to retry.
      * @param preferredRegions a list of preferred regions.
      */
     private void selectTranscriber(
-        int retryCount, List<Jid> filterJigasi, List<String> preferredRegions)
+        int retryCount, List<Jid> exclude, List<String> preferredRegions)
     {
         logger.info("Attempting to invite transcriber");
 
         Jid jigasiJid
-            = jigasiDetector.selectTranscriber(filterJigasi, preferredRegions);
+            = jigasiDetector.selectTranscriber(exclude, preferredRegions);
 
         if(jigasiJid == null)
         {
@@ -303,14 +303,13 @@ public class TranscriberManager
 
             if (retry && retryCount > 0)
             {
-                if (filterJigasi == null)
+                if (exclude == null)
                 {
-                    filterJigasi = new ArrayList<>();
+                    exclude = new ArrayList<>();
                 }
-                filterJigasi.add(jigasiJid);
+                exclude.add(jigasiJid);
 
-                selectTranscriber(
-                    retryCount - 1, filterJigasi, preferredRegions);
+                selectTranscriber(retryCount - 1, exclude, preferredRegions);
             }
         }
         catch (OperationFailedException e)
