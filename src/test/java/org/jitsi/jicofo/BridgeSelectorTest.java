@@ -24,8 +24,6 @@ import mock.xmpp.pubsub.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.videobridge.stats.*;
-
 import org.jivesoftware.smack.packet.*;
 
 import org.junit.*;
@@ -36,6 +34,7 @@ import org.jxmpp.jid.impl.*;
 
 import java.util.*;
 
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.junit.Assert.*;
 
 /**
@@ -301,10 +300,10 @@ public class BridgeSelectorTest
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                VideobridgeStatistics.BITRATE_DOWNLOAD, bitrate));
+                BITRATE_DOWNLOAD, bitrate));
         statsExtension.addStat(
                 new ColibriStatsExtension.Stat(
-                VideobridgeStatistics.BITRATE_UPLOAD, bitrate));
+                BITRATE_UPLOAD, bitrate));
 
         return statsExtension;
     }
