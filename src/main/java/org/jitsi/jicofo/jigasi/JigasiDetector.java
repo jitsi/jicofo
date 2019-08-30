@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@
 package org.jitsi.jicofo.jigasi;
 
 import org.jitsi.xmpp.extensions.colibri.*;
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
+
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * <tt>JigasiDetector</tt> manages the pool of Jigasi instances which exist in
@@ -44,23 +47,9 @@ public class JigasiDetector
         = "org.jitsi.jicofo.jigasi.BREWERY";
 
     /**
-     * The name of the stat used by the instance to indicate the number of
-     * participants. This should match
-     * {@code VideobridgeStatistics.NUMBEROFPARTICIPANTS}, but is defined
-     * separately to avoid depending on the {@code jitsi-videobridge}
-     * maven package.
+     * The local region of the this jicofo instance.
      */
-    private static final String STAT_NAME_PARTICIPANTS = "participants";
-
-    /**
-     * The name of the stat that indicates the instance has entered graceful
-     * shutdown mode.
-     * {@code VideobridgeStatistics.SHUTDOWN_IN_PROGRESS}, but is defined
-     * separately to avoid depending on the {@code jitsi-videobridge} maven
-     * package.
-     */
-    public static final String STAT_NAME_SHUTDOWN_IN_PROGRESS
-        = "graceful_shutdown";
+    private final String localRegion;
 
     /**
      * Constructs new JigasiDetector.
@@ -73,12 +62,15 @@ public class JigasiDetector
      */
     public JigasiDetector(
         ProtocolProviderHandler protocolProvider,
-        String breweryName)
+        String breweryName,
+        String localRegion)
     {
         super(protocolProvider,
             breweryName,
             ColibriStatsExtension.ELEMENT_NAME,
             ColibriStatsExtension.NAMESPACE);
+
+        this.localRegion = localRegion;
     }
 
     @Override
@@ -92,48 +84,114 @@ public class JigasiDetector
     {}
 
     /**
-     * Selects the jigasi instance that is less loaded.
-     *
+     * Selects a jigasi instance which supports transcription.
+     * @param exclude a list of <tt>Jid</tt>s to be filtered from the list of
+     * available Jigasi instances. List that we do not want as a result.
+     * @param preferredRegions a list of preferred regions.
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi()
+    public Jid selectTranscriber(
+        List<Jid> exclude, Collection<String> preferredRegions)
     {
-        return this.selectJigasi(null);
+        return this.selectJigasi(
+            instances, exclude, preferredRegions, localRegion, true);
     }
 
     /**
      * Selects the jigasi instance that is less loaded.
      *
-     * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
+     * @param exclude a list of <tt>Jid</tt>s to be filtered from the list of
      * available Jigasi instances. List that we do not want as a result.
+     * @param preferredRegions a list of preferred regions.
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi(List<Jid> filter)
+    public Jid selectJigasi(
+        List<Jid> exclude, Collection<String> preferredRegions)
     {
+        return selectJigasi(
+            instances, exclude, preferredRegions, localRegion, false);
+    }
+
+    /**
+     * Selects the jigasi instance that is less loaded.
+     *
+     * @param exclude a list of <tt>Jid</tt>s to be filtered from the list of
+     * available Jigasi instances. List that we do not want as a result.
+     * @param preferredRegions a list of preferred regions.
+     * @param transcriber Whether we need to select a transcriber or sipgw
+     * jigasi instance.
+     * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
+     * no Jigasis available currently.
+     */
+    public static Jid selectJigasi(
+        List<BrewInstance> instances,
+        List<Jid> exclude,
+        Collection<String> preferredRegions,
+        String localRegion,
+        boolean transcriber)
+    {
+        final Collection<String> regions
+            = preferredRegions != null ? preferredRegions : new ArrayList<>();
+
+        // let's filter using the provided exclude list
+        // and those in graceful shutdown
+        List<BrewInstance> filteredInstances = instances.stream()
+            .filter(j -> exclude == null || !exclude.contains(j.jid))
+            .filter(j -> !isInGracefulShutdown(j))
+            .collect(Collectors.toList());
+
+        // let's select by type, is it transcriber or sipgw
+        List<BrewInstance> selectedByCap =
+            filteredInstances.stream()
+            .filter(j ->  transcriber ? supportTranscription(j) : supportSip(j))
+            .collect(Collectors.toList());
+
+        if (selectedByCap.isEmpty())
+        {
+            // maybe old jigasi instances are used where there is no stat
+            // with info is it transcriber or sipgw so let's check are we in
+            // this legacy mode
+
+            boolean legacyMode = filteredInstances.stream()
+                .anyMatch(JigasiDetector::isLegacyInstance);
+
+            if (legacyMode)
+            {
+                selectedByCap = filteredInstances;
+            }
+        }
+
+        // let's select by region
+        // Prefer a jigasi in the participant's region.
+        List<BrewInstance> filteredByRegion = new ArrayList<>();
+        if (preferredRegions != null && !preferredRegions.isEmpty())
+        {
+            filteredByRegion = selectedByCap.stream()
+                .filter(j -> isInPreferredRegion(j, regions))
+                .collect(Collectors.toList());
+        }
+
+        // Otherwise, prefer a jigasi in the local region.
+        if (filteredByRegion.isEmpty() && localRegion != null)
+        {
+            filteredByRegion = selectedByCap.stream()
+                .filter(j -> isInRegion(j, localRegion))
+                .collect(Collectors.toList());
+        }
+
+        // Otherwise, just ignore region filtering
+        if (filteredByRegion.isEmpty())
+        {
+            filteredByRegion = selectedByCap;
+        }
+
         BrewInstance lessLoadedInstance = null;
         int numberOfParticipants = Integer.MAX_VALUE;
-        for (BrewInstance jigasi : instances)
+        for (BrewInstance jigasi : filteredByRegion)
         {
-            // filter instances
-            if (filter != null && filter.contains(jigasi.jid))
-            {
-                continue;
-            }
-
-            if(jigasi.status != null
-                && Boolean.valueOf(jigasi.status.getValueAsString(
-                    STAT_NAME_SHUTDOWN_IN_PROGRESS)))
-            {
-                // skip instance which is shutting down
-                continue;
-            }
-
-            int currentParticipants
-                = jigasi.status != null ?
-                    jigasi.status.getValueAsInt(STAT_NAME_PARTICIPANTS)
-                    : 0;
+            int currentParticipants = getParticipantsCount(jigasi);
             if (currentParticipants < numberOfParticipants)
             {
                 numberOfParticipants = currentParticipants;
@@ -142,5 +200,92 @@ public class JigasiDetector
         }
 
         return lessLoadedInstance != null ? lessLoadedInstance.jid : null;
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is in graceful shutdown.
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} is in graceful shutdown.
+     */
+    private static boolean isInGracefulShutdown(BrewInstance bi)
+    {
+        return bi.status != null
+            && Boolean.parseBoolean(
+                bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} supports transcription.
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} supports transcription.
+     */
+    private static boolean supportTranscription(BrewInstance bi)
+    {
+        return bi.status != null
+            && Boolean.parseBoolean(
+                bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} supports sip.
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} supports sip.
+     */
+    private static boolean supportSip(BrewInstance bi)
+    {
+        return bi.status != null
+            && Boolean.parseBoolean(
+                bi.status.getValueAsString(SUPPORTS_SIP));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is a legacy instance.
+     * A legacy instance is the one that has stats and both support sip and
+     * transcription stats are not set (are null).
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} is legacy.
+     */
+    private static boolean isLegacyInstance(BrewInstance bi)
+    {
+        return bi.status != null
+            && (bi.status.getValue(SUPPORTS_TRANSCRIPTION) == null
+                && bi.status.getValue(SUPPORTS_SIP) == null);
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is in a preferred region.
+     * @param bi the {@code BrewInstance} to check.
+     * @param preferredRegions a list of preferred regions.
+     * @return whether the {@code BrewInstance} is in a preferred region.
+     */
+    private static boolean isInPreferredRegion(
+        BrewInstance bi, Collection<String> preferredRegions)
+    {
+        return bi.status != null
+            && preferredRegions.contains(bi.status.getValueAsString(REGION));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is in a region.
+     * @param bi the {@code BrewInstance} to check.
+     * @param region a region to check.
+     * @return whether the {@code BrewInstance} is in a region.
+     */
+    private static boolean isInRegion(
+        BrewInstance bi, String region)
+    {
+        return bi.status != null
+            && region.equals(bi.status.getValueAsString(REGION));
+    }
+
+    /**
+     * Returns the number pf participants reported by a {@code BrewInstance}.
+     * @param bi the {@code BrewInstance} to check.
+     * @return the number of participants or 0 if nothing reported.
+     */
+    private static int getParticipantsCount(
+        BrewInstance bi)
+    {
+        return bi.status != null ? bi.status.getValueAsInt(PARTICIPANTS): 0;
     }
 }

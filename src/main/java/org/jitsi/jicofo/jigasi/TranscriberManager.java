@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2018 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,22 @@
 
 package org.jitsi.jicofo.jigasi;
 
+import net.java.sip.communicator.util.*;
+import org.jitsi.utils.logging.Logger;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.*;
-import org.jitsi.utils.logging.*;
-import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.*;
 
 /**
  * The {@link TranscriberManager} class is responsible for listening to
@@ -172,8 +175,48 @@ public class TranscriberManager
         }
         if(isRequestingTranscriber(presence) && !active)
         {
-            executorService.submit(this::startTranscribing);
+            executorService.submit(
+                () -> this.startTranscribing(getBridgeRegions()));
         }
+    }
+
+    /**
+     * Returns a list of regions of the bridges that are currently used
+     * in the conference, empty list if nothing found or an error occurs.
+     * @return a list of used bridge regions.
+     */
+    private Collection<String> getBridgeRegions()
+    {
+        FocusManager focusManager =
+            ServiceUtils.getService(
+                FocusBundleActivator.bundleContext,
+                FocusManager.class);
+
+        try
+        {
+            JitsiMeetConferenceImpl conference =
+                focusManager.getConference(
+                    JidCreate.entityBareFrom(chatRoom.getIdentifier()));
+
+            if (conference == null)
+            {
+                logger.debug("Cannot find conference for "
+                    + chatRoom.getIdentifier());
+            }
+            else
+            {
+                return conference.getBridges().stream()
+                    .map(b -> b.getRegion())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            }
+        }
+        catch (XmppStringprepException e)
+        {
+            logger.error("Error finding room for " + chatRoom.getIdentifier());
+        }
+
+        return new ArrayList<>();
     }
 
     /**
@@ -193,22 +236,38 @@ public class TranscriberManager
 
     /**
      * Method which is able to invite the transcriber by dialing Jigasi
+     * @param preferredRegions a list of preferred regions.
      */
-    private void startTranscribing()
+    private void startTranscribing(Collection<String> preferredRegions)
     {
         if(active)
         {
             return;
         }
 
+        selectTranscriber(2, null, preferredRegions);
+    }
+
+    /**
+     * Sends the dial iq to the selected jigasi (from brewery muc).
+     * @param retryCount the number of attempts to be made for sending this iq,
+     * if no reply is received from the remote side.
+     * @param exclude <tt>null</tt> or a list of jigasi Jids which
+     * we already tried sending in attempt to retry.
+     * @param preferredRegions a list of preferred regions.
+     */
+    private void selectTranscriber(
+        int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
+    {
         logger.info("Attempting to invite transcriber");
 
-        Jid jigasiJid = jigasiDetector.selectJigasi();
+        Jid jigasiJid
+            = jigasiDetector.selectTranscriber(exclude, preferredRegions);
 
         if(jigasiJid == null)
         {
             logger.warn("Unable to invite transcriber due to no " +
-                            "Jigasi instances being available");
+                "Jigasi instances being available");
             return;
         }
 
@@ -222,6 +281,7 @@ public class TranscriberManager
         {
             IQ response = this.connection.sendPacketAndGetReply(dialIq);
 
+            boolean retry = false;
             if (response != null)
             {
                 if (response.getError() == null)
@@ -231,15 +291,27 @@ public class TranscriberManager
                 }
                 else
                 {
-                    //todo attempt again?
                     logger.warn("failed to invite transcriber. Got error: " +
                         response.getError().getErrorGenerator());
+                    retry = true;
                 }
             }
             else
             {
                 logger.warn("failed to invite transcriber; lack of response" +
                     " from XmmpConnection");
+                retry = true;
+            }
+
+            if (retry && retryCount > 0)
+            {
+                if (exclude == null)
+                {
+                    exclude = new ArrayList<>();
+                }
+                exclude.add(jigasiJid);
+
+                selectTranscriber(retryCount - 1, exclude, preferredRegions);
             }
         }
         catch (OperationFailedException e)

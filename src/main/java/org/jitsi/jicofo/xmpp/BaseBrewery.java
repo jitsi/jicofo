@@ -311,7 +311,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * @param extension the presence extension representing this brewing
      * instance status.
      */
-    private void processInstanceStatusChanged(
+    protected void processInstanceStatusChanged(
         Jid jid, T extension)
     {
         BrewInstance instance = find(jid);

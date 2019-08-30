@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+
+import static org.jitsi.jicofo.BridgeSelector.*;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -357,7 +359,10 @@ public class JitsiMeetServices
         if (!StringUtils.isNullOrEmpty(jigasiBreweryName))
         {
             JigasiDetector jigasiDetector
-                = new JigasiDetector(protocolProvider, jigasiBreweryName);
+                = new JigasiDetector(
+                    protocolProvider,
+                    jigasiBreweryName,
+                    config.getString(LOCAL_REGION_PNAME, null));
             logger.info("Using a Jigasi detector with MUC: " + jigasiBreweryName);
 
             jigasiDetector.init();
@@ -434,10 +439,9 @@ public class JitsiMeetServices
      * @param bridgeJid the XMPP address of the videobridge for which we want to
      *        obtain the version.
      *
-     * @return {@link Version} instance which holds the details about JVB
-     *         version or <tt>null</tt> if unknown.
+     * @return JVB version or <tt>null</tt> if unknown.
      */
-    public Version getBridgeVersion(Jid bridgeJid)
+    public String getBridgeVersion(Jid bridgeJid)
     {
         return bridgeSelector.getBridgeVersion(bridgeJid);
     }

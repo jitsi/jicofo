@@ -18,9 +18,10 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.xmpp.extensions.colibri.*;
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
+
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
@@ -35,75 +36,13 @@ import java.util.*;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-class Bridge
+public class Bridge
     implements Comparable<Bridge>
 {
     /**
      * The {@link Logger} used by the {@link Bridge} class and its instances.
      */
     private static final Logger logger = Logger.getLogger(Bridge.class);
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate the number of
-     * video streams. This should match
-     * {@code VideobridgeStatistics.VIDEOSTREAMS}, but is defined separately
-     * to avoid depending on the {@code jitsi-videobridge} maven package.
-     */
-    private static final String STAT_NAME_VIDEO_STREAMS = "videostreams";
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate the current
-     * upload bitrate in Kbps.
-     * video streams. This should match
-     * {@code VideobridgeStatistics.BITRATE_UPLOAD}, but is defined separately
-     * to avoid depending on the {@code jitsi-videobridge} maven package.
-     */
-    private static final String STAT_NAME_BITRATE_UP = "bit_rate_upload";
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate the current
-     * download bitrate in Kbps.
-     * video streams. This should match
-     * {@code VideobridgeStatistics.BITRATE_DOWNLOAD}, but is defined separately
-     * to avoid depending on the {@code jitsi-videobridge} maven package.
-     */
-    private static final String STAT_NAME_BITRATE_DOWN = "bit_rate_download";
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate the current
-     * Octo receive bitrate in Kbps.
-     * video streams. This should match
-     * {@code VideobridgeStatistics.BITRATE_DOWNLOAD}, but is defined separately
-     * to avoid depending on the {@code jitsi-videobridge} maven package.
-     */
-    private static final String STAT_NAME_OCTO_RECEIVE_BITRATE
-        = "octo_receive_bitrate";
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate the current
-     * Octo send bitrate in Kbps.
-     * video streams. This should match
-     * {@code VideobridgeStatistics.BITRATE_DOWNLOAD}, but is defined separately
-     * to avoid depending on the {@code jitsi-videobridge} maven package.
-     */
-    private static final String STAT_NAME_OCTO_SEND_BITRATE
-            = "octo_send_bitrate";
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate its region.
-     * This should match {@code VideobridgeStatistics.REGION}, but is defined
-     * separately to avoid depending on the {@code jitsi-videobridge} maven
-     * package.
-     */
-    private static final String STAT_NAME_REGION = "region";
-
-    /**
-     * The name of the stat used by jitsi-videobridge to indicate its Octo relay
-     * ID. This should match {@code VideobridgeStatistics.RELAY_ID}, but is
-     * defined separately to avoid depending on the {@code jitsi-videobridge}
-     * maven package.
-     */
-    private static final String STAT_NAME_RELAY_ID = "relay_id";
 
     /**
      * A {@link ColibriStatsExtension} instance with no stats.
@@ -148,7 +87,7 @@ class Bridge
      * Holds bridge version (if known - not all bridge version are capable of
      * reporting it).
      */
-    private final Version version;
+    private String version = null;
 
     /**
      * Stores the {@code operational} status of the bridge, which is
@@ -189,7 +128,7 @@ class Bridge
         }
         stats = this.stats;
 
-        Integer videoStreamCount = stats.getValueAsInt(STAT_NAME_VIDEO_STREAMS);
+        Integer videoStreamCount = stats.getValueAsInt(VIDEO_STREAMS);
         if (videoStreamCount != null)
         {
             // We have extra logic for keeping track of the number of video
@@ -203,11 +142,11 @@ class Bridge
         Integer octoSendBitrate = null;
         try
         {
-            bitrateUpKbps = stats.getValueAsInt(STAT_NAME_BITRATE_UP);
-            bitrateDownKbps = stats.getValueAsInt(STAT_NAME_BITRATE_DOWN);
+            bitrateUpKbps = stats.getValueAsInt(BITRATE_UPLOAD);
+            bitrateDownKbps = stats.getValueAsInt(BITRATE_DOWNLOAD);
             octoReceiveBitrate
-                    = stats.getValueAsInt(STAT_NAME_OCTO_RECEIVE_BITRATE);
-            octoSendBitrate = stats.getValueAsInt(STAT_NAME_OCTO_SEND_BITRATE);
+                    = stats.getValueAsInt(OCTO_RECEIVE_BITRATE);
+            octoSendBitrate = stats.getValueAsInt(OCTO_SEND_BITRATE);
         }
         catch (NumberFormatException nfe)
         {
@@ -228,8 +167,14 @@ class Bridge
             lastReportedBitrateKbps = bitrate;
         }
 
-        setIsOperational(!Boolean.valueOf(stats.getValueAsString(
-            JigasiDetector.STAT_NAME_SHUTDOWN_IN_PROGRESS)));
+        setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
+            SHUTDOWN_IN_PROGRESS)));
+
+        String newVersion = stats.getValueAsString(VERSION);
+        if (newVersion != null)
+        {
+            version = newVersion;
+        }
     }
 
     Bridge(BridgeSelector bridgeSelector,
@@ -238,7 +183,10 @@ class Bridge
     {
         this.bridgeSelector = bridgeSelector;
         this.jid = Objects.requireNonNull(jid, "jid");
-        this.version = version;
+        if (version != null)
+        {
+            this.version = version.getVersion();
+        }
     }
 
     /**
@@ -247,7 +195,7 @@ class Bridge
      */
     public String getRelayId()
     {
-        return stats.getValueAsString(STAT_NAME_RELAY_ID);
+        return stats.getValueAsString(RELAY_ID);
     }
 
     /**
@@ -375,7 +323,7 @@ class Bridge
         return jid;
     }
 
-    public Version getVersion()
+    public String getVersion()
     {
         return version;
     }
@@ -385,7 +333,7 @@ class Bridge
      */
     public String getRegion()
     {
-        return stats.getValueAsString(STAT_NAME_REGION);
+        return stats.getValueAsString(REGION);
     }
 
     /**
