@@ -185,7 +185,7 @@ public class TranscriberManager
      * in the conference, empty list if nothing found or an error occurs.
      * @return a list of used bridge regions.
      */
-    private List<String> getBridgeRegions()
+    private Collection<String> getBridgeRegions()
     {
         FocusManager focusManager =
             ServiceUtils.getService(
@@ -206,7 +206,9 @@ public class TranscriberManager
             else
             {
                 return conference.getBridges().stream()
-                    .map(b -> b.getRegion()).collect(Collectors.toList());
+                    .map(b -> b.getRegion())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
             }
         }
         catch (XmppStringprepException e)
@@ -236,7 +238,7 @@ public class TranscriberManager
      * Method which is able to invite the transcriber by dialing Jigasi
      * @param preferredRegions a list of preferred regions.
      */
-    private void startTranscribing(List<String> preferredRegions)
+    private void startTranscribing(Collection<String> preferredRegions)
     {
         if(active)
         {
@@ -255,7 +257,7 @@ public class TranscriberManager
      * @param preferredRegions a list of preferred regions.
      */
     private void selectTranscriber(
-        int retryCount, List<Jid> exclude, List<String> preferredRegions)
+        int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
     {
         logger.info("Attempting to invite transcriber");
 

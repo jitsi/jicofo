@@ -92,7 +92,7 @@ public class JigasiDetector
      * no Jigasis available currently.
      */
     public Jid selectTranscriber(
-        List<Jid> exclude, List<String> preferredRegions)
+        List<Jid> exclude, Collection<String> preferredRegions)
     {
         return this.selectJigasi(
             instances, exclude, preferredRegions, localRegion, true);
@@ -107,7 +107,8 @@ public class JigasiDetector
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi(List<Jid> exclude, List<String> preferredRegions)
+    public Jid selectJigasi(
+        List<Jid> exclude, Collection<String> preferredRegions)
     {
         return selectJigasi(
             instances, exclude, preferredRegions, localRegion, false);
@@ -127,10 +128,13 @@ public class JigasiDetector
     public static Jid selectJigasi(
         List<BrewInstance> instances,
         List<Jid> exclude,
-        List<String> preferredRegions,
+        Collection<String> preferredRegions,
         String localRegion,
         boolean transcriber)
     {
+        final Collection<String> regions
+            = preferredRegions != null ? preferredRegions : new ArrayList<>();
+
         // let's filter using the provided exclude list
         // and those in graceful shutdown
         List<BrewInstance> filteredInstances = instances.stream()
@@ -165,7 +169,7 @@ public class JigasiDetector
         if (preferredRegions != null && !preferredRegions.isEmpty())
         {
             filteredByRegion = selectedByCap.stream()
-                .filter(j -> isInPreferredRegion(j, preferredRegions))
+                .filter(j -> isInPreferredRegion(j, regions))
                 .collect(Collectors.toList());
         }
 
@@ -255,7 +259,7 @@ public class JigasiDetector
      * @return whether the {@code BrewInstance} is in a preferred region.
      */
     private static boolean isInPreferredRegion(
-        BrewInstance bi, List<String> preferredRegions)
+        BrewInstance bi, Collection<String> preferredRegions)
     {
         return bi.status != null
             && preferredRegions.contains(bi.status.getValueAsString(REGION));

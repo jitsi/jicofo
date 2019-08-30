@@ -112,11 +112,13 @@ public class JigasiSelectorTest
         updateStats(jid2, 2, null, null, null, null);
 
         Jid res;
-        // legacy select where there is no stats(transcriber, sipgw) and no region
+        // legacy select where there is no stats(transcriber, sipgw)
+        // and no region,
+        // also checks whether selectJigasi can get null list of regions
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
             null,               /* filter */
-            new ArrayList<>(),  /* preferred regions */
+            null,               /* preferred regions */
             null,               /* local region */
             false);             /* select transcriber*/
         assertEquals("Wrong jigasi selected", jid1, res);
