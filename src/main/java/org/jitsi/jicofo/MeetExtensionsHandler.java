@@ -240,10 +240,10 @@ public class MeetExtensionsHandler
         }
 
 
-        List<String> bridgeRegions = conference.getBridges().stream()
+        Set<String> bridgeRegions = conference.getBridges().stream()
             .map(b -> b.getRegion())
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .collect(Collectors.toSet());
 
         // Check if Jigasi is available
         Jid jigasiJid;

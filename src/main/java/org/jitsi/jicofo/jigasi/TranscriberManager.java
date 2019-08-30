@@ -208,7 +208,7 @@ public class TranscriberManager
                 return conference.getBridges().stream()
                     .map(b -> b.getRegion())
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
             }
         }
         catch (XmppStringprepException e)
