@@ -84,37 +84,39 @@ public class JigasiDetector
     {}
 
     /**
-     * Selects the jigasi instance that is less loaded.
-     * @param preferredRegions a list of preferred regions.
-     * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
-     * no Jigasis available currently.
-     */
-    public Jid selectTranscriber(
-        List<Jid> filter, List<String> preferredRegions)
-    {
-        return this.selectJigasi(
-            instances, filter, preferredRegions, localRegion, true);
-    }
-
-    /**
-     * Selects the jigasi instance that is less loaded.
-     *
-     * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
+     * Selects a jigasi instance which supports transcription.
+     * @param exclude a list of <tt>Jid</tt>s to be filtered from the list of
      * available Jigasi instances. List that we do not want as a result.
      * @param preferredRegions a list of preferred regions.
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi(List<Jid> filter, List<String> preferredRegions)
+    public Jid selectTranscriber(
+        List<Jid> exclude, List<String> preferredRegions)
     {
-        return selectJigasi(
-            instances, filter, preferredRegions, localRegion, false);
+        return this.selectJigasi(
+            instances, exclude, preferredRegions, localRegion, true);
     }
 
     /**
      * Selects the jigasi instance that is less loaded.
      *
-     * @param filter a list of <tt>Jid</tt>s to be filtered from the list of
+     * @param exclude a list of <tt>Jid</tt>s to be filtered from the list of
+     * available Jigasi instances. List that we do not want as a result.
+     * @param preferredRegions a list of preferred regions.
+     * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
+     * no Jigasis available currently.
+     */
+    public Jid selectJigasi(List<Jid> exclude, List<String> preferredRegions)
+    {
+        return selectJigasi(
+            instances, exclude, preferredRegions, localRegion, false);
+    }
+
+    /**
+     * Selects the jigasi instance that is less loaded.
+     *
+     * @param exclude a list of <tt>Jid</tt>s to be filtered from the list of
      * available Jigasi instances. List that we do not want as a result.
      * @param preferredRegions a list of preferred regions.
      * @param transcriber Whether we need to select a transcriber or sipgw
@@ -124,14 +126,15 @@ public class JigasiDetector
      */
     public static Jid selectJigasi(
         List<BrewInstance> instances,
-        List<Jid> filter,
+        List<Jid> exclude,
         List<String> preferredRegions,
         String localRegion,
         boolean transcriber)
     {
-        // let's filter using the provided filter and those in graceful shutdown
+        // let's filter using the provided exclude list
+        // and those in graceful shutdown
         List<BrewInstance> filteredInstances = instances.stream()
-            .filter(j -> filter == null || !filter.contains(j.jid))
+            .filter(j -> exclude == null || !exclude.contains(j.jid))
             .filter(j -> j.status == null
                 || !Boolean.parseBoolean(j.status.getValueAsString(
                         SHUTDOWN_IN_PROGRESS)))
