@@ -141,6 +141,18 @@ public class JigasiSelectorTest
         assertEquals("Wrong jigasi selected", jid2, res);
 
         // select by preferred regions
+        // should select based on participant as no region reported by instances
+        updateStats(jid1, 1, null, null, null, null);
+        updateStats(jid2, 2, null, null, null, null);
+        res = JigasiDetector.selectJigasi(
+            brewery.getInstances(),
+            null,                                   /* filter */
+            Arrays.asList(
+                new String[]{"region2", "region3"}),/* preferred regions */
+            "region2",                              /* local region */
+            false);                                 /* select transcriber*/
+        assertEquals("Wrong jigasi selected", jid1, res);
+
         updateStats(jid1, 1, "region1", null, null, null);
         updateStats(jid2, 2, "region2", null, null, null);
         // should select from region2

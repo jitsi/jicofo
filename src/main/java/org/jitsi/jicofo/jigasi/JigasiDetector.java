@@ -135,20 +135,13 @@ public class JigasiDetector
         // and those in graceful shutdown
         List<BrewInstance> filteredInstances = instances.stream()
             .filter(j -> exclude == null || !exclude.contains(j.jid))
-            .filter(j -> j.status == null
-                || !Boolean.parseBoolean(j.status.getValueAsString(
-                        SHUTDOWN_IN_PROGRESS)))
+            .filter(j -> !isInGracefulShutdown(j))
             .collect(Collectors.toList());
 
         // let's select by type, is it transcriber or sipgw
         List<BrewInstance> selectedByCap =
             filteredInstances.stream()
-            .filter(j ->  j.status != null
-                    && transcriber ?
-                        Boolean.parseBoolean(
-                            j.status.getValueAsString(SUPPORTS_TRANSCRIPTION))
-                        : Boolean.parseBoolean(
-                            j.status.getValueAsString(SUPPORTS_SIP)))
+            .filter(j ->  transcriber ? supportTranscription(j) : supportSip(j))
             .collect(Collectors.toList());
 
         if (selectedByCap.isEmpty())
@@ -157,13 +150,8 @@ public class JigasiDetector
             // with info is it transcriber or sipgw so let's check are we in
             // this legacy mode
 
-            boolean legacyMode =
-                filteredInstances.stream().anyMatch(
-                    j -> j.status != null
-                        && (j.status.getValue(SUPPORTS_TRANSCRIPTION)
-                                == null
-                            && j.status.getValue(SUPPORTS_SIP)
-                                == null));
+            boolean legacyMode = filteredInstances.stream()
+                .anyMatch(JigasiDetector::isLegacyInstance);
 
             if (legacyMode)
             {
@@ -177,9 +165,7 @@ public class JigasiDetector
         if (preferredRegions != null && !preferredRegions.isEmpty())
         {
             filteredByRegion = selectedByCap.stream()
-                .filter(j -> j.status == null
-                            || preferredRegions.contains(
-                                j.status.getValueAsString(REGION)))
+                .filter(j -> isInPreferredRegion(j, preferredRegions))
                 .collect(Collectors.toList());
         }
 
@@ -187,9 +173,7 @@ public class JigasiDetector
         if (filteredByRegion.isEmpty() && localRegion != null)
         {
             filteredByRegion = selectedByCap.stream()
-                .filter(j -> j.status == null
-                    || j.status.getValueAsString(REGION)
-                        .equals(localRegion))
+                .filter(j -> isInRegion(j, localRegion))
                 .collect(Collectors.toList());
         }
 
@@ -203,10 +187,7 @@ public class JigasiDetector
         int numberOfParticipants = Integer.MAX_VALUE;
         for (BrewInstance jigasi : filteredByRegion)
         {
-            int currentParticipants
-                = jigasi.status != null ?
-                    jigasi.status.getValueAsInt(PARTICIPANTS)
-                    : 0;
+            int currentParticipants = getParticipantsCount(jigasi);
             if (currentParticipants < numberOfParticipants)
             {
                 numberOfParticipants = currentParticipants;
@@ -215,5 +196,92 @@ public class JigasiDetector
         }
 
         return lessLoadedInstance != null ? lessLoadedInstance.jid : null;
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is in graceful shutdown.
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} is in graceful shutdown.
+     */
+    private static boolean isInGracefulShutdown(BrewInstance bi)
+    {
+        return bi.status != null
+            && Boolean.parseBoolean(
+                bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} supports transcription.
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} supports transcription.
+     */
+    private static boolean supportTranscription(BrewInstance bi)
+    {
+        return bi.status != null
+            && Boolean.parseBoolean(
+                bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} supports sip.
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} supports sip.
+     */
+    private static boolean supportSip(BrewInstance bi)
+    {
+        return bi.status != null
+            && Boolean.parseBoolean(
+                bi.status.getValueAsString(SUPPORTS_SIP));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is a legacy instance.
+     * A legacy instance is the one that has stats and both support sip and
+     * transcription stats are not set (are null).
+     * @param bi the {@code BrewInstance} to check.
+     * @return whether the {@code BrewInstance} is legacy.
+     */
+    private static boolean isLegacyInstance(BrewInstance bi)
+    {
+        return bi.status != null
+            && (bi.status.getValue(SUPPORTS_TRANSCRIPTION) == null
+                && bi.status.getValue(SUPPORTS_SIP) == null);
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is in a preferred region.
+     * @param bi the {@code BrewInstance} to check.
+     * @param preferredRegions a list of preferred regions.
+     * @return whether the {@code BrewInstance} is in a preferred region.
+     */
+    private static boolean isInPreferredRegion(
+        BrewInstance bi, List<String> preferredRegions)
+    {
+        return bi.status != null
+            && preferredRegions.contains(bi.status.getValueAsString(REGION));
+    }
+
+    /**
+     * Checks whether the {@code BrewInstance} is in a region.
+     * @param bi the {@code BrewInstance} to check.
+     * @param region a region to check.
+     * @return whether the {@code BrewInstance} is in a region.
+     */
+    private static boolean isInRegion(
+        BrewInstance bi, String region)
+    {
+        return bi.status != null
+            && region.equals(bi.status.getValueAsString(REGION));
+    }
+
+    /**
+     * Returns the number pf participants reported by a {@code BrewInstance}.
+     * @param bi the {@code BrewInstance} to check.
+     * @return the number of participants or 0 if nothing reported.
+     */
+    private static int getParticipantsCount(
+        BrewInstance bi)
+    {
+        return bi.status != null ? bi.status.getValueAsInt(PARTICIPANTS): 0;
     }
 }
