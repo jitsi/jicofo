@@ -31,7 +31,6 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
-import org.jitsi.videobridge.stats.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -46,6 +45,7 @@ import org.mockito.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -363,7 +363,7 @@ public class PubSubBridgeSelectorTest
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                VideobridgeStatistics.CONFERENCES, "" + conferenceCount));
+                CONFERENCES, "" + conferenceCount));
 
         subOpSet.fireSubscriptionNotification(
             sharedPubSubNode, itemId.toString(), statsExtension);
