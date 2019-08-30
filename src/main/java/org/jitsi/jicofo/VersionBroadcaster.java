@@ -175,6 +175,8 @@ public class VersionBroadcaster
         String jvbVersions = conference.getBridges().stream()
             .map(b -> b.getVersion())
             .filter(Objects::nonNull)
+            .distinct()
+            .sorted()
             .collect(Collectors.joining(", "));
 
         if (jvbVersions.length() > 0)
