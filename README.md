@@ -180,3 +180,25 @@ configured with the jitsi-meet scripts, then you can find the certificate in:
 /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
 ```
 
+## Building from source
+
+The build system is based on `maven` and `ant`. Additionally, `maven-ant-tasks` package is needed:
+
+```
+mvn dependency:get -DartifactId=maven-ant-tasks -DgroupId=org.apache.maven -Dversion=2.1.3
+```
+
+Goto the `jicofo` source folder and resolve package dependencies:
+
+```
+mvn dependency:resolve
+```
+
+Finally, build package for the given target platform, e.g. for 64-bit Linux:
+
+```
+ant -lib ~/.m2/repository/org/apache/maven/maven-ant-tasks/2.1.3 dist.lin64
+```
+
+The resulting `jicofo.jar` will be placed into the source folder root.
+
