@@ -80,12 +80,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     private final String extensionNamespace;
 
     /**
-     * Whether to use the MUC occupant jid of detected instances, or the
-     * user jid (the "real" jid).
-     */
-    private boolean useOccupantJid = true;
-
-    /**
      * Creates new instance of <tt>BaseBrewery</tt>
      * @param protocolProvider the {@link ProtocolProviderHandler} instance
      * to which this detector will attach.
@@ -300,7 +294,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return null;
         }
 
-        return useOccupantJid ? member.getOccupantJid() : member.getJid();
+        return member.getOccupantJid();
     }
 
     /**
@@ -368,15 +362,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         logger.info("Removed brewery instance: " + i.jid);
 
         notifyInstanceOffline(i.jid);
-    }
-
-    /**
-     * Sets the flag the the use of the MUC occupant jid or the user jid.
-     * @param useOccupantJid the value to set.
-     */
-    protected void setUseOccupantJid(boolean useOccupantJid)
-    {
-        this.useOccupantJid = useOccupantJid;
     }
 
     /**
