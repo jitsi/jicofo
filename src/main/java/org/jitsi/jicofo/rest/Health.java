@@ -80,7 +80,7 @@ public class Health
     /**
      * The maximum number of millis that we cache results for.
      */
-    private static final int STATUS_CACHE_INTERVAL = 1000;
+    private static final int STATUS_CACHE_INTERVAL = 10000;
 
     /**
      * Interval which we consider bad for a health check and we will print
