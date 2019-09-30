@@ -179,7 +179,7 @@ public class MockVideobridge
             String confId, String endpointId)
     {
         Conference conference = bridge.getConference(confId, null);
-        Endpoint endpoint = conference.getOrCreateLocalEndpoint(endpointId);
+        Endpoint endpoint = conference.getLocalEndpoint(endpointId);
 
         MediaStreamTrackDesc[] tracks = endpoint.getMediaStreamTracks();
 
