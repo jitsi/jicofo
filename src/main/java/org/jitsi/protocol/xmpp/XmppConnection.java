@@ -63,7 +63,8 @@ public interface XmppConnection
     IQRequestHandler unregisterIQRequestHandler(IQRequestHandler handler);
 
     /**
-     * See {@link XMPPConnection#sendIqWithResponseCallback(IQ, StanzaListener, ExceptionCallback, long)}
+     * See {@link XMPPConnection#sendIqWithResponseCallback(
+     *              IQ, StanzaListener, ExceptionCallback, long)}
      */
     void sendIqWithResponseCallback(
             IQ iq,
