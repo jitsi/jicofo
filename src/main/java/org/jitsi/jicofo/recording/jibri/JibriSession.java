@@ -171,6 +171,16 @@ public class JibriSession
     private int numRetries = 0;
 
     /**
+     * The full JID of the entity that has initiated the recording flow.
+     */
+    private Jid initiator;
+
+    /**
+     * The full JID of the entity that has initiated the stop of the recording.
+     */
+    private Jid terminator;
+
+    /**
      * Creates new {@link JibriSession} instance.
      * @param owner the session owner which will be notified about this session
      * state changes.
@@ -198,6 +208,7 @@ public class JibriSession
     JibriSession(
             JibriSession.Owner owner,
             EntityBareJid roomName,
+            Jid initiator,
             long pendingTimeout,
             int maxNumRetries,
             XmppConnection connection,
@@ -214,6 +225,7 @@ public class JibriSession
     {
         this.owner = owner;
         this.roomName = roomName;
+        this.initiator = initiator;
         this.scheduledExecutor
             = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.pendingTimeout = pendingTimeout;
@@ -261,13 +273,15 @@ public class JibriSession
 
     /**
      * Stops this session if it's not already stopped.
+     * @param initiator The jid of the initiator of the stop request.
      */
-    synchronized public void stop()
+    synchronized public void stop(Jid initiator)
     {
         if (currentJibriJid == null)
         {
             return;
         }
+        this.terminator = initiator;
 
         JibriIq stopRequest = new JibriIq();
 
@@ -662,12 +676,30 @@ public class JibriSession
                     // an error status (like we do in
                     // JibriEventHandler#handleEvent when a Jibri goes offline)
                     // to trigger the fallback logic.
-                    stop();
+                    stop(null);
                     handleJibriStatusUpdate(
                         currentJibriJid, Status.OFF, FailureReason.ERROR);
                 }
             }
         }
+    }
+
+    /**
+     * The JID of the entity that has initiated the recording flow.
+     * @return The JID of the entity that has initiated the recording flow.
+     */
+    public Jid getInitiator()
+    {
+        return initiator;
+    }
+
+    /**
+     * The JID of the entity that has initiated the stop of the recording.
+     * @return The JID of the entity that has stopped the recording.
+     */
+    public Jid getTerminator()
+    {
+        return terminator;
     }
 
     /**

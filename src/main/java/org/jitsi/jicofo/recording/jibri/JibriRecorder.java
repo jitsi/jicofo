@@ -84,7 +84,7 @@ public class JibriRecorder
     {
         if (this.jibriSession != null)
         {
-            this.jibriSession.stop();
+            this.jibriSession.stop(null);
             this.jibriSession = null;
         }
 
@@ -139,6 +139,7 @@ public class JibriRecorder
                 = new JibriSession(
                     this,
                     conference.getRoomName(),
+                    iq.getFrom(),
                     globalConfig.getJibriPendingTimeout(),
                     globalConfig.getNumJibriRetries(),
                     connection,
@@ -244,6 +245,16 @@ public class JibriRecorder
         recordingStatus.setStatus(newStatus);
         recordingStatus.setFailureReason(failureReason);
         recordingStatus.setSessionId(jibriSession.getSessionId());
+
+        if (JibriIq.Status.ON.equals(newStatus))
+        {
+            recordingStatus.setInitiator(jibriSession.getInitiator());
+        }
+        else if (JibriIq.Status.OFF.equals(newStatus))
+        {
+            recordingStatus.setInitiator(jibriSession.getTerminator());
+        }
+
         JibriIq.RecordingMode recordingMode = jibriSession.getRecordingMode();
         if (recordingMode != RecordingMode.UNDEFINED)
         {
