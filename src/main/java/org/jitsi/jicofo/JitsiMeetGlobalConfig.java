@@ -224,7 +224,8 @@ public class JitsiMeetGlobalConfig
             logger.warn("Jibri PENDING timeouts are disabled");
         }
 
-        numJibriRetries = configService.getInt(NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
+        numJibriRetries = configService.getInt(
+            NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
         if (numJibriRetries >= 0)
         {
             logger.info("Will attempt a maximum of " + numJibriRetries +
@@ -232,7 +233,8 @@ public class JitsiMeetGlobalConfig
         }
         else
         {
-            logger.info("Will retry Jibri requests infinitely (if a Jibri is available)");
+            logger.info("Will retry Jibri requests infinitely "
+                + "(if a Jibri is available)");
         }
 
         singleParticipantTimeout
@@ -296,7 +298,8 @@ public class JitsiMeetGlobalConfig
     }
 
     /**
-     * Tells how many retry attempts we'll make for a Jibri request when a Jibri fails
+     * Tells how many retry attempts we'll make for a Jibri request when
+     * a Jibri fails
      * @return the amount of retry attempts we'll make for a Jibri request when
      * a Jibri fails
      */

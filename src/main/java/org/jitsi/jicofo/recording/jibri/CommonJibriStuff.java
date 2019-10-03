@@ -269,7 +269,7 @@ public abstract class CommonJibriStuff
         else if (JibriIq.Action.STOP.equals(action) &&
             jibriSession != null)
         {
-            jibriSession.stop();
+            jibriSession.stop(iq.getFrom());
             return IQ.createResultIQ(iq);
         }
 

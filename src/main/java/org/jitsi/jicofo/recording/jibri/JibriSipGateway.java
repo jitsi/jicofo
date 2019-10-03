@@ -99,7 +99,7 @@ public class JibriSipGateway
             List<JibriSession> sessions = new ArrayList<>(sipSessions.values());
             for (JibriSession session : sessions)
             {
-                session.stop();
+                session.stop(null);
             }
         }
         finally
@@ -132,6 +132,7 @@ public class JibriSipGateway
                 = new JibriSession(
                         this,
                         conference.getRoomName(),
+                        iq.getFrom(),
                         globalConfig.getJibriPendingTimeout(),
                         globalConfig.getNumJibriRetries(),
                         connection,

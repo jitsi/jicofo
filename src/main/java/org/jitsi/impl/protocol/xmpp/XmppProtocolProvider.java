@@ -782,17 +782,20 @@ public class XmppProtocolProvider
                 long timeout)
             throws NotConnectedException, InterruptedException
         {
-            connection.sendIqWithResponseCallback(iq, stanzaListener, exceptionCallback, timeout);
+            connection.sendIqWithResponseCallback(
+                iq, stanzaListener, exceptionCallback, timeout);
         }
 
         @Override
-        public IQRequestHandler registerIQRequestHandler(IQRequestHandler handler)
+        public IQRequestHandler registerIQRequestHandler(
+            IQRequestHandler handler)
         {
             return connection.registerIQRequestHandler(handler);
         }
 
         @Override
-        public IQRequestHandler unregisterIQRequestHandler(IQRequestHandler handler)
+        public IQRequestHandler unregisterIQRequestHandler(
+            IQRequestHandler handler)
         {
             return connection.unregisterIQRequestHandler(handler);
         }
