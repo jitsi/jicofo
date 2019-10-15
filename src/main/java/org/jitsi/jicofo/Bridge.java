@@ -294,7 +294,7 @@ public class Bridge
         return this.lastReportedBitrateKbps - o.lastReportedBitrateKbps;
     }
 
-    private int getEstimatedVideoStreamCount()
+    public int getEstimatedVideoStreamCount()
     {
         return videoStreamCount + videoStreamCountDiff;
     }

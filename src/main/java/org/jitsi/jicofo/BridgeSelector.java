@@ -1007,4 +1007,77 @@ public class BridgeSelector
                 .orElse(selectFrom.get(0));
         }
     }
+
+    /**
+     * Implements a {@link BridgeSelectionStrategy} which
+     * tries to find a bridge in the users region with a load
+     * of less than the number of participants defined by
+     * {@link RegionBasedMaxLoadBridgeSelectionStrategy#MAX_NUM_BRIDGE_PARTICIPANTS_PNAME}
+     * participants
+     */
+    private static class RegionBasedMaxLoadBridgeSelectionStrategy
+        extends RegionBasedBridgeSelectionStrategy
+    {
+        /**
+         * The name of the property to define the amount of participants
+         * after which a bridge will not be considered
+         */
+        public static final String MAX_NUM_BRIDGE_PARTICIPANTS_PNAME
+            = "org.jitsi.jicofo.BridgeSelector.MAX_NUM_BRIDGE_PARTICIPANTS";
+
+        /**
+         * The default number of participants after which the bridge
+         * will not be considered for adding a participant
+         */
+        private static int DEFAULT_MAX_NUM_BRIDGE_PARTICIPANTS = 25;
+
+        protected final int maxNumBridgeParticipants;
+
+        /**
+         * Default constructor.
+         */
+        RegionBasedMaxLoadBridgeSelectionStrategy()
+        {
+            ConfigurationService config = FocusBundleActivator.getConfigService();
+            if (config != null)
+            {
+                maxNumBridgeParticipants = config.getInt(
+                    MAX_NUM_BRIDGE_PARTICIPANTS_PNAME, DEFAULT_MAX_NUM_BRIDGE_PARTICIPANTS);
+            }
+            else
+            {
+                maxNumBridgeParticipants = DEFAULT_MAX_NUM_BRIDGE_PARTICIPANTS;
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         * </p>
+         * Always selects the bridge already used by the conference.
+         */
+        @Override
+        public Bridge doSelect(
+            List<Bridge> bridges,
+            List<Bridge> conferenceBridges,
+            JitsiMeetConference conference,
+            String participantRegion)
+        {
+            List<Bridge> filteredBridges = bridges.stream()
+                .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeParticipants)
+                .collect(Collectors.toList());
+
+            List<Bridge> filteredConferenceBridges = conferenceBridges.stream()
+                .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeParticipants)
+                .collect(Collectors.toList());
+
+            Bridge selectedBridge = super.doSelect(filteredBridges, filteredConferenceBridges, conference, participantRegion);
+
+            if (selectedBridge == null && !bridges.isEmpty())
+            {
+                logger.error("Bridges were available, but they were all at maximum capacity");
+            }
+            
+            return selectedBridge;
+        }
+    }
 }
