@@ -94,6 +94,13 @@ public class BridgeSelector
         = "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION";
 
     /**
+     * The name of the property to define the amount of participants
+     * after which a bridge will not be considered
+     */
+    public static final String MAX_NUM_BRIDGE_PARTICIPANTS_PNAME
+        = "org.jitsi.jicofo.BridgeSelector.MAX_NUM_BRIDGE_PARTICIPANTS";
+
+    /**
      * Five minutes.
      */
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
@@ -147,9 +154,39 @@ public class BridgeSelector
         this.subscriptionOpSet
             = Objects.requireNonNull(subscriptionOpSet, "subscriptionOpSet");
 
-        bridgeSelectionStrategy
+        BridgeSelectionStrategy bridgeSelectionStrategy
             = Objects.requireNonNull(createBridgeSelectionStrategy());
+
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+
+        int maximumBridgeParticipants = getMaximumBridgeParticipants();
+        if (maximumBridgeParticipants != -1)
+        {
+            logger.info("Enforcing a maximum bridge participant count of "
+                + maximumBridgeParticipants);
+            this.bridgeSelectionStrategy = new MaxLoadBridgeSelectionStrategyDecorator(
+                bridgeSelectionStrategy, maximumBridgeParticipants);
+        }
+        else
+        {
+            this.bridgeSelectionStrategy = bridgeSelectionStrategy;
+        }
+    }
+
+    /**
+     * Get the number of participants after which we'll consider
+     * a bridge ineligible for more participants, or -1 if there
+     * is no such limit
+     * @return max amount of bridge participants, -1 for no limit
+     */
+    private int getMaximumBridgeParticipants()
+    {
+        ConfigurationService config = FocusBundleActivator.getConfigService();
+        if (config != null)
+        {
+            return config.getInt(MAX_NUM_BRIDGE_PARTICIPANTS_PNAME, -1);
+        }
+        return -1;
     }
 
     /**
@@ -1009,58 +1046,31 @@ public class BridgeSelector
     }
 
     /**
-     * Implements a {@link BridgeSelectionStrategy} which
-     * tries to find a bridge in the users region with a load
-     * of less than the number of participants defined by
-     * {@link RegionBasedMaxLoadBridgeSelectionStrategy#MAX_NUM_BRIDGE_PARTICIPANTS_PNAME}
-     * participants
+     * A 'decorator' which can wrap any {@link BridgeSelectionStrategy} and filters
+     * out any bridges which have more than {@code maxNumBridgeParticipants} connected
+     * to them before selecting one.
      */
-    private static class RegionBasedMaxLoadBridgeSelectionStrategy
-        extends RegionBasedBridgeSelectionStrategy
+    private static class MaxLoadBridgeSelectionStrategyDecorator extends BridgeSelectionStrategy
     {
         /**
-         * The name of the property to define the amount of participants
-         * after which a bridge will not be considered
+         * The wrapped selection strategy which will do the actual selection
          */
-        public static final String MAX_NUM_BRIDGE_PARTICIPANTS_PNAME
-            = "org.jitsi.jicofo.BridgeSelector.MAX_NUM_BRIDGE_PARTICIPANTS";
+        protected final BridgeSelectionStrategy bridgeSelectionStrategy;
 
         /**
-         * The default number of participants after which the bridge
-         * will not be considered for adding a participant
+         * A bridge must have less than this many participants connected to it
+         * to be considered
          */
-        private static int DEFAULT_MAX_NUM_BRIDGE_PARTICIPANTS = 25;
-
         protected final int maxNumBridgeParticipants;
 
-        /**
-         * Default constructor.
-         */
-        RegionBasedMaxLoadBridgeSelectionStrategy()
+        public MaxLoadBridgeSelectionStrategyDecorator(BridgeSelectionStrategy strategy, int maxNumBridgeParticipants)
         {
-            ConfigurationService config = FocusBundleActivator.getConfigService();
-            if (config != null)
-            {
-                maxNumBridgeParticipants = config.getInt(
-                    MAX_NUM_BRIDGE_PARTICIPANTS_PNAME, DEFAULT_MAX_NUM_BRIDGE_PARTICIPANTS);
-            }
-            else
-            {
-                maxNumBridgeParticipants = DEFAULT_MAX_NUM_BRIDGE_PARTICIPANTS;
-            }
+            this.bridgeSelectionStrategy = strategy;
+            this.maxNumBridgeParticipants = maxNumBridgeParticipants;
         }
 
-        /**
-         * {@inheritDoc}
-         * </p>
-         * Always selects the bridge already used by the conference.
-         */
         @Override
-        public Bridge doSelect(
-            List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
-            JitsiMeetConference conference,
-            String participantRegion)
+        Bridge doSelect(List<Bridge> bridges, List<Bridge> conferenceBridges, JitsiMeetConference conference, String participantRegion)
         {
             List<Bridge> filteredBridges = bridges.stream()
                 .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeParticipants)
@@ -1070,13 +1080,15 @@ public class BridgeSelector
                 .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeParticipants)
                 .collect(Collectors.toList());
 
-            Bridge selectedBridge = super.doSelect(filteredBridges, filteredConferenceBridges, conference, participantRegion);
+            Bridge selectedBridge = bridgeSelectionStrategy.doSelect(
+                filteredBridges, filteredConferenceBridges, conference, participantRegion
+            );
 
             if (selectedBridge == null && !bridges.isEmpty())
             {
                 logger.error("Bridges were available, but they were all at maximum capacity");
             }
-            
+
             return selectedBridge;
         }
     }
