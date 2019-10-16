@@ -94,11 +94,15 @@ public class BridgeSelector
         = "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION";
 
     /**
-     * The name of the property to define the amount of participants
-     * after which a bridge will not be considered
+     * The name of the property to define the amount of streams which
+     * a bridge is forwarding after which it won't be considered
+     * for new participants.
+     *
+     * For example, a conference on a single bridge with 10 participants
+     * will be forwarding 100 streams.
      */
-    public static final String MAX_NUM_BRIDGE_PARTICIPANTS_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.MAX_NUM_BRIDGE_PARTICIPANTS";
+    public static final String MAX_NUM_BRIDGE_STREAMS_PNAME
+        = "org.jitsi.jicofo.BridgeSelector.MAX_NUM_BRIDGE_STREAMS";
 
     /**
      * Five minutes.
@@ -159,13 +163,13 @@ public class BridgeSelector
 
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
 
-        int maximumBridgeParticipants = getMaximumBridgeParticipants();
-        if (maximumBridgeParticipants != -1)
+        int maximumBridgeStreams = getMaximumBridgeStreams();
+        if (maximumBridgeStreams != -1)
         {
-            logger.info("Enforcing a maximum bridge participant count of "
-                + maximumBridgeParticipants);
+            logger.info("Enforcing a maximum bridge stream count of "
+                + maximumBridgeStreams);
             this.bridgeSelectionStrategy = new MaxLoadBridgeSelectionStrategyDecorator(
-                bridgeSelectionStrategy, maximumBridgeParticipants);
+                bridgeSelectionStrategy, maximumBridgeStreams);
         }
         else
         {
@@ -174,17 +178,17 @@ public class BridgeSelector
     }
 
     /**
-     * Get the number of participants after which we'll consider
+     * Get the number of streams after which we'll consider
      * a bridge ineligible for more participants, or -1 if there
      * is no such limit
-     * @return max amount of bridge participants, -1 for no limit
+     * @return max amount of bridge streams, -1 for no limit
      */
-    private int getMaximumBridgeParticipants()
+    private int getMaximumBridgeStreams()
     {
         ConfigurationService config = FocusBundleActivator.getConfigService();
         if (config != null)
         {
-            return config.getInt(MAX_NUM_BRIDGE_PARTICIPANTS_PNAME, -1);
+            return config.getInt(MAX_NUM_BRIDGE_STREAMS_PNAME, -1);
         }
         return -1;
     }
@@ -1047,8 +1051,8 @@ public class BridgeSelector
 
     /**
      * A 'decorator' which can wrap any {@link BridgeSelectionStrategy} and filters
-     * out any bridges which have more than {@code maxNumBridgeParticipants} connected
-     * to them before selecting one.
+     * out any bridges which have more than {@link MaxLoadBridgeSelectionStrategyDecorator#maxNumBridgeStreams}
+     * connected to them before selecting one.
      */
     private static class MaxLoadBridgeSelectionStrategyDecorator extends BridgeSelectionStrategy
     {
@@ -1058,26 +1062,26 @@ public class BridgeSelector
         protected final BridgeSelectionStrategy bridgeSelectionStrategy;
 
         /**
-         * A bridge must have less than this many participants connected to it
+         * A bridge must have less than this many streams being forwarded
          * to be considered
          */
-        protected final int maxNumBridgeParticipants;
+        protected final int maxNumBridgeStreams;
 
-        public MaxLoadBridgeSelectionStrategyDecorator(BridgeSelectionStrategy strategy, int maxNumBridgeParticipants)
+        public MaxLoadBridgeSelectionStrategyDecorator(BridgeSelectionStrategy strategy, int maxNumBridgeStreams)
         {
             this.bridgeSelectionStrategy = strategy;
-            this.maxNumBridgeParticipants = maxNumBridgeParticipants;
+            this.maxNumBridgeStreams = maxNumBridgeStreams;
         }
 
         @Override
         Bridge doSelect(List<Bridge> bridges, List<Bridge> conferenceBridges, JitsiMeetConference conference, String participantRegion)
         {
             List<Bridge> filteredBridges = bridges.stream()
-                .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeParticipants)
+                .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeStreams)
                 .collect(Collectors.toList());
 
             List<Bridge> filteredConferenceBridges = conferenceBridges.stream()
-                .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeParticipants)
+                .filter(b -> b.getEstimatedVideoStreamCount() < maxNumBridgeStreams)
                 .collect(Collectors.toList());
 
             Bridge selectedBridge = bridgeSelectionStrategy.doSelect(
