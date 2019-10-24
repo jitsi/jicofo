@@ -20,6 +20,9 @@ package org.jitsi.jicofo.auth;
 import net.java.sip.communicator.util.*;
 
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.servlet.*;
+import org.glassfish.jersey.servlet.*;
+import org.jitsi.jicofo.rest.*;
 import org.jitsi.rest.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.utils.*;
@@ -148,6 +151,10 @@ public class AuthBundleActivator
         // optional as well (in a way similar to Videobridge, for example).
         handlers.add(new org.jitsi.jicofo.rest.HandlerImpl(bundleContext));
 
+        ServletContextHandler appHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        appHandler.setContextPath("/");
+        appHandler.addServlet(new ServletHolder(new ServletContainer(new Application(bundleContext))), "/*");
+        handlers.add(appHandler);
 
         // Shibboleth
         if (authAuthority instanceof ShibbolethAuthAuthority)
