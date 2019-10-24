@@ -573,6 +573,20 @@ public class FocusManager
     }
 
     /**
+     * Get the conferences of this Jicofo.  Note that the
+     * List returned is a snapshot of the conference
+     * references at the time of the call.
+     * @return the list of conferences
+     */
+    public List<JitsiMeetConference> getConferences()
+    {
+        synchronized (conferencesSyncRoot)
+        {
+            return new ArrayList<>(conferences.values());
+        }
+    }
+
+    /**
      * Enables shutdown mode which means that no new focus instances will
      * be allocated. After conference count drops to zero the process will exit.
      */
