@@ -199,18 +199,18 @@ public class Health
 
         do
         {
-            roomName
-                = JidCreate.entityBareFrom(
+            roomName = JidCreate.entityBareFrom(
                 generateRoomName(),
-                mucService.asDomainBareJid());
+                mucService.asDomainBareJid()
+            );
         }
         while (focusManager.getConference(roomName) != null);
 
         // Create a conference with the generated room name.
         if (!focusManager.conferenceRequest(
-            roomName,
-            JITSI_MEET_CONFIG,
-            Level.WARNING /* conference logging level */))
+                roomName,
+                JITSI_MEET_CONFIG,
+                Level.WARNING /* conference logging level */))
         {
             throw new RuntimeException(
                 "Failed to create conference with room name " + roomName);
@@ -230,7 +230,7 @@ public class Health
                 Localpart.from(Health.class.getName()
                     + "-"
                     + Long.toHexString(
-                    System.currentTimeMillis() + RANDOM.nextLong()));
+                        System.currentTimeMillis() + RANDOM.nextLong()));
         }
         catch (XmppStringprepException e)
         {
