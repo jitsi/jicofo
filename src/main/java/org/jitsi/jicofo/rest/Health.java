@@ -59,7 +59,7 @@ public class Health
      * Interval which we consider bad for a health check and we will print
      * some debug information.
      */
-    private static final int BAD_HEALTH_CHECK_INTERVAL = 3000;
+    private static final Duration BAD_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(3);
 
     /**
      * The pseudo-random generator used to generate random input for
@@ -285,7 +285,7 @@ public class Health
         {
             this.startedAt = System.currentTimeMillis();
             this.monitorTimer = new Timer(getClass().getSimpleName(), true);
-            this.monitorTimer.schedule(this, BAD_HEALTH_CHECK_INTERVAL);
+            this.monitorTimer.schedule(this, BAD_HEALTH_CHECK_INTERVAL.toMillis());
         }
 
         /**
