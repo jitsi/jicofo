@@ -23,7 +23,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.Mockito.*;
 
-public class Health2Test extends JerseyTest
+public class HealthTest extends JerseyTest
 {
     private FocusManagerProvider focusManagerProvider;
     private FocusManager focusManager;
@@ -58,7 +58,7 @@ public class Health2Test extends JerseyTest
                         bind(clock).to(Clock.class);
                     }
                 });
-                register(Health2.class);
+                register(Health.class);
             }
         };
     }

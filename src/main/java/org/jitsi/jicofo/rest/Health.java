@@ -19,7 +19,7 @@ import java.util.logging.*;
 
 @Path("/about/health")
 @Singleton()
-public class Health2
+public class Health
 {
     @Inject
     protected FocusManagerProvider focusManagerProvider;
@@ -31,7 +31,7 @@ public class Health2
      * The {@code Logger} utilized by the {@code Health} class to print
      * debug-related information.
      */
-    private static final Logger logger = Logger.getLogger(Health2.class);
+    private static final Logger logger = Logger.getLogger(Health.class);
 
     /**
      * The {@code JitsiMeetConfig} properties to be utilized for the purposes of
@@ -212,7 +212,7 @@ public class Health2
         try
         {
             return
-                Localpart.from(Health2.class.getName()
+                Localpart.from(Health.class.getName()
                     + "-"
                     + Long.toHexString(
                     System.currentTimeMillis() + RANDOM.nextLong()));
@@ -225,7 +225,7 @@ public class Health2
     }
     /**
      * Health check monitor schedules execution with a delay
-     * {@link Health2#BAD_HEALTH_CHECK_INTERVAL} if monitor is not stopped
+     * {@link Health#BAD_HEALTH_CHECK_INTERVAL} if monitor is not stopped
      * by the time it executes we consider a health check was taking too much
      * time executing and we dump the stack trace in the logs.
      */
