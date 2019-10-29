@@ -161,6 +161,58 @@ public class JigasiDetector
             {
                 selectedByCap = filteredInstances;
             }
+
+            // but now let's check whether we are in mixed mode (legacy and new)
+            boolean mixedMode = filteredInstances.stream()
+                .anyMatch(bi -> !isLegacyInstance(bi));
+
+            if (mixedMode)
+            {
+                // one of those lists should be non empty
+                List<BrewInstance> transcribers =
+                    selectedByCap.stream()
+                        .filter(JigasiDetector::supportTranscription)
+                        .collect(Collectors.toList());
+                List<BrewInstance> sipgwInstances =
+                    selectedByCap.stream()
+                        .filter(JigasiDetector::supportSip)
+                        .collect(Collectors.toList());
+
+                // We have two options:
+                // - sipgw is new and reports its cap and old transcriber
+                // - transcribers are new and reports cap and old sipgw
+
+                if(!transcribers.isEmpty())
+                {
+                    // new transcribers and old sipgw
+                    if(transcriber)
+                    {
+                        selectedByCap = transcribers;
+                    }
+                    else
+                    {
+                        // we need those that are not transcribers
+                        selectedByCap = selectedByCap.stream()
+                            .filter(j -> !supportTranscription(j))
+                            .collect(Collectors.toList());
+                    }
+                }
+                else if(!sipgwInstances.isEmpty())
+                {
+                    // new sipgw and old transcribers
+                    if(transcriber)
+                    {
+                        // we need those that are not sipgw
+                        selectedByCap = selectedByCap.stream()
+                            .filter(j -> !supportSip(j))
+                            .collect(Collectors.toList());
+                    }
+                    else
+                    {
+                        selectedByCap = sipgwInstances;
+                    }
+                }
+            }
         }
 
         // let's select by region
