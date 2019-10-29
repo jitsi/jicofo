@@ -290,5 +290,49 @@ public class JigasiSelectorTest
             null,                                   /* local region */
             true);                                  /* select transcriber*/
         assertEquals("Wrong jigasi selected", jid4, res);
+
+        // mixed mode, transcriber new and legacy sip
+        updateStats(jid1, 1, null, null, true, null);
+        updateStats(jid2, 2, null, null, null, null);
+        updateStats(jid3, 3, null, null, null, null);
+        updateStats(jid4, 4, null, null, null, null);
+
+        res = JigasiDetector.selectJigasi(
+            brewery.getInstances(),
+            Arrays.asList(new Jid[]{}),         /* filter */
+            Arrays.asList(new String[]{}),      /* preferred regions */
+            null,                               /* local region */
+            false);                             /* select transcriber*/
+        assertEquals("Wrong jigasi selected", jid2, res);
+
+        res = JigasiDetector.selectJigasi(
+            brewery.getInstances(),
+            Arrays.asList(new Jid[]{}),         /* filter */
+            Arrays.asList(new String[]{}),      /* preferred regions */
+            null,                               /* local region */
+            true);                             /* select transcriber*/
+        assertEquals("Wrong jigasi selected", jid1, res);
+
+        // mixed mode, legacy transcriber and new sip
+        updateStats(jid1, 1, null, null, null, true);
+        updateStats(jid2, 2, null, null, null, null);
+        updateStats(jid3, 3, null, null, null, null);
+        updateStats(jid4, 4, null, null, null, null);
+
+        res = JigasiDetector.selectJigasi(
+            brewery.getInstances(),
+            Arrays.asList(new Jid[]{}),         /* filter */
+            Arrays.asList(new String[]{}),      /* preferred regions */
+            null,                               /* local region */
+            true);                             /* select transcriber*/
+        assertEquals("Wrong jigasi selected", jid2, res);
+
+        res = JigasiDetector.selectJigasi(
+            brewery.getInstances(),
+            Arrays.asList(new Jid[]{}),         /* filter */
+            Arrays.asList(new String[]{}),      /* preferred regions */
+            null,                               /* local region */
+            false);                             /* select transcriber*/
+        assertEquals("Wrong jigasi selected", jid1, res);
     }
 }
