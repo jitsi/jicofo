@@ -23,5 +23,7 @@ public class Application extends ResourceConfig
             }
         });
         packages("org.jitsi.jicofo.rest");
+        // Load any resources from Jicoco
+        packages("org.jitsi.rest");
     }
 }
