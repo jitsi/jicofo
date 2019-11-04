@@ -47,33 +47,6 @@ public class HandlerImpl
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doGetHealthJSON(
-            Request baseRequest,
-            HttpServletRequest request,
-            HttpServletResponse response)
-        throws IOException,
-               ServletException
-    {
-        beginResponse(/* target */ null, baseRequest, request, response);
-
-        FocusManager focusManager = getFocusManager();
-
-        if (focusManager == null)
-        {
-            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        }
-        else
-        {
-            Health.getJSON(focusManager, baseRequest, request, response);
-        }
-
-        endResponse(/* target */ null, baseRequest, request, response);
-    }
-
-    /**
      * Gets the {@code FocusManager} instance available to this Jetty
      * {@code Handler}.
      *
