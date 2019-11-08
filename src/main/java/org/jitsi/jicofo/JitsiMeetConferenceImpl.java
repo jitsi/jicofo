@@ -3034,7 +3034,7 @@ public class JitsiMeetConferenceImpl
         return includeInStatistics;
     }
 
-    public FocusManager getFocusManager()
+    protected FocusManager getFocusManager()
     {
         return ServiceUtils.getService(FocusBundleActivator.bundleContext, FocusManager.class);
     }
