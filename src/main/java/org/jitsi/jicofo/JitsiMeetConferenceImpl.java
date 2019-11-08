@@ -262,6 +262,11 @@ public class JitsiMeetConferenceImpl
         = new ConferenceProperties();
 
     /**
+     * See {@link JitsiMeetConference#includeInStatistics()}
+     */
+    private final boolean includeInStatistics;
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -280,7 +285,8 @@ public class JitsiMeetConferenceImpl
                                    JitsiMeetConfig          config,
                                    JitsiMeetGlobalConfig    globalConfig,
                                    Level                    logLevel,
-                                   String                   id)
+                                   String                   id,
+                                   boolean                  includeInStatistics)
     {
         this.protocolProviderHandler
             = Objects.requireNonNull(
@@ -298,6 +304,20 @@ public class JitsiMeetConferenceImpl
         {
             logger.setLevel(logLevel);
         }
+        this.includeInStatistics = includeInStatistics;
+    }
+
+    public JitsiMeetConferenceImpl(EntityBareJid            roomName,
+                                   Resourcepart             focusUserName,
+                                   ProtocolProviderHandler  protocolProviderHandler,
+                                   ConferenceListener       listener,
+                                   JitsiMeetConfig          config,
+                                   JitsiMeetGlobalConfig    globalConfig,
+                                   Level                    logLevel,
+                                   String                   id)
+    {
+       this(roomName, focusUserName, protocolProviderHandler, listener,
+           config, globalConfig, logLevel, id, false);
     }
 
     /**
@@ -3005,6 +3025,12 @@ public class JitsiMeetConferenceImpl
                     bridge,
                     hashCode());
         }
+    }
+
+    @Override
+    public boolean includeInStatistics()
+    {
+        return includeInStatistics;
     }
 
     /**

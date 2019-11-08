@@ -100,4 +100,9 @@ public class MockJitsiMeetConference
         return 0;
     }
 
+    @Override
+    public boolean includeInStatistics()
+    {
+        return true;
+    }
 }
