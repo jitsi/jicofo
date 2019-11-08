@@ -661,6 +661,7 @@ public class JitsiMeetConferenceImpl
             logger.info(
                     "Member "
                         + chatRoomMember.getContactAddress() + " joined.");
+            getFocusManager().getStatistics().totalParticipants.incrementAndGet();
 
             if (!isFocusMember(chatRoomMember))
             {
@@ -3031,6 +3032,11 @@ public class JitsiMeetConferenceImpl
     public boolean includeInStatistics()
     {
         return includeInStatistics;
+    }
+
+    protected FocusManager getFocusManager()
+    {
+        return ServiceUtils.getService(FocusBundleActivator.bundleContext, FocusManager.class);
     }
 
     /**

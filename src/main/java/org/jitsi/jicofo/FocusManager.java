@@ -21,7 +21,9 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.meet.*;
 import org.jitsi.service.configuration.*;
@@ -228,6 +230,11 @@ public class FocusManager
      * IQs sent from conference participants to the focus.
      */
     private MeetExtensionsHandler meetExtensionsHandler;
+
+    /**
+     * A class that holds Jicofo-wide statistics
+     */
+    private final Statistics statistics = new Statistics();
 
     /**
      * Starts this manager for given <tt>hostName</tt>.
@@ -461,6 +468,8 @@ public class FocusManager
 
         conferences.put(room, conference);
         conferenceIds.add(id);
+
+        statistics.totalConferencesCreated.incrementAndGet();
 
         if (conference.getLogger().isInfoEnabled())
         {
@@ -731,6 +740,11 @@ public class FocusManager
             // Do initializations which require valid connection
             meetExtensionsHandler.init();
         }
+    }
+
+    public @NotNull Statistics getStatistics()
+    {
+        return statistics;
     }
 
     /**
