@@ -28,6 +28,8 @@ public class Statistics
         json.put(CONFERENCES, snapshot.numConferences);
         json.put(LARGEST_CONFERENCE, snapshot.largestConferenceSize);
         json.put(TOTAL_CONFERENCES_CREATED, snapshot.totalConferencesCreated);
+        json.put(PARTICIPANTS, snapshot.numParticipants);
+        json.put(TOTAL_PARTICIPANTS, snapshot.totalNumParticipants);
         JSONArray conferenceSizesJson = new JSONArray();
         for (int size : snapshot.conferenceSizes)
         {

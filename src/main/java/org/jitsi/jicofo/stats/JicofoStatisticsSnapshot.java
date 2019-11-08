@@ -15,8 +15,7 @@ public class JicofoStatisticsSnapshot
     private static final int CONFERENCE_SIZE_BUCKETS = 22;
 
     /**
-     * The total number of conferences created on this Jicofo since
-     * it was started
+     * See {@link Statistics#totalConferencesCreated}
      */
     public int totalConferencesCreated;
     /**
@@ -28,6 +27,16 @@ public class JicofoStatisticsSnapshot
      */
     public int largestConferenceSize;
 
+    /**
+     * See {@link Statistics#totalParticipants}
+     */
+    public int totalNumParticipants;
+
+    /**
+     * The current number of participants on this Jicofo
+     */
+    public int numParticipants;
+
     public int[] conferenceSizes = new int[CONFERENCE_SIZE_BUCKETS];
 
     public static JicofoStatisticsSnapshot generate(
@@ -35,6 +44,8 @@ public class JicofoStatisticsSnapshot
     )
     {
         JicofoStatisticsSnapshot snapshot = new JicofoStatisticsSnapshot();
+        snapshot.totalNumParticipants =
+            focusManager.getStatistics().totalParticipants.get();
         snapshot.totalConferencesCreated =
             focusManager.getStatistics().totalConferencesCreated.get();
         snapshot.numConferences = focusManager.getConferenceCount();
@@ -56,6 +67,7 @@ public class JicofoStatisticsSnapshot
             {
                 confSize = 1;
             }
+            snapshot.numParticipants += confSize;
             if (confSize > snapshot.largestConferenceSize)
             {
                 snapshot.largestConferenceSize = confSize;
