@@ -14,16 +14,29 @@ public class JicofoStatisticsSnapshot
      */
     private static final int CONFERENCE_SIZE_BUCKETS = 22;
 
+    /**
+     * The total number of conferences created on this Jicofo since
+     * it was started
+     */
     public int totalConferencesCreated;
+    /**
+     * The current number of conferences on this Jicofo
+     */
     public int numConferences;
+    /**
+     * The number of participants in the largest, currently-active conference
+     */
     public int largestConferenceSize;
 
     public int[] conferenceSizes = new int[CONFERENCE_SIZE_BUCKETS];
 
-    public static JicofoStatisticsSnapshot generate(@NotNull FocusManager focusManager)
+    public static JicofoStatisticsSnapshot generate(
+        @NotNull FocusManager focusManager
+    )
     {
         JicofoStatisticsSnapshot snapshot = new JicofoStatisticsSnapshot();
-        snapshot.totalConferencesCreated = focusManager.getStatistics().totalConferencesCreated.get();
+        snapshot.totalConferencesCreated =
+            focusManager.getStatistics().totalConferencesCreated.get();
         snapshot.numConferences = focusManager.getConferenceCount();
         for (JitsiMeetConference conference : focusManager.getConferences())
         {
@@ -32,13 +45,13 @@ public class JicofoStatisticsSnapshot
                 continue;
             }
             int confSize = conference.getParticipantCount();
-            // getParticipantCount only includes endpoints with allocated media channels,
-            // so if a single participant is waiting in a meeting they wouldn't
-            // be counted.  In stats, calling this a conference with size 0
-            // would be misleading, so we add 1 in this case to properly show
-            // it as a conference of size 1.  (If there really weren't any
-            // participants in there at all, the conference wouldn't have
-            // existed in the first place).
+            // getParticipantCount only includes endpoints with allocated media
+            // channels, so if a single participant is waiting in a meeting
+            // they wouldn't be counted.  In stats, calling this a conference
+            // with size 0 would be misleading, so we add 1 in this case to
+            // properly show it as a conference of size 1.  (If there really
+            // weren't any participants in there at all, the conference
+            // wouldn't have existed in the first place).
             if (confSize == 0)
             {
                 confSize = 1;
