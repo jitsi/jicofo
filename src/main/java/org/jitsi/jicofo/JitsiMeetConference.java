@@ -102,4 +102,9 @@ public interface JitsiMeetConference
      *         participant or <tt>false</tt> otherwise.
      */
     boolean isFocusMember(Jid jid);
+
+    /**
+     * Whether this conference should be considered when generating statistics.
+     */
+    boolean includeInStatistics();
 }

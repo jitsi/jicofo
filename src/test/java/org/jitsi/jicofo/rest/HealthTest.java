@@ -83,7 +83,7 @@ public class HealthTest extends JerseyTest
     {
         setupSuccessfulHealthCheck();
         Response resp = target("/about/health").request().get();
-        verify(focusManager).conferenceRequest(any(), any(), any());
+        verify(focusManager).conferenceRequest(any(), any(), any(), eq(false));
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
     }
 
@@ -95,7 +95,7 @@ public class HealthTest extends JerseyTest
         clock.elapse(Duration.ofSeconds(5));
         Response resp = target("/about/health").request().get();
         // We should have only called the check method the first time
-        verify(focusManager, times(1)).conferenceRequest(any(), any(), any());
+        verify(focusManager, times(1)).conferenceRequest(any(), any(), any(), eq(false));
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
     }
 
@@ -107,7 +107,7 @@ public class HealthTest extends JerseyTest
         // Long enough for the cached response to expire
         clock.elapse(Duration.ofSeconds(30));
         Response resp = target("/about/health").request().get();
-        verify(focusManager, times(2)).conferenceRequest(any(), any(), any());
+        verify(focusManager, times(2)).conferenceRequest(any(), any(), any(), eq(false));
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
     }
 
@@ -127,7 +127,7 @@ public class HealthTest extends JerseyTest
         setupSuccessfulHealthCheck();
         Response resp = target("/about/health").queryParam("list_jvb", true).request().get();
         // Should still do the health check
-        verify(focusManager).conferenceRequest(any(), any(), any());
+        verify(focusManager).conferenceRequest(any(), any(), any(), eq(false));
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
         JSONObject respJson = resp.readEntity(JSONObject.class);
         assertNotNull(respJson.get("jvbs"));
@@ -178,7 +178,7 @@ public class HealthTest extends JerseyTest
         when(focusManager.getConference(any())).thenReturn(null);
         try
         {
-            when(focusManager.conferenceRequest(any(), any(), any())).thenReturn(true);
+            when(focusManager.conferenceRequest(any(), any(), any(), eq(false))).thenReturn(true);
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -193,7 +193,7 @@ public class HealthTest extends JerseyTest
         when(focusManager.getConference(any())).thenReturn(null);
         try
         {
-            when(focusManager.conferenceRequest(any(), any(), any())).thenReturn(true);
+            when(focusManager.conferenceRequest(any(), any(), any(), eq(false))).thenReturn(true);
         } catch (Exception e)
         {
             e.printStackTrace();

@@ -210,7 +210,8 @@ public class Health
         if (!focusManager.conferenceRequest(
                 roomName,
                 JITSI_MEET_CONFIG,
-                Level.WARNING /* conference logging level */))
+                Level.WARNING /* conference logging level */,
+                false /* don't include in statistics */))
         {
             throw new RuntimeException(
                 "Failed to create conference with room name " + roomName);

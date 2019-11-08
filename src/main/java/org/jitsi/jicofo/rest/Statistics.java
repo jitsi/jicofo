@@ -35,6 +35,10 @@ public class Statistics
         int largestConferenceSize = 0;
         for (JitsiMeetConference conference : focusManager.getConferences())
         {
+            if (!conference.includeInStatistics())
+            {
+                continue;
+            }
             int confSize = conference.getParticipantCount();
             // getParticipantCount only includes endpoints with allocated media channels,
             // so if a single participant is waiting in a meeting they wouldn't
