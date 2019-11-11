@@ -48,7 +48,7 @@ public class JicofoStatisticsSnapshot
             focusManager.getStatistics().totalParticipants.get();
         snapshot.totalConferencesCreated =
             focusManager.getStatistics().totalConferencesCreated.get();
-        snapshot.numConferences = focusManager.getConferenceCount();
+        snapshot.numConferences = focusManager.getNonHealthCheckConferenceCount();
         for (JitsiMeetConference conference : focusManager.getConferences())
         {
             if (!conference.includeInStatistics())
