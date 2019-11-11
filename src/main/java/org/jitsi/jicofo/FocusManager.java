@@ -469,7 +469,10 @@ public class FocusManager
         conferences.put(room, conference);
         conferenceIds.add(id);
 
-        statistics.totalConferencesCreated.incrementAndGet();
+        if (includeInStatistics)
+        {
+            statistics.totalConferencesCreated.incrementAndGet();
+        }
 
         if (conference.getLogger().isInfoEnabled())
         {
@@ -663,6 +666,13 @@ public class FocusManager
     public int getConferenceCount()
     {
         return conferences.size();
+    }
+
+    public int getNonHealthCheckConferenceCount()
+    {
+        return (int)conferences.values().stream()
+            .filter(JitsiMeetConferenceImpl::includeInStatistics)
+            .count();
     }
 
     /**
