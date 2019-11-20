@@ -374,7 +374,8 @@ public class JibriSession
                 "Updating status from JIBRI: "
                     + iq.toXML() + " for " + roomName);
 
-            handleJibriStatusUpdate(iq.getFrom(), status, iq.getFailureReason());
+            handleJibriStatusUpdate(
+                iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
         }
         else
         {
@@ -514,11 +515,15 @@ public class JibriSession
      * @param jibriJid the jid of the jibri for which this status update applies
      * @param newStatus the jibri's new status
      * @param failureReason the jibri's failure reason, if any (otherwise null)
+     * @param shouldRetryParam if {@code failureReason} is not null, shouldRetry
+     *                    denotes whether or not we should retry the same
+     *                    request with another Jibri
      */
     private void handleJibriStatusUpdate(
             @NotNull Jid jibriJid,
             JibriIq.Status newStatus,
-            @Nullable JibriIq.FailureReason failureReason)
+            @Nullable JibriIq.FailureReason failureReason,
+            @Nullable Boolean shouldRetryParam)
     {
         jibriStatus = newStatus;
         logger.info("Got Jibri status update: Jibri " + jibriJid
@@ -549,8 +554,19 @@ public class JibriSession
         // Jibri to keep things going
         if (failureReason != null)
         {
+            boolean shouldRetry;
+            if (shouldRetryParam == null)
+            {
+                logger.warn("failureReason was non-null but shouldRetry " +
+                    "wasn't set, will NOT retry");
+                shouldRetry = false;
+            }
+            else
+            {
+                shouldRetry = shouldRetryParam;
+            }
             // There was an error with the current Jibri, see if we should retry
-            if (!maxRetriesExceeded())
+            if (shouldRetry && !maxRetriesExceeded())
             {
                 logger.info("Jibri failed, trying to fall back to another Jibri");
                 if (retryRequestWithAnotherJibri())
@@ -570,11 +586,19 @@ public class JibriSession
             }
             else
             {
-                // The Jibri we tried failed and we've reached the maxmium
-                // amount of retries we've been configured to attempt, so we'll
-                // give up trying to handle this request.
-                logger.info("Jibri failed, but max amount of retries ("
-                    + maxNumRetries + ") reached, giving up");
+                if (!shouldRetry)
+                {
+                    logger.info("Jibri failed and signaled that we " +
+                        "should not retry the same request");
+                }
+                else
+                {
+                    // The Jibri we tried failed and we've reached the maxmium
+                    // amount of retries we've been configured to attempt, so we'll
+                    // give up trying to handle this request.
+                    logger.info("Jibri failed, but max amount of retries ("
+                        + maxNumRetries + ") reached, giving up");
+                }
                 owner.onSessionStateChanged(this, newStatus, failureReason);
                 cleanupSession();
             }
@@ -653,7 +677,7 @@ public class JibriSession
                         nickname() + " went offline: " + jibriJid
                             + " for room: " + roomName);
                     handleJibriStatusUpdate(
-                        jibriJid, Status.OFF, FailureReason.ERROR);
+                        jibriJid, Status.OFF, FailureReason.ERROR, true);
                 }
             }
         }
@@ -687,7 +711,7 @@ public class JibriSession
                     // to trigger the fallback logic.
                     stop(null);
                     handleJibriStatusUpdate(
-                        currentJibriJid, Status.OFF, FailureReason.ERROR);
+                        currentJibriJid, Status.OFF, FailureReason.ERROR, true);
                 }
             }
         }
