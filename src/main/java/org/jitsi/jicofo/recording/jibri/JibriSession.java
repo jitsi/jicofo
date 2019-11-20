@@ -485,11 +485,12 @@ public class JibriSession
 
     /**
      * Check whether or not we should retry the current request to another Jibri
-     * @return true if we should retry again, false otherwise
+     * @return true if we've not exceeded the max amount of retries,
+     * false otherwise
      */
-    private boolean shouldRetryRequest()
+    private boolean maxRetriesExceeded()
     {
-        return (maxNumRetries < 0 || numRetries < maxNumRetries);
+        return (maxNumRetries >= 0 && numRetries >= maxNumRetries);
     }
 
     /**
@@ -549,7 +550,7 @@ public class JibriSession
         if (failureReason != null)
         {
             // There was an error with the current Jibri, see if we should retry
-            if (shouldRetryRequest())
+            if (!maxRetriesExceeded())
             {
                 logger.info("Jibri failed, trying to fall back to another Jibri");
                 if (retryRequestWithAnotherJibri())
