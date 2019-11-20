@@ -300,10 +300,7 @@ public class JibriSession
                     stopRequest,
                     stanza -> {
                         JibriIq resp = (JibriIq)stanza;
-                        handleJibriStatusUpdate(
-                            resp.getFrom(),
-                            resp.getStatus(),
-                            resp.getFailureReason());
+                        processJibriIqFromJibri(resp);
                     },
                     exception -> {
                         logger.error(
@@ -351,7 +348,23 @@ public class JibriSession
         return this.isSIP ? "SIP Jibri" : "Jibri";
     }
 
-    IQ processJibriIqFromJibri(JibriIq iq)
+    /**
+     * Process a {@link JibriIq} *request* from Jibri
+     * @param request
+     * @return the response
+     */
+    IQ processJibriIqRequestFromJibri(JibriIq request)
+    {
+        processJibriIqFromJibri(request);
+        return IQ.createResultIQ(request);
+    }
+
+    /**
+     * Process a {@link JibriIq} from Jibri (note that this
+     * may be an IQ request or an IQ response)
+     * @param iq
+     */
+    private void processJibriIqFromJibri(JibriIq iq)
     {
         // We have something from Jibri - let's update recording status
         JibriIq.Status status = iq.getStatus();
@@ -368,8 +381,6 @@ public class JibriSession
             logger.error(
                 "Received UNDEFINED status from jibri: " + iq.toString());
         }
-
-        return IQ.createResultIQ(iq);
     }
 
     /**
@@ -441,10 +452,7 @@ public class JibriSession
         try
         {
             JibriIq result = (JibriIq)xmpp.sendPacketAndGetReply(startIq);
-            handleJibriStatusUpdate(
-                result.getFrom(),
-                result.getStatus(),
-                result.getFailureReason());
+            processJibriIqFromJibri(result);
         }
         catch (OperationFailedException e)
         {

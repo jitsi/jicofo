@@ -230,7 +230,7 @@ public abstract class CommonJibriStuff
         JibriSession session = getJibriSessionForMeetIq(iq);
         if (session != null && session.accept(iq))
         {
-            return session.processJibriIqFromJibri(iq);
+            return session.processJibriIqRequestFromJibri(iq);
         }
 
         JibriIq.Action action = iq.getAction();
