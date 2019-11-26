@@ -152,7 +152,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-utils</artifactId>
-      <version>1.0-21-gb09b57b</version>
+      <version>1.0-23-ga53f8af</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -237,7 +237,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.0-45-g2cce9de</version>
+      <version>2.1-26-gb1de4cd</version>
       <scope>test</scope>
     </dependency>
     <dependency>
