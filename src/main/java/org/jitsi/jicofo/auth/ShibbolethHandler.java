@@ -53,6 +53,8 @@ class ShibbolethHandler
 
     private final ShibbolethAuthAuthority shibbolethAuthAuthority;
 
+    private static final String SHIBBOLETH_TARGET = "/login";
+
     /**
      * Initializes a new <tt>ShibbolethHandler</tt> instance.
      *
@@ -75,6 +77,11 @@ class ShibbolethHandler
             throws IOException,
             ServletException
     {
+        if (!SHIBBOLETH_TARGET.equals(target))
+        {
+            return;
+        }
+
         try
         {
             doHandle(target, baseRequest, request, response);
