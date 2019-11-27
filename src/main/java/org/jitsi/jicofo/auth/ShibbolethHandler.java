@@ -51,9 +51,13 @@ class ShibbolethHandler
     private static final Logger logger
             = Logger.getLogger(ShibbolethHandler.class);
 
+    /**
+     * The target on which shibboleth requests are made
+     */
+    private static final String SHIBBOLETH_TARGET = "/login";
+
     private final ShibbolethAuthAuthority shibbolethAuthAuthority;
 
-    private static final String SHIBBOLETH_TARGET = "/login";
 
     /**
      * Initializes a new <tt>ShibbolethHandler</tt> instance.
