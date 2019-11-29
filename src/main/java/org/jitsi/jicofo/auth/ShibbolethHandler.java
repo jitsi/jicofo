@@ -51,7 +51,13 @@ class ShibbolethHandler
     private static final Logger logger
             = Logger.getLogger(ShibbolethHandler.class);
 
+    /**
+     * The target on which shibboleth requests are made
+     */
+    private static final String SHIBBOLETH_TARGET = "/login";
+
     private final ShibbolethAuthAuthority shibbolethAuthAuthority;
+
 
     /**
      * Initializes a new <tt>ShibbolethHandler</tt> instance.
@@ -75,6 +81,11 @@ class ShibbolethHandler
             throws IOException,
             ServletException
     {
+        if (!SHIBBOLETH_TARGET.equals(target))
+        {
+            return;
+        }
+
         try
         {
             doHandle(target, baseRequest, request, response);
