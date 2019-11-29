@@ -115,7 +115,7 @@ public class Health
                 && cachedStatus > 0)
             {
                 return Response.status(cachedStatus)
-                    .entity(activeJvbsJson).build();
+                    .entity(activeJvbsJson.toJSONString()).build();
             }
 
             HealthChecksMonitor monitor = null;
@@ -128,7 +128,7 @@ public class Health
             {
                 check(focusManager);
                 cacheStatus(HttpServletResponse.SC_OK);
-                return Response.ok(activeJvbsJson).build();
+                return Response.ok(activeJvbsJson.toJSONString()).build();
             }
             finally
             {
@@ -142,7 +142,8 @@ public class Health
         {
             logger.error("Health check of Jicofo failed!", ex);
             cacheStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            return Response.serverError().entity(activeJvbsJson).build();
+            return Response.serverError()
+                .entity(activeJvbsJson.toJSONString()).build();
         }
     }
 
