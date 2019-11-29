@@ -22,6 +22,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.testutils.*;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;
+import org.json.simple.parser.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -129,7 +130,8 @@ public class HealthTest extends JerseyTest
         // Should still do the health check
         verify(focusManager).conferenceRequest(any(), any(), any(), eq(false));
         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
-        JSONObject respJson = resp.readEntity(JSONObject.class);
+        JSONObject respJson
+            = (JSONObject)new JSONParser().parse(resp.readEntity(String.class));
         assertNotNull(respJson.get("jvbs"));
         List jvbs = (List)respJson.get("jvbs");
         assertEquals(2, jvbs.size());
@@ -142,7 +144,8 @@ public class HealthTest extends JerseyTest
         setupHealthCheckError();
         Response resp = target("/about/health").queryParam("list_jvb", true).request().get();
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, resp.getStatus());
-        JSONObject respJson = resp.readEntity(JSONObject.class);
+        JSONObject respJson
+            = (JSONObject)new JSONParser().parse(resp.readEntity(String.class));
         assertNotNull(respJson.get("jvbs"));
         List jvbs = (List)respJson.get("jvbs");
         assertEquals(2, jvbs.size());

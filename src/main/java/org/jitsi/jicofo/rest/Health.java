@@ -31,6 +31,7 @@ import javax.ws.rs.core.*;
 import java.time.*;
 import java.util.*;
 import java.util.logging.*;
+import java.util.stream.*;
 
 /**
  * Checks the health of {@link FocusManager}.
@@ -106,7 +107,9 @@ public class Health
                         "The health check failed - 0 active JVB instances !");
                     throw new InternalServerErrorException();
                 }
-                activeJvbsJson.put("jvbs", activeJvbs);
+                activeJvbsJson.put("jvbs",
+                    activeJvbs.stream().map(j -> j.toString())
+                        .collect(Collectors.toList()));
             }
 
             if (Duration.between(
