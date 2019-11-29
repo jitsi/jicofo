@@ -32,6 +32,12 @@ import java.time.*;
 import java.util.*;
 import java.util.logging.*;
 
+/**
+ * Checks the health of {@link FocusManager}.
+ *
+ * @author Lyubomir Marinov
+ * @author Pawel Domas
+ */
 @Path("/about/health")
 @Singleton()
 public class Health
@@ -59,7 +65,8 @@ public class Health
      * Interval which we consider bad for a health check and we will print
      * some debug information.
      */
-    private static final Duration BAD_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(3);
+    private static final Duration BAD_HEALTH_CHECK_INTERVAL
+        = Duration.ofSeconds(3);
 
     /**
      * The pseudo-random generator used to generate random input for
@@ -102,10 +109,13 @@ public class Health
                 activeJvbsJson.put("jvbs", activeJvbs);
             }
 
-            if (Duration.between(lastHealthCheckTime, clock.instant()).compareTo(STATUS_CACHE_INTERVAL) < 0
+            if (Duration.between(
+                    lastHealthCheckTime,
+                    clock.instant()).compareTo(STATUS_CACHE_INTERVAL) < 0
                 && cachedStatus > 0)
             {
-                return Response.status(cachedStatus).entity(activeJvbsJson).build();
+                return Response.status(cachedStatus)
+                    .entity(activeJvbsJson).build();
             }
 
             HealthChecksMonitor monitor = null;
@@ -286,7 +296,8 @@ public class Health
         {
             this.startedAt = System.currentTimeMillis();
             this.monitorTimer = new Timer(getClass().getSimpleName(), true);
-            this.monitorTimer.schedule(this, BAD_HEALTH_CHECK_INTERVAL.toMillis());
+            this.monitorTimer
+                .schedule(this, BAD_HEALTH_CHECK_INTERVAL.toMillis());
         }
 
         /**
