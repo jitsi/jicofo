@@ -31,7 +31,14 @@ import javax.ws.rs.core.*;
 import java.time.*;
 import java.util.*;
 import java.util.logging.*;
+import java.util.stream.*;
 
+/**
+ * Checks the health of {@link FocusManager}.
+ *
+ * @author Lyubomir Marinov
+ * @author Pawel Domas
+ */
 @Path("/about/health")
 @Singleton()
 public class Health
@@ -59,7 +66,8 @@ public class Health
      * Interval which we consider bad for a health check and we will print
      * some debug information.
      */
-    private static final Duration BAD_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(3);
+    private static final Duration BAD_HEALTH_CHECK_INTERVAL
+        = Duration.ofSeconds(3);
 
     /**
      * The pseudo-random generator used to generate random input for
@@ -99,13 +107,18 @@ public class Health
                         "The health check failed - 0 active JVB instances !");
                     throw new InternalServerErrorException();
                 }
-                activeJvbsJson.put("jvbs", activeJvbs);
+                activeJvbsJson.put("jvbs",
+                    activeJvbs.stream().map(j -> j.toString())
+                        .collect(Collectors.toList()));
             }
 
-            if (Duration.between(lastHealthCheckTime, clock.instant()).compareTo(STATUS_CACHE_INTERVAL) < 0
+            if (Duration.between(
+                    lastHealthCheckTime,
+                    clock.instant()).compareTo(STATUS_CACHE_INTERVAL) < 0
                 && cachedStatus > 0)
             {
-                return Response.status(cachedStatus).entity(activeJvbsJson).build();
+                return Response.status(cachedStatus)
+                    .entity(activeJvbsJson.toJSONString()).build();
             }
 
             HealthChecksMonitor monitor = null;
@@ -118,7 +131,7 @@ public class Health
             {
                 check(focusManager);
                 cacheStatus(HttpServletResponse.SC_OK);
-                return Response.ok(activeJvbsJson).build();
+                return Response.ok(activeJvbsJson.toJSONString()).build();
             }
             finally
             {
@@ -132,7 +145,8 @@ public class Health
         {
             logger.error("Health check of Jicofo failed!", ex);
             cacheStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            return Response.serverError().entity(activeJvbsJson).build();
+            return Response.serverError()
+                .entity(activeJvbsJson.toJSONString()).build();
         }
     }
 
@@ -286,7 +300,8 @@ public class Health
         {
             this.startedAt = System.currentTimeMillis();
             this.monitorTimer = new Timer(getClass().getSimpleName(), true);
-            this.monitorTimer.schedule(this, BAD_HEALTH_CHECK_INTERVAL.toMillis());
+            this.monitorTimer
+                .schedule(this, BAD_HEALTH_CHECK_INTERVAL.toMillis());
         }
 
         /**
