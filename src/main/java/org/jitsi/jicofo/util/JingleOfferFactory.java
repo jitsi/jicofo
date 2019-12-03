@@ -620,11 +620,13 @@ public class JingleOfferFactory
      * Adds the video-related extensions for an offer to a
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
-     * @param stereo enable transport-cc
-     * @param enableTcc enable opus stereo mode
+     * @param stereo Whether to enable stereo for opus.
+     * @param enableRemb Whether to enable REMB.
+     * @param enableTcc Whether to enable transport-cc.
      */
     private static void addAudioToContent(ContentPacketExtension content,
-                                          boolean stereo, boolean enableRemb, boolean enableTcc)
+                                          boolean stereo, boolean enableRemb,
+                                          boolean enableTcc)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
