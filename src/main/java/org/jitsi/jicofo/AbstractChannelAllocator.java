@@ -310,7 +310,7 @@ public abstract class AbstractChannelAllocator implements Runnable
         if (restartConference && !StringUtils.isNullOrEmpty(
                     bridgeSession.colibriConference.getConferenceId()))
         {
-            meetConference.onBridgeDown(jvb);
+            meetConference.channelAllocationFailed(jvb);
         }
 
         return null;
