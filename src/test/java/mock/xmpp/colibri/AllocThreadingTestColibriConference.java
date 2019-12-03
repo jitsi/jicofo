@@ -17,6 +17,7 @@
  */
 package mock.xmpp.colibri;
 
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import net.java.sip.communicator.service.protocol.*;
 
@@ -195,7 +196,7 @@ public class AllocThreadingTestColibriConference
 
     @Override
     protected boolean acquireCreateConferenceSemaphore(String endpointId)
-        throws OperationFailedException
+        throws ColibriException
     {
         createConfSemaphoreQueue.add(endpointId);
 
@@ -236,7 +237,7 @@ public class AllocThreadingTestColibriConference
     @Override
     protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)
-        throws OperationFailedException
+        throws ColibriException
     {
         boolean isCreator = confCreator.equals(endpointId);
         synchronized (createConferenceSync)

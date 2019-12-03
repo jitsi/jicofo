@@ -22,6 +22,7 @@ import mock.jvb.*;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -356,7 +357,7 @@ public class ColibriThreadingTest
                         channels = colibriConference.createColibriChannels(
                             true, endpointId, null, true, createContents());
                     }
-                    catch (OperationFailedException e)
+                    catch (ColibriException e)
                     {
                         e.printStackTrace();
                     }

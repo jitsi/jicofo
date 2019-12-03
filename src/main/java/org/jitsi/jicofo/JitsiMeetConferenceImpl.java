@@ -2358,8 +2358,20 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles on bridge down event by shutting down the conference if it's the
-     * one we're using here.
+     * Notifies this conference that one of its channel allocators failed to
+     * allocate channels, and that the participants on a specific bridge need
+     * to be re-invited.
+     * @param bridgeJid the JID of the bridge on which participants need to be
+     * re-invited.
+     */
+    void channelAllocationFailed(Jid bridgeJid)
+    {
+        onBridgeDown(bridgeJid);
+    }
+
+    /**
+     * Notifies this conference that the bridge with a specific JID has failed.
+     * @param bridgeJid the JID of the bridge which failed.
      */
     void onBridgeDown(Jid bridgeJid)
     {

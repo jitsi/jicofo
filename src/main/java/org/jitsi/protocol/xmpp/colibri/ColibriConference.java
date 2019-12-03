@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol.xmpp.colibri;
 
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -101,8 +102,7 @@ public interface ColibriConference
      * @param contents content list that describes peer media.
      * @return <tt>ColibriConferenceIQ</tt> that describes allocated channels.
      *
-     * @throws OperationFailedException if channel allocation failed due to
-     * network or bridge failure.
+     * @throws OperationFailedException if channel allocation fails.
      */
     default ColibriConferenceIQ createColibriChannels(
         boolean useBundle,
@@ -110,7 +110,7 @@ public interface ColibriConference
         String statsId,
         boolean peerIsInitiator,
         List<ContentPacketExtension> contents)
-        throws OperationFailedException
+        throws ColibriException
     {
         return createColibriChannels(
             useBundle,
@@ -141,8 +141,7 @@ public interface ColibriConference
      * request, if any.
      * @return <tt>ColibriConferenceIQ</tt> that describes allocated channels.
      *
-     * @throws OperationFailedException if channel allocation failed due to
-     * network or bridge failure.
+     * @throws ColibriException if channel allocation fails.
      */
     ColibriConferenceIQ createColibriChannels(
             boolean useBundle,
@@ -153,7 +152,7 @@ public interface ColibriConference
             Map<String, List<SourcePacketExtension>> sources,
             Map<String, List<SourceGroupPacketExtension>> sourceGroups,
             List<String> relays)
-        throws OperationFailedException;
+        throws ColibriException;
 
     /**
      * Does Colibri channels update of RTP description, SSRC and transport
