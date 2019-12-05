@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
@@ -140,7 +141,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     @Override
     protected ColibriConferenceIQ doAllocateChannels(
         List<ContentPacketExtension> offer)
-        throws OperationFailedException
+        throws ColibriException
     {
         return bridgeSession.colibriConference.createColibriChannels(
             participant.hasBundleSupport(),

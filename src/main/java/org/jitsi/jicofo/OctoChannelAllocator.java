@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -114,7 +115,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
     @Override
     protected ColibriConferenceIQ doAllocateChannels(
         List<ContentPacketExtension> offer)
-        throws OperationFailedException
+        throws ColibriException
     {
         // This is a blocking call.
         ColibriConferenceIQ result =

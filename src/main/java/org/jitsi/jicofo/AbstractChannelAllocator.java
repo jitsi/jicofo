@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -235,84 +236,89 @@ public abstract class AbstractChannelAllocator implements Runnable
             return null;
         }
 
-        // We keep trying until the conference is disposed
-        // This can happen either when this JitsiMeetConference is being
-        // disposed or if the bridge already set on ColibriConference by other
-        // allocator thread dies before this thread get the chance to allocate
-        // anything, then it will cancel and channels for this Participant will
-        // be allocated from 'restartConference'
-        while (!bridgeSession.colibriConference.isDisposed()
-                && !bridgeSession.hasFailed)
+        // The bridge is faulty.
+        boolean faulty = false;
+        // We want to re-invite the participants in this conference.
+        boolean restartConference = false;
+        try
         {
-            try
+            logger.info(
+                "Using " + jvb + " to allocate channels for: "
+                 + (participant == null ? "null" : participant.toString()));
+
+            ColibriConferenceIQ colibriChannels
+                = doAllocateChannels(contents);
+
+            // null means canceled, because colibriConference has been
+            // disposed by another thread
+            if (colibriChannels == null)
             {
-                logger.info(
-                        "Using " + jvb + " to allocate channels for: "
-                             + (participant == null
-                                    ? "null" : participant.toString()));
-
-                ColibriConferenceIQ colibriChannels
-                    = doAllocateChannels(contents);
-
-                // null means canceled, because colibriConference has been
-                // disposed by another thread
-                if (colibriChannels == null)
-                {
-                    cancel();
-                    return null;
-                }
-
-                bridgeSession.bridge.setIsOperational(true);
-
-                if (bridgeSession.colibriConference.hasJustAllocated())
-                {
-                    meetConference.onColibriConferenceAllocated(
-                        bridgeSession.colibriConference, jvb);
-                }
-                return colibriChannels;
+                cancel();
+                return null;
             }
-            catch (OperationFailedException exc)
+
+            bridgeSession.bridge.setIsOperational(true);
+
+            if (bridgeSession.colibriConference.hasJustAllocated())
             {
-                logger.error(
-                        "Failed to allocate channels using bridge: " + jvb,
-                        exc);
-
-                // ILLEGAL_ARGUMENT == BAD_REQUEST(XMPP)
-                // It usually means that Jicofo's conference state got out of
-                // sync with the one of the bridge. The easiest thing to do here
-                // is to restart the conference. It does not mean that
-                // the bridge is faulty though.
-                if (OperationFailedException.ILLEGAL_ARGUMENT
-                        != exc.getErrorCode())
-                {
-                    bridgeSession.bridge.setIsOperational(false);
-                    bridgeSession.hasFailed = true;
-                }
-
-                // Check if the conference is in progress
-                if (!StringUtils.isNullOrEmpty(
-                    bridgeSession.colibriConference.getConferenceId()))
-                {
-                    // Cancel this instance
-                    cancel();
-
-                    // Notify the conference that this ColibriConference is now
-                    // broken.
-                    meetConference.onBridgeDown(jvb);
-                    return null;
-                }
+                meetConference.onColibriConferenceAllocated(
+                    bridgeSession.colibriConference, jvb);
             }
+            return colibriChannels;
+        }
+        catch (ConferenceNotFoundException e)
+        {
+            // The conference on the bridge has likely expired. We want to
+            // re-invite the conference participants, though the bridge is not
+            // faulty.
+            restartConference = true;
+            faulty = false;
+            logger.error("Conference ID not found (expired?)." + e.getMessage());
+        }
+        catch (BadRequestException e)
+        {
+            // The bridge indicated that our request is invalid. This does not
+            // mean the bridge is faulty, and retrying will likely result
+            // in the same error.
+            // We observe this when an endpoint uses an ID not accepted by
+            // the new bridge (via a custom client).
+            restartConference = false;
+            faulty = false;
+            logger.error("The bridge indicated bad-request: " + e.getMessage());
+        }
+        catch (ColibriException e)
+        {
+            // All other errors indicate that the bridge is faulty: timeout,
+            // wrong response type, or something else.
+            restartConference = true;
+            faulty = true;
+            logger.error("Failed to allocate channels, will consider the " +
+                    "bridge faulty.");
         }
 
-        // If we reach this point it means that the conference has been disposed
-        // of before we managed to allocate anything
+        // We only get here if we caught an exception.
+        if (faulty)
+        {
+            bridgeSession.bridge.setIsOperational(false);
+            bridgeSession.hasFailed = true;
+        }
+
         cancel();
+
+        // If the ColibriConference is in use, and we want to retry,
+        // notify the JitsiMeetConference.
+        if (restartConference && !StringUtils.isNullOrEmpty(
+                    bridgeSession.colibriConference.getConferenceId()))
+        {
+            meetConference.channelAllocationFailed(jvb);
+        }
+
         return null;
     }
 
     protected abstract ColibriConferenceIQ doAllocateChannels(
         List<ContentPacketExtension> offer)
-        throws OperationFailedException;
+        throws ColibriException;
 
     /**
      * Updates a Jingle offer (represented by a list of

@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -101,22 +102,14 @@ public class ColibriConferenceImpl
         = new ConferenceCreationSemaphore();
 
     /**
-     * The error code produced by the allocator thread which is to be passed to
-     * the waiting threads, so that they will throw
-     * {@link OperationFailedException} consistent with the allocator thread.
+     * The exception produced by the allocator thread which is to be passed to
+     * the waiting threads, so that they will throw exceptions consistent with
+     * the allocator thread.
      *
-     * Note: this and {@link #allocChannelsErrorMsg} are only used to modify
-     * the message logged when an exception is thrown. They are NOT used to
-     * decide whether to throw an exception or not.
+     * Note: this is only used to modify the message logged when an exception
+     * is thrown. It is NOT used to decide whether to throw an exception or not.
      */
-    private int allocChannelsErrorCode = -1;
-
-    /**
-     * The error message produced by the allocator thread which is to be passed
-     * to the waiting threads, so that they will throw
-     * {@link OperationFailedException} consistent with the allocator thread.
-     */
-    private String allocChannelsErrorMsg = null;
+    private ColibriException allocateChannelsException = null;
 
     /**
      * Utility used for building Colibri queries.
@@ -261,7 +254,7 @@ public class ColibriConferenceImpl
             Map<String, List<SourcePacketExtension>> sourceMap,
             Map<String, List<SourceGroupPacketExtension>> sourceGroupsMap,
             List<String> octoRelayIds)
-        throws OperationFailedException
+        throws ColibriException
     {
         ColibriConferenceIQ allocateRequest;
         // How many new video channels will be allocated
@@ -348,7 +341,7 @@ public class ColibriConferenceImpl
                         (ColibriConferenceIQ) response, contents);
 
         }
-        catch (Exception e)
+        catch (ColibriException e)
         {
             try
             {
@@ -381,35 +374,30 @@ public class ColibriConferenceImpl
 
     /**
      * Verifies the JVB's response to allocate channel request and sets
-     * {@link #allocChannelsErrorCode} and {@link #allocChannelsErrorMsg}.
+     * {@link #allocateChannelsException}.
      *
-     * @param response the packet received from JVB(null == timeout) as
-     *                 a response to Colibri allocate channels request.
+     * @param response the packet received from the bridge (with {@code null}
+     * meaning a timeout) as a response to a request to allocate Colibri
+     * channels.
      *
-     * @throws OperationFailedException with error code set to:
-     * <li>{@link OperationFailedException#NETWORK_FAILURE}</li> in case of
-     * a timeout.
-     * <li>{@link OperationFailedException#ILLEGAL_ARGUMENT}</li> in case of
-     * "bad request" response returned by the JVB
-     * <li>{@link OperationFailedException#GENERAL_ERROR}</li> in case of other
-     * error that may indicate that the JVB instance is faulty.
-     *
+     * @throws TimeoutException in case of a timeout.
+     * @throws ConferenceNotFoundException if the request referenced a colibri
+     * conference which does not exist on the bridge.
+     * @throws BadRequestException if the response
+     * @throws WrongResponseTypeException if the response contains no error, but
+     * is not of the expected {@link ColibriConferenceIQ} type.
+     * @throws ColibriConference in case the response contained an XMPP error
+     * not listed above.
      */
     private void maybeThrowOperationFailed(Stanza response)
-        throws OperationFailedException
+        throws ColibriException
     {
-        // This code block must be protected, because in the last "if" a
-        // decision is made based on the value of allocChannelsErrorCode, which
-        // could have been written by another thread.
         synchronized (syncRoot)
         {
+            ColibriException exception = null;
             if (response == null)
             {
-                allocChannelsErrorCode
-                    = OperationFailedException.NETWORK_FAILURE;
-                allocChannelsErrorMsg
-                    = "Failed to allocate colibri channels: response is null."
-                            + " Maybe the response timed out.";
+                exception = new TimeoutException();
             }
             else if (response.getError() != null)
             {
@@ -417,41 +405,48 @@ public class ColibriConferenceImpl
                 if (XMPPError.Condition
                     .bad_request.equals(error.getCondition()))
                 {
-                    allocChannelsErrorCode
-                        = OperationFailedException.ILLEGAL_ARGUMENT;
-                    allocChannelsErrorMsg
-                        = "Failed to allocate colibri channels - bad request: "
-                                + response.toXML();
+                    // Currently jitsi-videobridge returns the same error type
+                    // (bad-request) for two separate cases:
+                    // 1. The request was valid, but the conference ID was not
+                    // found (e.g. it has expired)
+                    // 2. The request was invalid (e.g. the endpoint ID format
+                    // was invalid).
+                    //
+                    // We want to handle the two cases differently, so we
+                    // distinguish them by matching the string.
+                    if (error.getDescriptiveText() != null &&
+                            error.getDescriptiveText()
+                                    .matches("Conference not found for ID:.*"))
+                    {
+                        exception
+                            = new ConferenceNotFoundException(
+                                    error.getConditionText());
+                    }
+                    else
+                    {
+                        exception
+                            = new BadRequestException(
+                                    response.toXML().toString());
+                    }
                 }
                 else
                 {
-                    allocChannelsErrorCode
-                        = OperationFailedException.GENERAL_ERROR;
-                    allocChannelsErrorMsg
-                        = "Failed to allocate colibri channels: "
-                                + response.toXML();
+                    exception
+                        = new ColibriException(
+                                "XMPP error: " + response.toXML());
                 }
             }
             else if (!(response instanceof ColibriConferenceIQ))
             {
-                allocChannelsErrorCode = OperationFailedException.GENERAL_ERROR;
-                allocChannelsErrorMsg
-                    = "Failed to allocate colibri channels: response is not a"
-                            + " colibri conference";
-            }
-            else
-            {
-                allocChannelsErrorCode = -1;
-                allocChannelsErrorMsg = null;
+                exception
+                    = new WrongResponseTypeException(
+                            response.getClass().getCanonicalName());
             }
 
-            if (allocChannelsErrorCode != -1)
+            this.allocateChannelsException = exception;
+            if (exception != null)
             {
-                throw new OperationFailedException(
-                    allocChannelsErrorMsg, allocChannelsErrorCode,
-                    response == null
-                        ? null
-                        : new Exception(response.toXML().toString()));
+                throw exception;
             }
         }
     }
@@ -467,12 +462,12 @@ public class ColibriConferenceImpl
      *
      * @return <tt>true</tt> if current thread is conference creator.
      *
-     * @throws OperationFailedException if conference creator thread has failed
-     *         to allocate new conference and current thread has been waiting
-     *         to acquire the semaphore.
+     * @throws ColibriConference if the current thread is not the conference
+     * creator thread and the conference creator thread produced an exception.
+     * The exception will be a clone of the original.
      */
     protected boolean acquireCreateConferenceSemaphore(String endpointId)
-        throws OperationFailedException
+        throws ColibriException
     {
         return createConfSemaphore.acquire();
     }
@@ -501,14 +496,21 @@ public class ColibriConferenceImpl
      * @return <tt>Packet</tt> which is JVB response or <tt>null</tt> if
      *         the request timed out.
      *
-     * @throws OperationFailedException see throws description of
-     * {@link XmppConnection#sendPacketAndGetReply(IQ)}.
+     * @throws ColibriException If sending the packet fails (see
+     * {@link XmppConnection#sendPacketAndGetReply(IQ)}).
      */
     protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)
-        throws OperationFailedException
+        throws ColibriException
     {
-        return connection.sendPacketAndGetReply(request);
+        try
+        {
+            return connection.sendPacketAndGetReply(request);
+        }
+        catch (OperationFailedException ofe)
+        {
+            throw new ColibriException(ofe.getMessage());
+        }
     }
 
     /**
@@ -1108,17 +1110,15 @@ public class ColibriConferenceImpl
          *         creator. That is the thread that sends first channel allocate
          *         request that results in new conference created.
          *
-         * @throws OperationFailedException if we are not conference creator
+         * @throws ColibriException if we are not conference creator
          *         thread and conference creator has failed to create the
          *         conference while we've been waiting on this semaphore.
          */
         public boolean acquire()
-            throws OperationFailedException
+            throws ColibriException
         {
             synchronized (syncRoot)
             {
-                Jid jvbInUse = jitsiVideobridge;
-
                 if (conferenceState.getID() == null && creatorThread == null)
                 {
                     creatorThread = Thread.currentThread();
@@ -1155,11 +1155,8 @@ public class ColibriConferenceImpl
 
                     if (conferenceState.getID() == null)
                     {
-                        throw new OperationFailedException(
-                            "Creator thread has failed to "
-                                + "allocate channels on: " + jvbInUse
-                                + ", msg: " + allocChannelsErrorMsg,
-                            allocChannelsErrorCode);
+                        throw allocateChannelsException.clone(
+                            "Creator thread has failed to allocate channels: ");
                     }
 
                     if (logger.isDebugEnabled())
