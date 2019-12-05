@@ -414,8 +414,8 @@ public class ColibriConferenceImpl
                     //
                     // We want to handle the two cases differently, so we
                     // distinguish them by matching the string.
-                    if (error.getConditionText() != null &&
-                            error.getConditionText()
+                    if (error.getDescriptiveText() != null &&
+                            error.getDescriptiveText()
                                     .matches("Conference not found for ID:.*"))
                     {
                         exception

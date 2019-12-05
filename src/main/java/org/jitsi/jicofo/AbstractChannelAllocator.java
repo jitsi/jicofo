@@ -292,8 +292,8 @@ public abstract class AbstractChannelAllocator implements Runnable
             // wrong response type, or something else.
             restartConference = true;
             faulty = true;
-            logger.error("Failed to allocate channels, will consider the bridge" +
-                    "faulty.");
+            logger.error("Failed to allocate channels, will consider the " +
+                    "bridge faulty.");
         }
 
         // We only get here if we caught an exception.
