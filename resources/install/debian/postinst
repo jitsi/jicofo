@@ -110,6 +110,12 @@ case "$1" in
             touch $NEW_JITSI_CONFIG
         fi
 
+        # Default is to use mucs for jvb, if setting is missing add it
+        # we are migrating old configs to use mucs now
+        if ! grep -q "org.jitsi.jicofo.BRIDGE_MUC" "$NEW_JITSI_CONFIG" ;then
+            echo "org.jitsi.jicofo.BRIDGE_MUC=JvbBrewery@internal.auth.${JVB_HOSTNAME}" >> $NEW_JITSI_CONFIG
+        fi
+
         # we don't want to start the daemon as root
         if ! getent group jitsi > /dev/null ; then
             groupadd jitsi
