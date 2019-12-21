@@ -221,11 +221,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             chatRoom = null;
 
             // Clean up the list of service instances
-            List<BrewInstance> instancesCopy = new ArrayList<>(instances);
-            for (BrewInstance i : instancesCopy)
-            {
-                removeInstance(i);
-            }
+            instances.forEach(this::removeInstance);
         }
     }
 
