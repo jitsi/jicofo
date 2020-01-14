@@ -715,6 +715,143 @@ public class SSRCValidatorTest
         assertEquals(1, groups.getSourceGroupsForMedia("video").size());
     }
 
+    @Test
+    public void testStateBrokenByRemoval()
+            throws InvalidSSRCsException
+    {
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        SSRCValidator ssrcValidator = createValidator();
+
+        ssrcValidator.tryAddSourcesAndGroups(sources, groups);
+
+        MediaSourceMap sourcesToRemove = new MediaSourceMap();
+        // remove SSRCs 10 and 20
+        sourcesToRemove.addSource("video", videoSources.get(0).copy());
+        sourcesToRemove.addSource("video", videoSources.get(1).copy());
+
+        MediaSourceGroupMap groupsToRemove = new MediaSourceGroupMap();
+        // remove SIM 10 30 50 group
+        groupsToRemove.addSourceGroup("video", videoGroups.get(0).copy());
+        // remove FIR 10 20 group
+        groupsToRemove.addSourceGroup("video", videoGroups.get(1).copy());
+
+        try {
+            ssrcValidator.tryRemoveSourcesAndGroups(sourcesToRemove, groupsToRemove);
+
+            fail("Did not detect broken state after SIM and FIR groups removal");
+        } catch (InvalidSSRCsException exception) {
+            String msg = exception.getMessage();
+            String msgPattern
+                = "MSID conflict across FID groups: vstream vtrack, "
+                    + "SourceGroup\\[FID, ssrc=50, ssrc=60, ]@\\w+ conflicts "
+                    + "with group SourceGroup\\[FID, ssrc=30, ssrc=40, ]@\\w+";
+
+            if(!msg.matches(msgPattern)) {
+                fail("Fail error msg validation: " + msg);
+            }
+        }
+    }
+
+    @Test
+    public void testStateBrokenBySourceRemoval()
+            throws InvalidSSRCsException
+    {
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        SSRCValidator ssrcValidator = createValidator();
+
+        ssrcValidator.tryAddSourcesAndGroups(sources, groups);
+
+        MediaSourceMap sourcesToRemove = new MediaSourceMap();
+        // remove SSRCs 10
+        sourcesToRemove.addSource("video", videoSources.get(0).copy());
+
+        try {
+            ssrcValidator.tryRemoveSourcesAndGroups(sourcesToRemove, new MediaSourceGroupMap());
+
+            fail("Did not detect broken state after source removal");
+        } catch (InvalidSSRCsException exception) {
+            String msg = exception.getMessage();
+            String msgPattern
+                = "Source ssrc=10 not found in 'video' for group: "
+                    + "SourceGroup\\[SIM, ssrc=10, ssrc=30, ssrc=50, ]@\\w+";
+
+            if(!msg.matches(msgPattern)) {
+                fail("Fail error msg validation: " + msg);
+            }
+        }
+    }
+
+    @Test
+    public void testStateBrokenByGroupRemoval()
+            throws InvalidSSRCsException
+    {
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        SSRCValidator ssrcValidator = createValidator();
+
+        ssrcValidator.tryAddSourcesAndGroups(sources, groups);
+
+        MediaSourceMap sourcesToRemove = new MediaSourceMap();
+        MediaSourceGroupMap groupsToRemove = new MediaSourceGroupMap();
+
+        // remove SIM 10 30 50 group
+        groupsToRemove.addSourceGroup("video", videoGroups.get(0).copy());
+
+        try {
+            ssrcValidator.tryRemoveSourcesAndGroups(sourcesToRemove, groupsToRemove);
+
+            fail("Did not detect broken state after SIM group removal");
+        } catch (InvalidSSRCsException exception) {
+            String msg = exception.getMessage();
+            String msgPattern
+                = "MSID conflict across FID groups: vstream vtrack, "
+                    + "SourceGroup\\[FID, ssrc=30, ssrc=40, ]@\\w+ "
+                    + "conflicts with group "
+                    + "SourceGroup\\[FID, ssrc=10, ssrc=20, ]@\\w+";
+
+            if(!msg.matches(msgPattern)) {
+                fail("Fail error msg validation: " + msg);
+            }
+        }
+    }
+
+    @Test
+    public void testStateBrokenByFirGroupRemoval()
+            throws InvalidSSRCsException
+    {
+        addDefaultVideoSSRCs();
+        addDefaultVideoGroups();
+
+        SSRCValidator ssrcValidator = createValidator();
+
+        ssrcValidator.tryAddSourcesAndGroups(sources, groups);
+
+        MediaSourceMap sourcesToRemove = new MediaSourceMap();
+        MediaSourceGroupMap groupsToRemove = new MediaSourceGroupMap();
+        // remove FIR 10 20 group
+        groupsToRemove.addSourceGroup("video", videoGroups.get(1).copy());
+
+        try {
+            ssrcValidator.tryRemoveSourcesAndGroups(sourcesToRemove, groupsToRemove);
+
+            fail("Did not detect broken state after FIR group removal");
+        } catch (InvalidSSRCsException exception) {
+            String msg = exception.getMessage();
+            String msgPattern
+                = "SIM group size != FID group count: SourceGroup"
+                    + "\\[SIM, ssrc=10, ssrc=30, ssrc=50, ]@\\w+ != 2";
+
+            if(!msg.matches(msgPattern)) {
+                fail("Fail error msg validation: " + msg);
+            }
+        }
+    }
+
     private void verifySSRC(
         String cname, String msid, SourcePacketExtension ssrc)
     {

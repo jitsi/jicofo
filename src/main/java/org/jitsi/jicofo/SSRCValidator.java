@@ -355,6 +355,35 @@ public class SSRCValidator
         return new Object[] { acceptedSources, acceptedGroups };
     }
 
+    /**
+     * Makes an attempt to remove given sources and source groups from
+     * the current state.
+     *
+     * @param sourcesToRemove the sources to be removed
+     * @param groupsToRemove the groups to be removed
+     *
+     * @return an array of two objects where first one is <tt>MediaSourceMap</tt>
+     * contains the sources that have been removed and the second one is
+     * <tt>MediaSourceGroupMap</tt> with <tt>SourceGroup</tt>s removed by this
+     * validator instance.
+     *
+     * @throws InvalidSSRCsException if a critical problem has been found
+     * after sources/groups removal which would probably would result in
+     * "setRemoteDescription" error on the client.
+     */
+    public Object[] tryRemoveSourcesAndGroups(
+            MediaSourceMap sourcesToRemove,
+            MediaSourceGroupMap groupsToRemove)
+        throws InvalidSSRCsException
+    {
+        MediaSourceMap removedSources = sources.remove(sourcesToRemove);
+        MediaSourceGroupMap removedGroups = sourceGroups.remove(groupsToRemove);
+
+        this.validateStreams();
+
+        return new Object[] { removedSources, removedGroups };
+    }
+
     private void filterOutParams(SourcePacketExtension copy)
     {
         Iterator<? extends ExtensionElement> params
@@ -436,8 +465,18 @@ public class SSRCValidator
                 continue;
             }
 
-            List<SimulcastGrouping> simGroupings
-                = sourceGroups.findSimulcastGroupings();
+            List<SimulcastGrouping> simGroupings;
+
+            try
+            {
+                simGroupings = sourceGroups.findSimulcastGroupings();
+            }
+            // If groups are in invalid state a SIM grouping may fail to
+            // initialize with IllegalArgumentException
+            catch (IllegalArgumentException exc)
+            {
+                throw new InvalidSSRCsException(exc.getMessage());
+            }
 
             // Check if this SIM group's MSID does not appear in any other
             // simulcast grouping
