@@ -1865,10 +1865,8 @@ public class JitsiMeetConferenceImpl
         MediaSourceGroupMap sourceGroupsToRemove
             = MediaSourceGroupMap.getSourceGroupsForContents(contents);
 
-        removeSources(
-                sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
-
-        return null;
+        return removeSources(
+            sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
     }
 
     /**
@@ -1881,7 +1879,7 @@ public class JitsiMeetConferenceImpl
      * @param updateChannels tells whether or not sources update request should be
      *                       sent to the bridge.
      */
-    private void removeSources(JingleSession        sourceJingleSession,
+    private XMPPError removeSources(JingleSession        sourceJingleSession,
                                MediaSourceMap       sourcesToRemove,
                                MediaSourceGroupMap  sourceGroupsToRemove,
                                boolean              updateChannels)
@@ -1892,21 +1890,48 @@ public class JitsiMeetConferenceImpl
         if (participant == null)
         {
             logger.warn("Remove-source: no session for " + participantJid);
-            return;
+
+            return null;
+        }
+
+        final MediaSourceMap conferenceSources = getAllSources();
+        final MediaSourceGroupMap conferenceSourceGroups = getAllSourceGroups();
+
+        SSRCValidator validator
+                = new SSRCValidator(
+                        participant.getEndpointId(),
+                        conferenceSources,
+                        conferenceSourceGroups,
+                        globalConfig.getMaxSourcesPerUser(),
+                        this.logger);
+
+        Object[] removed;
+
+        try
+        {
+            removed
+                = validator.tryRemoveSourcesAndGroups(
+                        sourcesToRemove, sourceGroupsToRemove);
+        }
+        catch (InvalidSSRCsException e)
+        {
+            logger.error(
+                    "Error removing SSRCs from: " + participantJid
+                            + ": " + e.getMessage());
+            return XMPPError.from(
+                    XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
         // Only sources owned by this participant end up in "removed" set
-        final MediaSourceMap removedSources
-            = participant.removeSources(sourcesToRemove);
-
+        final MediaSourceMap removedSources = (MediaSourceMap) removed[0];
         final MediaSourceGroupMap removedGroups
-            = participant.removeSourceGroups(sourceGroupsToRemove);
+                = (MediaSourceGroupMap) removed[1];
 
         if (removedSources.isEmpty() && removedGroups.isEmpty())
         {
             logger.warn(
                     "No sources or groups to be removed from: "+ participantJid);
-            return;
+            return null;
         }
 
         // We remove all ssrc params from SourcePacketExtension as we want
@@ -1966,6 +1991,8 @@ public class JitsiMeetConferenceImpl
                             removedGroups);
                     }
                 });
+
+        return null;
     }
 
     /**
