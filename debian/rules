@@ -1,0 +1,30 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+#export DEB_VERBOSE_ALL=true
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	mvn -Dmaven.repo.local=${HOME}/.m2/repository clean
+
+override_dh_auto_configure:
+	# do nothing
+
+override_dh_auto_test:
+	# do nothing
+
+override_dh_auto_build:
+	mvn -Dmaven.repo.local=${HOME}/.m2/repository -DskipTests -Dassembly.skipAssembly=true package
+	mvn -Dmaven.repo.local=${HOME}/.m2/repository dependency:copy-dependencies -DincludeScope=runtime
+
+override_dh_install:
+	mkdir debian/tmp
+	cp resources/config/jicofo-logrotate.d debian/tmp/jicofo
+	cp target/jicofo*.jar debian/tmp/jicofo.jar
+	dh_install
+
+override_dh_auto_install:
+	# do nothing

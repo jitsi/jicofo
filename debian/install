@@ -1,0 +1,6 @@
+target/dependency/*             usr/share/jicofo/lib
+lib/logging.properties          etc/jitsi/jicofo
+jicofo.jar                      usr/share/jicofo
+resources/jicofo.sh             usr/share/jicofo
+resources/collect-dump-logs.sh	usr/share/jicofo
+jicofo                          etc/logrotate.d/

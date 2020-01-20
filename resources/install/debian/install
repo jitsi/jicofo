@@ -1,3 +1,0 @@
-debian/usr/share/jicofo/* /usr/share/jicofo/
-debian/etc/jitsi/jicofo/logging.properties	/etc/jitsi/jicofo/
-debian/etc/logrotate.d/jicofo	/etc/logrotate.d/

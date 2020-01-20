@@ -1,3 +1,0 @@
-version=3
-https://github.com/jitsi/jicofo/tags \
-  .*/archive/([\d\.]+)\.tar\.gz

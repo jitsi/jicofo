@@ -3,12 +3,12 @@ Section: net
 Priority: extra
 Maintainer: Jitsi Team <dev@jitsi.org>
 Uploaders: Emil Ivov <emcho@jitsi.org>, Damian Minkov <damencho@jitsi.org>, Pawel Domas <pawel.domas@jitsi.org>
-Build-Depends: debhelper (>= 8.0.0)
+Build-Depends: debhelper
 Standards-Version: 3.9.3
 Homepage: https://jitsi.org/meet
 
 Package: jicofo
-Architecture: any
+Architecture: all
 Depends: ${misc:Depends}, openjdk-8-jre-headless | openjdk-11-jre-headless
 Description: JItsi Meet COnference FOcus
  Jicofo is a conference focus for Jitsi Meet application.
