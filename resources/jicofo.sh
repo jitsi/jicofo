@@ -15,11 +15,15 @@ if [[ "$1" == "--help"  || $# -lt 1 ]]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 mainClass="org.jitsi.jicofo.Main"
 cp=$(JARS=($SCRIPT_DIR/jicofo*.jar $SCRIPT_DIR/lib/*.jar); IFS=:; echo "${JARS[*]}")
-libs="$SCRIPT_DIR/lib/native/macosx"
 logging_config="$SCRIPT_DIR/lib/logging.properties"
 
-exec java -Djava.library.path=$libs -Djava.util.logging.config.file=$logging_config -cp $cp $mainClass $@
+# if there is a logging config file in lib folder use it (running from source)
+if [ -f $logging_config ]; then
+    LOGGING_CONFIG_PARAM="-Djava.util.logging.config.file=$logging_config"
+fi
+
+exec java -Xmx3072m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp $LOGGING_CONFIG_PARAM $JAVA_SYS_PROPS -cp $cp $mainClass $@

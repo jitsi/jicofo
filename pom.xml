@@ -13,7 +13,7 @@
   <url>https://github.com/jitsi/jicofo</url>
 
   <properties>
-    <assembly.skipAssembly>true</assembly.skipAssembly>
+    <assembly.skipAssembly>false</assembly.skipAssembly>
     <jetty.version>9.4.15.v20190215</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.2.4-47d17fc</smack.version>
@@ -283,70 +283,23 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.2.0</version>
         <executions>
           <execution>
-            <id>assembly-linux-x64-bin-archive</id>
+            <id>assemble-archive</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
             <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptor>src/assembly/linux-x64-bin-archive.xml</descriptor>
-              <finalName>${project.artifactId}-linux-x64-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/assembly/archive.xml</descriptor>
+              </descriptors>
               <skipAssembly>${assembly.skipAssembly}</skipAssembly>
-            </configuration>
-          </execution>
-          <execution>
-            <id>assembly-linux-x86-bin-archive</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptor>src/assembly/linux-x86-bin-archive.xml</descriptor>
-              <finalName>${project.artifactId}-linux-x86-${project.version}</finalName>
-              <skipAssembly>${assembly.skipAssembly}</skipAssembly>
-            </configuration>
-          </execution>
-          <execution>
-            <id>assembly-macosx-bin-archive</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptor>src/assembly/macosx-bin-archive.xml</descriptor>
-              <finalName>${project.artifactId}-macosx-${project.version}</finalName>
-              <skipAssembly>${assembly.skipAssembly}</skipAssembly>
-            </configuration>
-          </execution>
-          <execution>
-            <id>assembly-windows-x64-bin-archive</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptor>src/assembly/windows-x64-bin-archive.xml</descriptor>
-              <finalName>${project.artifactId}-windows-x64-${project.version}</finalName>
-              <skipAssembly>${assembly.skipAssembly}</skipAssembly>
-            </configuration>
-          </execution>
-          <execution>
-            <id>assembly-windows-x86-bin-archive</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptor>src/assembly/windows-x86-bin-archive.xml</descriptor>
-              <finalName>${project.artifactId}-windows-x86-${project.version}</finalName>
-              <skipAssembly>${assembly.skipAssembly}</skipAssembly>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
             </configuration>
           </execution>
         </executions>
@@ -362,6 +315,21 @@
         <version>1.4.0</version>
         <configuration>
           <mainClass>org.jitsi.jicofo.Main</mainClass>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- Instructs the plugin to add the current package version in the jar manifest
+        So we can access it runtime with: .class.getPackage().getImplementationVersion()
+        -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.2.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
     </plugins>
