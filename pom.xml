@@ -157,7 +157,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-5-g725dcef</version>
+      <version>1.0-6-g009420d</version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
