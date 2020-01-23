@@ -300,10 +300,7 @@ public class JibriSession
                     stopRequest,
                     stanza -> {
                         JibriIq resp = (JibriIq)stanza;
-                        handleJibriStatusUpdate(
-                            resp.getFrom(),
-                            resp.getStatus(),
-                            resp.getFailureReason());
+                        processJibriIqFromJibri(resp);
                     },
                     exception -> {
                         logger.error(
@@ -351,7 +348,23 @@ public class JibriSession
         return this.isSIP ? "SIP Jibri" : "Jibri";
     }
 
-    IQ processJibriIqFromJibri(JibriIq iq)
+    /**
+     * Process a {@link JibriIq} *request* from Jibri
+     * @param request
+     * @return the response
+     */
+    IQ processJibriIqRequestFromJibri(JibriIq request)
+    {
+        processJibriIqFromJibri(request);
+        return IQ.createResultIQ(request);
+    }
+
+    /**
+     * Process a {@link JibriIq} from Jibri (note that this
+     * may be an IQ request or an IQ response)
+     * @param iq
+     */
+    private void processJibriIqFromJibri(JibriIq iq)
     {
         // We have something from Jibri - let's update recording status
         JibriIq.Status status = iq.getStatus();
@@ -361,15 +374,14 @@ public class JibriSession
                 "Updating status from JIBRI: "
                     + iq.toXML() + " for " + roomName);
 
-            handleJibriStatusUpdate(iq.getFrom(), status, iq.getFailureReason());
+            handleJibriStatusUpdate(
+                iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
         }
         else
         {
             logger.error(
                 "Received UNDEFINED status from jibri: " + iq.toString());
         }
-
-        return IQ.createResultIQ(iq);
     }
 
     /**
@@ -441,10 +453,7 @@ public class JibriSession
         try
         {
             JibriIq result = (JibriIq)xmpp.sendPacketAndGetReply(startIq);
-            handleJibriStatusUpdate(
-                result.getFrom(),
-                result.getStatus(),
-                result.getFailureReason());
+            processJibriIqFromJibri(result);
         }
         catch (OperationFailedException e)
         {
@@ -477,11 +486,12 @@ public class JibriSession
 
     /**
      * Check whether or not we should retry the current request to another Jibri
-     * @return true if we should retry again, false otherwise
+     * @return true if we've not exceeded the max amount of retries,
+     * false otherwise
      */
-    private boolean shouldRetryRequest()
+    private boolean maxRetriesExceeded()
     {
-        return (maxNumRetries < 0 || numRetries < maxNumRetries);
+        return (maxNumRetries >= 0 && numRetries >= maxNumRetries);
     }
 
     /**
@@ -505,11 +515,15 @@ public class JibriSession
      * @param jibriJid the jid of the jibri for which this status update applies
      * @param newStatus the jibri's new status
      * @param failureReason the jibri's failure reason, if any (otherwise null)
+     * @param shouldRetryParam if {@code failureReason} is not null, shouldRetry
+     *                    denotes whether or not we should retry the same
+     *                    request with another Jibri
      */
     private void handleJibriStatusUpdate(
             @NotNull Jid jibriJid,
             JibriIq.Status newStatus,
-            @Nullable JibriIq.FailureReason failureReason)
+            @Nullable JibriIq.FailureReason failureReason,
+            @Nullable Boolean shouldRetryParam)
     {
         jibriStatus = newStatus;
         logger.info("Got Jibri status update: Jibri " + jibriJid
@@ -540,8 +554,19 @@ public class JibriSession
         // Jibri to keep things going
         if (failureReason != null)
         {
+            boolean shouldRetry;
+            if (shouldRetryParam == null)
+            {
+                logger.warn("failureReason was non-null but shouldRetry " +
+                    "wasn't set, will NOT retry");
+                shouldRetry = false;
+            }
+            else
+            {
+                shouldRetry = shouldRetryParam;
+            }
             // There was an error with the current Jibri, see if we should retry
-            if (shouldRetryRequest())
+            if (shouldRetry && !maxRetriesExceeded())
             {
                 logger.info("Jibri failed, trying to fall back to another Jibri");
                 if (retryRequestWithAnotherJibri())
@@ -561,11 +586,19 @@ public class JibriSession
             }
             else
             {
-                // The Jibri we tried failed and we've reached the maxmium
-                // amount of retries we've been configured to attempt, so we'll
-                // give up trying to handle this request.
-                logger.info("Jibri failed, but max amount of retries ("
-                    + maxNumRetries + ") reached, giving up");
+                if (!shouldRetry)
+                {
+                    logger.info("Jibri failed and signaled that we " +
+                        "should not retry the same request");
+                }
+                else
+                {
+                    // The Jibri we tried failed and we've reached the maxmium
+                    // amount of retries we've been configured to attempt, so we'll
+                    // give up trying to handle this request.
+                    logger.info("Jibri failed, but max amount of retries ("
+                        + maxNumRetries + ") reached, giving up");
+                }
                 owner.onSessionStateChanged(this, newStatus, failureReason);
                 cleanupSession();
             }
@@ -644,7 +677,7 @@ public class JibriSession
                         nickname() + " went offline: " + jibriJid
                             + " for room: " + roomName);
                     handleJibriStatusUpdate(
-                        jibriJid, Status.OFF, FailureReason.ERROR);
+                        jibriJid, Status.OFF, FailureReason.ERROR, true);
                 }
             }
         }
@@ -678,7 +711,7 @@ public class JibriSession
                     // to trigger the fallback logic.
                     stop(null);
                     handleJibriStatusUpdate(
-                        currentJibriJid, Status.OFF, FailureReason.ERROR);
+                        currentJibriJid, Status.OFF, FailureReason.ERROR, true);
                 }
             }
         }
