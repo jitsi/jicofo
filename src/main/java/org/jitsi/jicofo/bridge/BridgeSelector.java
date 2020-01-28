@@ -168,17 +168,30 @@ public class BridgeSelector
                 = config.getString(BRIDGE_SELECTION_STRATEGY_PNAME);
             if (clazzName != null)
             {
-                clazzName = BridgeSelector.class.getCanonicalName()
-                    + "$" + clazzName;
                 try
                 {
                     Class clazz = Class.forName(clazzName);
                     strategy = (BridgeSelectionStrategy)clazz.newInstance();
-                    logger.info("Using " + clazzName);
                 }
-                catch (Exception e)
+                catch (ClassNotFoundException | InstantiationException
+                        | IllegalAccessException e)
                 {
-                    logger.error("Failed to find class: " + clazzName, e);
+                }
+
+                if (strategy == null)
+                {
+                    try
+                    {
+                        Class clazz =
+                            Class.forName(
+                                getClass().getPackage().getName() + "." + clazzName);
+                        strategy = (BridgeSelectionStrategy)clazz.newInstance();
+                    }
+                    catch (ClassNotFoundException | InstantiationException
+                            | IllegalAccessException e)
+                    {
+                        logger.error("Failed to find class for: " + clazzName, e);
+                    }
                 }
             }
         }
@@ -356,7 +369,7 @@ public class BridgeSelector
      * @return videobridge JID for given pub-sub node or <tt>null</tt> if no
      *         mapping found.
      */
-    synchronized public Jid getBridgeForPubSubNode(String pubSubNode)
+    synchronized Jid getBridgeForPubSubNode(String pubSubNode)
     {
         Bridge bridge = findBridgeForNode(pubSubNode);
         return bridge != null ? bridge.getJid() : null;
@@ -473,7 +486,7 @@ public class BridgeSelector
      *
      * @return failure reset threshold in millis.
      */
-    public long getFailureResetThreshold()
+    long getFailureResetThreshold()
     {
         return failureResetThreshold;
     }
@@ -487,7 +500,7 @@ public class BridgeSelector
      * @throws IllegalArgumentException if given threshold value is equal or
      *         less than zero.
      */
-    public void setFailureResetThreshold(long failureResetThreshold)
+    void setFailureResetThreshold(long failureResetThreshold)
     {
         if (failureResetThreshold <= 0)
         {
@@ -503,7 +516,7 @@ public class BridgeSelector
      * Returns the number of JVBs known to this bridge selector. Not all of them
      * have to be operational.
      */
-    synchronized public int getKnownBridgesCount()
+    synchronized int getKnownBridgesCount()
     {
         return bridges.size();
     }
@@ -624,9 +637,9 @@ public class BridgeSelector
         logger.info(
             "Bridge failure reset threshold: " + getFailureResetThreshold());
 
-        bridgeSelectionStrategy.localRegion
-                = config.getString(LOCAL_REGION_PNAME, null);
-        logger.info("Local region: " + bridgeSelectionStrategy.localRegion);
+        bridgeSelectionStrategy.setLocalRegion(
+                config.getString(LOCAL_REGION_PNAME, null));
+        logger.info("Local region: " + bridgeSelectionStrategy.getLocalRegion());
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
@@ -683,315 +696,4 @@ public class BridgeSelector
         }
     }
 
-    /**
-     * Represents an algorithm for bridge selection.
-     */
-    private static abstract class BridgeSelectionStrategy
-    {
-        /**
-         * The local region of the jicofo instance.
-         */
-        private String localRegion = null;
-
-        /**
-         * Selects a bridge to be used for a specific
-         * {@link JitsiMeetConference} and a specific {@link Participant}.
-         *
-         * @param bridges the list of bridges to select from.
-         * @param conference the conference for which a bridge is to be
-         * selected.
-         * @param participantRegion the region of the participant for which
-         * a bridge is to be selected.
-         * @return the selected bridge, or {@code null} if no bridge is
-         * available.
-         */
-        private Bridge select(
-                List<Bridge> bridges,
-                JitsiMeetConference conference,
-                String participantRegion,
-                boolean allowMultiBridge)
-        {
-            List<Bridge> conferenceBridges
-                = conference == null
-                        ? new LinkedList<>()
-                        : conference.getBridges();
-            if (conferenceBridges.isEmpty())
-            {
-                Bridge bridge
-                    = selectInitial(bridges, participantRegion);
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug(
-                        "Selected initial bridge for " + conference +
-                            ": " + bridge);
-                }
-                return bridge;
-            }
-            else
-            {
-                if (!allowMultiBridge
-                    || conferenceBridges.get(0).getRelayId() == null)
-                {
-                    if (logger.isDebugEnabled())
-                    {
-                        logger.debug(
-                            "Existing bridge does not have a relay, will not " +
-                                "consider other bridges.");
-                    }
-
-                    return conferenceBridges.get(0);
-                }
-
-                return doSelect(
-                        bridges, conferenceBridges, participantRegion);
-            }
-        }
-
-        /**
-         * Selects a bridge to be used for a specific
-         * {@link JitsiMeetConference} and a specific {@link Participant},
-         * assuming that no other bridge is used by the conference (i.e. this
-         * is the initial selection of a bridge for the conference).
-         *
-         * @param bridges the list of bridges to select from.
-         * @param participantRegion the region of the participant for which a
-         * bridge is to be selected.
-         * @return the selected bridge, or {@code null} if no bridge is
-         * available.
-         */
-        private Bridge selectInitial(List<Bridge> bridges,
-                                     String participantRegion)
-        {
-            Bridge bridge = null;
-
-            // Prefer a bridge in the participant's region.
-            if (participantRegion != null)
-            {
-                bridge = findFirstOperationalInRegion(bridges, participantRegion);
-            }
-
-            // Otherwise, prefer a bridge in the local region.
-            if (bridge == null)
-            {
-                bridge = findFirstOperationalInRegion(bridges, localRegion);
-            }
-
-            // Otherwise, just find the first operational bridge.
-            if (bridge == null)
-            {
-                bridge = findFirstOperationalInRegion(bridges, null);
-            }
-
-            return bridge;
-        }
-
-        /**
-         * Returns the first operational bridge in the given list which matches
-         * the given region (if the given regio is {@code null} the region is
-         * not matched).
-         *
-         * @param bridges
-         * @param region
-         * @return
-         */
-        private Bridge findFirstOperationalInRegion(
-                List<Bridge> bridges,
-                String region)
-        {
-            return bridges.stream()
-                    .filter(Bridge::isOperational)
-                    .filter(
-                        b -> region == null || region.equals(b.getRegion()))
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        /**
-         * Selects a bridge to be used for a specific
-         * {@link JitsiMeetConference} and a specific {@link Participant}.
-         *
-         * @param bridges the list of bridges to select from.
-         * @param conferenceBridges the list of bridges currently used by the
-         * conference.
-         * @param participantRegion the region of the participant for which a
-         * bridge is to be selected.
-         * @return the selected bridge, or {@code null} if no bridge is
-         * available.
-         */
-        abstract Bridge doSelect(
-                List<Bridge> bridges,
-                List<Bridge> conferenceBridges,
-                String participantRegion);
-    }
-
-    /**
-     * A {@link BridgeSelectionStrategy} implementation which keeps all
-     * participants in a conference on the same bridge.
-     */
-    public static class SingleBridgeSelectionStrategy
-        extends BridgeSelectionStrategy
-    {
-        /**
-         * Default constructor.
-         */
-        SingleBridgeSelectionStrategy()
-        {}
-
-        /**
-         * {@inheritDoc}
-         * </p>
-         * Always selects the bridge already used by the conference.
-         */
-        @Override
-        public Bridge doSelect(
-                List<Bridge> bridges,
-                List<Bridge> conferenceBridges,
-                String participantRegion)
-        {
-            if (conferenceBridges.size() != 1)
-            {
-                logger.error("Unexpected number of bridges with "
-                                 + "SingleBridgeSelectionStrategy: "
-                                 + conferenceBridges.size());
-                return null;
-            }
-
-            Bridge bridge = conferenceBridges.get(0);
-            if (!bridge.isOperational())
-            {
-                logger.error(
-                    "The conference already has a bridge, but it is not "
-                        + "operational: bridge=" + bridge);
-                return null;
-            }
-
-            return bridge;
-        }
-    }
-
-    /**
-     * Implements a {@link BridgeSelectionStrategy} which tries to split each
-     * conference to different bridges (without regard for the "region"). For
-     * testing purposes only.
-     */
-    private static class SplitBridgeSelectionStrategy
-        extends BridgeSelectionStrategy
-    {
-        /**
-         * Default constructor.
-         */
-        SplitBridgeSelectionStrategy()
-        {}
-
-        /**
-         * {@inheritDoc}
-         * </p>
-         * Always selects the bridge already used by the conference.
-         */
-        @Override
-        public Bridge doSelect(
-            List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
-            String participantRegion)
-        {
-            for (Bridge bridge : bridges)
-            {
-                // If there's an available bridge, which isn't yet used in the
-                // conference, use it.
-                if (!conferenceBridges.contains(bridge))
-                {
-                    return bridge;
-                }
-            }
-
-            // Otherwise, select one of the existing bridges in the conference
-            // at random.
-            if (!bridges.isEmpty())
-            {
-                return
-                    bridges.get(
-                        Math.abs(new Random().nextInt()) % bridges.size());
-            }
-
-            return null;
-        }
-    }
-
-    /**
-     * Implements a {@link BridgeSelectionStrategy} which
-     */
-    private static class RegionBasedBridgeSelectionStrategy
-        extends BridgeSelectionStrategy
-    {
-        /**
-         * Default constructor.
-         */
-        RegionBasedBridgeSelectionStrategy()
-        {}
-
-        /**
-         * {@inheritDoc}
-         * </p>
-         * Always selects the bridge already used by the conference.
-         */
-        @Override
-        public Bridge doSelect(
-            List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
-            String participantRegion)
-        {
-            if (participantRegion == null)
-            {
-                // We don't know the participant's region. Use the least loaded
-                // existing bridge in the conference.
-                return findFirst(bridges, conferenceBridges);
-            }
-
-            // We know the participant's region.
-            List<Bridge> conferenceBridgesInRegion
-                = conferenceBridges.stream()
-                    .filter(
-                        bridge -> participantRegion.equals(bridge.getRegion()))
-                    .collect(Collectors.toList());
-            if (!conferenceBridgesInRegion.isEmpty())
-            {
-                return findFirst(bridges, conferenceBridgesInRegion);
-            }
-
-            // The conference has no bridges in the participant region. Try
-            // to add a new bridge in that region.
-            Bridge bridgeInRegion
-                = bridges.stream()
-                    .filter(bridge -> participantRegion.equals(bridge.getRegion()))
-                    .findFirst().orElse(null);
-            if (bridgeInRegion != null)
-            {
-                return bridgeInRegion;
-            }
-
-            // We couldn't find a bridge in the participant's region. Use the
-            // least loaded of the existing conference bridges.
-            // TODO: perhaps use a bridge in a nearby region (if we have data
-            // about the topology of the regions).
-            return findFirst(bridges, conferenceBridges);
-        }
-
-        /**
-         * Selects the bridge from {@code selectFrom} which occurs first in
-         * {@code order}.
-         * @param order A list which dictates the order.
-         * @param selectFrom A list of bridges to select from. Assumed non-null
-         * and non-empty.
-         * @return the bridge from {@code selectFrom} which occurs first in
-         * {@code order}.
-         */
-        private Bridge findFirst(
-            List<Bridge> selectFrom, List<Bridge> order)
-        {
-            return order.stream()
-                .filter(selectFrom::contains)
-                .findFirst()
-                .orElse(selectFrom.get(0));
-        }
-    }
 }

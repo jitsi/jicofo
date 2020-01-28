@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.bridge;
 
 import mock.*;
 import mock.xmpp.*;
 import mock.xmpp.pubsub.*;
 
-import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
@@ -46,7 +46,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private static OSGiHandler osgi = OSGiHandler.getInstance();
 
     private static Jid jvb1Jid;
     private static Jid jvb2Jid;
@@ -205,7 +205,7 @@ public class BridgeSelectorTest
         // TEST all bridges down
         jvb2.setIsOperational(false);
         jvb3.setIsOperational(false);
-        assertEquals(null, selector.selectBridge(null));
+        assertNull(selector.selectBridge(null));
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
@@ -295,7 +295,7 @@ public class BridgeSelectorTest
             BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
     }
 
-    ExtensionElement createJvbStats(int bitrate)
+    private ExtensionElement createJvbStats(int bitrate)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
