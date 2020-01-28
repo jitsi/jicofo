@@ -1,6 +1,5 @@
 package org.jitsi.jicofo.bridge;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging.*;
 
 import java.util.*;
@@ -22,12 +21,11 @@ abstract class BridgeSelectionStrategy
     private String localRegion = null;
 
     /**
-     * Selects a bridge to be used for a specific
-     * {@link JitsiMeetConference} and a specific {@link Participant}.
+     * Selects a bridge to be used for a new participant in a conference.
      *
      * @param bridges the list of bridges to select from.
-     * @param conference the conference for which a bridge is to be
-     * selected.
+     * @param conferenceBridges the bridges already in use by the conference
+     * for which for which a bridge is to be selected.
      * @param participantRegion the region of the participant for which
      * a bridge is to be selected.
      * @return the selected bridge, or {@code null} if no bridge is
@@ -35,23 +33,17 @@ abstract class BridgeSelectionStrategy
      */
     public Bridge select(
             List<Bridge> bridges,
-            JitsiMeetConference conference,
+            List<Bridge> conferenceBridges,
             String participantRegion,
             boolean allowMultiBridge)
     {
-        List<Bridge> conferenceBridges
-            = conference == null
-                    ? new LinkedList<>()
-                    : conference.getBridges();
         if (conferenceBridges.isEmpty())
         {
             Bridge bridge
                 = selectInitial(bridges, participantRegion);
             if (logger.isDebugEnabled())
             {
-                logger.debug(
-                    "Selected initial bridge for " + conference +
-                        ": " + bridge);
+                logger.debug("Selected initial bridge " + bridge);
             }
             return bridge;
         }
@@ -76,8 +68,7 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * Selects a bridge to be used for a specific
-     * {@link JitsiMeetConference} and a specific {@link Participant},
+     * Selects a bridge to be used for a new participant in a conference,
      * assuming that no other bridge is used by the conference (i.e. this
      * is the initial selection of a bridge for the conference).
      *
@@ -135,8 +126,7 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * Selects a bridge to be used for a specific
-     * {@link JitsiMeetConference} and a specific {@link Participant}.
+     * Selects a bridge to be used for a new participant in a conference.
      *
      * @param bridges the list of bridges to select from.
      * @param conferenceBridges the list of bridges currently used by the
