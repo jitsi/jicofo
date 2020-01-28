@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.bridge;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -369,7 +370,7 @@ public class JvbDoctor
          */
         private Boolean hasHealthCheckSupport;
 
-        public HealthCheckTask(Jid bridgeJid)
+        private HealthCheckTask(Jid bridgeJid)
         {
             this.bridgeJid = bridgeJid;
         }
@@ -389,7 +390,7 @@ public class JvbDoctor
             }
         }
 
-        private boolean checkTaskStillValid()
+        private boolean taskInvalid()
         {
             synchronized (JvbDoctor.this)
             {
@@ -397,9 +398,9 @@ public class JvbDoctor
                 {
                     logger.info(
                             "Health check task canceled for: " + bridgeJid);
-                    return false;
+                    return true;
                 }
-                return true;
+                return false;
             }
         }
 
@@ -457,7 +458,7 @@ public class JvbDoctor
             // Sync on start/stop and bridges state
             synchronized (JvbDoctor.this)
             {
-                if (!checkTaskStillValid())
+                if (taskInvalid())
                     return;
 
                 // Check for health-check support
@@ -481,7 +482,7 @@ public class JvbDoctor
             {
                 try
                 {
-                    if (!checkTaskStillValid())
+                    if (taskInvalid())
                         return;
 
                     logger.warn(bridgeJid + " health-check timed out,"
@@ -490,7 +491,7 @@ public class JvbDoctor
 
                     Thread.sleep(secondChanceDelay);
 
-                    if (!checkTaskStillValid())
+                    if (taskInvalid())
                         return;
 
                     response
@@ -506,7 +507,7 @@ public class JvbDoctor
             // Sync on start/stop and bridges state
             synchronized (JvbDoctor.this)
             {
-                if (!checkTaskStillValid())
+                if (taskInvalid())
                     return;
 
                 logger.debug(

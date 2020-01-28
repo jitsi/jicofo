@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.bridge;
 
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
@@ -202,7 +202,7 @@ public class Bridge
      * Sets the stream count currently used.
      * @param streamCount the stream count currently used.
      */
-    public void setVideoStreamCount(int streamCount)
+    private void setVideoStreamCount(int streamCount)
     {
         if (this.videoStreamCount != streamCount)
         {

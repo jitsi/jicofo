@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;

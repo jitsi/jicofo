@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.bridge;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.xmpp.*;

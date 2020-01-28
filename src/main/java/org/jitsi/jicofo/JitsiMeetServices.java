@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.eventadmin.*;
@@ -38,7 +39,7 @@ import org.osgi.framework.*;
 
 import java.util.*;
 
-import static org.jitsi.jicofo.BridgeSelector.*;
+import static org.jitsi.jicofo.bridge.BridgeSelector.*;
 
 /**
  * Class manages discovery of Jitsi Meet application services like

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
