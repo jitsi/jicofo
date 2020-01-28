@@ -326,7 +326,7 @@ public class BridgeSelector
                 .collect(Collectors.toList());
         return bridgeSelectionStrategy.select(
             bridges,
-            conference,
+            conference.getBridges(),
             participantRegion,
             allowMultiBridge);
     }

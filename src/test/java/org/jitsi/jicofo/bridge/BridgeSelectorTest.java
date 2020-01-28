@@ -25,8 +25,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 
-import org.jivesoftware.smack.packet.*;
-
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -295,7 +293,12 @@ public class BridgeSelectorTest
             BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
     }
 
-    private ExtensionElement createJvbStats(int bitrate)
+    private ColibriStatsExtension createJvbStats(int bitrate)
+    {
+        return createJvbStats(bitrate, null);
+    }
+
+    private ColibriStatsExtension createJvbStats(int bitrate, String region)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
@@ -306,7 +309,91 @@ public class BridgeSelectorTest
                 new ColibriStatsExtension.Stat(
                 BITRATE_UPLOAD, bitrate));
 
+        if (region != null)
+        {
+            statsExtension.addStat(
+                    new ColibriStatsExtension.Stat(
+                           REGION, region));
+            statsExtension.addStat(
+                    new ColibriStatsExtension.Stat(
+                            RELAY_ID, region));
+        }
+
         return statsExtension;
+    }
+
+    @Test
+    public void testRegionBasedSelection()
+            throws Exception
+    {
+        JitsiMeetServices meetServices
+                = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+        BridgeSelector selector = meetServices.getBridgeSelector();
+
+        String region1 = "region1";
+        Bridge bridge1 = selector.addJvbAddress(JidCreate.from("bridge1"));
+        bridge1.setStats(createJvbStats(0, region1));
+
+        String region2 = "region2";
+        Bridge bridge2 = selector.addJvbAddress(JidCreate.from("bridge2"));
+        bridge2.setStats(createJvbStats(0, region2));
+
+        String region3 = "region3";
+        Bridge bridge3 = selector.addJvbAddress(JidCreate.from("bridge3"));
+        bridge3.setStats(createJvbStats(0, region3));
+
+        Bridge localBridge = bridge1;
+        BridgeSelectionStrategy strategy
+                = new RegionBasedBridgeSelectionStrategy();
+        strategy.setLocalRegion(localBridge.getRegion());
+
+
+        List<Bridge> allBridges
+                = Arrays.asList(bridge1, bridge2, bridge3);
+        List<Bridge> conferenceBridges = new LinkedList<>();
+
+        // Initial selection should select a bridge in the participant's region
+        // if possible
+        assertEquals(
+            bridge1,
+            strategy.select(allBridges, conferenceBridges, region1, true));
+        assertEquals(
+            bridge2,
+            strategy.select(allBridges, conferenceBridges, region2, true));
+        // Or a bridge in the local region otherwise
+        assertEquals(
+            localBridge,
+            strategy.select(allBridges, conferenceBridges, "invalid region", true));
+        assertEquals(
+            localBridge,
+            strategy.select(allBridges, conferenceBridges, null, true));
+
+        conferenceBridges.add(bridge3);
+        assertEquals(
+                bridge3,
+                strategy.select(allBridges, conferenceBridges, region3, true));
+        assertEquals(
+                bridge2,
+                strategy.select(allBridges, conferenceBridges, region2, true));
+        // A participant in an unknown region should be allocated on the existing
+        // conference bridge.
+        assertEquals(
+                bridge3,
+                strategy.select(allBridges, conferenceBridges, null, true));
+
+        conferenceBridges.add(bridge2);
+        // A participant in an unknown region should be allocated on the least
+        // loaded (according to the order of 'allBridges') existing conference
+        // bridge.
+        assertEquals(
+                bridge2,
+                strategy.select(allBridges, conferenceBridges, null, true));
+        // A participant in a region with no bridges should also be allocated
+        // on the least loaded (according to the order of 'allBridges') existing
+        // conference bridge.
+        assertEquals(
+                bridge2,
+                strategy.select(allBridges, conferenceBridges, "invalid region", true));
     }
 }
 
