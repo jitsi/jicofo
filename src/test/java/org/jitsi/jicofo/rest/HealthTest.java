@@ -19,6 +19,7 @@ import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
 import org.glassfish.jersey.test.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.testutils.*;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;

@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.bridge;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.eventadmin.*;
@@ -258,7 +259,7 @@ public class BridgeSelector
      * @return <tt>true</tt> if given JVB XMPP address is already known to this
      * <tt>BridgeSelector</tt>.
      */
-    synchronized boolean isJvbOnTheList(Jid jvbJid)
+    public synchronized boolean isJvbOnTheList(Jid jvbJid)
     {
         return bridges.containsKey(jvbJid);
     }
@@ -406,7 +407,7 @@ public class BridgeSelector
      * @param itemId stats item ID. Should be the JID of JVB instance.
      * @param payload JVB stats payload.
      */
-    void onSharedNodeUpdate(String itemId, ExtensionElement payload)
+    public void onSharedNodeUpdate(String itemId, ExtensionElement payload)
     {
         onSubscriptionUpdate(null, itemId, payload);
     }

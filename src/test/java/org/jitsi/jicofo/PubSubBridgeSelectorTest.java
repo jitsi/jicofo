@@ -22,6 +22,7 @@ import mock.jvb.*;
 import mock.xmpp.*;
 import mock.xmpp.pubsub.*;
 
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import net.java.sip.communicator.util.*;
 

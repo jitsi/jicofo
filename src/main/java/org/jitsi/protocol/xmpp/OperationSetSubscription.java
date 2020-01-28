@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jivesoftware.smackx.pubsub.*;
 
 import java.util.*;
@@ -25,7 +26,7 @@ import java.util.*;
 /**
  * Operation set exposes underlying protocol's subscription for notifications.
  * In case of XMPP this is pub-sub nodes which is currently used by
- * {@link org.jitsi.jicofo.BridgeSelector}.
+ * {@link BridgeSelector}.
  *
  * @author Pawel Domas
  */

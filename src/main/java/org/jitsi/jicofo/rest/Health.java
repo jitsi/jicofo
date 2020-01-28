@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.rest;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.logging.Logger;
 import org.json.simple.*;
@@ -164,7 +165,7 @@ public class Health
 
     /**
      * Returns a list of currently healthy JVBs known to Jicofo and
-     * kept alive by our {@link org.jitsi.jicofo.JvbDoctor}.
+     * kept alive by our {@link JvbDoctor}.
      * @param focusManager our current context
      * @return the list of healthy bridges currently known to this focus.
      */

@@ -25,13 +25,12 @@ import mock.xmpp.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 
 import org.jitsi.jicofo.util.*;
 import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
