@@ -30,7 +30,7 @@ class RegionBasedBridgeSelectionStrategy
         {
             // We don't know the participant's region. Use the least loaded
             // existing bridge in the conference.
-            return findFirst(bridges, conferenceBridges);
+            return findFirst(conferenceBridges, bridges);
         }
 
         // We know the participant's region.
@@ -41,7 +41,7 @@ class RegionBasedBridgeSelectionStrategy
                 .collect(Collectors.toList());
         if (!conferenceBridgesInRegion.isEmpty())
         {
-            return findFirst(bridges, conferenceBridgesInRegion);
+            return findFirst(conferenceBridgesInRegion, bridges);
         }
 
         // The conference has no bridges in the participant region. Try
@@ -59,7 +59,7 @@ class RegionBasedBridgeSelectionStrategy
         // least loaded of the existing conference bridges.
         // TODO: perhaps use a bridge in a nearby region (if we have data
         // about the topology of the regions).
-        return findFirst(bridges, conferenceBridges);
+        return findFirst(conferenceBridges, bridges);
     }
 
     /**
