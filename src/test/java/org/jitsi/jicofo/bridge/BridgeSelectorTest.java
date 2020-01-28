@@ -124,6 +124,7 @@ public class BridgeSelectorTest
         createMockJvbNodes(meetServices, mockProvider);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
+        JitsiMeetConference conference = new MockJitsiMeetConference();
 
         // Check pub-sub nodes mapping
         assertEquals(jvb1Jid,
@@ -139,7 +140,7 @@ public class BridgeSelectorTest
         workingBridges.add(jvb2Jid);
         workingBridges.add(jvb3Jid);
 
-        Bridge bridgeState = selector.selectBridge(null);
+        Bridge bridgeState = selector.selectBridge(conference);
         assertTrue(workingBridges.contains(bridgeState.getJid()));
 
         // Bridge 1 is down !!!
@@ -147,13 +148,13 @@ public class BridgeSelectorTest
         jvb1.setIsOperational(false);
 
         assertTrue(workingBridges.contains(
-                selector.selectBridge(null).getJid()));
+                selector.selectBridge(conference).getJid()));
 
         // Bridge 2 is down !!!
         workingBridges.remove(jvb2Jid);
         jvb2.setIsOperational(false);
 
-        assertEquals(jvb3Jid, selector.selectBridge(null).getJid());
+        assertEquals(jvb3Jid, selector.selectBridge(conference).getJid());
 
         // Bridge 1 is up again, but 3 is down instead
         workingBridges.add(jvb1Jid);
@@ -162,7 +163,7 @@ public class BridgeSelectorTest
         workingBridges.remove(jvb3Jid);
         jvb3.setIsOperational(false);
 
-        assertEquals(jvb1Jid, selector.selectBridge(null).getJid());
+        assertEquals(jvb1Jid, selector.selectBridge(conference).getJid());
 
         // Reset all bridges - now we'll select based on conference count
         workingBridges.clear();
@@ -187,23 +188,23 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(0));
 
-        assertEquals(jvb3Jid, selector.selectBridge(null).getJid());
+        assertEquals(jvb3Jid, selector.selectBridge(conference).getJid());
 
         // Now Jvb 3 gets occupied the most
         mockSubscriptions.fireSubscriptionNotification(
             jvb3PubSubNode, itemId, createJvbStats(300));
 
-        assertEquals(jvb1Jid, selector.selectBridge(null).getJid());
+        assertEquals(jvb1Jid, selector.selectBridge(conference).getJid());
 
         // Jvb 1 is gone
         jvb1.setIsOperational(false);
 
-        assertEquals(jvb2Jid, selector.selectBridge(null).getJid());
+        assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
 
         // TEST all bridges down
         jvb2.setIsOperational(false);
         jvb3.setIsOperational(false);
-        assertNull(selector.selectBridge(null));
+        assertNull(selector.selectBridge(conference));
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
@@ -220,7 +221,7 @@ public class BridgeSelectorTest
 
         // JVB 1 should not be in front
         assertNotEquals(
-                jvb1PubSubNode, selector.selectBridge(null).getJid());
+                jvb1PubSubNode, selector.selectBridge(conference).getJid());
 
         // JVB 2 least occupied
         mockSubscriptions.fireSubscriptionNotification(
@@ -230,16 +231,16 @@ public class BridgeSelectorTest
         mockSubscriptions.fireSubscriptionNotification(
                 jvb3PubSubNode, itemId, createJvbStats(1));
 
-        assertEquals(jvb2Jid, selector.selectBridge(null).getJid());
+        assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
 
         // FAILURE RESET THRESHOLD
         testFailureResetThreshold(selector, mockSubscriptions);
 
         // Test drain bridges queue
         int maxCount = selector.getKnownBridgesCount();
-        while (selector.selectBridge(null) != null)
+        while (selector.selectBridge(conference) != null)
         {
-            Bridge bridge = selector.selectBridge(null);
+            Bridge bridge = selector.selectBridge(conference);
             bridge.setIsOperational(false);
             if (--maxCount < 0)
             {
@@ -280,13 +281,13 @@ public class BridgeSelectorTest
             // Should not be selected now
             assertNotEquals(
                     nodes[testNode],
-                    selector.selectBridge(null).getJid());
+                    selector.selectBridge(new MockJitsiMeetConference()).getJid());
             // Wait for faulty status reset
             Thread.sleep(150);
             // Test node should recover
             assertEquals(
                     nodes[testNode],
-                    selector.selectBridge(null).getJid());
+                    selector.selectBridge(new MockJitsiMeetConference()).getJid());
         }
 
         selector.setFailureResetThreshold(

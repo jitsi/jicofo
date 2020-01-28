@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
@@ -316,7 +317,7 @@ public class BridgeSelector
      * bridge is to be selected.
      */
     synchronized public Bridge selectBridge(
-            JitsiMeetConference conference,
+            @NotNull JitsiMeetConference conference,
             String participantRegion,
             boolean allowMultiBridge)
     {
@@ -338,7 +339,7 @@ public class BridgeSelector
      * @return the selected bridge, represented by its {@link Bridge}.
      */
     public Bridge selectBridge(
-            JitsiMeetConference conference)
+            @NotNull JitsiMeetConference conference)
     {
         return selectBridge(conference, null, false);
     }
