@@ -45,6 +45,12 @@ public class JingleOfferFactory
     public static final String VP8_PT_PNAME = "org.jitsi.jicofo.VP8_PT";
 
     /**
+     * The name of the property which enables VP8.
+     */
+    public static final String ENABLE_VP8_PNAME
+            = "org.jitsi.jicofo.ENABLE_VP8";
+
+    /**
      * The property name of the VP8 RTX payload type to include in the Jingle
      * session-invite.
      */
@@ -55,6 +61,12 @@ public class JingleOfferFactory
      * session-invite.
      */
     public static final String VP9_PT_PNAME = "org.jitsi.jicofo.VP9_PT";
+
+    /**
+     * The name of the property which enables VP9.
+     */
+    public static final String ENABLE_VP9_PNAME
+            = "org.jitsi.jicofo.ENABLE_VP9";
 
     /**
      * The property name of the VP9 RTX payload type to include in the Jingle
@@ -68,6 +80,12 @@ public class JingleOfferFactory
      * session-invite.
      */
     public static final String H264_PT_PNAME = "org.jitsi.jicofo.H264_PT";
+
+    /**
+     * The name of the property which enables H264.
+     */
+    public static final String ENABLE_H264_PNAME
+            = "org.jitsi.jicofo.ENABLE_H264";
 
     /**
      * The property name of the H264 RTX payload type to include in the Jingle
@@ -119,6 +137,11 @@ public class JingleOfferFactory
     private final int VP8_PT;
 
     /**
+     * Whether VP8 is enabled.
+     */
+    private final boolean ENABLE_VP8;
+
+    /**
      * The VP8 RTX payload type to include in the Jingle session-invite.
      */
     private final int VP8_RTX_PT;
@@ -129,6 +152,11 @@ public class JingleOfferFactory
     private final int VP9_PT;
 
     /**
+     * Whether VP9 is enabled.
+     */
+    private final boolean ENABLE_VP9;
+
+    /**
      * The VP9 RTX payload type to include in the Jingle session-invite.
      */
     private final int VP9_RTX_PT;
@@ -137,6 +165,11 @@ public class JingleOfferFactory
      * The H264 payload type to include in the Jingle session-invite.
      */
     private final int H264_PT;
+
+    /**
+     * Whether H264 is enabled.
+     */
+    private final boolean ENABLE_H264;
 
     /**
      * The H264 RTX payload type to include in the Jingle session-invite.
@@ -178,10 +211,13 @@ public class JingleOfferFactory
     public JingleOfferFactory(ConfigurationService cfg)
     {
         VP8_PT = cfg != null ? cfg.getInt(VP8_PT_PNAME, 100) : 100;
+        ENABLE_VP8 = cfg != null ? cfg.getBoolean(ENABLE_VP8_PNAME, true) : true;
         VP8_RTX_PT = cfg != null ? cfg.getInt(VP8_RTX_PT_PNAME, 96) : 96;
         VP9_PT = cfg != null ? cfg.getInt(VP9_PT_PNAME, 101) : 101;
+        ENABLE_VP9 = cfg != null ? cfg.getBoolean(ENABLE_VP9_PNAME, true) : true;
         VP9_RTX_PT = cfg != null ? cfg.getInt(VP9_RTX_PT_PNAME, 97) : 97;
         H264_PT = cfg != null ? cfg.getInt(H264_PT_PNAME, 107) : 107;
+        ENABLE_H264 = cfg != null ? cfg.getBoolean(ENABLE_H264_PNAME, true) : true;
         H264_RTX_PT = cfg != null ? cfg.getInt(H264_RTX_PT_PNAME, 99) : 99;
         enableFrameMarking
             = cfg != null && cfg.getBoolean(ENABLE_FRAMEMARKING_PNAME, false);
@@ -388,7 +424,7 @@ public class JingleOfferFactory
             rtpDesc.addExtmap(rtpStreamId);
         }
 
-        if (VP8_PT > 0)
+        if (ENABLE_VP8 && VP8_PT > 0)
         {
             // a=rtpmap:XXX VP8/90000
             PayloadTypePacketExtension vp8
@@ -398,7 +434,7 @@ public class JingleOfferFactory
                     vp8, minBitrate, startBitrate, enableRemb, enableTcc);
         }
 
-        if (H264_PT > 0)
+        if (ENABLE_H264 && H264_PT > 0)
         {
             // a=rtpmap:XXX H264/90000
             PayloadTypePacketExtension h264 = addPayloadTypeExtension(
@@ -414,7 +450,7 @@ public class JingleOfferFactory
                 "42e01f;level-asymmetry-allowed=1;packetization-mode=1;");
         }
 
-        if (VP9_PT > 0)
+        if (ENABLE_VP9 && VP9_PT > 0)
         {
             // a=rtpmap:XXX VP9/90000
             PayloadTypePacketExtension vp9
@@ -437,7 +473,7 @@ public class JingleOfferFactory
 
         if (useRtx)
         {
-            if (VP8_RTX_PT > 0 && VP8_PT > 0)
+            if (ENABLE_VP8 && VP8_RTX_PT > 0 && VP8_PT > 0)
             {
                 // a=rtpmap:96 rtx/90000
                 PayloadTypePacketExtension rtx = addPayloadTypeExtension(
@@ -459,7 +495,7 @@ public class JingleOfferFactory
                 rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
             }
 
-            if (VP9_RTX_PT > 0 && VP9_PT > 0)
+            if (ENABLE_VP9 && VP9_RTX_PT > 0 && VP9_PT > 0)
             {
                 // a=rtpmap:97 rtx/90000
                 PayloadTypePacketExtension rtxVP9 = addPayloadTypeExtension(
@@ -469,7 +505,7 @@ public class JingleOfferFactory
                 addParameterExtension(rtxVP9, "apt", String.valueOf(VP9_PT));
             }
 
-            if (H264_RTX_PT > 0 && H264_PT > 0)
+            if (ENABLE_H264 && H264_RTX_PT > 0 && H264_PT > 0)
             {
                 // a=rtpmap:99 rtx/90000
                 PayloadTypePacketExtension rtxH264 = addPayloadTypeExtension(
