@@ -388,91 +388,42 @@ public class JingleOfferFactory
             rtpDesc.addExtmap(rtpStreamId);
         }
 
-        // a=rtpmap:100 VP8/90000
-        PayloadTypePacketExtension vp8
-            = addPayloadTypeExtension(rtpDesc, VP8_PT, Constants.VP8, 90000);
-
-        // a=rtcp-fb:100 ccm fir
-        vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
-
-        // a=rtcp-fb:100 nack
-        vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
-
-        // a=rtcp-fb:100 nack pli
-        vp8.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
-
-
-        if (minBitrate != -1)
+        if (VP8_PT > 0)
         {
+            // a=rtpmap:XXX VP8/90000
+            PayloadTypePacketExtension vp8
+                    = addPayloadTypeExtension(rtpDesc, VP8_PT, Constants.VP8, 90000);
+
+            addExtensionsToVideoPayloadType(
+                    vp8, minBitrate, startBitrate, enableRemb, enableTcc);
+        }
+
+        if (H264_PT > 0)
+        {
+            // a=rtpmap:XXX H264/90000
+            PayloadTypePacketExtension h264 = addPayloadTypeExtension(
+                    // XXX(gp): older Chrome versions (users have reported 53/55/61)
+                    // fail to enable h264, if the encoding name is in lower case.
+                    rtpDesc, H264_PT, Constants.H264.toUpperCase(), 90000);
+
+            addExtensionsToVideoPayloadType(
+                    h264, minBitrate, startBitrate, enableRemb, enableTcc);
             addParameterExtension(
-                vp8, "x-google-min-bitrate", String.valueOf(minBitrate));
+                h264,
+                "profile-level-id",
+                "42e01f;level-asymmetry-allowed=1;packetization-mode=1;");
         }
 
-        if (startBitrate != -1)
+        if (VP9_PT > 0)
         {
-            addParameterExtension(
-                vp8, "x-google-start-bitrate", String.valueOf(startBitrate));
+            // a=rtpmap:XXX VP9/90000
+            PayloadTypePacketExtension vp9
+                    = addPayloadTypeExtension(rtpDesc, VP9_PT, Constants.VP9, 90000);
+
+            addExtensionsToVideoPayloadType(
+                    vp9, minBitrate, startBitrate, enableRemb, enableTcc);
         }
 
-        // a=rtpmap:107 H264/90000
-        PayloadTypePacketExtension h264 = addPayloadTypeExtension(
-                // XXX(gp): older Chrome versions (users have reported 53/55/61)
-                // fail to enable h264, if the encoding name is in lower case.
-                rtpDesc, H264_PT, Constants.H264.toUpperCase(), 90000);
-
-        // a=rtcp-fb:107 ccm fir
-        h264.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
-
-        // a=rtcp-fb:107 nack
-        h264.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
-
-        // a=rtcp-fb:107 nack pli
-        h264.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
-
-        if (minBitrate != -1)
-        {
-            addParameterExtension(
-                h264, "x-google-min-bitrate", String.valueOf(minBitrate));
-        }
-
-        if (startBitrate != -1)
-        {
-            addParameterExtension(
-                h264, "x-google-start-bitrate", String.valueOf(startBitrate));
-        }
-
-        addParameterExtension(
-            h264,
-            "profile-level-id",
-            "42e01f;level-asymmetry-allowed=1;packetization-mode=1;");
-
-        // a=rtpmap:101 VP9/90000
-        PayloadTypePacketExtension vp9
-            = addPayloadTypeExtension(rtpDesc, VP9_PT, Constants.VP9, 90000);
-
-        // a=rtcp-fb:101 ccm fir
-        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
-
-        // a=rtcp-fb:101 nack
-        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
-
-        // a=rtcp-fb:101 nack pli
-        vp9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
-
-        if (enableRemb)
-        {
-            // a=rtcp-fb:100 goog-remb
-            vp8.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("goog-remb", null));
-
-            // a=rtcp-fb:107 goog-remb
-            h264.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("goog-remb", null));
-
-            // a=rtcp-fb:101 goog-remb
-            vp9.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("goog-remb", null));
-        }
 
         if (enableTcc)
         {
@@ -481,66 +432,52 @@ public class JingleOfferFactory
             tcc.setID(TRANSPORT_CC_ID);
             tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
             rtpDesc.addExtmap(tcc);
-
-            // a=rtcp-fb:100 transport-cc
-            vp8.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("transport-cc", null));
-
-            // a=rtcp-fb:107 transport-cc
-            h264.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("transport-cc", null));
-
-            // a=rtcp-fb:101 transport-cc
-            vp9.addRtcpFeedbackType(
-                createRtcpFbPacketExtension("transport-cc", null));
         }
 
-        if (minBitrate != -1)
-        {
-            addParameterExtension(
-                vp9, "x-google-min-bitrate", String.valueOf(minBitrate));
-        }
-
-        if (startBitrate != -1)
-        {
-            addParameterExtension(
-                vp9, "x-google-start-bitrate", String.valueOf(startBitrate));
-        }
 
         if (useRtx)
         {
-            // a=rtpmap:96 rtx/90000
-            PayloadTypePacketExtension rtx = addPayloadTypeExtension(
-                rtpDesc, VP8_RTX_PT, Constants.RTX, 90000);
+            if (VP8_RTX_PT > 0 && VP8_PT > 0)
+            {
+                // a=rtpmap:96 rtx/90000
+                PayloadTypePacketExtension rtx = addPayloadTypeExtension(
+                        rtpDesc, VP8_RTX_PT, Constants.RTX, 90000);
 
-            // a=fmtp:96 apt=100
-            addParameterExtension(rtx, "apt", String.valueOf(VP8_PT));
+                // a=fmtp:96 apt=100
+                addParameterExtension(rtx, "apt", String.valueOf(VP8_PT));
 
-            // Chrome doesn't have these when it creates an offer, but they were
-            // observed in a hangouts conference. Not sure whether they have any
-            // effect.
-            // a=rtcp-fb:96 ccm fir
-            rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
+                // Chrome doesn't have these when it creates an offer, but they were
+                // observed in a hangouts conference. Not sure whether they have any
+                // effect.
+                // a=rtcp-fb:96 ccm fir
+                rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
 
-            // a=rtcp-fb:96 nack
-            rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
+                // a=rtcp-fb:96 nack
+                rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
 
-            // a=rtcp-fb:96 nack pli
-            rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
+                // a=rtcp-fb:96 nack pli
+                rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
+            }
 
-            // a=rtpmap:99 rtx/90000
-            PayloadTypePacketExtension rtxH264 = addPayloadTypeExtension(
-                rtpDesc, H264_RTX_PT, Constants.RTX, 90000);
+            if (VP9_RTX_PT > 0 && VP9_PT > 0)
+            {
+                // a=rtpmap:97 rtx/90000
+                PayloadTypePacketExtension rtxVP9 = addPayloadTypeExtension(
+                        rtpDesc, VP9_RTX_PT, Constants.RTX, 90000);
 
-            // a=fmtp:99 apt=107
-            addParameterExtension(rtxH264, "apt", String.valueOf(H264_PT));
+                // a=fmtp:97 apt=101
+                addParameterExtension(rtxVP9, "apt", String.valueOf(VP9_PT));
+            }
 
-            // a=rtpmap:97 rtx/90000
-            PayloadTypePacketExtension rtxVP9 = addPayloadTypeExtension(
-                rtpDesc, VP9_RTX_PT, Constants.RTX, 90000);
+            if (H264_RTX_PT > 0 && H264_PT > 0)
+            {
+                // a=rtpmap:99 rtx/90000
+                PayloadTypePacketExtension rtxH264 = addPayloadTypeExtension(
+                        rtpDesc, H264_RTX_PT, Constants.RTX, 90000);
 
-            // a=fmtp:97 apt=101
-            addParameterExtension(rtxVP9, "apt", String.valueOf(VP9_PT));
+                // a=fmtp:99 apt=107
+                addParameterExtension(rtxH264, "apt", String.valueOf(H264_PT));
+            }
         }
 
         // a=rtpmap:116 red/90000
@@ -571,6 +508,51 @@ public class JingleOfferFactory
         ptExt.addParameter(parameterPacketExtension);
 
         return parameterPacketExtension;
+    }
+
+    private static void addExtensionsToVideoPayloadType(
+            PayloadTypePacketExtension pt,
+            int minBitrate,
+            int startBitrate,
+            boolean enableRemb,
+            boolean enableTcc)
+    {
+        // a=rtcp-fb:XXX ccm fir
+        pt.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
+
+        // a=rtcp-fb:XXX nack
+        pt.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
+
+        // a=rtcp-fb:XXX nack pli
+        pt.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
+
+
+        if (minBitrate != -1)
+        {
+            addParameterExtension(
+                    pt, "x-google-min-bitrate", String.valueOf(minBitrate));
+        }
+
+        if (startBitrate != -1)
+        {
+            addParameterExtension(
+                    pt, "x-google-start-bitrate", String.valueOf(startBitrate));
+        }
+
+        if (enableRemb)
+        {
+            // a=rtcp-fb:XXX goog-remb
+            pt.addRtcpFeedbackType(
+                    createRtcpFbPacketExtension("goog-remb", null));
+        }
+
+        if (enableTcc)
+        {
+            // a=rtcp-fb:XXX transport-cc
+            pt.addRtcpFeedbackType(
+                    createRtcpFbPacketExtension("transport-cc", null));
+        }
+
     }
 
     /**
