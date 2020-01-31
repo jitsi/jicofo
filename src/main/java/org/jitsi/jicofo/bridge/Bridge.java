@@ -50,6 +50,25 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
+     * A conservative estimate of the average bitrate (in kbps) of a video
+     * stream flowing through the bridge.
+     */
+    private static final int avgVideoStreamBitrateKbps = 1000;
+
+    /**
+     * This is the worst case scenario that the bridge must be able to handle
+     * for a 100-peeps call: 20 local senders and 5 local receivers. Most bits
+     * are wasted in octo traffic.
+     */
+    private static final double MAX_TOTAL_BITRATE_BPS = 560_000;
+
+    /**
+     * The stress-level beyond which we consider a bridge to be
+     * overloaded/overstressed.
+     */
+    private static final double OVERSTRESSED_THRESHOLD = .8;
+
+    /**
      * The parent {@link BridgeSelector}.
      */
     private BridgeSelector bridgeSelector;
@@ -258,7 +277,7 @@ public class Bridge
             return 1;
         }
 
-        return this.getLastReportedPacketRatePps() - o.getLastReportedPacketRatePps();
+        return Double.compare(this.getStress(), o.getStress());
     }
 
     void onVideoStreamsChanged(Integer videoStreamCount)
@@ -297,10 +316,36 @@ public class Bridge
     public String toString()
     {
         return String.format(
-                "Bridge[jid=%s, relayId=%s, region=%s]",
+                "Bridge[jid=%s, relayId=%s, region=%s, stress=%.2f]",
                      jid.toString(),
                      getRelayId(),
-                     getRegion());
+                     getRegion(),
+                     getStress());
+    }
+
+    /**
+     * Returns the "stress" of the bridge. The stress is computed based on the
+     * total bitrate reported by the bridge and the video stream estimation
+     * since the last update from the bridge.
+     *
+     * @return the sum of the last total reported bitrate (in kbps) and an
+     * estimation of the bitrate of the streams that we estimate that the bridge
+     * hasn't reported to Jicofo yet. The estimation is the product of the
+     * number of unreported streams and a constant C (which we set to 1000 kbps).
+     */
+    public double getStress()
+    {
+        return Math.min(MAX_TOTAL_BITRATE_BPS,
+            (lastReportedBitrateKbps + videoStreamCountDiff * avgVideoStreamBitrateKbps)) / MAX_TOTAL_BITRATE_BPS;
+    }
+
+    /**
+     * @return true if the stress of the bridge is greater-than-or-equal to
+     * {@link #OVERSTRESSED_THRESHOLD}.
+     */
+    public boolean isOverloaded()
+    {
+        return getStress() >= OVERSTRESSED_THRESHOLD;
     }
 
     public int getLastReportedPacketRatePps()

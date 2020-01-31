@@ -3,6 +3,9 @@ package org.jitsi.jicofo.bridge;
 import org.jitsi.utils.logging.*;
 
 import java.util.*;
+import java.util.function.*;
+
+import static org.glassfish.jersey.internal.guava.Predicates.not;
 
 /**
  * Represents an algorithm for bridge selection.
@@ -40,8 +43,8 @@ abstract class BridgeSelectionStrategy
         if (conferenceBridges.isEmpty())
         {
             Bridge bridge
-                = selectInitial(bridges, participantRegion);
-            if (bridge != null)
+                = doSelect(bridges, conferenceBridges, participantRegion);
+            if (logger.isDebugEnabled())
             {
                 logger.info("Selected initial bridge " + bridge
                         + " with packetRate=" + bridge.getLastReportedPacketRatePps()
@@ -90,57 +93,76 @@ abstract class BridgeSelectionStrategy
      * assuming that no other bridge is used by the conference (i.e. this
      * is the initial selection of a bridge for the conference).
      *
-     * @param bridges the list of bridges to select from.
+     * @param bridges the list of bridges to select from (ordered by the total
+     * bitrate that they're handling, which is used an indirect load indicator).
+     * @param conferenceBridges the bridges that are in the conference.
      * @param participantRegion the region of the participant for which a
      * bridge is to be selected.
      * @return the selected bridge, or {@code null} if no bridge is
      * available.
      */
-    private Bridge selectInitial(List<Bridge> bridges,
-                                 String participantRegion)
+    public Bridge selectLeastLoadedNearby(List<Bridge> bridges,
+                                          List<Bridge> conferenceBridges,
+                                          String participantRegion)
     {
-        Bridge bridge = null;
-
-        // Prefer a bridge in the participant's region.
-        if (participantRegion != null)
+        if (bridges.isEmpty())
         {
-            bridge = findFirstOperationalInRegion(bridges, participantRegion);
+            return null;
         }
 
-        // Otherwise, prefer a bridge in the local region.
-        if (bridge == null)
-        {
-            bridge = findFirstOperationalInRegion(bridges, localRegion);
-        }
+        // NOTE that A2 is equivalent to B1 but we include it as a separate
+        // step for clarity when comparing the code to the document that
+        // describes the load balancing scheme.
 
-        // Otherwise, just find the first operational bridge.
-        if (bridge == null)
-        {
-            bridge = findFirstOperationalInRegion(bridges, null);
-        }
-
-        return bridge;
-    }
-
-    /**
-     * Returns the first operational bridge in the given list which matches
-     * the given region (if the given regio is {@code null} the region is
-     * not matched).
-     *
-     * @param bridges
-     * @param region
-     * @return
-     */
-    private Bridge findFirstOperationalInRegion(
-            List<Bridge> bridges,
-            String region)
-    {
         return bridges.stream()
-                .filter(Bridge::isOperational)
-                .filter(
-                    b -> region == null || region.equals(b.getRegion()))
+            // A1. (Happy case 1): There is a NOL bridge in the conference and
+            // in the region. Use the least loaded of them.
+            .filter(not(Bridge::isOverloaded))
+            .filter(selectFrom(conferenceBridges))
+            .filter(inRegion(participantRegion))
+            .findFirst()
+            .orElse(bridges.stream()
+                // A2. (Happy case 2): There is a NOL bridge in the region, and the
+                // conference has no bridges in the region. Use the least loaded
+                // bridge in the region.
+                .filter(not(Bridge::isOverloaded))
+                .filter(inRegion(participantRegion))
                 .findFirst()
-                .orElse(null);
+                .orElse(bridges.stream()
+                    // B1. (Split case 1): There is a NOL bridge in the region, the
+                    // conference has bridges in the region but all are OL. Use the
+                    // least loaded of the bridges in the region.
+                    .filter(not(Bridge::isOverloaded))
+                    .filter(inRegion(participantRegion))
+                    .findFirst()
+                    .orElse(bridges.stream()
+                        // C1. (Overload case 1): All bridges in the region are
+                        // overloaded, and the conference has a bridge in the
+                        // region. Use the least loaded conference bridge in the
+                        // region.
+                        .filter(selectFrom(conferenceBridges))
+                        .filter(inRegion(participantRegion))
+                        .findFirst()
+                        .orElse(bridges.stream()
+                            // C2. (Overload case 2): All bridges in the region are
+                            // overloaded, and the conference has no bridges in the
+                            // region. Use the least loaded bridge in the region.
+                            .filter(inRegion(participantRegion))
+                            .findFirst()
+                            .orElse(bridges.stream()
+                                // D1. (No-region-match case 1): There are NO
+                                // bridges in the region, and the conference has
+                                // a NOL bridge. Use the least loaded conference
+                                // bridge.
+                                .filter(not(Bridge::isOverloaded))
+                                .filter(selectFrom(conferenceBridges))
+                                .findFirst()
+                                .orElse(bridges.stream()
+                                    // D2. (No-region-match case 2): There are NO
+                                    // bridges in the region and all conference
+                                    // bridges are OL.
+                                    .findFirst()
+                                    .orElse(null)))))));
     }
 
     /**
@@ -155,9 +177,19 @@ abstract class BridgeSelectionStrategy
      * available.
      */
     abstract Bridge doSelect(
-            List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
-            String participantRegion);
+        List<Bridge> bridges,
+        List<Bridge> conferenceBridges,
+        String participantRegion);
+
+    private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)
+    {
+        return b -> conferenceBridges != null && conferenceBridges.contains(b);
+    }
+
+    private static Predicate<Bridge> inRegion(String region)
+    {
+        return b -> region != null && region.equalsIgnoreCase(b.getRegion());
+    }
 
     String getLocalRegion()
     {
