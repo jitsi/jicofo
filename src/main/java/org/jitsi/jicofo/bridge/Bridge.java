@@ -50,6 +50,16 @@ public class Bridge
     private static final ColibriStatsExtension EMPTY_STATS
         = new ColibriStatsExtension();
 
+    /***
+     * TBD
+     */
+    private static final int RECOMMENDED_MAX_VIDEO_STREAMS = -1;
+
+    /***
+     * TBD
+     */
+    private static final int RECOMMENDED_MAX_BITRATE = -1;
+
     /**
      * The parent {@link BridgeSelector}.
      */
@@ -347,5 +357,24 @@ public class Bridge
                      jid.toString(),
                      getRelayId(),
                      getRegion());
+    }
+
+    private boolean exceedsRecommendedBitrate()
+    {
+        return RECOMMENDED_MAX_BITRATE > -1
+            && lastReportedBitrateKbps > RECOMMENDED_MAX_BITRATE;
+    }
+
+    private boolean exceedsRecommendedVideoStreams()
+    {
+        return RECOMMENDED_MAX_VIDEO_STREAMS > -1
+            && getEstimatedVideoStreamCount() > RECOMMENDED_MAX_VIDEO_STREAMS;
+    }
+
+    public boolean isInSurvivalMode()
+    {
+        // XXX maybe this flag should come directly from the bridge
+        return  exceedsRecommendedBitrate() || exceedsRecommendedVideoStreams();
+
     }
 }

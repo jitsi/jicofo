@@ -3,6 +3,7 @@ package org.jitsi.jicofo.bridge;
 import org.jitsi.utils.logging.*;
 
 import java.util.*;
+import java.util.function.*;
 
 /**
  * Represents an algorithm for bridge selection.
@@ -14,6 +15,11 @@ abstract class BridgeSelectionStrategy
      */
     private final static Logger logger
             = Logger.getLogger(BridgeSelectionStrategy.class);
+
+    /**
+     * Helper field to reduce allocations.
+     */
+    private static final Boolean[] FALSE_NULL = new Boolean[]{false, null};
 
     /**
      * The local region of the jicofo instance.
@@ -40,7 +46,7 @@ abstract class BridgeSelectionStrategy
         if (conferenceBridges.isEmpty())
         {
             Bridge bridge
-                = selectInitial(bridges, participantRegion);
+                = doSelect(bridges, conferenceBridges, participantRegion);
             if (logger.isDebugEnabled())
             {
                 logger.debug("Selected initial bridge " + bridge);
@@ -72,74 +78,77 @@ abstract class BridgeSelectionStrategy
      * assuming that no other bridge is used by the conference (i.e. this
      * is the initial selection of a bridge for the conference).
      *
-     * @param bridges the list of bridges to select from.
+     * @param bridges the list of bridges to select from (ordered by the total
+     * bitrate that they're handling, which is used an indirect load indicator).
+     * @param conferenceBridges the bridges that are in the conference.
      * @param participantRegion the region of the participant for which a
      * bridge is to be selected.
      * @return the selected bridge, or {@code null} if no bridge is
      * available.
      */
-    private Bridge selectInitial(List<Bridge> bridges,
+    public Bridge doSelect(List<Bridge> bridges,
+                                 List<Bridge> conferenceBridges,
                                  String participantRegion)
     {
         Bridge bridge = null;
-
-        // Prefer a bridge in the participant's region.
-        if (participantRegion != null)
+        for (Boolean inSurvivalMode : FALSE_NULL)
         {
-            bridge = findFirstOperationalInRegion(bridges, participantRegion);
-        }
+            // Try the first operational bridge in the participant region and
+            // that is already in the conference.
+            bridge = bridges.stream()
+                .filter(inSurvivalMode(inSurvivalMode))
+                .filter(selectFrom(conferenceBridges))
+                .filter(inRegion(participantRegion))
+                .findFirst()
+                // Otherwise, try to add a new bridge in the participant region.
+                .orElse(bridges.stream()
+                    .filter(inSurvivalMode(inSurvivalMode))
+                    .filter(inRegion(participantRegion))
+                    .findFirst()
+                    // Otherwise, try to add a new bridge that is already in the
+                    // conference.
+                    .orElse(bridges.stream()
+                        .filter(inSurvivalMode(inSurvivalMode))
+                        .filter(selectFrom(conferenceBridges))
+                        .findFirst()
+                        // Otherwise, try to add a new bridge in the local
+                        // region.
+                        .orElse(bridges.stream()
+                            .filter(inSurvivalMode(inSurvivalMode))
+                            .filter(inRegion(localRegion))
+                            .findFirst()
+                            // Otherwise, try to add the least loaded bridge
+                            // that we know of.
+                            // TODO: perhaps use a bridge in a nearby region (if
+                            // we have data about the topology of the regions).
+                            .orElse(bridges.stream()
+                                .filter(inSurvivalMode(inSurvivalMode))
+                                .findFirst()
+                                .orElse(null)))));
 
-        // Otherwise, prefer a bridge in the local region.
-        if (bridge == null)
-        {
-            bridge = findFirstOperationalInRegion(bridges, localRegion);
-        }
-
-        // Otherwise, just find the first operational bridge.
-        if (bridge == null)
-        {
-            bridge = findFirstOperationalInRegion(bridges, null);
+            if (bridge != null)
+            {
+                break;
+            }
         }
 
         return bridge;
     }
 
-    /**
-     * Returns the first operational bridge in the given list which matches
-     * the given region (if the given regio is {@code null} the region is
-     * not matched).
-     *
-     * @param bridges
-     * @param region
-     * @return
-     */
-    private Bridge findFirstOperationalInRegion(
-            List<Bridge> bridges,
-            String region)
+    private static Predicate<Bridge> inSurvivalMode(Boolean inSurvivalMode)
     {
-        return bridges.stream()
-                .filter(Bridge::isOperational)
-                .filter(
-                    b -> region == null || region.equals(b.getRegion()))
-                .findFirst()
-                .orElse(null);
+        return b -> inSurvivalMode == null || b.isInSurvivalMode() == inSurvivalMode;
     }
 
-    /**
-     * Selects a bridge to be used for a new participant in a conference.
-     *
-     * @param bridges the list of bridges to select from.
-     * @param conferenceBridges the list of bridges currently used by the
-     * conference.
-     * @param participantRegion the region of the participant for which a
-     * bridge is to be selected.
-     * @return the selected bridge, or {@code null} if no bridge is
-     * available.
-     */
-    abstract Bridge doSelect(
-            List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
-            String participantRegion);
+    private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)
+    {
+        return b -> conferenceBridges != null && conferenceBridges.contains(b);
+    }
+
+    private static Predicate<Bridge> inRegion(String region)
+    {
+        return b -> region != null && region.equalsIgnoreCase(b.getRegion());
+    }
 
     String getLocalRegion()
     {

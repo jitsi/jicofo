@@ -34,7 +34,11 @@ public class SingleBridgeSelectionStrategy
             List<Bridge> conferenceBridges,
             String participantRegion)
     {
-        if (conferenceBridges.size() != 1)
+        if (conferenceBridges.size() == 0)
+        {
+            return super.doSelect(bridges, conferenceBridges, participantRegion);
+        }
+        else if (conferenceBridges.size() != 1)
         {
             logger.error("Unexpected number of bridges with "
                              + "SingleBridgeSelectionStrategy: "
