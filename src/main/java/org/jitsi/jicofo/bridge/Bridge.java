@@ -50,16 +50,6 @@ public class Bridge
     private static final ColibriStatsExtension EMPTY_STATS
         = new ColibriStatsExtension();
 
-    /***
-     * TBD
-     */
-    private static final int RECOMMENDED_MAX_VIDEO_STREAMS = -1;
-
-    /***
-     * TBD
-     */
-    private static final int RECOMMENDED_MAX_BITRATE = -1;
-
     /**
      * The parent {@link BridgeSelector}.
      */
@@ -146,6 +136,7 @@ public class Bridge
             setVideoStreamCount(videoStreamCount);
         }
 
+        // XXX(gp) should these be longs?
         Integer bitrateUpKbps = null;
         Integer bitrateDownKbps = null;
         Integer octoReceiveBitrate = null;
@@ -359,22 +350,43 @@ public class Bridge
                      getRegion());
     }
 
-    private boolean exceedsRecommendedBitrate()
+    /**
+     * Returns the "stress" level of this bridge. The stress level depends on
+     * load and total bitrate. For instance, if the bridge is highly loaded or
+     * if it's sending high throughput (throughput is not unlimited), then the
+     * stress level is high. When the bridge is experiencing either high load
+     * and/or high throughput it misbehaves (i.e. it drops packets and/or
+     * introduces jiitter), therefore these are the two parameters that we use
+     * to determine whether a bridge is "stressed" and route traffic to less
+     * stressed bridges.
+     *
+     * Having multiple stress levels allows us to act before a bridge has become
+     * highly stressed.
+     *
+     * Note that the specific limits for load and bitrate that are used in this
+     * method depend on the specific bridge instance type. They'll work well for
+     * aws c5.xlarges (which is the specific bridge instance type that I'm using
+     * for testing) for the bridge version that I'm testing with but they'll
+     * probably have to be adjusted for other instance types and potentially for
+     * other bridge versions. Also, in an environment with mixed instance types
+     * we'd ideally use different values based on the instance type. So it seems
+     * appropriate that these limits come directly from the bridge.
+     *
+     * @return the "stress" level of the bridge.
+     */
+    public int getStressLevel()
     {
-        return RECOMMENDED_MAX_BITRATE > -1
-            && lastReportedBitrateKbps > RECOMMENDED_MAX_BITRATE;
-    }
-
-    private boolean exceedsRecommendedVideoStreams()
-    {
-        return RECOMMENDED_MAX_VIDEO_STREAMS > -1
-            && getEstimatedVideoStreamCount() > RECOMMENDED_MAX_VIDEO_STREAMS;
-    }
-
-    public boolean isInSurvivalMode()
-    {
-        // XXX maybe this flag should come directly from the bridge
-        return  exceedsRecommendedBitrate() || exceedsRecommendedVideoStreams();
-
+        if (lastReportedBitrateKbps >= 124000 || videoStreamCount >= 2500)
+        {
+            return StressLevel.HIGH;
+        }
+        else if (lastReportedBitrateKbps >= 62000 || videoStreamCount >= 1200)
+        {
+            return StressLevel.MEDIUM;
+        }
+        else
+        {
+            return StressLevel.LOW;
+        }
     }
 }

@@ -19,7 +19,8 @@ abstract class BridgeSelectionStrategy
     /**
      * Helper field to reduce allocations.
      */
-    private static final Boolean[] FALSE_NULL = new Boolean[]{false, null};
+    private static final int[] LOW_MEDIUM_HIGH
+        = new int[] { StressLevel.LOW, StressLevel.MEDIUM, StressLevel.HIGH };
 
     /**
      * The local region of the jicofo instance.
@@ -91,30 +92,30 @@ abstract class BridgeSelectionStrategy
                                  String participantRegion)
     {
         Bridge bridge = null;
-        for (Boolean inSurvivalMode : FALSE_NULL)
+        for (int stressLevel : LOW_MEDIUM_HIGH)
         {
             // Try the first operational bridge in the participant region and
             // that is already in the conference.
             bridge = bridges.stream()
-                .filter(inSurvivalMode(inSurvivalMode))
+                .filter(notStressedOver(stressLevel))
                 .filter(selectFrom(conferenceBridges))
                 .filter(inRegion(participantRegion))
                 .findFirst()
                 // Otherwise, try to add a new bridge in the participant region.
                 .orElse(bridges.stream()
-                    .filter(inSurvivalMode(inSurvivalMode))
+                    .filter(notStressedOver(stressLevel))
                     .filter(inRegion(participantRegion))
                     .findFirst()
                     // Otherwise, try to add a new bridge that is already in the
                     // conference.
                     .orElse(bridges.stream()
-                        .filter(inSurvivalMode(inSurvivalMode))
+                        .filter(notStressedOver(stressLevel))
                         .filter(selectFrom(conferenceBridges))
                         .findFirst()
                         // Otherwise, try to add a new bridge in the local
                         // region.
                         .orElse(bridges.stream()
-                            .filter(inSurvivalMode(inSurvivalMode))
+                            .filter(notStressedOver(stressLevel))
                             .filter(inRegion(localRegion))
                             .findFirst()
                             // Otherwise, try to add the least loaded bridge
@@ -122,7 +123,7 @@ abstract class BridgeSelectionStrategy
                             // TODO: perhaps use a bridge in a nearby region (if
                             // we have data about the topology of the regions).
                             .orElse(bridges.stream()
-                                .filter(inSurvivalMode(inSurvivalMode))
+                                .filter(notStressedOver(stressLevel))
                                 .findFirst()
                                 .orElse(null)))));
 
@@ -135,9 +136,9 @@ abstract class BridgeSelectionStrategy
         return bridge;
     }
 
-    private static Predicate<Bridge> inSurvivalMode(Boolean inSurvivalMode)
+    private static Predicate<Bridge> notStressedOver(int loadLevel)
     {
-        return b -> inSurvivalMode == null || b.isInSurvivalMode() == inSurvivalMode;
+        return b -> b.getStressLevel() <= loadLevel;
     }
 
     private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)
