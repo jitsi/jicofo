@@ -113,7 +113,7 @@ public class MediaSourceMap
     }
 
     /**
-     * Adds sources to this map. NOTE that duplicates will be stored in the map.
+     * Adds sources to this map. NOTE that duplicates will NOT be stored in the map.
      *
      * @param mediaType the media type of sources to be added to this map.
      *
@@ -122,9 +122,12 @@ public class MediaSourceMap
     public void addSources(
         String mediaType, Collection<SourcePacketExtension> newSources)
     {
-        // BEWARE! addAll will not detect duplications
-        // as .equals is not overridden
-        getSourcesForMedia(mediaType).addAll(newSources);
+        // Remove duplicates before adding
+        List<SourcePacketExtension> mediaSources = getSourcesForMedia(mediaType);
+
+        mediaSources.removeIf(s -> newSources.stream().anyMatch(s2 -> s.getSSRC() == s2.getSSRC()));
+
+        mediaSources.addAll(newSources);
     }
 
     /**

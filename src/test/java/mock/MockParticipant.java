@@ -483,7 +483,7 @@ public class MockParticipant
 
                 remoteSSRCgroups.add(ssrcGroupMap);
 
-                logger.info("session-initiate received " + nick + " " + ssrcMap  + " groups: " + ssrcGroupMap);
+                logger.info(nick + " received session-initiate: " + ssrcMap  + " groups: " + ssrcGroupMap);
 
                 sourceLock.notifyAll();
             }
@@ -505,7 +505,7 @@ public class MockParticipant
 
                 remoteSSRCgroups.add(ssrcGroupMap);
 
-                logger.info("source-add received " + nick + " " + ssrcMap);
+                logger.info(nick + " received source-add " + ssrcMap);
 
                 try
                 {
@@ -536,8 +536,7 @@ public class MockParticipant
 
                 remoteSSRCgroups.remove(ssrcGroupsToRemove);
 
-                logger.info(
-                    "source-remove received " + nick + " " + ssrcsToRemove);
+                logger.info(nick + " source-remove received " + ssrcsToRemove);
 
                 try
                 {
@@ -598,6 +597,32 @@ public class MockParticipant
     public List<SourcePacketExtension> audioSourceAdd(int count)
     {
         return sourceAdd("audio", count, false, null);
+    }
+
+    public void audioSourceRemove(int count)
+    {
+        List<SourcePacketExtension> audioSources
+                = this.localSSRCs.getSourcesForMedia("audio");
+
+        if (audioSources.size() < count)
+        {
+            throw new IllegalArgumentException(
+                    "audio source size(" + audioSources.size()
+                            + ") < count(" + count + ")");
+        }
+
+        List<SourcePacketExtension> toRemove = new ArrayList<>(count);
+
+        for(int i = 0; i < count; i++)
+        {
+            toRemove.add(audioSources.remove(0));
+        }
+
+        MediaSourceMap removeMap = new MediaSourceMap();
+
+        removeMap.addSources("audio", toRemove);
+
+        jingle.sendRemoveSourceIQ(removeMap, null, jingleSession);
     }
 
     private List<SourcePacketExtension> sourceAdd(

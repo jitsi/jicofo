@@ -1935,6 +1935,9 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
+        participant.removeSources(removedSources);
+        participant.removeSourceGroups(removedGroups);
+
         // We remove all ssrc params from SourcePacketExtension as we want
         // the client to simply remove all lines corresponding to given SSRC and
         // not care about parameter's values we send.
