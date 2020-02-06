@@ -292,6 +292,8 @@ public class MockParticipant
 
         initContents();
 
+        processStanza(invite);
+
         JingleIQ user1Accept = generateSessionAccept(
             invite,
             createTransportMap(invite));
@@ -465,8 +467,29 @@ public class MockParticipant
         JingleIQ modifySSRcIq = (JingleIQ) packet;
         JingleAction action = modifySSRcIq.getAction();
 
-        if (JingleAction.SOURCEADD.equals(action)
-                || JingleAction.ADDSOURCE.equals(action))
+        if (JingleAction.SESSION_INITIATE.equals(action))
+        {
+            synchronized (sourceLock)
+            {
+                MediaSourceMap ssrcMap
+                        = MediaSourceMap.getSourcesFromContent(
+                        modifySSRcIq.getContentList());
+
+                remoteSSRCs.add(ssrcMap);
+
+                MediaSourceGroupMap ssrcGroupMap
+                        = MediaSourceGroupMap.getSourceGroupsForContents(
+                        modifySSRcIq.getContentList());
+
+                remoteSSRCgroups.add(ssrcGroupMap);
+
+                logger.info("session-initiate received " + nick + " " + ssrcMap  + " groups: " + ssrcGroupMap);
+
+                sourceLock.notifyAll();
+            }
+        }
+        else  if (JingleAction.SOURCEADD.equals(action)
+                    || JingleAction.ADDSOURCE.equals(action))
         {
             synchronized (sourceLock)
             {

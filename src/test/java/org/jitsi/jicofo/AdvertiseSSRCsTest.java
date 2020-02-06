@@ -99,7 +99,7 @@ public class AdvertiseSSRCsTest
         user1.waitForAddSource(2000);
         user2.waitForAddSource(2000);
 
-        assertEquals(1, user1.getRemoteSSRCs("audio").size());
+        assertEquals(2, user1.getRemoteSSRCs("audio").size());
         // No groups
         assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
 
@@ -107,29 +107,29 @@ public class AdvertiseSSRCsTest
         // From user 1 perspective
         assertEquals(
             user2.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("audio").get(0)));
+            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("audio").get(1)));
         assertEquals(
             user2.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("video").get(0)));
+            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("video").get(1)));
         assertEquals(
             user2.getSsrcVideoType(),
-            SSRCSignaling.getVideoType(user1.getRemoteSSRCs("video").get(0)));
+            SSRCSignaling.getVideoType(user1.getRemoteSSRCs("video").get(1)));
         // From user 2 perspective
         assertEquals(
             user1.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("audio").get(0)));
+            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("audio").get(1)));
         assertEquals(
             user1.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("video").get(0)));
+            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("video").get(1)));
         assertEquals(
             user1.getSsrcVideoType(),
-            SSRCSignaling.getVideoType(user2.getRemoteSSRCs("video").get(0)));
+            SSRCSignaling.getVideoType(user2.getRemoteSSRCs("video").get(1)));
 
         user2.leave();
 
         assertNotNull(user1.waitForRemoveSource(500));
 
-        assertEquals(0, user1.getRemoteSSRCs("audio").size());
+        assertEquals(1, user1.getRemoteSSRCs("audio").size());
         // No groups
         assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
 
@@ -139,9 +139,11 @@ public class AdvertiseSSRCsTest
 
         user1.waitForAddSource(2000);
 
-        assertEquals(1, user1.getRemoteSSRCs("audio").size());
+        assertEquals(2, user1.getRemoteSSRCs("audio").size());
+        assertEquals(2, user3.getRemoteSSRCs("audio").size());
         // No groups
         assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
+        assertEquals(0, user3.getRemoteSSRCGroups("audio").size());
 
         user3.leave();
         user1.leave();
@@ -190,7 +192,7 @@ public class AdvertiseSSRCsTest
         assertNotNull(user2.waitForAddSource(1000));
 
         // There is 1 + 2 extra we've created here in the test
-        assertEquals(3, user2.getRemoteSSRCs("video").size());
+        assertEquals(1 /* jvb */ + 3, user2.getRemoteSSRCs("video").size());
         // No groups
         assertEquals(0, user2.getRemoteSSRCGroups("video").size());
 
@@ -207,9 +209,9 @@ public class AdvertiseSSRCsTest
         // There should be no source-add notifications sent
         assertEquals(null, user2.waitForAddSource(500));
 
-        assertEquals(1, user2.getRemoteSSRCs("audio").size());
+        assertEquals(1 + /* jvb */ + 1, user2.getRemoteSSRCs("audio").size());
         // There is 1 + 2 extra we've created here in the test
-        assertEquals(3, user2.getRemoteSSRCs("video").size());
+        assertEquals(1 + /* jvb */ + 3, user2.getRemoteSSRCs("video").size());
 
         user2.leave();
         user1.leave();
@@ -276,15 +278,19 @@ public class AdvertiseSSRCsTest
         assertNotNull(user1.waitForAddSource(4000));
         assertNotNull(user2.waitForAddSource(4000));
 
+        int expectedMax
+            = 1 /* jvb's mixed */
+                + maxSSRCs /* max that can come from 1 participant */;
+
         // Verify User1's SSRCs seen by User2
-        assertEquals(1 + user1ExtraVideoSSRCCount,
+        assertEquals(1 /* jvb's mixed */ + 1 + user1ExtraVideoSSRCCount,
                      user2.getRemoteSSRCs("video").size());
-        assertEquals(maxSSRCs,
+        assertEquals(expectedMax,
                      user2.getRemoteSSRCs("audio").size());
         // Verify User1's SSRCs seen by User1
-        assertEquals(maxSSRCs,
+        assertEquals(expectedMax,
             user1.getRemoteSSRCs("video").size());
-        assertEquals(1 + user2ExtraAudioSSRCCount,
+        assertEquals(1 /* jvb's mixed */ + 1 + user2ExtraAudioSSRCCount,
             user1.getRemoteSSRCs("audio").size());
 
         // No groups
@@ -297,20 +303,20 @@ public class AdvertiseSSRCsTest
         // User1 will have video SSRCs filled and audio are filled already
         user1.videoSourceAdd(maxSSRCs / 2);
         assertNotNull(user2.waitForAddSource(300));
-        assertEquals(maxSSRCs, user2.getRemoteSSRCs("video").size());
+        assertEquals(expectedMax, user2.getRemoteSSRCs("video").size());
 
         user1.audioSourceAdd(5);
         assertTrue(null == user2.waitForAddSource(300));
-        assertEquals(maxSSRCs, user2.getRemoteSSRCs("audio").size());
+        assertEquals(expectedMax, user2.getRemoteSSRCs("audio").size());
 
         // User2 has video SSRCs filled already and audio will be filled
         user2.videoSourceAdd(maxSSRCs / 2);
         assertNull(user1.waitForAddSource(300));
-        assertEquals(maxSSRCs, user1.getRemoteSSRCs("video").size());
+        assertEquals(expectedMax, user1.getRemoteSSRCs("video").size());
 
         user2.audioSourceAdd(maxSSRCs / 2);
         assertNotNull(user1.waitForAddSource(300));
-        assertEquals(maxSSRCs, user1.getRemoteSSRCs("audio").size());
+        assertEquals(expectedMax, user1.getRemoteSSRCs("audio").size());
 
         user2.leave();
         user1.leave();
