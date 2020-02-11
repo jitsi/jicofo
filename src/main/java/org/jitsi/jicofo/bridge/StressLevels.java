@@ -15,7 +15,18 @@
  */
 package org.jitsi.jicofo.bridge;
 
-public class StressLevel
+public class StressLevels
 {
-    public static final int LOW = 1, LOW_MEDIUM = 2, MEDIUM = 5, MEDIUM_HIGH = 7, HIGH = 10;
+    public static final float LOW = 0, LOW_MEDIUM = .2f, MEDIUM = .5f, MEDIUM_HIGH = .7f, HIGH = 1;
+
+    /**
+     * Helper field to reduce allocations.
+     */
+    public static final float[] ALL_LEVELS = new float[] {
+        StressLevels.LOW,
+        StressLevels.LOW_MEDIUM,
+        StressLevels.MEDIUM,
+        StressLevels.MEDIUM_HIGH,
+        StressLevels.HIGH
+    };
 }

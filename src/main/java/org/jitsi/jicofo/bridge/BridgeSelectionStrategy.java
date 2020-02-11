@@ -17,12 +17,6 @@ abstract class BridgeSelectionStrategy
             = Logger.getLogger(BridgeSelectionStrategy.class);
 
     /**
-     * Helper field to reduce allocations.
-     */
-    private static final int[] LOW_MEDIUM_HIGH
-        = new int[] { StressLevel.LOW, StressLevel.MEDIUM, StressLevel.HIGH };
-
-    /**
      * The local region of the jicofo instance.
      */
     private String localRegion = null;
@@ -92,30 +86,30 @@ abstract class BridgeSelectionStrategy
                                  String participantRegion)
     {
         Bridge bridge = null;
-        for (int stressLevel : LOW_MEDIUM_HIGH)
+        for (float stressLevel : StressLevels.ALL_LEVELS)
         {
             // Try the first operational bridge in the participant region and
             // that is already in the conference.
             bridge = bridges.stream()
-                .filter(notStressedOver(stressLevel))
+                .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
                 .filter(selectFrom(conferenceBridges))
                 .filter(inRegion(participantRegion))
                 .findFirst()
                 // Otherwise, try to add a new bridge in the participant region.
                 .orElse(bridges.stream()
-                    .filter(notStressedOver(stressLevel))
+                    .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
                     .filter(inRegion(participantRegion))
                     .findFirst()
                     // Otherwise, try to add a new bridge that is already in the
                     // conference.
                     .orElse(bridges.stream()
-                        .filter(notStressedOver(stressLevel))
+                        .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
                         .filter(selectFrom(conferenceBridges))
                         .findFirst()
                         // Otherwise, try to add a new bridge in the local
                         // region.
                         .orElse(bridges.stream()
-                            .filter(notStressedOver(stressLevel))
+                            .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
                             .filter(inRegion(localRegion))
                             .findFirst()
                             // Otherwise, try to add the least loaded bridge
@@ -123,7 +117,7 @@ abstract class BridgeSelectionStrategy
                             // TODO: perhaps use a bridge in a nearby region (if
                             // we have data about the topology of the regions).
                             .orElse(bridges.stream()
-                                .filter(notStressedOver(stressLevel))
+                                .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
                                 .findFirst()
                                 .orElse(null)))));
 
@@ -136,9 +130,33 @@ abstract class BridgeSelectionStrategy
         return bridge;
     }
 
-    private static Predicate<Bridge> notStressedOver(int loadLevel)
+    private static Predicate<Bridge> stressLevelWithNewVideoStreamMustBeLessThanOrEqual(float stressLevel)
     {
-        return b -> b.getStressLevel() <= loadLevel;
+        // We assume that the stress-level (denoted S) increases linearly* with
+        // the number of video streams (denoted V) :
+        //
+        //     S = S_0 + alpha * V, where alpha = dS/dV => dS = alpha * dV
+        //
+        // The stress-level estimation (denoted S_hat) is based on the dS/dV
+        // estimation (denoted alpha_hat).
+        //
+        //    S_hat = S + dS_hat, where dS_hat = alpha_hat * dV
+        //
+        // and
+        //
+        //    alpha_hat = S / V_hat
+        //
+        // * this is an approximation that doesn't work well in practice. Here
+        // we only use it to calculate the stress-level delta (dS), and not the
+        // actual stress-level (S). It should be good enough for that.
+
+        return b -> {
+            int dV = 1;
+            float alphaHat = b.getStressPerVideoStreamEstimation();
+            float dsHat = alphaHat * dV;
+            float sHat = b.getStressLevel() + dsHat;
+            return sHat <= stressLevel;
+        };
     }
 
     private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)

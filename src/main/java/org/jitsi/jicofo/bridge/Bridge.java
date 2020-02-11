@@ -61,6 +61,11 @@ public class Bridge
     private final Jid jid;
 
     /**
+     * The initial stress level is low by default.
+     */
+    private float stressLevel = StressLevels.LOW;
+
+    /**
      * How many video streams are there on the bridge (as reported by the bridge
      * itself).
      */
@@ -166,6 +171,12 @@ public class Bridge
             }
 
             lastReportedBitrateKbps = bitrate;
+        }
+
+        Float stressLevel = stats.getValueAsFloat(STRESS_LEVEL);
+        if (stressLevel != null)
+        {
+            this.stressLevel = stressLevel;
         }
 
         setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
@@ -374,19 +385,16 @@ public class Bridge
      *
      * @return the "stress" level of the bridge.
      */
-    public int getStressLevel()
+    public float getStressLevel()
     {
-        if (lastReportedBitrateKbps >= 124000 || videoStreamCount >= 2500)
-        {
-            return StressLevel.HIGH;
-        }
-        else if (lastReportedBitrateKbps >= 62000 || videoStreamCount >= 1200)
-        {
-            return StressLevel.MEDIUM;
-        }
-        else
-        {
-            return StressLevel.LOW;
-        }
+        return stressLevel;
+    }
+
+    public float getStressPerVideoStreamEstimation()
+    {
+        // TODO it'd be nice to have a better (or actual) estimation; maybe use
+        // linear regression?
+        int estimatedVideoStreams = getEstimatedVideoStreamCount();
+        return (estimatedVideoStreams != 0) ? getStressLevel() / estimatedVideoStreams : 0;
     }
 }
