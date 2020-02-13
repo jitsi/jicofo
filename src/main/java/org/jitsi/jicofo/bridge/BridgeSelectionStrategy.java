@@ -130,33 +130,9 @@ abstract class BridgeSelectionStrategy
         return bridge;
     }
 
-    private static Predicate<Bridge> stressLevelWithNewVideoStreamMustBeLessThanOrEqual(float stressLevel)
+    private static Predicate<Bridge> stressLevelWithNewVideoStreamMustBeLessThanOrEqual(float maxStressLevel)
     {
-        // We assume that the stress-level (denoted S) increases linearly* with
-        // the number of video streams (denoted V) :
-        //
-        //     S = S_0 + alpha * V, where alpha = dS/dV => dS = alpha * dV
-        //
-        // The stress-level estimation (denoted S_hat) is based on the dS/dV
-        // estimation (denoted alpha_hat).
-        //
-        //    S_hat = S + dS_hat, where dS_hat = alpha_hat * dV
-        //
-        // and
-        //
-        //    alpha_hat = S / V_hat
-        //
-        // * this is an approximation that doesn't work well in practice. Here
-        // we only use it to calculate the stress-level delta (dS), and not the
-        // actual stress-level (S). It should be good enough for that.
-
-        return b -> {
-            int dV = 1;
-            float alphaHat = b.getStressPerVideoStreamEstimation();
-            float dsHat = alphaHat * dV;
-            float sHat = b.getStressLevel() + dsHat;
-            return sHat <= stressLevel;
-        };
+        return b -> b.estimateStressLevel(1) <= maxStressLevel;
     }
 
     private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)

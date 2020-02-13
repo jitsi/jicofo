@@ -379,11 +379,65 @@ public class Bridge
         return stressLevel;
     }
 
-    public float getStressPerVideoStreamEstimation()
+    /**
+     * This method provides an estimate of the stress-level if the video streams
+     * change by a small value "dv".
+     *
+     * We assume (with a note bellow) that the stress-level (denoted s)
+     * correlates linearly with the number of video streams (denoted v). The
+     * correlation coefficient is denoted alpha and the stress-level at rest
+     * (i.e. the stress-level without any participants nor video streams) is
+     * denoted s_0.
+     *
+     *     s = s_0 + alpha * v
+     *
+     * and
+     *
+     *     alpha = ds/dv
+     *
+     * Let s be the current stress-level of the system and s' be the new
+     * stress-level, after dv video streams are added to the system. We're
+     * looking for an estimate of s' (denoted s'_hat).
+     *
+     * The s' estimate is based on the small stress-level change estimate
+     * (denoted ds_hat) which is based on the alpha coefficient estimate
+     * (denoted alpha_hat) which is based on the total video stream count
+     * estimate (denoted v_hat) and the current stress-level of the system:
+     *
+     *    s'_hat = s + ds_hat
+     *
+     * where
+     *
+     *    ds_hat = alpha_hat * dv
+     *
+     * where
+     *
+     *    alpha_hat = s / v_hat
+     *
+     * so
+     *
+     *     s'_hat = s + ds_hat
+     *            = s + alpha_hat * dv
+     *            = s + (s / v_hat) * dv
+     *            = s + s * dv / v_hat
+     *
+     * NOTE that the linear correlation assumption is an inaccurate
+     * approximation that doesn't work well in practice to calculate the
+     * stress-level. Here, however, we only use it to calculate the stress-level
+     * delta (ds), and not the actual stress-level (s) and tt should be good
+     * enough for that purpose.
+     *
+     * @param dv the small change in the video streams
+     * @return an estimate of the stress-level if the video streams change by a
+     * small value "dv".
+     */
+    public float estimateStressLevel(int dv)
     {
-        // TODO it'd be nice to have a better (or actual) estimation; maybe use
-        // linear regression?
-        int estimatedVideoStreams = getEstimatedVideoStreamCount();
-        return (estimatedVideoStreams != 0) ? getStressLevel() / estimatedVideoStreams : 0;
+        int v_hat = getEstimatedVideoStreamCount();
+        float s = this.stressLevel;
+        float alpha_hat = (v_hat != 0) ? s / v_hat : 0;
+        float ds_hat = alpha_hat * dv;
+        float s_hat = s + ds_hat;
+        return s_hat;
     }
 }
