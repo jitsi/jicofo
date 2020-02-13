@@ -123,6 +123,11 @@ abstract class BridgeSelectionStrategy
 
             if (bridge != null)
             {
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug("Selected " + bridge);
+                }
+
                 break;
             }
         }

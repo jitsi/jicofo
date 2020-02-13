@@ -355,10 +355,13 @@ public class Bridge
     public String toString()
     {
         return String.format(
-                "Bridge[jid=%s, relayId=%s, region=%s]",
+                "Bridge[jid=%s, relayId=%s, region=%s, stress=%f, streams=%d, alpha=%f]",
                      jid.toString(),
                      getRelayId(),
-                     getRegion());
+                     getRegion(),
+                     getStressLevel(),
+                     getEstimatedVideoStreamCount(),
+                     alpha_hat);
     }
 
     /**
@@ -426,6 +429,10 @@ public class Bridge
      * stress-level. Here, however, we only use it to calculate the stress-level
      * delta (ds), and not the actual stress-level (s) and tt should be good
      * enough for that purpose.
+     *
+     * FIXME that if the bridge connects to multiple jicofos then the various
+     * estimates that we use here will inaccurate (v_hat in particular, because
+     * multiple jicofos will be sending participants to a single bridge)
      *
      * @param dv the small change in the video streams
      * @return an estimate of the stress-level if the video streams change by a
