@@ -435,12 +435,11 @@ public class Bridge
     {
         int v_hat = getEstimatedVideoStreamCount();
         float s = this.stressLevel;
-        float alpha_hat = (v_hat != 0) ? s / v_hat : 0;
-        alphaEstimate = Math.max(alphaEstimate, alpha_hat);
-        float ds_hat = alphaEstimate * dv;
+        alpha_hat = Math.max(alpha_hat, (v_hat != 0) ? s / v_hat : 0);
+        float ds_hat = alpha_hat * dv;
         float s_hat = s + ds_hat;
         return s_hat;
     }
 
-    private float alphaEstimate;
+    private float alpha_hat;
 }
