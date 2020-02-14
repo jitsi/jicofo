@@ -63,7 +63,7 @@ public class Bridge
     /**
      * The initial stress level is low by default.
      */
-    private float stressLevel = StressLevels.LOW;
+    private float cpuUsage, stressLevel = StressLevels.LOW;
 
     /**
      * How many video streams are there on the bridge (as reported by the bridge
@@ -177,6 +177,12 @@ public class Bridge
         if (stressLevel != null)
         {
             this.stressLevel = stressLevel;
+        }
+
+        Float cpuUsage = stats.getValueAsFloat(CPU_USAGE);
+        if (cpuUsage != null)
+        {
+            this.cpuUsage = cpuUsage;
         }
 
         setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
@@ -355,11 +361,12 @@ public class Bridge
     public String toString()
     {
         return String.format(
-                "Bridge[jid=%s, relayId=%s, region=%s, stress=%f, streams=%d, alpha=%f]",
+                "Bridge[jid=%s, relayId=%s, region=%s, cpu_usage=%f, stress=%f, streams=%d, alpha=%f]",
                      jid.toString(),
                      getRelayId(),
                      getRegion(),
-                     getStressLevel(),
+                     cpuUsage,
+                     stressLevel,
                      getEstimatedVideoStreamCount(),
                      alpha_hat);
     }
