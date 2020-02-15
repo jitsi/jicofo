@@ -152,67 +152,6 @@ public class AdvertiseSSRCsTest
     }
 
     @Test
-    public void testSourceRemoval()
-            throws Exception
-    {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testSSRCremoval@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-
-        TestConference testConf
-                = TestConference.allocate(osgi.bc, serverName, roomName);
-
-        MockProtocolProvider pps
-                = testConf.getFocusProtocolProvider();
-
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-
-        MockMultiUserChat chat
-                = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
-
-        // Join with all users
-        MockParticipant user1 = new MockParticipant("User1");
-        user1.setSsrcVideoType(SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE);
-        user1.join(chat);
-
-        MockParticipant user2 = new MockParticipant("User2");
-        user2.setSsrcVideoType(SSRCInfoPacketExtension.SCREEN_VIDEO_TYPE);
-        user2.join(chat);
-
-        // Accept invite with all users
-        assertNotNull(user1.acceptInvite(4000));
-        assertNotNull(user2.acceptInvite(4000));
-
-        user1.waitForAddSource(2000);
-        user2.waitForAddSource(2000);
-
-        user2.audioSourceRemove(1);
-
-        assertNotNull(user1.waitForRemoveSource(500));
-
-        assertEquals(1, user1.getRemoteSSRCs("audio").size());
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
-
-        MockParticipant user3 = new MockParticipant("User3");
-        user3.join(chat);
-        assertNotNull(user3.acceptInvite(4000));
-
-        user1.waitForAddSource(2000);
-
-        assertEquals(2, user1.getRemoteSSRCs("audio").size());
-        assertEquals(2, user3.getRemoteSSRCs("audio").size());
-        // No groups
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
-        assertEquals(0, user3.getRemoteSSRCGroups("audio").size());
-
-        user3.leave();
-        user2.leave();
-        user1.leave();
-
-        testConf.stop();
-    }
-
-    @Test
     public void testDuplicatedSSRCs()
         throws Exception
     {
