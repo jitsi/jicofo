@@ -7,7 +7,7 @@ JItsi COnference FOcus is a server side focus component used in [Jitsi Meet]
 
 ## Overview
 
-Conference focus is mandatory component of Jitsi Meet conferencing system next to the videobridge. It is responsible for managing media sessions between each of the participants and the videobridge. Whenever new conference is about to start an IQ is sent to the component to allocate new focus instance. After that special focus participant joins Multi User Chat room. It will be creating Jingle session between Jitsi videobridge and the participant. Although the session in terms of XMPP is between focus user and participant the media will flow between participant and the videobridge. That's because focus user will allocate Colibri channels on the bridge and use them as it's own Jingle transport.
+Conference focus is a mandatory component of Jitsi Meet conferencing system next to the videobridge. It is responsible for managing media sessions between each of the participants and the videobridge. Whenever a new conference is about to start an Instance Qeury (IQ) is sent to the component to allocate a new focus instance. After that, a special focus participant joins the Multi User Chat room. It will be creating a Jingle session between Jitsi videobridge and the participant. Although the session in terms of XMPP is between a focus user and a participant, the media will flow between a participant and the videobridge. That's because a focus user will allocate Colibri channels on the bridge and use them as it's own Jingle transport.
 
 ## Quick install (from the start)
 
