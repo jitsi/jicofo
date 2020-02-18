@@ -15,10 +15,14 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.protocol.xmpp.*;
+import org.jitsi.utils.logging.Logger;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
+import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
 import java.util.*;
@@ -72,7 +76,7 @@ public class BridgeSelectionStrategyTest
      * is located, a low-stressed bridge should be preferred.
      */
     @Test
-    public void preferLowestStressLevel()
+    public void preferLowestStress()
     {
         Bridge localBridge = bridge1,
             lowStressBridge = bridge3,
@@ -84,19 +88,13 @@ public class BridgeSelectionStrategyTest
             highStressRegion = region1;
 
         highStressBridge.setStats(
-            createJvbStats(StressLevels.HIGH, 80, highStressRegion));
-        assertEquals(
-            highStressBridge.getStressLevel(), StressLevels.HIGH, precision);
+            createJvbStats(75_000, 75_000, highStressRegion));
 
         mediumStressBridge.setStats(
-            createJvbStats(StressLevels.MEDIUM, 50, mediumStressRegion));
-        assertEquals(
-            mediumStressBridge.getStressLevel(), StressLevels.MEDIUM, precision);
+            createJvbStats(50_000, 50_000, mediumStressRegion));
 
         lowStressBridge.setStats(
-            createJvbStats(StressLevels.LOW, 10, lowStressRegion));
-        assertEquals(
-            lowStressBridge.getStressLevel(), StressLevels.LOW, precision);
+            createJvbStats(25_000, 25_000, lowStressRegion));
 
 
         BridgeSelectionStrategy strategy
@@ -154,16 +152,17 @@ public class BridgeSelectionStrategyTest
     }
 
     private ColibriStatsExtension createJvbStats(
-        float stressLevel, int videoStreams, String region)
+        int bitrateUpload, int bitrateDownload, String region)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                STRESS_LEVEL, stressLevel));
+                BITRATE_UPLOAD, bitrateUpload));
+
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                VIDEO_STREAMS, videoStreams));
+                BITRATE_DOWNLOAD, bitrateDownload));
 
         if (region != null)
         {
@@ -179,7 +178,7 @@ public class BridgeSelectionStrategyTest
     }
 
     @Test
-    public void preferRegionWhenStressLevelIsEqual()
+    public void preferRegionWhenStressIsEqual()
     {
         Bridge localBridge = bridge1,
             mediumStressBridge3 = bridge3,
@@ -191,17 +190,11 @@ public class BridgeSelectionStrategyTest
             highStressRegion = region1;
 
         highStressBridge.setStats(
-            createJvbStats(StressLevels.HIGH, 100, highStressRegion));
-        assertEquals(
-            highStressBridge.getStressLevel(), StressLevels.HIGH, precision);
+            createJvbStats(750_000, 75_000, highStressRegion));
         mediumStressBridge3.setStats(
-            createJvbStats(StressLevels.MEDIUM, 50, mediumStressRegion3));
-        assertEquals(
-            mediumStressBridge3.getStressLevel(), StressLevels.MEDIUM, precision);
+            createJvbStats(50_000, 50_000, mediumStressRegion3));
         mediumStressBridge2.setStats(
-            createJvbStats(StressLevels.MEDIUM, 50, mediumStressRegion2));
-        assertEquals(
-            mediumStressBridge3.getStressLevel(), StressLevels.MEDIUM, precision);
+            createJvbStats(50_000, 50_000, mediumStressRegion2));
 
         BridgeSelectionStrategy strategy
             = new RegionBasedBridgeSelectionStrategy();
@@ -221,7 +214,7 @@ public class BridgeSelectionStrategyTest
         Bridge b = strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true);
         assertEquals(
             mediumStressBridge2, b);
-            ;
+
         assertNotEquals(
             highStressRegion,
             strategy.select(allBridges, conferenceBridges, invalidRegion, true));

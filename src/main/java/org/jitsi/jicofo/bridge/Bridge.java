@@ -51,6 +51,11 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
+     *
+     */
+    private static final int C = 500;
+
+    /**
      * The parent {@link BridgeSelector}.
      */
     private BridgeSelector bridgeSelector;
@@ -59,11 +64,6 @@ public class Bridge
      * The XMPP address of the bridge.
      */
     private final Jid jid;
-
-    /**
-     * The initial stress level is low by default.
-     */
-    private float cpuUsage, stressLevel = StressLevels.LOW;
 
     /**
      * How many video streams are there on the bridge (as reported by the bridge
@@ -171,18 +171,6 @@ public class Bridge
             }
 
             lastReportedBitrateKbps = bitrate;
-        }
-
-        Float stressLevel = stats.getValueAsFloat(STRESS_LEVEL);
-        if (stressLevel != null)
-        {
-            this.stressLevel = stressLevel;
-        }
-
-        Float cpuUsage = stats.getValueAsFloat(CPU_USAGE);
-        if (cpuUsage != null)
-        {
-            this.cpuUsage = cpuUsage;
         }
 
         setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
@@ -361,99 +349,14 @@ public class Bridge
     public String toString()
     {
         return String.format(
-                "Bridge[jid=%s, relayId=%s, region=%s, cpu_usage=%f, stress=%f, streams=%d, alpha=%f]",
+                "Bridge[jid=%s, relayId=%s, region=%s]",
                      jid.toString(),
                      getRelayId(),
-                     getRegion(),
-                     cpuUsage,
-                     stressLevel,
-                     getEstimatedVideoStreamCount(),
-                     alpha_hat);
+                     getRegion());
     }
 
-    /**
-     * Returns the "stress" level of this bridge. Although it's up to the bridge
-     * to come up with an actual number in (0, 1], the general idea is that if
-     * the bridge is highly loaded or if it has very high throughput, then the
-     * stress level is high. When the bridge is in either of these two states we
-     * know that it misbehaves (i.e. it drops packets and/or introduces jiitter),
-     * and therefore jicofo needs to route traffic to less stressed bridges.
-     *
-     * Having multiple stress levels allows us to act before a bridge has become
-     * highly stressed.
-     *
-     * @return the "stress" level of the bridge.
-     */
-    public float getStressLevel()
+    public double getStress()
     {
-        return stressLevel;
+        return lastReportedBitrateKbps + videoStreamCountDiff * C;
     }
-
-    /**
-     * This method provides an estimate of the stress-level if the video streams
-     * change by a small value "dv".
-     *
-     * We assume (with a note bellow) that the stress-level (denoted s)
-     * correlates linearly with the number of video streams (denoted v). The
-     * correlation coefficient is denoted alpha and the stress-level at rest
-     * (i.e. the stress-level without any participants nor video streams) is
-     * denoted s_0.
-     *
-     *     s = s_0 + alpha * v
-     *
-     * and
-     *
-     *     alpha = ds/dv
-     *
-     * Let s be the current stress-level of the system and s' be the new
-     * stress-level, after dv video streams are added to the system. We're
-     * looking for an estimate of s' (denoted s'_hat).
-     *
-     * The s' estimate is based on the small stress-level change estimate
-     * (denoted ds_hat) which is based on the alpha coefficient estimate
-     * (denoted alpha_hat) which is based on the total video stream count
-     * estimate (denoted v_hat) and the current stress-level of the system:
-     *
-     *    s'_hat = s + ds_hat
-     *
-     * where
-     *
-     *    ds_hat = alpha_hat * dv
-     *
-     * where
-     *
-     *    alpha_hat = s / v_hat
-     *
-     * so
-     *
-     *     s'_hat = s + ds_hat
-     *            = s + alpha_hat * dv
-     *            = s + (s / v_hat) * dv
-     *            = s + s * dv / v_hat
-     *
-     * NOTE that the linear correlation assumption is an inaccurate
-     * approximation that doesn't work well in practice to calculate the
-     * stress-level. Here, however, we only use it to calculate the stress-level
-     * delta (ds), and not the actual stress-level (s) and tt should be good
-     * enough for that purpose.
-     *
-     * FIXME that if the bridge connects to multiple jicofos then the various
-     * estimates that we use here will inaccurate (v_hat in particular, because
-     * multiple jicofos will be sending participants to a single bridge)
-     *
-     * @param dv the small change in the video streams
-     * @return an estimate of the stress-level if the video streams change by a
-     * small value "dv".
-     */
-    public float estimateStressLevel(int dv)
-    {
-        int v_hat = getEstimatedVideoStreamCount();
-        float s = this.stressLevel;
-        alpha_hat = Math.max(alpha_hat, (v_hat != 0) ? s / v_hat : 0);
-        float ds_hat = alpha_hat * dv;
-        float s_hat = s + ds_hat;
-        return s_hat;
-    }
-
-    private float alpha_hat;
 }

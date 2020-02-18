@@ -4,6 +4,7 @@ import org.jitsi.utils.logging.*;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 
 /**
  * Represents an algorithm for bridge selection.
@@ -85,31 +86,47 @@ abstract class BridgeSelectionStrategy
                                  List<Bridge> conferenceBridges,
                                  String participantRegion)
     {
+        if (bridges.isEmpty())
+        {
+            return null;
+        }
+
         Bridge bridge = null;
-        for (float stressLevel : StressLevels.ALL_LEVELS)
+        List<Double> bridgesStress = bridges
+            .stream()
+            .map(Bridge::getStress)
+            .sorted()
+            .collect(Collectors.toList());
+
+        // Try to group into groups of two, so #bridge/2
+        double min = bridgesStress.get(0);
+        double max = bridgesStress.get(bridgesStress.size() - 1);
+        double step = (max - min) / bridgesStress.size() / 2;
+
+        for (double stress = min; stress <= max; stress += step)
         {
             // Try the first operational bridge in the participant region and
             // that is already in the conference.
             bridge = bridges.stream()
-                .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
+                .filter(stressIsLessThanOrEqual(stress))
                 .filter(selectFrom(conferenceBridges))
                 .filter(inRegion(participantRegion))
                 .findFirst()
                 // Otherwise, try to add a new bridge in the participant region.
                 .orElse(bridges.stream()
-                    .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
+                    .filter(stressIsLessThanOrEqual(stress))
                     .filter(inRegion(participantRegion))
                     .findFirst()
                     // Otherwise, try to add a new bridge that is already in the
                     // conference.
                     .orElse(bridges.stream()
-                        .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
+                        .filter(stressIsLessThanOrEqual(stress))
                         .filter(selectFrom(conferenceBridges))
                         .findFirst()
                         // Otherwise, try to add a new bridge in the local
                         // region.
                         .orElse(bridges.stream()
-                            .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
+                            .filter(stressIsLessThanOrEqual(stress))
                             .filter(inRegion(localRegion))
                             .findFirst()
                             // Otherwise, try to add the least loaded bridge
@@ -117,7 +134,7 @@ abstract class BridgeSelectionStrategy
                             // TODO: perhaps use a bridge in a nearby region (if
                             // we have data about the topology of the regions).
                             .orElse(bridges.stream()
-                                .filter(stressLevelWithNewVideoStreamMustBeLessThanOrEqual(stressLevel))
+                                .filter(stressIsLessThanOrEqual(stress))
                                 .findFirst()
                                 .orElse(null)))));
 
@@ -135,9 +152,10 @@ abstract class BridgeSelectionStrategy
         return bridge;
     }
 
-    private static Predicate<Bridge> stressLevelWithNewVideoStreamMustBeLessThanOrEqual(float maxStressLevel)
+    private static Predicate<Bridge> stressIsLessThanOrEqual(double maxStress)
     {
-        return b -> b.estimateStressLevel(1) <= maxStressLevel;
+        // new video streams as a result of a new participant joining.
+        return b -> b.getStress() <= maxStress;
     }
 
     private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)
