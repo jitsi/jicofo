@@ -70,6 +70,47 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
+     * Find the "max stress level" above which a bridge won't be considered for
+     * participant allocation.
+     *
+     * It works by splitting the available bridges into groups of bridges
+     * with similar stress level and allocate participants to a bridge that
+     * is in the least stressed group.
+     *
+     * Suppose for example that we have 6 bridges, each loaded from 1 to 6 that
+     * we want to split into 3 groups (imagine the groups names are "low-stressed",
+     * "medium-stressed" and "high-stressed" bridges):
+     *
+     * min = 1, max = 6, step = ceil(5 / 3)  = cel(1.66) = 2
+     * group 1: stress <= 3
+     * group 2: stress <= 5
+     * group 3: stress <= 7
+     *
+     * This method returns 3 and the bridge selector will consider bridges that
+     * are stressed <= 3.
+     *
+     * @param bridges
+     * @return
+     */
+    private double findStressLimit(Collection<Bridge> bridges)
+    {
+        List<Double> bridgesStress = bridges
+            .stream()
+            .map(Bridge::getStress)
+            .sorted()
+            .collect(Collectors.toList());
+
+        // We consider three groups, namely: "low-stressed", "medium-stressed"
+        // and "high-stressed" bridges.
+        int numberOfGroups = 3;
+
+        double min = bridgesStress.get(0);
+        double max = bridgesStress.get(bridgesStress.size() - 1);
+        double step = Math.ceil((max - min) / numberOfGroups);
+        return min + step;
+    }
+
+    /**
      * Selects a bridge to be used for a new participant in a conference,
      * assuming that no other bridge is used by the conference (i.e. this
      * is the initial selection of a bridge for the conference).
@@ -91,65 +132,40 @@ abstract class BridgeSelectionStrategy
             return null;
         }
 
-        Bridge bridge = null;
-        List<Double> bridgesStress = bridges
-            .stream()
-            .map(Bridge::getStress)
-            .sorted()
-            .collect(Collectors.toList());
+        double maxStress = findStressLimit(bridges);
 
-        // Try to group into groups of two, so #bridge/2
-        double min = bridgesStress.get(0);
-        double max = bridgesStress.get(bridgesStress.size() - 1);
-        double step = (max - min) / bridgesStress.size() / 2;
-
-        for (double stress = min; stress <= max; stress += step)
-        {
-            // Try the first operational bridge in the participant region and
-            // that is already in the conference.
-            bridge = bridges.stream()
-                .filter(stressIsLessThanOrEqual(stress))
-                .filter(selectFrom(conferenceBridges))
+        // Try the first operational bridge in the participant region and
+        // that is already in the conference.
+        return bridges.stream()
+            .filter(stressIsLessThanOrEqual(maxStress))
+            .filter(selectFrom(conferenceBridges))
+            .filter(inRegion(participantRegion))
+            .findFirst()
+            // Otherwise, try to add a new bridge in the participant region.
+            .orElse(bridges.stream()
+                .filter(stressIsLessThanOrEqual(maxStress))
                 .filter(inRegion(participantRegion))
                 .findFirst()
-                // Otherwise, try to add a new bridge in the participant region.
+                // Otherwise, try to add a new bridge that is already in the
+                // conference.
                 .orElse(bridges.stream()
-                    .filter(stressIsLessThanOrEqual(stress))
-                    .filter(inRegion(participantRegion))
+                    .filter(stressIsLessThanOrEqual(maxStress))
+                    .filter(selectFrom(conferenceBridges))
                     .findFirst()
-                    // Otherwise, try to add a new bridge that is already in the
-                    // conference.
+                    // Otherwise, try to add a new bridge in the local
+                    // region.
                     .orElse(bridges.stream()
-                        .filter(stressIsLessThanOrEqual(stress))
-                        .filter(selectFrom(conferenceBridges))
+                        .filter(stressIsLessThanOrEqual(maxStress))
+                        .filter(inRegion(localRegion))
                         .findFirst()
-                        // Otherwise, try to add a new bridge in the local
-                        // region.
+                        // Otherwise, try to add the least loaded bridge
+                        // that we know of.
+                        // TODO: perhaps use a bridge in a nearby region (if
+                        // we have data about the topology of the regions).
                         .orElse(bridges.stream()
-                            .filter(stressIsLessThanOrEqual(stress))
-                            .filter(inRegion(localRegion))
+                            .filter(stressIsLessThanOrEqual(maxStress))
                             .findFirst()
-                            // Otherwise, try to add the least loaded bridge
-                            // that we know of.
-                            // TODO: perhaps use a bridge in a nearby region (if
-                            // we have data about the topology of the regions).
-                            .orElse(bridges.stream()
-                                .filter(stressIsLessThanOrEqual(stress))
-                                .findFirst()
-                                .orElse(null)))));
-
-            if (bridge != null)
-            {
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug("Selected " + bridge);
-                }
-
-                break;
-            }
-        }
-
-        return bridge;
+                            .orElse(null)))));
     }
 
     private static Predicate<Bridge> stressIsLessThanOrEqual(double maxStress)

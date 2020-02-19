@@ -87,6 +87,17 @@ public class BridgeSelectionStrategyTest
             mediumStressRegion = region2,
             highStressRegion = region1;
 
+        // Here we specify 3 bridges in 3 different regions: one high-stressed,
+        // one medium-stressed and one low-stressed. The numbers bellow are
+        // bitrates, as our stress calculation is based on bitrate.
+        //
+        // The exact values don't really matter and they're only meaningful when
+        // interpreted relative to each other; i.e. 75_000 is high compared to
+        // 50_000, but low compared to 750_000.
+        //
+        // The selector takes care of splitting the available bridges into
+        // groups of bridges with similar stress level and allocate participants
+        // to a bridge in the least stressed group.
         highStressBridge.setStats(
             createJvbStats(75_000, 75_000, highStressRegion));
 
@@ -189,8 +200,19 @@ public class BridgeSelectionStrategyTest
             mediumStressRegion2 = region2,
             highStressRegion = region1;
 
+        // Here we specify 3 bridges in 3 different regions: one high-stressed
+        // and two medium-stressed. The numbers bellow are bitrates, as our
+        // stress calculation is based on bitrate.
+        //
+        // The exact values don't really matter and they're only meaningful when
+        // interpreted relative to each other; i.e. 75_000 is high compared to
+        // 50_000, but low compared to 750_000.
+        //
+        // The selector takes care of splitting the available bridges into
+        // groups of bridges with similar stress level and allocate participants
+        // to a bridge in the least stressed group.
         highStressBridge.setStats(
-            createJvbStats(750_000, 75_000, highStressRegion));
+            createJvbStats(75_000, 75_000, highStressRegion));
         mediumStressBridge3.setStats(
             createJvbStats(50_000, 50_000, mediumStressRegion3));
         mediumStressBridge2.setStats(
