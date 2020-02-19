@@ -51,7 +51,8 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     *
+     * A conservative estimate of the average bitrate (in kbps) of a video
+     * stream flowing through the bridge.
      */
     private static final int C = 500;
 
@@ -355,6 +356,15 @@ public class Bridge
                      getRegion());
     }
 
+    /**
+     * Returns the "stress" of the bridge. The stress is computed based on the
+     * total bitrate reported by the bridge.
+     *
+     * @return the sum of the last total reported bitrate (in kbps) and an
+     * estimation of the bitrate of the streams that we estimate that the bridge
+     * hasn't reported to Jicofo yet. The estimation is the product of the
+     * number of unreported streams and a constant C (which we set to 500 kbps).
+     */
     public double getStress()
     {
         return lastReportedBitrateKbps + videoStreamCountDiff * C;
