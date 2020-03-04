@@ -4,7 +4,6 @@ import org.jitsi.utils.logging.*;
 
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.*;
 
 /**
  * Represents an algorithm for bridge selection.
@@ -94,8 +93,8 @@ abstract class BridgeSelectionStrategy
         double step = .25;
         for (double maxStress = step; maxStress <= 1.0; maxStress += step)
         {
-            // Try the first operational bridge in the participant region and
-            // that is already in the conference.
+            // First, try a bridge in the participant region and that is already
+            // in the conference.
             Bridge bridge = bridges.stream()
                 .filter(stressIsLessThanOrEqual(maxStress))
                 .filter(selectFrom(conferenceBridges))
