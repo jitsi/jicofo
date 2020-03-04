@@ -54,7 +54,14 @@ public class Bridge
      * A conservative estimate of the average bitrate (in kbps) of a video
      * stream flowing through the bridge.
      */
-    private static final int C = 500;
+    private static final int C = 1000;
+
+    /**
+     * This is the worst case scenario that the bridge must be able to handle
+     * for a 100-peeps call: 20 local senders and 5 local receivers. Most bits
+     * are wasted in octo traffic.
+     */
+    private static final double MAX_TOTAL_BITRATE_BPS = 560_000;
 
     /**
      * The parent {@link BridgeSelector}.
@@ -367,6 +374,6 @@ public class Bridge
      */
     public double getStress()
     {
-        return lastReportedBitrateKbps + videoStreamCountDiff * C;
+        return Math.min(MAX_TOTAL_BITRATE_BPS, (lastReportedBitrateKbps + videoStreamCountDiff * C)) / MAX_TOTAL_BITRATE_BPS;
     }
 }

@@ -99,13 +99,13 @@ public class BridgeSelectionStrategyTest
         // groups of bridges with similar stress level and allocate participants
         // to a bridge in the least stressed group.
         highStressBridge.setStats(
-            createJvbStats(75_000, 75_000, highStressRegion));
+            createJvbStats1(20, 5, highStressRegion));
 
         mediumStressBridge.setStats(
-            createJvbStats(50_000, 50_000, mediumStressRegion));
+            createJvbStats1(10, 2, mediumStressRegion));
 
         lowStressBridge.setStats(
-            createJvbStats(25_000, 25_000, lowStressRegion));
+            createJvbStats1(1, 0, lowStressRegion));
 
 
         BridgeSelectionStrategy strategy
@@ -162,18 +162,69 @@ public class BridgeSelectionStrategyTest
             strategy.select(allBridges, conferenceBridges, invalidRegion, true));
     }
 
-    private ColibriStatsExtension createJvbStats(
-        int bitrateUpload, int bitrateDownload, String region)
+
+    private int numberOfConferenceBridges = 4;
+    private int numberOfGlobalSenders = 20;
+    private int[] bitratesKbps = { 200, 500, 3200 };
+
+    /**
+     * Assuming a 100 peeps conference with 20 senders, computes the (max) total
+     * bitrate of a bridge that hosts numberOfLocalSenders local senders, numberOfLocalReceivers local receivers and the
+     * remaining octo participants.
+     *
+     * @param numberOfLocalSenders the local senders
+     * @param numberOfLocalReceivers the local receivers
+     * @return the (max) total bitrate of a bridge that hosts numberOfLocalSenders local senders, numberOfLocalReceivers
+     * local receivers and the remaining octo participants
+     */
+    private int computeMaxUpload(int numberOfLocalSenders, int numberOfLocalReceivers)
     {
+        // regardless of the participant distribution, in a 100 people call each
+        // sender receivers 19 other senders.
+        return (numberOfLocalSenders + numberOfLocalReceivers)
+            * ((numberOfGlobalSenders - 2)* bitratesKbps[0] + bitratesKbps[2]);
+    }
+    private int computeMaxDownload(int numberOfLocalSenders)
+    {
+        // regardless of the participant distribution, in a 100 people call each
+        // sender receivers 19 other senders.
+        return numberOfLocalSenders*Arrays.stream(bitratesKbps).sum();
+    }
+
+    private int computeMaxOctoSendBitrate(int numberOfLocalSenders)
+    {
+        // the octo bitrate depends on how many local senders there are.
+        return numberOfConferenceBridges * computeMaxDownload(numberOfLocalSenders);
+    }
+
+    private int computeMaxOctoReceiveBitrate(int numberOfLocalSenders)
+    {
+        // the octo bitrate depends on how many local senders there are.
+        return computeMaxDownload(numberOfGlobalSenders-numberOfLocalSenders);
+    }
+
+    private ColibriStatsExtension createJvbStats1(int numberOfLocalSenders, int numberOfLocalReceivers, String region)
+    {
+        int maxDownload = computeMaxDownload(numberOfLocalSenders)
+            , maxUpload = computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers)
+            , maxOctoSendBitrate = computeMaxOctoSendBitrate(numberOfLocalSenders)
+            , maxOctoReceiveBitrate = computeMaxOctoReceiveBitrate(numberOfLocalSenders);
+
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_UPLOAD, bitrateUpload));
-
+                BITRATE_DOWNLOAD, maxDownload));
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_DOWNLOAD, bitrateDownload));
+                BITRATE_UPLOAD, maxUpload));
+        statsExtension.addStat(
+            new ColibriStatsExtension.Stat(
+                OCTO_RECEIVE_BITRATE, maxOctoReceiveBitrate));
+        statsExtension.addStat(
+            new ColibriStatsExtension.Stat(
+                OCTO_SEND_BITRATE, maxOctoSendBitrate));
+
 
         if (region != null)
         {
@@ -212,11 +263,11 @@ public class BridgeSelectionStrategyTest
         // groups of bridges with similar stress level and allocate participants
         // to a bridge in the least stressed group.
         highStressBridge.setStats(
-            createJvbStats(75_000, 75_000, highStressRegion));
+            createJvbStats1(20, 5, highStressRegion));
         mediumStressBridge3.setStats(
-            createJvbStats(50_000, 50_000, mediumStressRegion3));
+            createJvbStats1(10, 2, mediumStressRegion3));
         mediumStressBridge2.setStats(
-            createJvbStats(50_000, 50_000, mediumStressRegion2));
+            createJvbStats1(10, 2, mediumStressRegion2));
 
         BridgeSelectionStrategy strategy
             = new RegionBasedBridgeSelectionStrategy();
