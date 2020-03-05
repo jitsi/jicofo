@@ -2294,11 +2294,9 @@ public class JitsiMeetConferenceImpl
             return false;
         }
 
-        // we do not want to remotely mute jigasi as currently
-        // there is no way for it to unmute
-        if (doMute && participant.isSipGateway())
+        if (doMute && participant.isSipGateway() && !globalConfig.isSipMuteEnabled())
         {
-            logger.warn("Blocking mute request to jigasi.");
+            logger.warn("Blocking mute request to jigasi. Muting SIP participants is disabled.");
             return false;
         }
 

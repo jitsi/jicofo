@@ -63,6 +63,18 @@ public class JitsiMeetGlobalConfig
         = "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT";
 
     /**
+     * The name of the configuration property that enables or
+     * disables the handling of mute requests for SIP participants.
+     */
+    private final static String SIP_MUTE_ENABLED_CONFIG_PNAME
+        = "org.jitsi.jicofo.SIP_MUTE_ENABLED";
+
+    /**
+     * The default value for {@link #SIP_MUTE_ENABLED_CONFIG_PNAME}.
+     */
+    private final static boolean DEFAULT_SIP_MUTE_ENABLED = false;
+
+    /**
      * The default value for {@link #maxSourcesPerUser}.
      */
     private final static int DEFAULT_MAX_SSRC_PER_USER = 20;
@@ -104,6 +116,12 @@ public class JitsiMeetGlobalConfig
      * room next participant be selected as new owner.
      */
     private boolean autoOwner = true;
+
+    /**
+     * Flag that enables or disables handling of mute requests from
+     * sip participant.
+     */
+    private boolean sipMuteEnabled = false;
 
     /**
      * Tells how many seconds we're going to wait for the Jibri to start
@@ -203,6 +221,12 @@ public class JitsiMeetGlobalConfig
         }
 
         logger.info("Automatically grant 'owner' role: " + autoOwner);
+
+        if (FocusBundleActivator.getConfigService()
+                .getBoolean(SIP_MUTE_ENABLED_CONFIG_PNAME, DEFAULT_SIP_MUTE_ENABLED))
+        {
+            this.sipMuteEnabled = true;
+        }
 
         this.maxSourcesPerUser
             = configService.getInt(
@@ -319,5 +343,17 @@ public class JitsiMeetGlobalConfig
     public boolean isAutoOwnerEnabled()
     {
         return this.autoOwner;
+    }
+
+    /**
+     * Indicates whether mute requests for sip participants should be handled
+     * or not.
+     *
+     * @return <tt>true</tt> if mute requests for sip participants
+     * should be handled or <tt>false</tt> otherwise.
+     */
+    public boolean isSipMuteEnabled()
+    {
+        return this.sipMuteEnabled;
     }
 }
