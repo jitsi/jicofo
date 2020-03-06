@@ -6,8 +6,6 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import java.util.*;
-
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 public class BridgeTest
@@ -51,58 +49,18 @@ public class BridgeTest
         Assert.assertEquals(bridge.getStress(), 0.58, .05);
     }
 
-    private int numberOfConferenceBridges = 4;
-    private int numberOfGlobalSenders = 20;
-    private int numberOfSpeakers = 2;
-
-    /**
-     * 30 kbps for audio, 150 kbps for 180p, 500kbps for 360p and 3200kbps for
-     * 720p.
-     */
-    private int[] bitratesKbps = { 50, 200, 500, 3200 };
-
-    /**
-     * Assuming a 100 peeps conference with 20 senders, computes the (max) total
-     * bitrate of a bridge that hosts numberOfLocalSenders local senders, numberOfLocalReceivers local receivers and the
-     * remaining octo participants.
-     *
-     * @param numberOfLocalSenders the local senders
-     * @param numberOfLocalReceivers the local receivers
-     * @return the (max) total bitrate of a bridge that hosts numberOfLocalSenders local senders, numberOfLocalReceivers
-     * local receivers and the remaining octo participants
-     */
-    private int computeMaxUpload(int numberOfLocalSenders, int numberOfLocalReceivers)
-    {
-        // regardless of the participant distribution, in a 100 people call each
-        // sender receivers 19 other senders.
-        return (numberOfLocalSenders + numberOfLocalReceivers)
-            * (numberOfSpeakers * bitratesKbps[0] + (numberOfGlobalSenders - 2) * bitratesKbps[1] + bitratesKbps[3]);
-    }
-    private int computeMaxDownload(int numberOfLocalSenders)
-    {
-        // regardless of the participant distribution, in a 100 people call each
-        // sender receivers 19 other senders.
-        return numberOfLocalSenders*Arrays.stream(bitratesKbps).sum();
-    }
-
-    private int computeMaxOctoSendBitrate(int numberOfLocalSenders)
-    {
-        // the octo bitrate depends on how many local senders there are.
-        return numberOfConferenceBridges * computeMaxDownload(numberOfLocalSenders);
-    }
-
-    private int computeMaxOctoReceiveBitrate(int numberOfLocalSenders)
-    {
-        // the octo bitrate depends on how many local senders there are.
-        return computeMaxDownload(numberOfGlobalSenders - numberOfLocalSenders);
-    }
-
     private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers)
     {
-        int maxDownload = computeMaxDownload(numberOfLocalSenders)
-            , maxUpload = computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers)
-            , maxOctoSendBitrate = computeMaxOctoSendBitrate(numberOfLocalSenders)
-            , maxOctoReceiveBitrate = computeMaxOctoReceiveBitrate(numberOfLocalSenders);
+        MaxBitrateCalculator maxBitrateCalculator = new MaxBitrateCalculator(
+            4 /* numberOfConferenceBridges */,
+            20 /* numberOfGlobalSenders */,
+            2 /* numberOfSpeakers */
+        );
+
+        int maxDownload = maxBitrateCalculator.computeMaxDownload(numberOfLocalSenders)
+            , maxUpload = maxBitrateCalculator.computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers)
+            , maxOctoSendBitrate = maxBitrateCalculator.computeMaxOctoSendBitrate(numberOfLocalSenders)
+            , maxOctoReceiveBitrate = maxBitrateCalculator.computeMaxOctoReceiveBitrate(numberOfLocalSenders);
 
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
