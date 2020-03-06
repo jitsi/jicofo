@@ -94,13 +94,13 @@ public class BridgeSelectionStrategyTest
         // groups of bridges with similar stress level and allocate participants
         // to a bridge in the least stressed group.
         highStressBridge.setStats(
-            createJvbStats1(20, 5, highStressRegion));
+            createJvbStats(20, 5, highStressRegion));
 
         mediumStressBridge.setStats(
-            createJvbStats1(10, 2, mediumStressRegion));
+            createJvbStats(10, 2, mediumStressRegion));
 
         lowStressBridge.setStats(
-            createJvbStats1(1, 0, lowStressRegion));
+            createJvbStats(1, 0, lowStressRegion));
 
 
         BridgeSelectionStrategy strategy
@@ -155,7 +155,7 @@ public class BridgeSelectionStrategyTest
     }
 
 
-    private ColibriStatsExtension createJvbStats1(int numberOfLocalSenders, int numberOfLocalReceivers, String region)
+    private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers, String region)
     {
         MaxBitrateCalculator maxBitrateCalculator = new MaxBitrateCalculator(
             4 /* numberOfConferenceBridges */,
@@ -221,11 +221,11 @@ public class BridgeSelectionStrategyTest
         // groups of bridges with similar stress level and allocate participants
         // to a bridge in the least stressed group.
         highStressBridge.setStats(
-            createJvbStats1(20, 5, highStressRegion));
+            createJvbStats(20, 5, highStressRegion));
         mediumStressBridge3.setStats(
-            createJvbStats1(10, 2, mediumStressRegion3));
+            createJvbStats(10, 2, mediumStressRegion3));
         mediumStressBridge2.setStats(
-            createJvbStats1(10, 2, mediumStressRegion2));
+            createJvbStats(10, 2, mediumStressRegion2));
 
         BridgeSelectionStrategy strategy
             = new RegionBasedBridgeSelectionStrategy();
