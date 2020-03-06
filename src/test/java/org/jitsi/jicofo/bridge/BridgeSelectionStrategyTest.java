@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 package org.jitsi.jicofo.bridge;
-
-import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.Logger;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
-import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
 import java.util.*;
@@ -114,21 +109,18 @@ public class BridgeSelectionStrategyTest
 
         List<Bridge> conferenceBridges = new LinkedList<>();
 
-        // Initial selection should select a bridge in the participant's region,
-        // unless there are free bridges elsewhere that are less stressed, i.e.
-        // as long as there are bridges that have a stress level N-1, the
-        // algorithm should not select a bridge with a stress level of N.
+        // Initial selection should select a bridge in the participant's region.
 
         assertEquals(
-            lowStressBridge,
+            highStressBridge,
             strategy.select(allBridges, conferenceBridges, highStressRegion, true));
         assertEquals(
-            lowStressBridge,
+            mediumStressBridge,
             strategy.select(allBridges, conferenceBridges, mediumStressRegion, true));
         assertEquals(
-            lowStressBridge,
+            highStressBridge,
             strategy.select(allBridges, conferenceBridges, invalidRegion, true));
-        assertNotEquals(
+        assertEquals(
             localBridge,
             strategy.select(allBridges, conferenceBridges, null, true));
 
@@ -138,7 +130,7 @@ public class BridgeSelectionStrategyTest
             lowStressBridge,
             strategy.select(allBridges, conferenceBridges, lowStressRegion, true));
         assertEquals(
-            lowStressBridge,
+            mediumStressBridge,
             strategy.select(allBridges, conferenceBridges, mediumStressRegion, true));
         // A participant in an unknown region should be allocated on the
         // existing conference bridge.
@@ -152,13 +144,13 @@ public class BridgeSelectionStrategyTest
         // loaded (according to the order of 'allBridges') existing conference
         // bridge.
         assertEquals(
-            lowStressBridge,
+            mediumStressBridge,
             strategy.select(allBridges, conferenceBridges, null, true));
         // A participant in a region with no bridges should also be allocated
         // on the least loaded (according to the order of 'allBridges') existing
         // conference bridge.
         assertEquals(
-            lowStressBridge,
+            mediumStressBridge,
             strategy.select(allBridges, conferenceBridges, invalidRegion, true));
     }
 
@@ -275,12 +267,9 @@ public class BridgeSelectionStrategyTest
 
         List<Bridge> conferenceBridges = new LinkedList<>();
 
-        // Initial selection should select a bridge in the participant's region,
-        // unless there are free bridges elsewhere that are less stressed, i.e.
-        // as long as there are bridges that have a stress level N-1, the
-        // algorithm should not select a bridge with a stress level of N.
+        // Initial selection should select a bridge in the participant's region.
 
-        assertNotEquals(
+        assertEquals(
             highStressBridge,
             strategy.select(allBridges, conferenceBridges, highStressRegion, true));
 
@@ -288,11 +277,11 @@ public class BridgeSelectionStrategyTest
         assertEquals(
             mediumStressBridge2, b);
 
-        assertNotEquals(
-            highStressRegion,
+        assertEquals(
+            highStressBridge,
             strategy.select(allBridges, conferenceBridges, invalidRegion, true));
-        assertNotEquals(
-            localBridge,
+        assertEquals(
+            highStressBridge,
             strategy.select(allBridges, conferenceBridges, null, true));
 
         conferenceBridges.add(mediumStressBridge2);
