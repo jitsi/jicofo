@@ -34,6 +34,7 @@ import org.jitsi.service.configuration.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
@@ -445,5 +446,14 @@ public class JitsiMeetServices
     public String getBridgeVersion(Jid bridgeJid)
     {
         return bridgeSelector.getBridgeVersion(bridgeJid);
+    }
+
+    public JSONObject getStats()
+    {
+        JSONObject json = new JSONObject();
+
+        json.put("selector", bridgeSelector.getStats());
+
+        return json;
     }
 }

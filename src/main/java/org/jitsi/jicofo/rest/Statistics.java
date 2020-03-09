@@ -97,6 +97,14 @@ public class Statistics
         }
         json.put(CONFERENCE_SIZES, conferenceSizesJson);
 
+        // XXX we have this top-down approach of populating the stats in various
+        // places in the bridge and thought to bring it over here. It'll bring
+        // proper name spacing of the various stats, but we'll have to type a
+        // bit more in dd to access said stats. For example the bridge selection
+        // strategy stats will be available under
+        // focus.services.selector.strategy.*
+        json.put("focus", focusManager.getStats());
+
         return json.toJSONString();
     }
 }
