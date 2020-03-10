@@ -78,15 +78,23 @@ public class OperationSetJibri
     @Override
     public IQ handleIQRequest(IQ iq)
     {
+        CommonJibriStuff theJibri = null;
+
         synchronized (jibris)
         {
             for (CommonJibriStuff jibri : jibris)
             {
                 if (jibri.accept((JibriIq) iq))
                 {
-                    return jibri.handleIQRequest((JibriIq) iq);
+                    theJibri = jibri;
+                    break;
                 }
             }
+        }
+
+        if (theJibri != null)
+        {
+            return theJibri.handleIQRequest((JibriIq) iq);
         }
 
         return IQ.createErrorResponse(iq, XMPPError.getBuilder(

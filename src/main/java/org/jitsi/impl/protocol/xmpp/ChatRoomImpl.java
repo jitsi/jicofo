@@ -1159,10 +1159,12 @@ public class ChatRoomImpl
             return;
         }
 
+        ChatMemberImpl chatMember;
+        boolean memberIsNew = false;
+
         synchronized (members)
         {
-            ChatMemberImpl chatMember = (ChatMemberImpl) findChatMember(jid);
-            boolean memberIsNew = false;
+            chatMember = (ChatMemberImpl) findChatMember(jid);
             if (chatMember == null)
             {
                 if (presence.getType().equals(Presence.Type.available))
@@ -1187,19 +1189,19 @@ public class ChatRoomImpl
                     return;
                 }
             }
+        }
 
-            if (chatMember != null)
+        if (chatMember != null)
+        {
+            chatMember.processPresence(presence);
+
+            if (memberIsNew)
             {
-                chatMember.processPresence(presence);
-
-                if (memberIsNew)
-                {
-                    // Trigger member "joined"
-                    notifyMemberJoined(chatMember);
-                }
-
-                notifyMemberPropertyChanged(chatMember);
+                // Trigger member "joined"
+                notifyMemberJoined(chatMember);
             }
+
+            notifyMemberPropertyChanged(chatMember);
         }
     }
 
@@ -1283,6 +1285,8 @@ public class ChatRoomImpl
         @Override
         public void left(EntityFullJid occupantJid)
         {
+            ChatMemberImpl member;
+
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
@@ -1290,44 +1294,46 @@ public class ChatRoomImpl
                     logger.debug("Left " + occupantJid + " room: " + roomJid);
                 }
 
-                ChatMemberImpl member = removeMember(occupantJid);
+                member = removeMember(occupantJid);
+            }
 
-                if (member != null)
-                {
-                    notifyMemberLeft(member);
-                }
-                else
-                {
-                    logger.warn(
-                        "Member left event for non-existing member: "
-                                    + occupantJid);
-                }
+            if (member != null)
+            {
+                notifyMemberLeft(member);
+            }
+            else
+            {
+                logger.warn(
+                    "Member left event for non-existing member: "
+                                + occupantJid);
             }
         }
 
         @Override
         public void kicked(EntityFullJid occupantJid, Jid actor, String reason)
         {
+            ChatMemberImpl member;
+
             synchronized (members)
             {
                 if (logger.isDebugEnabled())
                 {
                     logger.debug(
                         "Kicked: " + occupantJid + ", "
-                                + actor + ", " + reason);
+                            + actor + ", " + reason);
                 }
 
-                ChatMemberImpl member = removeMember(occupantJid);
-
-                if (member == null)
-                {
-                    logger.error(
-                        "Kicked member does not exist: " + occupantJid);
-                    return;
-                }
-
-                notifyMemberKicked(member);
+                member = removeMember(occupantJid);
             }
+
+            if (member == null)
+            {
+                logger.error(
+                    "Kicked member does not exist: " + occupantJid);
+                return;
+            }
+
+            notifyMemberKicked(member);
         }
 
         @Override
