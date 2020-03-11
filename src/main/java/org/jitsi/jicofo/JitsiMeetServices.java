@@ -206,7 +206,7 @@ public class JitsiMeetServices
         {
             this.XMPPServerVersion = version;
 
-            logger.info("Detected XMPP server version: " + version);
+            logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
         }
         /*
         FIXME: pub-sub service auto-detect ?
