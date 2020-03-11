@@ -132,6 +132,8 @@ public class DiscoveryUtil
             return getDefaultParticipantFeatureSet();
         }
 
+        logger.info("Doing feature discovery for " + address);
+
         // Discover participant feature set
         List<String> participantFeatures = disco.getFeatures(address);
         if (participantFeatures == null)
@@ -150,6 +152,8 @@ public class DiscoveryUtil
                 .append(", features: ")
                 .append(String.join(", ", participantFeatures));
             logger.debug(sb);
+        } else {
+            logger.info("Successfully discovered features for " + address);
         }
 
         return participantFeatures;
