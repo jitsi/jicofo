@@ -335,8 +335,8 @@ public class Bridge
      */
     public double getStress()
     {
-        return Math.min(MAX_TOTAL_BITRATE_BPS,
-            (lastReportedBitrateKbps + videoStreamCountDiff * avgVideoStreamBitrateKbps)) / MAX_TOTAL_BITRATE_BPS;
+        double stress = (lastReportedBitrateKbps + videoStreamCountDiff * avgVideoStreamBitrateKbps) / MAX_TOTAL_BITRATE_BPS;
+        return Math.min(1, stress);
     }
 
     /**
