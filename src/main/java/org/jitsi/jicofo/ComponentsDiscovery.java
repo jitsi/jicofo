@@ -265,8 +265,11 @@ public class ComponentsDiscovery
                 Version version
                     = DiscoveryUtil.discoverVersion(connection, node, features);
 
+                String verStr
+                    = version != null
+                        ? version.getNameVersionOsString() : "null";
                 logger.info(
-                        "New component discovered: " + node + ", " + version);
+                    "New component discovered: " + node + ", " + verStr);
 
                 meetServices.newNodeDiscovered(node, features, version);
             }
