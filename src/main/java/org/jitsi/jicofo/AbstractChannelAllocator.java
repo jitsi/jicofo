@@ -293,7 +293,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             restartConference = true;
             faulty = true;
             logger.error("Failed to allocate channels, will consider the " +
-                    "bridge faulty.");
+                    "bridge faulty.", e);
         }
 
         // We only get here if we caught an exception.

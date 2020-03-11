@@ -1499,7 +1499,7 @@ public class JitsiMeetConferenceImpl
         }
 
         logger.info("Received session-accept from " +
-                        participant.getEndpointId() +
+                        participant.getMucJid() +
                         " with accepted sources:" + sourcesAdded);
 
         // Update channel info - we may miss update during conference restart,
@@ -1646,7 +1646,7 @@ public class JitsiMeetConferenceImpl
                     {
                         logger.warn(
                             "No jingle session yet for "
-                                + participant.getEndpointId());
+                                + participant.getMucJid());
 
                         participant.scheduleSourcesToAdd(sources);
                         participant

@@ -266,10 +266,12 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
         if (initiateSession)
         {
+            logger.info("Sending session-initiate to: " + address);
             ack = jingle.initiateSession(jingleIQ, meetConference);
         }
         else
         {
+            logger.info("Sending transport-replace to: " + address);
             // will throw OperationFailedExc if XMPP connection is broken
             ack = jingle.replaceTransport(jingleIQ, jingleSession);
         }
