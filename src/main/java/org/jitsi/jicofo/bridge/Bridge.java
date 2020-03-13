@@ -21,7 +21,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 import org.jitsi.jicofo.discovery.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
@@ -61,26 +60,17 @@ public class Bridge
     private final Jid jid;
 
     /**
-     * How many video streams are there on the bridge (as reported by the bridge
-     * itself).
+     * Estimates the number of new video streams added (or removed if negative)
+     * on this bridge by this jicofo instance since the last statistics update
+     * was received.
      */
-    private int videoStreamCount = 0;
-
-    /**
-     * Accumulates video stream count changes coming from
-     * {@link BridgeEvent#VIDEOSTREAMS_CHANGED} in order to estimate video
-     * stream count on the bridge. The value is included in the result
-     * returned by {@link #getEstimatedVideoStreamCount()} if not
-     * <tt>null</tt>.
-     *
-     * Is is set back to <tt>null</tt> when new value from the bridge
-     * arrives.
-     */
+    @SuppressWarnings("unused")
     private int videoStreamCountDiff = 0;
 
     /**
      * The last reported bitrate in Kbps.
      */
+    @SuppressWarnings("unused")
     private int lastReportedBitrateKbps = 0;
 
     /**
@@ -123,6 +113,11 @@ public class Bridge
      */
     void setStats(ColibriStatsExtension stats)
     {
+        // Reset the counter for video streams added/removed since the last
+        // stats update. TODO: this, if used at all, needs to not be tied to
+        // stats.
+        videoStreamCountDiff = 0;
+
         if (stats == null)
         {
             this.stats = EMPTY_STATS;
@@ -132,14 +127,6 @@ public class Bridge
             this.stats = ColibriStatsExtension.clone(stats);
         }
         stats = this.stats;
-
-        Integer videoStreamCount = stats.getValueAsInt(VIDEO_STREAMS);
-        if (videoStreamCount != null)
-        {
-            // We have extra logic for keeping track of the number of video
-            // streams.
-            setVideoStreamCount(videoStreamCount);
-        }
 
         Integer bitrateUpKbps = null;
         Integer bitrateDownKbps = null;
@@ -212,40 +199,6 @@ public class Bridge
         return stats.getValueAsString(RELAY_ID);
     }
 
-    /**
-     * Sets the stream count currently used.
-     * @param streamCount the stream count currently used.
-     */
-    private void setVideoStreamCount(int streamCount)
-    {
-        if (this.videoStreamCount != streamCount)
-        {
-            logger.info("Video stream count for: " + jid + ": " + streamCount);
-        }
-
-        int estimatedBefore = getEstimatedVideoStreamCount();
-
-        this.videoStreamCount = streamCount;
-
-        // The event for video streams count diff are processed on
-        // a single threaded queue and those will pile up during conference
-        // burst. Because of that "videoStreamCountDiff" must be cleared
-        // even if the was no change to the actual value.
-        // FIXME eventually add a timestamp and reject old events
-        if (videoStreamCountDiff != 0)
-        {
-            videoStreamCountDiff = 0;
-            logger.info(
-                "Reset video stream diff on " + this.jid
-                    + " video streams: " + this.videoStreamCount
-                    + " (estimation error: "
-                    // FIXME estimation error is often invalid wrong,
-                    // but not enough time to look into it now
-                    + (estimatedBefore - getEstimatedVideoStreamCount())
-                    + ")");
-        }
-    }
-
     public void setIsOperational(boolean isOperational)
     {
         this.isOperational = isOperational;
@@ -308,11 +261,6 @@ public class Bridge
         return this.lastReportedPacketRatePps - o.lastReportedPacketRatePps;
     }
 
-    private int getEstimatedVideoStreamCount()
-    {
-        return videoStreamCount + videoStreamCountDiff;
-    }
-
     void onVideoStreamsChanged(Integer videoStreamCount)
     {
         if (videoStreamCount == null || videoStreamCount == 0)
@@ -321,15 +269,7 @@ public class Bridge
             return;
         }
 
-        boolean adding = videoStreamCount > 0;
-
         videoStreamCountDiff += videoStreamCount;
-        logger.info(
-            (adding ? "Adding " : "Removing ") + Math.abs(videoStreamCount)
-                + " video streams on " + this.jid
-                + " video streams: " + this.videoStreamCount
-                + " diff: " + videoStreamCountDiff
-                + " (estimated: " + getEstimatedVideoStreamCount() + ")");
     }
 
     public Jid getJid()
