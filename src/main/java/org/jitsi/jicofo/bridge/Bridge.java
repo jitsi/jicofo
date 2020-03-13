@@ -258,7 +258,7 @@ public class Bridge
             return 1;
         }
 
-        return this.lastReportedPacketRatePps - o.lastReportedPacketRatePps;
+        return this.getLastReportedPacketRatePps() - o.getLastReportedPacketRatePps();
     }
 
     void onVideoStreamsChanged(Integer videoStreamCount)
