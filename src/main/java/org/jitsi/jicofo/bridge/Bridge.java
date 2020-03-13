@@ -302,4 +302,10 @@ public class Bridge
                      getRelayId(),
                      getRegion());
     }
+
+    public int getLastReportedPacketRatePps()
+    {
+        return lastReportedPacketRatePps;
+    }
+
 }
