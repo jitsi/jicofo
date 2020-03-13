@@ -307,8 +307,14 @@ public class BridgeSelectorTest
             new ColibriStatsExtension.Stat(
                 BITRATE_DOWNLOAD, bitrate));
         statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
+            new ColibriStatsExtension.Stat(
                 BITRATE_UPLOAD, bitrate));
+        statsExtension.addStat(
+            new ColibriStatsExtension.Stat(
+                PACKET_RATE_DOWNLOAD, bitrate));
+        statsExtension.addStat(
+            new ColibriStatsExtension.Stat(
+                PACKET_RATE_UPLOAD, bitrate));
 
         if (region != null)
         {

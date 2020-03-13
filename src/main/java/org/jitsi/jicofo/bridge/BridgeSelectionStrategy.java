@@ -41,9 +41,17 @@ abstract class BridgeSelectionStrategy
         {
             Bridge bridge
                 = selectInitial(bridges, participantRegion);
-            logger.info("Selected initial bridge " + bridge
-                    + " with packetRate=" + bridge.getLastReportedPacketRatePps()
-                    + " for participantRegion=" + participantRegion);
+            if (bridge != null)
+            {
+                logger.info("Selected initial bridge " + bridge
+                        + " with packetRate=" + bridge.getLastReportedPacketRatePps()
+                        + " for participantRegion=" + participantRegion);
+            }
+            else
+            {
+                logger.warn("Failed to select initial bridge for participantRegion="
+                        + participantRegion);
+            }
             return bridge;
         }
         else
@@ -63,9 +71,16 @@ abstract class BridgeSelectionStrategy
 
             Bridge bridge = doSelect(
                     bridges, conferenceBridges, participantRegion);
-            logger.info("Selected bridge " + bridge
-                    + " with packetRate=" + bridge.getLastReportedPacketRatePps()
-                    + " for participantRegion=" + participantRegion);
+            if (bridge != null)
+            {
+                logger.info("Selected bridge " + bridge
+                        + " with packetRate=" + bridge.getLastReportedPacketRatePps()
+                        + " for participantRegion=" + participantRegion);
+            }
+            else
+            {
+                logger.warn("Failed to select bridge for participantRegion=" + participantRegion);
+            }
             return bridge;
         }
     }
