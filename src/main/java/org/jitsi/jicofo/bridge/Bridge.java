@@ -84,6 +84,11 @@ public class Bridge
     private int lastReportedBitrateKbps = 0;
 
     /**
+     * The last reported packet rate in packets per second.
+     */
+    private int lastReportedPacketRatePps = 0;
+
+    /**
      * Holds bridge version (if known - not all bridge version are capable of
      * reporting it).
      */
@@ -140,6 +145,8 @@ public class Bridge
         Integer bitrateDownKbps = null;
         Integer octoReceiveBitrate = null;
         Integer octoSendBitrate = null;
+        Integer packetRateDown = null;
+        Integer packetRateUp = null;
         try
         {
             bitrateUpKbps = stats.getValueAsInt(BITRATE_UPLOAD);
@@ -147,6 +154,8 @@ public class Bridge
             octoReceiveBitrate
                     = stats.getValueAsInt(OCTO_RECEIVE_BITRATE);
             octoSendBitrate = stats.getValueAsInt(OCTO_SEND_BITRATE);
+            packetRateDown = stats.getValueAsInt(PACKET_RATE_DOWNLOAD);
+            packetRateUp = stats.getValueAsInt(PACKET_RATE_UPLOAD);
         }
         catch (NumberFormatException nfe)
         {
@@ -165,6 +174,11 @@ public class Bridge
             }
 
             lastReportedBitrateKbps = bitrate;
+        }
+
+        if (packetRateDown != null && packetRateUp != null)
+        {
+            lastReportedPacketRatePps = packetRateDown + packetRateUp;
         }
 
         setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
@@ -291,7 +305,7 @@ public class Bridge
             return 1;
         }
 
-        return this.lastReportedBitrateKbps - o.lastReportedBitrateKbps;
+        return this.lastReportedPacketRatePps - o.lastReportedPacketRatePps;
     }
 
     private int getEstimatedVideoStreamCount()
