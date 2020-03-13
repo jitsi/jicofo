@@ -53,6 +53,12 @@ public class Statistics
         json.put(TOTAL_CONFERENCES_CREATED, snapshot.totalConferencesCreated);
         json.put(PARTICIPANTS, snapshot.numParticipants);
         json.put(TOTAL_PARTICIPANTS, snapshot.totalNumParticipants);
+        json.put(BREWERY_JVB_COUNT, snapshot.bridgeCount);
+        json.put(BREWERY_JVB_OPERATIONAL_COUNT, snapshot.operationalBridgeCount);
+        json.put(BREWERY_JIGASI_SIP_COUNT, snapshot.jigasiSipCount);
+        json.put(BREWERY_JIGASI_TRANSCRIBER_COUNT, snapshot.jigasiTranscriberCount);
+        json.put(BREWERY_JIBRI_COUNT, snapshot.jibriCount);
+        json.put(BREWERY_JIBRI_SIP_COUNT, snapshot.sipJibriCount);
         JSONArray conferenceSizesJson = new JSONArray();
         for (int size : snapshot.conferenceSizes)
         {

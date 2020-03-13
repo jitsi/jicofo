@@ -697,4 +697,13 @@ public class BridgeSelector
         }
     }
 
+    public int getBridgeCount()
+    {
+        return bridges.size();
+    }
+
+    public int getOperationalBridgeCount()
+    {
+        return (int) bridges.values().stream().filter(Bridge::isOperational).count();
+    }
 }
