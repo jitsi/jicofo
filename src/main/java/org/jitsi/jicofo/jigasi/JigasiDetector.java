@@ -340,4 +340,14 @@ public class JigasiDetector
     {
         return bi.status != null ? bi.status.getValueAsInt(PARTICIPANTS): 0;
     }
+
+    public int getJigasiSipCount()
+    {
+        return (int) instances.stream().filter(i -> supportSip(i)).count();
+    }
+
+    public int getJigasiTranscriberCount()
+    {
+        return (int) instances.stream().filter(i -> supportTranscription(i)).count();
+    }
 }

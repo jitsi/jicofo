@@ -336,6 +336,11 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         onInstanceStatusChanged(instance.jid, extension);
     }
 
+    public int getInstanceCount()
+    {
+        return instances.size();
+    }
+
     /**
      * Notified for MUC service status update by providing its presence
      * extension.

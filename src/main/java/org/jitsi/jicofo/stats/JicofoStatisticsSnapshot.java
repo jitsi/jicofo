@@ -2,6 +2,9 @@ package org.jitsi.jicofo.stats;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.jigasi.*;
+import org.jitsi.jicofo.recording.jibri.*;
 
 /**
  * A snapshot of the current state of Jicofo, as well as
@@ -36,6 +39,36 @@ public class JicofoStatisticsSnapshot
      * The current number of participants on this Jicofo
      */
     public int numParticipants;
+
+    /**
+     * Number of jitsi-videobridge instances.
+     */
+    public int bridgeCount;
+
+    /**
+     * Number of jitsi-videobridge instances that are operational (not failed).
+     */
+    public int operationalBridgeCount;
+
+    /**
+     * Number of jigasi instances that support SIP.
+     */
+    public int jigasiSipCount;
+
+    /**
+     * Number of jigasi instances that support transcription.
+     */
+    public int jigasiTranscriberCount;
+
+    /**
+     * Number of jibri instances.
+     */
+    public int jibriCount;
+
+    /**
+     * Number of jibri instances for SIP.
+     */
+    public int sipJibriCount;
 
     public int[] conferenceSizes = new int[CONFERENCE_SIZE_BUCKETS];
 
@@ -77,6 +110,37 @@ public class JicofoStatisticsSnapshot
                 : snapshot.conferenceSizes.length - 1;
             snapshot.conferenceSizes[conferenceSizeIndex]++;
         }
+
+        BridgeSelector bridgeSelector
+                = focusManager.getJitsiMeetServices().getBridgeSelector();
+        if (bridgeSelector != null)
+        {
+            snapshot.bridgeCount = bridgeSelector.getBridgeCount();
+            snapshot.operationalBridgeCount = bridgeSelector.getOperationalBridgeCount();
+        }
+
+        JigasiDetector jigasiDetector
+                = focusManager.getJitsiMeetServices().getJigasiDetector();
+        if (jigasiDetector != null)
+        {
+            snapshot.jigasiSipCount = jigasiDetector.getJigasiSipCount();
+            snapshot.jigasiTranscriberCount = jigasiDetector.getJigasiTranscriberCount();
+        }
+
+        JibriDetector jibriDetector
+                = focusManager.getJitsiMeetServices().getJibriDetector();
+        if (jibriDetector != null)
+        {
+            snapshot.jibriCount = jibriDetector.getInstanceCount();
+        }
+
+        JibriDetector sipJibriDetector
+                = focusManager.getJitsiMeetServices().getSipJibriDetector();
+        if (sipJibriDetector != null)
+        {
+            snapshot.sipJibriCount = sipJibriDetector.getInstanceCount();
+        }
+
         return snapshot;
     }
 }
