@@ -5,6 +5,7 @@ import org.json.simple.*;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 
 import static org.glassfish.jersey.internal.guava.Predicates.not;
 
@@ -113,6 +114,10 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
+            logger.info("bridge_selected,rule=a1,bridge=" + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
+
             totalA1++;
         }
 
@@ -130,7 +135,8 @@ abstract class BridgeSelectionStrategy
      * @return
      */
     private Optional<Bridge> a2(List<Bridge> bridges,
-                        String participantRegion)
+                                List<Bridge> conferenceBridges,
+                                String participantRegion)
     {
         // NOTE that A2 is equivalent to B1 but we include it as a separate
         // step for clarity when comparing the code to the document that
@@ -143,6 +149,10 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
+            logger.info("bridge_selected,rule=a2,bridge=" + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
+
             totalA2++;
         }
 
@@ -160,7 +170,8 @@ abstract class BridgeSelectionStrategy
      * @return
      */
     private Optional<Bridge> b1(List<Bridge> bridges,
-                        String participantRegion)
+                                List<Bridge> conferenceBridges,
+                                String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
@@ -169,6 +180,10 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
+            logger.info("bridge_selected,rule=b1,bridge=" + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
+
             totalB1++;
         }
 
@@ -197,6 +212,9 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
+            logger.info("bridge_selected,rule=c1,bridge=" + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
             totalC1++;
         }
 
@@ -214,7 +232,8 @@ abstract class BridgeSelectionStrategy
      * @return
      */
     private Optional<Bridge> c2(List<Bridge> bridges,
-                        String participantRegion)
+                                List<Bridge> conferenceBridges,
+                                String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(inRegion(participantRegion))
@@ -222,6 +241,11 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
+
+            logger.info("bridge_selected,rule=c2,bridge="  + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
+
             totalC2++;
         }
 
@@ -238,7 +262,8 @@ abstract class BridgeSelectionStrategy
      * @return
      */
     private Optional<Bridge> d1(List<Bridge> bridges,
-                        List<Bridge> conferenceBridges)
+                                List<Bridge> conferenceBridges,
+                                String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
@@ -247,6 +272,9 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
+            logger.info("bridge_selected,rule=d1,bridge=" + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
             totalD1++;
         }
 
@@ -261,12 +289,17 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> d2(List<Bridge> bridges)
+    private Optional<Bridge> d2(List<Bridge> bridges,
+                                List<Bridge> conferenceBridges,
+                                String participantRegion)
     {
         Optional<Bridge> result = bridges.stream().findFirst();
 
         if (result.isPresent())
         {
+            logger.info("bridge_selected,rule=d2,bridge=" + result.get() +
+                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                "participant_region " + participantRegion);
             totalD2++;
         }
 
@@ -296,12 +329,12 @@ abstract class BridgeSelectionStrategy
         }
 
         return a1(bridges, conferenceBridges, participantRegion).orElse(
-            a2(bridges, participantRegion).orElse(
-                b1(bridges, participantRegion).orElse(
+            a2(bridges, conferenceBridges, participantRegion).orElse(
+                b1(bridges, conferenceBridges, participantRegion).orElse(
                     c1(bridges, conferenceBridges, participantRegion).orElse(
-                        c2(bridges, participantRegion).orElse(
-                            d1(bridges, conferenceBridges).orElse(
-                                d2(bridges).orElse(null)))))));
+                        c2(bridges, conferenceBridges, participantRegion).orElse(
+                            d1(bridges, conferenceBridges, participantRegion).orElse(
+                                d2(bridges, conferenceBridges, participantRegion).orElse(null)))))));
     }
 
     /**
