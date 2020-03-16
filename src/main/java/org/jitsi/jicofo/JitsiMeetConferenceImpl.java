@@ -931,6 +931,7 @@ public class JitsiMeetConferenceImpl
         {
             return
                 bridges.stream()
+                    .filter(session -> !session.hasFailed && session.bridge.isOperational())
                     .map(bridge -> bridge.bridge.getRelayId())
                     .filter(Objects::nonNull)
                     .filter(bridge -> !bridge.equals(exclude))
