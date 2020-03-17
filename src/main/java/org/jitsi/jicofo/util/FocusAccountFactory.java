@@ -19,6 +19,7 @@ package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
+import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
@@ -40,6 +41,7 @@ public class FocusAccountFactory
      * <tt>domain</tt> which uses anonymous login method.
      *
      * @param serverAddress XMPP server address.
+     * @param serverPort XMPP server port(5222 by default).
      * @param domain name of the XMPP domain on which the focus will register.
      * @param userName user name used by the focus user.
      *
@@ -47,6 +49,7 @@ public class FocusAccountFactory
      */
     public static Map<String, String> createFocusAccountProperties(
             String serverAddress,
+            String serverPort,
             DomainBareJid domain,
             Resourcepart userName)
     {
@@ -67,7 +70,13 @@ public class FocusAccountFactory
 
         properties.put(ProtocolProviderFactory.USER_ID, userID);
         properties.put(ProtocolProviderFactory.SERVER_ADDRESS, serverAddress);
-        properties.put(ProtocolProviderFactory.SERVER_PORT, "5222");
+
+        if (StringUtils.isNullOrEmpty(serverPort, true)) {
+            properties.put(ProtocolProviderFactory.SERVER_PORT, "5222");
+        } else {
+            properties.put(ProtocolProviderFactory.SERVER_PORT, serverPort.trim());
+        }
+
 
         // This is used as the multi user chat nick when joining the room
         properties.put(ProtocolProviderFactory.DISPLAY_NAME, userName.toString());
@@ -128,6 +137,7 @@ public class FocusAccountFactory
      *  the room).
      *
      * @param serverAddress XMPP server address.
+     * @param serverPort XMPP server port(5222 by default).
      * @param domain name of the XMPP domain on which the focus will register.
      * @param userName the nickname used by the focus in MUC room
      *                 (also used as login name).
@@ -137,13 +147,17 @@ public class FocusAccountFactory
      */
     public static Map<String, String> createFocusAccountProperties(
             String serverAddress,
+            String serverPort,
             DomainBareJid domain,
             Resourcepart userName,
             String password)
     {
         Map<String, String> properties
             = createFocusAccountProperties(
-                    serverAddress, domain, userName);
+                    serverAddress,
+                    serverPort,
+                    domain,
+                    userName);
 
         properties.put(
                 ProtocolProviderFactory.AUTHORIZATION_NAME,

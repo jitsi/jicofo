@@ -107,6 +107,11 @@ public class JitsiMeetServices
     private final DomainBareJid jicofoUserDomain;
 
     /**
+     * The {@link ProtocolProviderHandler} for JVB XMPP connection.
+     */
+    private final ProtocolProviderHandler jvbBreweryProtocolProvider;
+
+    /**
      * The {@link ProtocolProviderHandler} for Jicofo XMPP connection.
      */
     private final ProtocolProviderHandler protocolProvider;
@@ -142,15 +147,20 @@ public class JitsiMeetServices
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo
      *        XMPP connection.
+     * @param jvbMucProtocolProvider {@link ProtocolProviderHandler} for JVB
+     *        XMPP connection.
      * @param jicofoUserDomain the name of the XMPP domain to which Jicofo user
      */
     public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
+                             ProtocolProviderHandler jvbMucProtocolProvider,
                              DomainBareJid jicofoUserDomain)
     {
         super(new String[] { BridgeEvent.HEALTH_CHECK_FAILED });
 
         Objects.requireNonNull(
             protocolProviderHandler, "protocolProviderHandler");
+        Objects.requireNonNull(
+            jvbMucProtocolProvider, "jvbMucProtocolProvider");
 
         OperationSetSubscription subscriptionOpSet
             = protocolProviderHandler.getOperationSet(
@@ -160,6 +170,7 @@ public class JitsiMeetServices
 
         this.jicofoUserDomain = jicofoUserDomain;
         this.protocolProvider = protocolProviderHandler;
+        this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
         this.bridgeSelector = new BridgeSelector(subscriptionOpSet);
     }
 
@@ -390,7 +401,9 @@ public class JitsiMeetServices
         {
             BridgeMucDetector bridgeMucDetector
                 = new BridgeMucDetector(
-                    protocolProvider, bridgeBreweryName, bridgeSelector);
+                    jvbBreweryProtocolProvider,
+                    bridgeBreweryName,
+                    bridgeSelector);
             logger.info(
                 "Using a Bridge MUC detector with MUC: " + bridgeBreweryName);
 

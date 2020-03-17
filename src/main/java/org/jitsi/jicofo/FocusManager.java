@@ -22,6 +22,7 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
@@ -89,6 +90,12 @@ public class FocusManager
      */
     public static final String XMPP_DOMAIN_PNAME
         = "org.jitsi.jicofo.XMPP_DOMAIN";
+
+    /**
+     * The XMPP port for the main Jicofo user's XMPP connection.
+     */
+    public static final String XMPP_PORT_PNAME
+        = "org.jitsi.jicofo.XMPP_PORT";
 
     /**
      * The name of the configuration property that specifies XMPP domain of
@@ -214,6 +221,13 @@ public class FocusManager
     private JitsiMeetServices jitsiMeetServices;
 
     /**
+     * The XMPP connection provider that will be used to detect JVB's and
+     * allocate channels.
+     * See {@link BridgeMucDetector#tryLoadingJvbXmppProvider(ConfigurationService)}.
+     */
+    private ProtocolProviderHandler jvbProtocolProvider;
+
+    /**
      * Observes and discovers JVB instances and other conference components on
      * our XMPP domain.
      */
@@ -257,13 +271,31 @@ public class FocusManager
                 config.getString(FOCUS_USER_NAME_PNAME));
 
         String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
+        String xmppServerPort = config.getString(XMPP_PORT_PNAME);
 
         protocolProviderHandler.start(
-            hostName, focusUserDomain, focusUserPassword, focusUserName);
+            hostName,
+            xmppServerPort,
+            focusUserDomain,
+            focusUserPassword,
+            focusUserName);
+
+        jvbProtocolProvider = BridgeMucDetector.tryLoadingJvbXmppProvider(config);
+
+        if (jvbProtocolProvider == null) {
+            logger.warn(
+                "No dedicated JVB MUC XMPP connection configured"
+                    + " - falling back to the default XMPP connection");
+            jvbProtocolProvider = protocolProviderHandler;
+        } else {
+            logger.info("Using dedicated XMPP connection for JVB MUC: " + jvbProtocolProvider);
+            jvbProtocolProvider.register();
+        }
 
         jitsiMeetServices
             = new JitsiMeetServices(
                     protocolProviderHandler,
+                    jvbProtocolProvider,
                     focusUserDomain);
         jitsiMeetServices.start(bundleContext);
 
@@ -462,7 +494,10 @@ public class FocusManager
         String id = generateConferenceId();
         JitsiMeetConferenceImpl conference
             = new JitsiMeetConferenceImpl(
-                    room, focusUserName, protocolProviderHandler,
+                    room,
+                    focusUserName,
+                    protocolProviderHandler,
+                    jvbProtocolProvider,
                     this, config, globalConfig, logLevel,
                     id, includeInStatistics);
 
