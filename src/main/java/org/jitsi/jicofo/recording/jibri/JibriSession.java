@@ -299,8 +299,13 @@ public class JibriSession
             xmpp.sendIqWithResponseCallback(
                     stopRequest,
                     stanza -> {
-                        JibriIq resp = (JibriIq)stanza;
-                        processJibriIqFromJibri(resp);
+                        if (stanza instanceof JibriIq) {
+                            processJibriIqFromJibri((JibriIq) stanza);
+                        } else {
+                            logger.error(
+                                "Unexpected response to stop iq: "
+                                + (stanza != null ? stanza.toXML() : "null"));
+                        }
                     },
                     exception -> {
                         logger.error(
@@ -452,8 +457,16 @@ public class JibriSession
 
         try
         {
-            JibriIq result = (JibriIq)xmpp.sendPacketAndGetReply(startIq);
-            processJibriIqFromJibri(result);
+            IQ reply = xmpp.sendPacketAndGetReply(startIq);
+
+            if (reply instanceof JibriIq)
+            {
+                processJibriIqFromJibri((JibriIq) reply);
+            } else {
+                logger.error(
+                    "Unexpected response to start request: "
+                            + (reply != null ? reply.toXML() : "null"));
+            }
         }
         catch (OperationFailedException e)
         {
