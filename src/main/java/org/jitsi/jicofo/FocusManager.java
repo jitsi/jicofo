@@ -738,6 +738,14 @@ public class FocusManager
     }
 
     /**
+     * Returns {@link ProtocolProviderService} for the JVB XMPP connection.
+     */
+    public ProtocolProviderService getJvbProtocolProvider()
+    {
+        return jvbProtocolProvider.getProtocolProvider();
+    }
+
+    /**
      * Interface used to listen for focus lifecycle events.
      */
     public interface FocusAllocationListener

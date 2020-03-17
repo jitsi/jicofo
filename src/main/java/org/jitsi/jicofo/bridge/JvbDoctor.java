@@ -182,10 +182,11 @@ public class JvbDoctor
         this.executorServiceRef
             = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
 
-        // We assume that in Jicofo there is only one XMPP provider running at a
-        // time.
+        FocusManager focusManager
+            = ServiceUtils.getService(osgiBc, FocusManager.class);
+
         protocolProvider
-            = ServiceUtils.getService(osgiBc, ProtocolProviderService.class);
+            = focusManager.getJvbProtocolProvider();
 
         Objects.requireNonNull(protocolProvider, "protocolProvider");
 
