@@ -1160,7 +1160,7 @@ public class ChatRoomImpl
         }
 
         ChatMemberImpl chatMember;
-        boolean memberIsNew = false;
+        boolean memberJoined = false;
 
         synchronized (members)
         {
@@ -1176,7 +1176,7 @@ public class ChatRoomImpl
                         logger.debug("Joined " + jid + " room: " + roomJid);
                     }
                     chatMember = addMember(jid);
-                    memberIsNew = true;
+                    memberJoined = true;
                 }
                 else
                 {
@@ -1195,7 +1195,7 @@ public class ChatRoomImpl
         {
             chatMember.processPresence(presence);
 
-            if (memberIsNew)
+            if (memberJoined)
             {
                 // Trigger member "joined"
                 notifyMemberJoined(chatMember);
