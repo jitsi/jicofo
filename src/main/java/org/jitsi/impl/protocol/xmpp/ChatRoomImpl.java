@@ -1161,6 +1161,7 @@ public class ChatRoomImpl
 
         ChatMemberImpl chatMember;
         boolean memberJoined = false;
+        boolean memberLeft = false;
 
         synchronized (members)
         {
@@ -1180,14 +1181,16 @@ public class ChatRoomImpl
                 }
                 else
                 {
-                    // It is not clear to me whether the first presence from
-                    // a member necessarily needs to have type "available", but
-                    // this has worked so far and I don't want to change it.
-
                     // We received presence from an unknown member which doesn't
                     // look like a new member's presence. Ignore it.
+                    // The member might have been just removed via left(), which
+                    // is fine.
                     return;
                 }
+            }
+            else if (presence.getType().equals(Presence.Type.unavailable))
+            {
+                memberLeft = true;
             }
         }
 
@@ -1200,8 +1203,17 @@ public class ChatRoomImpl
                 // Trigger member "joined"
                 notifyMemberJoined(chatMember);
             }
+            else if (memberLeft)
+            {
+                // In some cases smack fails to call left(). We'll call it here
+                // any time we receive presence unavailable
+                memberListener.left(jid);
+            }
 
-            notifyMemberPropertyChanged(chatMember);
+            if (!memberLeft)
+            {
+                notifyMemberPropertyChanged(chatMember);
+            }
         }
     }
 
@@ -1282,6 +1294,10 @@ public class ChatRoomImpl
             }
         }
 
+        /**
+         * This needs to be prepared to run twice for the same member.
+         * @param occupantJid
+         */
         @Override
         public void left(EntityFullJid occupantJid)
         {
@@ -1303,7 +1319,7 @@ public class ChatRoomImpl
             }
             else
             {
-                logger.warn(
+                logger.info(
                     "Member left event for non-existing member: "
                                 + occupantJid);
             }
