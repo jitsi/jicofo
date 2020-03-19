@@ -834,6 +834,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Get a stream of those bridges which are operational.
+     * Caller should be synchronized on bridges.
+     */
+    private Stream<BridgeSession> operationalBridges()
+    {
+        return bridges.stream().
+            filter(session -> !session.hasFailed && session.bridge.isOperational());
+    }
+
+    /**
      * Invites a {@link Participant} to the conference. Selects the
      * {@link BridgeSession} to use and starts a new {@link
      * ParticipantChannelAllocator} to allocate COLIBRI channels and initiate
@@ -881,7 +891,7 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridges.size()));
 
-                if (bridges.size() >= 2)
+                if (operationalBridges().count() >= 2)
                 {
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
@@ -928,7 +938,8 @@ public class JitsiMeetConferenceImpl
                                  ". All relays:" + allRelays);
             }
 
-            bridges.forEach(bridge -> bridge.setRelays(allRelays));
+            operationalBridges().
+                forEach(bridge -> bridge.setRelays(allRelays));
         }
     }
 
@@ -942,8 +953,7 @@ public class JitsiMeetConferenceImpl
         synchronized (bridges)
         {
             return
-                bridges.stream()
-                    .filter(session -> !session.hasFailed && session.bridge.isOperational())
+                operationalBridges()
                     .map(bridge -> bridge.bridge.getRelayId())
                     .filter(Objects::nonNull)
                     .filter(bridge -> !bridge.equals(exclude))
@@ -1689,7 +1699,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (bridges)
         {
-            bridges.stream()
+            operationalBridges()
                 .filter(bridge -> !bridge.equals(exclude))
                 .forEach(
                     bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
@@ -1974,7 +1984,7 @@ public class JitsiMeetConferenceImpl
 
         synchronized (bridges)
         {
-            bridges.stream()
+            operationalBridges()
                 .filter(bridge -> !bridge.equals(bridgeSession))
                 .forEach(
                     bridge -> bridge.removeSourcesFromOcto(
