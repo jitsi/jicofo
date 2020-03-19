@@ -62,6 +62,12 @@ import static org.jivesoftware.smack.SmackException.*;
 public class XmppProtocolProvider
     extends AbstractProtocolProviderService
 {
+    static
+    {
+        XMPPTCPConnection.setUseStreamManagementResumptionDefault(false);
+        XMPPTCPConnection.setUseStreamManagementDefault(false);
+    }
+
     /**
      * The logger used by this class.
      */
