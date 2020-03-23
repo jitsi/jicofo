@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.bridge;
 import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.impl.*;
@@ -157,32 +158,23 @@ public class BridgeSelectionStrategyTest
 
     private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers, String region)
     {
-        MaxBitrateCalculator maxBitrateCalculator = new MaxBitrateCalculator(
+        MaxPacketRateCalculator maxPacketRateCalculator = new MaxPacketRateCalculator(
             4 /* numberOfConferenceBridges */,
             20 /* numberOfGlobalSenders */,
             2 /* numberOfSpeakers */
         );
 
-        int maxDownload = maxBitrateCalculator.computeMaxDownload(numberOfLocalSenders)
-            , maxUpload = maxBitrateCalculator.computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers)
-            , maxOctoSendBitrate = maxBitrateCalculator.computeMaxOctoSendBitrate(numberOfLocalSenders)
-            , maxOctoReceiveBitrate = maxBitrateCalculator.computeMaxOctoReceiveBitrate(numberOfLocalSenders);
+        int maxDownload = maxPacketRateCalculator.computeMaxDownload(numberOfLocalSenders)
+            , maxUpload = maxPacketRateCalculator.computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers);
 
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_DOWNLOAD, maxDownload));
+                PACKET_RATE_DOWNLOAD, maxDownload));
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_UPLOAD, maxUpload));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                OCTO_RECEIVE_BITRATE, maxOctoReceiveBitrate));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                OCTO_SEND_BITRATE, maxOctoSendBitrate));
-
+                PACKET_RATE_UPLOAD, maxUpload));
 
         if (region != null)
         {

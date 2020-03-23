@@ -707,7 +707,7 @@ public class BridgeSelector
     {
         return (int) bridges.values().stream().filter(Bridge::isOperational).count();
     }
-    
+
     public JSONObject getStats()
     {
         JSONObject json = new JSONObject();

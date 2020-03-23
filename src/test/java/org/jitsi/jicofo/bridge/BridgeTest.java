@@ -1,5 +1,6 @@
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
@@ -25,57 +26,49 @@ public class BridgeTest
         // advance whether a participant will be sendrecv or a recvonly.
 
         bridge.setStats(createJvbStats(0 /* numOf local senders */, 0 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.14, .05);
+        Assert.assertEquals(0.0, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(5 /* numOf local senders */, 0 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.34, .05);
+        Assert.assertEquals(0.19, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(5 /* numOf local senders */, 5 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.4, .05);
+        Assert.assertEquals(0.35, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(10 /* numOf local senders */, 5 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.6, .05);
+        Assert.assertEquals(0.54, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(10 /* numOf local senders */, 10 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.66, .05);
+        Assert.assertEquals(0.69, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(15 /* numOf local senders */, 10 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.86, .05);
+        Assert.assertEquals(.89, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(20 /* numOf local senders */, 5 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 1.0, .05);
+        Assert.assertEquals(.94, bridge.getStress(), .05);
 
         bridge.setStats(createJvbStats(5 /* numOf local senders */, 20 /* numOf local receivers */));
-        Assert.assertEquals(bridge.getStress(), 0.58, .05);
+        Assert.assertEquals(.78, bridge.getStress(), .05);
     }
 
     private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers)
     {
-        MaxBitrateCalculator maxBitrateCalculator = new MaxBitrateCalculator(
+        MaxPacketRateCalculator maxPacketRateCalculator = new MaxPacketRateCalculator(
             4 /* numberOfConferenceBridges */,
             20 /* numberOfGlobalSenders */,
             2 /* numberOfSpeakers */
         );
 
-        int maxDownload = maxBitrateCalculator.computeMaxDownload(numberOfLocalSenders)
-            , maxUpload = maxBitrateCalculator.computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers)
-            , maxOctoSendBitrate = maxBitrateCalculator.computeMaxOctoSendBitrate(numberOfLocalSenders)
-            , maxOctoReceiveBitrate = maxBitrateCalculator.computeMaxOctoReceiveBitrate(numberOfLocalSenders);
+        int maxDownload = maxPacketRateCalculator.computeMaxDownload(numberOfLocalSenders)
+            , maxUpload = maxPacketRateCalculator.computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers);
 
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_DOWNLOAD, maxDownload));
+                PACKET_RATE_DOWNLOAD, maxDownload));
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_UPLOAD, maxUpload));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                OCTO_RECEIVE_BITRATE, maxOctoReceiveBitrate));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                OCTO_SEND_BITRATE, maxOctoSendBitrate));
+                PACKET_RATE_UPLOAD, maxUpload));
 
         return statsExtension;
     }

@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
@@ -50,17 +51,23 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * A conservative estimate of the average bitrate (in kbps) of a video
+     * A conservative estimate of the average packet rate (in kbps) of a video
      * stream flowing through the bridge.
      */
-    private static final int avgVideoStreamBitrateKbps = 1000;
+    private static final int avgVideoStreamPacketRatePps = 500;
 
     /**
      * This is the worst case scenario that the bridge must be able to handle
      * for a 100-peeps call: 20 local senders and 5 local receivers. Most bits
      * are wasted in octo traffic.
      */
-    private static final double MAX_TOTAL_BITRATE_BPS = 560_000;
+    private static final double MAX_TOTAL_PACKET_RATE_PPS;
+
+    static
+    {
+        MaxPacketRateCalculator calc = new MaxPacketRateCalculator(2, 20, 5);
+        MAX_TOTAL_PACKET_RATE_PPS = calc.computeMaxDownload(20) + calc.computeMaxUpload(20, 5);
+    }
 
     /**
      * The stress-level beyond which we consider a bridge to be
@@ -83,7 +90,6 @@ public class Bridge
      * on this bridge by this jicofo instance since the last statistics update
      * was received.
      */
-    @SuppressWarnings("unused")
     private int videoStreamCountDiff = 0;
 
     /**
@@ -335,7 +341,7 @@ public class Bridge
      */
     public double getStress()
     {
-        double stress = (lastReportedBitrateKbps + videoStreamCountDiff * avgVideoStreamBitrateKbps) / MAX_TOTAL_BITRATE_BPS;
+        double stress = (lastReportedPacketRatePps + videoStreamCountDiff * avgVideoStreamPacketRatePps) / MAX_TOTAL_PACKET_RATE_PPS;
         return Math.min(1, stress);
     }
 

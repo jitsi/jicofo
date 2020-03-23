@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.bridge;
+package org.jitsi.jicofo.util;
 
 import java.util.*;
 
-class MaxBitrateCalculator
+public class MaxPacketRateCalculator
 {
-    public MaxBitrateCalculator(int numberOfConferenceBridges, int numberOfGlobalSenders, int numberOfSpeakers)
+    public MaxPacketRateCalculator(int numberOfConferenceBridges, int numberOfGlobalSenders, int numberOfSpeakers)
     {
         this.numberOfConferenceBridges = numberOfConferenceBridges;
         this.numberOfGlobalSenders = numberOfGlobalSenders;
@@ -31,15 +31,16 @@ class MaxBitrateCalculator
     private final int numberOfSpeakers;
 
     /**
-     * 30 kbps for audio, 150 kbps for 180p, 500kbps for 360p and 3200kbps for
+     * 30pps for audio, 50pps for 180p, 100pps for 360p and 250pps for
      * 720p.
      */
-    private int[] bitratesKbps = { 50, 200, 500, 3200 };
+    private final int[] packetRatePps = { 30, 50, 100, 250 };
 
     /**
      * Assuming a 100 peeps conference with 20 senders, computes the (max) total
-     * bitrate of a bridge that hosts numberOfLocalSenders local senders, numberOfLocalReceivers local receivers and the
-     * remaining octo participants.
+     * packet rate of a bridge that hosts numberOfLocalSenders local senders,
+     * numberOfLocalReceivers local receivers and the remaining octo
+     * participants.
      *
      * @param numberOfLocalSenders the local senders
      * @param numberOfLocalReceivers the local receivers
@@ -51,24 +52,24 @@ class MaxBitrateCalculator
         // regardless of the participant distribution, in a 100 people call each
         // sender receivers 19 other senders.
         return (numberOfLocalSenders + numberOfLocalReceivers)
-            * (numberOfSpeakers * bitratesKbps[0] + (numberOfGlobalSenders - 2) * bitratesKbps[1] + bitratesKbps[3]);
+            * (numberOfSpeakers * packetRatePps[0] + (numberOfGlobalSenders - 2) * packetRatePps[1] + packetRatePps[3]);
     }
     public int computeMaxDownload(int numberOfLocalSenders)
     {
         // regardless of the participant distribution, in a 100 people call each
         // sender receivers 19 other senders.
-        return numberOfLocalSenders*Arrays.stream(bitratesKbps).sum();
+        return numberOfLocalSenders*Arrays.stream(packetRatePps).sum();
     }
 
     public int computeMaxOctoSendBitrate(int numberOfLocalSenders)
     {
-        // the octo bitrate depends on how many local senders there are.
+        // the octo packet rate depends on how many local senders there are.
         return numberOfConferenceBridges * computeMaxDownload(numberOfLocalSenders);
     }
 
     public int computeMaxOctoReceiveBitrate(int numberOfLocalSenders)
     {
-        // the octo bitrate depends on how many local senders there are.
+        // the octo packet rate depends on how many local senders there are.
         return computeMaxDownload(numberOfGlobalSenders - numberOfLocalSenders);
     }
 
