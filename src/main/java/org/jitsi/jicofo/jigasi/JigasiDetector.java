@@ -94,7 +94,7 @@ public class JigasiDetector
     public Jid selectTranscriber(
         List<Jid> exclude, Collection<String> preferredRegions)
     {
-        return this.selectJigasi(
+        return JigasiDetector.selectJigasi(
             instances, exclude, preferredRegions, localRegion, true);
     }
 
