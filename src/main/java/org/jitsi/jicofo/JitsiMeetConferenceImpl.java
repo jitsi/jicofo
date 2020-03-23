@@ -2095,7 +2095,7 @@ public class JitsiMeetConferenceImpl
      */
     private MediaSourceMap getAllSources()
     {
-        return getAllSources(Collections.EMPTY_LIST);
+        return getAllSources(Collections.emptyList());
     }
 
     /**
@@ -2148,7 +2148,7 @@ public class JitsiMeetConferenceImpl
      */
     private MediaSourceGroupMap getAllSourceGroups()
     {
-        return getAllSourceGroups(Collections.EMPTY_LIST);
+        return getAllSourceGroups(Collections.emptyList());
     }
 
     /**
@@ -2427,7 +2427,7 @@ public class JitsiMeetConferenceImpl
      */
     void onBridgeDown(Jid bridgeJid)
     {
-        List<Participant> participantsToReinvite = Collections.EMPTY_LIST;
+        List<Participant> participantsToReinvite = Collections.emptyList();
 
         synchronized (bridges)
         {
