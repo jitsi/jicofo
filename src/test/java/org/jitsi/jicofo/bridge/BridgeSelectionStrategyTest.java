@@ -164,8 +164,8 @@ public class BridgeSelectionStrategyTest
             2 /* numberOfSpeakers */
         );
 
-        int maxDownload = maxPacketRateCalculator.computeMaxDownload(numberOfLocalSenders)
-            , maxUpload = maxPacketRateCalculator.computeMaxUpload(numberOfLocalSenders, numberOfLocalReceivers);
+        int maxDownload = maxPacketRateCalculator.computeIngressPacketRatePps(numberOfLocalSenders)
+            , maxUpload = maxPacketRateCalculator.computeEgressPacketRatePps(numberOfLocalSenders, numberOfLocalReceivers);
 
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 

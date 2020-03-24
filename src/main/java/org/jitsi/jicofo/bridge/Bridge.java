@@ -54,19 +54,25 @@ public class Bridge
      * A conservative estimate of the average packet rate (in kbps) of a video
      * stream flowing through the bridge.
      */
-    private static final int avgVideoStreamPacketRatePps = 500;
+    private static final int AVG_VIDEO_STREAM_PACKET_RATE_PPS = 500;
 
     /**
      * This is the worst case scenario that the bridge must be able to handle
-     * for a 100-peeps call: 20 local senders and 5 local receivers. Most bits
-     * are wasted in octo traffic.
+     * in a 100-peeps call with 20 local senders and 5 local receivers.
      */
     private static final double MAX_TOTAL_PACKET_RATE_PPS;
 
     static
     {
-        MaxPacketRateCalculator calc = new MaxPacketRateCalculator(2, 20, 5);
-        MAX_TOTAL_PACKET_RATE_PPS = calc.computeMaxDownload(20) + calc.computeMaxUpload(20, 5);
+        MaxPacketRateCalculator calc = new MaxPacketRateCalculator(
+            2 /* numberOfConferenceBridges */,
+            20 /* numberOfGlobalSenders */,
+            5 /* numberOfSpeakers */
+        );
+
+        MAX_TOTAL_PACKET_RATE_PPS =
+            calc.computeIngressPacketRatePps(20 /* numberOfLocalSenders */)
+                + calc.computeEgressPacketRatePps(20 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */);
     }
 
     /**
@@ -341,7 +347,7 @@ public class Bridge
      */
     public double getStress()
     {
-        double stress = (lastReportedPacketRatePps + videoStreamCountDiff * avgVideoStreamPacketRatePps) / MAX_TOTAL_PACKET_RATE_PPS;
+        double stress = (lastReportedPacketRatePps + videoStreamCountDiff * AVG_VIDEO_STREAM_PACKET_RATE_PPS) / MAX_TOTAL_PACKET_RATE_PPS;
         return Math.min(1, stress);
     }
 
