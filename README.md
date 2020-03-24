@@ -87,18 +87,18 @@ from anonymous domain. Here's what has to be configured:
 
     (If you have installed jitsi-meet from the Debian package, these changes should be made in `/etc/prosody/conf.avail/[your-hostname].cfg.lua`)
 
-    a) Enable authentication on your main domain:<br/>
+    a) Enable authentication on your main domain:
 
         VirtualHost "jitsi-meet.example.com"
             authentication = "internal_plain"
 
-    b) Add new virtual host with anonymous login method for guests:<br/>
+    b) Add new virtual host with anonymous login method for guests:
 
         VirtualHost "guest.jitsi-meet.example.com"
             authentication = "anonymous"
             c2s_require_encryption = false
 
-2.  In Jitsi Meet config.js configure `anonymousdomain`:<br/>
+2.  In Jitsi Meet config.js configure `anonymousdomain`:
 
     (If you have installed jitsi-meet from the Debian package, these changes should be made in `/etc/jitsi/meet/[your-hostname]-config.js`)
 
