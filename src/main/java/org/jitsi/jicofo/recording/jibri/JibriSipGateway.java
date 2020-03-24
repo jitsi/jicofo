@@ -28,6 +28,8 @@ import org.jivesoftware.smack.packet.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
+
 /**
  * A Jibri SIP gateway that manages SIP calls for single conference. Relies on
  * the information provided by {@link JibriDetector} to tell whether any Jibris
@@ -144,30 +146,39 @@ public class JibriSipGateway
                         displayName, null, null, sessionId, null,
                         classLogger);
             sipSessions.put(sipAddress, jibriSession);
-            // Try starting Jibri
-            if (jibriSession.start())
+
+            try
             {
+                jibriSession.start();
                 logger.info("Started Jibri session");
+
                 return JibriIq.createResult(iq, sessionId);
             }
-            else
+            catch (StartException exc)
             {
-                logger.info("Failed to start a Jibri session");
+                String reason = exc.getReason();
+                logger.info(
+                    "Failed to start a Jibri session: "  +  reason, exc);
                 sipSessions.remove(sipAddress);
                 ErrorIQ errorIq;
-                if (jibriDetector.isAnyInstanceConnected())
+                if (StartException.ALL_BUSY.equals(reason))
                 {
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.resource_constraint,
                             "all Jibris are busy");
                 }
-                else
+                else if(StartException.NOT_AVAILABLE.equals(reason))
                 {
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.service_unavailable,
                             "no Jibri instances available");
+                } else {
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.internal_server_error,
+                            reason);
                 }
                 return errorIq;
             }

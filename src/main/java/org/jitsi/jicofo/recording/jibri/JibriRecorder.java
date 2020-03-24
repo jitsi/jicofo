@@ -28,6 +28,8 @@ import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;
 
+import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
+
 /**
  * Handles conference recording through Jibri.
  * Waits for updates from {@link JibriDetector} about recorder instance
@@ -148,36 +150,49 @@ public class JibriRecorder
                     jibriDetector,
                     false, null, displayName, streamID, youTubeBroadcastId, sessionId, applicationData,
                     classLogger);
-            if (jibriSession.start())
+
+            try
             {
+                jibriSession.start();
                 logger.info("Started Jibri session");
+
                 return JibriIq.createResult(iq, sessionId);
             }
-            else
+            catch (JibriSession.StartException exc)
             {
                 ErrorIQ errorIq;
-                if (jibriDetector.isAnyInstanceConnected())
+                String reason = exc.getReason();
+
+                if (StartException.ALL_BUSY.equals(reason))
                 {
                     logger.info("Failed to start a Jibri session, " +
-                        "all Jibris were busy");
+                                        "all Jibris were busy");
                     errorIq = ErrorResponse.create(
-                        iq,
-                        XMPPError.Condition.resource_constraint,
-                        "all Jibris are busy");
+                            iq,
+                            XMPPError.Condition.resource_constraint,
+                            "all Jibris are busy");
+                }
+                else if (StartException.NOT_AVAILABLE.equals(reason))
+                {
+                    logger.info("Failed to start a Jibri session, " +
+                                        "no Jibris available");
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.service_unavailable,
+                            "no Jibri instances available");
                 }
                 else
                 {
-                    logger.info("Failed to start a Jibri session, " +
-                        "no Jibris available");
+                    logger.info(
+                        "Failed to start a Jibri session:" + reason, exc);
                     errorIq = ErrorResponse.create(
-                        iq,
-                        XMPPError.Condition.service_unavailable,
-                        "no Jibri instances available");
+                            iq,
+                            XMPPError.Condition.internal_server_error,
+                            reason);
                 }
                 jibriSession = null;
                 return errorIq;
             }
-
         }
         else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
         {
