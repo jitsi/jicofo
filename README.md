@@ -157,7 +157,7 @@ store by:
 
 ### On Linux
 
-    sudo cp cert.pem /usr/local/share/ca-certificates/ 
+    sudo cp cert.pem /usr/local/share/ca-certificates/
     sudo update-ca-certificates
 
 ### On MacOS X
@@ -169,4 +169,4 @@ does not work. Add it to the Java keystore with:
 Note, if the XMPP server you are connecting to is a Prosody instance
 configured with the jitsi-meet scripts, then you can find the certificate in:
 
-    /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
+    /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt
