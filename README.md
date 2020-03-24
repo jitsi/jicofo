@@ -74,7 +74,7 @@ If we use `focus.jitsi.example.com` where `jitsi.example.com` is our main domain
 - `--secret=SECRET` sets the shared secret used to authenticate focus component to the XMPP server
 - `--user_domain=DOMAIN` specifies the name of XMPP domain used by the focus user to login
 - `--user_name=USERNAME` specifies the username used by the focus XMPP user to login. (default: `focus@user_domain`)
-- `--user_password=PASSWORD` specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
+- `--user_password=PASSWORD` specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method.
 
 ## Secure domain
 
