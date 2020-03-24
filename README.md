@@ -7,11 +7,11 @@ conferences.
 
 ## Overview
 
-Conference focus is mandatory component of Jitsi Meet conferencing system next to the videobridge. It is responsible for managing media sessions between each of the participants and the videobridge. Whenever new conference is about to start an IQ is sent to the component to allocate new focus instance. After that special focus participant joins Multi User Chat room. It will be creating Jingle session between Jitsi videobridge and the participant. Although the session in terms of XMPP is between focus user and participant the media will flow between participant and the videobridge. That's because focus user will allocate Colibri channels on the bridge and use them as it's own Jingle transport.
+Conference focus is a mandatory component of Jitsi Meet conferencing system next to the videobridge. It is responsible for managing media sessions between each of the participants and the videobridge. Whenever a new conference is about to start an IQ is sent to the component to allocate a new focus instance. After that special focus participant joins Multi User Chat room. It creates a Jingle session between Jitsi videobridge and the participant. Although the session in terms of XMPP is between the focus user and the participant the media will flow between the participant and the videobridge. That's because focus user will allocate Colibri channels on the bridge and use them as its own Jingle transport.
 
 ## Quick install (from the start)
 
-To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instruction which should install and configure 'jicofo' debian package next to 'jitsi-meet'.
+To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instructions which should install and configure 'jicofo' debian package next to 'jitsi-meet'.
 
 [quick install]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md
 
@@ -24,7 +24,7 @@ You can download Debian/Ubuntu binaries:
 
 ## Manual Prosody configuration
 
-Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method(jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration(etc\prosody\prosody.cfg.lua):
+Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method (jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration (etc\prosody\prosody.cfg.lua):
 ```
 VirtualHost "auth.jitsi.example.com"
     authentication = "internal_plain"
@@ -46,7 +46,7 @@ Restart Prosody:
 ```
 sudo prosodyctl restart
 ```
-If we use 'focus.jitsi.example.com' where 'jitsi.example.com' is our main domain we don't need to modify config.js in Jitsi Meet. Application will try to add 'focus' prefix to our domain and find focus component there. To specify different name for focus component you need to modify config.js file in Jitsi Meet. Assuming that we want to use 'special_focus.jitsi.example.com' then config.js should look like following:
+If we use 'focus.jitsi.example.com' where 'jitsi.example.com' is our main domain we don't need to modify config.js in Jitsi Meet. The application will try to add 'focus' prefix to our domain and find focus component there. To specify a different name for the focus component you need to modify config.js file in Jitsi Meet. Assuming that we want to use 'special_focus.jitsi.example.com' then config.js should look like following:
 ```
 var config = {
     hosts: {
@@ -60,8 +60,8 @@ var config = {
 
 ## Running Jicofo from distribution package
 
-1. Build distributon package using ant target for your OS: "dist.lin", "dist.lin64", "dist.macosx", "dist.win" or "dist.win64"
-2. Packge will be placed in 'dist/{os-name}' folder.
+1. Build distribution package using ant target for your OS: "dist.lin", "dist.lin64", "dist.macosx", "dist.win" or "dist.win64"
+2. Package will be placed in 'dist/{os-name}' folder.
 3. Extract distribution package to the folder of your choice.
 4. Assuming Prosody has been configured using "Manual configuration for Prosody" 'jicofo' run script should be executed with following arguments:
 ```
@@ -81,8 +81,8 @@ var config = {
 ## Secure domain
 
 It is possible to allow only authenticated users for creating new conference
-rooms. Whenever new room is about to be created Jitsi Meet will prompt for
-user name and password. After room is created others will be able to join
+rooms. Whenever a new room is about to be created Jitsi Meet will prompt for
+user name and password. After the room is created others will be able to join
 from anonymous domain. Here's what has to be configured:
 
 1 In Prosody:
@@ -114,7 +114,7 @@ var config = {
         ...
 }
 ```
-3 When running Jicofo specify your main domain in additional configuration
+3 When running Jicofo specify your main domain in an additional configuration
 property. Jicofo will accept conference allocation requests only from
 authenticated domain.
 ```
@@ -168,13 +168,13 @@ sudo update-ca-certificates
 ```
 
 ### On MacOS X
-On Mac java uses its own keystore, so adding the certificate to the system one
-does not work. Add it to the java keystore with:
+On Mac Java uses its own keystore, so adding the certificate to the system one
+does not work. Add it to the Java keystore with:
 ```
 sudo keytool -importcert -file cert.pem -keystore /Library/Java//JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home/jre/lib/security/cacerts
 ```
 
-Note that if the XMPP server you are connecting to is a prosody instance
+Note that if the XMPP server you are connecting to is a Prosody instance
 configured with the jitsi-meet scripts, then you can find the certificate in:
 ```
 /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
