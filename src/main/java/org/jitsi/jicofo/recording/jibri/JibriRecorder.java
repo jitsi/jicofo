@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
@@ -159,15 +160,19 @@ public class JibriRecorder
                 {
                     logger.info("Failed to start a Jibri session, " +
                         "all Jibris were busy");
-                    errorIq = IQ.createErrorResponse(
-                        iq, XMPPError.Condition.resource_constraint);
+                    errorIq = ErrorResponse.create(
+                        iq,
+                        XMPPError.Condition.resource_constraint,
+                        "all Jibris are busy");
                 }
                 else
                 {
                     logger.info("Failed to start a Jibri session, " +
                         "no Jibris available");
-                    errorIq = IQ.createErrorResponse(
-                        iq, XMPPError.Condition.service_unavailable);
+                    errorIq = ErrorResponse.create(
+                        iq,
+                        XMPPError.Condition.service_unavailable,
+                        "no Jibri instances available");
                 }
                 jibriSession = null;
                 return errorIq;
@@ -177,29 +182,26 @@ public class JibriRecorder
         else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
         {
             // Bad request - no stream ID and no recording mode
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                 iq,
-                XMPPError.from(
-                    XMPPError.Condition.bad_request,
-                    "Stream ID is empty and recording mode is not FILE"));
+                XMPPError.Condition.bad_request,
+                "Stream ID is empty and recording mode is not FILE");
         }
         else if (emptyStreamId && recordingMode.equals(RecordingMode.STREAM))
         {
             // Bad request - no stream ID
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                     iq,
-                    XMPPError.from(
-                            XMPPError.Condition.bad_request,
-                            "Stream ID is empty or undefined"));
+                    XMPPError.Condition.bad_request,
+                    "Stream ID is empty or undefined");
         }
         else
         {
             // Bad request - catch all
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                     iq,
-                    XMPPError.from(
-                        XMPPError.Condition.bad_request,
-                        "Invalid recording mode and stream ID combination"));
+                    XMPPError.Condition.bad_request,
+                    "Invalid recording mode and stream ID combination");
         }
     }
 

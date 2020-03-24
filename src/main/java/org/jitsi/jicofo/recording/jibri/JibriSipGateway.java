@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
@@ -156,11 +157,17 @@ public class JibriSipGateway
                 ErrorIQ errorIq;
                 if (jibriDetector.isAnyInstanceConnected())
                 {
-                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.resource_constraint,
+                            "all Jibris are busy");
                 }
                 else
                 {
-                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.service_unavailable);
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.service_unavailable,
+                            "no Jibri instances available");
                 }
                 return errorIq;
             }
@@ -168,11 +175,10 @@ public class JibriSipGateway
         else
         {
             // Bad request - no SIP address
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                     iq,
-                    XMPPError.from(
-                            XMPPError.Condition.bad_request,
-                            "Stream ID is empty or undefined").build());
+                    XMPPError.Condition.bad_request,
+                    "Stream ID is empty or undefined");
         }
     }
 
