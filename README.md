@@ -25,38 +25,37 @@ You can download Debian/Ubuntu binaries:
 ## Manual Prosody configuration
 
 Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method (jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration (etc\prosody\prosody.cfg.lua):
-```
-VirtualHost "auth.jitsi.example.com"
-    authentication = "internal_plain"
-```
+
+    VirtualHost "auth.jitsi.example.com"
+        authentication = "internal_plain"
+
 Next step is to create admin user that will be used by Jicofo to log in:
-```
-sudo prosodyctl register focus auth.jitsi.example.com focuspassword
-```
+
+    sudo prosodyctl register focus auth.jitsi.example.com focuspassword
+
 Include focus user as one of server admins:
-```
-admins = { focus@auth.jitsi.example.com }
-```
+
+    admins = { focus@auth.jitsi.example.com }
+
 Add XMPP focus component:
-```
-Component "focus.jitsi.exmaple.com"
-    component_secret="focus_secret"
-```
+
+    Component "focus.jitsi.exmaple.com"
+        component_secret="focus_secret"
+
 Restart Prosody:
-```
-sudo prosodyctl restart
-```
+
+    sudo prosodyctl restart
+
 If we use 'focus.jitsi.example.com' where 'jitsi.example.com' is our main domain we don't need to modify config.js in Jitsi Meet. The application will try to add 'focus' prefix to our domain and find focus component there. To specify a different name for the focus component you need to modify config.js file in Jitsi Meet. Assuming that we want to use 'special_focus.jitsi.example.com' then config.js should look like following:
-```
-var config = {
-    hosts: {
-        domain: 'jitsi.example.com',
-        muc: 'conference.jitsi.example.com',
-        bridge: 'jitsi-videobridge.jitsi.example.com',
-        focus: 'special_focus.jitsi.example.com'
-    },
-    ...
-```
+
+    var config = {
+        hosts: {
+            domain: 'jitsi.example.com',
+            muc: 'conference.jitsi.example.com',
+            bridge: 'jitsi-videobridge.jitsi.example.com',
+            focus: 'special_focus.jitsi.example.com'
+        },
+        ...
 
 ## Running Jicofo from distribution package
 
@@ -64,9 +63,8 @@ var config = {
 2. Package will be placed in 'dist/{os-name}' folder.
 3. Extract distribution package to the folder of your choice.
 4. Assuming Prosody has been configured using "Manual configuration for Prosody" 'jicofo' run script should be executed with following arguments:
-```
-    ./jicofo.sh --domain=jitsi.exmaple.com --secret=focus_secret --user_domain=auth.jitsi.example.com --user_name=focus --user_password=focuspassword
-```
+
+        ./jicofo.sh --domain=jitsi.exmaple.com --secret=focus_secret --user_domain=auth.jitsi.example.com --user_name=focus --user_password=focuspassword
 
 ## Run arguments descripton
 - --domain=DOMAIN sets the XMPP domain
@@ -90,47 +88,43 @@ from anonymous domain. Here's what has to be configured:
     (If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/prosody/conf.avail/[your-hostname].cfg.lua)
 
     a) Enable authentication on your main domain:<br/>
-    ```
-    VirtualHost "jitsi-meet.example.com"
-        authentication = "internal_plain"
-    ```
+
+        VirtualHost "jitsi-meet.example.com"
+            authentication = "internal_plain"
+
     b) Add new virtual host with anonymous login method for guests:<br/>
-    ```
-    VirtualHost "guest.jitsi-meet.example.com"
-        authentication = "anonymous"
-        c2s_require_encryption = false
-    ```
+
+        VirtualHost "guest.jitsi-meet.example.com"
+            authentication = "anonymous"
+            c2s_require_encryption = false
+
 2.  In Jitsi Meet config.js configure 'anonymousdomain':<br/>
 
     (If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/jitsi/meet/[your-hostname]-config.js)
 
-    ```
-    var config = {
-        hosts: {
-                domain: 'jitsi-meet.example.com',
-                anonymousdomain: 'guest.jitsi-meet.example.com',
+        var config = {
+            hosts: {
+                    domain: 'jitsi-meet.example.com',
+                    anonymousdomain: 'guest.jitsi-meet.example.com',
+                    ...
+                },
                 ...
-            },
-            ...
-    }
-    ```
+        }
+
 3.  When running Jicofo specify your main domain in an additional configuration
 property. Jicofo will accept conference allocation requests only from
 authenticated domain.
-    ```
-    -Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
-    ```
+
+        -Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 
     If you have Jicofo installed from the Debian package this should go directly to
     **/etc/jitsi/jicofo/sip-communicator.properties** file:
-    ```
-    org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
-    ```
+
+        org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 
 4.  To create users use the command:
-    ```
-    prosodyctl register <username> jitsi-meet.example.com <password>
-    ```
+
+        prosodyctl register <username> jitsi-meet.example.com <password>
 
 5.  If you are using jigasi:
 
@@ -162,21 +156,18 @@ For situations in which the certificate is not trusted you can add it to the
 store by:
 
 ### On Linux
-```
-sudo cp cert.pem /usr/local/share/ca-certificates/ 
-sudo update-ca-certificates
-```
+
+    sudo cp cert.pem /usr/local/share/ca-certificates/ 
+    sudo update-ca-certificates
 
 ### On MacOS X
 On Mac Java uses its own keystore, so adding the certificate to the system one
 does not work. Add it to the Java keystore with:
-```
-sudo keytool -importcert -file cert.pem -keystore /Library/Java//JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home/jre/lib/security/cacerts
-```
+
+    sudo keytool -importcert -file cert.pem -keystore /Library/Java//JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home/jre/lib/security/cacerts
 
 Note that if the XMPP server you are connecting to is a Prosody instance
 configured with the jitsi-meet scripts, then you can find the certificate in:
-```
-/var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
-```
+
+    /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
 
