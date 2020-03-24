@@ -64,15 +64,15 @@ public class Bridge
 
     static
     {
-        MaxPacketRateCalculator calc = new MaxPacketRateCalculator(
-            2 /* numberOfConferenceBridges */,
+        MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
+            4 /* numberOfConferenceBridges */,
             20 /* numberOfGlobalSenders */,
-            5 /* numberOfSpeakers */
+            2 /* numberOfSpeakers */
         );
 
         MAX_TOTAL_PACKET_RATE_PPS =
-            calc.computeIngressPacketRatePps(20 /* numberOfLocalSenders */)
-                + calc.computeEgressPacketRatePps(20 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */);
+            packetRateCalculator.computeIngressPacketRatePps(20 /* numberOfLocalSenders */)
+                + packetRateCalculator.computeEgressPacketRatePps(20 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */);
     }
 
     /**

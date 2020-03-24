@@ -11,6 +11,11 @@ import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 public class BridgeTest
 {
+    MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
+        4 /* numberOfConferenceBridges */,
+        20 /* numberOfGlobalSenders */,
+        2 /* numberOfSpeakers */
+    );
 
     @Test
     public void getStress()
@@ -25,41 +30,35 @@ public class BridgeTest
         // each bridge handles 25 participants. Note that we can't know in
         // advance whether a participant will be sendrecv or a recvonly.
 
-        bridge.setStats(createJvbStats(0 /* numOf local senders */, 0 /* numOf local receivers */));
+        bridge.setStats(createJvbStats(0 /* numberOfLocalSenders */, 0 /* numberOfLocalReceivers */));
         Assert.assertEquals(0.0, bridge.getStress(), .05);
 
-        bridge.setStats(createJvbStats(5 /* numOf local senders */, 0 /* numOf local receivers */));
+        bridge.setStats(createJvbStats(5 /* numberOfLocalSenders */, 0 /* numberOfLocalReceivers */));
         Assert.assertEquals(0.19, bridge.getStress(), .05);
 
-        bridge.setStats(createJvbStats(5 /* numOf local senders */, 5 /* numOf local receivers */));
+        bridge.setStats(createJvbStats(5 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */));
         Assert.assertEquals(0.35, bridge.getStress(), .05);
 
-        bridge.setStats(createJvbStats(10 /* numOf local senders */, 5 /* numOf local receivers */));
+        bridge.setStats(createJvbStats(10 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */));
         Assert.assertEquals(0.54, bridge.getStress(), .05);
 
-        bridge.setStats(createJvbStats(10 /* numOf local senders */, 10 /* numOf local receivers */));
+        bridge.setStats(createJvbStats(10 /* numberOfLocalSenders */, 10 /* numberOfLocalReceivers */));
         Assert.assertEquals(0.69, bridge.getStress(), .05);
 
-        bridge.setStats(createJvbStats(15 /* numOf local senders */, 10 /* numOf local receivers */));
-        Assert.assertEquals(.89, bridge.getStress(), .05);
-
-        bridge.setStats(createJvbStats(20 /* numOf local senders */, 5 /* numOf local receivers */));
+        bridge.setStats(createJvbStats(15 /* numberOfLocalSenders */, 10 /* numberOfLocalReceivers */));
         Assert.assertEquals(.94, bridge.getStress(), .05);
 
-        bridge.setStats(createJvbStats(5 /* numOf local senders */, 20 /* numOf local receivers */));
-        Assert.assertEquals(.78, bridge.getStress(), .05);
+        bridge.setStats(createJvbStats(20 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */));
+        Assert.assertEquals(1.0, bridge.getStress(), .05);
+
+        bridge.setStats(createJvbStats(5 /* numberOfLocalSenders */, 20 /* numberOfLocalReceivers */));
+        Assert.assertEquals(.83, bridge.getStress(), .05);
     }
 
     private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers)
     {
-        MaxPacketRateCalculator maxPacketRateCalculator = new MaxPacketRateCalculator(
-            4 /* numberOfConferenceBridges */,
-            20 /* numberOfGlobalSenders */,
-            2 /* numberOfSpeakers */
-        );
-
-        int maxDownload = maxPacketRateCalculator.computeIngressPacketRatePps(numberOfLocalSenders)
-            , maxUpload = maxPacketRateCalculator.computeEgressPacketRatePps(numberOfLocalSenders, numberOfLocalReceivers);
+        int maxDownload = packetRateCalculator.computeIngressPacketRatePps(numberOfLocalSenders)
+            , maxUpload = packetRateCalculator.computeEgressPacketRatePps(numberOfLocalSenders, numberOfLocalReceivers);
 
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
