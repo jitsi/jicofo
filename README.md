@@ -143,7 +143,7 @@ authenticated domain.
     
         net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
     
-    Note that this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
+    Note, this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
 
 
 ## Certificates
@@ -166,7 +166,7 @@ does not work. Add it to the Java keystore with:
 
     sudo keytool -importcert -file cert.pem -keystore /Library/Java//JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home/jre/lib/security/cacerts
 
-Note that if the XMPP server you are connecting to is a Prosody instance
+Note, if the XMPP server you are connecting to is a Prosody instance
 configured with the jitsi-meet scripts, then you can find the certificate in:
 
     /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
