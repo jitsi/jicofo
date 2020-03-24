@@ -170,4 +170,3 @@ Note that if the XMPP server you are connecting to is a Prosody instance
 configured with the jitsi-meet scripts, then you can find the certificate in:
 
     /var/lib/prosody/$JICOFO_AUTH_DOMAIN.crt 
-
