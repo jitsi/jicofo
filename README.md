@@ -11,7 +11,7 @@ Conference focus is a mandatory component of Jitsi Meet conferencing system next
 
 ## Quick install (from the start)
 
-To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instructions which should install and configure *jicofo* debian package next to *jitsi-meet*.
+To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instructions which should install and configure *jicofo* Debian package next to *jitsi-meet*.
 
 [quick install]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md
 
@@ -149,7 +149,7 @@ authenticated domain.
 ## Certificates
 Jicofo uses an XMPP user connection (on port 5222 by default), and since the
 upgrade to smack4 it verifies the server's certificate. In a default
-installation the debian installation scripts take care of generating a
+installation the Debian installation scripts take care of generating a
 self-signed certificate and adding it to the keystore.
 
 For situations in which the certificate is not trusted you can add it to the
