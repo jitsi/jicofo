@@ -337,13 +337,13 @@ public class Bridge
 
     /**
      * Returns the "stress" of the bridge. The stress is computed based on the
-     * total bitrate reported by the bridge and the video stream estimation
-     * since the last update from the bridge.
+     * total packet rate reported by the bridge and the video stream diff
+     * estimation since the last update from the bridge.
      *
-     * @return the sum of the last total reported bitrate (in kbps) and an
-     * estimation of the bitrate of the streams that we estimate that the bridge
+     * @return the sum of the last total reported packet rate (in pps) and an
+     * estimation of the packet rate of the streams that we estimate that the bridge
      * hasn't reported to Jicofo yet. The estimation is the product of the
-     * number of unreported streams and a constant C (which we set to 1000 kbps).
+     * number of unreported streams and a constant C (which we set to 500 pps).
      */
     public double getStress()
     {
