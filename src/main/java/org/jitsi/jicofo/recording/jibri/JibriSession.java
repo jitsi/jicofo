@@ -305,6 +305,14 @@ public class JibriSession
                             logger.error(
                                 "Unexpected response to stop iq: "
                                 + (stanza != null ? stanza.toXML() : "null"));
+
+                            JibriIq error = new JibriIq();
+
+                            error.setFrom(stopRequest.getTo());
+                            error.setFailureReason(FailureReason.ERROR);
+                            error.setStatus(Status.OFF);
+
+                            processJibriIqFromJibri(error);
                         }
                     },
                     exception -> {
@@ -466,6 +474,13 @@ public class JibriSession
                 logger.error(
                     "Unexpected response to start request: "
                             + (reply != null ? reply.toXML() : "null"));
+
+                JibriIq errorIq = new JibriIq();
+                errorIq.setFrom(startIq.getTo());
+                errorIq.setStatus(Status.OFF);
+                errorIq.setFailureReason(FailureReason.ERROR);
+
+                processJibriIqFromJibri(errorIq);
             }
         }
         catch (OperationFailedException e)
