@@ -11,7 +11,7 @@ Conference focus is a mandatory component of Jitsi Meet conferencing system next
 
 ## Quick install (from the start)
 
-To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instructions which should install and configure 'jicofo' debian package next to 'jitsi-meet'.
+To start quickly with Jicofo it is recomended to install Jitsi Meet using [quick install] instructions which should install and configure *jicofo* debian package next to *jitsi-meet*.
 
 [quick install]: https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md
 
@@ -24,7 +24,7 @@ You can download Debian/Ubuntu binaries:
 
 ## Manual Prosody configuration
 
-Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method (jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration (etc\prosody\prosody.cfg.lua):
+Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs adminsitrator credentials to start. By default Jitsi Meet uses XMPP domain with anonymous login method (jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration (`etc\prosody\prosody.cfg.lua`):
 
     VirtualHost "auth.jitsi.example.com"
         authentication = "internal_plain"
@@ -46,7 +46,7 @@ Restart Prosody:
 
     sudo prosodyctl restart
 
-If we use 'focus.jitsi.example.com' where 'jitsi.example.com' is our main domain we don't need to modify config.js in Jitsi Meet. The application will try to add 'focus' prefix to our domain and find focus component there. To specify a different name for the focus component you need to modify config.js file in Jitsi Meet. Assuming that we want to use 'special_focus.jitsi.example.com' then config.js should look like following:
+If we use `focus.jitsi.example.com` where `jitsi.example.com` is our main domain we don't need to modify `config.js` in Jitsi Meet. The application will try to add `focus` prefix to our domain and find focus component there. To specify a different name for the focus component you need to modify `config.js` file in Jitsi Meet. Assuming that we want to use `special_focus.jitsi.example.com` then `config.js` should look like below:
 
     var config = {
         hosts: {
@@ -59,22 +59,22 @@ If we use 'focus.jitsi.example.com' where 'jitsi.example.com' is our main domain
 
 ## Running Jicofo from distribution package
 
-1. Build distribution package using ant target for your OS: "dist.lin", "dist.lin64", "dist.macosx", "dist.win" or "dist.win64"
-2. Package will be placed in 'dist/{os-name}' folder.
+1. Build distribution package using ant target for your OS: `dist.lin`, `dist.lin64`, `dist.macosx`, `dist.win` or `dist.win64`
+2. Package will be placed in `dist/{os-name}` folder.
 3. Extract distribution package to the folder of your choice.
-4. Assuming Prosody has been configured using "Manual configuration for Prosody" 'jicofo' run script should be executed with following arguments:
+4. Assuming Prosody has been configured using "Manual configuration for Prosody" `jicofo.sh` run script should be executed with following arguments:
 
         ./jicofo.sh --domain=jitsi.exmaple.com --secret=focus_secret --user_domain=auth.jitsi.example.com --user_name=focus --user_password=focuspassword
 
 ## Run arguments descripton
-- --domain=DOMAIN sets the XMPP domain
-- --host=HOST sets the hostname of the XMPP server (default: --domain, if --domain is set, localhost otherwise)
-- --port=PORT sets the port of the XMPP server (default: 5347)
-- --subdomain=SUBDOMAIN sets the sub-domain used to bind focus XMPP component (default: focus)
-- --secret=SECRET sets the shared secret used to authenticate focus component to the XMPP server
-- --user_domain=DOMAIN specifies the name of XMPP domain used by the focus user to login
-- --user_name=USERNAME specifies the username used by the focus XMPP user to login. (default: focus@user_domain)
-- --user_password=PASSWORD specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
+- `--domain=DOMAIN` sets the XMPP domain
+- `--host=HOST` sets the hostname of the XMPP server (default: `--domain`, if `--domain` is set, `localhost` otherwise)
+- `--port=PORT` sets the port of the XMPP server (default: 5347)
+- `--subdomain=SUBDOMAIN` sets the sub-domain used to bind focus XMPP component (default: `focus`)
+- `--secret=SECRET` sets the shared secret used to authenticate focus component to the XMPP server
+- `--user_domain=DOMAIN` specifies the name of XMPP domain used by the focus user to login
+- `--user_name=USERNAME` specifies the username used by the focus XMPP user to login. (default: `focus@user_domain`)
+- `--user_password=PASSWORD` specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
 
 ## Secure domain
 
@@ -85,7 +85,7 @@ from anonymous domain. Here's what has to be configured:
 
 1.  In Prosody:
 
-    (If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/prosody/conf.avail/[your-hostname].cfg.lua)
+    (If you have installed jitsi-meet from the Debian package, these changes should be made in `/etc/prosody/conf.avail/[your-hostname].cfg.lua`)
 
     a) Enable authentication on your main domain:<br/>
 
@@ -98,9 +98,9 @@ from anonymous domain. Here's what has to be configured:
             authentication = "anonymous"
             c2s_require_encryption = false
 
-2.  In Jitsi Meet config.js configure 'anonymousdomain':<br/>
+2.  In Jitsi Meet config.js configure `anonymousdomain`:<br/>
 
-    (If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/jitsi/meet/[your-hostname]-config.js)
+    (If you have installed jitsi-meet from the Debian package, these changes should be made in `/etc/jitsi/meet/[your-hostname]-config.js`)
 
         var config = {
             hosts: {
@@ -118,7 +118,7 @@ authenticated domain.
         -Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 
     If you have Jicofo installed from the Debian package this should go directly to
-    **/etc/jitsi/jicofo/sip-communicator.properties** file:
+    `/etc/jitsi/jicofo/sip-communicator.properties` file:
 
         org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 
@@ -128,10 +128,10 @@ authenticated domain.
 
 5.  If you are using jigasi:
 
-    a) Set jigasi to authenticate by editing the following lines in sip-communicator.properties.
+    a) Set jigasi to authenticate by editing the following lines in `sip-communicator.properties`.
     
     If you have jigasi installed from the Debian package this should go directly to
-    **/etc/jitsi/jigasi/sip-communicator.properties**
+    `/etc/jitsi/jigasi/sip-communicator.properties`
     
         org.jitsi.jigasi.xmpp.acc.USER_ID=SOME_USER@SOME_DOMAIN
         org.jitsi.jigasi.xmpp.acc.PASS=SOME_PASS
@@ -139,7 +139,7 @@ authenticated domain.
     
     The password is the actual plaintext password, not a base64 encoding.
     
-    b) If you experience problems with a certificate chain, you may also need to uncomment the following line, also in sip-communicator.properties:
+    b) If you experience problems with a certificate chain, you may also need to uncomment the following line, also in `sip-communicator.properties`:
     
         net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
     
