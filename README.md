@@ -85,71 +85,71 @@ rooms. Whenever a new room is about to be created Jitsi Meet will prompt for
 user name and password. After the room is created others will be able to join
 from anonymous domain. Here's what has to be configured:
 
-1 In Prosody:
+1.  In Prosody:
 
-(If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/prosody/conf.avail/[your-hostname].cfg.lua)
+    (If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/prosody/conf.avail/[your-hostname].cfg.lua)
 
- a) Enable authentication on your main domain:<br/>
- ```
- VirtualHost "jitsi-meet.example.com"
-     authentication = "internal_plain"
- ```
- b) Add new virtual host with anonymous login method for guests:<br/>
- ```
- VirtualHost "guest.jitsi-meet.example.com"
-     authentication = "anonymous"
-     c2s_require_encryption = false
- ```
-2 In Jitsi Meet config.js configure 'anonymousdomain':<br/>
+    a) Enable authentication on your main domain:<br/>
+    ```
+    VirtualHost "jitsi-meet.example.com"
+        authentication = "internal_plain"
+    ```
+    b) Add new virtual host with anonymous login method for guests:<br/>
+    ```
+    VirtualHost "guest.jitsi-meet.example.com"
+        authentication = "anonymous"
+        c2s_require_encryption = false
+    ```
+2.  In Jitsi Meet config.js configure 'anonymousdomain':<br/>
 
-(If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/jitsi/meet/[your-hostname]-config.js)
+    (If you have installed jitsi-meet from the Debian package, these changes should be made in /etc/jitsi/meet/[your-hostname]-config.js)
 
-```
-var config = {
-    hosts: {
-            domain: 'jitsi-meet.example.com',
-            anonymousdomain: 'guest.jitsi-meet.example.com',
+    ```
+    var config = {
+        hosts: {
+                domain: 'jitsi-meet.example.com',
+                anonymousdomain: 'guest.jitsi-meet.example.com',
+                ...
+            },
             ...
-        },
-        ...
-}
-```
-3 When running Jicofo specify your main domain in an additional configuration
+    }
+    ```
+3.  When running Jicofo specify your main domain in an additional configuration
 property. Jicofo will accept conference allocation requests only from
 authenticated domain.
-```
--Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
-```
+    ```
+    -Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
+    ```
 
-If you have Jicofo installed from the Debian package this should go directly to
-**/etc/jitsi/jicofo/sip-communicator.properties** file:
-```
-org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
-```
+    If you have Jicofo installed from the Debian package this should go directly to
+    **/etc/jitsi/jicofo/sip-communicator.properties** file:
+    ```
+    org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
+    ```
 
-4 To create users use the command:
-```
-prosodyctl register <username> jitsi-meet.example.com <password>
-```
+4.  To create users use the command:
+    ```
+    prosodyctl register <username> jitsi-meet.example.com <password>
+    ```
 
-5 If you are using jigasi:
+5.  If you are using jigasi:
 
-a) Set jigasi to authenticate by editing the following lines in sip-communicator.properties.
-
-If you have jigasi installed from the Debian package this should go directly to
-**/etc/jitsi/jigasi/sip-communicator.properties**
-
-org.jitsi.jigasi.xmpp.acc.USER_ID=SOME_USER@SOME_DOMAIN
-org.jitsi.jigasi.xmpp.acc.PASS=SOME_PASS
-org.jitsi.jigasi.xmpp.acc.ANONYMOUS_AUTH=false
-
-The password is the actual plaintext password, not a base64 encoding.
-
-b) If you experience problems with a certificate chain, you may also need to uncomment the following line, also in sip-communicator.properties:
-
-net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
-
-Note that this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
+    a) Set jigasi to authenticate by editing the following lines in sip-communicator.properties.
+    
+    If you have jigasi installed from the Debian package this should go directly to
+    **/etc/jitsi/jigasi/sip-communicator.properties**
+    
+    org.jitsi.jigasi.xmpp.acc.USER_ID=SOME_USER@SOME_DOMAIN
+    org.jitsi.jigasi.xmpp.acc.PASS=SOME_PASS
+    org.jitsi.jigasi.xmpp.acc.ANONYMOUS_AUTH=false
+    
+    The password is the actual plaintext password, not a base64 encoding.
+    
+    b) If you experience problems with a certificate chain, you may also need to uncomment the following line, also in sip-communicator.properties:
+    
+    net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
+    
+    Note that this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
 
 
 ## Certificates
