@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.*;
@@ -262,7 +263,10 @@ public abstract class CommonJibriStuff
                 // (so it isn't XMPPError.Condition.service_unavailable), so it
                 // must be that they're all busy.
                 logger.info("Failed to start a Jibri session, all Jibris were busy");
-                return IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                return ErrorResponse.create(
+                        iq,
+                        XMPPError.Condition.resource_constraint,
+                        "all Jibris are busy");
             }
         }
         // stop ?
