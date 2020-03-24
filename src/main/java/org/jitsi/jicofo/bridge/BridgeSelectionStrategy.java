@@ -48,7 +48,7 @@ abstract class BridgeSelectionStrategy
         {
             Bridge bridge
                 = doSelect(bridges, conferenceBridges, participantRegion);
-            if (logger.isDebugEnabled())
+            if (bridge != null)
             {
                 logger.info("Selected initial bridge " + bridge
                         + " with packetRate=" + bridge.getLastReportedPacketRatePps()
