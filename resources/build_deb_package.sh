@@ -64,4 +64,4 @@ echo "-----"
 
 # Let's try deploying
 cd ..
-([ ! -x deploy.sh ] || ./deploy.sh)
+([ ! -x deploy.sh ] || ./deploy.sh "jicofo" ${BUILD_NUMBER} )
