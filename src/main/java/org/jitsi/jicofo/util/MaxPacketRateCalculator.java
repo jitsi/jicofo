@@ -17,6 +17,13 @@ package org.jitsi.jicofo.util;
 
 import java.util.*;
 
+/**
+ * A helper class to calculate the maximum ingress/egress/octo packet rate that
+ * goes through a bridge that serves a conference of a given size and topology.
+ *
+ * We use maxes because it allows us to compute worst case scenarios in our
+ * load-balancing scheme.
+ */
 public class MaxPacketRateCalculator
 {
     public MaxPacketRateCalculator(int numberOfConferenceBridges, int numberOfGlobalSenders, int numberOfSpeakers)
