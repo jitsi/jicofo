@@ -328,13 +328,13 @@ abstract class BridgeSelectionStrategy
             return null;
         }
 
-        return a1(bridges, conferenceBridges, participantRegion).orElse(
-            a2(bridges, conferenceBridges, participantRegion).orElse(
-                b1(bridges, conferenceBridges, participantRegion).orElse(
-                    c1(bridges, conferenceBridges, participantRegion).orElse(
-                        c2(bridges, conferenceBridges, participantRegion).orElse(
-                            d1(bridges, conferenceBridges, participantRegion).orElse(
-                                d2(bridges, conferenceBridges, participantRegion).orElse(null)))))));
+        return a1(bridges, conferenceBridges, participantRegion).orElseGet(
+            () -> a2(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> b1(bridges, conferenceBridges, participantRegion).orElseGet(
+                    () -> c1(bridges, conferenceBridges, participantRegion).orElseGet(
+                        () -> c2(bridges, conferenceBridges, participantRegion).orElseGet(
+                            () -> d1(bridges, conferenceBridges, participantRegion).orElseGet(
+                                () -> d2(bridges, conferenceBridges, participantRegion).orElse(null)))))));
     }
 
     /**
