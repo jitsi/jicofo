@@ -102,7 +102,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge a1(List<Bridge> bridges,
+    private Optional<Bridge> a1(List<Bridge> bridges,
                         List<Bridge> conferenceBridges,
                         String participantRegion)
     {
@@ -116,16 +116,12 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,rule=a1,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
 
             totalA1++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return a2(bridges, conferenceBridges, participantRegion);
-        }
+        return result;
     }
 
     /**
@@ -138,7 +134,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge a2(List<Bridge> bridges,
+    private Optional<Bridge> a2(List<Bridge> bridges,
                                 List<Bridge> conferenceBridges,
                                 String participantRegion)
     {
@@ -155,16 +151,12 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,rule=a2,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
 
             totalA2++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return b1(bridges, conferenceBridges, participantRegion);
-        }
+        return result;
     }
 
     /**
@@ -177,7 +169,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge b1(List<Bridge> bridges,
+    private Optional<Bridge> b1(List<Bridge> bridges,
                                 List<Bridge> conferenceBridges,
                                 String participantRegion)
     {
@@ -190,16 +182,12 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,rule=b1,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
 
             totalB1++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return c1(bridges, conferenceBridges, participantRegion);
-        }
+        return result;
     }
 
     /**
@@ -213,7 +201,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge c1(List<Bridge> bridges,
+    private Optional<Bridge> c1(List<Bridge> bridges,
                         List<Bridge> conferenceBridges,
                         String participantRegion)
     {
@@ -226,15 +214,11 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,rule=c1,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
             totalC1++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return c2(bridges, conferenceBridges, participantRegion);
-        }
+        return result;
     }
 
     /**
@@ -247,7 +231,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge c2(List<Bridge> bridges,
+    private Optional<Bridge> c2(List<Bridge> bridges,
                                 List<Bridge> conferenceBridges,
                                 String participantRegion)
     {
@@ -258,18 +242,14 @@ abstract class BridgeSelectionStrategy
         if (result.isPresent())
         {
 
-            logger.info("bridge_selected,rule=c2,bridge=" + result.get() +
+            logger.info("bridge_selected,rule=c2,bridge="  + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
 
             totalC2++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return d1(bridges, conferenceBridges, participantRegion);
-        }
+        return result;
     }
 
     /**
@@ -281,7 +261,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge d1(List<Bridge> bridges,
+    private Optional<Bridge> d1(List<Bridge> bridges,
                                 List<Bridge> conferenceBridges,
                                 String participantRegion)
     {
@@ -294,15 +274,11 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,rule=d1,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
             totalD1++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return d2(bridges, conferenceBridges, participantRegion);
-        }
+        return result;
     }
 
     /**
@@ -313,7 +289,7 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Bridge d2(List<Bridge> bridges,
+    private Optional<Bridge> d2(List<Bridge> bridges,
                                 List<Bridge> conferenceBridges,
                                 String participantRegion)
     {
@@ -323,15 +299,11 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,rule=d2,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region=" + participantRegion);
+                "participant_region " + participantRegion);
             totalD2++;
+        }
 
-            return result.get();
-        }
-        else
-        {
-            return bridges.get(0);
-        }
+        return result;
     }
 
     /**
@@ -355,10 +327,14 @@ abstract class BridgeSelectionStrategy
         {
             return null;
         }
-        else
-        {
-            return a1(bridges, conferenceBridges, participantRegion);
-        }
+
+        return a1(bridges, conferenceBridges, participantRegion).orElse(
+            a2(bridges, conferenceBridges, participantRegion).orElse(
+                b1(bridges, conferenceBridges, participantRegion).orElse(
+                    c1(bridges, conferenceBridges, participantRegion).orElse(
+                        c2(bridges, conferenceBridges, participantRegion).orElse(
+                            d1(bridges, conferenceBridges, participantRegion).orElse(
+                                d2(bridges, conferenceBridges, participantRegion).orElse(null)))))));
     }
 
     /**
