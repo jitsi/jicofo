@@ -81,12 +81,22 @@ public class MaxPacketRateCalculator
         // senders call each sender receivers 19 other senders, 1 in HD and 18
         // in LD.
         return (numberOfLocalSenders + numberOfLocalReceivers)
-            * (numberOfSpeakers * maxPacketRatePps[0] + (numberOfGlobalSenders - 2) * maxPacketRatePps[1] + maxPacketRatePps[3]);
+            * computeParticipantEgressPacketRatePps();
+    }
+
+    public int computeSenderIngressPacketRatePps()
+    {
+        return Arrays.stream(maxPacketRatePps).sum();
+    }
+
+    public int computeParticipantEgressPacketRatePps()
+    {
+        return (numberOfSpeakers * maxPacketRatePps[0] + (numberOfGlobalSenders - 2) * maxPacketRatePps[1] + maxPacketRatePps[3]);
     }
 
     public int computeIngressPacketRatePps()
     {
-        return numberOfLocalSenders*Arrays.stream(maxPacketRatePps).sum();
+        return numberOfLocalSenders* computeSenderIngressPacketRatePps();
     }
 
     public int computeOctoEgressPacketRate()
