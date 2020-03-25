@@ -81,7 +81,7 @@ class ShibbolethHandler
             throws IOException,
             ServletException
     {
-        if (!SHIBBOLETH_TARGET.equals(target))
+        if (!target.startsWith(SHIBBOLETH_TARGET))
         {
             return;
         }
