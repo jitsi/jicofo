@@ -11,12 +11,6 @@ import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 public class BridgeTest
 {
-    MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
-        4 /* numberOfConferenceBridges */,
-        20 /* numberOfGlobalSenders */,
-        2 /* numberOfSpeakers */
-    );
-
     @Test
     public void getStress()
         throws
@@ -57,8 +51,16 @@ public class BridgeTest
 
     private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers)
     {
-        int maxDownload = packetRateCalculator.computeIngressPacketRatePps(numberOfLocalSenders)
-            , maxUpload = packetRateCalculator.computeEgressPacketRatePps(numberOfLocalSenders, numberOfLocalReceivers);
+        MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
+            4 /* numberOfConferenceBridges */,
+            20 /* numberOfGlobalSenders */,
+            2 /* numberOfSpeakers */,
+            numberOfLocalSenders,
+            numberOfLocalReceivers
+        );
+
+        int maxDownload = packetRateCalculator.computeIngressPacketRatePps()
+            , maxUpload = packetRateCalculator.computeEgressPacketRatePps();
 
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 

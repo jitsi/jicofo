@@ -69,12 +69,14 @@ public class Bridge
         MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
             4 /* numberOfConferenceBridges */,
             20 /* numberOfGlobalSenders */,
-            2 /* numberOfSpeakers */
+            2 /* numberOfSpeakers */,
+            20 /* numberOfLocalSenders */,
+            5 /* numberOfLocalReceivers */
         );
 
         MAX_TOTAL_PACKET_RATE_PPS =
-            packetRateCalculator.computeIngressPacketRatePps(20 /* numberOfLocalSenders */)
-                + packetRateCalculator.computeEgressPacketRatePps(20 /* numberOfLocalSenders */, 5 /* numberOfLocalReceivers */);
+            packetRateCalculator.computeIngressPacketRatePps()
+                + packetRateCalculator.computeEgressPacketRatePps();
     }
 
     /**

@@ -26,16 +26,34 @@ import java.util.*;
  */
 public class MaxPacketRateCalculator
 {
-    public MaxPacketRateCalculator(int numberOfConferenceBridges, int numberOfGlobalSenders, int numberOfSpeakers)
+    /**
+     * Ctor.
+     *
+     * @param numberOfConferenceBridges the number of bridges in this call
+     * @param numberOfGlobalSenders the global senders (sendrecv)
+     * @param numberOfSpeakers the speakers in this call
+     * @param numberOfLocalSenders the local senders (sendrecv)
+     * @param numberOfLocalReceivers the local receivers (recvonly)
+     */
+    public MaxPacketRateCalculator(
+        int numberOfConferenceBridges,
+        int numberOfGlobalSenders,
+        int numberOfSpeakers,
+        int numberOfLocalSenders,
+        int numberOfLocalReceivers)
     {
         this.numberOfConferenceBridges = numberOfConferenceBridges;
         this.numberOfGlobalSenders = numberOfGlobalSenders;
         this.numberOfSpeakers = numberOfSpeakers;
+        this.numberOfLocalSenders = numberOfLocalSenders;
+        this.numberOfLocalReceivers = numberOfLocalReceivers;
     }
 
     private final int numberOfConferenceBridges;
     private final int numberOfGlobalSenders;
     private final int numberOfSpeakers;
+    private final int numberOfLocalSenders;
+    private final int numberOfLocalReceivers;
 
     /**
      * 30pps for audio, 50pps for 180p, 100pps for 360p and 250pps for
@@ -53,13 +71,11 @@ public class MaxPacketRateCalculator
      * numberOfLocalSenders local senders and numberOfLocalReceivers local
      * receivers and assuming the rest are octo participants.
      *
-     * @param numberOfLocalSenders the local senders
-     * @param numberOfLocalReceivers the local receivers
      * @return the (max) total packet rate of a bridge that serves
      * numberOfLocalSenders local senders and numberOfLocalReceivers local
      * receivers.
      */
-    public int computeEgressPacketRatePps(int numberOfLocalSenders, int numberOfLocalReceivers)
+    public int computeEgressPacketRatePps()
     {
         // regardless of the participant distribution, in a 100 people/20
         // senders call each sender receivers 19 other senders, 1 in HD and 18
@@ -68,21 +84,21 @@ public class MaxPacketRateCalculator
             * (numberOfSpeakers * maxPacketRatePps[0] + (numberOfGlobalSenders - 2) * maxPacketRatePps[1] + maxPacketRatePps[3]);
     }
 
-    public int computeIngressPacketRatePps(int numberOfLocalSenders)
+    public int computeIngressPacketRatePps()
     {
         return numberOfLocalSenders*Arrays.stream(maxPacketRatePps).sum();
     }
 
-    public int computeOctoEgressPacketRate(int numberOfLocalSenders)
+    public int computeOctoEgressPacketRate()
     {
         // the octo packet rate depends on how many local senders there are.
-        return numberOfConferenceBridges * computeIngressPacketRatePps(numberOfLocalSenders);
+        return numberOfConferenceBridges * computeIngressPacketRatePps();
     }
 
-    public int computeOctoIngressPacketRate(int numberOfLocalSenders)
+    public int computeOctoIngressPacketRate()
     {
         // the octo packet rate depends on how many local senders there are.
-        return computeIngressPacketRatePps(numberOfGlobalSenders - numberOfLocalSenders);
+        return (numberOfGlobalSenders - numberOfLocalSenders)*Arrays.stream(maxPacketRatePps).sum();
     }
 
 }
