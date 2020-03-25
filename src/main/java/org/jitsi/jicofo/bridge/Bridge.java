@@ -51,8 +51,10 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * A conservative estimate of the average packet rate (in kbps) of a video
-     * stream flowing through the bridge.
+     * A conservative estimate of the average sum of egress + egress packet rate
+     * (in pps) of a video stream flowing through the bridge. Note that the term
+     * "video stream" comes from {@link ColibriConferenceImpl#trackVideoChannelsAddedRemoved},
+     * so it's equivalent to a participant.
      */
     private static final int AVG_VIDEO_STREAM_PACKET_RATE_PPS = 500;
 
