@@ -134,9 +134,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findNotLoadedBridgeInRegionA2(List<Bridge> bridges,
-                                                           List<Bridge> conferenceBridges,
-                                                           String participantRegion)
+    private Optional<Bridge> findNotLoadedBridgeInRegion(List<Bridge> bridges,
+                                                         List<Bridge> conferenceBridges,
+                                                         String participantRegion)
     {
         // NOTE that A2 is equivalent to B1 but we include it as a separate
         // step for clarity when comparing the code to the document that
@@ -154,37 +154,6 @@ abstract class BridgeSelectionStrategy
                 "participant_region " + participantRegion);
 
             totalA2++;
-        }
-
-        return result;
-    }
-
-    /**
-     * B1. (Split case 1): There is a NOL bridge in the region, the conference
-     * has bridges in the region but all are OL. Use the least loaded of the
-     * bridges in the region.
-     *
-     * @param bridges
-     * @param participantRegion
-     *
-     * @return
-     */
-    private Optional<Bridge> findNotLoadedBridgeInRegionB1(List<Bridge> bridges,
-                                                           List<Bridge> conferenceBridges,
-                                                           String participantRegion)
-    {
-        Optional<Bridge> result = bridges.stream()
-            .filter(not(Bridge::isOverloaded))
-            .filter(inRegion(participantRegion))
-            .findFirst();
-
-        if (result.isPresent())
-        {
-            logger.info("bridge_selected,rule=b1,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region " + participantRegion);
-
-            totalB1++;
         }
 
         return result;
@@ -329,12 +298,11 @@ abstract class BridgeSelectionStrategy
         }
 
         return findNotLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-            () -> findNotLoadedBridgeInRegionA2(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> findNotLoadedBridgeInRegionB1(bridges, conferenceBridges, participantRegion).orElseGet(
-                    () -> findLeastLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                        () -> findLeastLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                            () -> findLeastLoadedBridgeAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
-                                () -> findLeastLoadedBridge(bridges, conferenceBridges, participantRegion).orElse(null)))))));
+            () -> findNotLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> findLeastLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                    () -> findLeastLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                        () -> findLeastLoadedBridgeAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
+                            () -> findLeastLoadedBridge(bridges, conferenceBridges, participantRegion).orElse(null))))));
     }
 
     /**
