@@ -16,12 +16,14 @@
  */
 package org.jitsi.jicofo.util;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.osgi.framework.*;
 
 /**
  * Provides {@link JibriStats} service instance for the OSGI bundle context.
+ *
+ * It's used by {@link OsgiServiceBinder} to inject {@link JibriStats} instance
+ * to {@link org.jitsi.jicofo.rest.Statistics}.
  */
 public class JibriStatsProvider extends OsgiServiceProvider<JibriStats>
 {
