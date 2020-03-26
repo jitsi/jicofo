@@ -20,7 +20,7 @@ abstract class BridgeSelectionStrategy
     private final static Logger logger
             = Logger.getLogger(BridgeSelectionStrategy.class);
 
-    public int totalA1, totalA2, totalB1, totalC1, totalC2, totalD1, totalD2;
+    public int totalNotLoadedBridgeAlreadyInConferenceInRegion, totalNotLoadedBridgeInRegion, totalLeastLoadedBridgeAlreadyInConferenceInRegion, totalLeastLoadedBridgeInRegion, totalLeastLoadedBridgeAlreadyInConference, totalLeastLoadedBridge;
 
     /**
      * The local region of the jicofo instance.
@@ -120,7 +120,7 @@ abstract class BridgeSelectionStrategy
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
 
-            totalA1++;
+            totalNotLoadedBridgeAlreadyInConferenceInRegion++;
         }
 
         return result;
@@ -149,7 +149,7 @@ abstract class BridgeSelectionStrategy
             logger.info("bridge_selected,rule=a2,bridge=" + result.get() +
                 "participant_region " + participantRegion);
 
-            totalA2++;
+            totalNotLoadedBridgeInRegion++;
         }
 
         return result;
@@ -180,7 +180,7 @@ abstract class BridgeSelectionStrategy
             logger.info("bridge_selected,rule=c1,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
-            totalC1++;
+            totalLeastLoadedBridgeAlreadyInConferenceInRegion++;
         }
 
         return result;
@@ -208,7 +208,7 @@ abstract class BridgeSelectionStrategy
             logger.info("bridge_selected,rule=c2,bridge="  + result.get() +
                 "participant_region " + participantRegion);
 
-            totalC2++;
+            totalLeastLoadedBridgeInRegion++;
         }
 
         return result;
@@ -238,7 +238,7 @@ abstract class BridgeSelectionStrategy
             logger.info("bridge_selected,rule=d1,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
-            totalD1++;
+            totalLeastLoadedBridgeAlreadyInConference++;
         }
 
         return result;
@@ -258,7 +258,7 @@ abstract class BridgeSelectionStrategy
         if (result.isPresent())
         {
             logger.info("bridge_selected,rule=d2,bridge=" + result.get());
-            totalD2++;
+            totalLeastLoadedBridge++;
         }
 
         return result;
@@ -334,13 +334,12 @@ abstract class BridgeSelectionStrategy
     {
         JSONObject json = new JSONObject();
 
-        json.put("total_a1", totalA1);
-        json.put("total_a2", totalA2);
-        json.put("total_b1", totalB1);
-        json.put("total_c1", totalC1);
-        json.put("total_c2", totalC2);
-        json.put("total_d1", totalD1);
-        json.put("total_d2", totalD2);
+        json.put("total_not_loaded_in_region_in_conference", totalNotLoadedBridgeAlreadyInConferenceInRegion);
+        json.put("total_not_loaded_in_region", totalNotLoadedBridgeInRegion);
+        json.put("total_least_loaded_in_region_in_conference", totalLeastLoadedBridgeAlreadyInConferenceInRegion);
+        json.put("total_least_loaded_in_region", totalLeastLoadedBridgeInRegion);
+        json.put("total_least_loaded_in_conference", totalLeastLoadedBridgeAlreadyInConference);
+        json.put("total_least_loaded", totalLeastLoadedBridge);
 
         return json;
     }
