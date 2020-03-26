@@ -5,6 +5,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
+import org.osgi.framework.*;
 
 /**
  * A snapshot of the current state of Jicofo, as well as
@@ -51,6 +52,21 @@ public class JicofoStatisticsSnapshot
     public int operationalBridgeCount;
 
     /**
+     * How many times the live streaming has failed to start.
+     */
+    public int totalLiveStreamingFailures;
+
+    /**
+     * How many times the recording has failed to start.
+     */
+    public int totalRecordingFailures;
+
+    /**
+     * How many times Jicofo has failed to start a SIP call.
+     */
+    public int totalSipCallFailures;
+
+    /**
      * Number of jigasi instances that support SIP.
      */
     public int jigasiSipCount;
@@ -73,7 +89,8 @@ public class JicofoStatisticsSnapshot
     public int[] conferenceSizes = new int[CONFERENCE_SIZE_BUCKETS];
 
     public static JicofoStatisticsSnapshot generate(
-        @NotNull FocusManager focusManager
+        @NotNull FocusManager focusManager,
+        @NotNull JibriStats   jibriStats
     )
     {
         JicofoStatisticsSnapshot snapshot = new JicofoStatisticsSnapshot();
@@ -140,6 +157,13 @@ public class JicofoStatisticsSnapshot
         {
             snapshot.sipJibriCount = sipJibriDetector.getInstanceCount();
         }
+
+        snapshot.totalLiveStreamingFailures
+            = jibriStats.getTotalLiveStreamingFailures();
+        snapshot.totalRecordingFailures
+            = jibriStats.getTotalRecordingFailures();
+        snapshot.totalSipCallFailures
+            = jibriStats.getTotalSipCallFailures();
 
         return snapshot;
     }

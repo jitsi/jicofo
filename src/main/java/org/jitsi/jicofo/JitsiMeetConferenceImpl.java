@@ -419,7 +419,11 @@ public class JitsiMeetConferenceImpl
             {
                 jibriRecorder
                     = new JibriRecorder(
-                            this, getXmppConnection(), executor, globalConfig);
+                            osgiCtx,
+                            this,
+                            getXmppConnection(),
+                            executor,
+                            globalConfig);
 
                 jibriOpSet.addJibri(jibriRecorder);
             }
@@ -429,6 +433,7 @@ public class JitsiMeetConferenceImpl
             {
                 jibriSipGateway
                     = new JibriSipGateway(
+                            osgiCtx,
                             this,
                             getXmppConnection(),
                             FocusBundleActivator.getSharedThreadPool(),
