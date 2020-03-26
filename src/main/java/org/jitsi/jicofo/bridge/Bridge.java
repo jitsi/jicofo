@@ -56,7 +56,7 @@ public class Bridge
      * "video stream" comes from {@link ColibriConferenceImpl#trackVideoChannelsAddedRemoved},
      * so it's equivalent to a participant.
      */
-    private static final int AVG_VIDEO_STREAM_PACKET_RATE_PPS;
+    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS;
 
     /**
      * This is the worst case scenario that the bridge must be able to handle
@@ -82,7 +82,7 @@ public class Bridge
         // will be sending video. We're using the "Max" packet rate calculator
         // so we divide by 3 (an arbitrary factor) to figure out a more
         // conservative estimate of the average packet rate.
-        AVG_VIDEO_STREAM_PACKET_RATE_PPS =
+        AVG_PARTICIPANT_PACKET_RATE_PPS =
             (packetRateCalculator.computeSenderIngressPacketRatePps()
                 + packetRateCalculator.computeParticipantEgressPacketRatePps()) / 3;
     }
@@ -359,7 +359,7 @@ public class Bridge
      */
     public double getStress()
     {
-        double stress = (lastReportedPacketRatePps + videoStreamCountDiff * AVG_VIDEO_STREAM_PACKET_RATE_PPS) / MAX_TOTAL_PACKET_RATE_PPS;
+        double stress = (lastReportedPacketRatePps + videoStreamCountDiff * AVG_PARTICIPANT_PACKET_RATE_PPS) / MAX_TOTAL_PACKET_RATE_PPS;
         return Math.min(1, stress);
     }
 
