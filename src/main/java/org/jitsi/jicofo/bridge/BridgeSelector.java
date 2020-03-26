@@ -211,41 +211,48 @@ public class BridgeSelector
     }
 
     /**
-     * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process. If a bridge
-     * with the given JID already exists, it is returned and a new instance is
-     * not created.
+     * Adds a bridge to this selector. If a bridge with the given JID already
+     * exists, it does nothing.
+     * @return the {@link Bridge} instance for thee given JID.
      *
-     * @param bridgeJid the JID of videobridge to be added to this selector's
-     * set of videobridges.
-     * @return the {@link Bridge} for the bridge with the provided JID.
+     * @param bridgeJid the JID of videobridge.
      */
     public Bridge addJvbAddress(Jid bridgeJid)
     {
-        return addJvbAddress(bridgeJid, null);
+        return addJvbAddress(bridgeJid, null, null);
     }
 
     /**
-     * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process. If a bridge
-     * with the given JID already exists, it is returned and a new instance is
-     * not created.
+     * Adds a brige to this selector and sets it's version. If a bridge with
+     * the given JID already exists, it does nothing.
+     *
+     * @return the {@link Bridge} instance for thee given JID.
+     */
+    public Bridge addJvbAddress(Jid bridgeJid, Version version)
+    {
+        return addJvbAddress(bridgeJid, version, null);
+    }
+
+    /**
+     * Adds a bridge to this selector, or if a bridge with the given JID
+     * already exists updates its stats.
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
      * set of videobridges.
      * @param version the {@link Version} IQ instance which contains the info
      * about JVB version.
-     * @return the {@link Bridge} for the bridge with the provided JID.
+     * @param stats the last reported statistics
+     * @return the {@link Bridge} instance for thee given JID.
      */
     synchronized public Bridge addJvbAddress(
-            Jid bridgeJid, Version version)
+            Jid bridgeJid, Version version, ColibriStatsExtension stats)
     {
-        if (isJvbOnTheList(bridgeJid))
+        Bridge bridge = bridges.get(bridgeJid);
+        if (bridge != null)
         {
-            return bridges.get(bridgeJid);
+            bridge.setStats(stats);
+            return bridge;
         }
-
-        logger.info("Added videobridge: " + bridgeJid + " v: " + version);
 
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
@@ -261,7 +268,11 @@ public class BridgeSelector
         }
 
         Bridge newBridge = new Bridge(this, bridgeJid, version);
-
+        if (stats != null)
+        {
+            newBridge.setStats(stats);
+        }
+        logger.info("Added new videobridge: " + newBridge);
         bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
