@@ -25,6 +25,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 import java.util.concurrent.*;
 
@@ -58,6 +59,7 @@ public class JibriRecorder
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
+     * @param bundleContext OSGi {@link BundleContext}.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
      *        instance.
      * @param connection the XMPP connection which will be used for
@@ -66,12 +68,14 @@ public class JibriRecorder
      * @param globalConfig the global config that provides some values required
      *                     by <tt>JibriRecorder</tt> to work.
      */
-    public JibriRecorder(JitsiMeetConferenceImpl         conference,
+    public JibriRecorder(BundleContext                   bundleContext,
+                         JitsiMeetConferenceImpl         conference,
                          XmppConnection                  connection,
                          ScheduledExecutorService        scheduledExecutor,
                          JitsiMeetGlobalConfig           globalConfig)
     {
         super(
+            bundleContext,
             false /* deals with non SIP Jibri events */,
             conference,
             connection,
@@ -140,6 +144,7 @@ public class JibriRecorder
             String sessionId = generateSessionId();
             jibriSession
                 = new JibriSession(
+                    bundleContext,
                     this,
                     conference.getRoomName(),
                     iq.getFrom(),

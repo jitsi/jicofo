@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -29,6 +31,7 @@ import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -50,6 +53,11 @@ public class JibriSession
      */
     static private final Logger classLogger
         = Logger.getLogger(JibriSession.class);
+
+    /**
+     * Provides the {@link EventAdmin} instance for emitting events.
+     */
+    private final EventAdminProvider eventAdminProvider;
 
     /**
      * Returns <tt>true</tt> if given <tt>status</tt> indicates that Jibri is in
@@ -182,6 +190,7 @@ public class JibriSession
 
     /**
      * Creates new {@link JibriSession} instance.
+     * @param bundleContext the OSGI context.
      * @param owner the session owner which will be notified about this session
      * state changes.
      * @param roomName the name if the XMPP MUC room (full address).
@@ -206,6 +215,7 @@ public class JibriSession
      * select logging level for this instance {@link #logger}.
      */
     JibriSession(
+            BundleContext bundleContext,
             JibriSession.Owner owner,
             EntityBareJid roomName,
             Jid initiator,
@@ -223,6 +233,7 @@ public class JibriSession
             String applicationData,
             Logger logLevelDelegate)
     {
+        this.eventAdminProvider = new EventAdminProvider(bundleContext);
         this.owner = owner;
         this.roomName = roomName;
         this.initiator = initiator;
@@ -243,6 +254,49 @@ public class JibriSession
     }
 
     /**
+     * Used internally to call
+     * {@link Owner#onSessionStateChanged(JibriSession, Status, FailureReason)}.
+     * @param newStatus the new status to dispatch.
+     * @param failureReason the failure reason associated with the state
+     * transition if any.
+     */
+    private void dispatchSessionStateChanged(
+            Status newStatus, FailureReason failureReason)
+    {
+        if (failureReason != null)
+        {
+            emitSessionFailedEvent();
+        }
+        owner.onSessionStateChanged(this, newStatus, failureReason);
+    }
+
+    /**
+     * Asynchronously emits {@link JibriSessionEvent#FAILED_TO_START} event over
+     * the {@link EventAdmin} bus.
+     */
+    private void emitSessionFailedEvent()
+    {
+        JibriSessionEvent.Type jibriType;
+        if (isSIP)
+        {
+            jibriType = JibriSessionEvent.Type.SIP_CALL;
+        }
+        else if (StringUtils.isNullOrEmpty(streamID))
+        {
+            jibriType = JibriSessionEvent.Type.RECORDING;
+        }
+        else
+        {
+            jibriType = JibriSessionEvent.Type.LIVE_STREAMING;
+        }
+
+        eventAdminProvider
+                .get()
+                .postEvent(
+                        JibriSessionEvent.newFailedToStartEvent(jibriType));
+    }
+
+    /**
      * Starts this session. A new Jibri instance will be selected and start
      * request will be sent (in non blocking mode).
      * @throws StartException if failed to start.
@@ -250,16 +304,36 @@ public class JibriSession
     synchronized public void start()
         throws StartException
     {
+        try
+        {
+            startInternal();
+        }
+        catch (Exception e)
+        {
+            emitSessionFailedEvent();
+
+            throw e;
+        }
+    }
+
+    /**
+     * Does the actual start logic.
+     *
+     * @throws StartException if fails  to start.
+     */
+    private void startInternal()
+        throws StartException
+    {
         final Jid jibriJid = jibriDetector.selectJibri();
 
         if (jibriJid == null) {
-           logger.error("Unable to find an available Jibri, can't start");
+            logger.error("Unable to find an available Jibri, can't start");
 
-           if (jibriDetector.isAnyInstanceConnected()) {
-               throw new StartException(StartException.ALL_BUSY);
-           }
+            if (jibriDetector.isAnyInstanceConnected()) {
+                throw new StartException(StartException.ALL_BUSY);
+            }
 
-           throw new StartException(StartException.NOT_AVAILABLE);
+            throw new StartException(StartException.NOT_AVAILABLE);
         }
 
         try
@@ -624,7 +698,7 @@ public class JibriSession
                             + "session has now failed: " + exc, exc);
                     // Propagate up that the session has failed entirely.
                     // We'll pass the original failure reason.
-                    owner.onSessionStateChanged(this, newStatus, failureReason);
+                    dispatchSessionStateChanged(newStatus, failureReason);
                     cleanupSession();
                 }
             }
@@ -643,7 +717,7 @@ public class JibriSession
                     logger.info("Jibri failed, but max amount of retries ("
                         + maxNumRetries + ") reached, giving up");
                 }
-                owner.onSessionStateChanged(this, newStatus, failureReason);
+                dispatchSessionStateChanged(newStatus, failureReason);
                 cleanupSession();
             }
         }
@@ -652,14 +726,13 @@ public class JibriSession
             logger.info("Jibri session ended cleanly, notifying owner and "
                 + "cleaning up session");
             // The Jibri stopped for some non-error reason
-            owner.onSessionStateChanged(this, newStatus, failureReason);
+            dispatchSessionStateChanged(newStatus, null);
             cleanupSession();
         }
         else if (Status.ON.equals(newStatus))
         {
             logger.info("Jibri session started, notifying owner");
-            // The Jibri stopped for some non-error reason
-            owner.onSessionStateChanged(this, newStatus, failureReason);
+            dispatchSessionStateChanged(newStatus, null);
         }
     }
 

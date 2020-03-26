@@ -24,6 +24,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -57,6 +58,7 @@ public class JibriSipGateway
 
     /**
      * Creates new instance of {@link JibriSipGateway}.
+     * @param bundleContext OSGi context.
      * @param conference parent conference for which the new instance will be
      * managing Jibri SIP sessions.
      * @param xmppConnection the connection which will be used to send XMPP
@@ -65,12 +67,14 @@ public class JibriSipGateway
      * @param globalConfig the global config that provides some values required
      * by {@link JibriSession} to work.
      */
-    public JibriSipGateway( JitsiMeetConferenceImpl         conference,
+    public JibriSipGateway( BundleContext                   bundleContext,
+                            JitsiMeetConferenceImpl         conference,
                             XmppConnection                  xmppConnection,
                             ScheduledExecutorService        scheduledExecutor,
                             JitsiMeetGlobalConfig           globalConfig)
     {
         super(
+            bundleContext,
             true /* handles SIP Jibri events */,
             conference,
             xmppConnection,
@@ -133,6 +137,7 @@ public class JibriSipGateway
             String sessionId = generateSessionId();
             JibriSession jibriSession
                 = new JibriSession(
+                        bundleContext,
                         this,
                         conference.getRoomName(),
                         iq.getFrom(),
