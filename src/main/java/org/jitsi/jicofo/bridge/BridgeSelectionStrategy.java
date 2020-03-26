@@ -136,7 +136,7 @@ abstract class BridgeSelectionStrategy
      * overloaded.
      *
      * @param bridges the list of operational bridges, ordered by load.
-     * @param participantRegion the set of bridges that are already used in the conference.
+     * @param participantRegion the participant region.
      *
      * @return an optional that contains a bridge that is not loaded and that is
      * in the participant region.
@@ -220,7 +220,7 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * Finds the least loaded bridge that is already handling the conference.
+     * Finds the least loaded non overloaded bridge that is already handling the conference.
      *
      * @param bridges the list of operational bridges, ordered by load.
      * @param conferenceBridges the set of bridges that are already used in the
@@ -229,9 +229,9 @@ abstract class BridgeSelectionStrategy
      * @return an optional that contains the least loaded bridge that is already
      * in the  conference, if it exists.
      */
-    private Optional<Bridge> leastLoadedAlreadyInConference(List<Bridge> bridges,
-                                                            List<Bridge> conferenceBridges,
-                                                            String participantRegion)
+    private Optional<Bridge> nonLoadedAlreadyInConference(List<Bridge> bridges,
+                                                          List<Bridge> conferenceBridges,
+                                                          String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
@@ -295,7 +295,7 @@ abstract class BridgeSelectionStrategy
             () -> notLoadedInRegion(bridges, participantRegion).orElseGet(
                 () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
                     () -> leastLoadedInRegion(bridges, participantRegion).orElseGet(
-                        () -> leastLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
+                        () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
                             () -> leastLoaded(bridges).orElse(null))))));
     }
 

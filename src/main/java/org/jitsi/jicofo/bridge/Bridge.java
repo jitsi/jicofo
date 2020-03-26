@@ -51,7 +51,7 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * A conservative estimate of the average sum of egress + egress packet rate
+     * A conservative estimate of the average sum of ingress + egress packet rate
      * (in pps) of a video stream flowing through the bridge. Note that the term
      * "video stream" comes from {@link ColibriConferenceImpl#trackVideoChannelsAddedRemoved},
      * so it's equivalent to a participant.
