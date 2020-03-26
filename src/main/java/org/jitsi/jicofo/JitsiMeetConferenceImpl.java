@@ -124,6 +124,13 @@ public class JitsiMeetConferenceImpl
     private final ProtocolProviderHandler protocolProviderHandler;
 
     /**
+     * XMPP protocol provider used for the JVB connection. Unless configured
+     * with properties defined in {@link BridgeMucDetector} it wil be the same
+     * as {@link #protocolProviderHandler}
+     */
+    private final ProtocolProviderHandler jvbXmppConnection;
+
+    /**
      * The name of XMPP user used by the focus to login.
      */
     private final Resourcepart focusUserName;
@@ -282,6 +289,7 @@ public class JitsiMeetConferenceImpl
     public JitsiMeetConferenceImpl(EntityBareJid            roomName,
                                    Resourcepart             focusUserName,
                                    ProtocolProviderHandler  protocolProviderHandler,
+                                   ProtocolProviderHandler  jvbXmppConnection,
                                    ConferenceListener       listener,
                                    JitsiMeetConfig          config,
                                    JitsiMeetGlobalConfig    globalConfig,
@@ -292,6 +300,9 @@ public class JitsiMeetConferenceImpl
         this.protocolProviderHandler
             = Objects.requireNonNull(
                     protocolProviderHandler, "protocolProviderHandler");
+        this.jvbXmppConnection
+            = Objects.requireNonNull(
+                    jvbXmppConnection, "jvbXmppConnection");
         this.config = Objects.requireNonNull(config, "config");
 
         this.id = id;
@@ -311,14 +322,15 @@ public class JitsiMeetConferenceImpl
     public JitsiMeetConferenceImpl(EntityBareJid            roomName,
                                    Resourcepart             focusUserName,
                                    ProtocolProviderHandler  protocolProviderHandler,
+                                   ProtocolProviderHandler  jvbXmppConnection,
                                    ConferenceListener       listener,
                                    JitsiMeetConfig          config,
                                    JitsiMeetGlobalConfig    globalConfig,
                                    Level                    logLevel,
                                    String                   id)
     {
-       this(roomName, focusUserName, protocolProviderHandler, listener,
-           config, globalConfig, logLevel, id, false);
+       this(roomName, focusUserName, protocolProviderHandler, jvbXmppConnection,
+            listener, config, globalConfig, logLevel, id, false);
     }
 
     /**
@@ -343,7 +355,7 @@ public class JitsiMeetConferenceImpl
         try
         {
             colibri
-                = protocolProviderHandler.getOperationSet(
+                = jvbXmppConnection.getOperationSet(
                         OperationSetColibriConference.class);
             jingle
                 = protocolProviderHandler.getOperationSet(
@@ -407,7 +419,11 @@ public class JitsiMeetConferenceImpl
             {
                 jibriRecorder
                     = new JibriRecorder(
-                            this, getXmppConnection(), executor, globalConfig);
+                            osgiCtx,
+                            this,
+                            getXmppConnection(),
+                            executor,
+                            globalConfig);
 
                 jibriOpSet.addJibri(jibriRecorder);
             }
@@ -417,6 +433,7 @@ public class JitsiMeetConferenceImpl
             {
                 jibriSipGateway
                     = new JibriSipGateway(
+                            osgiCtx,
                             this,
                             getXmppConnection(),
                             FocusBundleActivator.getSharedThreadPool(),
@@ -822,6 +839,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Get a stream of those bridges which are operational.
+     * Caller should be synchronized on bridges.
+     */
+    private Stream<BridgeSession> operationalBridges()
+    {
+        return bridges.stream().
+            filter(session -> !session.hasFailed && session.bridge.isOperational());
+    }
+
+    /**
      * Invites a {@link Participant} to the conference. Selects the
      * {@link BridgeSession} to use and starts a new {@link
      * ParticipantChannelAllocator} to allocate COLIBRI channels and initiate
@@ -869,7 +896,7 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridges.size()));
 
-                if (bridges.size() >= 2)
+                if (operationalBridges().count() >= 2)
                 {
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
@@ -916,7 +943,8 @@ public class JitsiMeetConferenceImpl
                                  ". All relays:" + allRelays);
             }
 
-            bridges.forEach(bridge -> bridge.setRelays(allRelays));
+            operationalBridges().
+                forEach(bridge -> bridge.setRelays(allRelays));
         }
     }
 
@@ -930,7 +958,7 @@ public class JitsiMeetConferenceImpl
         synchronized (bridges)
         {
             return
-                bridges.stream()
+                operationalBridges()
                     .map(bridge -> bridge.bridge.getRelayId())
                     .filter(Objects::nonNull)
                     .filter(bridge -> !bridge.equals(exclude))
@@ -1676,7 +1704,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (bridges)
         {
-            bridges.stream()
+            operationalBridges()
                 .filter(bridge -> !bridge.equals(exclude))
                 .forEach(
                     bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
@@ -1961,7 +1989,7 @@ public class JitsiMeetConferenceImpl
 
         synchronized (bridges)
         {
-            bridges.stream()
+            operationalBridges()
                 .filter(bridge -> !bridge.equals(bridgeSession))
                 .forEach(
                     bridge -> bridge.removeSourcesFromOcto(
@@ -2072,7 +2100,7 @@ public class JitsiMeetConferenceImpl
      */
     private MediaSourceMap getAllSources()
     {
-        return getAllSources(Collections.EMPTY_LIST);
+        return getAllSources(Collections.emptyList());
     }
 
     /**
@@ -2125,7 +2153,7 @@ public class JitsiMeetConferenceImpl
      */
     private MediaSourceGroupMap getAllSourceGroups()
     {
-        return getAllSourceGroups(Collections.EMPTY_LIST);
+        return getAllSourceGroups(Collections.emptyList());
     }
 
     /**
@@ -2404,7 +2432,7 @@ public class JitsiMeetConferenceImpl
      */
     void onBridgeDown(Jid bridgeJid)
     {
-        List<Participant> participantsToReinvite = Collections.EMPTY_LIST;
+        List<Participant> participantsToReinvite = Collections.emptyList();
 
         synchronized (bridges)
         {

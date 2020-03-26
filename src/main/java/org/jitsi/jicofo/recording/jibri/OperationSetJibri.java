@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -97,8 +98,8 @@ public class OperationSetJibri
             return theJibri.handleIQRequest((JibriIq) iq);
         }
 
-        return IQ.createErrorResponse(iq, XMPPError.getBuilder(
-            XMPPError.Condition.item_not_found));
+        return ErrorResponse.create(
+                iq, XMPPError.Condition.item_not_found, null);
     }
 
     @Override

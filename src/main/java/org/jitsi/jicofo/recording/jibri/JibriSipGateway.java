@@ -17,15 +17,19 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
 
 /**
  * A Jibri SIP gateway that manages SIP calls for single conference. Relies on
@@ -54,6 +58,7 @@ public class JibriSipGateway
 
     /**
      * Creates new instance of {@link JibriSipGateway}.
+     * @param bundleContext OSGi context.
      * @param conference parent conference for which the new instance will be
      * managing Jibri SIP sessions.
      * @param xmppConnection the connection which will be used to send XMPP
@@ -62,12 +67,14 @@ public class JibriSipGateway
      * @param globalConfig the global config that provides some values required
      * by {@link JibriSession} to work.
      */
-    public JibriSipGateway( JitsiMeetConferenceImpl         conference,
+    public JibriSipGateway( BundleContext                   bundleContext,
+                            JitsiMeetConferenceImpl         conference,
                             XmppConnection                  xmppConnection,
                             ScheduledExecutorService        scheduledExecutor,
                             JitsiMeetGlobalConfig           globalConfig)
     {
         super(
+            bundleContext,
             true /* handles SIP Jibri events */,
             conference,
             xmppConnection,
@@ -130,6 +137,7 @@ public class JibriSipGateway
             String sessionId = generateSessionId();
             JibriSession jibriSession
                 = new JibriSession(
+                        bundleContext,
                         this,
                         conference.getRoomName(),
                         iq.getFrom(),
@@ -143,24 +151,39 @@ public class JibriSipGateway
                         displayName, null, null, sessionId, null,
                         classLogger);
             sipSessions.put(sipAddress, jibriSession);
-            // Try starting Jibri
-            if (jibriSession.start())
+
+            try
             {
+                jibriSession.start();
                 logger.info("Started Jibri session");
+
                 return JibriIq.createResult(iq, sessionId);
             }
-            else
+            catch (StartException exc)
             {
-                logger.info("Failed to start a Jibri session");
+                String reason = exc.getReason();
+                logger.info(
+                    "Failed to start a Jibri session: "  +  reason, exc);
                 sipSessions.remove(sipAddress);
                 ErrorIQ errorIq;
-                if (jibriDetector.isAnyInstanceConnected())
+                if (StartException.ALL_BUSY.equals(reason))
                 {
-                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.resource_constraint,
+                            "all Jibris are busy");
                 }
-                else
+                else if(StartException.NOT_AVAILABLE.equals(reason))
                 {
-                    errorIq = IQ.createErrorResponse(iq, XMPPError.Condition.service_unavailable);
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.service_unavailable,
+                            "no Jibri instances available");
+                } else {
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.internal_server_error,
+                            reason);
                 }
                 return errorIq;
             }
@@ -168,11 +191,10 @@ public class JibriSipGateway
         else
         {
             // Bad request - no SIP address
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                     iq,
-                    XMPPError.from(
-                            XMPPError.Condition.bad_request,
-                            "Stream ID is empty or undefined").build());
+                    XMPPError.Condition.bad_request,
+                    "Stream ID is empty or undefined");
         }
     }
 

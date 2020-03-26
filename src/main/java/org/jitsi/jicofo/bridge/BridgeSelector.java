@@ -37,6 +37,7 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -172,11 +173,12 @@ public class BridgeSelector
             {
                 try
                 {
-                    Class clazz = Class.forName(clazzName);
-                    strategy = (BridgeSelectionStrategy)clazz.newInstance();
+                    Class<?> clazz = Class.forName(clazzName);
+                    strategy = (BridgeSelectionStrategy)clazz.getConstructor().newInstance();
                 }
-                catch (ClassNotFoundException | InstantiationException
-                        | IllegalAccessException e)
+                catch (ClassNotFoundException | InstantiationException |
+                    IllegalAccessException | NoSuchMethodException |
+                    InvocationTargetException e)
                 {
                 }
 
@@ -184,13 +186,14 @@ public class BridgeSelector
                 {
                     try
                     {
-                        Class clazz =
+                        Class<?> clazz =
                             Class.forName(
                                 getClass().getPackage().getName() + "." + clazzName);
-                        strategy = (BridgeSelectionStrategy)clazz.newInstance();
+                        strategy = (BridgeSelectionStrategy)clazz.getConstructor().newInstance();
                     }
-                    catch (ClassNotFoundException | InstantiationException
-                            | IllegalAccessException e)
+                    catch (ClassNotFoundException | InstantiationException |
+                        IllegalAccessException | NoSuchMethodException |
+                        InvocationTargetException e)
                     {
                         logger.error("Failed to find class for: " + clazzName, e);
                     }

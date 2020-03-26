@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.*;
@@ -24,6 +25,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,6 +43,11 @@ import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
  */
 public abstract class CommonJibriStuff
 {
+    /**
+     * OSGI bundle context.
+     */
+    protected final BundleContext bundleContext;
+
     /**
      * The Jitsi Meet conference instance.
      */
@@ -88,6 +95,7 @@ public abstract class CommonJibriStuff
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
+     * @param bundleContext OSGi {@link BundleContext}.
      * @param isSIP indicates whether this stuff is for SIP Jibri or for regular
      *        Jibris.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
@@ -98,7 +106,7 @@ public abstract class CommonJibriStuff
      * @param globalConfig the global config that provides some values required
      *        by <tt>JibriRecorder</tt> to work.
      */
-    CommonJibriStuff(
+    CommonJibriStuff(      BundleContext                   bundleContext,
                            boolean                         isSIP,
                            JitsiMeetConferenceImpl         conference,
                            XmppConnection                  xmppConnection,
@@ -106,6 +114,7 @@ public abstract class CommonJibriStuff
                            JitsiMeetGlobalConfig           globalConfig,
                            Logger                          logger)
     {
+        this.bundleContext = Objects.requireNonNull(bundleContext, "bundleContext");
         this.connection
             = Objects.requireNonNull(xmppConnection, "xmppConnection");
         this.conference = Objects.requireNonNull(conference, "conference");
@@ -262,7 +271,10 @@ public abstract class CommonJibriStuff
                 // (so it isn't XMPPError.Condition.service_unavailable), so it
                 // must be that they're all busy.
                 logger.info("Failed to start a Jibri session, all Jibris were busy");
-                return IQ.createErrorResponse(iq, XMPPError.Condition.resource_constraint);
+                return ErrorResponse.create(
+                        iq,
+                        XMPPError.Condition.resource_constraint,
+                        "all Jibris are busy");
             }
         }
         // stop ?

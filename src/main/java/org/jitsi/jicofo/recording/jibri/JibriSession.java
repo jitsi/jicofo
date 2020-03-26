@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -29,6 +31,7 @@ import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -50,6 +53,11 @@ public class JibriSession
      */
     static private final Logger classLogger
         = Logger.getLogger(JibriSession.class);
+
+    /**
+     * Provides the {@link EventAdmin} instance for emitting events.
+     */
+    private final EventAdminProvider eventAdminProvider;
 
     /**
      * Returns <tt>true</tt> if given <tt>status</tt> indicates that Jibri is in
@@ -182,6 +190,7 @@ public class JibriSession
 
     /**
      * Creates new {@link JibriSession} instance.
+     * @param bundleContext the OSGI context.
      * @param owner the session owner which will be notified about this session
      * state changes.
      * @param roomName the name if the XMPP MUC room (full address).
@@ -206,6 +215,7 @@ public class JibriSession
      * select logging level for this instance {@link #logger}.
      */
     JibriSession(
+            BundleContext bundleContext,
             JibriSession.Owner owner,
             EntityBareJid roomName,
             Jid initiator,
@@ -223,6 +233,7 @@ public class JibriSession
             String applicationData,
             Logger logLevelDelegate)
     {
+        this.eventAdminProvider = new EventAdminProvider(bundleContext);
         this.owner = owner;
         this.roomName = roomName;
         this.initiator = initiator;
@@ -243,32 +254,101 @@ public class JibriSession
     }
 
     /**
-     * Starts this session. A new Jibri instance will be selected and start
-     * request will be sent (in non blocking mode).
-     * @return true if the start is successful, false otherwise
+     * Used internally to call
+     * {@link Owner#onSessionStateChanged(JibriSession, Status, FailureReason)}.
+     * @param newStatus the new status to dispatch.
+     * @param failureReason the failure reason associated with the state
+     * transition if any.
      */
-    synchronized public boolean start()
+    private void dispatchSessionStateChanged(
+            Status newStatus, FailureReason failureReason)
     {
-        final Jid jibriJid = jibriDetector.selectJibri();
-        if (jibriJid != null)
+        if (failureReason != null)
         {
-            try
-            {
-                jibriEventHandler.start(FocusBundleActivator.bundleContext);
-                sendJibriStartIq(jibriJid);
-                logger.info("Starting session with Jibri " + jibriJid);
-                return true;
-            }
-            catch (Exception e)
-            {
-                logger.error("Failed to start Jibri event handler: " + e, e);
-            }
+            emitSessionFailedEvent();
+        }
+        owner.onSessionStateChanged(this, newStatus, failureReason);
+    }
+
+    /**
+     * Asynchronously emits {@link JibriSessionEvent#FAILED_TO_START} event over
+     * the {@link EventAdmin} bus.
+     */
+    private void emitSessionFailedEvent()
+    {
+        JibriSessionEvent.Type jibriType;
+        if (isSIP)
+        {
+            jibriType = JibriSessionEvent.Type.SIP_CALL;
+        }
+        else if (StringUtils.isNullOrEmpty(streamID))
+        {
+            jibriType = JibriSessionEvent.Type.RECORDING;
         }
         else
         {
-            logger.error("Unable to find an available Jibri, can't start");
+            jibriType = JibriSessionEvent.Type.LIVE_STREAMING;
         }
-        return false;
+
+        eventAdminProvider
+                .get()
+                .postEvent(
+                        JibriSessionEvent.newFailedToStartEvent(jibriType));
+    }
+
+    /**
+     * Starts this session. A new Jibri instance will be selected and start
+     * request will be sent (in non blocking mode).
+     * @throws StartException if failed to start.
+     */
+    synchronized public void start()
+        throws StartException
+    {
+        try
+        {
+            startInternal();
+        }
+        catch (Exception e)
+        {
+            emitSessionFailedEvent();
+
+            throw e;
+        }
+    }
+
+    /**
+     * Does the actual start logic.
+     *
+     * @throws StartException if fails  to start.
+     */
+    private void startInternal()
+        throws StartException
+    {
+        final Jid jibriJid = jibriDetector.selectJibri();
+
+        if (jibriJid == null) {
+            logger.error("Unable to find an available Jibri, can't start");
+
+            if (jibriDetector.isAnyInstanceConnected()) {
+                throw new StartException(StartException.ALL_BUSY);
+            }
+
+            throw new StartException(StartException.NOT_AVAILABLE);
+        }
+
+        try
+        {
+            jibriEventHandler.start(FocusBundleActivator.bundleContext);
+            logger.info("Starting session with Jibri " + jibriJid);
+
+            sendJibriStartIq(jibriJid);
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to send start Jibri IQ: " + e, e);
+
+            throw new StartException(StartException.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -299,8 +379,21 @@ public class JibriSession
             xmpp.sendIqWithResponseCallback(
                     stopRequest,
                     stanza -> {
-                        JibriIq resp = (JibriIq)stanza;
-                        processJibriIqFromJibri(resp);
+                        if (stanza instanceof JibriIq) {
+                            processJibriIqFromJibri((JibriIq) stanza);
+                        } else {
+                            logger.error(
+                                "Unexpected response to stop iq: "
+                                + (stanza != null ? stanza.toXML() : "null"));
+
+                            JibriIq error = new JibriIq();
+
+                            error.setFrom(stopRequest.getTo());
+                            error.setFailureReason(FailureReason.ERROR);
+                            error.setStatus(Status.OFF);
+
+                            processJibriIqFromJibri(error);
+                        }
                     },
                     exception -> {
                         logger.error(
@@ -406,8 +499,12 @@ public class JibriSession
     /**
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
+     * @throws OperationFailedException if XMPP connection failed
+     * @throws StartException if something went wrong
      */
     private void sendJibriStartIq(final Jid jibriJid)
+        throws OperationFailedException,
+               StartException
     {
         // Store Jibri JID to make the packet filter accept the response
         currentJibriJid = jibriJid;
@@ -450,15 +547,31 @@ public class JibriSession
         // timeout each time.
         reschedulePendingTimeout();
 
-        try
+        IQ reply = xmpp.sendPacketAndGetReply(startIq);
+
+        if (!(reply instanceof JibriIq))
         {
-            JibriIq result = (JibriIq)xmpp.sendPacketAndGetReply(startIq);
-            processJibriIqFromJibri(result);
+            logger.error(
+                    "Unexpected response to start request: "
+                            + (reply != null ? reply.toXML() : "null"));
+
+            throw new StartException(StartException.UNEXPECTED_RESPONSE);
         }
-        catch (OperationFailedException e)
+
+        JibriIq jibriIq = (JibriIq) reply;
+
+        // According to the "protocol" only PENDING status is allowed in
+        // response to the start request.
+        if (!Status.PENDING.equals(jibriIq.getStatus()))
         {
-            logger.error("Error sending Jibri start IQ: " + e.toString());
+            logger.error(
+                "Unexpected status received in response to the start IQ: "
+                        + jibriIq.toXML());
+
+            throw new StartException(StartException.UNEXPECTED_RESPONSE);
         }
+
+        processJibriIqFromJibri(jibriIq);
     }
 
     /**
@@ -496,13 +609,13 @@ public class JibriSession
 
     /**
      * Retry the current request with another Jibri (if one is available)
-     * @return true if we were able to find another Jibri to retry the request
-     * with, false otherwise
+     * @throws StartException if failed to start.
      */
-    private boolean retryRequestWithAnotherJibri()
+    private void retryRequestWithAnotherJibri()
+        throws StartException
     {
         numRetries++;
-        return start();
+        start();
     }
 
     /**
@@ -569,18 +682,23 @@ public class JibriSession
             if (shouldRetry && !maxRetriesExceeded())
             {
                 logger.info("Jibri failed, trying to fall back to another Jibri");
-                if (retryRequestWithAnotherJibri())
+
+                try
                 {
+                    retryRequestWithAnotherJibri();
+
                     // The fallback to another Jibri succeeded.
-                    logger.info("Successfully resumed session with another Jibri");
+                    logger.info(
+                        "Successfully resumed session with another Jibri");
                 }
-                else
+                catch (StartException exc)
                 {
-                    logger.info("Failed to fall back to another Jibri, this "
-                        + "session has now failed");
+                    logger.info(
+                        "Failed to fall back to another Jibri, this "
+                            + "session has now failed: " + exc, exc);
                     // Propagate up that the session has failed entirely.
                     // We'll pass the original failure reason.
-                    owner.onSessionStateChanged(this, newStatus, failureReason);
+                    dispatchSessionStateChanged(newStatus, failureReason);
                     cleanupSession();
                 }
             }
@@ -599,7 +717,7 @@ public class JibriSession
                     logger.info("Jibri failed, but max amount of retries ("
                         + maxNumRetries + ") reached, giving up");
                 }
-                owner.onSessionStateChanged(this, newStatus, failureReason);
+                dispatchSessionStateChanged(newStatus, failureReason);
                 cleanupSession();
             }
         }
@@ -608,14 +726,13 @@ public class JibriSession
             logger.info("Jibri session ended cleanly, notifying owner and "
                 + "cleaning up session");
             // The Jibri stopped for some non-error reason
-            owner.onSessionStateChanged(this, newStatus, failureReason);
+            dispatchSessionStateChanged(newStatus, null);
             cleanupSession();
         }
         else if (Status.ON.equals(newStatus))
         {
             logger.info("Jibri session started, notifying owner");
-            // The Jibri stopped for some non-error reason
-            owner.onSessionStateChanged(this, newStatus, failureReason);
+            dispatchSessionStateChanged(newStatus, null);
         }
     }
 
@@ -752,5 +869,27 @@ public class JibriSession
                 JibriSession      jibriSession,
                 JibriIq.Status    newStatus,
                 JibriIq.FailureReason         failureReason);
+    }
+
+    static public class StartException extends Exception
+    {
+        final static String ALL_BUSY = "All Jibri instances are busy";
+        final static String INTERNAL_SERVER_ERROR = "Internal server error";
+        final static String NOT_AVAILABLE = "No Jibris available";
+        final static String UNEXPECTED_RESPONSE = "Unexpected response";
+
+        private final String reason;
+
+        StartException(String reason)
+        {
+            super(reason);
+
+            this.reason = reason;
+        }
+
+        String getReason()
+        {
+            return reason;
+        }
     }
 }

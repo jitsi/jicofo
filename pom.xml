@@ -20,6 +20,7 @@
     <jitsi-desktop.version>2.13.cb5485e</jitsi-desktop.version>
     <slf4j.version>1.7.26</slf4j.version>
     <apache-http.version>4.4.1</apache-http.version>
+    <jersey.version>2.30.1</jersey.version>
   </properties>
 
   <dependencies>
@@ -107,7 +108,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.1-7-g05338ab</version>
+      <version>1.1-22-gbec9167</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -187,22 +188,22 @@
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-jetty-http</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-servlet</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.inject</groupId>
       <artifactId>jersey-hk2</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
       <artifactId>jersey-media-json-jackson</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
     </dependency>
     <!-- jersey relies on this version of javassist or we get hk2
     errors, but other libs (Powermock, at this time) also rely on
@@ -249,19 +250,19 @@
     <dependency>
       <groupId>org.glassfish.jersey.test-framework</groupId>
       <artifactId>jersey-test-framework-core</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.test-framework.providers</groupId>
       <artifactId>jersey-test-framework-provider-jetty</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.test-framework.providers</groupId>
       <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
-      <version>2.29</version>
+      <version>${jersey.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

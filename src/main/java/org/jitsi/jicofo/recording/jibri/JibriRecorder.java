@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
@@ -24,8 +25,11 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
+import org.osgi.framework.*;
 
 import java.util.concurrent.*;
+
+import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
 
 /**
  * Handles conference recording through Jibri.
@@ -55,6 +59,7 @@ public class JibriRecorder
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
+     * @param bundleContext OSGi {@link BundleContext}.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
      *        instance.
      * @param connection the XMPP connection which will be used for
@@ -63,12 +68,14 @@ public class JibriRecorder
      * @param globalConfig the global config that provides some values required
      *                     by <tt>JibriRecorder</tt> to work.
      */
-    public JibriRecorder(JitsiMeetConferenceImpl         conference,
+    public JibriRecorder(BundleContext                   bundleContext,
+                         JitsiMeetConferenceImpl         conference,
                          XmppConnection                  connection,
                          ScheduledExecutorService        scheduledExecutor,
                          JitsiMeetGlobalConfig           globalConfig)
     {
         super(
+            bundleContext,
             false /* deals with non SIP Jibri events */,
             conference,
             connection,
@@ -137,6 +144,7 @@ public class JibriRecorder
             String sessionId = generateSessionId();
             jibriSession
                 = new JibriSession(
+                    bundleContext,
                     this,
                     conference.getRoomName(),
                     iq.getFrom(),
@@ -147,59 +155,73 @@ public class JibriRecorder
                     jibriDetector,
                     false, null, displayName, streamID, youTubeBroadcastId, sessionId, applicationData,
                     classLogger);
-            if (jibriSession.start())
+
+            try
             {
+                jibriSession.start();
                 logger.info("Started Jibri session");
+
                 return JibriIq.createResult(iq, sessionId);
             }
-            else
+            catch (JibriSession.StartException exc)
             {
                 ErrorIQ errorIq;
-                if (jibriDetector.isAnyInstanceConnected())
+                String reason = exc.getReason();
+
+                if (StartException.ALL_BUSY.equals(reason))
                 {
                     logger.info("Failed to start a Jibri session, " +
-                        "all Jibris were busy");
-                    errorIq = IQ.createErrorResponse(
-                        iq, XMPPError.Condition.resource_constraint);
+                                        "all Jibris were busy");
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.resource_constraint,
+                            "all Jibris are busy");
+                }
+                else if (StartException.NOT_AVAILABLE.equals(reason))
+                {
+                    logger.info("Failed to start a Jibri session, " +
+                                        "no Jibris available");
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.service_unavailable,
+                            "no Jibri instances available");
                 }
                 else
                 {
-                    logger.info("Failed to start a Jibri session, " +
-                        "no Jibris available");
-                    errorIq = IQ.createErrorResponse(
-                        iq, XMPPError.Condition.service_unavailable);
+                    logger.info(
+                        "Failed to start a Jibri session:" + reason, exc);
+                    errorIq = ErrorResponse.create(
+                            iq,
+                            XMPPError.Condition.internal_server_error,
+                            reason);
                 }
                 jibriSession = null;
                 return errorIq;
             }
-
         }
         else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
         {
             // Bad request - no stream ID and no recording mode
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                 iq,
-                XMPPError.from(
-                    XMPPError.Condition.bad_request,
-                    "Stream ID is empty and recording mode is not FILE"));
+                XMPPError.Condition.bad_request,
+                "Stream ID is empty and recording mode is not FILE");
         }
         else if (emptyStreamId && recordingMode.equals(RecordingMode.STREAM))
         {
             // Bad request - no stream ID
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                     iq,
-                    XMPPError.from(
-                            XMPPError.Condition.bad_request,
-                            "Stream ID is empty or undefined"));
+                    XMPPError.Condition.bad_request,
+                    "Stream ID is empty or undefined");
         }
         else
         {
             // Bad request - catch all
-            return IQ.createErrorResponse(
+            return ErrorResponse.create(
                     iq,
-                    XMPPError.from(
-                        XMPPError.Condition.bad_request,
-                        "Invalid recording mode and stream ID combination"));
+                    XMPPError.Condition.bad_request,
+                    "Invalid recording mode and stream ID combination");
         }
     }
 

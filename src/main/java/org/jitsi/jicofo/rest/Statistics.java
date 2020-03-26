@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.rest;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;
@@ -63,8 +64,26 @@ public class Statistics
      */
     public static final String BREWERY_JIBRI_SIP_COUNT = "brewery_jibri_sip_count";
 
+    /**
+     * How many times the live streaming has failed to start so far.
+     */
+    public static final String TOTAL_LIVE_STREAMING_FAILURES = "total_live_streaming_failures";
+
+    /**
+     * How many times the recording has failed to start so far.
+     */
+    public static final String TOTAL_RECORDING_FAILURES = "total_recording_failures";
+
+    /**
+     * How many times a SIP call has failed to start so far.
+     */
+    public static final String TOTAL_SIP_CALL_FAILURES = "total_sip_call_failures";
+
     @Inject
     protected FocusManagerProvider focusManagerProvider;
+
+    @Inject
+    protected JibriStatsProvider jibriStatsProvider;
 
     /**
      * Returns json string with statistics.
@@ -75,9 +94,10 @@ public class Statistics
     public String getStats()
     {
         FocusManager focusManager = focusManagerProvider.get();
+        JibriStats jibriStats = jibriStatsProvider.get();
 
         JicofoStatisticsSnapshot snapshot
-            = JicofoStatisticsSnapshot.generate(focusManager);
+            = JicofoStatisticsSnapshot.generate(focusManager, jibriStats);
         JSONObject json = new JSONObject();
         json.put(CONFERENCES, snapshot.numConferences);
         json.put(LARGEST_CONFERENCE, snapshot.largestConferenceSize);
@@ -90,6 +110,9 @@ public class Statistics
         json.put(BREWERY_JIGASI_TRANSCRIBER_COUNT, snapshot.jigasiTranscriberCount);
         json.put(BREWERY_JIBRI_COUNT, snapshot.jibriCount);
         json.put(BREWERY_JIBRI_SIP_COUNT, snapshot.sipJibriCount);
+        json.put(TOTAL_LIVE_STREAMING_FAILURES, snapshot.totalLiveStreamingFailures);
+        json.put(TOTAL_RECORDING_FAILURES, snapshot.totalRecordingFailures);
+        json.put(TOTAL_SIP_CALL_FAILURES, snapshot.totalSipCallFailures);
         JSONArray conferenceSizesJson = new JSONArray();
         for (int size : snapshot.conferenceSizes)
         {
