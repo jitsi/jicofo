@@ -35,7 +35,7 @@ public class SingleBridgeSelectionStrategy
     /**
      * Default constructor.
      */
-    SingleBridgeSelectionStrategy()
+    public SingleBridgeSelectionStrategy()
     {}
 
     /**

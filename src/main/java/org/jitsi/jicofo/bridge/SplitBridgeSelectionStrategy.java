@@ -28,7 +28,7 @@ class SplitBridgeSelectionStrategy
     /**
      * Default constructor.
      */
-    SplitBridgeSelectionStrategy()
+    public SplitBridgeSelectionStrategy()
     {}
 
     /**

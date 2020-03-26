@@ -26,7 +26,7 @@ class RegionBasedBridgeSelectionStrategy
     /**
      * Default constructor.
      */
-    RegionBasedBridgeSelectionStrategy()
+    public RegionBasedBridgeSelectionStrategy()
     {}
 
     @Override
