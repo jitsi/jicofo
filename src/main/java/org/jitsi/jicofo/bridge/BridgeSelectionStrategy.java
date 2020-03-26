@@ -102,9 +102,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findNotLoadedBridgeAlreadyInConferenceInRegion(List<Bridge> bridges,
-                                                                            List<Bridge> conferenceBridges,
-                                                                            String participantRegion)
+    private Optional<Bridge> notLoadedBridgeAlreadyInConferenceInRegion(List<Bridge> bridges,
+                                                                        List<Bridge> conferenceBridges,
+                                                                        String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
@@ -134,9 +134,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findNotLoadedBridgeInRegion(List<Bridge> bridges,
-                                                         List<Bridge> conferenceBridges,
-                                                         String participantRegion)
+    private Optional<Bridge> notLoadedBridgeInRegion(List<Bridge> bridges,
+                                                     List<Bridge> conferenceBridges,
+                                                     String participantRegion)
     {
         // NOTE that A2 is equivalent to B1 but we include it as a separate
         // step for clarity when comparing the code to the document that
@@ -170,9 +170,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findLeastLoadedBridgeAlreadyInConferenceInRegion(List<Bridge> bridges,
-                                                                              List<Bridge> conferenceBridges,
-                                                                              String participantRegion)
+    private Optional<Bridge> leastLoadedBridgeAlreadyInConferenceInRegion(List<Bridge> bridges,
+                                                                          List<Bridge> conferenceBridges,
+                                                                          String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(selectFrom(conferenceBridges))
@@ -200,9 +200,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findLeastLoadedBridgeInRegion(List<Bridge> bridges,
-                                                           List<Bridge> conferenceBridges,
-                                                           String participantRegion)
+    private Optional<Bridge> leastLoadedBridgeInRegion(List<Bridge> bridges,
+                                                       List<Bridge> conferenceBridges,
+                                                       String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(inRegion(participantRegion))
@@ -230,9 +230,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findLeastLoadedBridgeAlreadyInConference(List<Bridge> bridges,
-                                                                      List<Bridge> conferenceBridges,
-                                                                      String participantRegion)
+    private Optional<Bridge> leastLoadedBridgeAlreadyInConference(List<Bridge> bridges,
+                                                                  List<Bridge> conferenceBridges,
+                                                                  String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
@@ -258,9 +258,9 @@ abstract class BridgeSelectionStrategy
      *
      * @return
      */
-    private Optional<Bridge> findLeastLoadedBridge(List<Bridge> bridges,
-                                                   List<Bridge> conferenceBridges,
-                                                   String participantRegion)
+    private Optional<Bridge> leastLoadedBridge(List<Bridge> bridges,
+                                               List<Bridge> conferenceBridges,
+                                               String participantRegion)
     {
         Optional<Bridge> result = bridges.stream().findFirst();
 
@@ -297,12 +297,12 @@ abstract class BridgeSelectionStrategy
             return null;
         }
 
-        return findNotLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-            () -> findNotLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> findLeastLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                    () -> findLeastLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                        () -> findLeastLoadedBridgeAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
-                            () -> findLeastLoadedBridge(bridges, conferenceBridges, participantRegion).orElse(null))))));
+        return notLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+            () -> notLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> leastLoadedBridgeAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                    () -> leastLoadedBridgeInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                        () -> leastLoadedBridgeAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
+                            () -> leastLoadedBridge(bridges, conferenceBridges, participantRegion).orElse(null))))));
     }
 
     /**
