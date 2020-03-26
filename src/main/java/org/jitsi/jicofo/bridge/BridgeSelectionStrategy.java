@@ -139,10 +139,6 @@ abstract class BridgeSelectionStrategy
     private Optional<Bridge> notLoadedBridgeInRegion(List<Bridge> bridges,
                                                      String participantRegion)
     {
-        // NOTE that A2 is equivalent to B1 but we include it as a separate
-        // step for clarity when comparing the code to the document that
-        // describes the load balancing scheme.
-
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
             .filter(inRegion(participantRegion))
