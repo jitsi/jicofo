@@ -93,14 +93,16 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * A1. (Happy case 1): There is a NOL bridge in the conference and in the
-     * region. Use the least loaded of them.
+     * Finds the least loaded bridge in the participant's region that is not
+     * overloaded and that is already handling the conference.
      *
-     * @param bridges
-     * @param conferenceBridges
-     * @param participantRegion
+     * @param bridges the list of operational bridges, ordered by load.
+     * @param conferenceBridges the set of bridges that are already used in the conference.
+     * @param participantRegion the participant region.
      *
-     * @return
+     * @return an optional that contains a bridge that is not loaded and that
+     * is already in the conference and that is in the participant region, if it
+     * exists.
      */
     private Optional<Bridge> notLoadedBridgeAlreadyInConferenceInRegion(List<Bridge> bridges,
                                                                         List<Bridge> conferenceBridges,
@@ -125,14 +127,14 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * A2. (Happy case 2): There is a NOL bridge in the region, and the
-     * conference has no bridges in the region. Use the least loaded bridge in
-     * the region.
+     * Finds the least loaded bridge in the participant's region that is not
+     * overloaded.
      *
-     * @param bridges
-     * @param participantRegion
+     * @param bridges the list of operational bridges, ordered by load.
+     * @param participantRegion the set of bridges that are already used in the conference.
      *
-     * @return
+     * @return an optional that contains a bridge that is not loaded and that is
+     * in the participant region.
      */
     private Optional<Bridge> notLoadedBridgeInRegion(List<Bridge> bridges,
                                                      String participantRegion)
@@ -158,15 +160,15 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * C1. (Overload case 1): All bridges in the region are overloaded, and the
-     * conference has a bridge in the region. Use the least loaded conference
-     * bridge in the region.
+     * Finds the least loaded conference bridge in the participant's region that
+     * is already handling the conference.
      *
-     * @param bridges
-     * @param conferenceBridges
-     * @param participantRegion
+     * @param bridges the list of operational bridges, ordered by load.
+     * @param conferenceBridges the set of bridges that are already used in the conference.
+     * @param participantRegion the participant region.
      *
-     * @return
+     * @return an optional that contains the least loaded bridge that is already
+     * in the conference and that is in the participant region if it exists.
      */
     private Optional<Bridge> leastLoadedBridgeAlreadyInConferenceInRegion(List<Bridge> bridges,
                                                                           List<Bridge> conferenceBridges,
@@ -189,14 +191,13 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * C2. (Overload case 2): All bridges in the region are overloaded, and the
-     * conference has no bridges in the region. Use the least loaded bridge in
-     * the region.
+     * Finds the least loaded bridge in the participant's region.
      *
-     * @param bridges
-     * @param participantRegion
+     * @param bridges the list of operational bridges, ordered by load.
+     * @param participantRegion the participant region.
      *
-     * @return
+     * @return an optional that contains the least loaded bridge in the
+     * participant's region if it exists.
      */
     private Optional<Bridge> leastLoadedBridgeInRegion(List<Bridge> bridges,
                                                        String participantRegion)
@@ -218,13 +219,14 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * D1. (No-region-match case 1): There are NO bridges in the region, and the
-     * conference has a NOL bridge. Use the least loaded conference bridge.
+     * Finds the least loaded bridge that is already handling the conference.
      *
-     * @param bridges
-     * @param conferenceBridges
+     * @param bridges the list of operational bridges, ordered by load.
+     * @param conferenceBridges the set of bridges that are already used in the
+     * conference.
      *
-     * @return
+     * @return an optional that contains the least loaded bridge that is already
+     * in the  conference, if it exists.
      */
     private Optional<Bridge> leastLoadedBridgeAlreadyInConference(List<Bridge> bridges,
                                                                   List<Bridge> conferenceBridges,
@@ -247,12 +249,11 @@ abstract class BridgeSelectionStrategy
     }
 
     /**
-     * D2. (No-region-match case 2): There are NO bridges in the region and all
-     * conference bridges are OL.
+     * Finds the least loaded bridge.
      *
-     * @param bridges
+     * @param bridges the list of operational bridges, ordered by load.
      *
-     * @return
+     * @return an optional that contains the least loaded bridge if it exists.
      */
     private Optional<Bridge> leastLoadedBridge(List<Bridge> bridges)
     {
