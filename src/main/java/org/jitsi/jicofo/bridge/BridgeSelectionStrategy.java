@@ -121,7 +121,7 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,rule=a1,bridge=" + result.get() +
+            logger.info("bridge_selected,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
 
@@ -151,7 +151,7 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,rule=a2,bridge=" + result.get() +
+            logger.info("bridge_selected,bridge=" + result.get() +
                 "participant_region " + participantRegion);
 
             totalNotLoadedInRegion++;
@@ -182,7 +182,7 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,rule=c1,bridge=" + result.get() +
+            logger.info("bridge_selected,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
             totalLeastLoadedAlreadyInConferenceInRegion++;
@@ -210,7 +210,7 @@ abstract class BridgeSelectionStrategy
         if (result.isPresent())
         {
 
-            logger.info("bridge_selected,rule=c2,bridge="  + result.get() +
+            logger.info("bridge_selected,bridge="  + result.get() +
                 "participant_region " + participantRegion);
 
             totalLeastLoadedInRegion++;
@@ -240,7 +240,7 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,rule=d1,bridge=" + result.get() +
+            logger.info("bridge_selected,bridge=" + result.get() +
                 ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
             totalLeastLoadedAlreadyInConference++;
@@ -262,7 +262,7 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,rule=d2,bridge=" + result.get());
+            logger.info("bridge_selected,bridge=" + result.get());
             totalLeastLoaded++;
         }
 
