@@ -465,7 +465,7 @@ public class JitsiMeetServices
     {
         JSONObject json = new JSONObject();
 
-        json.put("selector", bridgeSelector.getStats());
+        json.put("bridge_selector", bridgeSelector.getStats());
 
         return json;
     }
