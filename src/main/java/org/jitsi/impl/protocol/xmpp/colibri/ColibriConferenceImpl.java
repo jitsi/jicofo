@@ -1027,31 +1027,6 @@ public class ColibriConferenceImpl
     }
 
     /**
-     * Calculates how the video stream count will change after given video
-     * channel count modifier is applied to the current value. Video stream
-     * count is expressed as video channel count to the power of two.
-     * E.g.:
-     * current channels = 5
-     * modifier = -2
-     * result = 3 * 3 - 5 * 5 = -16
-     * Read that as "there will be 16 video streams less, after 2 video channels
-     * are removed".
-     *
-     * @param currentChannels how many video channels are there now
-     * @param channelCountDiff how many video channels are to be added/removed
-     *
-     * @return how many video streams will be added/removed when given
-     * <tt>channelCountDiff</tt> is applied to the current value.
-     */
-    static private int calcVideoStreamDiff(int currentChannels,
-                                           int channelCountDiff)
-    {
-        int newChannelCount = currentChannels + channelCountDiff;
-        return (newChannelCount * newChannelCount)
-                    - (currentChannels * currentChannels);
-    }
-
-    /**
      * Method called whenever video channels are about to be allocated/expired,
      * but before the actual request is sent. It will track the current video
      * channel count and emit {@link BridgeEvent#VIDEOSTREAMS_CHANGED}.
@@ -1066,20 +1041,11 @@ public class ColibriConferenceImpl
             return;
         }
 
-        int streamDiff = calcVideoStreamDiff(videoChannels, channelsDiff);
         videoChannels += channelsDiff;
 
-        if (streamDiff != 0)
-        {
-            eventAdmin.postEvent(
-                    BridgeEvent.createVideoStreamsChanged(
-                            jitsiVideobridge, streamDiff));
-        }
-        else
-        {
-            logger.error(
-                "Stream diff is zero ??? channels diff: " + channelsDiff);
-        }
+        eventAdmin.postEvent(
+                    BridgeEvent.createVideoChannelsChanged(
+                            jitsiVideobridge, channelsDiff));
     }
 
     /**

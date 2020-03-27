@@ -600,8 +600,8 @@ public class BridgeSelector
 
         switch (topic)
         {
-        case BridgeEvent.VIDEOSTREAMS_CHANGED:
-            bridge.onVideoStreamsChanged(bridgeEvent.getVideoStreamCount());
+        case BridgeEvent.VIDEO_CHANNELS_CHANGED:
+            bridge.onVideoChannelsChanged(bridgeEvent.getVideoChannelCount());
             break;
         }
     }
@@ -666,7 +666,7 @@ public class BridgeSelector
         this.handlerRegistration = EventUtil.registerEventHandler(
             FocusBundleActivator.bundleContext,
             new String[] {
-                BridgeEvent.VIDEOSTREAMS_CHANGED
+                BridgeEvent.VIDEO_CHANNELS_CHANGED
             },
             this);
     }

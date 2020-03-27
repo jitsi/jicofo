@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.util.*;
+import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
@@ -104,11 +105,9 @@ public class Bridge
     private final Jid jid;
 
     /**
-     * Estimates the number of new video streams added (or removed if negative)
-     * on this bridge by this jicofo instance since the last statistics update
-     * was received.
+     * Keep track of the recently allocated or removed channels.
      */
-    private int videoStreamCountDiff = 0;
+    private final RateStatistics videoChannelsRate = new RateStatistics(10000);
 
     /**
      * The last reported bitrate in Kbps.
@@ -156,11 +155,6 @@ public class Bridge
      */
     void setStats(ColibriStatsExtension stats)
     {
-        // Reset the counter for video streams added/removed since the last
-        // stats update. TODO: this, if used at all, needs to not be tied to
-        // stats.
-        videoStreamCountDiff = 0;
-
         if (stats == null)
         {
             this.stats = EMPTY_STATS;
@@ -304,15 +298,24 @@ public class Bridge
         return Double.compare(this.getStress(), o.getStress());
     }
 
-    void onVideoStreamsChanged(Integer videoStreamCount)
+    void onVideoChannelsChanged(Integer diff)
     {
-        if (videoStreamCount == null || videoStreamCount == 0)
+        if (diff == null)
         {
-            logger.error("videoStreamCount is " + videoStreamCount);
+            logger.error("diff is null");
             return;
         }
 
-        videoStreamCountDiff += videoStreamCount;
+        videoChannelsRate.update(diff, System.currentTimeMillis());
+    }
+
+    /**
+     * Returns the net number of video channels recently allocated or removed
+     * from this bridge.
+     */
+    private long getRecentVideoChannelChange()
+    {
+        return videoChannelsRate.getAccumulatedCount();
     }
 
     public Jid getJid()
@@ -359,7 +362,10 @@ public class Bridge
      */
     public double getStress()
     {
-        double stress = (lastReportedPacketRatePps + videoStreamCountDiff * AVG_PARTICIPANT_PACKET_RATE_PPS) / MAX_TOTAL_PACKET_RATE_PPS;
+        double stress =
+            (lastReportedPacketRatePps
+                + Math.max(0, getRecentVideoChannelChange()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
+            / MAX_TOTAL_PACKET_RATE_PPS;
         return Math.min(1, stress);
     }
 

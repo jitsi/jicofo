@@ -54,12 +54,13 @@ public class BridgeEvent
     /**
      * The event is emitted by
      * {@link org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl}
-     * when new video channels are being allocated/expired which results in
-     * video stream count change. It is consumed by {@link BridgeSelector}
-     * to estimate the current video stream count for each JVB.
+     * when new video channels are allocated or expired.
+     * It is consumed by {@link BridgeSelector} to estimate the net number of
+     * new video channels allocated on the bridge since the last update from
+     * that bridge was received.
      */
-    public static final String VIDEOSTREAMS_CHANGED
-        = "org/jitsi/jicofo/JVB/VIDEOSTREAMS_CHANGE";
+    public static final String VIDEO_CHANNELS_CHANGED
+        = "org/jitsi/jicofo/JVB/VIDEO_CHANNELS_CHANGED";
 
     /**
      * The key for event property
@@ -69,7 +70,7 @@ public class BridgeEvent
     /**
      * The key for video stream count property
      */
-    private final static String STREAMS_VIDEO_KEY = "bridge.streams.video";
+    private final static String VIDEO_CHANNEL_COUNT_KEY = "video.channels.count";
 
     /**
      * Used to init the properties passed to the constructor.
@@ -119,21 +120,19 @@ public class BridgeEvent
     }
 
     /**
-     * Creates {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt>.
+     * Creates an event for a change in the number of video channels allocated
+     * on a bridg.
      *
      * @param bridgeJid the JID of the bridge for which the event will be
-     *        created.
-     * @param videoStreamCount how many video streams are being added/removed.
-     *
-     * @return {@link #VIDEOSTREAMS_CHANGED} <tt>BridgeEvent</tt> for given
-     *         <tt>bridgeJid</tt>.
+     * created.
+     * @param videoChannelDiff how many video channels were added/removed.
      */
-    static public BridgeEvent createVideoStreamsChanged(Jid    bridgeJid,
-                                                        int    videoStreamCount)
+    static public BridgeEvent createVideoChannelsChanged(Jid bridgeJid,
+                                                         int videoChannelDiff)
     {
         Dictionary<String, Object> dict = initDictionary(bridgeJid);
-        dict.put(STREAMS_VIDEO_KEY, videoStreamCount);
-        return new BridgeEvent(VIDEOSTREAMS_CHANGED, dict);
+        dict.put(VIDEO_CHANNEL_COUNT_KEY, videoChannelDiff);
+        return new BridgeEvent(VIDEO_CHANNELS_CHANGED, dict);
     }
 
     /**
@@ -151,7 +150,7 @@ public class BridgeEvent
         case BRIDGE_DOWN:
         case BRIDGE_UP:
         case HEALTH_CHECK_FAILED:
-        case VIDEOSTREAMS_CHANGED:
+        case VIDEO_CHANNELS_CHANGED:
             return true;
         default:
             return false;
@@ -184,9 +183,9 @@ public class BridgeEvent
      * @return <tt>Integer</tt> or <tt>null</tt> if attribute not present for
      * given event.
      */
-    public Integer getVideoStreamCount()
+    public Integer getVideoChannelCount()
     {
-        return (Integer) getProperty(STREAMS_VIDEO_KEY);
+        return (Integer) getProperty(VIDEO_CHANNEL_COUNT_KEY);
     }
 
     /**
@@ -210,8 +209,8 @@ public class BridgeEvent
             return false;
         }
         // Compare streams added/remove
-        Integer streamCount = this.getVideoStreamCount();
-        Integer otherStreamCount = other.getVideoStreamCount();
-        return Objects.equals(streamCount, otherStreamCount);
+        Integer videoChannelCount = this.getVideoChannelCount();
+        Integer otherVideoChannelCount = other.getVideoChannelCount();
+        return Objects.equals(videoChannelCount, otherVideoChannelCount);
     }
 }
