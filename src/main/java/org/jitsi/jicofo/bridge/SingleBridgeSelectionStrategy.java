@@ -51,7 +51,8 @@ public class SingleBridgeSelectionStrategy
     {
         if (conferenceBridges.size() == 0)
         {
-            return selectLeastLoadedNearby(bridges, conferenceBridges, participantRegion);
+            return leastLoadedInRegion(bridges, participantRegion).orElseGet(
+                    () -> leastLoaded(bridges).orElse(null));
         }
         else if (conferenceBridges.size() != 1)
         {

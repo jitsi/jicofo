@@ -32,6 +32,16 @@ class RegionBasedBridgeSelectionStrategy
     @Override
     public Bridge doSelect(List<Bridge> bridges, List<Bridge> conferenceBridges, String participantRegion)
     {
-        return selectLeastLoadedNearby(bridges, conferenceBridges, participantRegion);
+        if (bridges.isEmpty())
+        {
+            return null;
+        }
+
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> notLoadedInRegion(bridges, participantRegion).orElseGet(
+                () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> leastLoadedInRegion(bridges, participantRegion).orElseGet(
+                () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> leastLoaded(bridges).orElse(null))))));
     }
 }
