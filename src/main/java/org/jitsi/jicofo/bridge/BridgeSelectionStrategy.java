@@ -20,12 +20,47 @@ abstract class BridgeSelectionStrategy
     private final static Logger logger
             = Logger.getLogger(BridgeSelectionStrategy.class);
 
-    private int totalNotLoadedAlreadyInConferenceInRegion,
-        totalNotLoadedInRegion,
-        totalLeastLoadedAlreadyInConferenceInRegion,
-        totalLeastLoadedInRegion,
-        totalLeastLoadedAlreadyInConference,
-        totalLeastLoaded;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * already in the conference, in the desired region that was not
+     * overloaded.
+     */
+    private int totalNotLoadedAlreadyInConferenceInRegion;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * in the desired region that was not overloaded.
+     */
+    private int totalNotLoadedInRegion;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * already in the conference, in the desired region.
+     */
+    private int totalLeastLoadedAlreadyInConferenceInRegion;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * in the desired region.
+     */
+    private int totalLeastLoadedInRegion;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * already in the conference.
+     */
+    private int totalLeastLoadedAlreadyInConference;
+    /**
+     * Total number of times selection succeeded because there was any bridge
+     * available.
+     */
+    private int totalLeastLoaded;
+    /**
+     * Total number of times a new bridge was added to a conference to satisfy
+     * the desired region.
+     */
+    private int totalSplitDueToRegion;
+    /**
+     * Total number of times a new bridge was added to a conference due to
+     * load.
+     */
+    private int totalSplitDueToLoad;
 
     /**
      * The local region of the jicofo instance.
@@ -144,6 +179,7 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> notLoadedInRegion(
             List<Bridge> bridges,
+            List<Bridge> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
@@ -157,9 +193,32 @@ abstract class BridgeSelectionStrategy
                 "participant_region " + participantRegion);
 
             totalNotLoadedInRegion++;
+
+            updateSplitStats(conferenceBridges, result.get(), participantRegion);
         }
 
         return result;
+    }
+
+    private void updateSplitStats(
+            List<Bridge> conferenceBridges,
+            Bridge selectedBridge,
+            String participantRegion)
+    {
+        if (!conferenceBridges.isEmpty() && !conferenceBridges.contains(selectedBridge))
+        {
+            // We added a new bridge to the conference. Was it because the
+            // conference had no bridges in that region, or because it had
+            // some, but they were over loaded?
+            if (conferenceBridges.stream().anyMatch(inRegion(participantRegion)))
+            {
+                totalSplitDueToRegion++;
+            }
+            else
+            {
+                totalSplitDueToLoad++;
+            }
+        }
     }
 
     /**
@@ -205,6 +264,7 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> leastLoadedInRegion(
             List<Bridge> bridges,
+            List<Bridge> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
@@ -218,6 +278,8 @@ abstract class BridgeSelectionStrategy
                 "participant_region " + participantRegion);
 
             totalLeastLoadedInRegion++;
+
+            updateSplitStats(conferenceBridges, result.get(), participantRegion);
         }
 
         return result;
@@ -261,7 +323,10 @@ abstract class BridgeSelectionStrategy
      *
      * @return an optional that contains the least loaded bridge if it exists.
      */
-    Optional<Bridge> leastLoaded(List<Bridge> bridges)
+    Optional<Bridge> leastLoaded(
+            List<Bridge> bridges,
+            List<Bridge> conferenceBridges,
+            String participantRegion)
     {
         Optional<Bridge> result = bridges.stream().findFirst();
 
@@ -269,6 +334,8 @@ abstract class BridgeSelectionStrategy
         {
             logger.info("bridge_selected,bridge=" + result.get());
             totalLeastLoaded++;
+
+            updateSplitStats(conferenceBridges, result.get(), participantRegion);
         }
 
         return result;
@@ -321,6 +388,8 @@ abstract class BridgeSelectionStrategy
         json.put("total_least_loaded_in_region", totalLeastLoadedInRegion);
         json.put("total_least_loaded_in_conference", totalLeastLoadedAlreadyInConference);
         json.put("total_least_loaded", totalLeastLoaded);
+        json.put("total_split_due_to_region", totalSplitDueToRegion);
+        json.put("total_split_due_to_load", totalSplitDueToLoad);
 
         return json;
     }

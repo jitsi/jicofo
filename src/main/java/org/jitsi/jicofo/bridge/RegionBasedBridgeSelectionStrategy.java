@@ -38,10 +38,10 @@ class RegionBasedBridgeSelectionStrategy
         }
 
         return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> notLoadedInRegion(bridges, participantRegion).orElseGet(
+                () -> notLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
                 () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoadedInRegion(bridges, participantRegion).orElseGet(
+                () -> leastLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
                 () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoaded(bridges).orElse(null))))));
+                () -> leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null))))));
     }
 }
