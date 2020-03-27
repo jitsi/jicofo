@@ -55,15 +55,11 @@ public class MaxPacketRateCalculator
     private final int numberOfLocalSenders;
     private final int numberOfLocalReceivers;
 
-    /**
-     * 30pps for audio, 50pps for 180p, 100pps for 360p and 250pps for
-     * 720p.
-     */
     private final int[] maxPacketRatePps = {
-        30, /* max audio pps of a participant sending audio */
-        50, /* max 180p pps of a participant sending simulcast  */
-        100, /* max 360p pps of a participant sending simulcast */
-        250 /* max 720p pps of a participant sending simulcast */
+        50, /* max audio pps of a participant sending audio */
+        70, /* max 180p pps of a participant sending simulcast */
+        90, /* max 360p pps of a participant sending simulcast */
+        280 /* max 720p pps of a participant sending simulcast */
     };
 
     /**

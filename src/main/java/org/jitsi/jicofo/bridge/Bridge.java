@@ -52,16 +52,13 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * A conservative estimate of the average sum of ingress + egress packet rate
-     * (in pps) of a video stream flowing through the bridge. Note that the term
-     * "video stream" comes from {@link ColibriConferenceImpl#trackVideoChannelsAddedRemoved},
-     * so it's equivalent to a participant.
+     * We assume that each recently added participant contributes this much
+     * to the bridge's packet rate.
      */
-    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS;
+    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS = 500;
 
     /**
-     * This is the worst case scenario that the bridge must be able to handle
-     * in a 100-peeps call with 20 local senders and 5 local receivers.
+     * We assume this is the maximum packet rate that a bridge can handle.
      */
     private static final double MAX_TOTAL_PACKET_RATE_PPS;
 
@@ -79,13 +76,8 @@ public class Bridge
             packetRateCalculator.computeIngressPacketRatePps()
                 + packetRateCalculator.computeEgressPacketRatePps();
 
-        // This currently evaluates to 546. It assumes that the new participant
-        // will be sending video. We're using the "Max" packet rate calculator
-        // so we divide by 3 (an arbitrary factor) to figure out a more
-        // conservative estimate of the average packet rate.
-        AVG_PARTICIPANT_PACKET_RATE_PPS =
-            (packetRateCalculator.computeSenderIngressPacketRatePps()
-                + packetRateCalculator.computeParticipantEgressPacketRatePps()) / 3;
+        logger.info("Using max total packet rate of " + MAX_TOTAL_PACKET_RATE_PPS);
+        logger.info("Using average participant packet rate of " + AVG_PARTICIPANT_PACKET_RATE_PPS);
     }
 
     /**
