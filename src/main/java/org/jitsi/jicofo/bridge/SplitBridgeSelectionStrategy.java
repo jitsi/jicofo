@@ -39,14 +39,14 @@ class SplitBridgeSelectionStrategy
     @Override
     public Bridge doSelect(
         List<Bridge> bridges,
-        List<Bridge> conferenceBridges,
+        Map<Bridge, Integer> conferenceBridges,
         String participantRegion)
     {
         for (Bridge bridge : bridges)
         {
             // If there's an available bridge, which isn't yet used in the
             // conference, use it.
-            if (!conferenceBridges.contains(bridge))
+            if (!conferenceBridges.keySet().contains(bridge))
             {
                 return bridge;
             }

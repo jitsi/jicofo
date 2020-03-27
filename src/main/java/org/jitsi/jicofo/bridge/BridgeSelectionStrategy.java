@@ -80,7 +80,7 @@ abstract class BridgeSelectionStrategy
      */
     public Bridge select(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion,
             boolean allowMultiBridge)
     {
@@ -103,8 +103,9 @@ abstract class BridgeSelectionStrategy
         }
         else
         {
+            Bridge existingBridge = conferenceBridges.keySet().stream().findFirst().get();
             if (!allowMultiBridge
-                || conferenceBridges.get(0).getRelayId() == null)
+                || existingBridge.getRelayId() == null)
             {
                 if (logger.isDebugEnabled())
                 {
@@ -113,7 +114,7 @@ abstract class BridgeSelectionStrategy
                             "consider other bridges.");
                 }
 
-                return conferenceBridges.get(0);
+                return existingBridge;
             }
 
             Bridge bridge = doSelect(
@@ -146,19 +147,19 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> notLoadedAlreadyInConferenceInRegion(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
-            .filter(selectFrom(conferenceBridges))
+            .filter(selectFrom(conferenceBridges.keySet()))
             .filter(inRegion(participantRegion))
             .findFirst();
 
         if (result.isPresent())
         {
             logger.info("bridge_selected,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                ",conference_bridges=" + conferenceBridges.keySet().stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
 
             totalNotLoadedAlreadyInConferenceInRegion++;
@@ -179,7 +180,7 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> notLoadedInRegion(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
@@ -201,16 +202,16 @@ abstract class BridgeSelectionStrategy
     }
 
     private void updateSplitStats(
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             Bridge selectedBridge,
             String participantRegion)
     {
-        if (!conferenceBridges.isEmpty() && !conferenceBridges.contains(selectedBridge))
+        if (!conferenceBridges.isEmpty() && !conferenceBridges.containsKey(selectedBridge))
         {
             // We added a new bridge to the conference. Was it because the
             // conference had no bridges in that region, or because it had
             // some, but they were over loaded?
-            if (conferenceBridges.stream().anyMatch(inRegion(participantRegion)))
+            if (conferenceBridges.keySet().stream().anyMatch(inRegion(participantRegion)))
             {
                 totalSplitDueToRegion++;
             }
@@ -234,18 +235,18 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> leastLoadedAlreadyInConferenceInRegion(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
-            .filter(selectFrom(conferenceBridges))
+            .filter(selectFrom(conferenceBridges.keySet()))
             .filter(inRegion(participantRegion))
             .findFirst();
 
         if (result.isPresent())
         {
             logger.info("bridge_selected,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                ",conference_bridges=" + conferenceBridges.keySet().stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
             totalLeastLoadedAlreadyInConferenceInRegion++;
         }
@@ -264,7 +265,7 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> leastLoadedInRegion(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
@@ -297,18 +298,18 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> nonLoadedAlreadyInConference(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream()
             .filter(not(Bridge::isOverloaded))
-            .filter(selectFrom(conferenceBridges))
+            .filter(selectFrom(conferenceBridges.keySet()))
             .findFirst();
 
         if (result.isPresent())
         {
             logger.info("bridge_selected,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
+                ",conference_bridges=" + conferenceBridges.keySet().stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
                 "participant_region " + participantRegion);
             totalLeastLoadedAlreadyInConference++;
         }
@@ -325,7 +326,7 @@ abstract class BridgeSelectionStrategy
      */
     Optional<Bridge> leastLoaded(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         Optional<Bridge> result = bridges.stream().findFirst();
@@ -355,10 +356,10 @@ abstract class BridgeSelectionStrategy
      */
     abstract Bridge doSelect(
         List<Bridge> bridges,
-        List<Bridge> conferenceBridges,
+        Map<Bridge, Integer> conferenceBridges,
         String participantRegion);
 
-    private static Predicate<Bridge> selectFrom(List<Bridge> conferenceBridges)
+    private static Predicate<Bridge> selectFrom(Collection<Bridge> conferenceBridges)
     {
         return b -> conferenceBridges != null && conferenceBridges.contains(b);
     }

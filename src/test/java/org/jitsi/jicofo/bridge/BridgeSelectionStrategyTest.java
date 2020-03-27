@@ -106,7 +106,7 @@ public class BridgeSelectionStrategyTest
             = new RegionBasedBridgeSelectionStrategy();
         strategy.setLocalRegion(localBridge.getRegion());
 
-        List<Bridge> conferenceBridges = new LinkedList<>();
+        Map<Bridge, Integer> conferenceBridges = new HashMap<>();
         List<Bridge> allBridges = new ArrayList<>(availableBridges);
         Collections.sort(allBridges);
 
@@ -126,7 +126,7 @@ public class BridgeSelectionStrategyTest
             strategy.select(allBridges, conferenceBridges, null, true));
 
         // Now assume that the low-stressed bridge is in the conference.
-        conferenceBridges.add(lowStressBridge);
+        conferenceBridges.put(lowStressBridge, 1);
         assertEquals(
             lowStressBridge,
             strategy.select(allBridges, conferenceBridges, lowStressRegion, true));
@@ -140,7 +140,7 @@ public class BridgeSelectionStrategyTest
             strategy.select(allBridges, conferenceBridges, null, true));
 
         // Now assume that a medium-stressed bridge is in the conference.
-        conferenceBridges.add(mediumStressBridge);
+        conferenceBridges.put(mediumStressBridge, 1);
         // A participant in an unknown region should be allocated on the least
         // loaded (according to the order of 'allBridges') existing conference
         // bridge.
@@ -225,7 +225,7 @@ public class BridgeSelectionStrategyTest
             = new RegionBasedBridgeSelectionStrategy();
         strategy.setLocalRegion(localBridge.getRegion());
 
-        List<Bridge> conferenceBridges = new LinkedList<>();
+        Map<Bridge, Integer> conferenceBridges = new HashMap<>();
         List<Bridge> allBridges = new ArrayList<>(availableBridges);
         Collections.sort(allBridges);
 
@@ -246,7 +246,7 @@ public class BridgeSelectionStrategyTest
             mediumStressBridge2,
             strategy.select(allBridges, conferenceBridges, null, true));
 
-        conferenceBridges.add(mediumStressBridge2);
+        conferenceBridges.put(mediumStressBridge2, 1);
         assertEquals(
             mediumStressBridge3,
             strategy.select(allBridges, conferenceBridges, mediumStressRegion3, true));
@@ -260,7 +260,7 @@ public class BridgeSelectionStrategyTest
             strategy.select(allBridges, conferenceBridges, null, true));
 
         // Now assume that a medium-stressed bridge is in the conference.
-        conferenceBridges.add(highStressBridge);
+        conferenceBridges.put(highStressBridge, 1);
         // A participant in an unknown region should be allocated on the least
         // loaded (according to the order of 'allBridges') existing conference
         // bridge.

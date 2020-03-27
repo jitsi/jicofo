@@ -46,13 +46,13 @@ public class SingleBridgeSelectionStrategy
     @Override
     public Bridge doSelect(
             List<Bridge> bridges,
-            List<Bridge> conferenceBridges,
+            Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         if (conferenceBridges.size() == 0)
         {
-            return leastLoadedInRegion(bridges, participantRegion).orElseGet(
-                    () -> leastLoaded(bridges).orElse(null));
+            return leastLoadedInRegion(bridges, Collections.emptyMap(), participantRegion).orElseGet(
+                    () -> leastLoaded(bridges, Collections.emptyMap(), participantRegion).orElse(null));
         }
         else if (conferenceBridges.size() != 1)
         {
@@ -62,7 +62,7 @@ public class SingleBridgeSelectionStrategy
             return null;
         }
 
-        Bridge bridge = conferenceBridges.get(0);
+        Bridge bridge = conferenceBridges.keySet().stream().findFirst().get();
         if (!bridge.isOperational())
         {
             logger.error(

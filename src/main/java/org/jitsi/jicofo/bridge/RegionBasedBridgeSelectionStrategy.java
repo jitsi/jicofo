@@ -30,7 +30,10 @@ class RegionBasedBridgeSelectionStrategy
     {}
 
     @Override
-    public Bridge doSelect(List<Bridge> bridges, List<Bridge> conferenceBridges, String participantRegion)
+    public Bridge doSelect(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            String participantRegion)
     {
         if (bridges.isEmpty())
         {

@@ -205,7 +205,7 @@ public class TranscriberManager
             }
             else
             {
-                return conference.getBridges().stream()
+                return conference.getBridges().keySet().stream()
                     .map(b -> b.getRegion())
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());

@@ -357,7 +357,7 @@ public class BridgeSelectorTest
 
         List<Bridge> allBridges
                 = Arrays.asList(bridge1, bridge2, bridge3);
-        List<Bridge> conferenceBridges = new LinkedList<>();
+        Map<Bridge, Integer> conferenceBridges = new HashMap<>();
 
         // Initial selection should select a bridge in the participant's region
         // if possible
@@ -375,7 +375,7 @@ public class BridgeSelectorTest
             localBridge,
             strategy.select(allBridges, conferenceBridges, null, true));
 
-        conferenceBridges.add(bridge3);
+        conferenceBridges.put(bridge3, 1);
         assertEquals(
                 bridge3,
                 strategy.select(allBridges, conferenceBridges, region3, true));
@@ -388,7 +388,7 @@ public class BridgeSelectorTest
                 bridge3,
                 strategy.select(allBridges, conferenceBridges, null, true));
 
-        conferenceBridges.add(bridge2);
+        conferenceBridges.put(bridge2, 1);
         // A participant in an unknown region should be allocated on the least
         // loaded (according to the order of 'allBridges') existing conference
         // bridge.
