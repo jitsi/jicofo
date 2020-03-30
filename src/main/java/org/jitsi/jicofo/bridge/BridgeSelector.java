@@ -66,6 +66,9 @@ public class BridgeSelector
     public static final String BRIDGE_SELECTION_STRATEGY_PNAME
         = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
 
+    public static final String MAX_PARTICIPANTS_PER_BRIDGE_PNAME
+        = "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE";
+
     /**
      * Property used to configure mapping of videobridge JIDs to PubSub nodes.
      * Single mapping is defined by writing videobridge JID followed by ':' and
@@ -656,6 +659,13 @@ public class BridgeSelector
         bridgeSelectionStrategy.setLocalRegion(
                 config.getString(LOCAL_REGION_PNAME, null));
         logger.info("Local region: " + bridgeSelectionStrategy.getLocalRegion());
+
+        int maxParticipantsPerBridge = config.getInt(MAX_PARTICIPANTS_PER_BRIDGE_PNAME, -1);
+        if (maxParticipantsPerBridge > 0)
+        {
+            bridgeSelectionStrategy.setMaxParticipantsPerBridge(maxParticipantsPerBridge);
+        }
+
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)

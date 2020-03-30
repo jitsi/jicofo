@@ -21,27 +21,6 @@ abstract class BridgeSelectionStrategy
             = Logger.getLogger(BridgeSelectionStrategy.class);
 
     /**
-     * The maximum participants peer bridge in one conference.
-     */
-    private static final int MAX_PARTICIPANTS_PER_BRIDGE = 20;
-
-    /**
-     * Checks whether a {@link Bridge} should be considered overloaded for a
-     * particular conference.
-     * @param bridge the bridge
-     * @param conferenceBridges the bridges in the conference
-     * @return {@code true} if the bridge should be considered overloaded.
-     */
-    private static boolean isOverloaded(
-            Bridge bridge,
-            Map<Bridge, Integer> conferenceBridges)
-    {
-        return bridge.isOverloaded()
-                || (conferenceBridges.containsKey(bridge)
-                    && conferenceBridges.get(bridge) >= MAX_PARTICIPANTS_PER_BRIDGE);
-    }
-
-    /**
      * Total number of times selection succeeded because there was a bridge
      * already in the conference, in the desired region that was not
      * overloaded.
@@ -87,6 +66,11 @@ abstract class BridgeSelectionStrategy
      * The local region of the jicofo instance.
      */
     private String localRegion = null;
+
+    /**
+     * Maximum participants per bridge in one conference.
+     */
+    private int maxParticipantsPerBridge = Integer.MAX_VALUE;
 
     /**
      * Selects a bridge to be used for a new participant in a conference.
@@ -399,6 +383,29 @@ abstract class BridgeSelectionStrategy
     {
         this.localRegion = localRegion;
     }
+
+    void setMaxParticipantsPerBridge(int maxParticipantsPerBridge)
+    {
+        logger.info("Using max participants per bridge: " + maxParticipantsPerBridge);
+        this.maxParticipantsPerBridge = maxParticipantsPerBridge;
+    }
+
+    /**
+     * Checks whether a {@link Bridge} should be considered overloaded for a
+     * particular conference.
+     * @param bridge the bridge
+     * @param conferenceBridges the bridges in the conference
+     * @return {@code true} if the bridge should be considered overloaded.
+     */
+    private boolean isOverloaded(
+            Bridge bridge,
+            Map<Bridge, Integer> conferenceBridges)
+    {
+        return bridge.isOverloaded()
+            || (conferenceBridges.containsKey(bridge)
+                && conferenceBridges.get(bridge) >= maxParticipantsPerBridge);
+    }
+
 
     public JSONObject getStats()
     {
