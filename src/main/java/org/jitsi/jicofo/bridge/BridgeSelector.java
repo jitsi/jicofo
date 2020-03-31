@@ -69,6 +69,12 @@ public class BridgeSelector
     public static final String MAX_PARTICIPANTS_PER_BRIDGE_PNAME
         = "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE";
 
+    public static final String MAX_BRIDGE_PACKET_RATE_PNAME
+            = "org.jitsi.jicofo.BridgeSelector.MAX_BRIDGE_PACKET_RATE";
+
+    public static final String AVG_PARTICIPANT_PACKET_RATE_PNAME
+            = "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE";
+
     /**
      * Property used to configure mapping of videobridge JIDs to PubSub nodes.
      * Single mapping is defined by writing videobridge JID followed by ':' and
@@ -665,6 +671,19 @@ public class BridgeSelector
         {
             bridgeSelectionStrategy.setMaxParticipantsPerBridge(maxParticipantsPerBridge);
         }
+
+        int maxBridgePacketRate = config.getInt(MAX_BRIDGE_PACKET_RATE_PNAME, -1);
+        if (maxBridgePacketRate > 0)
+        {
+            Bridge.setMaxTotalPacketRatePps(maxBridgePacketRate);
+        }
+
+        int avgParticipantPacketRate = config.getInt(AVG_PARTICIPANT_PACKET_RATE_PNAME, -1);
+        if (avgParticipantPacketRate > 0)
+        {
+            Bridge.setAvgParticipantPacketRatePps(avgParticipantPacketRate);
+        }
+
 
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();

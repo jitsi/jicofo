@@ -55,12 +55,12 @@ public class Bridge
      * We assume that each recently added participant contributes this much
      * to the bridge's packet rate.
      */
-    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS = 500;
+    private static int AVG_PARTICIPANT_PACKET_RATE_PPS;
 
     /**
      * We assume this is the maximum packet rate that a bridge can handle.
      */
-    private static final double MAX_TOTAL_PACKET_RATE_PPS;
+    private static double MAX_TOTAL_PACKET_RATE_PPS;
 
     static
     {
@@ -72,14 +72,24 @@ public class Bridge
             5 /* numberOfLocalReceivers */
         );
 
-        MAX_TOTAL_PACKET_RATE_PPS =
+        setMaxTotalPacketRatePps(
             packetRateCalculator.computeIngressPacketRatePps()
-                + packetRateCalculator.computeEgressPacketRatePps();
+                + packetRateCalculator.computeEgressPacketRatePps());
 
-        logger.info("Using max total packet rate of " + MAX_TOTAL_PACKET_RATE_PPS);
-        logger.info("Using average participant packet rate of " + AVG_PARTICIPANT_PACKET_RATE_PPS);
+        setAvgParticipantPacketRatePps(500);
     }
 
+    static void setMaxTotalPacketRatePps(int maxTotalPacketRatePps)
+    {
+        MAX_TOTAL_PACKET_RATE_PPS = maxTotalPacketRatePps;
+        logger.info("Setting max total packet rate of " + MAX_TOTAL_PACKET_RATE_PPS);
+    }
+
+    static void setAvgParticipantPacketRatePps(int avgParticipantPacketRatePps)
+    {
+        AVG_PARTICIPANT_PACKET_RATE_PPS = avgParticipantPacketRatePps;
+        logger.info("Setting average participant packet rate of " + AVG_PARTICIPANT_PACKET_RATE_PPS);
+    }
     /**
      * The stress-level beyond which we consider a bridge to be
      * overloaded/overstressed.
