@@ -15,9 +15,6 @@
  */
 package org.jitsi.jicofo.rest;
 
-import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;
 
@@ -25,29 +22,12 @@ import javax.inject.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
-import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
-
 /**
  * Adds statistics REST endpoint exposes some internal Jicofo stats.
  */
 @Path("/stats")
 public class Statistics
 {
-    /**
-     * How many times the live streaming has failed to start so far.
-     */
-    public static final String TOTAL_LIVE_STREAMING_FAILURES = "total_live_streaming_failures";
-
-    /**
-     * How many times the recording has failed to start so far.
-     */
-    public static final String TOTAL_RECORDING_FAILURES = "total_recording_failures";
-
-    /**
-     * How many times a SIP call has failed to start so far.
-     */
-    public static final String TOTAL_SIP_CALL_FAILURES = "total_sip_call_failures";
-
     @Inject
     protected FocusManagerProvider focusManagerProvider;
 
@@ -62,26 +42,13 @@ public class Statistics
     @Produces(MediaType.APPLICATION_JSON)
     public String getStats()
     {
-        FocusManager focusManager = focusManagerProvider.get();
-
-        JicofoStatisticsSnapshot snapshot
-            = JicofoStatisticsSnapshot.generate(focusManager);
-        JSONObject json = new JSONObject();
-        json.put(LARGEST_CONFERENCE, snapshot.largestConferenceSize);
-        json.put(PARTICIPANTS, snapshot.numParticipants);
-        JSONArray conferenceSizesJson = new JSONArray();
-        for (int size : snapshot.conferenceSizes)
-        {
-            conferenceSizesJson.add(size);
-        }
-        json.put(CONFERENCE_SIZES, conferenceSizesJson);
+        JSONObject stats = new JSONObject();
 
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
-        // so we'll merge the FocusManager stats in the root object.
-        json.putAll(focusManager.getStats());
+        // so we merge the FocusManager and Jibri stats in the root object.
+        stats.putAll(focusManagerProvider.get().getStats());
+        stats.putAll(jibriStatsProvider.get().getStats());
 
-        json.putAll(jibriStatsProvider.get().getStats());
-
-        return json.toJSONString();
+        return stats.toJSONString();
     }
 }
