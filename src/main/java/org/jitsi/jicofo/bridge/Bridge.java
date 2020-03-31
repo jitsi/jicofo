@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.jicofo.util.*;
+import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
@@ -50,6 +52,51 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
+     * We assume that each recently added participant contributes this much
+     * to the bridge's packet rate.
+     */
+    private static int AVG_PARTICIPANT_PACKET_RATE_PPS;
+
+    /**
+     * We assume this is the maximum packet rate that a bridge can handle.
+     */
+    private static double MAX_TOTAL_PACKET_RATE_PPS;
+
+    static
+    {
+        MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
+            4 /* numberOfConferenceBridges */,
+            20 /* numberOfGlobalSenders */,
+            2 /* numberOfSpeakers */,
+            20 /* numberOfLocalSenders */,
+            5 /* numberOfLocalReceivers */
+        );
+
+        setMaxTotalPacketRatePps(
+            packetRateCalculator.computeIngressPacketRatePps()
+                + packetRateCalculator.computeEgressPacketRatePps());
+
+        setAvgParticipantPacketRatePps(500);
+    }
+
+    static void setMaxTotalPacketRatePps(int maxTotalPacketRatePps)
+    {
+        MAX_TOTAL_PACKET_RATE_PPS = maxTotalPacketRatePps;
+        logger.info("Setting max total packet rate of " + MAX_TOTAL_PACKET_RATE_PPS);
+    }
+
+    static void setAvgParticipantPacketRatePps(int avgParticipantPacketRatePps)
+    {
+        AVG_PARTICIPANT_PACKET_RATE_PPS = avgParticipantPacketRatePps;
+        logger.info("Setting average participant packet rate of " + AVG_PARTICIPANT_PACKET_RATE_PPS);
+    }
+    /**
+     * The stress-level beyond which we consider a bridge to be
+     * overloaded/overstressed.
+     */
+    private static final double OVERSTRESSED_THRESHOLD = .8;
+
+    /**
      * The parent {@link BridgeSelector}.
      */
     private BridgeSelector bridgeSelector;
@@ -60,12 +107,9 @@ public class Bridge
     private final Jid jid;
 
     /**
-     * Estimates the number of new video streams added (or removed if negative)
-     * on this bridge by this jicofo instance since the last statistics update
-     * was received.
+     * Keep track of the recently allocated or removed channels.
      */
-    @SuppressWarnings("unused")
-    private int videoStreamCountDiff = 0;
+    private final RateStatistics videoChannelsRate = new RateStatistics(10000);
 
     /**
      * The last reported bitrate in Kbps.
@@ -113,11 +157,6 @@ public class Bridge
      */
     void setStats(ColibriStatsExtension stats)
     {
-        // Reset the counter for video streams added/removed since the last
-        // stats update. TODO: this, if used at all, needs to not be tied to
-        // stats.
-        videoStreamCountDiff = 0;
-
         if (stats == null)
         {
             this.stats = EMPTY_STATS;
@@ -258,18 +297,27 @@ public class Bridge
             return 1;
         }
 
-        return this.getLastReportedPacketRatePps() - o.getLastReportedPacketRatePps();
+        return Double.compare(this.getStress(), o.getStress());
     }
 
-    void onVideoStreamsChanged(Integer videoStreamCount)
+    void onVideoChannelsChanged(Integer diff)
     {
-        if (videoStreamCount == null || videoStreamCount == 0)
+        if (diff == null)
         {
-            logger.error("videoStreamCount is " + videoStreamCount);
+            logger.error("diff is null");
             return;
         }
 
-        videoStreamCountDiff += videoStreamCount;
+        videoChannelsRate.update(diff, System.currentTimeMillis());
+    }
+
+    /**
+     * Returns the net number of video channels recently allocated or removed
+     * from this bridge.
+     */
+    private long getRecentVideoChannelChange()
+    {
+        return videoChannelsRate.getAccumulatedCount();
     }
 
     public Jid getJid()
@@ -297,10 +345,39 @@ public class Bridge
     public String toString()
     {
         return String.format(
-                "Bridge[jid=%s, relayId=%s, region=%s]",
+                "Bridge[jid=%s, relayId=%s, region=%s, stress=%.2f]",
                      jid.toString(),
                      getRelayId(),
-                     getRegion());
+                     getRegion(),
+                     getStress());
+    }
+
+    /**
+     * Returns the "stress" of the bridge. The stress is computed based on the
+     * total packet rate reported by the bridge and the video stream diff
+     * estimation since the last update from the bridge.
+     *
+     * @return the sum of the last total reported packet rate (in pps) and an
+     * estimation of the packet rate of the streams that we estimate that the bridge
+     * hasn't reported to Jicofo yet. The estimation is the product of the
+     * number of unreported streams and a constant C (which we set to 500 pps).
+     */
+    public double getStress()
+    {
+        double stress =
+            (lastReportedPacketRatePps
+                + Math.max(0, getRecentVideoChannelChange()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
+            / MAX_TOTAL_PACKET_RATE_PPS;
+        return Math.min(1, stress);
+    }
+
+    /**
+     * @return true if the stress of the bridge is greater-than-or-equal to
+     * {@link #OVERSTRESSED_THRESHOLD}.
+     */
+    public boolean isOverloaded()
+    {
+        return getStress() >= OVERSTRESSED_THRESHOLD;
     }
 
     public int getLastReportedPacketRatePps()

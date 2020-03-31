@@ -31,6 +31,7 @@ import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -64,6 +65,15 @@ public class BridgeSelector
      */
     public static final String BRIDGE_SELECTION_STRATEGY_PNAME
         = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
+
+    public static final String MAX_PARTICIPANTS_PER_BRIDGE_PNAME
+        = "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE";
+
+    public static final String MAX_BRIDGE_PACKET_RATE_PNAME
+            = "org.jitsi.jicofo.BridgeSelector.MAX_BRIDGE_PACKET_RATE";
+
+    public static final String AVG_PARTICIPANT_PACKET_RATE_PNAME
+            = "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE";
 
     /**
      * Property used to configure mapping of videobridge JIDs to PubSub nodes.
@@ -210,41 +220,48 @@ public class BridgeSelector
     }
 
     /**
-     * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process. If a bridge
-     * with the given JID already exists, it is returned and a new instance is
-     * not created.
+     * Adds a bridge to this selector. If a bridge with the given JID already
+     * exists, it does nothing.
+     * @return the {@link Bridge} instance for thee given JID.
      *
-     * @param bridgeJid the JID of videobridge to be added to this selector's
-     * set of videobridges.
-     * @return the {@link Bridge} for the bridge with the provided JID.
+     * @param bridgeJid the JID of videobridge.
      */
     public Bridge addJvbAddress(Jid bridgeJid)
     {
-        return addJvbAddress(bridgeJid, null);
+        return addJvbAddress(bridgeJid, null, null);
     }
 
     /**
-     * Adds next Jitsi Videobridge XMPP address to be observed by this selected
-     * and taken into account in best bridge selection process. If a bridge
-     * with the given JID already exists, it is returned and a new instance is
-     * not created.
+     * Adds a brige to this selector and sets it's version. If a bridge with
+     * the given JID already exists, it does nothing.
+     *
+     * @return the {@link Bridge} instance for thee given JID.
+     */
+    public Bridge addJvbAddress(Jid bridgeJid, Version version)
+    {
+        return addJvbAddress(bridgeJid, version, null);
+    }
+
+    /**
+     * Adds a bridge to this selector, or if a bridge with the given JID
+     * already exists updates its stats.
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
      * set of videobridges.
      * @param version the {@link Version} IQ instance which contains the info
      * about JVB version.
-     * @return the {@link Bridge} for the bridge with the provided JID.
+     * @param stats the last reported statistics
+     * @return the {@link Bridge} instance for thee given JID.
      */
     synchronized public Bridge addJvbAddress(
-            Jid bridgeJid, Version version)
+            Jid bridgeJid, Version version, ColibriStatsExtension stats)
     {
-        if (isJvbOnTheList(bridgeJid))
+        Bridge bridge = bridges.get(bridgeJid);
+        if (bridge != null)
         {
-            return bridges.get(bridgeJid);
+            bridge.setStats(stats);
+            return bridge;
         }
-
-        logger.info("Added videobridge: " + bridgeJid + " v: " + version);
 
         String pubSubNode = findNodeForBridge(bridgeJid);
         if (pubSubNode != null)
@@ -260,7 +277,11 @@ public class BridgeSelector
         }
 
         Bridge newBridge = new Bridge(this, bridgeJid, version);
-
+        if (stats != null)
+        {
+            newBridge.setStats(stats);
+        }
+        logger.info("Added new videobridge: " + newBridge);
         bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
@@ -588,8 +609,8 @@ public class BridgeSelector
 
         switch (topic)
         {
-        case BridgeEvent.VIDEOSTREAMS_CHANGED:
-            bridge.onVideoStreamsChanged(bridgeEvent.getVideoStreamCount());
+        case BridgeEvent.VIDEO_CHANNELS_CHANGED:
+            bridge.onVideoChannelsChanged(bridgeEvent.getVideoChannelCount());
             break;
         }
     }
@@ -645,6 +666,26 @@ public class BridgeSelector
                 config.getString(LOCAL_REGION_PNAME, null));
         logger.info("Local region: " + bridgeSelectionStrategy.getLocalRegion());
 
+        int maxParticipantsPerBridge = config.getInt(MAX_PARTICIPANTS_PER_BRIDGE_PNAME, -1);
+        if (maxParticipantsPerBridge > 0)
+        {
+            bridgeSelectionStrategy.setMaxParticipantsPerBridge(maxParticipantsPerBridge);
+        }
+
+        int maxBridgePacketRate = config.getInt(MAX_BRIDGE_PACKET_RATE_PNAME, -1);
+        if (maxBridgePacketRate > 0)
+        {
+            Bridge.setMaxTotalPacketRatePps(maxBridgePacketRate);
+        }
+
+        int avgParticipantPacketRate = config.getInt(AVG_PARTICIPANT_PACKET_RATE_PNAME, -1);
+        if (avgParticipantPacketRate > 0)
+        {
+            Bridge.setAvgParticipantPacketRatePps(avgParticipantPacketRate);
+        }
+
+
+
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
         {
@@ -654,7 +695,7 @@ public class BridgeSelector
         this.handlerRegistration = EventUtil.registerEventHandler(
             FocusBundleActivator.bundleContext,
             new String[] {
-                BridgeEvent.VIDEOSTREAMS_CHANGED
+                BridgeEvent.VIDEO_CHANNELS_CHANGED
             },
             this);
     }
@@ -708,5 +749,14 @@ public class BridgeSelector
     public int getOperationalBridgeCount()
     {
         return (int) bridges.values().stream().filter(Bridge::isOperational).count();
+    }
+
+    public JSONObject getStats()
+    {
+        JSONObject json = new JSONObject();
+
+        json.put("strategy", bridgeSelectionStrategy.getStats());
+
+        return json;
     }
 }

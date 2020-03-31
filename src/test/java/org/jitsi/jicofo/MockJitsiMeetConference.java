@@ -52,9 +52,9 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public List<Bridge> getBridges()
+    public Map<Bridge, Integer> getBridges()
     {
-        return new LinkedList<>();
+        return new HashMap<>();
     }
 
     @Override

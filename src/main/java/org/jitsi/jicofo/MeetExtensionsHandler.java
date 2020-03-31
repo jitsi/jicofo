@@ -240,7 +240,7 @@ public class MeetExtensionsHandler
         }
 
 
-        Set<String> bridgeRegions = conference.getBridges().stream()
+        Set<String> bridgeRegions = conference.getBridges().keySet().stream()
             .map(b -> b.getRegion())
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());

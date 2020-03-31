@@ -175,7 +175,7 @@ public class BridgeMucDetector
                 "Received updated status for " + jid + ": " + stats.toXML());
         }
 
-        bridgeSelector.addJvbAddress(jid).setStats(stats);
+        bridgeSelector.addJvbAddress(jid, null, stats);
     }
 
     @Override

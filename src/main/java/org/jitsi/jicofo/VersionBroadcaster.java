@@ -172,7 +172,7 @@ public class VersionBroadcaster
                     + "(" + jicofoVersion.toString() + ","
                     + System.getProperty("os.name") + ")");
 
-        String jvbVersions = conference.getBridges().stream()
+        String jvbVersions = conference.getBridges().keySet().stream()
             .map(b -> b.getVersion())
             .filter(Objects::nonNull)
             .distinct()

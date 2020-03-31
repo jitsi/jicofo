@@ -2711,9 +2711,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public List<Bridge> getBridges()
+    public Map<Bridge, Integer> getBridges()
     {
-        List<Bridge> bridges = new LinkedList<>();
+        Map<Bridge, Integer> bridges = new HashMap<>();
         synchronized (this.bridges)
         {
             for (BridgeSession bridgeSession : this.bridges)
@@ -2721,7 +2721,7 @@ public class JitsiMeetConferenceImpl
                 // TODO: do we actually want the hasFailed check?
                 if (!bridgeSession.hasFailed)
                 {
-                    bridges.add(bridgeSession.bridge);
+                    bridges.put(bridgeSession.bridge, bridgeSession.participants.size());
                 }
             }
         }

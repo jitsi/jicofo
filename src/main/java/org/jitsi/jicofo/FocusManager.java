@@ -31,6 +31,7 @@ import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger;
 
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -735,6 +736,15 @@ public class FocusManager
     public JitsiMeetServices getJitsiMeetServices()
     {
         return jitsiMeetServices;
+    }
+
+    public JSONObject getStats()
+    {
+        JSONObject json = new JSONObject();
+
+        json.put("services", jitsiMeetServices.getStats());
+
+        return json;
     }
 
     /**
