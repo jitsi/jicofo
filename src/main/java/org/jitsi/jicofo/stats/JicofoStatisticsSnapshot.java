@@ -56,16 +56,6 @@ public class JicofoStatisticsSnapshot
      */
     public int totalSipCallFailures;
 
-    /**
-     * Number of jibri instances.
-     */
-    public int jibriCount;
-
-    /**
-     * Number of jibri instances for SIP.
-     */
-    public int sipJibriCount;
-
     public int[] conferenceSizes = new int[CONFERENCE_SIZE_BUCKETS];
 
     public static JicofoStatisticsSnapshot generate(
@@ -106,20 +96,6 @@ public class JicofoStatisticsSnapshot
                 ? confSize
                 : snapshot.conferenceSizes.length - 1;
             snapshot.conferenceSizes[conferenceSizeIndex]++;
-        }
-
-        JibriDetector jibriDetector
-                = focusManager.getJitsiMeetServices().getJibriDetector();
-        if (jibriDetector != null)
-        {
-            snapshot.jibriCount = jibriDetector.getInstanceCount();
-        }
-
-        JibriDetector sipJibriDetector
-                = focusManager.getJitsiMeetServices().getSipJibriDetector();
-        if (sipJibriDetector != null)
-        {
-            snapshot.sipJibriCount = sipJibriDetector.getInstanceCount();
         }
 
         snapshot.totalLiveStreamingFailures

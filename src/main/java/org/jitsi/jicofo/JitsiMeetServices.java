@@ -472,6 +472,18 @@ public class JitsiMeetServices
             json.put("jigasi_detector", jigasiDetector.getStats());
         }
 
+        JibriDetector jibriDetector = getJibriDetector();
+        if (jibriDetector != null)
+        {
+            json.put("jibri_detector", jibriDetector.getStats());
+        }
+
+        JibriDetector sipJibriDetector = getSipJibriDetector();
+        if (sipJibriDetector != null)
+        {
+            json.put("sip_jibri_detector", sipJibriDetector.getStats());
+        }
+
         return json;
     }
 }

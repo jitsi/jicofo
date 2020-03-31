@@ -24,6 +24,7 @@ import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 /**
@@ -185,5 +186,12 @@ public class JibriDetector
         {
             logger.warn("No EventAdmin!");
         }
+    }
+
+    public JSONObject getStats()
+    {
+        JSONObject stats = new JSONObject();
+        stats.put("count", getInstanceCount());
+        return stats;
     }
 }
