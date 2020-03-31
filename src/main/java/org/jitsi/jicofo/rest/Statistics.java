@@ -68,11 +68,8 @@ public class Statistics
         JicofoStatisticsSnapshot snapshot
             = JicofoStatisticsSnapshot.generate(focusManager, jibriStats);
         JSONObject json = new JSONObject();
-        json.put(CONFERENCES, snapshot.numConferences);
         json.put(LARGEST_CONFERENCE, snapshot.largestConferenceSize);
-        json.put(TOTAL_CONFERENCES_CREATED, snapshot.totalConferencesCreated);
         json.put(PARTICIPANTS, snapshot.numParticipants);
-        json.put(TOTAL_PARTICIPANTS, snapshot.totalNumParticipants);
         json.put(TOTAL_LIVE_STREAMING_FAILURES, snapshot.totalLiveStreamingFailures);
         json.put(TOTAL_RECORDING_FAILURES, snapshot.totalRecordingFailures);
         json.put(TOTAL_SIP_CALL_FAILURES, snapshot.totalSipCallFailures);

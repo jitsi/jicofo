@@ -19,22 +19,9 @@ public class JicofoStatisticsSnapshot
     private static final int CONFERENCE_SIZE_BUCKETS = 22;
 
     /**
-     * See {@link Statistics#totalConferencesCreated}
-     */
-    public int totalConferencesCreated;
-    /**
-     * The current number of conferences on this Jicofo
-     */
-    public int numConferences;
-    /**
      * The number of participants in the largest, currently-active conference
      */
     public int largestConferenceSize;
-
-    /**
-     * See {@link Statistics#totalParticipants}
-     */
-    public int totalNumParticipants;
 
     /**
      * The current number of participants on this Jicofo
@@ -64,11 +51,6 @@ public class JicofoStatisticsSnapshot
     )
     {
         JicofoStatisticsSnapshot snapshot = new JicofoStatisticsSnapshot();
-        snapshot.totalNumParticipants =
-            focusManager.getStatistics().totalParticipants.get();
-        snapshot.totalConferencesCreated =
-            focusManager.getStatistics().totalConferencesCreated.get();
-        snapshot.numConferences = focusManager.getNonHealthCheckConferenceCount();
         for (JitsiMeetConference conference : focusManager.getConferences())
         {
             if (!conference.includeInStatistics())

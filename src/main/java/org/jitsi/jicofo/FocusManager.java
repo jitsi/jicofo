@@ -704,7 +704,7 @@ public class FocusManager
         return conferences.size();
     }
 
-    public int getNonHealthCheckConferenceCount()
+    private int getNonHealthCheckConferenceCount()
     {
         return (int)conferences.values().stream()
             .filter(JitsiMeetConferenceImpl::includeInStatistics)
@@ -741,9 +741,13 @@ public class FocusManager
     public JSONObject getStats()
     {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
-        // so we'll merge stats from different "child" objects here. Right now
-        // we only have one child object.
-        return jitsiMeetServices.getStats();
+        // so we'll merge stats from different "child" objects here.
+        JSONObject stats = jitsiMeetServices.getStats();
+        stats.put("total_participants", statistics.totalParticipants.get());
+        stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
+        stats.put("confrences", getNonHealthCheckConferenceCount());
+
+        return stats;
     }
 
     /**
