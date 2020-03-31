@@ -106,6 +106,19 @@ public class DiscoveryUtil
         = "http://jitsi.org/meet/lipsync";
 
     /**
+     * A namespace for detecting participants as jigasi users.
+     */
+    public final static String FEATURE_JIGASI
+        = "http://jitsi.org/protocol/jigasi";
+
+    /**
+     * A namespace for detecting whether a participant (jigasi users) can be
+     * muted.
+     */
+    public final static String FEATURE_AUDIO_MUTE
+        = "http://jitsi.org/protocol/audio-mute";
+
+    /**
      * Array constant which can be used to check for Version IQ support.
      */
     public final static String[] VERSION_FEATURES = new String[]

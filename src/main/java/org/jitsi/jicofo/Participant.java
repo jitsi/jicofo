@@ -224,7 +224,7 @@ public class Participant
      */
     public boolean isSipGateway()
     {
-        return supportedFeatures.contains("http://jitsi.org/protocol/jigasi");
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_JIGASI);
     }
 
     /**
@@ -233,6 +233,14 @@ public class Participant
     public boolean hasAudioSupport()
     {
         return supportedFeatures.contains(DiscoveryUtil.FEATURE_AUDIO);
+    }
+
+    /**
+     * Returns <tt>true</tt> if RTP audio can be muted for this peer.
+     */
+    public boolean hasAudioMuteSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_AUDIO_MUTE);
     }
 
     /**

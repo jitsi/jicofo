@@ -2322,9 +2322,12 @@ public class JitsiMeetConferenceImpl
             return false;
         }
 
-        if (doMute && participant.isSipGateway() && !globalConfig.isSipMuteEnabled())
+        if (doMute
+            && participant.isSipGateway()
+            && !participant.hasAudioMuteSupport())
         {
-            logger.warn("Blocking mute request to jigasi. Muting SIP participants is disabled.");
+            logger.warn("Blocking mute request to jigasi. " +
+                "Muting SIP participants is disabled.");
             return false;
         }
 
