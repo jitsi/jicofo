@@ -740,11 +740,10 @@ public class FocusManager
 
     public JSONObject getStats()
     {
-        JSONObject json = new JSONObject();
-
-        json.put("services", jitsiMeetServices.getStats());
-
-        return json;
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we'll merge stats from different "child" objects here. Right now
+        // we only have one child object.
+        return jitsiMeetServices.getStats();
     }
 
     /**
