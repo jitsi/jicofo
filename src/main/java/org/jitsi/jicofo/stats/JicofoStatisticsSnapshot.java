@@ -57,16 +57,6 @@ public class JicofoStatisticsSnapshot
     public int totalSipCallFailures;
 
     /**
-     * Number of jigasi instances that support SIP.
-     */
-    public int jigasiSipCount;
-
-    /**
-     * Number of jigasi instances that support transcription.
-     */
-    public int jigasiTranscriberCount;
-
-    /**
      * Number of jibri instances.
      */
     public int jibriCount;
@@ -116,14 +106,6 @@ public class JicofoStatisticsSnapshot
                 ? confSize
                 : snapshot.conferenceSizes.length - 1;
             snapshot.conferenceSizes[conferenceSizeIndex]++;
-        }
-
-        JigasiDetector jigasiDetector
-                = focusManager.getJitsiMeetServices().getJigasiDetector();
-        if (jigasiDetector != null)
-        {
-            snapshot.jigasiSipCount = jigasiDetector.getJigasiSipCount();
-            snapshot.jigasiTranscriberCount = jigasiDetector.getJigasiTranscriberCount();
         }
 
         JibriDetector jibriDetector

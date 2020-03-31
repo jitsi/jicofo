@@ -34,16 +34,6 @@ import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 public class Statistics
 {
     /**
-     * The current number of jigasi instances that support SIP.
-     */
-    public static final String BREWERY_JIGASI_SIP_COUNT = "brewery_jigasi_sip_count";
-
-    /**
-     * The current number of jigasi instances that support transcription.
-     */
-    public static final String BREWERY_JIGASI_TRANSCRIBER_COUNT = "brewery_jigasi_transcriber_count";
-
-    /**
      * The current number of jibri instances for streaming.
      */
     public static final String BREWERY_JIBRI_COUNT = "brewery_jibri_count";
@@ -93,8 +83,6 @@ public class Statistics
         json.put(TOTAL_CONFERENCES_CREATED, snapshot.totalConferencesCreated);
         json.put(PARTICIPANTS, snapshot.numParticipants);
         json.put(TOTAL_PARTICIPANTS, snapshot.totalNumParticipants);
-        json.put(BREWERY_JIGASI_SIP_COUNT, snapshot.jigasiSipCount);
-        json.put(BREWERY_JIGASI_TRANSCRIBER_COUNT, snapshot.jigasiTranscriberCount);
         json.put(BREWERY_JIBRI_COUNT, snapshot.jibriCount);
         json.put(BREWERY_JIBRI_SIP_COUNT, snapshot.sipJibriCount);
         json.put(TOTAL_LIVE_STREAMING_FAILURES, snapshot.totalLiveStreamingFailures);

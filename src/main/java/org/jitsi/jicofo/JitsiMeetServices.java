@@ -466,6 +466,11 @@ public class JitsiMeetServices
         JSONObject json = new JSONObject();
 
         json.put("bridge_selector", bridgeSelector.getStats());
+        JigasiDetector jigasiDetector = getJigasiDetector();
+        if (jigasiDetector != null)
+        {
+            json.put("jigasi_detector", jigasiDetector.getStats());
+        }
 
         return json;
     }

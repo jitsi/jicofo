@@ -22,6 +22,7 @@ import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -349,5 +350,14 @@ public class JigasiDetector
     public int getJigasiTranscriberCount()
     {
         return (int) instances.stream().filter(i -> supportTranscription(i)).count();
+    }
+
+    public JSONObject getStats()
+    {
+        JSONObject stats = new JSONObject();
+        stats.put("sip_count", getJigasiSipCount());
+        stats.put("transcriber_count", getJigasiTranscriberCount());
+
+        return stats;
     }
 }
