@@ -218,11 +218,11 @@ abstract class BridgeSelectionStrategy
             // some, but they were over loaded?
             if (conferenceBridges.keySet().stream().anyMatch(inRegion(participantRegion)))
             {
-                totalSplitDueToRegion++;
+                totalSplitDueToLoad++;
             }
             else
             {
-                totalSplitDueToLoad++;
+                totalSplitDueToRegion++;
             }
         }
     }
