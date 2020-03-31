@@ -34,17 +34,6 @@ import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 public class Statistics
 {
     /**
-     * The current number of jitsi-videobridge instances.
-     */
-    public static final String BREWERY_JVB_COUNT = "brewery_jvb_count";
-
-    /**
-     * The current number of jitsi-videobridge instances that are operational
-     * (not failed).
-     */
-    public static final String BREWERY_JVB_OPERATIONAL_COUNT = "brewery_jvb_operational_count";
-
-    /**
      * The current number of jigasi instances that support SIP.
      */
     public static final String BREWERY_JIGASI_SIP_COUNT = "brewery_jigasi_sip_count";
@@ -104,8 +93,6 @@ public class Statistics
         json.put(TOTAL_CONFERENCES_CREATED, snapshot.totalConferencesCreated);
         json.put(PARTICIPANTS, snapshot.numParticipants);
         json.put(TOTAL_PARTICIPANTS, snapshot.totalNumParticipants);
-        json.put(BREWERY_JVB_COUNT, snapshot.bridgeCount);
-        json.put(BREWERY_JVB_OPERATIONAL_COUNT, snapshot.operationalBridgeCount);
         json.put(BREWERY_JIGASI_SIP_COUNT, snapshot.jigasiSipCount);
         json.put(BREWERY_JIGASI_TRANSCRIBER_COUNT, snapshot.jigasiTranscriberCount);
         json.put(BREWERY_JIBRI_COUNT, snapshot.jibriCount);

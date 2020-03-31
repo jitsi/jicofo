@@ -42,16 +42,6 @@ public class JicofoStatisticsSnapshot
     public int numParticipants;
 
     /**
-     * Number of jitsi-videobridge instances.
-     */
-    public int bridgeCount;
-
-    /**
-     * Number of jitsi-videobridge instances that are operational (not failed).
-     */
-    public int operationalBridgeCount;
-
-    /**
      * How many times the live streaming has failed to start.
      */
     public int totalLiveStreamingFailures;
@@ -126,14 +116,6 @@ public class JicofoStatisticsSnapshot
                 ? confSize
                 : snapshot.conferenceSizes.length - 1;
             snapshot.conferenceSizes[conferenceSizeIndex]++;
-        }
-
-        BridgeSelector bridgeSelector
-                = focusManager.getJitsiMeetServices().getBridgeSelector();
-        if (bridgeSelector != null)
-        {
-            snapshot.bridgeCount = bridgeSelector.getBridgeCount();
-            snapshot.operationalBridgeCount = bridgeSelector.getOperationalBridgeCount();
         }
 
         JigasiDetector jigasiDetector
