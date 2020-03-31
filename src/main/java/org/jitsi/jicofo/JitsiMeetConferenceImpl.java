@@ -2331,6 +2331,13 @@ public class JitsiMeetConferenceImpl
             return false;
         }
 
+
+        if (doMute && participant.isJibri())
+        {
+            logger.warn("Blocking mute request to jibri. ");
+            return false;
+        }
+
         logger.info(
             "Will " + (doMute ? "mute" : "unmute")
                 + " " + toBeMutedJid + " on behalf of " + fromJid);
