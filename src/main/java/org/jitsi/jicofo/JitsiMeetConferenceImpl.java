@@ -2055,8 +2055,8 @@ public class JitsiMeetConferenceImpl
      *
      * @param participant - The {@link Participant} instance to which sources
      * and groups will be added.
-     * @param contents - The list of Jingle 'content' packet extensions which
-     * describe media sources and groups.
+     * @param newSources - The new media sources to add.
+     * @param newGroups - The new media group sources to add.
      *
      * @return See returns description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
      * @throws InvalidSSRCsException See throws description of {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.

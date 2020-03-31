@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.jicofo.discovery.*;
@@ -500,7 +501,7 @@ public class Participant
      * @return {@code BridgeSession} from which this {@code Participant} has
      * been removed or {@code null} if this {@link Participant} was not part
      * of any bridge session.
-     * @see ColibriConference#expireChannels(ColibriConferenceIQ, boolean)
+     * @see org.jitsi.protocol.xmpp.colibri.ColibriConference#expireChannels(ColibriConferenceIQ)
      */
     @Deprecated
     JitsiMeetConferenceImpl.BridgeSession terminateBridgeSession(
