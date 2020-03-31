@@ -228,6 +228,14 @@ public class Participant
     }
 
     /**
+     * Returns <tt>true</tt> if this participant is a Jibri instance.
+    */
+    public boolean isJibri()
+    {
+        return supportedFeatures.contains("http://jitsi.org/protocol/jibri");
+    }
+
+    /**
      * Returns <tt>true</tt> if RTP audio is supported by this peer.
      */
     public boolean hasAudioSupport()
