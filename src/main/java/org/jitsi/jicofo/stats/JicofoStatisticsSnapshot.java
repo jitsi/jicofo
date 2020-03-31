@@ -28,27 +28,10 @@ public class JicofoStatisticsSnapshot
      */
     public int numParticipants;
 
-    /**
-     * How many times the live streaming has failed to start.
-     */
-    public int totalLiveStreamingFailures;
-
-    /**
-     * How many times the recording has failed to start.
-     */
-    public int totalRecordingFailures;
-
-    /**
-     * How many times Jicofo has failed to start a SIP call.
-     */
-    public int totalSipCallFailures;
-
     public int[] conferenceSizes = new int[CONFERENCE_SIZE_BUCKETS];
 
     public static JicofoStatisticsSnapshot generate(
-        @NotNull FocusManager focusManager,
-        @NotNull JibriStats   jibriStats
-    )
+        @NotNull FocusManager focusManager)
     {
         JicofoStatisticsSnapshot snapshot = new JicofoStatisticsSnapshot();
         for (JitsiMeetConference conference : focusManager.getConferences())
@@ -79,13 +62,6 @@ public class JicofoStatisticsSnapshot
                 : snapshot.conferenceSizes.length - 1;
             snapshot.conferenceSizes[conferenceSizeIndex]++;
         }
-
-        snapshot.totalLiveStreamingFailures
-            = jibriStats.getTotalLiveStreamingFailures();
-        snapshot.totalRecordingFailures
-            = jibriStats.getTotalRecordingFailures();
-        snapshot.totalSipCallFailures
-            = jibriStats.getTotalSipCallFailures();
 
         return snapshot;
     }

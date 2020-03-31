@@ -63,16 +63,12 @@ public class Statistics
     public String getStats()
     {
         FocusManager focusManager = focusManagerProvider.get();
-        JibriStats jibriStats = jibriStatsProvider.get();
 
         JicofoStatisticsSnapshot snapshot
-            = JicofoStatisticsSnapshot.generate(focusManager, jibriStats);
+            = JicofoStatisticsSnapshot.generate(focusManager);
         JSONObject json = new JSONObject();
         json.put(LARGEST_CONFERENCE, snapshot.largestConferenceSize);
         json.put(PARTICIPANTS, snapshot.numParticipants);
-        json.put(TOTAL_LIVE_STREAMING_FAILURES, snapshot.totalLiveStreamingFailures);
-        json.put(TOTAL_RECORDING_FAILURES, snapshot.totalRecordingFailures);
-        json.put(TOTAL_SIP_CALL_FAILURES, snapshot.totalSipCallFailures);
         JSONArray conferenceSizesJson = new JSONArray();
         for (int size : snapshot.conferenceSizes)
         {
@@ -83,6 +79,8 @@ public class Statistics
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we'll merge the FocusManager stats in the root object.
         json.putAll(focusManager.getStats());
+
+        json.putAll(jibriStatsProvider.get().getStats());
 
         return json.toJSONString();
     }
