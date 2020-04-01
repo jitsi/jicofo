@@ -704,7 +704,7 @@ public class FocusManager
         return conferences.size();
     }
 
-    public int getNonHealthCheckConferenceCount()
+    private int getNonHealthCheckConferenceCount()
     {
         return (int)conferences.values().stream()
             .filter(JitsiMeetConferenceImpl::includeInStatistics)
@@ -740,11 +740,54 @@ public class FocusManager
 
     public JSONObject getStats()
     {
-        JSONObject json = new JSONObject();
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we'll merge stats from different "child" objects here.
+        JSONObject stats = jitsiMeetServices.getStats();
+        stats.put("total_participants", statistics.totalParticipants.get());
+        stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
+        stats.put("conferences", getNonHealthCheckConferenceCount());
 
-        json.put("services", jitsiMeetServices.getStats());
+        // Calculate the number of participants and conference size distribution
+        int numParticipants = 0;
+        int largestConferenceSize = 0;
+        int[] conferenceSizes = new int[22];
+        for (JitsiMeetConference conference : getConferences())
+        {
+            if (!conference.includeInStatistics())
+            {
+                continue;
+            }
+            int confSize = conference.getParticipantCount();
+            // getParticipantCount only includes endpoints with allocated media
+            // channels, so if a single participant is waiting in a meeting
+            // they wouldn't be counted.  In stats, calling this a conference
+            // with size 0 would be misleading, so we add 1 in this case to
+            // properly show it as a conference of size 1.  (If there really
+            // weren't any participants in there at all, the conference
+            // wouldn't have existed in the first place).
+            if (confSize == 0)
+            {
+                confSize = 1;
+            }
+            numParticipants += confSize;
+            largestConferenceSize = Math.max(largestConferenceSize, confSize);
 
-        return json;
+            int conferenceSizeIndex = confSize < conferenceSizes.length
+                    ? confSize
+                    : conferenceSizes.length - 1;
+            conferenceSizes[conferenceSizeIndex]++;
+        }
+
+        stats.put("largest_conference", largestConferenceSize);
+        stats.put("participants", numParticipants);
+        JSONArray conferenceSizesJson = new JSONArray();
+        for (int size : conferenceSizes)
+        {
+            conferenceSizesJson.add(size);
+        }
+        stats.put("conference_sizes", conferenceSizesJson);
+
+        return stats;
     }
 
     /**

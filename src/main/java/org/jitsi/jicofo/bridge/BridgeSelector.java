@@ -753,10 +753,12 @@ public class BridgeSelector
 
     public JSONObject getStats()
     {
-        JSONObject json = new JSONObject();
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we'll merge stats from different "child" objects here.
+        JSONObject stats = bridgeSelectionStrategy.getStats();
+        stats.put("bridge_count", getBridgeCount());
+        stats.put("operational_bridge_count", getOperationalBridgeCount());
 
-        json.put("strategy", bridgeSelectionStrategy.getStats());
-
-        return json;
+        return stats;
     }
 }

@@ -19,6 +19,7 @@ package org.jitsi.jicofo.recording.jibri;
 import org.jitsi.eventadmin.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.logging.*;
+import org.json.simple.*;
 import org.osgi.framework.*;
 
 /**
@@ -129,5 +130,15 @@ public class JibriStats
     public int getTotalRecordingFailures()
     {
         return totalRecordingFailures;
+    }
+
+    public JSONObject getStats()
+    {
+        JSONObject stats = new JSONObject();
+        stats.put("total_live_streaming_failures", getTotalLiveStreamingFailures());
+        stats.put("total_recording_failures", getTotalRecordingFailures());
+        stats.put("total_sip_call_failures", getTotalSipCallFailures());
+
+        return stats;
     }
 }

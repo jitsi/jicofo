@@ -15,9 +15,6 @@
  */
 package org.jitsi.jicofo.rest;
 
-import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;
 
@@ -25,60 +22,12 @@ import javax.inject.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
-import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
-
 /**
  * Adds statistics REST endpoint exposes some internal Jicofo stats.
  */
 @Path("/stats")
 public class Statistics
 {
-    /**
-     * The current number of jitsi-videobridge instances.
-     */
-    public static final String BREWERY_JVB_COUNT = "brewery_jvb_count";
-
-    /**
-     * The current number of jitsi-videobridge instances that are operational
-     * (not failed).
-     */
-    public static final String BREWERY_JVB_OPERATIONAL_COUNT = "brewery_jvb_operational_count";
-
-    /**
-     * The current number of jigasi instances that support SIP.
-     */
-    public static final String BREWERY_JIGASI_SIP_COUNT = "brewery_jigasi_sip_count";
-
-    /**
-     * The current number of jigasi instances that support transcription.
-     */
-    public static final String BREWERY_JIGASI_TRANSCRIBER_COUNT = "brewery_jigasi_transcriber_count";
-
-    /**
-     * The current number of jibri instances for streaming.
-     */
-    public static final String BREWERY_JIBRI_COUNT = "brewery_jibri_count";
-
-    /**
-     * The current number of jibri instances for SIP.
-     */
-    public static final String BREWERY_JIBRI_SIP_COUNT = "brewery_jibri_sip_count";
-
-    /**
-     * How many times the live streaming has failed to start so far.
-     */
-    public static final String TOTAL_LIVE_STREAMING_FAILURES = "total_live_streaming_failures";
-
-    /**
-     * How many times the recording has failed to start so far.
-     */
-    public static final String TOTAL_RECORDING_FAILURES = "total_recording_failures";
-
-    /**
-     * How many times a SIP call has failed to start so far.
-     */
-    public static final String TOTAL_SIP_CALL_FAILURES = "total_sip_call_failures";
-
     @Inject
     protected FocusManagerProvider focusManagerProvider;
 
@@ -93,41 +42,13 @@ public class Statistics
     @Produces(MediaType.APPLICATION_JSON)
     public String getStats()
     {
-        FocusManager focusManager = focusManagerProvider.get();
-        JibriStats jibriStats = jibriStatsProvider.get();
+        JSONObject stats = new JSONObject();
 
-        JicofoStatisticsSnapshot snapshot
-            = JicofoStatisticsSnapshot.generate(focusManager, jibriStats);
-        JSONObject json = new JSONObject();
-        json.put(CONFERENCES, snapshot.numConferences);
-        json.put(LARGEST_CONFERENCE, snapshot.largestConferenceSize);
-        json.put(TOTAL_CONFERENCES_CREATED, snapshot.totalConferencesCreated);
-        json.put(PARTICIPANTS, snapshot.numParticipants);
-        json.put(TOTAL_PARTICIPANTS, snapshot.totalNumParticipants);
-        json.put(BREWERY_JVB_COUNT, snapshot.bridgeCount);
-        json.put(BREWERY_JVB_OPERATIONAL_COUNT, snapshot.operationalBridgeCount);
-        json.put(BREWERY_JIGASI_SIP_COUNT, snapshot.jigasiSipCount);
-        json.put(BREWERY_JIGASI_TRANSCRIBER_COUNT, snapshot.jigasiTranscriberCount);
-        json.put(BREWERY_JIBRI_COUNT, snapshot.jibriCount);
-        json.put(BREWERY_JIBRI_SIP_COUNT, snapshot.sipJibriCount);
-        json.put(TOTAL_LIVE_STREAMING_FAILURES, snapshot.totalLiveStreamingFailures);
-        json.put(TOTAL_RECORDING_FAILURES, snapshot.totalRecordingFailures);
-        json.put(TOTAL_SIP_CALL_FAILURES, snapshot.totalSipCallFailures);
-        JSONArray conferenceSizesJson = new JSONArray();
-        for (int size : snapshot.conferenceSizes)
-        {
-            conferenceSizesJson.add(size);
-        }
-        json.put(CONFERENCE_SIZES, conferenceSizesJson);
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we merge the FocusManager and Jibri stats in the root object.
+        stats.putAll(focusManagerProvider.get().getStats());
+        stats.putAll(jibriStatsProvider.get().getStats());
 
-        // XXX we have this top-down approach of populating the stats in various
-        // places in the bridge and thought to bring it over here. It'll bring
-        // proper name spacing of the various stats, but we'll have to type a
-        // bit more in dd to access said stats. For example the bridge selection
-        // strategy stats will be available under
-        // focus.services.selector.strategy.*
-        json.put("focus", focusManager.getStats());
-
-        return json.toJSONString();
+        return stats.toJSONString();
     }
 }
