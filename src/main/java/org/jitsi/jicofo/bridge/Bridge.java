@@ -368,7 +368,9 @@ public class Bridge
             (lastReportedPacketRatePps
                 + Math.max(0, getRecentVideoChannelChange()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
             / MAX_TOTAL_PACKET_RATE_PPS;
-        return Math.min(1, stress);
+        // While a stress of 1 indicates a bridge is fully loaded, we allow
+        // larger values to keep sorting correctly.
+        return stress;
     }
 
     /**
