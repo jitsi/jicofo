@@ -108,7 +108,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>1.1-22-gbec9167</version>
+      <version>1.1-25-g0328114</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -153,7 +153,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-utils</artifactId>
-      <version>1.0-33-g2ed4090</version>
+      <version>1.0-40-g3244250</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
