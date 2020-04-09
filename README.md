@@ -123,8 +123,8 @@ authenticated domain.
 -Dorg.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```
 
-If you have Jicofo installed from the Debian package this should go directly to
-**/etc/jitsi/jicofo/sip-communicator.properties** file:
+If you have Jicofo installed from the Debian package this should go directly on a new line in
+the **/etc/jitsi/jicofo/sip-communicator.properties** file:
 ```
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```
