@@ -877,7 +877,9 @@ public class ChatRoomImpl
     {
         try
         {
-            muc.destroy(reason, JidCreate.entityBareFrom(alternateAddress));
+            muc.destroy(reason,
+                alternateAddress != null ?
+                    JidCreate.entityBareFrom(alternateAddress) : null);
         }
         catch (XMPPException
                 | XmppStringprepException
