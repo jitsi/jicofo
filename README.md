@@ -153,6 +153,12 @@ net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
 
 Note that this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
 
+6 Restart services:
+```
+sudo systemctl restart jicofo.service
+sudo systemctl restart prosody.service
+```
+
 
 ## Certificates
 Jicofo uses an XMPP user connection (on port 5222 by default), and since the
