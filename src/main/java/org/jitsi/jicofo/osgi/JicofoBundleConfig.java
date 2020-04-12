@@ -82,16 +82,9 @@ public class JicofoBundleConfig
             {
                 "net/java/sip/communicator/util/UtilActivator",
                 "org/jitsi/eventadmin/Activator",
-                //"net/java/sip/communicator/impl/fileaccess/FileAccessActivator"
             },
             {
                 "net/java/sip/communicator/impl/configuration/ConfigurationActivator"
-            },
-            {
-                //"net/java/sip/communicator/impl/resources/ResourceManagementActivator"
-            },
-            {
-                //"net/java/sip/communicator/impl/dns/DnsUtilActivator"
             },
             {
                 "net/java/sip/communicator/impl/credentialsstorage/CredentialsStorageActivator"
@@ -100,17 +93,7 @@ public class JicofoBundleConfig
                 "net/java/sip/communicator/impl/netaddr/NetaddrActivator"
             },
             {
-                //"net/java/sip/communicator/impl/packetlogging/PacketLoggingActivator"
-            },
-            {
-                //"net/java/sip/communicator/service/gui/internal/GuiServiceActivator"
-            },
-            {
                 "net/java/sip/communicator/service/protocol/media/ProtocolMediaActivator"
-            },
-            {
-                //"net/java/sip/communicator/service/notification/NotificationServiceActivator",
-                //"net/java/sip/communicator/impl/globaldisplaydetails/GlobalDisplayDetailsActivator"
             },
             useMockProtocols
                 ? new String[]
@@ -121,9 +104,6 @@ public class JicofoBundleConfig
                 {
                     //"net/java/sip/communicator/impl/neomedia/NeomediaActivator"
                 },
-            {
-                //"net/java/sip/communicator/impl/certificate/CertificateVerificationActivator"
-            },
             {
                 "org/jitsi/jicofo/version/VersionActivator"
             },
@@ -141,6 +121,9 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/bridge/JvbDoctor",
                 "org/jitsi/jicofo/recording/jibri/JibriStats",
                 "org/jitsi/jicofo/VersionBroadcaster"
+            },
+            {
+                "org/jitsi/jicofo/health/Health"
             }
         };
 
