@@ -87,6 +87,7 @@ public class JicofoBundleConfig
                 "net/java/sip/communicator/impl/configuration/ConfigurationActivator"
             },
             {
+                // We need this because ProtocolProviderFactory uses it
                 "net/java/sip/communicator/impl/credentialsstorage/CredentialsStorageActivator"
             },
             {
