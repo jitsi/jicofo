@@ -125,6 +125,19 @@ public class JibriSipGateway
         return sipSessions.get(sipAddress);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<JibriSession> getJibriSessions()
+    {
+        List<JibriSession> sessions = new ArrayList<>(sipSessions.size());
+
+        sessions.addAll(sipSessions.values());
+
+        return sessions;
+    }
+
     @Override
     protected IQ handleStartRequest(JibriIq iq)
     {

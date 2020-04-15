@@ -276,24 +276,49 @@ public class JibriSession
      */
     private void emitSessionFailedEvent()
     {
-        JibriSessionEvent.Type jibriType;
-        if (isSIP)
-        {
-            jibriType = JibriSessionEvent.Type.SIP_CALL;
-        }
-        else if (StringUtils.isNullOrEmpty(streamID))
-        {
-            jibriType = JibriSessionEvent.Type.RECORDING;
-        }
-        else
-        {
-            jibriType = JibriSessionEvent.Type.LIVE_STREAMING;
-        }
-
         eventAdminProvider
                 .get()
                 .postEvent(
-                        JibriSessionEvent.newFailedToStartEvent(jibriType));
+                        JibriSessionEvent.newFailedToStartEvent(
+                                getJibriType()));
+    }
+
+    /**
+     * @return The {@link JibriSessionEvent.Type} of this session.
+     */
+    public JibriSessionEvent.Type getJibriType()
+    {
+        if (isSIP)
+        {
+            return JibriSessionEvent.Type.SIP_CALL;
+        }
+        else if (StringUtils.isNullOrEmpty(streamID))
+        {
+            return JibriSessionEvent.Type.RECORDING;
+        }
+        else
+        {
+            return JibriSessionEvent.Type.LIVE_STREAMING;
+        }
+    }
+
+    /**
+     * @return {@code true} if this sessions is active or {@code false}
+     * otherwise.
+     */
+    public boolean isActive()
+    {
+        return Status.ON.equals(jibriStatus);
+    }
+
+    /**
+     * @return {@code true} if this session is pending or {@code false}
+     * otherwise.
+     */
+    public boolean isPending()
+    {
+        return Status.UNDEFINED.equals(jibriStatus)
+                || Status.PENDING.equals(jibriStatus);
     }
 
     /**

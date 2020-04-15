@@ -3122,6 +3122,27 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    public JibriSessionStats getJibriSessionStats()
+    {
+        List<JibriSession> sessions = new ArrayList<>();
+
+        if (jibriRecorder != null)
+        {
+            sessions.addAll(jibriRecorder.getJibriSessions());
+        }
+
+        if  (jibriSipGateway != null)
+        {
+            sessions.addAll(jibriSipGateway.getJibriSessions());
+        }
+
+        return new JibriSessionStats(sessions);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String toString()
     {
         return
