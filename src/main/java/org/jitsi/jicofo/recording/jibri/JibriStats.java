@@ -17,10 +17,13 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.eventadmin.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.logging.*;
 import org.json.simple.*;
 import org.osgi.framework.*;
+
+import java.util.*;
 
 /**
  * Service listens for {@link JibriSession} events and computes statistics.
@@ -32,6 +35,11 @@ public class JibriStats
      * The class logger used by {@link JibriStats}.
      */
     static private final Logger logger = Logger.getLogger(JibriStats.class);
+
+    /**
+     * The OSGi bundle context.
+     */
+    private BundleContext bundleContext;
 
     /**
      * How many times a Jibri SIP call has failed to start.
@@ -65,7 +73,44 @@ public class JibriStats
     {
         super.start(bundleContext);
 
+        this.bundleContext = bundleContext;
+
         bundleContext.registerService(JibriStats.class, this, null);
+    }
+
+    /**
+     * Generates the stats section covering Jibri sessions.
+     * @param stats the JSON object to which the stats are added to.
+     */
+    private void generateJibriSessionStats(JSONObject stats)
+    {
+        if (this.bundleContext == null)
+        {
+            return;
+        }
+
+        FocusManager focusManager
+                = ServiceUtils2.getService(this.bundleContext, FocusManager.class);
+
+        if (focusManager == null)
+        {
+            return;
+        }
+
+        List<JitsiMeetConference> conferences = focusManager.getConferences();
+        JibriSessionStats jibriSessionStats = new JibriSessionStats();
+
+        for (JitsiMeetConference conf : conferences)
+        {
+            if (!conf.includeInStatistics())
+            {
+                continue;
+            }
+
+            jibriSessionStats.merge(conf.getJibriSessionStats());
+        }
+
+        jibriSessionStats.toJSON(stats);
     }
 
     /**
@@ -138,6 +183,8 @@ public class JibriStats
         stats.put("total_live_streaming_failures", getTotalLiveStreamingFailures());
         stats.put("total_recording_failures", getTotalRecordingFailures());
         stats.put("total_sip_call_failures", getTotalSipCallFailures());
+
+        generateJibriSessionStats(stats);
 
         return stats;
     }

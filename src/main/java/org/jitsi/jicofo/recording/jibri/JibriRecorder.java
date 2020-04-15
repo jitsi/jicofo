@@ -27,6 +27,7 @@ import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
@@ -118,6 +119,22 @@ public class JibriRecorder
     protected JibriSession getJibriSessionForMeetIq(JibriIq iq)
     {
         return jibriSession;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<JibriSession> getJibriSessions()
+    {
+        List<JibriSession> sessions = new ArrayList<>(1);
+
+        if (jibriSession != null)
+        {
+            sessions.add(jibriSession);
+        }
+
+        return sessions;
     }
 
     /**

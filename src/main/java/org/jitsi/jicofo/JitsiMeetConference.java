@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
@@ -86,6 +87,12 @@ public interface JitsiMeetConference
      * array is copied.
      */
     void setStartMuted(boolean[] startMuted);
+
+    /**
+     * @return a stats snapshot for all {@link JibriSession}s used in this
+     * conference.
+     */
+    JibriSessionStats getJibriSessionStats();
 
     /**
      * Gets the role of a member in the conference.

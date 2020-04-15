@@ -157,6 +157,11 @@ public abstract class CommonJibriStuff
     protected abstract JibriSession getJibriSessionForMeetIq(JibriIq iq);
 
     /**
+     * @return a list with all {@link JibriSession}s used by this instance.
+     */
+    public abstract List<JibriSession> getJibriSessions();
+
+    /**
      * This method will be called when start IQ arrives from Jitsi Meet
      * participant and {@link #getJibriSessionForMeetIq(JibriIq)} returns
      * <tt>null</tt>. The implementing class should allocate and store new
