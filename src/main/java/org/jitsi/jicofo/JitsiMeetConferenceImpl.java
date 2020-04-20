@@ -436,7 +436,7 @@ public class JitsiMeetConferenceImpl
                             osgiCtx,
                             this,
                             getXmppConnection(),
-                            FocusBundleActivator.getSharedThreadPool(),
+                            FocusBundleActivator.getSharedScheduledThreadPool(),
                             globalConfig);
 
                 jibriOpSet.addJibri(jibriSipGateway);

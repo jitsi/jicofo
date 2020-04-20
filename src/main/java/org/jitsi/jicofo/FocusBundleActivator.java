@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.impl.protocol.jabber.caps.*;
-
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.service.configuration.*;
@@ -37,9 +35,10 @@ public class FocusBundleActivator
     implements BundleActivator
 {
     /**
-     * The number of threads available in the thread pool shared through OSGi.
+     * The number of threads available in the scheduled executor pool shared
+     * through OSGi.
      */
-    private static final int SHARED_POOL_SIZE = 20;
+    private static final int SHARED_SCHEDULED_POOL_SIZE = 200;
 
     /**
      * OSGi bundle context held by this activator.
@@ -65,7 +64,23 @@ public class FocusBundleActivator
      * Shared thread pool available through OSGi for other components that do
      * not like to manage their own pool.
      */
-    private static ScheduledExecutorService sharedThreadPool;
+    private ScheduledExecutorService scheduledPool;
+
+    /**
+     * {@link ServiceRegistration} for {@link #scheduledPool}.
+     */
+    private ServiceRegistration<ScheduledExecutorService> scheduledPoolRegistration;
+
+    /**
+     * A cached pool registered as {@link ExecutorService} to be shared by
+     * different Jicofo components through OSGi.
+     */
+    private ExecutorService cachedPool;
+
+    /**
+     * {@link ServiceRegistration} for {@link #cachedPool}.
+     */
+    private ServiceRegistration<ExecutorService> cachedPoolRegistration;
 
     /**
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
@@ -89,9 +104,14 @@ public class FocusBundleActivator
         bundleContext = context;
 
         // Make threads daemon, so that they won't prevent from doing shutdown
-        sharedThreadPool
+        scheduledPool
             = Executors.newScheduledThreadPool(
-                    SHARED_POOL_SIZE, new DaemonThreadFactory());
+                SHARED_SCHEDULED_POOL_SIZE,
+                    new DaemonThreadFactory("Jicofo Scheduled"));
+
+        cachedPool
+            = Executors.newCachedThreadPool(
+                new DaemonThreadFactory("Jicofo Cached"));
 
         eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 
@@ -100,10 +120,11 @@ public class FocusBundleActivator
 
         jingleOfferFactory = new JingleOfferFactory(configServiceRef.get());
 
-        context.registerService(
-            ExecutorService.class, sharedThreadPool, null);
-        context.registerService(
-            ScheduledExecutorService.class, sharedThreadPool, null);
+        this.cachedPoolRegistration = context.registerService(
+                ExecutorService.class, cachedPool, null);
+
+        this.scheduledPoolRegistration = context.registerService(
+                ScheduledExecutorService.class, scheduledPool, null);
 
         globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
 
@@ -128,8 +149,29 @@ public class FocusBundleActivator
             focusManager = null;
         }
 
-        sharedThreadPool.shutdownNow();
-        sharedThreadPool = null;
+        if (scheduledPoolRegistration != null)
+        {
+            scheduledPoolRegistration.unregister();
+            scheduledPoolRegistration = null;
+        }
+
+        if (scheduledPool != null)
+        {
+            scheduledPool.shutdownNow();
+            scheduledPool = null;
+        }
+
+        if (cachedPoolRegistration != null)
+        {
+            cachedPoolRegistration.unregister();
+            cachedPoolRegistration = null;
+        }
+
+        if (cachedPool != null)
+        {
+            cachedPool.shutdownNow();
+            cachedPool = null;
+        }
 
         configServiceRef = null;
         eventAdminRef = null;
@@ -169,10 +211,20 @@ public class FocusBundleActivator
     }
 
     /**
-     * Returns shared thread pool service.
+     * Returns a {@link ScheduledExecutorService} shared by all components
+     * through OSGi.
      */
-    public static ScheduledExecutorService getSharedThreadPool()
+    public static ScheduledExecutorService getSharedScheduledThreadPool()
     {
-        return sharedThreadPool;
+        return ServiceUtils2.getService(bundleContext, ScheduledExecutorService.class);
+    }
+
+    /**
+     * Returns a cached {@link ExecutorService} shared by all components through
+     * OSGi.
+     */
+    public static ExecutorService getSharedThreadPool()
+    {
+        return ServiceUtils2.getService(bundleContext, ExecutorService.class);
     }
 }
