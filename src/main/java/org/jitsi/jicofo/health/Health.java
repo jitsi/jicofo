@@ -17,6 +17,7 @@ package org.jitsi.jicofo.health;
 
 import org.jitsi.health.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
@@ -102,16 +103,28 @@ public class Health
     {
         // Get the MUC service to perform the check on.
         JitsiMeetServices services = focusManager.getJitsiMeetServices();
+        if (services == null)
+        {
+            throw new RuntimeException("No JitsiMeetServices available");
+        }
 
-        Jid mucService = services != null ? services.getMucService() : null;
-
+        Jid mucService = services.getMucService();
         if (mucService == null)
         {
-            logger.error(
-                "No MUC service found on XMPP domain or Jicofo has not" +
-                    " finished initial components discovery yet");
-
             throw new RuntimeException("No MUC component");
+        }
+
+        BridgeSelector bridgeSelector = services.getBridgeSelector();
+        if (bridgeSelector == null)
+        {
+            throw new RuntimeException("No BridgeSelector available");
+        }
+
+        if (bridgeSelector.getOperationalBridgeCount() <= 0)
+        {
+            throw new RuntimeException(
+                    "No operational bridges available (total bridge count: "
+                            + bridgeSelector.getBridgeCount() + ")");
         }
 
         // Generate a pseudo-random room name. Minimize the risk of clashing
