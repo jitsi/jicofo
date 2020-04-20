@@ -214,7 +214,7 @@ public class JitsiMeetServices
 
             setMucService(node);
         }
-        else if (jicofoUserDomain != null && jicofoUserDomain.equals(node))
+        else if (jicofoUserDomain != null && jicofoUserDomain.equals(node) && version != null)
         {
             this.XMPPServerVersion = version;
 
