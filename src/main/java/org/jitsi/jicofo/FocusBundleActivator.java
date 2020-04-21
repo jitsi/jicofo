@@ -73,14 +73,9 @@ public class FocusBundleActivator
 
     /**
      * A cached pool registered as {@link ExecutorService} to be shared by
-     * different Jicofo components through OSGi.
+     * different Jicofo components.
      */
-    private ExecutorService cachedPool;
-
-    /**
-     * {@link ServiceRegistration} for {@link #cachedPool}.
-     */
-    private ServiceRegistration<ExecutorService> cachedPoolRegistration;
+    private static ExecutorService cachedPool;
 
     /**
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
@@ -120,9 +115,6 @@ public class FocusBundleActivator
 
         jingleOfferFactory = new JingleOfferFactory(configServiceRef.get());
 
-        this.cachedPoolRegistration = context.registerService(
-                ExecutorService.class, cachedPool, null);
-
         this.scheduledPoolRegistration = context.registerService(
                 ScheduledExecutorService.class, scheduledPool, null);
 
@@ -159,12 +151,6 @@ public class FocusBundleActivator
         {
             scheduledPool.shutdownNow();
             scheduledPool = null;
-        }
-
-        if (cachedPoolRegistration != null)
-        {
-            cachedPoolRegistration.unregister();
-            cachedPoolRegistration = null;
         }
 
         if (cachedPool != null)
@@ -220,11 +206,10 @@ public class FocusBundleActivator
     }
 
     /**
-     * Returns a cached {@link ExecutorService} shared by all components through
-     * OSGi.
+     * Returns a cached {@link ExecutorService} shared by Jicofo components.
      */
     public static ExecutorService getSharedThreadPool()
     {
-        return ServiceUtils2.getService(bundleContext, ExecutorService.class);
+        return cachedPool;
     }
 }
