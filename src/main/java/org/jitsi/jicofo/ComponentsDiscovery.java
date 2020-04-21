@@ -209,7 +209,7 @@ public class ComponentsDiscovery
             pubSubBridgeDiscovery
                 = new ThroughPubSubDiscovery(
                         subOpSet, capsOpSet,
-                        FocusBundleActivator.getSharedThreadPool());
+                        FocusBundleActivator.getSharedScheduledThreadPool());
 
             pubSubBridgeDiscovery.start(
                     FocusBundleActivator.bundleContext);
