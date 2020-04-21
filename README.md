@@ -141,15 +141,19 @@ a) Set jigasi to authenticate by editing the following lines in sip-communicator
 If you have jigasi installed from the Debian package this should go directly to
 **/etc/jitsi/jigasi/sip-communicator.properties**
 
+```
 org.jitsi.jigasi.xmpp.acc.USER_ID=SOME_USER@SOME_DOMAIN
 org.jitsi.jigasi.xmpp.acc.PASS=SOME_PASS
 org.jitsi.jigasi.xmpp.acc.ANONYMOUS_AUTH=false
+```
 
 The password is the actual plaintext password, not a base64 encoding.
 
 b) If you experience problems with a certificate chain, you may also need to uncomment the following line, also in sip-communicator.properties:
 
+```
 net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
+```
 
 Note that this should only be used for testing/debugging purposes, or in controlled environments. If you confirm that this is the problem, you should then solve it in another way (e.g. get a signed certificate for prosody, or add the particular certificate to jigasi’s trust store).
 
