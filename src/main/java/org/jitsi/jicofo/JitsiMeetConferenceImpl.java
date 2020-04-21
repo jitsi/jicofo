@@ -907,6 +907,7 @@ public class JitsiMeetConferenceImpl
             }
 
             bridgeSession.participants.add(participant);
+            bridgeSession.bridge.expectAnotherParticipant();
             participant.setBridgeSession(bridgeSession);
             logger.info("Added participant jid= " + participant.getMucJid()
                             + ", bridge=" + bridgeSession.bridge.getJid());

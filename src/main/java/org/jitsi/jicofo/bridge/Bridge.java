@@ -300,6 +300,10 @@ public class Bridge
         return Double.compare(this.getStress(), o.getStress());
     }
 
+    public void expectAnotherParticipant() {
+        onVideoChannelsChanged(1);
+    }
+
     void onVideoChannelsChanged(Integer diff)
     {
         if (diff == null)
