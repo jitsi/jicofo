@@ -273,7 +273,8 @@ public abstract class AbstractChannelAllocator implements Runnable
             // faulty.
             restartConference = true;
             faulty = false;
-            logger.error("Conference ID not found (expired?)." + e.getMessage());
+            logger.error(
+                jvb + " - conference ID not found (expired?):" + e.getMessage());
         }
         catch (BadRequestException e)
         {
@@ -284,7 +285,8 @@ public abstract class AbstractChannelAllocator implements Runnable
             // the new bridge (via a custom client).
             restartConference = false;
             faulty = false;
-            logger.error("The bridge indicated bad-request: " + e.getMessage());
+            logger.error(
+                jvb + " - the bridge indicated bad-request: " + e.getMessage());
         }
         catch (ColibriException e)
         {
@@ -292,8 +294,9 @@ public abstract class AbstractChannelAllocator implements Runnable
             // wrong response type, or something else.
             restartConference = true;
             faulty = true;
-            logger.error("Failed to allocate channels, will consider the " +
-                    "bridge faulty.", e);
+            logger.error(
+                jvb + " - failed to allocate channels, will consider the "
+                    + "bridge faulty: " + e.getMessage(), e);
         }
 
         // We only get here if we caught an exception.
