@@ -191,7 +191,13 @@ public class JibriDetector
     public JSONObject getStats()
     {
         JSONObject stats = new JSONObject();
-        stats.put("count", getInstanceCount());
+        stats.put("count", getInstanceCount(null));
+        stats.put(
+            "available",
+            getInstanceCount(
+                    brewInstance ->
+                        brewInstance.status != null
+                            && brewInstance.status.isAvailable()));
         return stats;
     }
 }
