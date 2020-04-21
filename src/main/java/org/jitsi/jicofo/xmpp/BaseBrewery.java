@@ -28,6 +28,7 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.*;
 
 /**
  * <tt>BaseBrewery</tt> manages the pool of service instances which
@@ -336,8 +337,15 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         onInstanceStatusChanged(instance.jid, extension);
     }
 
-    public int getInstanceCount()
+    public int getInstanceCount(Predicate<? super BrewInstance> filter)
     {
+        if  (filter != null)
+        {
+            return (int) instances.stream()
+                    .filter(filter)
+                    .count();
+        }
+
         return instances.size();
     }
 
