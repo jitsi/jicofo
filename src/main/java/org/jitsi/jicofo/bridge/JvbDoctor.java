@@ -456,23 +456,24 @@ public class JvbDoctor
                 return;
             }
 
-            // Sync on start/stop and bridges state
-            synchronized (JvbDoctor.this)
+            if (taskInvalid())
             {
-                if (taskInvalid())
-                    return;
-
-                // Check for health-check support
-                verifyHealthCheckSupport();
-
-                if (!Boolean.TRUE.equals(hasHealthCheckSupport))
-                {
-                    // This JVB does not support health-checks
-                    return;
-                }
-
-                logger.debug("Sending health-check request to: " + bridgeJid);
+                return;
             }
+
+            // Check for health-check support
+            verifyHealthCheckSupport();
+
+            if (taskInvalid())
+                return;
+
+            if (!Boolean.TRUE.equals(hasHealthCheckSupport))
+            {
+                // This JVB does not support health-checks
+                return;
+            }
+
+            logger.debug("Sending health-check request to: " + bridgeJid);
 
             IQ response
                 = connection.sendPacketAndGetReply(
