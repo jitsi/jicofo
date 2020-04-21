@@ -502,7 +502,8 @@ public class JvbDoctor
                 }
                 catch (InterruptedException e)
                 {
-                    logger.error("Second chance delay wait interrupted", e);
+                    logger.error(
+                        bridgeJid + " second chance delay wait interrupted", e);
                 }
             }
 
