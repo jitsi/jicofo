@@ -222,13 +222,10 @@ public class PubSubBridgeSelectorTest
     {
         System.err.println("Running clearPubSubBridgeIssueTest");
 
-        // Make sure that jvb advertises features with health-check support
-        String[] features
-            = ArrayUtils.add(
-                    JitsiMeetServices.VIDEOBRIDGE_FEATURES,
-                    String.class,
-                    DiscoveryUtil.FEATURE_HEALTH_CHECK);
-        MockCapsNode jvbNode = new MockCapsNode(jvb1Jid, features);
+        MockCapsNode jvbNode
+            = new MockCapsNode(
+                    jvb1Jid,
+                    JitsiMeetServices.VIDEOBRIDGE_FEATURES);
         capsOpSet.addChildNode(jvbNode);
 
         // Remove all JVBS

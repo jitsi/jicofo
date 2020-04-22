@@ -83,15 +83,6 @@ public class JvbDoctor
     public static final long DEFAULT_HEALTH_CHECK_INTERVAL = 10000;
 
     /**
-     * Constant array for health check feature discovery.
-     */
-    private static final String[] HEALTH_CHECK_FEATURES
-        = new String[]
-        {
-            DiscoveryUtil.FEATURE_HEALTH_CHECK
-        };
-
-    /**
      * Tells how often we send health checks to the bridge in ms.
      */
     private long healthCheckInterval;
@@ -405,32 +396,6 @@ public class JvbDoctor
             }
         }
 
-        private void verifyHealthCheckSupport()
-        {
-            if (hasHealthCheckSupport == null)
-            {
-                // Check if that bridge comes with health check support
-                List<String> jvbFeatures = capsOpSet.getFeatures(bridgeJid);
-                if (jvbFeatures != null)
-                {
-                    hasHealthCheckSupport
-                        = DiscoveryUtil.checkFeatureSupport(
-                                HEALTH_CHECK_FEATURES, jvbFeatures);
-                    if (!hasHealthCheckSupport)
-                    {
-                        logger.warn(
-                                bridgeJid + " does not support health checks!");
-                    }
-                }
-                else
-                {
-                    logger.warn(
-                           "Failed to check for health check support on "
-                               + bridgeJid);
-                }
-            }
-        }
-
         private HealthCheckIQ newHealthCheckIQ(Jid bridgeJid)
         {
             HealthCheckIQ healthIq = new HealthCheckIQ();
@@ -460,9 +425,6 @@ public class JvbDoctor
             {
                 return;
             }
-
-            // Check for health-check support
-            verifyHealthCheckSupport();
 
             if (taskInvalid())
                 return;
