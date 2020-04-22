@@ -169,6 +169,12 @@ public abstract class AbstractChannelAllocator implements Runnable
         ColibriConferenceIQ colibriChannels = allocateChannels(offer);
         if (canceled)
         {
+            // expire any channels that were successfully created, if the
+            // allocator was canceled while waiting for a reply.
+            if (colibriChannels != null)
+            {
+                bridgeSession.colibriConference.expireChannels(colibriChannels);
+            }
             return;
         }
 
@@ -189,6 +195,9 @@ public abstract class AbstractChannelAllocator implements Runnable
         offer = updateOffer(offer, colibriChannels);
         if (offer == null || canceled)
         {
+            // expire any channels that were successfully created, if the
+            // allocator was canceled while we updated the offer.
+            bridgeSession.colibriConference.expireChannels(colibriChannels);
             return;
         }
 
@@ -199,6 +208,9 @@ public abstract class AbstractChannelAllocator implements Runnable
         catch (OperationFailedException e)
         {
             logger.error("Failed to invite participant: ", e);
+            // expire any channels that were successfully created, if the invite
+            // failed.
+            bridgeSession.colibriConference.expireChannels(colibriChannels);
         }
     }
 
