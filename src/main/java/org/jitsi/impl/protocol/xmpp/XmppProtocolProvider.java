@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
@@ -39,15 +38,13 @@ import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
-import org.jivesoftware.smackx.disco.packet.*;
+import org.jivesoftware.smackx.caps.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
-import javax.net.ssl.*;
 import java.io.*;
-import java.security.cert.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -125,11 +122,6 @@ public class XmppProtocolProvider
     private XmppConnectionAdapter connectionAdapter;
 
     /**
-     * Jitsi service discovery manager.
-     */
-    private ScServiceDiscoveryManager discoInfoManager;
-
-    /**
      * Creates new instance of {@link XmppProtocolProvider} for given AccountID.
      *
      * @param accountID the <tt>JabberAccountID</tt> that will be used by new
@@ -139,7 +131,7 @@ public class XmppProtocolProvider
     {
         this.jabberAccountID = (JabberAccountID) accountID;
 
-        ScServiceDiscoveryManager.initIdentity();
+        EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
@@ -247,6 +239,11 @@ public class XmppProtocolProvider
 
         connectRetry = new RetryStrategy(executorService);
 
+        EntityCapsManager capsManager
+            = EntityCapsManager.getInstanceFor(connection);
+
+        capsManager.enableEntityCaps();
+
         // FIXME we could make retry interval configurable, but we do not have
         // control over retries executed by smack after first connect, so...
         connectRetry.runRetryingTask(
@@ -274,15 +271,6 @@ public class XmppProtocolProvider
             ReconnectionManager
                 .getInstanceFor(connection)
                 .addReconnectionListener(reConnListener);
-
-            discoInfoManager
-                = new ScServiceDiscoveryManager(
-                    XmppProtocolProvider.this,
-                    FocusBundleActivator.getConfigService(),
-                    connection,
-                    new String[]{},
-                    new String[]{},
-                    false);
 
             if (!jabberAccountID.isAnonymousAuthUsed())
             {
@@ -506,113 +494,6 @@ public class XmppProtocolProvider
             connectionAdapter = new XmppConnectionAdapter(connection);
         }
         return connectionAdapter;
-    }
-
-    /**
-     * FIXME: move to operation set together with ScServiceDiscoveryManager
-     */
-    public boolean checkFeatureSupport(Jid contactAddress, String[] features)
-    {
-        try
-        {
-            //FIXME: fix logging levels
-            logger.debug("Discovering info for: " + contactAddress);
-
-            DiscoverInfo info = discoInfoManager.discoverInfo(contactAddress);
-
-            logger.debug("HAVE Discovering info for: " + contactAddress);
-
-            logger.debug("Features");
-            for (DiscoverInfo.Feature f : info.getFeatures())
-            {
-                logger.debug(f.toXML());
-            }
-
-            logger.debug("Identities");
-            for (DiscoverInfo.Identity identity : info.getIdentities())
-            {
-                logger.debug(identity.toXML());
-            }
-        }
-        catch (XMPPException
-                | InterruptedException
-                | NotConnectedException
-                | NoResponseException e)
-        {
-            logger.error("Error discovering features: " + e.getMessage());
-        }
-
-        for (String feature : features)
-        {
-            if (!discoInfoManager.supportsFeature(contactAddress, feature))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean checkFeatureSupport(Jid node, String subnode,
-                                       String[] features)
-    {
-        for (String feature : features)
-        {
-            if (!discoInfoManager.supportsFeature(node, feature))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * FIXME: move to operation set together with ScServiceDiscoveryManager
-     */
-    public Set<Jid> discoverItems(Jid node)
-            throws XMPPException,
-            NotConnectedException,
-            InterruptedException,
-            NoResponseException
-    {
-        DiscoverItems itemsDisco = discoInfoManager.discoverItems(node);
-
-        if (logger.isDebugEnabled())
-            logger.debug("HAVE Discovered items for: " + node);
-
-        Set<Jid> result = new HashSet<>();
-
-        for (DiscoverItems.Item item : itemsDisco.getItems())
-        {
-            if (logger.isDebugEnabled())
-                logger.debug(item.toXML());
-
-            result.add(item.getEntityID());
-        }
-
-        return result;
-    }
-
-    public List<String> getEntityFeatures(Jid node)
-    {
-        try
-        {
-            DiscoverInfo info = discoInfoManager.discoverInfo(node);
-            List<String> featureList = new ArrayList<>();
-            for (DiscoverInfo.Feature feature : info.getFeatures())
-            {
-                featureList.add(feature.getVar());
-            }
-
-            return featureList;
-        }
-        catch (XMPPException
-                | InterruptedException
-                | NoResponseException
-                | NotConnectedException e)
-        {
-            logger.debug("Error getting feature list: " + e.getMessage());
-            return null;
-        }
     }
 
     class XmppConnectionListener

@@ -19,14 +19,15 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
-
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
+import org.jivesoftware.smackx.disco.*;
+import org.jivesoftware.smackx.disco.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  *
@@ -40,18 +41,51 @@ public class OpSetSimpleCapsImpl
     private final static Logger logger
         = Logger.getLogger(OpSetSimpleCapsImpl.class);
 
+    private ServiceDiscoveryManager discoveryManager;
+
     private final XmppProtocolProvider xmppProvider;
 
-    public OpSetSimpleCapsImpl(XmppProtocolProvider xmppProtocolProvider)
+    public OpSetSimpleCapsImpl(XmppProtocolProvider xmppProvider)
     {
-        this.xmppProvider = xmppProtocolProvider;
+        this.xmppProvider = xmppProvider;
+    }
+
+    private ServiceDiscoveryManager getDiscoveryManager() {
+        if (this.discoveryManager == null)
+        {
+            this.discoveryManager
+                = ServiceDiscoveryManager.getInstanceFor(
+                    xmppProvider.getConnection());
+        }
+
+        return discoveryManager;
     }
 
     public Set<Jid> getItems(Jid node)
     {
+        if (getDiscoveryManager() == null)
+        {
+            return null;
+        }
+
         try
         {
-            return xmppProvider.discoverItems(node);
+            DiscoverItems itemsDisco = discoveryManager.discoverItems(node);
+
+            if (logger.isDebugEnabled())
+                logger.debug("HAVE Discovered items for: " + node);
+
+            Set<Jid> result = new HashSet<>();
+
+            for (DiscoverItems.Item item : itemsDisco.getItems())
+            {
+                if (logger.isDebugEnabled())
+                    logger.debug(item.toXML());
+
+                result.add(item.getEntityID());
+            }
+
+            return result;
         }
         catch (XMPPException
                 | InterruptedException
@@ -69,22 +103,49 @@ public class OpSetSimpleCapsImpl
     @Override
     public boolean hasFeatureSupport(Jid node, String[] features)
     {
-        List<String> itemFeatures = getFeatures(node);
+        if (getDiscoveryManager() == null)
+        {
+            return false;
+        }
 
-        return itemFeatures != null &&
-            DiscoveryUtil.checkFeatureSupport(features, itemFeatures);
-
+        try
+        {
+            return discoveryManager.supportsFeatures(node, features);
+        }
+        catch (NoResponseException
+                | XMPPException.XMPPErrorException
+                | NotConnectedException
+                | InterruptedException e)
+        {
+            return false;
+        }
     }
-    
+
     public List<String> getFeatures(Jid node)
     {
-        return xmppProvider.getEntityFeatures(node);
-    }
+        if (getDiscoveryManager() == null)
+        {
+            return null;
+        }
 
-    //@Override
-    public boolean hasFeatureSupport(Jid node, String subnode,
-                                     String[] features)
-    {
-        return xmppProvider.checkFeatureSupport(node, subnode, features);
+        try
+        {
+            DiscoverInfo info = discoveryManager.discoverInfo(node);
+            if (info != null)
+            {
+                return info.getFeatures()
+                        .stream()
+                        .map(DiscoverInfo.Feature::getVar)
+                        .collect(Collectors.toList());
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error(
+                    String.format(
+                            "Failed to discover features for %s: %s", node, e.getMessage()));
+        }
+
+        return null;
     }
 }
