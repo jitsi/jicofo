@@ -145,6 +145,8 @@ public class DiscoveryUtil
             return getDefaultParticipantFeatureSet();
         }
 
+        long start = System.currentTimeMillis();
+
         logger.info("Doing feature discovery for " + address);
 
         // Discover participant feature set
@@ -158,15 +160,25 @@ public class DiscoveryUtil
             return getDefaultParticipantFeatureSet();
         }
 
+        long tookMillis = System.currentTimeMillis() - start;
+
         if (logger.isDebugEnabled())
         {
             StringBuilder sb
                 = new StringBuilder(address)
-                .append(", features: ")
-                .append(String.join(", ", participantFeatures));
+                    .append(", features: ")
+                    .append(String.join(", ", participantFeatures))
+                    .append(", in: ")
+                    .append(tookMillis);
             logger.debug(sb);
-        } else {
-            logger.info("Successfully discovered features for " + address);
+        }
+        else
+        {
+            logger.info(
+                String.format(
+                    "Successfully discovered features for %s in %d",
+                    address,
+                    tookMillis));
         }
 
         return participantFeatures;
