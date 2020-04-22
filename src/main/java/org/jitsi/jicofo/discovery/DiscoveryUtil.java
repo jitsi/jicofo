@@ -93,11 +93,6 @@ public class DiscoveryUtil
     public final static String FEATURE_RTP_BUNDLE = "urn:ietf:rfc:5888";
 
     /**
-     * Heath checks feature namespace.
-     */
-    public final static String FEATURE_HEALTH_CHECK = HealthCheckIQ.NAMESPACE;
-
-    /**
      * A namespace for our custom "lip-sync" feature. Advertised by the clients
      * that support all of the functionality required for doing the lip-sync
      * properly.
