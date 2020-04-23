@@ -208,9 +208,6 @@ public abstract class AbstractChannelAllocator implements Runnable
         catch (OperationFailedException e)
         {
             logger.error("Failed to invite participant: ", e);
-            // expire any channels that were successfully created, if the invite
-            // failed.
-            bridgeSession.colibriConference.expireChannels(colibriChannels);
         }
     }
 
