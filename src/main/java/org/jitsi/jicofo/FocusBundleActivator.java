@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo;
 
+import net.java.sip.communicator.util.*;
+
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.service.configuration.*;
@@ -34,6 +36,18 @@ import java.util.concurrent.*;
 public class FocusBundleActivator
     implements BundleActivator
 {
+    /**
+     * The default size for the shared thread pool used by Jicofo.
+     */
+    private static final int DEFAULT_SHARED_POOL_SIZE = 1500;
+
+    /**
+     * The name of the config property that can be used to change the Jicofo
+     * thread pool size.
+     */
+    private static final String SHARED_POOL_SIZE_CFG_PROP
+        = "org.jitsi.jicofo.SHARED_POOL_SIZE";
+
     /**
      * The number of threads available in the scheduled executor pool shared
      * through OSGi.
@@ -56,6 +70,12 @@ public class FocusBundleActivator
     private static JingleOfferFactory jingleOfferFactory;
 
     /**
+     * The logger.
+     */
+    private static final Logger logger
+        = Logger.getLogger(FocusBundleActivator.class);
+
+    /**
      * {@link EventAdmin} service reference.
      */
     private static OSGIServiceRef<EventAdmin> eventAdminRef;
@@ -75,7 +95,7 @@ public class FocusBundleActivator
      * A cached pool registered as {@link ExecutorService} to be shared by
      * different Jicofo components.
      */
-    private static ExecutorService cachedPool;
+    private static ExecutorService sharedPool;
 
     /**
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
@@ -104,14 +124,23 @@ public class FocusBundleActivator
                 SHARED_SCHEDULED_POOL_SIZE,
                     new DaemonThreadFactory("Jicofo Scheduled"));
 
-        cachedPool
-            = Executors.newCachedThreadPool(
-                new DaemonThreadFactory("Jicofo Cached"));
-
         eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 
         configServiceRef
             = new OSGIServiceRef<>(context, ConfigurationService.class);
+
+        int maxSharedPoolSize
+            = configServiceRef.get()
+                .getInt(SHARED_POOL_SIZE_CFG_PROP, DEFAULT_SHARED_POOL_SIZE);
+
+        logger.info("Max shared pool size: " + maxSharedPoolSize);
+
+        sharedPool
+            = new ThreadPoolExecutor(
+                0, maxSharedPoolSize,
+                60L, TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                new DaemonThreadFactory("Jicofo Cached"));
 
         jingleOfferFactory = new JingleOfferFactory(configServiceRef.get());
 
@@ -153,10 +182,10 @@ public class FocusBundleActivator
             scheduledPool = null;
         }
 
-        if (cachedPool != null)
+        if (sharedPool != null)
         {
-            cachedPool.shutdownNow();
-            cachedPool = null;
+            sharedPool.shutdownNow();
+            sharedPool = null;
         }
 
         configServiceRef = null;
@@ -210,6 +239,6 @@ public class FocusBundleActivator
      */
     public static ExecutorService getSharedThreadPool()
     {
-        return cachedPool;
+        return sharedPool;
     }
 }
