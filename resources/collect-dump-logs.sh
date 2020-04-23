@@ -34,6 +34,6 @@ else
         rm ${JAVA_HEAPDUMP_PATH}
     else
         echo "Jicofo not running, no previous dump found. Including logs only."
-        tar zcvf jicofo-dumps-${STAMP}-crash.tgz ${CRASH_FILES} /var/log/jitsi/jicofo.log /tmp/hs_err_*
+        tar zcvf jicofo-dumps-${STAMP}-crash.tgz ${CRASH_FILES} /var/log/jitsi/jicofo.* /tmp/hs_err_*
     fi
 fi
