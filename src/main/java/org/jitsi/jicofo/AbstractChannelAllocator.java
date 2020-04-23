@@ -98,6 +98,12 @@ public abstract class AbstractChannelAllocator implements Runnable
     protected final boolean reInvite;
 
     /**
+     * The colibri channels that this allocator has allocated. They'll be
+     * cleaned up if the allocator is canceled or failed at any point.
+     */
+    private ColibriConferenceIQ colibriChannels;
+
+    /**
      * Initializes a new {@link AbstractChannelAllocator} instance which is to
      * invite a specific {@link Participant} into a specific
      * {@link JitsiMeetConferenceImpl} (using a specific jitsi-videobridge
@@ -145,9 +151,15 @@ public abstract class AbstractChannelAllocator implements Runnable
         catch (Throwable e)
         {
             logger.error("Channel allocator failed: ", e);
+            cancel();
         }
         finally
         {
+            if (canceled && colibriChannels != null)
+            {
+                bridgeSession.colibriConference.expireChannels(colibriChannels);
+            }
+
             if (participant != null)
             {
                 participant.channelAllocatorCompleted(this);
@@ -166,15 +178,9 @@ public abstract class AbstractChannelAllocator implements Runnable
             return;
         }
 
-        ColibriConferenceIQ colibriChannels = allocateChannels(offer);
+        colibriChannels = allocateChannels(offer);
         if (canceled)
         {
-            // expire any channels that were successfully created, if the
-            // allocator was canceled while waiting for a reply.
-            if (colibriChannels != null)
-            {
-                bridgeSession.colibriConference.expireChannels(colibriChannels);
-            }
             return;
         }
 
@@ -195,9 +201,6 @@ public abstract class AbstractChannelAllocator implements Runnable
         offer = updateOffer(offer, colibriChannels);
         if (offer == null || canceled)
         {
-            // expire any channels that were successfully created, if the
-            // allocator was canceled while we updated the offer.
-            bridgeSession.colibriConference.expireChannels(colibriChannels);
             return;
         }
 
