@@ -60,7 +60,7 @@ public class ComponentsDiscovery
     /**
      * Re-discovers every 30 seconds.
      */
-    private static final long DEFAULT_REDISCOVERY_INT = 30L * 1000L;
+    private static final long DEFAULT_REDISCOVERY_INT = -1;
 
     /**
      * The name of configuration property which specifies how often XMPP
