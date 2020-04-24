@@ -1449,139 +1449,9 @@ public class JitsiMeetConferenceImpl
             JingleSession jingleSession,
             List<ContentPacketExtension> answer)
     {
-        Participant participant
-            = findParticipantForJingleSession(jingleSession);
-        Jid participantJid = jingleSession.getAddress();
+        logger.info("Got session-accept from: " + jingleSession.getAddress());
 
-        if (participant == null)
-        {
-            String errorMsg
-                = "No participant found for: " + participantJid;
-            logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found,
-                    errorMsg).build();
-        }
-
-        if (participant.getJingleSession() != null)
-        {
-            //FIXME: we should reject it ?
-            logger.error(
-                    "Reassigning jingle session for participant: "
-                        + participantJid);
-        }
-
-        // XXX We will be acting on the received session-accept bellow.
-        // Unfortunately, we may have not received an acknowledgment of our
-        // session-initiate yet and whatever we do bellow will be torn down when
-        // the acknowledgement timeout occurs later on. Since we will have
-        // acted on the session-accept by the time the acknowledgement timeout
-        // occurs, we may as well ignore the timeout.
-        jingleSession.setAccepted(true);
-
-        participant.setJingleSession(jingleSession);
-
-        // Extract and store various session information in the Participant
-        participant.setRTPDescription(answer);
-        participant.addTransportFromJingle(answer);
-
-        MediaSourceMap sourcesAdvertised
-                = MediaSourceMap.getSourcesFromContent(answer);
-        MediaSourceGroupMap sourceGroupsAdvertised
-                = MediaSourceGroupMap.getSourceGroupsForContents(answer);
-        if (sourcesAdvertised.isEmpty()
-            && globalConfig.injectSsrcForRecvOnlyEndpoints)
-        {
-            // We inject an SSRC in order to insure that the participant has
-            // at least one SSRC advertised. Otherwise, non-local bridges in the
-            // conference will not be aware of the participant. We intentionally
-            // use a negative value, because this is an invalid SSRC and will
-            // not be actually used on the wire.
-            SourcePacketExtension sourcePacketExtension
-                    = new SourcePacketExtension();
-            long ssrc = RANDOM.nextInt() & 0xffff_ffffl;
-            logger.info(participant
-                    + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcePacketExtension.setSSRC(ssrc);
-            sourcesAdvertised.addSource(
-                    MediaType.AUDIO.toString(),
-                    sourcePacketExtension);
-        }
-        MediaSourceMap sourcesAdded;
-        MediaSourceGroupMap sourceGroupsAdded;
-        try
-        {
-            Object[] sourcesAndGroupsAdded
-                = tryAddSourcesToParticipant(
-                        participant, sourcesAdvertised, sourceGroupsAdvertised);
-            sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
-            sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
-        }
-        catch (InvalidSSRCsException e)
-        {
-            logger.error(
-                "Error processing session accept from: "
-                    + participantJid +": " + e.getMessage());
-
-            return XMPPError.from(
-                XMPPError.Condition.bad_request, e.getMessage()).build();
-        }
-
-        logger.info("Received session-accept from " +
-                        participant.getMucJid() +
-                        " with accepted sources:" + sourcesAdded);
-
-        // Update channel info - we may miss update during conference restart,
-        // but the state will be synced up after channels are allocated for this
-        // participant on the new bridge
-        synchronized (bridges)
-        {
-            BridgeSession participantBridge = findBridgeSession(participant);
-            if (participantBridge != null)
-            {
-                participantBridge.updateColibriChannels(participant);
-            }
-            else
-            {
-                logger
-                    .warn("No bridge found for a participant: " + participant);
-                // TODO: how do we handle this? Re-invite?
-            }
-
-            // If we accepted any new sources from the participant, update
-            // the state of all remote bridges.
-            if ((!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty())
-                && participantBridge != null)
-            {
-                propagateNewSourcesToOcto(
-                    participantBridge, sourcesAdded, sourceGroupsAdded);
-            }
-        }
-
-        // Loop over current participant and send 'source-add' notification
-        propagateNewSources(
-            participant, sourcesAdded.copyDeep(), sourceGroupsAdded.copy());
-
-        // Notify the participant itself since it is now stable
-        if (participant.hasSourcesToAdd())
-        {
-            jingle.sendAddSourceIQ(
-                    participant.getSourcesToAdd(),
-                    participant.getSourceGroupsToAdd(),
-                    jingleSession);
-
-            participant.clearSourcesToAdd();
-        }
-        if (participant.hasSourcesToRemove())
-        {
-            jingle.sendRemoveSourceIQ(
-                    participant.getSourcesToRemove(),
-                    participant.getSourceGroupsToRemove(),
-                    jingleSession);
-
-            participant.clearSourcesToRemove();
-        }
-
-        return null;
+        return updateParticipant(jingleSession, answer);
     }
 
     /**
@@ -1768,15 +1638,9 @@ public class JitsiMeetConferenceImpl
         JingleSession jingleSession,
         List<ContentPacketExtension> contents)
     {
-        jingleSession.setAccepted(true);
-
         logger.info("Got transport-accept from: " + jingleSession.getAddress());
 
-        // We basically do the same processing as with transport-info by just
-        // forwarding transport/rtp information to the bridge
-        onTransportInfo(jingleSession, contents);
-
-        return null;
+        return updateParticipant(jingleSession, contents);
     }
 
     /**
@@ -1897,6 +1761,146 @@ public class JitsiMeetConferenceImpl
         return removeSources(
             sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
     }
+
+    /**
+     * Updates the RTP description, transport and propagates sources and source
+     * groups of a participant that sends the session-accept or transport-accept
+     * Jingle IQs.
+     *
+     * @param jingleSession
+     * @param contents
+     * @return
+     */
+    private XMPPError updateParticipant(
+        JingleSession jingleSession,
+        List<ContentPacketExtension> contents)
+    {
+        Participant participant
+            = findParticipantForJingleSession(jingleSession);
+        Jid participantJid = jingleSession.getAddress();
+
+        if (participant == null)
+        {
+            String errorMsg
+                = "No participant found for: " + participantJid;
+            logger.warn(errorMsg);
+            return XMPPError.from(XMPPError.Condition.item_not_found,
+                errorMsg).build();
+        }
+
+        // XXX We will be acting on the received session-accept bellow.
+        // Unfortunately, we may have not received an acknowledgment of our
+        // session-initiate yet and whatever we do bellow will be torn down when
+        // the acknowledgement timeout occurs later on. Since we will have
+        // acted on the session-accept by the time the acknowledgement timeout
+        // occurs, we may as well ignore the timeout.
+        jingleSession.setAccepted(true);
+
+
+        // Extract and store various session information in the Participant
+        participant.setRTPDescription(contents);
+        participant.addTransportFromJingle(contents);
+
+        MediaSourceMap sourcesAdvertised
+            = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceGroupMap sourceGroupsAdvertised
+            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
+        if (sourcesAdvertised.isEmpty()
+            && globalConfig.injectSsrcForRecvOnlyEndpoints)
+        {
+            // We inject an SSRC in order to insure that the participant has
+            // at least one SSRC advertised. Otherwise, non-local bridges in the
+            // conference will not be aware of the participant. We intentionally
+            // use a negative value, because this is an invalid SSRC and will
+            // not be actually used on the wire.
+            SourcePacketExtension sourcePacketExtension
+                = new SourcePacketExtension();
+            long ssrc = RANDOM.nextInt() & 0xffff_ffffl;
+            logger.info(participant
+                + " did not advertise any SSRCs. Injecting " + ssrc);
+            sourcePacketExtension.setSSRC(ssrc);
+            sourcesAdvertised.addSource(
+                MediaType.AUDIO.toString(),
+                sourcePacketExtension);
+        }
+        MediaSourceMap sourcesAdded;
+        MediaSourceGroupMap sourceGroupsAdded;
+        try
+        {
+            Object[] sourcesAndGroupsAdded
+                = tryAddSourcesToParticipant(
+                participant, sourcesAdvertised, sourceGroupsAdvertised);
+            sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
+            sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
+        }
+        catch (InvalidSSRCsException e)
+        {
+            logger.error(
+                "Error processing session accept from: "
+                    + participantJid +": " + e.getMessage());
+
+            return XMPPError.from(
+                XMPPError.Condition.bad_request, e.getMessage()).build();
+        }
+
+        logger.info("Received session-accept from " +
+            participant.getMucJid() +
+            " with accepted sources:" + sourcesAdded);
+
+        // Update channel info - we may miss update during conference restart,
+        // but the state will be synced up after channels are allocated for this
+        // participant on the new bridge
+        synchronized (bridges)
+        {
+            BridgeSession participantBridge = findBridgeSession(participant);
+            if (participantBridge != null)
+            {
+                participantBridge.updateColibriChannels(participant);
+            }
+            else
+            {
+                logger
+                    .warn("No bridge found for a participant: " + participant);
+                // TODO: how do we handle this? Re-invite?
+            }
+
+            // If we accepted any new sources from the participant, update
+            // the state of all remote bridges.
+            if ((!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty())
+                && participantBridge != null)
+            {
+                propagateNewSourcesToOcto(
+                    participantBridge, sourcesAdded, sourceGroupsAdded);
+            }
+        }
+
+        // Loop over current participant and send 'source-add' notification
+        propagateNewSources(
+            participant, sourcesAdded.copyDeep(), sourceGroupsAdded.copy());
+
+        // Notify the participant itself since it is now stable
+        if (participant.hasSourcesToAdd())
+        {
+            jingle.sendAddSourceIQ(
+                participant.getSourcesToAdd(),
+                participant.getSourceGroupsToAdd(),
+                jingleSession);
+
+            participant.clearSourcesToAdd();
+        }
+        if (participant.hasSourcesToRemove())
+        {
+            jingle.sendRemoveSourceIQ(
+                participant.getSourcesToRemove(),
+                participant.getSourceGroupsToRemove(),
+                jingleSession);
+
+            participant.clearSourcesToRemove();
+        }
+
+        return null;
+    }
+
 
     /**
      * Removes sources from the conference and notifies other participants.
