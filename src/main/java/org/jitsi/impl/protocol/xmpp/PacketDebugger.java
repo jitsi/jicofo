@@ -38,6 +38,18 @@ public class PacketDebugger
         return debuggerMap.get(connection);
     }
 
+    static private boolean packetLoggingEnabled = false;
+
+    static public boolean isPacketLoggingEnabled()
+    {
+        return packetLoggingEnabled;
+    }
+
+    static public void setPacketLoggingEnabled(boolean enabled)
+    {
+        packetLoggingEnabled = enabled;
+    }
+
     /**
      * Total XMPP packets  received.
      */
@@ -92,6 +104,11 @@ public class PacketDebugger
         else if (logMessage.contains("RECV"))
         {
             totalPacketsRecv += 1;
+        }
+
+        if (packetLoggingEnabled)
+        {
+            logger.info(logMessage);
         }
     }
 
