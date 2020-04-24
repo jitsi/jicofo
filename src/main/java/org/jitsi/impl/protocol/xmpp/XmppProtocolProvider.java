@@ -33,12 +33,12 @@ import org.jitsi.service.configuration.*;
 
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -63,6 +63,7 @@ public class XmppProtocolProvider
     {
         XMPPTCPConnection.setUseStreamManagementResumptionDefault(false);
         XMPPTCPConnection.setUseStreamManagementDefault(false);
+        SmackConfiguration.setDebuggerFactory(PacketDebugger::new);
     }
 
     /**
@@ -203,6 +204,10 @@ public class XmppProtocolProvider
                 .setHost(serverAddressUserSetting)
                 .setPort(serverPort)
                 .setXmppDomain(serviceName);
+
+        // Required for PacketDebugger and XMPP stats to work
+        connConfig.setDebuggerEnabled(true);
+
         ReconnectionManager.setEnabledPerDefault(true);
 
         // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but tries
@@ -226,11 +231,6 @@ public class XmppProtocolProvider
         }
 
         connection = new XMPPTCPConnection(connConfig.build());
-
-        if (logger.isTraceEnabled())
-        {
-            enableDebugPacketsLogging();
-        }
 
         ScheduledExecutorService executorService
             = ServiceUtils.getService(
@@ -347,18 +347,6 @@ public class XmppProtocolProvider
                 RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
                 null);
         }
-    }
-
-    private void enableDebugPacketsLogging()
-    {
-        // FIXME: consider using packet logging service
-        DebugLogger outLogger = new DebugLogger("--> ");
-
-        connection.addPacketSendingListener(outLogger, outLogger);
-
-        DebugLogger inLogger = new DebugLogger("<-- ");
-
-        connection.addAsyncStanzaListener(inLogger, inLogger);
     }
 
     /**
@@ -494,6 +482,33 @@ public class XmppProtocolProvider
             connectionAdapter = new XmppConnectionAdapter(connection);
         }
         return connectionAdapter;
+    }
+
+    /**
+     * Generates a {@link JSONObject} with statistics  for this protocol
+     * provider instance.
+     * @return JSON stats
+     */
+    public JSONObject getStats()
+    {
+        JSONObject stats = new JSONObject();
+
+        if (connection == null)
+        {
+            return stats;
+        }
+
+        PacketDebugger  debugger = PacketDebugger.forConnection(connection);
+
+        if (debugger == null)
+        {
+            return stats;
+        }
+
+        stats.put("total_sent", debugger.getTotalPacketsSent());
+        stats.put("total_recv", debugger.getTotalPacketsRecv());
+
+        return stats;
     }
 
     class XmppConnectionListener
@@ -685,31 +700,6 @@ public class XmppProtocolProvider
             IQRequestHandler handler)
         {
             return connection.unregisterIQRequestHandler(handler);
-        }
-    }
-
-    // FIXME: use Smack's debug interface
-    // FIXME: misses IQ get/set stanzas due to SMACK-728 (PR Smack#158)
-    private static class DebugLogger
-        implements StanzaFilter, StanzaListener
-    {
-        private final String prefix;
-
-        DebugLogger(String prefix)
-        {
-            this.prefix = prefix;
-        }
-
-        @Override
-        public boolean accept(Stanza packet)
-        {
-            return true;
-        }
-
-        @Override
-        public void processStanza(Stanza packet)
-        {
-            logger.trace(prefix + packet.toXML());
         }
     }
 }

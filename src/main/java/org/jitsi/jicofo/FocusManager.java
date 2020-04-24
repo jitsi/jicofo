@@ -22,6 +22,7 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.stats.*;
@@ -786,6 +787,17 @@ public class FocusManager
             conferenceSizesJson.add(size);
         }
         stats.put("conference_sizes", conferenceSizesJson);
+
+        // XMPP traffic stats
+        ProtocolProviderService pps
+            = protocolProviderHandler.getProtocolProvider();
+        if (pps instanceof XmppProtocolProvider)
+        {
+            XmppProtocolProvider xmppProtocolProvider
+                    = (XmppProtocolProvider) pps;
+
+            stats.put("xmpp", xmppProtocolProvider.getStats());
+        }
 
         return stats;
     }
