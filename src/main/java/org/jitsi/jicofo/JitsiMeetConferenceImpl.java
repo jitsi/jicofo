@@ -1327,6 +1327,18 @@ public class JitsiMeetConferenceImpl
 
         if (bridgeSession != null)
         {
+            MediaSourceMap removedSources = participant.getSourcesCopy();
+            MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
+
+            synchronized (bridges)
+            {
+                operationalBridges()
+                    .filter(bridge -> !bridge.equals(bridgeSession))
+                    .forEach(
+                        bridge -> bridge.removeSourcesFromOcto(
+                            removedSources, removedGroups));
+            }
+
             maybeExpireBridgeSession(bridgeSession);
         }
     }
