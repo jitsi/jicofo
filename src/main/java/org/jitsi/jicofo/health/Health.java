@@ -18,6 +18,7 @@ package org.jitsi.jicofo.health;
 import org.jitsi.health.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
@@ -140,6 +141,16 @@ public class Health
         if (mucService == null)
         {
             throw new RuntimeException("No MUC component");
+        }
+
+        FocusComponent focusComponent = Main.getFocusXmppComponent();
+        if (focusComponent == null)
+        {
+            throw new RuntimeException("No Jicofo XMPP component");
+        }
+        if (!focusComponent.isConnectionAlive())
+        {
+            throw new RuntimeException("Jicofo XMPP component not connected");
         }
 
         BridgeSelector bridgeSelector = services.getBridgeSelector();
