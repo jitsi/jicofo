@@ -22,9 +22,11 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.health.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.meet.*;
@@ -797,6 +799,17 @@ public class FocusManager
                     = (XmppProtocolProvider) pps;
 
             stats.put("xmpp", xmppProtocolProvider.getStats());
+        }
+
+        HealthCheckService healthService
+            = ServiceUtils.getService(
+                    FocusBundleActivator.bundleContext,
+                    HealthCheckService.class);
+        if (healthService instanceof Health)
+        {
+            Health health = (Health) healthService;
+
+            stats.put("slow_health_check", health.getTotalSlowHealthChecks());
         }
 
         return stats;
