@@ -104,6 +104,19 @@ public class Main
     private static final String SUBDOMAIN_ARG_VALUE = "focus";
 
     /**
+     * Stores {@link FocusComponent} instance for the health check purpose.
+     */
+    private static FocusComponent focusXmppComponent;
+
+    /**
+     * @return the Jicofo XMPP component.
+     */
+    public static FocusComponent getFocusXmppComponent()
+    {
+        return focusXmppComponent;
+    }
+
+    /**
      * Program entry point.
      * @param args command-line arguments.
      */
@@ -165,13 +178,13 @@ public class Main
 
         boolean focusAnonymous = StringUtils.isNullOrEmpty(focusPassword);
 
-        FocusComponent component
+        focusXmppComponent
             = new FocusComponent(
                     host, port, componentDomain, componentSubDomain,
                     secret, focusAnonymous, focusUserName + "@" + focusDomain);
 
         JicofoBundleConfig osgiBundles = new JicofoBundleConfig();
 
-        componentMain.runMainProgramLoop(component, osgiBundles);
+        componentMain.runMainProgramLoop(focusXmppComponent, osgiBundles);
     }
 }
