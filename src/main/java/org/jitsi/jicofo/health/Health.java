@@ -26,6 +26,7 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
+import java.time.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -59,6 +60,23 @@ public class Health
      */
     private static final Random RANDOM = new Random();
 
+    /**
+     * Counts how many health checks took too long.
+     */
+    private long totalSlowHealthChecks = 0;
+
+    /**
+     * FIXME: Temporary override for max health check duration.
+     * Jicofo has been occasionally failing health checks by the join MUC
+     * operation taking too long to finish. The issue is under investigation.
+     */
+    public Health()
+    {
+        super(Duration.ofSeconds(10),
+              Duration.ofSeconds(30),
+              Duration.ofSeconds(20));
+    }
+
     @Override
     public void start(BundleContext bundleContext)
         throws Exception
@@ -86,7 +104,17 @@ public class Health
     {
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
+        long start = System.currentTimeMillis();
+
         check(focusManager);
+
+        long duration = System.currentTimeMillis() - start;
+
+        if (duration > 3000)
+        {
+            logger.error("Health check took too long: " + duration + "ms");
+            totalSlowHealthChecks++;
+        }
     }
 
     /**
@@ -172,5 +200,13 @@ public class Health
             // ignore, cannot happen
             return null;
         }
+    }
+
+    /**
+     * @return how many health checks took too long so far.
+     */
+    public long getTotalSlowHealthChecks()
+    {
+        return totalSlowHealthChecks;
     }
 }
