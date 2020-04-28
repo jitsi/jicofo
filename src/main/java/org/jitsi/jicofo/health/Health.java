@@ -62,6 +62,13 @@ public class Health
     private static final Random RANDOM = new Random();
 
     /**
+     * A prefix to the MUC names created for the purpose of health checks.
+     * Note that external code (e.g. prosody modules) might use this string to
+     * recognize these rooms.
+     */
+    private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
+
+    /**
      * Counts how many health checks took too long.
      */
     private long totalSlowHealthChecks = 0;
@@ -201,7 +208,7 @@ public class Health
         try
         {
             return
-                Localpart.from(Health.class.getName()
+                Localpart.from(ROOM_NAME_PREFIX
                     + "-"
                     + Long.toHexString(
                         System.currentTimeMillis() + RANDOM.nextLong()));
