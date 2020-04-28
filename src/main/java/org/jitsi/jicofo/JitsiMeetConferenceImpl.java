@@ -1463,7 +1463,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Got session-accept from: " + jingleSession.getAddress());
 
-        return updateParticipant(jingleSession, answer);
+        return onSessionAcceptInternal(jingleSession, answer);
     }
 
     /**
@@ -1652,7 +1652,10 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Got transport-accept from: " + jingleSession.getAddress());
 
-        return updateParticipant(jingleSession, contents);
+        // We basically do the same processing as with session-accept by just
+        // forwarding transport/rtp information to the bridge + propagate the
+        // participants sources & source groups to remote bridges.
+        return onSessionAcceptInternal(jingleSession, contents);
     }
 
     /**
@@ -1783,7 +1786,7 @@ public class JitsiMeetConferenceImpl
      * @param contents
      * @return
      */
-    private XMPPError updateParticipant(
+    private XMPPError onSessionAcceptInternal(
         JingleSession jingleSession,
         List<ContentPacketExtension> contents)
     {
