@@ -20,6 +20,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -68,10 +69,19 @@ public class Health
      */
     private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
 
+    private static final String ENABLE_HEALTH_CHECKS_PNAME
+            = "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS";
+
     /**
      * Counts how many health checks took too long.
      */
     private long totalSlowHealthChecks = 0;
+
+    /**
+     * Whether internal health checks are enabled. If not enabled, the rest
+     * API will always return 200.
+     */
+    private boolean enabled = false;
 
     /**
      * FIXME: Temporary override for max health check duration.
@@ -89,6 +99,21 @@ public class Health
     public void start(BundleContext bundleContext)
         throws Exception
     {
+        ConfigurationService cfg
+                = ServiceUtils2.getService(
+                        bundleContext, ConfigurationService.class);
+        enabled = cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false);
+
+        if (!enabled)
+        {
+            logger.info("Internal health checks are disabled. No checks will "
+                    + "be performed, but the REST API will always return 200.");
+            this.setInterval(Duration.ofMillis(Long.MAX_VALUE));
+
+            // Trigger a single check, so a successful result is cached.
+            run();
+        }
+
         focusManager
             = Objects.requireNonNull(
                 ServiceUtils2.getService(bundleContext, FocusManager.class),
@@ -110,6 +135,11 @@ public class Health
     public void performCheck()
         throws Exception
     {
+        if (!enabled)
+        {
+            return;
+        }
+
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
         long start = System.currentTimeMillis();
