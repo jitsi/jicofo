@@ -1800,6 +1800,15 @@ public class JitsiMeetConferenceImpl
                 errorMsg).build();
         }
 
+        JingleSession jingleSessionCopy = participant.getJingleSession();
+        if (jingleSessionCopy != null && jingleSession != jingleSessionCopy)
+        {
+            //FIXME: we should reject it ?
+            logger.error(
+                "Reassigning jingle session for participant: "
+                    + participantJid);
+        }
+
         // XXX We will be acting on the received session-accept bellow.
         // Unfortunately, we may have not received an acknowledgment of our
         // session-initiate yet and whatever we do bellow will be torn down when
@@ -1808,6 +1817,7 @@ public class JitsiMeetConferenceImpl
         // occurs, we may as well ignore the timeout.
         jingleSession.setAccepted(true);
 
+        participant.setJingleSession(jingleSession);
 
         // Extract and store various session information in the Participant
         participant.setRTPDescription(contents);
