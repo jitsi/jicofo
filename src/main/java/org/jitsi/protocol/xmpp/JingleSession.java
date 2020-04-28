@@ -46,16 +46,6 @@ public class JingleSession
     private final JingleRequestHandler requestHandler;
 
     /**
-     * The indicator which determines whether a {@code session-accept} was
-     * received from the remote peer in response to our {@code session-initiate}
-     * which initialized this instance. Introduced to work around a case in
-     * which we do not receive an acknowledgment from the remote peer in
-     * response to our {@code session-initiate} but do receive a
-     * {@code session-accept}.
-     */
-    private boolean _accepted = false;
-
-    /**
      * Creates new instance of <tt>JingleSession</tt> for given parameters.
      *
      * @param sid Jingle session identifier of new instance.
@@ -103,33 +93,5 @@ public class JingleSession
     public JingleRequestHandler getRequestHandler()
     {
         return requestHandler;
-    }
-
-    /**
-     * Determines whether a {@code session-accept} was received from the remote
-     * peer in response to our {@code session-initiate} which initialized this
-     * instance.
-     *
-     * @return {@code true} if a {@code session-accept} was received from the
-     * remote peer in response to our {@code session-initiate} which initialized
-     * this instance; otherwise, {@code false}
-     */
-    public boolean isAccepted()
-    {
-        return _accepted;
-    }
-
-    /**
-     * Sets the indicator which determines whether a {@code session-accept} was
-     * received from the remote peer in response to our {@code session-initiate}
-     * which initialized this instance.
-     *
-     * @param accepted {@code true} if a {@code session-accept} was received
-     * from the remote peer in response to our {@code session-initiate} which
-     * initialized this instance; otherwise, {@code false}
-     */
-    public void setAccepted(boolean accepted)
-    {
-        _accepted = accepted;
     }
 }
