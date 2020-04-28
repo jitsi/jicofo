@@ -1825,14 +1825,12 @@ public class JitsiMeetConferenceImpl
         if (sourcesAdvertised.isEmpty()
             && globalConfig.injectSsrcForRecvOnlyEndpoints)
         {
-            // We inject an SSRC in order to insure that the participant has
+            // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
-            // conference will not be aware of the participant. We intentionally
-            // use a negative value, because this is an invalid SSRC and will
-            // not be actually used on the wire.
+            // conference will not be aware of the participant.
             SourcePacketExtension sourcePacketExtension
                 = new SourcePacketExtension();
-            long ssrc = RANDOM.nextInt() & 0xffff_ffffl;
+            long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant
                 + " did not advertise any SSRCs. Injecting " + ssrc);
             sourcePacketExtension.setSSRC(ssrc);
