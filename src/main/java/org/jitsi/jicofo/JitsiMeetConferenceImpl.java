@@ -1809,12 +1809,12 @@ public class JitsiMeetConferenceImpl
                     + participantJid);
         }
 
-        // XXX We will be acting on the received session-accept bellow.
-        // Unfortunately, we may have not received an acknowledgment of our
-        // session-initiate yet and whatever we do bellow will be torn down when
-        // the acknowledgement timeout occurs later on. Since we will have
-        // acted on the session-accept by the time the acknowledgement timeout
-        // occurs, we may as well ignore the timeout.
+        // XXX We will be acting on the received session-accept or
+        // transport-accept Jingle IQs below. Unfortunately, we may have not
+        // received an acknowledgment of our IQ yet and whatever we do below
+        // will be torn down when the acknowledgement timeout occurs later on.
+        // Since we will have acted on the IQ by the time the acknowledgement
+        // timeout occurs, we may as well ignore the timeout.
         jingleSession.setAccepted(true);
 
         participant.setJingleSession(jingleSession);
