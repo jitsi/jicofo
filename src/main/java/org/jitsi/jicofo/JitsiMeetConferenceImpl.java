@@ -2922,6 +2922,10 @@ public class JitsiMeetConferenceImpl
 
             if (octo)
             {
+                if (participant != null)
+                {
+                    participant.setChannelAllocator(null);
+                }
                 this.octoParticipant = null;
             }
 
