@@ -2362,10 +2362,13 @@ public class JitsiMeetConferenceImpl
                 + " " + toBeMutedJid + " on behalf of " + fromJid);
 
         BridgeSession bridgeSession = findBridgeSession(participant);
+        ColibriConferenceIQ participantChannels
+            = participant.getColibriChannelsInfo();
         boolean succeeded
             = bridgeSession != null
+                    && participantChannels != null
                     && bridgeSession.colibriConference.muteParticipant(
-                            participant.getColibriChannelsInfo(), doMute);
+                            participantChannels, doMute);
 
         if (succeeded)
         {
