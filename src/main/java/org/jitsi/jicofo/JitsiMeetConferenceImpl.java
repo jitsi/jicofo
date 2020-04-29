@@ -1733,12 +1733,24 @@ public class JitsiMeetConferenceImpl
         synchronized (bridges)
         {
             BridgeSession bridgeSession = findBridgeSession(participant);
+            ColibriConferenceIQ participantsChannels
+                = participant.getColibriChannelsInfo();
             if (bridgeSession != null)
             {
-                bridgeSession.colibriConference.updateSourcesInfo(
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
-                    participant.getColibriChannelsInfo());
+                if (participantsChannels != null)
+                {
+                    bridgeSession.colibriConference.updateSourcesInfo(
+                            participant.getSourcesCopy(),
+                            participant.getSourceGroupsCopy(),
+                            participant.getColibriChannelsInfo());
+                }
+                else
+                {
+                    logger.info(
+                        "Skipped updateSourcesInfo for "
+                            + participant
+                            + " - no channels on the bridge");
+                }
 
                 propagateNewSourcesToOcto(
                         bridgeSession, sourcesToAdd, sourceGroupsToAdd);
@@ -1998,7 +2010,9 @@ public class JitsiMeetConferenceImpl
         // We may hit null here during conference restart, but that's not
         // important since the bridge for this instance will not be used
         // anymore and state is synced up soon after channels are allocated
-        if (updateChannels && bridgeSession != null)
+        if (updateChannels
+                && bridgeSession != null
+                && participant.getColibriChannelsInfo() != null)
         {
             bridgeSession.colibriConference.updateSourcesInfo(
                     participant.getSourcesCopy(),
