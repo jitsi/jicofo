@@ -112,9 +112,10 @@ public class ConferenceJsonHandler
         {
             assertString(primitive);
 
-            if (checkImmutableString(
-                    editedInstance.getName().toString(),
-                    (String) primitive, CONF_NAME_KEY))
+            if (editedInstance.getName() == null ||
+                    checkImmutableString(
+                            editedInstance.getName().toString(),
+                            (String) primitive, CONF_NAME_KEY))
             {
                 editedInstance.setName(Localpart.from((String)primitive));
             }
