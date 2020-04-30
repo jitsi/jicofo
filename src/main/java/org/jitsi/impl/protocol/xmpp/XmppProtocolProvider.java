@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
@@ -34,20 +33,18 @@ import org.jitsi.service.configuration.*;
 
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
-import org.jivesoftware.smackx.disco.packet.*;
+import org.jivesoftware.smackx.caps.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
-import javax.net.ssl.*;
 import java.io.*;
-import java.security.cert.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -66,6 +63,7 @@ public class XmppProtocolProvider
     {
         XMPPTCPConnection.setUseStreamManagementResumptionDefault(false);
         XMPPTCPConnection.setUseStreamManagementDefault(false);
+        SmackConfiguration.setDebuggerFactory(PacketDebugger::new);
     }
 
     /**
@@ -125,11 +123,6 @@ public class XmppProtocolProvider
     private XmppConnectionAdapter connectionAdapter;
 
     /**
-     * Jitsi service discovery manager.
-     */
-    private ScServiceDiscoveryManager discoInfoManager;
-
-    /**
      * Creates new instance of {@link XmppProtocolProvider} for given AccountID.
      *
      * @param accountID the <tt>JabberAccountID</tt> that will be used by new
@@ -139,7 +132,7 @@ public class XmppProtocolProvider
     {
         this.jabberAccountID = (JabberAccountID) accountID;
 
-        ScServiceDiscoveryManager.initIdentity();
+        EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
         addSupportedOperationSet(
             OperationSetColibriConference.class, colibriTools);
@@ -211,6 +204,10 @@ public class XmppProtocolProvider
                 .setHost(serverAddressUserSetting)
                 .setPort(serverPort)
                 .setXmppDomain(serviceName);
+
+        // Required for PacketDebugger and XMPP stats to work
+        connConfig.setDebuggerEnabled(true);
+
         ReconnectionManager.setEnabledPerDefault(true);
 
         // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but tries
@@ -235,17 +232,17 @@ public class XmppProtocolProvider
 
         connection = new XMPPTCPConnection(connConfig.build());
 
-        if (logger.isTraceEnabled())
-        {
-            enableDebugPacketsLogging();
-        }
-
         ScheduledExecutorService executorService
             = ServiceUtils.getService(
                     XmppProtocolActivator.bundleContext,
                     ScheduledExecutorService.class);
 
         connectRetry = new RetryStrategy(executorService);
+
+        EntityCapsManager capsManager
+            = EntityCapsManager.getInstanceFor(connection);
+
+        capsManager.enableEntityCaps();
 
         // FIXME we could make retry interval configurable, but we do not have
         // control over retries executed by smack after first connect, so...
@@ -274,15 +271,6 @@ public class XmppProtocolProvider
             ReconnectionManager
                 .getInstanceFor(connection)
                 .addReconnectionListener(reConnListener);
-
-            discoInfoManager
-                = new ScServiceDiscoveryManager(
-                    XmppProtocolProvider.this,
-                    FocusBundleActivator.getConfigService(),
-                    connection,
-                    new String[]{},
-                    new String[]{},
-                    false);
 
             if (!jabberAccountID.isAnonymousAuthUsed())
             {
@@ -359,18 +347,6 @@ public class XmppProtocolProvider
                 RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
                 null);
         }
-    }
-
-    private void enableDebugPacketsLogging()
-    {
-        // FIXME: consider using packet logging service
-        DebugLogger outLogger = new DebugLogger("--> ");
-
-        connection.addPacketSendingListener(outLogger, outLogger);
-
-        DebugLogger inLogger = new DebugLogger("<-- ");
-
-        connection.addAsyncStanzaListener(inLogger, inLogger);
     }
 
     /**
@@ -509,110 +485,30 @@ public class XmppProtocolProvider
     }
 
     /**
-     * FIXME: move to operation set together with ScServiceDiscoveryManager
+     * Generates a {@link JSONObject} with statistics  for this protocol
+     * provider instance.
+     * @return JSON stats
      */
-    public boolean checkFeatureSupport(Jid contactAddress, String[] features)
+    public JSONObject getStats()
     {
-        try
+        JSONObject stats = new JSONObject();
+
+        if (connection == null)
         {
-            //FIXME: fix logging levels
-            logger.debug("Discovering info for: " + contactAddress);
-
-            DiscoverInfo info = discoInfoManager.discoverInfo(contactAddress);
-
-            logger.debug("HAVE Discovering info for: " + contactAddress);
-
-            logger.debug("Features");
-            for (DiscoverInfo.Feature f : info.getFeatures())
-            {
-                logger.debug(f.toXML());
-            }
-
-            logger.debug("Identities");
-            for (DiscoverInfo.Identity identity : info.getIdentities())
-            {
-                logger.debug(identity.toXML());
-            }
-        }
-        catch (XMPPException
-                | InterruptedException
-                | NotConnectedException
-                | NoResponseException e)
-        {
-            logger.error("Error discovering features: " + e.getMessage());
+            return stats;
         }
 
-        for (String feature : features)
+        PacketDebugger  debugger = PacketDebugger.forConnection(connection);
+
+        if (debugger == null)
         {
-            if (!discoInfoManager.supportsFeature(contactAddress, feature))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean checkFeatureSupport(Jid node, String subnode,
-                                       String[] features)
-    {
-        for (String feature : features)
-        {
-            if (!discoInfoManager.supportsFeature(node, feature))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * FIXME: move to operation set together with ScServiceDiscoveryManager
-     */
-    public Set<Jid> discoverItems(Jid node)
-            throws XMPPException,
-            NotConnectedException,
-            InterruptedException,
-            NoResponseException
-    {
-        DiscoverItems itemsDisco = discoInfoManager.discoverItems(node);
-
-        if (logger.isDebugEnabled())
-            logger.debug("HAVE Discovered items for: " + node);
-
-        Set<Jid> result = new HashSet<>();
-
-        for (DiscoverItems.Item item : itemsDisco.getItems())
-        {
-            if (logger.isDebugEnabled())
-                logger.debug(item.toXML());
-
-            result.add(item.getEntityID());
+            return stats;
         }
 
-        return result;
-    }
+        stats.put("total_sent", debugger.getTotalPacketsSent());
+        stats.put("total_recv", debugger.getTotalPacketsRecv());
 
-    public List<String> getEntityFeatures(Jid node)
-    {
-        try
-        {
-            DiscoverInfo info = discoInfoManager.discoverInfo(node);
-            List<String> featureList = new ArrayList<>();
-            for (DiscoverInfo.Feature feature : info.getFeatures())
-            {
-                featureList.add(feature.getVar());
-            }
-
-            return featureList;
-        }
-        catch (XMPPException
-                | InterruptedException
-                | NoResponseException
-                | NotConnectedException e)
-        {
-            logger.debug("Error getting feature list: " + e.getMessage());
-            return null;
-        }
+        return stats;
     }
 
     class XmppConnectionListener
@@ -804,31 +700,6 @@ public class XmppProtocolProvider
             IQRequestHandler handler)
         {
             return connection.unregisterIQRequestHandler(handler);
-        }
-    }
-
-    // FIXME: use Smack's debug interface
-    // FIXME: misses IQ get/set stanzas due to SMACK-728 (PR Smack#158)
-    private static class DebugLogger
-        implements StanzaFilter, StanzaListener
-    {
-        private final String prefix;
-
-        DebugLogger(String prefix)
-        {
-            this.prefix = prefix;
-        }
-
-        @Override
-        public boolean accept(Stanza packet)
-        {
-            return true;
-        }
-
-        @Override
-        public void processStanza(Stanza packet)
-        {
-            logger.trace(prefix + packet.toXML());
         }
     }
 }

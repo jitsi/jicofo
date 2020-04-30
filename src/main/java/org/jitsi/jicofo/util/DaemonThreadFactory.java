@@ -27,6 +27,18 @@ import java.util.concurrent.*;
 public class DaemonThreadFactory
     implements ThreadFactory
 {
+    private final String threadName;
+
+    public DaemonThreadFactory()
+    {
+        this(null);
+    }
+
+    public DaemonThreadFactory(String threadName)
+    {
+        this.threadName = threadName;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -37,6 +49,11 @@ public class DaemonThreadFactory
         if (!t.isDaemon())
         {
             t.setDaemon(true);
+
+            if (threadName != null)
+            {
+                t.setName(threadName + "-" + t.getId());
+            }
         }
         return t;
     }

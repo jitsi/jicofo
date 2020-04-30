@@ -98,6 +98,12 @@ public abstract class AbstractChannelAllocator implements Runnable
     protected final boolean reInvite;
 
     /**
+     * The colibri channels that this allocator has allocated. They'll be
+     * cleaned up if the allocator is canceled or failed at any point.
+     */
+    private ColibriConferenceIQ colibriChannels;
+
+    /**
      * Initializes a new {@link AbstractChannelAllocator} instance which is to
      * invite a specific {@link Participant} into a specific
      * {@link JitsiMeetConferenceImpl} (using a specific jitsi-videobridge
@@ -145,9 +151,15 @@ public abstract class AbstractChannelAllocator implements Runnable
         catch (Throwable e)
         {
             logger.error("Channel allocator failed: ", e);
+            cancel();
         }
         finally
         {
+            if (canceled && colibriChannels != null)
+            {
+                bridgeSession.colibriConference.expireChannels(colibriChannels);
+            }
+
             if (participant != null)
             {
                 participant.channelAllocatorCompleted(this);
@@ -166,7 +178,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             return;
         }
 
-        ColibriConferenceIQ colibriChannels = allocateChannels(offer);
+        colibriChannels = allocateChannels(offer);
         if (canceled)
         {
             return;
@@ -273,7 +285,8 @@ public abstract class AbstractChannelAllocator implements Runnable
             // faulty.
             restartConference = true;
             faulty = false;
-            logger.error("Conference ID not found (expired?)." + e.getMessage());
+            logger.error(
+                jvb + " - conference ID not found (expired?):" + e.getMessage());
         }
         catch (BadRequestException e)
         {
@@ -284,7 +297,8 @@ public abstract class AbstractChannelAllocator implements Runnable
             // the new bridge (via a custom client).
             restartConference = false;
             faulty = false;
-            logger.error("The bridge indicated bad-request: " + e.getMessage());
+            logger.error(
+                jvb + " - the bridge indicated bad-request: " + e.getMessage());
         }
         catch (ColibriException e)
         {
@@ -292,8 +306,9 @@ public abstract class AbstractChannelAllocator implements Runnable
             // wrong response type, or something else.
             restartConference = true;
             faulty = true;
-            logger.error("Failed to allocate channels, will consider the " +
-                    "bridge faulty.", e);
+            logger.error(
+                jvb + " - failed to allocate channels, will consider the "
+                    + "bridge faulty: " + e.getMessage(), e);
         }
 
         // We only get here if we caught an exception.

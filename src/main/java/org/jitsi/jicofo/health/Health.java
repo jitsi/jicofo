@@ -17,7 +17,10 @@ package org.jitsi.jicofo.health;
 
 import org.jitsi.health.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -25,6 +28,7 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
+import java.time.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -58,10 +62,58 @@ public class Health
      */
     private static final Random RANDOM = new Random();
 
+    /**
+     * A prefix to the MUC names created for the purpose of health checks.
+     * Note that external code (e.g. prosody modules) might use this string to
+     * recognize these rooms.
+     */
+    private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
+
+    private static final String ENABLE_HEALTH_CHECKS_PNAME
+            = "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS";
+
+    /**
+     * Counts how many health checks took too long.
+     */
+    private long totalSlowHealthChecks = 0;
+
+    /**
+     * Whether internal health checks are enabled. If not enabled, the rest
+     * API will always return 200.
+     */
+    private boolean enabled = false;
+
+    /**
+     * FIXME: Temporary override for max health check duration.
+     * Jicofo has been occasionally failing health checks by the join MUC
+     * operation taking too long to finish. The issue is under investigation.
+     */
+    public Health()
+    {
+        super(Duration.ofSeconds(10),
+              Duration.ofSeconds(30),
+              Duration.ofSeconds(20));
+    }
+
     @Override
     public void start(BundleContext bundleContext)
         throws Exception
     {
+        ConfigurationService cfg
+                = ServiceUtils2.getService(
+                        bundleContext, ConfigurationService.class);
+        enabled = cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false);
+
+        if (!enabled)
+        {
+            logger.info("Internal health checks are disabled. No checks will "
+                    + "be performed, but the REST API will always return 200.");
+            this.setInterval(Duration.ofMillis(Long.MAX_VALUE));
+
+            // Trigger a single check, so a successful result is cached.
+            run();
+        }
+
         focusManager
             = Objects.requireNonNull(
                 ServiceUtils2.getService(bundleContext, FocusManager.class),
@@ -83,9 +135,24 @@ public class Health
     public void performCheck()
         throws Exception
     {
+        if (!enabled)
+        {
+            return;
+        }
+
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
+        long start = System.currentTimeMillis();
+
         check(focusManager);
+
+        long duration = System.currentTimeMillis() - start;
+
+        if (duration > 3000)
+        {
+            logger.error("Health check took too long: " + duration + "ms");
+            totalSlowHealthChecks++;
+        }
     }
 
     /**
@@ -102,16 +169,38 @@ public class Health
     {
         // Get the MUC service to perform the check on.
         JitsiMeetServices services = focusManager.getJitsiMeetServices();
+        if (services == null)
+        {
+            throw new RuntimeException("No JitsiMeetServices available");
+        }
 
-        Jid mucService = services != null ? services.getMucService() : null;
-
+        Jid mucService = services.getMucService();
         if (mucService == null)
         {
-            logger.error(
-                "No MUC service found on XMPP domain or Jicofo has not" +
-                    " finished initial components discovery yet");
-
             throw new RuntimeException("No MUC component");
+        }
+
+        FocusComponent focusComponent = Main.getFocusXmppComponent();
+        if (focusComponent == null)
+        {
+            throw new RuntimeException("No Jicofo XMPP component");
+        }
+        if (!focusComponent.isConnectionAlive())
+        {
+            throw new RuntimeException("Jicofo XMPP component not connected");
+        }
+
+        BridgeSelector bridgeSelector = services.getBridgeSelector();
+        if (bridgeSelector == null)
+        {
+            throw new RuntimeException("No BridgeSelector available");
+        }
+
+        if (bridgeSelector.getOperationalBridgeCount() <= 0)
+        {
+            throw new RuntimeException(
+                    "No operational bridges available (total bridge count: "
+                            + bridgeSelector.getBridgeCount() + ")");
         }
 
         // Generate a pseudo-random room name. Minimize the risk of clashing
@@ -149,7 +238,7 @@ public class Health
         try
         {
             return
-                Localpart.from(Health.class.getName()
+                Localpart.from(ROOM_NAME_PREFIX
                     + "-"
                     + Long.toHexString(
                         System.currentTimeMillis() + RANDOM.nextLong()));
@@ -159,5 +248,13 @@ public class Health
             // ignore, cannot happen
             return null;
         }
+    }
+
+    /**
+     * @return how many health checks took too long so far.
+     */
+    public long getTotalSlowHealthChecks()
+    {
+        return totalSlowHealthChecks;
     }
 }

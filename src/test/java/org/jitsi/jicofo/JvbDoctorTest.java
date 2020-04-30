@@ -98,14 +98,6 @@ public class JvbDoctorTest
         MockVideobridge mockBridge
             = new MockVideobridge(new MockXmppConnection(jvb1), jvb1);
 
-        // Make sure that jvb advertises health-check support
-        MockSetSimpleCapsOpSet mockCaps = focusPps.getMockCapsOpSet();
-        MockCapsNode jvbNode
-            = new MockCapsNode(
-                    jvb1,
-                    new String[] { DiscoveryUtil.FEATURE_HEALTH_CHECK });
-        mockCaps.addChildNode(jvbNode);
-
         // Make mock JVB return error response to health-check IQ
         mockBridge.setReturnServerError(true);
 
