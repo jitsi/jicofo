@@ -102,7 +102,7 @@ from anonymous domain. Here's what has to be configured:
  ```
 (Note that guest.jitsi-meet.example.com is internal to jitsi, and you do not need to (and should not) create a DNS record for it, or generate an SSL/TLS certificate, or do any web server configuration.)
 
-**NOTE:** If you want to use coturn with authentication enabled, add this instead:
+**NOTE:** Mmake sure you enable desired modules to the guest virtual host like `turncredentials` (if you use STUN/TURN together with secure domain) and/or `conference_duration` etc., by adding the `modules_enabled` option:
 
 ```
 VirtualHost "guest.jitsi-meet.example.com"
