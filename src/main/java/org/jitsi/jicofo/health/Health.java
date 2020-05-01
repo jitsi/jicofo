@@ -69,12 +69,6 @@ public class Health
      */
     private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
 
-    /**
-     * Config property to control health checks:
-     * <li>true - enabled</li>
-     * <li>false - disabled</li>
-     * <li>(null - not set) - auto enable on first REST request(default)</li>
-     */
     private static final String ENABLE_HEALTH_CHECKS_PNAME
             = "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS";
 
@@ -85,10 +79,9 @@ public class Health
 
     /**
      * Whether internal health checks are enabled. If not enabled, the rest
-     * API will always return 500 error. If {@link #ENABLE_HEALTH_CHECKS_PNAME}
-     * is not set then the first request will auto enable them.
+     * API will always return 200.
      */
-    private Boolean enabled = null;
+    private boolean enabled = false;
 
     /**
      * FIXME: Temporary override for max health check duration.
@@ -109,24 +102,16 @@ public class Health
         ConfigurationService cfg
                 = ServiceUtils2.getService(
                         bundleContext, ConfigurationService.class);
+        enabled = cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false);
 
-        String enableHealthChecksStr
-                = cfg.getString(ENABLE_HEALTH_CHECKS_PNAME);
-
-        enabled = enableHealthChecksStr != null
-                ? "true".equalsIgnoreCase(enableHealthChecksStr)
-                : null;
-
-        if (enabled == null)
+        if (!enabled)
         {
-            logger.info(
-                "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS" +
-                    " is not set - the health checks will auto enable on"
-                        + " the first health REST request");
-        }
-        else if (enabled == false)
-        {
-            logger.warn("Internal health checks are disabled.");
+            logger.info("Internal health checks are disabled. No checks will "
+                    + "be performed, but the REST API will always return 200.");
+            this.setInterval(Duration.ofMillis(Long.MAX_VALUE));
+
+            // Trigger a single check, so a successful result is cached.
+            run();
         }
 
         focusManager
@@ -147,41 +132,14 @@ public class Health
     }
 
     @Override
-    public Exception getResult()
-    {
-        // The very first request will block when enabled == null to avoid
-        // running twice
-        synchronized (this)
-        {
-            if(enabled == null)
-            {
-                logger.info(
-                        "Auto-enabling health checks - " +
-                                "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS not set");
-                enabled = true;
-                // Must initialize or will fail the first check with:
-                // "No health checks performed recently"
-                run();
-            }
-        }
-        return super.getResult();
-    }
-
-    @Override
-    public void run()
-    {
-        // Block the periodic runnable if not enabled
-        if (enabled == null || enabled == false)
-        {
-            return;
-        }
-        super.run();
-    }
-
-    @Override
     public void performCheck()
         throws Exception
     {
+        if (!enabled)
+        {
+            return;
+        }
+
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
         long start = System.currentTimeMillis();
