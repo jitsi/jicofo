@@ -12,6 +12,8 @@ if [[ "$1" == "--help"  || $# -lt 1 ]]; then
     echo -e "\t--user_name=USERNAME\t specifies the username used by the focus XMPP user to login. (default: focus@user_domain)"
     echo -e "\t--user_password=PASSWORD\t specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method."
     echo
+    echo -e "\tSECRET and PASSWORD can alternatively be set via the environment variables JICOFO_SECRET and JICOFO_AUTH_PASSWORD respectively."
+    echo
     exit 1
 fi
 

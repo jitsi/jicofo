@@ -58,11 +58,19 @@ public class Main
     private static final String USER_NAME_ARG_VALUE = "focus";
 
     /**
-     * The name of the command-line argument which specifies the password
-     * used by focus XMPP user to login. If not provided then focus will use
-     * anonymous authentication method.
+     * The name of the command-line argument which specifies the password used
+     * by focus XMPP user to login. If neither this argument nor the environment
+     * variable named by {@link #USER_PASSWORD_ENV_NAME} is provided then focus
+     * will use anonymous authentication method.
      */
     private static final String USER_PASSWORD_ARG_NAME = "--user_password";
+
+    /**
+     * The name of the environment variable which, when set and not an empty
+     * string, acts as an alternative to the command-line argument named by
+     * {@link #USER_PASSWORD_ARG_NAME}.
+     */
+    private static final String USER_PASSWORD_ENV_NAME = "JICOFO_AUTH_PASSWORD";
 
     /**
      * The name of the command-line argument which specifies the IP address or
@@ -91,9 +99,18 @@ public class Main
     /**
      * The name of the command-line argument which specifies the secret key for
      * the sub-domain of the Jabber component implemented by this application
-     * with which it is to authenticate to the XMPP server to connect to.
+     * with which it is to authenticate to the XMPP server to connect to. This
+     * secret can alternatively be specified using an environment variable; see
+     * {@link #SECRET_ENV_NAME}.
      */
     private static final String SECRET_ARG_NAME = "--secret";
+
+    /**
+     * The name of the environment variable which, when set and not an empty
+     * string, acts as an alternative to the command-line argument named by
+     * {@link #SECRET_ARG_NAME}.
+     */
+    private static final String SECRET_ENV_NAME = "JICOFO_SECRET";
 
     /**
      * The name of the command-line argument which specifies sub-domain name for
@@ -132,7 +149,10 @@ public class Main
 
         CmdLine cmdLine = new CmdLine();
 
-        cmdLine.addRequiredArgument(SECRET_ARG_NAME);
+        if (isBlank(System.getenv(SECRET_ENV_NAME)))
+        {
+            cmdLine.addRequiredArgument(SECRET_ARG_NAME);
+        }
 
         // We may end execution here if one of required arguments is missing
         cmdLine.parse(args);
@@ -160,6 +180,10 @@ public class Main
         int port = cmdLine.getIntOptionValue(PORT_ARG_NAME, PORT_ARG_VALUE);
 
         String secret = cmdLine.getOptionValue(SECRET_ARG_NAME);
+        if (isBlank(secret))
+        {
+            secret = System.getenv(SECRET_ENV_NAME);
+        }
 
         // Jicofo user
         String focusDomain = cmdLine.getOptionValue(USER_DOMAIN_ARG_NAME);
@@ -169,6 +193,10 @@ public class Main
                     USER_NAME_ARG_NAME, USER_NAME_ARG_VALUE);
 
         String focusPassword = cmdLine.getOptionValue(USER_PASSWORD_ARG_NAME);
+        if (isBlank(focusPassword))
+        {
+            focusPassword = System.getenv(USER_PASSWORD_ENV_NAME);
+        }
 
         // Focus specific config properties
         System.setProperty(FocusManager.HOSTNAME_PNAME, host);

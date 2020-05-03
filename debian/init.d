@@ -32,7 +32,7 @@ USER=jicofo
 PIDFILE=/var/run/jicofo.pid
 LOGFILE=/var/log/jitsi/jicofo.log
 DESC=jicofo
-DAEMON_OPTS=" --host=$JICOFO_HOST --domain=$JICOFO_HOSTNAME --port=$JICOFO_PORT --secret=$JICOFO_SECRET --user_name=$JICOFO_AUTH_USER --user_domain=$JICOFO_AUTH_DOMAIN --user_password=$JICOFO_AUTH_PASSWORD $JICOFO_OPTS"
+DAEMON_OPTS=" --host=$JICOFO_HOST --domain=$JICOFO_HOSTNAME --port=$JICOFO_PORT --user_name=$JICOFO_AUTH_USER --user_domain=$JICOFO_AUTH_DOMAIN $JICOFO_OPTS"
 
 
 if [ ! -x $DAEMON ] ;then
@@ -62,6 +62,7 @@ start() {
         exit 1
     fi
     echo -n "Starting $NAME: "
+    export JICOFO_SECRET JICOFO_AUTH_PASSWORD
     start-stop-daemon --start --quiet --background --chuid $USER --make-pidfile --pidfile $PIDFILE \
         --exec /bin/bash -- -c "cd $DAEMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
     echo "$NAME started."
