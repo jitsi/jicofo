@@ -511,38 +511,25 @@ public class Participant
      * Terminates the current {@code BridgeSession}, terminates the channel
      * allocator and resets any fields related to the session.
      *
-     * @param syncExpire whether or not the expire Colibri channels operation
-     * should be performed in a synchronous manner.
-     *
      * @return {@code BridgeSession} from which this {@code Participant} has
      * been removed or {@code null} if this {@link Participant} was not part
      * of any bridge session.
      * @see org.jitsi.protocol.xmpp.colibri.ColibriConference#expireChannels(ColibriConferenceIQ)
      */
-    @Deprecated
-    JitsiMeetConferenceImpl.BridgeSession terminateBridgeSession(
-            boolean syncExpire)
+    JitsiMeetConferenceImpl.BridgeSession terminateBridgeSession()
     {
         JitsiMeetConferenceImpl.BridgeSession _session = this.bridgeSession;
 
         if (_session != null)
         {
             this.setChannelAllocator(null);
-            _session.terminate(this, syncExpire);
+            _session.terminate(this);
             this.clearTransportInfo();
             this.setColibriChannelsInfo(null);
             this.bridgeSession = null;
         }
 
         return _session;
-    }
-
-    /**
-     * See {@link #terminateBridgeSession(boolean)}.
-     */
-    JitsiMeetConferenceImpl.BridgeSession terminateBridgeSession()
-    {
-        return terminateBridgeSession(false);
     }
 
     @Override
