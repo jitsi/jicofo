@@ -18,6 +18,7 @@ package org.jitsi.jicofo.rest;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;
 
+import java.lang.management.*;
 import javax.inject.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -48,6 +49,9 @@ public class Statistics
         // so we merge the FocusManager and Jibri stats in the root object.
         stats.putAll(focusManagerProvider.get().getStats());
         stats.putAll(jibriStatsProvider.get().getStats());
+
+        stats.put(
+            "threads", ManagementFactory.getThreadMXBean().getThreadCount());
 
         return stats.toJSONString();
     }
