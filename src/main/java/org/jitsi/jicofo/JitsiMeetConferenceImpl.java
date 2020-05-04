@@ -2620,23 +2620,7 @@ public class JitsiMeetConferenceImpl
         {
             for (Participant participant : participants)
             {
-                boolean synchronousExpire = false;
-                BridgeSession session = participant.getBridgeSession();
-                // If Participant is being re-invited to a healthy session
-                // do a graceful channel expire with waiting for the
-                // RESULT response. At the time of this writing the JVB may
-                // process packets out of order and in the ICE failed scenario
-                // the channel may not be expired correctly thus not
-                // resulting in the restart at all. The ICE transport manager
-                // must be recreated on the bridge to get new ICE credentials.
-                if (session != null
-                        && session.bridge.isOperational()
-                        && !session.hasFailed)
-                {
-                    synchronousExpire = true;
-                }
-
-                participant.terminateBridgeSession(synchronousExpire);
+                participant.terminateBridgeSession();
             }
             for (Participant participant : participants)
             {
@@ -2880,7 +2864,7 @@ public class JitsiMeetConferenceImpl
 
             if (octoParticipant != null)
             {
-                terminate(octoParticipant, false);
+                terminate(octoParticipant);
             }
 
             return terminatedParticipants;
@@ -2892,15 +2876,11 @@ public class JitsiMeetConferenceImpl
          * {@link #participants}.
          * @param participant the {@link Participant} for which to expire the
          * COLIBRI channels.
-         * @param syncExpire - whether or not the Colibri channels should be
-         * expired in a synchronous manner, that is with blocking the current
-         * thread until the RESULT packet is received.
          * @return {@code true} if the participant was a member of
          * {@link #participants} and was removed as a result of this call, and
          * {@code false} otherwise.
          */
-        public boolean terminate(AbstractParticipant participant,
-                                 boolean syncExpire)
+        public boolean terminate(AbstractParticipant participant)
         {
             boolean octo = participant == this.octoParticipant;
             boolean removed = octo || participants.remove(participant);
@@ -2920,7 +2900,7 @@ public class JitsiMeetConferenceImpl
                         ? ((Participant) participant).getMucJid().toString()
                         : "octo";
                 logger.info("Expiring channels for: " + id + " on: " + bridge);
-                colibriConference.expireChannels(channelsInfo, syncExpire);
+                colibriConference.expireChannels(channelsInfo);
             }
 
             if (octo)

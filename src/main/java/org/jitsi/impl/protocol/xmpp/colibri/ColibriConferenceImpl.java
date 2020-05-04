@@ -560,16 +560,6 @@ public class ColibriConferenceImpl
     @Override
     public void expireChannels(ColibriConferenceIQ channelInfo)
     {
-        expireChannels(channelInfo, false);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void expireChannels(ColibriConferenceIQ channelInfo,
-                               boolean             synchronous)
-    {
         ColibriConferenceIQ request;
 
         synchronized (syncRoot)
@@ -591,23 +581,8 @@ public class ColibriConferenceImpl
         {
             logRequest("Expire peer channels", request);
 
-            if (synchronous)
-            {
-                // Send and wait for the RESULT packet
-                try
-                {
-                    connection.sendPacketAndGetReply(request);
-                }
-                catch (OperationFailedException e)
-                {
-                    logger.error("Channel expire error", e);
-                }
-            }
-            else
-            {
-                // Send and forget
-                connection.sendStanza(request);
-            }
+            // Send and forget
+            connection.sendStanza(request);
 
             synchronized (stateEstimationSync)
             {
