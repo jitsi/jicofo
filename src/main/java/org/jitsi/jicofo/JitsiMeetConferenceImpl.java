@@ -2620,7 +2620,27 @@ public class JitsiMeetConferenceImpl
         {
             for (Participant participant : participants)
             {
+                BridgeSession session = participant.getBridgeSession();
                 participant.terminateBridgeSession();
+
+                // Expire the OctoEndpoints for this participant on other
+                // bridges.
+                if (session != null)
+                {
+                    MediaSourceMap removedSources = participant.getSourcesCopy();
+                    MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
+
+                    // Locking participantLock and the bridges is okay (or at
+                    // least used elsewhere).
+                    synchronized (bridges)
+                    {
+                        operationalBridges()
+                                .filter(bridge -> !bridge.equals(session))
+                                .forEach(
+                                    bridge -> bridge.removeSourcesFromOcto(
+                                            removedSources, removedGroups));
+                    }
+                }
             }
             for (Participant participant : participants)
             {
