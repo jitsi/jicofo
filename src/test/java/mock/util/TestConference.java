@@ -26,7 +26,7 @@ import mock.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 
-import org.jitsi_modified.impl.neomedia.rtp.*;
+import org.jitsi.nlj.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
