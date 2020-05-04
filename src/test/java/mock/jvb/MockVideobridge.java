@@ -175,18 +175,18 @@ public class MockVideobridge
         }
     }
 
-    public List<RTPEncodingDesc> getSimulcastLayers(
+    public List<RtpLayerDesc> getSimulcastLayers(
             String confId, String endpointId)
     {
         Conference conference = bridge.getConference(confId, null);
         AbstractEndpoint endpoint = conference.getEndpoint(endpointId);
 
-        MediaStreamTrackDesc[] tracks = endpoint.getMediaStreamTracks();
+        MediaSourceDesc[] sources = endpoint.getMediaSources();
 
-        if (ArrayUtils.isNullOrEmpty(tracks))
+        if (ArrayUtils.isNullOrEmpty(sources))
             return new ArrayList<>();
 
-        RTPEncodingDesc[] layers = tracks[0].getRTPEncodings();
+        RtpLayerDesc[] layers = sources[0].getRtpLayers();
         if (ArrayUtils.isNullOrEmpty(layers))
             return new ArrayList<>();
 
