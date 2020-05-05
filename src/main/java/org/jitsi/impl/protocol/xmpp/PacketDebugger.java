@@ -68,6 +68,8 @@ public class PacketDebugger
     {
         super(connection, writer, reader);
 
+        AbstractDebugger.printInterpreted = true;
+
         debuggerMap.put(connection, this);
     }
 
@@ -97,16 +99,16 @@ public class PacketDebugger
     @Override
     protected void log(String logMessage)
     {
-        if (logMessage.contains("SENT"))
+        if (logMessage.startsWith("SENT"))
         {
             totalPacketsSent += 1;
         }
-        else if (logMessage.contains("RECV"))
+        else if (logMessage.startsWith("RCV PKT ("))
         {
             totalPacketsRecv += 1;
         }
 
-        if (packetLoggingEnabled)
+        if (packetLoggingEnabled && !logMessage.startsWith("RECV ("))
         {
             logger.info(logMessage);
         }
