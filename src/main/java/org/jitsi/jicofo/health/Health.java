@@ -69,6 +69,11 @@ public class Health
      */
     private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
 
+    /**
+     * The name of the property to enable health checks. When enabled, health
+     * checks will be performed periodically (every 10 seconds) and the result
+     * available on the {@code /about/health} HTTP endpoint.
+     */
     private static final String ENABLE_HEALTH_CHECKS_PNAME
             = "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS";
 
@@ -77,17 +82,6 @@ public class Health
      */
     private long totalSlowHealthChecks = 0;
 
-    /**
-     * Whether internal health checks are enabled. If not enabled, the rest
-     * API will always return 200.
-     */
-    private boolean enabled = false;
-
-    /**
-     * FIXME: Temporary override for max health check duration.
-     * Jicofo has been occasionally failing health checks by the join MUC
-     * operation taking too long to finish. The issue is under investigation.
-     */
     public Health()
     {
         super(Duration.ofSeconds(10),
@@ -102,26 +96,22 @@ public class Health
         ConfigurationService cfg
                 = ServiceUtils2.getService(
                         bundleContext, ConfigurationService.class);
-        enabled = cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false);
 
-        if (!enabled)
+        if (cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false))
         {
-            logger.info("Internal health checks are disabled. No checks will "
-                    + "be performed, but the REST API will always return 200.");
-            this.setInterval(Duration.ofMillis(Long.MAX_VALUE));
-            this.setTimeout(Duration.ofMillis(Long.MAX_VALUE));
+            focusManager
+                = Objects.requireNonNull(
+                    ServiceUtils2.getService(bundleContext, FocusManager.class),
+                    "Can not find FocusManager.");
 
-            // Trigger a single check, so a successful result is cached.
-            run();
+            super.start(bundleContext);
         }
-
-        focusManager
-            = Objects.requireNonNull(
-                ServiceUtils2.getService(bundleContext, FocusManager.class),
-                "Can not find FocusManager.");
-
-        super.start(bundleContext);
+        else
+        {
+            logger.info("Health checks are disabled.");
+        }
     }
+
 
     @Override
     public void stop(BundleContext bundleContext)
@@ -136,11 +126,6 @@ public class Health
     public void performCheck()
         throws Exception
     {
-        if (!enabled)
-        {
-            return;
-        }
-
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
         long start = System.currentTimeMillis();
