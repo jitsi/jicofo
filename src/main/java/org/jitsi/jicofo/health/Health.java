@@ -109,6 +109,7 @@ public class Health
             logger.info("Internal health checks are disabled. No checks will "
                     + "be performed, but the REST API will always return 200.");
             this.setInterval(Duration.ofMillis(Long.MAX_VALUE));
+            this.setTimeout(Duration.ofMillis(Long.MAX_VALUE));
 
             // Trigger a single check, so a successful result is cached.
             run();
