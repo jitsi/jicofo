@@ -249,10 +249,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             jingleIQ = jingle.createTransportReplace(jingleSession, contents);
         }
 
-        if (participant.hasBundleSupport())
-        {
-            JicofoJingleUtils.addBundleExtensions(jingleIQ);
-        }
+        JicofoJingleUtils.addBundleExtensions(jingleIQ);
         if (startMuted[0] || startMuted[1])
         {
             JicofoJingleUtils.addStartMutedExtension(
@@ -318,32 +315,23 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             for (ColibriConferenceIQ.Channel channel
                     : colibriContent.getChannels())
             {
-                IceUdpTransportPacketExtension transport;
+                ColibriConferenceIQ.ChannelBundle bundle
+                    = colibriChannels.getChannelBundle(
+                    channel.getChannelBundleId());
 
-                if (useBundle)
+                if (bundle == null)
                 {
-                    ColibriConferenceIQ.ChannelBundle bundle
-                        = colibriChannels.getChannelBundle(
-                                channel.getChannelBundleId());
-
-                    if (bundle == null)
-                    {
-                        logger.error(
-                            "No bundle for " + channel.getChannelBundleId());
-                        continue;
-                    }
-
-                    transport = bundle.getTransport();
-
-                    if (!transport.isRtcpMux())
-                    {
-                        transport.addChildExtension(
-                                new RtcpmuxPacketExtension());
-                    }
+                    logger.error(
+                        "No bundle for " + channel.getChannelBundleId());
+                    continue;
                 }
-                else
+
+                IceUdpTransportPacketExtension transport = bundle.getTransport();
+
+                if (!transport.isRtcpMux())
                 {
-                    transport = channel.getTransport();
+                    transport.addChildExtension(
+                            new RtcpmuxPacketExtension());
                 }
 
                 try
@@ -367,27 +355,18 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             for (ColibriConferenceIQ.SctpConnection sctpConn
                     : colibriContent.getSctpConnections())
             {
-                IceUdpTransportPacketExtension transport;
+                ColibriConferenceIQ.ChannelBundle bundle
+                    = colibriChannels.getChannelBundle(
+                            sctpConn.getChannelBundleId());
 
-                if (useBundle)
+                if (bundle == null)
                 {
-                    ColibriConferenceIQ.ChannelBundle bundle
-                        = colibriChannels.getChannelBundle(
-                                sctpConn.getChannelBundleId());
-
-                    if (bundle == null)
-                    {
-                        logger.error(
-                            "No bundle for " + sctpConn.getChannelBundleId());
-                        continue;
-                    }
-
-                    transport = bundle.getTransport();
+                    logger.error(
+                        "No bundle for " + sctpConn.getChannelBundleId());
+                    continue;
                 }
-                else
-                {
-                    transport = sctpConn.getTransport();
-                }
+
+                IceUdpTransportPacketExtension transport = bundle.getTransport();
 
                 try
                 {

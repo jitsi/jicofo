@@ -84,8 +84,7 @@ public class Participant
     private final Logger logger;
 
     /**
-     * Stores information about bundled transport if {@link #hasBundleSupport()}
-     * returns <tt>true</tt>.
+     * Stores information about bundled transport
      */
     private IceUdpTransportPacketExtension bundleTransport;
 
@@ -311,10 +310,9 @@ public class Participant
 
     /**
      * Extracts and stores transport information from given map of Jingle
-     * content. Depending on the {@link #hasBundleSupport()} either 'bundle' or
-     * 'non-bundle' transport information will be stored. If we already have the
-     * transport information it will be merged into the currently stored one
-     * with {@link TransportSignaling#mergeTransportExtension}.
+     * content.  If we already have the transport information it will be
+     * merged into the currently stored one with
+     * {@link TransportSignaling#mergeTransportExtension}.
      *
      * @param contents the list of <tt>ContentPacketExtension</tt> from one of
      * jingle message which can potentially contain transport info like
