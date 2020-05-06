@@ -197,13 +197,6 @@ public abstract class AbstractOperationSetJingle
                 = GroupPacketExtension.createBundleGroup(contents);
 
             inviteIQ.addExtension(group);
-
-            for (ContentPacketExtension content : contents)
-            {
-                // FIXME: is it mandatory ?
-                // http://estos.de/ns/bundle
-                content.addChildExtension(new BundlePacketExtension());
-            }
         }
 
         // FIXME Move this to a place where offer's contents are created or
