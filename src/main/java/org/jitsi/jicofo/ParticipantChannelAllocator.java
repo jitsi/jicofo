@@ -293,8 +293,6 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             List<ContentPacketExtension> offer,
             ColibriConferenceIQ colibriChannels)
     {
-        boolean useBundle = participant.hasBundleSupport();
-
         MediaSourceMap conferenceSSRCs
             = meetConference.getAllSources(reInvite ? participant : null);
 
@@ -400,12 +398,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 = JingleUtils.getRtpDescription(cpe);
             if (rtpDescPe != null)
             {
-                if (useBundle)
-                {
-                    // rtcp-mux
-                    rtpDescPe.addChildExtension(
-                            new RtcpmuxPacketExtension());
-                }
+                // rtcp-mux is always used
+                rtpDescPe.addChildExtension(
+                        new RtcpmuxPacketExtension());
 
                 // Copy SSRC sent from the bridge(only the first one)
                 for (ColibriConferenceIQ.Channel channel
