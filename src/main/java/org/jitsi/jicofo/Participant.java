@@ -90,14 +90,6 @@ public class Participant
     private IceUdpTransportPacketExtension bundleTransport;
 
     /**
-     * Maps ICE transport information to the name of Colibri content. This is
-     * "non-bundled" transport which is used when {@link #hasBundleSupport()}
-     * returns <tt>false</tt>.
-     */
-    private Map<String, IceUdpTransportPacketExtension> transportMap
-        = new HashMap<>();
-
-    /**
      * The list of XMPP features supported by this participant.
      */
     private List<String> supportedFeatures = new ArrayList<>();
@@ -330,69 +322,40 @@ public class Participant
      */
     public void addTransportFromJingle(List<ContentPacketExtension> contents)
     {
-        if (hasBundleSupport())
+        // Select first transport
+        IceUdpTransportPacketExtension transport = null;
+        for (ContentPacketExtension cpe : contents)
         {
-            // Select first transport
-            IceUdpTransportPacketExtension transport = null;
-            for (ContentPacketExtension cpe : contents)
+            IceUdpTransportPacketExtension contentTransport
+                = cpe.getFirstChildOfType(
+                        IceUdpTransportPacketExtension.class);
+            if (contentTransport != null)
             {
-                IceUdpTransportPacketExtension contentTransport
-                    = cpe.getFirstChildOfType(
-                            IceUdpTransportPacketExtension.class);
-                if (contentTransport != null)
-                {
-                    transport = contentTransport;
-                    break;
-                }
+                transport = contentTransport;
+                break;
             }
-            if (transport == null)
-            {
-                logger.error(
-                    "No valid transport supplied in transport-update from "
-                        + getChatMember().getContactAddress());
-                return;
-            }
+        }
+        if (transport == null)
+        {
+            logger.error(
+                "No valid transport supplied in transport-update from "
+                    + getChatMember().getContactAddress());
+            return;
+        }
 
-            if (!transport.isRtcpMux())
-            {
-                transport.addChildExtension(new RtcpmuxPacketExtension());
-            }
+        if (!transport.isRtcpMux())
+        {
+            transport.addChildExtension(new RtcpmuxPacketExtension());
+        }
 
-            if (bundleTransport == null)
-            {
-                bundleTransport = transport;
-            }
-            else
-            {
-                TransportSignaling.mergeTransportExtension(
-                        bundleTransport, transport);
-            }
+        if (bundleTransport == null)
+        {
+            bundleTransport = transport;
         }
         else
         {
-            for (ContentPacketExtension cpe : contents)
-            {
-                IceUdpTransportPacketExtension srcTransport
-                    = cpe.getFirstChildOfType(
-                            IceUdpTransportPacketExtension.class);
-
-                if (srcTransport != null)
-                {
-                    String contentName = cpe.getName().toLowerCase();
-                    IceUdpTransportPacketExtension dstTransport
-                        = transportMap.get(contentName);
-
-                    if (dstTransport == null)
-                    {
-                        transportMap.put(contentName, srcTransport);
-                    }
-                    else
-                    {
-                        TransportSignaling.mergeTransportExtension(
-                                dstTransport, srcTransport);
-                    }
-                }
-            }
+            TransportSignaling.mergeTransportExtension(
+                    bundleTransport, transport);
         }
     }
 
@@ -409,27 +372,12 @@ public class Participant
     }
 
     /**
-     * Returns 'non-bundled' transport information stored for this
-     * <tt>Participant</tt>.
-     *
-     * @return a map of <tt>IceUdpTransportPacketExtension</tt> to Colibri
-     * content name which describes 'non-bundled' transport of this participant
-     * or <tt>null</tt> either if it's not available yet or if 'bundled'
-     * transport is being used.
-     */
-    public Map<String, IceUdpTransportPacketExtension> getTransportMap()
-    {
-        return transportMap;
-    }
-
-    /**
      * Clears any ICE transport information currently stored for this
      * participant.
      */
     public void clearTransportInfo()
     {
         bundleTransport = null;
-        transportMap = new HashMap<>();
     }
 
     /**

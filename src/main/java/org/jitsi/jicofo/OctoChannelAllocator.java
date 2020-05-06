@@ -180,7 +180,6 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
                     participant.getSourceGroupsCopy(),
                     null,
                     null,
-                    null,
                     participant.getRelays());
             }
 

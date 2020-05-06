@@ -1624,18 +1624,9 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        if (participant.hasBundleSupport())
-        {
-            bridgeSession.colibriConference.updateBundleTransportInfo(
-                    participant.getBundleTransport(),
-                    participant.getEndpointId());
-        }
-        else
-        {
-            bridgeSession.colibriConference.updateTransportInfo(
-                    participant.getTransportMap(),
-                    participant.getColibriChannelsInfo());
-        }
+        bridgeSession.colibriConference.updateBundleTransportInfo(
+                participant.getBundleTransport(),
+                participant.getEndpointId());
     }
 
     /**
@@ -2949,7 +2940,6 @@ public class JitsiMeetConferenceImpl
                 participant.getSourcesCopy(),
                 participant.getSourceGroupsCopy(),
                 participant.getBundleTransport(),
-                participant.getTransportMap(),
                 participant.getEndpointId(),
                 null);
         }
@@ -2967,7 +2957,6 @@ public class JitsiMeetConferenceImpl
                     octoParticipant.getRtpDescriptionMap(),
                     octoParticipant.getSourcesCopy(),
                     octoParticipant.getSourceGroupsCopy(),
-                    null,
                     null,
                     null,
                     octoParticipant.getRelays());

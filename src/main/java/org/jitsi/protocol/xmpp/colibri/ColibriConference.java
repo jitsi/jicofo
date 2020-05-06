@@ -188,7 +188,7 @@ public interface ColibriConference
             rtpInfoMap,
             sources,
             sourceGroups,
-            null, null, null, null);
+            null, null, null);
     }
 
     /**
@@ -213,14 +213,10 @@ public interface ColibriConference
      * Colibri content name to a list of <tt>SourceGroupPacketExtension</tt>
      * which will be used to update SSRCs of the channel in corresponding
      * content described by <tt>localChannelsInfo</tt>.
-     * @param bundleTransport (optional) the
+     * @param bundleTransport (mandatory) the
      * <tt>IceUdpTransportPacketExtension</tt> which will be used to set
      * "bundle" transport of the first channel bundle from
      * <tt>localChannelsInfo</tt>.
-     * @param transportMap  (optional) the map of
-     * <tt>IceUdpTransportPacketExtension</tt> to Colibri content name
-     * which will be used to update transport of the channels in corresponding
-     * content described by <tt>localChannelsInfo</tt>.
      * @param endpointId the ID of the endpoint for which the update applies
      * (it is implicit that the update only works for channels of a single
      * @param relays the Octo relay IDs to set.
@@ -232,7 +228,6 @@ public interface ColibriConference
             MediaSourceMap sources,
             MediaSourceGroupMap sourceGroups,
             IceUdpTransportPacketExtension bundleTransport,
-            Map<String, IceUdpTransportPacketExtension> transportMap,
             String endpointId,
             List<String> relays);
 

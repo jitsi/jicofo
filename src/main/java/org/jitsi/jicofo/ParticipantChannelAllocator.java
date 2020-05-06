@@ -144,7 +144,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         throws ColibriException
     {
         return bridgeSession.colibriConference.createColibriChannels(
-            participant.hasBundleSupport(),
+            true,
             participant.getEndpointId(),
             participant.getStatId(),
             true /* initiator */,

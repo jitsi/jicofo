@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -919,8 +920,7 @@ public class ColibriConferenceImpl
             Map<String, RtpDescriptionPacketExtension> descriptionMap,
             MediaSourceMap sources,
             MediaSourceGroupMap sourceGroups,
-            IceUdpTransportPacketExtension bundleTransport,
-            Map<String, IceUdpTransportPacketExtension> transportMap,
+            @NotNull IceUdpTransportPacketExtension bundleTransport,
             String endpointId,
             List<String> relays)
     {
@@ -970,17 +970,8 @@ public class ColibriConferenceImpl
             {
                 send = true;
             }
-            // Bundle transport...
-            if (bundleTransport != null
-                    && colibriBuilder.addBundleTransportUpdateReq(
-                            bundleTransport, endpointId))
-            {
-                send = true;
-            }
-            // ...or non-bundle transport
-            else if (transportMap != null
-                    && colibriBuilder.addTransportUpdateReq(
-                            transportMap, localChannelsInfo))
+            // Bundle transport
+            if (colibriBuilder.addBundleTransportUpdateReq(bundleTransport, endpointId))
             {
                 send = true;
             }
