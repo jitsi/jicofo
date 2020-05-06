@@ -284,6 +284,9 @@ public class Participant
     {
         this.supportedFeatures
             = Objects.requireNonNull(supportedFeatures, "supportedFeatures");
+        if (!hasBundleSupport()) {
+            throw new IllegalStateException("Participant doesn't support bundle, which is required");
+        }
     }
 
     /**
