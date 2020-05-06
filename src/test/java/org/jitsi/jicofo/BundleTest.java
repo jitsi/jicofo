@@ -142,20 +142,6 @@ public class BundleTest
                                     ContentPacketExtension firstContent,
                                     boolean isBundle)
     {
-        // We expect to find estos bundle
-        BundlePacketExtension bundle
-            = content.getFirstChildOfType(
-                    BundlePacketExtension.class);
-
-        if (isBundle)
-        {
-            assertNotNull(bundle);
-        }
-        else
-        {
-            assertNull(bundle);
-        }
-
         // We expect to find rtcp-mux if there is an RTP description
         RtpDescriptionPacketExtension rtpDesc
             = JingleUtils.getRtpDescription(content);
