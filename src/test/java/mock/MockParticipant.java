@@ -53,8 +53,6 @@ public class MockParticipant
 
     private final String nick;
 
-    private final boolean useBundle;
-
     private XmppPeer xmppPeer;
 
     private MockRoomMember user;
@@ -99,13 +97,7 @@ public class MockParticipant
 
     public MockParticipant(String nick)
     {
-        this(nick, true);
-    }
-
-    public MockParticipant(String nick, boolean useBundle)
-    {
         this.nick = nick;
-        this.useBundle = useBundle;
     }
 
     public MockRoomMember getChatMember()
@@ -154,7 +146,7 @@ public class MockParticipant
             throw new RuntimeException(e);
         }
 
-        user.setupFeatures(useBundle);
+        user.setupFeatures();
 
 
         try
@@ -326,11 +318,8 @@ public class MockParticipant
             IceUdpTransportPacketExtension transport
                 = new IceUdpTransportPacketExtension();
 
-            if (useBundle)
-            {
-                // Bundle uses RTCP mux
-                transport.addChildExtension(new RtcpmuxPacketExtension());
-            }
+            // Bundle uses RTCP mux
+            transport.addChildExtension(new RtcpmuxPacketExtension());
 
             DtlsFingerprintPacketExtension dtlsFingerprint
                 = new DtlsFingerprintPacketExtension();
