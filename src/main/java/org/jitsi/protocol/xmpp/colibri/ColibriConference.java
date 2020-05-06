@@ -93,8 +93,6 @@ public interface ColibriConference
     /**
      * Creates channels on the videobridge for given parameters.
      *
-     * @param useBundle <tt>true</tt> if channel transport bundle should be used
-     * for this allocation.
      * @param endpointId the ID of the Colibri endpoint.
      * @param statsId the statistics Id to use if any.
      * @param peerIsInitiator <tt>true</tt> if peer is ICE an initiator
@@ -105,7 +103,6 @@ public interface ColibriConference
      * @throws OperationFailedException if channel allocation fails.
      */
     default ColibriConferenceIQ createColibriChannels(
-        boolean useBundle,
         String endpointId,
         String statsId,
         boolean peerIsInitiator,
@@ -113,7 +110,6 @@ public interface ColibriConference
         throws ColibriException
     {
         return createColibriChannels(
-            useBundle,
             endpointId,
             statsId,
             peerIsInitiator,
@@ -126,8 +122,6 @@ public interface ColibriConference
     /**
      * Creates channels on the videobridge for given parameters.
      *
-     * @param useBundle <tt>true</tt> if channel transport bundle should be used
-     * for this allocation.
      * @param endpointId the ID of the Colibri endpoint.
      * @param statsId the statistics Id to use if any.
      * @param peerIsInitiator <tt>true</tt> if peer is ICE an initiator
@@ -144,7 +138,6 @@ public interface ColibriConference
      * @throws ColibriException if channel allocation fails.
      */
     ColibriConferenceIQ createColibriChannels(
-            boolean useBundle,
             String endpointId,
             String statsId,
             boolean peerIsInitiator,

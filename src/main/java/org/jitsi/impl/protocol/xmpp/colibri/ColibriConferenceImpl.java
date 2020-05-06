@@ -247,7 +247,6 @@ public class ColibriConferenceImpl
      */
     @Override
     public ColibriConferenceIQ createColibriChannels(
-            boolean useBundle,
             String endpointId,
             String statsId,
             boolean peerIsInitiator,
@@ -287,7 +286,7 @@ public class ColibriConferenceImpl
                 colibriBuilder.reset();
 
                 colibriBuilder.addAllocateChannelsReq(
-                    useBundle,
+                    true /* use bundle */,
                     endpointId,
                     statsId,
                     peerIsInitiator,
