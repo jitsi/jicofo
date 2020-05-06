@@ -237,19 +237,6 @@ public interface ColibriConference
             ColibriConferenceIQ localChannelsInfo);
 
     /**
-     * Updates transport information for active channels
-     * (existing on the bridge).
-     *
-     * @param map the map of content name to transport packet extension.
-     * @param localChannelsInfo <tt>ColibriConferenceIQ</tt> that contains
-     * the description of the channel for which transport information will be
-     * updated on the bridge.
-     */
-    void updateTransportInfo(
-            Map<String, IceUdpTransportPacketExtension>   map,
-            ColibriConferenceIQ                           localChannelsInfo);
-
-    /**
      * Updates simulcast layers on the bridge.
      * @param ssrcGroups the map of media SSRC groups that will be updated on
      * the bridge.

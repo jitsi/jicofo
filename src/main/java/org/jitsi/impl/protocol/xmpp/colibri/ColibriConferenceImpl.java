@@ -645,41 +645,6 @@ public class ColibriConferenceImpl
      * Does not block or wait for a response.
      */
     @Override
-    public void updateTransportInfo(
-            Map<String, IceUdpTransportPacketExtension> transportMap,
-            ColibriConferenceIQ localChannelsInfo)
-    {
-        ColibriConferenceIQ request;
-
-        synchronized (syncRoot)
-        {
-            if (checkIfDisposed("updateTransportInfo"))
-            {
-                return;
-            }
-
-            colibriBuilder.reset();
-
-            colibriBuilder
-                .addTransportUpdateReq(transportMap, localChannelsInfo);
-
-            request = colibriBuilder.getRequest(jitsiVideobridge);
-        }
-
-        if (request != null)
-        {
-            logRequest("Sending transport info update: ", request);
-
-            connection.sendStanza(request);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * </t>
-     * Does not block or wait for a response.
-     */
-    @Override
     public void updateSourcesInfo(MediaSourceMap sources,
                                   MediaSourceGroupMap sourceGroups,
                                   ColibriConferenceIQ localChannelsInfo)
