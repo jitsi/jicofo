@@ -94,7 +94,7 @@ from anonymous domain. Here's what has to be configured:
  VirtualHost "jitsi-meet.example.com"
      authentication = "internal_plain"
  ```
- b) Add new virtual host with anonymous login method for guests:<br/>
+ b) Add new virtual host with anonymous login method for guests at the end of the file:<br/>
  ```
  VirtualHost "guest.jitsi-meet.example.com"
      authentication = "anonymous"
