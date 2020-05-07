@@ -225,18 +225,6 @@ public interface ColibriConference
             List<String> relays);
 
     /**
-     * Updates the RTP description for active channels (existing on the bridge).
-     *
-     * @param map the map of content name to RTP description packet extension.
-     * @param localChannelsInfo <tt>ColibriConferenceIQ</tt> that contains
-     * the description of the channel for which the RTP description will be
-     * updated on the bridge.
-     */
-    void updateRtpDescription(
-            Map<String, RtpDescriptionPacketExtension> map,
-            ColibriConferenceIQ localChannelsInfo);
-
-    /**
      * Updates simulcast layers on the bridge.
      * @param ssrcGroups the map of media SSRC groups that will be updated on
      * the bridge.
@@ -292,15 +280,6 @@ public interface ColibriConference
      * instance must not be used anymore.
      */
     void dispose();
-
-    /**
-     * Checks whether or not this instance has been disposed. The instance must
-     * not be used for any Colibri operations once disposed.
-     *
-     * @return <tt>true</tt> if this instance is in "disposed" state or
-     * <tt>false</tt> otherwise.
-     */
-    boolean isDisposed();
 
     /**
      * Sets the "global" id of the conference.
