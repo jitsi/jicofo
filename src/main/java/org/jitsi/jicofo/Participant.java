@@ -272,11 +272,12 @@ public class Participant
      * @param supportedFeatures the list of features to set.
      */
     public void setSupportedFeatures(List<String> supportedFeatures)
+        throws UnsupportedFeatureConfigurationException
     {
         this.supportedFeatures
             = Objects.requireNonNull(supportedFeatures, "supportedFeatures");
         if (!hasBundleSupport()) {
-            throw new IllegalStateException("Participant doesn't support bundle, which is required");
+            throw new UnsupportedFeatureConfigurationException("Participant doesn't support bundle, which is required");
         }
     }
 
@@ -487,4 +488,12 @@ public class Participant
         return "Participant[" + getMucJid() + "]@" + hashCode();
     }
 
+}
+
+class UnsupportedFeatureConfigurationException extends Exception
+{
+    public UnsupportedFeatureConfigurationException(String msg)
+    {
+        super(msg);
+    }
 }

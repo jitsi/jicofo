@@ -83,6 +83,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      */
     @Override
     protected List<ContentPacketExtension> createOffer()
+        throws UnsupportedFeatureConfigurationException
     {
         EntityFullJid address = participant.getMucJid();
 
@@ -90,7 +91,6 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         List<String> features = DiscoveryUtil.discoverParticipantFeatures(
             meetConference.getXmppProvider(), address);
         participant.setSupportedFeatures(features);
-
 
         List<ContentPacketExtension> contents = new ArrayList<>();
 

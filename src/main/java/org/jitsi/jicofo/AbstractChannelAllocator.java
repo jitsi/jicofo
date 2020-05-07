@@ -172,7 +172,15 @@ public abstract class AbstractChannelAllocator implements Runnable
     {
         List<ContentPacketExtension> offer;
 
-        offer = createOffer();
+        try
+        {
+            offer = createOffer();
+        }
+        catch (UnsupportedFeatureConfigurationException e)
+        {
+            logger.error("Error creating offer", e);
+            return;
+        }
         if (canceled)
         {
             return;
@@ -228,7 +236,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * Creates a Jingle offer for the {@link Participant} of this
      * {@link AbstractChannelAllocator}.
      */
-    protected abstract List<ContentPacketExtension> createOffer();
+    protected abstract List<ContentPacketExtension> createOffer() throws UnsupportedFeatureConfigurationException;
 
     /**
      * Allocates Colibri channels for this {@link AbstractChannelAllocator}'s
