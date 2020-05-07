@@ -17,24 +17,21 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import org.jetbrains.annotations.*;
-import org.jitsi.protocol.xmpp.colibri.exception.*;
-import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.util.*;
-
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
@@ -884,7 +881,7 @@ public class ColibriConferenceImpl
             Map<String, RtpDescriptionPacketExtension> descriptionMap,
             MediaSourceMap sources,
             MediaSourceGroupMap sourceGroups,
-            @NotNull IceUdpTransportPacketExtension bundleTransport,
+            IceUdpTransportPacketExtension bundleTransport,
             String endpointId,
             List<String> relays)
     {
@@ -935,7 +932,7 @@ public class ColibriConferenceImpl
                 send = true;
             }
             // Bundle transport
-            if (colibriBuilder.addBundleTransportUpdateReq(bundleTransport, endpointId))
+            if (bundleTransport != null && colibriBuilder.addBundleTransportUpdateReq(bundleTransport, endpointId))
             {
                 send = true;
             }
