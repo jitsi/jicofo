@@ -24,6 +24,7 @@ import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
+import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
@@ -498,7 +499,7 @@ public class XmppProtocolProvider
             return stats;
         }
 
-        PacketDebugger  debugger = PacketDebugger.forConnection(connection);
+        PacketDebugger debugger = PacketDebugger.forConnection(connection);
 
         if (debugger == null)
         {
