@@ -17,23 +17,21 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import org.jitsi.protocol.xmpp.colibri.exception.*;
-import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.util.*;
-
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
@@ -246,7 +244,6 @@ public class ColibriConferenceImpl
      */
     @Override
     public ColibriConferenceIQ createColibriChannels(
-            boolean useBundle,
             String endpointId,
             String statsId,
             boolean peerIsInitiator,
@@ -286,7 +283,7 @@ public class ColibriConferenceImpl
                 colibriBuilder.reset();
 
                 colibriBuilder.addAllocateChannelsReq(
-                    useBundle,
+                    true /* use bundle */,
                     endpointId,
                     statsId,
                     peerIsInitiator,
@@ -645,41 +642,6 @@ public class ColibriConferenceImpl
      * Does not block or wait for a response.
      */
     @Override
-    public void updateTransportInfo(
-            Map<String, IceUdpTransportPacketExtension> transportMap,
-            ColibriConferenceIQ localChannelsInfo)
-    {
-        ColibriConferenceIQ request;
-
-        synchronized (syncRoot)
-        {
-            if (checkIfDisposed("updateTransportInfo"))
-            {
-                return;
-            }
-
-            colibriBuilder.reset();
-
-            colibriBuilder
-                .addTransportUpdateReq(transportMap, localChannelsInfo);
-
-            request = colibriBuilder.getRequest(jitsiVideobridge);
-        }
-
-        if (request != null)
-        {
-            logRequest("Sending transport info update: ", request);
-
-            connection.sendStanza(request);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * </t>
-     * Does not block or wait for a response.
-     */
-    @Override
     public void updateSourcesInfo(MediaSourceMap sources,
                                   MediaSourceGroupMap sourceGroups,
                                   ColibriConferenceIQ localChannelsInfo)
@@ -920,7 +882,6 @@ public class ColibriConferenceImpl
             MediaSourceMap sources,
             MediaSourceGroupMap sourceGroups,
             IceUdpTransportPacketExtension bundleTransport,
-            Map<String, IceUdpTransportPacketExtension> transportMap,
             String endpointId,
             List<String> relays)
     {
@@ -970,17 +931,8 @@ public class ColibriConferenceImpl
             {
                 send = true;
             }
-            // Bundle transport...
-            if (bundleTransport != null
-                    && colibriBuilder.addBundleTransportUpdateReq(
-                            bundleTransport, endpointId))
-            {
-                send = true;
-            }
-            // ...or non-bundle transport
-            else if (transportMap != null
-                    && colibriBuilder.addTransportUpdateReq(
-                            transportMap, localChannelsInfo))
+            // Bundle transport
+            if (bundleTransport != null && colibriBuilder.addBundleTransportUpdateReq(bundleTransport, endpointId))
             {
                 send = true;
             }

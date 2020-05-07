@@ -105,20 +105,18 @@ public class ColibriTest
         contents.add(video);
         contents.add(data);
 
-        boolean peer1UseBundle = true;
         String peer1 = "endpoint1";
-        boolean peer2UseBundle = true;
         String peer2 = "endpoint2";
 
         ColibriConferenceIQ peer1Channels
             = colibriConf.createColibriChannels(
-                peer1UseBundle, peer1, null, true, contents);
+                peer1, null, true, contents);
 
         assertEquals(3 , mockBridge.getChannelsCount());
 
         ColibriConferenceIQ peer2Channels
             = colibriConf.createColibriChannels(
-                peer2UseBundle, peer2, null, true, contents);
+                peer2, null, true, contents);
 
         assertEquals(6 , mockBridge.getChannelsCount());
 
