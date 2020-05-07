@@ -439,7 +439,10 @@ public class JitsiMeetServices
             BridgeEvent bridgeEvent = (BridgeEvent) event;
             Bridge jvb = bridgeSelector.getBridge(bridgeEvent.getBridgeJid());
 
-            jvb.setIsOperational(true);
+            if (jvb != null)
+            {
+                jvb.setIsOperational(true);
+            }
         }
     }
 
