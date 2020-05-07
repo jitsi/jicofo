@@ -44,20 +44,20 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    private static OSGiHandler osgi = OSGiHandler.getInstance();
+    private OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static Jid jvb1Jid;
-    private static Jid jvb2Jid;
-    private static Jid jvb3Jid;
-    private static Bridge jvb1;
-    private static Bridge jvb2;
-    private static Bridge jvb3;
-    private static String jvb1PubSubNode = "jvb1";
-    private static String jvb2PubSubNode = "jvb2";
-    private static String jvb3PubSubNode = "jvb3";
+    private Jid jvb1Jid;
+    private Jid jvb2Jid;
+    private Jid jvb3Jid;
+    private Bridge jvb1;
+    private Bridge jvb2;
+    private Bridge jvb3;
+    private String jvb1PubSubNode = "jvb1";
+    private String jvb2PubSubNode = "jvb2";
+    private String jvb3PubSubNode = "jvb3";
 
-    @BeforeClass
-    public static void setUpClass()
+    @Before
+    public void setUp()
         throws Exception
     {
         // Everything should work regardless of the type of jid.
@@ -75,8 +75,8 @@ public class BridgeSelectorTest
         osgi.init();
     }
 
-    @AfterClass
-    public static void tearDownClass()
+    @After
+    public void tearDown()
         throws Exception
     {
         osgi.shutdown();
@@ -110,7 +110,6 @@ public class BridgeSelectorTest
 
     @Test
     public void selectorTest()
-        throws InterruptedException
     {
         JitsiMeetServices meetServices
             = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
@@ -140,6 +139,8 @@ public class BridgeSelectorTest
         workingBridges.add(jvb2Jid);
         workingBridges.add(jvb3Jid);
 
+        // This part of the test doesn't care about reset threshold
+        selector.setFailureResetThreshold(0);
         Bridge bridgeState = selector.selectBridge(conference);
         assertTrue(workingBridges.contains(bridgeState.getJid()));
 
@@ -233,9 +234,6 @@ public class BridgeSelectorTest
 
         assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
 
-        // FAILURE RESET THRESHOLD
-        testFailureResetThreshold(selector, mockSubscriptions);
-
         // Test drain bridges queue
         int maxCount = selector.getKnownBridgesCount();
         while (selector.selectBridge(conference) != null)
@@ -249,10 +247,26 @@ public class BridgeSelectorTest
         }
     }
 
-    private void testFailureResetThreshold(
-        BridgeSelector selector, MockSubscriptionOpSetImpl mockSubscriptions)
+    @Test
+    public void notOperationalThresholdTest()
             throws InterruptedException
     {
+        JitsiMeetServices meetServices
+                = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+
+        ProviderListener providerListener
+                = new ProviderListener(FocusBundleActivator.bundleContext);
+
+        MockProtocolProvider mockProvider
+                = (MockProtocolProvider) providerListener.obtainProvider(1000);
+
+        MockSubscriptionOpSetImpl mockSubscriptions
+                = mockProvider.getMockSubscriptionOpSet();
+
+        createMockJvbNodes(meetServices, mockProvider);
+
+        BridgeSelector selector = meetServices.getBridgeSelector();
+
         Jid[] nodes = new Jid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
         Bridge[] states
             = new Bridge[] {jvb1, jvb2, jvb3};
@@ -282,6 +296,18 @@ public class BridgeSelectorTest
             assertNotEquals(
                     nodes[testNode],
                     selector.selectBridge(new MockJitsiMeetConference()).getJid());
+
+            for (int idx=0; idx < nodes.length; idx++)
+            {
+                // try to mark as operational before the blackout period passed
+                states[idx].setIsOperational(true);
+            }
+
+            // Should still not be selected
+            assertNotEquals(
+                    nodes[testNode],
+                    selector.selectBridge(new MockJitsiMeetConference()).getJid());
+
             // Wait for faulty status reset
             Thread.sleep(150);
             // Test node should recover

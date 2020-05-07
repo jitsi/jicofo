@@ -522,18 +522,9 @@ public class BridgeSelector
      *
      * @param failureResetThreshold the amount of time in millis.
      *
-     * @throws IllegalArgumentException if given threshold value is equal or
-     *         less than zero.
      */
     void setFailureResetThreshold(long failureResetThreshold)
     {
-        if (failureResetThreshold <= 0)
-        {
-            throw new IllegalArgumentException(
-                "Bridge failure reset threshold" +
-                    " must be greater than 0, given value: " +
-                    failureResetThreshold);
-        }
         this.failureResetThreshold = failureResetThreshold;
     }
 

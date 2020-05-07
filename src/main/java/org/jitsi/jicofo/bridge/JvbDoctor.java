@@ -327,6 +327,25 @@ public class JvbDoctor
         eventAdmin.postEvent(BridgeEvent.createHealthFailed(bridgeJid));
     }
 
+    private void notifyHealthCheckPassed(Jid bridgeJid)
+    {
+        EventAdmin eventAdmin = eventAdminRef.get();
+        if (eventAdmin == null)
+        {
+            logger.error(
+                    "Unable to trigger health-check passed event: "
+                            + "no EventAdmin service found!");
+            return;
+        }
+
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("Health check passed on: " + bridgeJid);
+        }
+
+        eventAdmin.postEvent(BridgeEvent.createHealthPassed(bridgeJid));
+    }
+
     /**
      * When the xmpp protocol provider got registered, its maybe reconnection
      * we need to get the connection. It can happen that on startup the initial
@@ -489,6 +508,7 @@ public class JvbDoctor
                 if (IQ.Type.result.equals(responseType))
                 {
                     // OK
+                    notifyHealthCheckPassed(bridgeJid);
                     return;
                 }
 
