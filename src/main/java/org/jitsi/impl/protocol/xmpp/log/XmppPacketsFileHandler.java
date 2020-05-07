@@ -34,7 +34,7 @@ public class XmppPacketsFileHandler extends FileHandler
     {
         setFilter(new IncludeXmppPackets());
         setFormatter(new Formatter());
-        setLevel(Level.FINEST);
+        setLevel(Level.ALL);
     }
 
     /**

@@ -111,9 +111,9 @@ public class PacketDebugger
             totalPacketsRecv += 1;
         }
 
-        if (!logMessage.startsWith("RECV ("))
+        if (logger.isDebugEnabled() && !logMessage.startsWith("RECV ("))
         {
-            logger.info(logMessage);
+            logger.debug(logMessage);
         }
     }
 
