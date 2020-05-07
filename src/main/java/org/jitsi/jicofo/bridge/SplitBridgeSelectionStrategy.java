@@ -42,25 +42,12 @@ class SplitBridgeSelectionStrategy
         Map<Bridge, Integer> conferenceBridges,
         String participantRegion)
     {
-        for (Bridge bridge : bridges)
-        {
-            // If there's an available bridge, which isn't yet used in the
-            // conference, use it.
-            if (!conferenceBridges.keySet().contains(bridge))
-            {
-                return bridge;
-            }
-        }
-
-        // Otherwise, select one of the existing bridges in the conference
-        // at random.
-        if (!bridges.isEmpty())
-        {
-            return
-                bridges.get(
-                    Math.abs(new Random().nextInt()) % bridges.size());
-        }
-
-        return null;
+        // If there's any bridge not yet in this conference, use that; otherwise
+        // find the bridge with the fewest participants
+        Optional<Bridge> bridgeNotYetInConf = bridges.stream().filter(b -> !conferenceBridges.containsKey(b)).findFirst();
+        return bridgeNotYetInConf.orElseGet(() -> conferenceBridges.entrySet().stream()
+            .min(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .orElse(null));
     }
 }
