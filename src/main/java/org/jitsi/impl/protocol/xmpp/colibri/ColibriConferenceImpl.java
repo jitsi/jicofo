@@ -598,50 +598,6 @@ public class ColibriConferenceImpl
      * Does not block or wait for a response.
      */
     @Override
-    public void updateRtpDescription(
-            Map<String, RtpDescriptionPacketExtension> descriptionMap,
-            ColibriConferenceIQ localChannelsInfo)
-    {
-        ColibriConferenceIQ request;
-
-        synchronized (syncRoot)
-        {
-            // Only if not in 'disposed' state
-            if (checkIfDisposed("updateRtpDescription"))
-            {
-                return;
-            }
-
-            colibriBuilder.reset();
-
-            for (String contentName : descriptionMap.keySet())
-            {
-                ColibriConferenceIQ.Channel channel
-                    = localChannelsInfo.getContent(contentName)
-                        .getChannels().get(0);
-                colibriBuilder.addRtpDescription(
-                        descriptionMap.get(contentName),
-                        contentName,
-                        channel);
-            }
-
-            request = colibriBuilder.getRequest(jitsiVideobridge);
-        }
-
-        if (request != null)
-        {
-            logRequest("Sending RTP desc update: ", request);
-
-            connection.sendStanza(request);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * </t>
-     * Does not block or wait for a response.
-     */
-    @Override
     public void updateSourcesInfo(MediaSourceMap sources,
                                   MediaSourceGroupMap sourceGroups,
                                   ColibriConferenceIQ localChannelsInfo)
@@ -781,15 +737,6 @@ public class ColibriConferenceImpl
     public void dispose()
     {
         this.disposed = true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isDisposed()
-    {
-        return disposed;
     }
 
     /**
