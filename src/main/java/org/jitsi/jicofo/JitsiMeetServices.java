@@ -434,6 +434,13 @@ public class JitsiMeetServices
 
             bridgeSelector.removeJvbAddress(bridgeEvent.getBridgeJid());
         }
+        else if (BridgeEvent.HEALTH_CHECK_PASSED.equals(event.getTopic()))
+        {
+            BridgeEvent bridgeEvent = (BridgeEvent) event;
+            Bridge jvb = bridgeSelector.getBridge(bridgeEvent.getBridgeJid());
+
+            jvb.setIsOperational(true);
+        }
     }
 
     /**

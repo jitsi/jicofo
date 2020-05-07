@@ -207,8 +207,16 @@ public class Bridge
             lastReportedPacketRatePps = packetRateDown + packetRateUp;
         }
 
-        setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
-            SHUTDOWN_IN_PROGRESS)));
+        // FIXME graceful shutdown should be treated separately from
+        //  "operational". When jvb is in graceful shutdown it does not allow
+        //  any new conferences but it allows to add participants to
+        //  the existing ones. Marking a bridge not operational while in
+        //  graceful shutdown will move the conference as soon as any new
+        //  participant joins and that is not very graceful.
+        if (Boolean.parseBoolean(stats.getValueAsString(SHUTDOWN_IN_PROGRESS)))
+        {
+            setIsOperational(false);
+        }
 
         String newVersion = stats.getValueAsString(VERSION);
         if (newVersion != null)
@@ -251,29 +259,15 @@ public class Bridge
 
     public boolean isOperational()
     {
-        // Check if we should give this bridge another try
-        verifyFailureThreshold();
+        // To filter out intermittent failures, do not return operational
+        // until past the reset threshold since the last failure.
+        if (System.currentTimeMillis() - failureTimestamp
+                < bridgeSelector.getFailureResetThreshold())
+        {
+            return false;
+        }
 
         return isOperational;
-    }
-
-    /**
-     * Verifies if it has been long enough since last bridge failure to give
-     * it another try(reset isOperational flag).
-     */
-    private void verifyFailureThreshold()
-    {
-        if (isOperational)
-        {
-            return;
-        }
-
-        if (System.currentTimeMillis() - failureTimestamp
-                > bridgeSelector.getFailureResetThreshold())
-        {
-            logger.info("Resetting operational status for " + jid);
-            isOperational = true;
-        }
     }
 
     /**
