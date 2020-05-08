@@ -373,13 +373,6 @@ public class JvbDoctor
     {
         private final Jid bridgeJid;
 
-        /**
-         * Indicates whether or not the bridge has health-check support.
-         * If set to <tt>null</tt> it means that we don't know that yet
-         * (there was no successful disco-info exchange so far).
-         */
-        private Boolean hasHealthCheckSupport;
-
         private HealthCheckTask(Jid bridgeJid)
         {
             this.bridgeJid = bridgeJid;
@@ -441,15 +434,6 @@ public class JvbDoctor
 
             if (taskInvalid())
             {
-                return;
-            }
-
-            if (taskInvalid())
-                return;
-
-            if (!Boolean.TRUE.equals(hasHealthCheckSupport))
-            {
-                // This JVB does not support health-checks
                 return;
             }
 
