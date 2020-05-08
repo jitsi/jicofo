@@ -160,16 +160,6 @@ public class XmppProtocolProvider
         addSupportedOperationSet(
             OperationSetJibri.class,
             new OperationSetJibri(this));
-
-        try {
-            addSupportedOperationSet(
-                OperationSetSubscription.class,
-                new OpSetSubscriptionImpl(this));
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new IllegalArgumentException("AccountID", e);
-        }
     }
 
     /**

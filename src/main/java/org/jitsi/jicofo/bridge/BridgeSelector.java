@@ -43,15 +43,13 @@ import java.util.stream.*;
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
- * available. Videobridge state is tracked through PubSub notifications and
- * based on feedback from Jitsi Meet conference focus.
+ * available.
  *
  * @author Pawel Domas
  * @author Boris Grozev
  */
 public class BridgeSelector
-    implements SubscriptionListener,
-               EventHandler
+    implements EventHandler
 {
     /**
      * The logger.
@@ -74,24 +72,6 @@ public class BridgeSelector
 
     public static final String AVG_PARTICIPANT_PACKET_RATE_PNAME
             = "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE";
-
-    /**
-     * Property used to configure mapping of videobridge JIDs to PubSub nodes.
-     * Single mapping is defined by writing videobridge JID followed by ':' and
-     * pub-sub node name. If multiple mapping are to be appended then ';' must
-     * be used to separate each mapping.
-     *
-     * org.jitsi.focus.BRIDGE_PUBSUB_MAPPING
-     * =jvb1.server.net:pubsub1;jvb2.server.net:pubsub2;jvb3.server.net:pubsub3
-     *
-     * PubSub service node is discovered automatically for now and the first one
-     * that offer PubSub feature is selected. Then this selector class
-     * subscribes for all mapped PubSub nodes on that service for notifications.
-     *
-     * FIXME: we do not unsubscribe from pubsub notifications on shutdown
-     */
-    public static final String BRIDGE_TO_PUBSUB_PNAME
-        = "org.jitsi.focus.BRIDGE_PUBSUB_MAPPING";
 
     /**
      * Configuration property which specifies the amount of time since bridge
@@ -124,11 +104,6 @@ public class BridgeSelector
     private long failureResetThreshold = DEFAULT_FAILURE_RESET_THRESHOLD;
 
     /**
-     * Operation set used to subscribe to PubSub nodes notifications.
-     */
-    private final OperationSetSubscription subscriptionOpSet;
-
-    /**
      * The map of bridge JID to <tt>Bridge</tt>.
      */
     private final Map<Jid, Bridge> bridges = new HashMap<>();
@@ -140,11 +115,6 @@ public class BridgeSelector
     private EventAdmin eventAdmin;
 
     /**
-     * The map of Pub-Sub nodes to videobridge JIDs.
-     */
-    private final Map<String, Jid> pubSubToBridge = new HashMap<>();
-
-    /**
      * The bridge selection strategy.
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy;
@@ -152,14 +122,9 @@ public class BridgeSelector
     /**
      * Creates new instance of {@link BridgeSelector}.
      *
-     * @param subscriptionOpSet the operations set that will be used by this
-     *                          instance to subscribe to pub-sub notifications.
      */
-    public BridgeSelector(OperationSetSubscription subscriptionOpSet)
+    public BridgeSelector()
     {
-        this.subscriptionOpSet
-            = Objects.requireNonNull(subscriptionOpSet, "subscriptionOpSet");
-
         bridgeSelectionStrategy
             = Objects.requireNonNull(createBridgeSelectionStrategy());
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
@@ -263,19 +228,6 @@ public class BridgeSelector
             return bridge;
         }
 
-        String pubSubNode = findNodeForBridge(bridgeJid);
-        if (pubSubNode != null)
-        {
-            logger.info(
-                "Subscribing to pub-sub notifications to "
-                    + pubSubNode + " for " + bridgeJid);
-            subscriptionOpSet.subscribe(pubSubNode, this);
-        }
-        else
-        {
-            logger.warn("No pub-sub node mapped for " + bridgeJid);
-        }
-
         Bridge newBridge = new Bridge(this, bridgeJid, version);
         if (stats != null)
         {
@@ -314,16 +266,6 @@ public class BridgeSelector
         logger.info("Removing JVB: " + bridgeJid);
 
         Bridge bridge = bridges.remove(bridgeJid);
-
-        String pubSubNode = findNodeForBridge(bridgeJid);
-        if (pubSubNode != null)
-        {
-            logger.info(
-                "Removing PubSub subscription to "
-                    + pubSubNode + " for " + bridgeJid);
-
-            subscriptionOpSet.unSubscribe(pubSubNode, this);
-        }
 
         if (bridge != null)
         {
@@ -384,125 +326,6 @@ public class BridgeSelector
         bridgeList.removeIf(bridge -> !bridge.isOperational());
 
         return bridgeList;
-    }
-
-    /**
-     * Returns videobridge JID for given pub-sub node.
-     *
-     * @param pubSubNode the pub-sub node name.
-     *
-     * @return videobridge JID for given pub-sub node or <tt>null</tt> if no
-     *         mapping found.
-     */
-    synchronized Jid getBridgeForPubSubNode(String pubSubNode)
-    {
-        Bridge bridge = findBridgeForNode(pubSubNode);
-        return bridge != null ? bridge.getJid() : null;
-    }
-
-    /**
-     * Finds <tt>Bridge</tt> for given pub-sub node.
-     *
-     * @param pubSubNode the name of pub-sub node to match with the bridge.
-     *
-     * @return <tt>Bridge</tt> for given pub-sub node name.
-     */
-    private synchronized Bridge findBridgeForNode(String pubSubNode)
-    {
-        Jid bridgeJid = pubSubToBridge.get(pubSubNode);
-        if (bridgeJid != null)
-        {
-            return bridges.get(bridgeJid);
-        }
-        return null;
-    }
-
-    /**
-     * Finds pub-sub node name for given videobridge JID.
-     *
-     * @param bridgeJid the JID of videobridge to be matched with
-     * pub-sub node name.
-     *
-     * @return name of pub-sub node mapped for given videobridge JID.
-     */
-    private synchronized String findNodeForBridge(Jid bridgeJid)
-    {
-        for (Map.Entry<String, Jid> psNodeToBridge
-            : pubSubToBridge.entrySet())
-        {
-            if (psNodeToBridge.getValue().equals(bridgeJid))
-            {
-                return psNodeToBridge.getKey();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Method called by {@link org.jitsi.jicofo.ComponentsDiscovery
-     * .ThroughPubSubDiscovery} whenever we receive stats update on shared
-     * PubSub node used to discover bridges.
-     * @param itemId stats item ID. Should be the JID of JVB instance.
-     * @param payload JVB stats payload.
-     */
-    public void onSharedNodeUpdate(String itemId, ExtensionElement payload)
-    {
-        onSubscriptionUpdate(null, itemId, payload);
-    }
-
-    /**
-     * Pub-sub notification processing logic.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void onSubscriptionUpdate(String           node,
-                                                  String           itemId,
-                                                  ExtensionElement payload)
-    {
-        if (!(payload instanceof ColibriStatsExtension))
-        {
-            logger.error(
-                "Unexpected pub-sub notification payload: "
-                    + payload.getClass().getName());
-            return;
-        }
-
-        Bridge bridge = null;
-        if (node != null)
-        {
-            bridge = findBridgeForNode(node);
-        }
-
-        if (bridge == null)
-        {
-            Jid bridgeId;
-            try
-            {
-                bridgeId = JidCreate.from(itemId);
-            }
-            catch (XmppStringprepException e)
-            {
-                logger.warn(
-                        "Received PubSub update for unknown bridge: "
-                                + itemId + " node: "
-                                + (node == null ? "'shared'" : node));
-                return;
-            }
-
-            // Try to figure out bridge by itemId
-            bridge = bridges.get(bridgeId);
-            if (bridge == null)
-            {
-                logger.warn(
-                        "Received PubSub update for unknown bridge: "
-                            + itemId + " node: "
-                            + (node == null ? "'shared'" : node));
-                return;
-            }
-        }
-
-        bridge.setStats((ColibriStatsExtension) payload);
     }
 
     /**
@@ -614,37 +437,6 @@ public class BridgeSelector
     public void init()
     {
         ConfigurationService config = FocusBundleActivator.getConfigService();
-
-        String mappingPropertyValue = config.getString(BRIDGE_TO_PUBSUB_PNAME);
-
-        if (!StringUtils.isNullOrEmpty(mappingPropertyValue))
-        {
-            String[] pairs = mappingPropertyValue.split(";");
-            for (String pair : pairs)
-            {
-                String[] bridgeAndNode = pair.split(":");
-                if (bridgeAndNode.length != 2)
-                {
-                    logger.error("Invalid mapping element: " + pair);
-                    continue;
-                }
-
-                Jid bridge = null;
-                try
-                {
-                    bridge = JidCreate.from(bridgeAndNode[0]);
-                }
-                catch (XmppStringprepException e)
-                {
-                    logger.error("Invalid mapping element: " + pair);
-                }
-
-                String pubSubNode = bridgeAndNode[1];
-                pubSubToBridge.put(pubSubNode, bridge);
-
-                logger.info("Pub-sub mapping: " + pubSubNode + " -> " + bridge);
-            }
-        }
 
         setFailureResetThreshold(
                 config.getLong(

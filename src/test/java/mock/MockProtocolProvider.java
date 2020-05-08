@@ -18,15 +18,12 @@
 package mock;
 
 import mock.muc.*;
-import mock.util.UtilityJingleOpSet;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
-import mock.xmpp.pubsub.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jxmpp.jid.*;
@@ -214,13 +211,6 @@ public class MockProtocolProvider
             new MockJitsiMeetTools(this));
     }
 
-    public void includeSubscriptionOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetSubscription.class,
-            new MockSubscriptionOpSetImpl());
-    }
-
     public OperationSetBasicTelephony getTelephony()
     {
         return getOperationSet(OperationSetBasicTelephony.class);
@@ -252,12 +242,6 @@ public class MockProtocolProvider
     {
         return (MockMultiUserChatOpSet)
             getOperationSet(OperationSetMultiUserChat.class);
-    }
-
-    public MockSubscriptionOpSetImpl getMockSubscriptionOpSet()
-    {
-        return (MockSubscriptionOpSetImpl)
-            getOperationSet(OperationSetSubscription.class);
     }
 
     public MockSetSimpleCapsOpSet getMockCapsOpSet()

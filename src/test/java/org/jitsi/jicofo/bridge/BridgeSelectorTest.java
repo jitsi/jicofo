@@ -19,7 +19,6 @@ package org.jitsi.jicofo.bridge;
 
 import mock.*;
 import mock.xmpp.*;
-import mock.xmpp.pubsub.*;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -52,9 +51,7 @@ public class BridgeSelectorTest
     private Bridge jvb1;
     private Bridge jvb2;
     private Bridge jvb3;
-    private String jvb1PubSubNode = "jvb1";
-    private String jvb2PubSubNode = "jvb2";
-    private String jvb3PubSubNode = "jvb3";
+    private JitsiMeetServices meetServices;
 
     @Before
     public void setUp()
@@ -64,15 +61,18 @@ public class BridgeSelectorTest
         jvb1Jid = JidCreate.from("jvb.example.com");
         jvb2Jid = JidCreate.from("jvb@example.com");
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
-        String bridgeMapping
-            = jvb1Jid + ":" + jvb1PubSubNode + ";" +
-              jvb2Jid + ":" + jvb2PubSubNode + ";" +
-              jvb3Jid + ":" + jvb3PubSubNode + ";";
-
-        System.setProperty(
-            BridgeSelector.BRIDGE_TO_PUBSUB_PNAME, bridgeMapping);
-
         osgi.init();
+
+        this.meetServices
+            = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+
+        ProviderListener providerListener
+                = new ProviderListener(FocusBundleActivator.bundleContext);
+
+        MockProtocolProvider mockProvider
+                = (MockProtocolProvider) providerListener.obtainProvider(1000);
+
+        createMockJvbNodes(this.meetServices, mockProvider);
     }
 
     @After
@@ -111,27 +111,8 @@ public class BridgeSelectorTest
     @Test
     public void selectorTest()
     {
-        JitsiMeetServices meetServices
-            = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
-
-        ProviderListener providerListener
-            = new ProviderListener(FocusBundleActivator.bundleContext);
-
-        MockProtocolProvider mockProvider
-            = (MockProtocolProvider) providerListener.obtainProvider(1000);
-
-        createMockJvbNodes(meetServices, mockProvider);
-
         BridgeSelector selector = meetServices.getBridgeSelector();
         JitsiMeetConference conference = new MockJitsiMeetConference();
-
-        // Check pub-sub nodes mapping
-        assertEquals(jvb1Jid,
-                     selector.getBridgeForPubSubNode(jvb1PubSubNode));
-        assertEquals(jvb2Jid,
-                     selector.getBridgeForPubSubNode(jvb2PubSubNode));
-        assertEquals(jvb3Jid,
-                     selector.getBridgeForPubSubNode(jvb3PubSubNode));
 
         // Test bridge operational status
         List<Jid> workingBridges = new ArrayList<>();
@@ -175,25 +156,15 @@ public class BridgeSelectorTest
         jvb2.setIsOperational(true);
         jvb3.setIsOperational(true);
 
-        MockSubscriptionOpSetImpl mockSubscriptions
-            = mockProvider.getMockSubscriptionOpSet();
-
-        // When PubSub mapping is used itemId is not important
-        String itemId = "randomNodeForMappingTest";
-
         // Jvb 1 and 3 are occupied by some conferences, 2 is free
-        mockSubscriptions.fireSubscriptionNotification(
-            jvb1PubSubNode,itemId, createJvbStats(10));
-        mockSubscriptions.fireSubscriptionNotification(
-            jvb2PubSubNode, itemId, createJvbStats(23));
-        mockSubscriptions.fireSubscriptionNotification(
-            jvb3PubSubNode, itemId, createJvbStats(0));
+        jvb1.setStats(createJvbStats(10));
+        jvb2.setStats(createJvbStats(23));
+        jvb3.setStats(createJvbStats(0));
 
         assertEquals(jvb3Jid, selector.selectBridge(conference).getJid());
 
         // Now Jvb 3 gets occupied the most
-        mockSubscriptions.fireSubscriptionNotification(
-            jvb3PubSubNode, itemId, createJvbStats(300));
+        jvb3.setStats(createJvbStats(300));
 
         assertEquals(jvb1Jid, selector.selectBridge(conference).getJid());
 
@@ -213,24 +184,17 @@ public class BridgeSelectorTest
         jvb2.setIsOperational(true);
         jvb3.setIsOperational(true);
 
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb1PubSubNode, itemId, createJvbStats(1));
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb2PubSubNode, itemId, createJvbStats(0));
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb3PubSubNode, itemId, createJvbStats(0));
+        jvb1.setStats(createJvbStats(1));
+        jvb2.setStats(createJvbStats(0));
+        jvb3.setStats(createJvbStats(0));
 
         // JVB 1 should not be in front
-        assertNotEquals(
-                jvb1PubSubNode, selector.selectBridge(conference).getJid());
+        assertNotEquals(jvb1Jid, selector.selectBridge(conference).getJid());
 
         // JVB 2 least occupied
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb1PubSubNode, itemId, createJvbStats(1));
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb2PubSubNode, itemId, createJvbStats(0));
-        mockSubscriptions.fireSubscriptionNotification(
-                jvb3PubSubNode, itemId, createJvbStats(1));
+        jvb1.setStats(createJvbStats(1));
+        jvb2.setStats(createJvbStats(0));
+        jvb3.setStats(createJvbStats(1));
 
         assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
 
@@ -254,65 +218,45 @@ public class BridgeSelectorTest
         JitsiMeetServices meetServices
                 = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
 
-        ProviderListener providerListener
-                = new ProviderListener(FocusBundleActivator.bundleContext);
-
-        MockProtocolProvider mockProvider
-                = (MockProtocolProvider) providerListener.obtainProvider(1000);
-
-        MockSubscriptionOpSetImpl mockSubscriptions
-                = mockProvider.getMockSubscriptionOpSet();
-
-        createMockJvbNodes(meetServices, mockProvider);
-
         BridgeSelector selector = meetServices.getBridgeSelector();
-
-        Jid[] nodes = new Jid[]{ jvb1Jid, jvb2Jid, jvb3Jid};
-        Bridge[] states
-            = new Bridge[] {jvb1, jvb2, jvb3};
-
-        String[] pubSubNodes
-            = new String[] { jvb1PubSubNode, jvb2PubSubNode, jvb3PubSubNode};
+        Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
 
         // Will restore failure status after 100 ms
         selector.setFailureResetThreshold(100);
 
-        for (int testNode = 0; testNode < nodes.length; testNode++)
+        for (int testedIdx = 0; testedIdx < bridges.length; testedIdx++)
         {
-            for (int idx=0; idx < nodes.length; idx++)
+            for (int idx=0; idx < bridges.length; idx++)
             {
-                boolean isTestNode = idx == testNode;
+                boolean isTestNode = idx == testedIdx;
 
                 // Test node has 0 load...
-                mockSubscriptions.fireSubscriptionNotification(
-                    pubSubNodes[idx],
-                    "randomItemId",
-                    createJvbStats(isTestNode ? 0 : 100));
+                bridges[idx].setStats(createJvbStats(isTestNode ? 0 : 100));
 
                 // ... and is not operational
-                states[idx].setIsOperational(!isTestNode);
+                bridges[idx].setIsOperational(!isTestNode);
             }
             // Should not be selected now
             assertNotEquals(
-                    nodes[testNode],
+                    bridges[testedIdx].getJid(),
                     selector.selectBridge(new MockJitsiMeetConference()).getJid());
 
-            for (int idx=0; idx < nodes.length; idx++)
+            for (int idx=0; idx < bridges.length; idx++)
             {
                 // try to mark as operational before the blackout period passed
-                states[idx].setIsOperational(true);
+                bridges[idx].setIsOperational(true);
             }
 
             // Should still not be selected
             assertNotEquals(
-                    nodes[testNode],
+                    bridges[testedIdx].getJid(),
                     selector.selectBridge(new MockJitsiMeetConference()).getJid());
 
             // Wait for faulty status reset
             Thread.sleep(150);
             // Test node should recover
             assertEquals(
-                    nodes[testNode],
+                    bridges[testedIdx].getJid(),
                     selector.selectBridge(new MockJitsiMeetConference()).getJid());
         }
 
