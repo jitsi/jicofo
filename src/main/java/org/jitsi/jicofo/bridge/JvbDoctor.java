@@ -24,7 +24,6 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.osgi.*;
@@ -44,7 +43,7 @@ import java.util.concurrent.*;
  * The class is responsible for doing health checks of currently known
  * jitsi-videobridge instances.
  *
- * Listens to <tt>BridgeEvent#BRIDGE_UP</tt>/<tt>BridgeEvent#BRIDGE_DOWN</tt>
+ * Listens to <tt>BridgeEvent#BRIDGE_UP</tt>/<tt>BridgeEvent#BRIDGE_OFFLINE</tt>
  * and schedules/cancels new health check jobs. When a health check task fails
  * <tt>BridgeEvent#HEALTH_CHECK_FAILED</tt> is triggered.
  *
@@ -136,7 +135,7 @@ public class JvbDoctor
      */
     public JvbDoctor()
     {
-        super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_DOWN });
+        super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_OFFLINE });
     }
 
     /**
@@ -258,7 +257,7 @@ public class JvbDoctor
         case BridgeEvent.BRIDGE_UP:
             addBridge(bridgeEvent.getBridgeJid());
             break;
-        case BridgeEvent.BRIDGE_DOWN:
+        case BridgeEvent.BRIDGE_OFFLINE:
             removeBridge(bridgeEvent.getBridgeJid());
             break;
         default:
