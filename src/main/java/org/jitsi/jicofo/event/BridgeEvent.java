@@ -42,6 +42,7 @@ public class BridgeEvent
      * down(stops working or disconnects).
      */
     public static final String BRIDGE_DOWN = "org/jitsi/jicofo/JVB/DOWN";
+    public static final String BRIDGE_OFFLINE = "org/jitsi/jicofo/JVB/OFFLINE";
 
     /**
      * The event is fired by {@link JvbDoctor} when the JVB health check fails.
@@ -113,6 +114,11 @@ public class BridgeEvent
         return new BridgeEvent(BRIDGE_DOWN, bridgeJid);
     }
 
+    static public BridgeEvent createBridgeOffline(Jid bridgeJid)
+    {
+        return new BridgeEvent(BRIDGE_OFFLINE, bridgeJid);
+    }
+
     /**
      * Creates {@link #HEALTH_CHECK_FAILED} <tt>BridgeEvent</tt>.
      * @param bridgeJid the JID of the bridge for which the event will be
@@ -167,6 +173,7 @@ public class BridgeEvent
         {
         case BRIDGE_DOWN:
         case BRIDGE_UP:
+        case BRIDGE_OFFLINE:
         case HEALTH_CHECK_FAILED:
         case VIDEO_CHANNELS_CHANGED:
             return true;

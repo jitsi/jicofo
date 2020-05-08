@@ -413,7 +413,9 @@ public class JitsiMeetServices
         }
         else if (BridgeEvent.HEALTH_CHECK_FAILED.equals(event.getTopic()))
         {
-            jvb.setIsOperational(false);
+            // Don't remove it, because the next presence in the muc will re-add
+            // it
+            bridgeSelector.healthCheckFailed(bridgeEvent.getBridgeJid());
         }
     }
 

@@ -270,6 +270,18 @@ public class BridgeSelector
         if (bridge != null)
         {
             notifyBridgeDown(bridge);
+            notifyBridgeOffline(bridge);
+        }
+    }
+
+    public void healthCheckFailed(Jid bridgeJid)
+    {
+        Bridge bridge = bridges.get(bridgeJid);
+
+        if (bridge != null)
+        {
+            bridge.setIsOperational(false);
+            notifyBridgeDown(bridge);
         }
     }
 
@@ -391,6 +403,13 @@ public class BridgeSelector
         logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
         eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.getJid()));
+    }
+
+    private void notifyBridgeOffline(Bridge bridge)
+    {
+        logger.debug("Propagating bridge went offline event: " + bridge.getJid());
+
+        eventAdmin.postEvent(BridgeEvent.createBridgeOffline(bridge.getJid()));
     }
 
     /**
