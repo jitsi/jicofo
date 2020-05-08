@@ -147,7 +147,10 @@ public class JitsiMeetServices
                              ProtocolProviderHandler jvbMucProtocolProvider,
                              DomainBareJid jicofoUserDomain)
     {
-        super(new String[] { BridgeEvent.HEALTH_CHECK_FAILED });
+        super(new String[] {
+                BridgeEvent.HEALTH_CHECK_FAILED,
+                BridgeEvent.HEALTH_CHECK_PASSED
+        });
 
         Objects.requireNonNull(
             protocolProviderHandler, "protocolProviderHandler");
