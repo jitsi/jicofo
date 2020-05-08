@@ -87,15 +87,6 @@ public class JitsiMeetServices
         };
 
     /**
-     * Features used to recognize pub-sub service.
-     */
-    /*private static final String[] PUBSUB_FEATURES = new String[]
-        {
-            "http://jabber.org/protocol/pubsub",
-            "http://jabber.org/protocol/pubsub#subscribe"
-        };*/
-
-    /**
      * Manages Jitsi Videobridge component XMPP addresses.
      */
     private final BridgeSelector bridgeSelector;
@@ -163,16 +154,10 @@ public class JitsiMeetServices
         Objects.requireNonNull(
             jvbMucProtocolProvider, "jvbMucProtocolProvider");
 
-        OperationSetSubscription subscriptionOpSet
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetSubscription.class);
-
-        Objects.requireNonNull(subscriptionOpSet, "subscriptionOpSet");
-
         this.jicofoUserDomain = jicofoUserDomain;
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
-        this.bridgeSelector = new BridgeSelector(subscriptionOpSet);
+        this.bridgeSelector = new BridgeSelector();
     }
 
     /**
@@ -220,20 +205,6 @@ public class JitsiMeetServices
 
             logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
         }
-        /*
-        FIXME: pub-sub service auto-detect ?
-        else if (capsOpSet.hasFeatureSupport(item, PUBSUB_FEATURES))
-        {
-            // Potential PUBSUB service
-            logger.info("Potential PUBSUB service:" + item);
-            List<String> subItems = capsOpSet.getItems(item);
-            for (String subItem: subItems)
-            {
-                logger.info("Subnode " + subItem + " of " + item);
-                capsOpSet.hasFeatureSupport(
-                    item, subItem, VIDEOBRIDGE_FEATURES);
-            }
-        }*/
     }
 
     /**
@@ -428,21 +399,21 @@ public class JitsiMeetServices
     @Override
     public void handleEvent(Event event)
     {
-        if (BridgeEvent.HEALTH_CHECK_FAILED.equals(event.getTopic()))
+        if (!(event instanceof BridgeEvent))
         {
-            BridgeEvent bridgeEvent = (BridgeEvent) event;
-
-            bridgeSelector.removeJvbAddress(bridgeEvent.getBridgeJid());
+            return;
         }
-        else if (BridgeEvent.HEALTH_CHECK_PASSED.equals(event.getTopic()))
-        {
-            BridgeEvent bridgeEvent = (BridgeEvent) event;
-            Bridge jvb = bridgeSelector.getBridge(bridgeEvent.getBridgeJid());
 
-            if (jvb != null)
-            {
-                jvb.setIsOperational(true);
-            }
+        BridgeEvent bridgeEvent = (BridgeEvent) event;
+        Bridge jvb = bridgeSelector.getBridge(bridgeEvent.getBridgeJid());
+
+        if (BridgeEvent.HEALTH_CHECK_PASSED.equals(event.getTopic()))
+        {
+            jvb.setIsOperational(true);
+        }
+        else if (BridgeEvent.HEALTH_CHECK_FAILED.equals(event.getTopic()))
+        {
+            jvb.setIsOperational(false);
         }
     }
 

@@ -139,14 +139,6 @@ public class FocusManager
         = "org.jitsi.jicofo.SHORT_ID";
 
     /**
-     * The name of the configuration property used to configure the PubSub node
-     * to which videobridges are publishing their stats. It is used to discover
-     * bridges automatically.
-     */
-    public static final String SHARED_STATS_PUBSUB_NODE_PNAME
-        = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
-
-    /**
      * A property to enable health check debug. Enabling this will result an
      * extra thread which will be monitoring the health-checks execution times.
      * The thread will print thread dump in the logs for those health checks
@@ -303,12 +295,8 @@ public class FocusManager
                     focusUserDomain);
         jitsiMeetServices.start(bundleContext);
 
-        String statsPubSubNode
-            = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
-
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(
-            xmppDomain, statsPubSubNode, protocolProviderHandler);
+        componentsDiscovery.start(xmppDomain, protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 

@@ -91,7 +91,6 @@ public class MockProtocolProviderFactory
             protocolProvider.includeJingleOpSet();
             protocolProvider.includeSimpleCapsOpSet();
             protocolProvider.includeDirectXmppOpSet();
-            protocolProvider.includeSubscriptionOpSet();
         }
 
         return protocolProvider;
