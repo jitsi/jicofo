@@ -24,17 +24,12 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.*;
 
 import org.jitsi.utils.logging.*;
-import org.jivesoftware.smack.packet.*;
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.lang.reflect.*;
@@ -89,7 +84,7 @@ public class BridgeSelector
     /**
      * Five minutes.
      */
-    public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
+    public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 1L * 60L * 1000L;
 
     /**
      * Stores reference to <tt>EventHandler</tt> registration, so that it can be
@@ -546,6 +541,14 @@ public class BridgeSelector
     public int getBridgeCount()
     {
         return bridges.size();
+    }
+
+    /**
+     * @return a copy of the bridges list.
+     */
+    public List<Bridge> getBridges()
+    {
+        return new ArrayList<>(bridges.values());
     }
 
     public int getOperationalBridgeCount()

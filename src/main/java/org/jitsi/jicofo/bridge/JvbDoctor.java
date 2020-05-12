@@ -120,12 +120,6 @@ public class JvbDoctor
     private ProtocolProviderService protocolProvider;
 
     /**
-     * Capabilities operation set used to detect health check support on
-     * the bridge.
-     */
-    private OperationSetSimpleCaps capsOpSet;
-
-    /**
      * XMPP operation set obtained from {@link #protocolProvider}.
      */
     private XmppConnection connection;
@@ -195,13 +189,31 @@ public class JvbDoctor
                     "xmppOpSet")
                  .getXmppConnection();
 
-        capsOpSet
-            = protocolProvider.getOperationSet(
-                    OperationSetSimpleCaps.class);
-
-        Objects.requireNonNull(capsOpSet, "capsOpSet");
-
         super.start(bundleContext);
+
+        JitsiMeetServices services
+            = ServiceUtils.getService(bundleContext, JitsiMeetServices.class);
+
+        initializeHealthChecks(services.getBridgeSelector().getBridges());
+    }
+
+    /**
+     * Initializes bridge health checks.
+     *
+     * @param bridges - the list of bridges connected at the time when
+     * the {@link JvbDoctor} bundle starts.
+     */
+    private void initializeHealthChecks(List<Bridge> bridges)
+    {
+        for (Bridge b : bridges)
+        {
+            Jid bridgeJid = b.getJid();
+
+            if (!tasks.containsKey(bridgeJid))
+            {
+                addBridge(bridgeJid);
+            }
+        }
     }
 
     /**
