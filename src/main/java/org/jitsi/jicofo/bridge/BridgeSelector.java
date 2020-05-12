@@ -84,7 +84,7 @@ public class BridgeSelector
     /**
      * Five minutes.
      */
-    public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 5L * 60L * 1000L;
+    public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 1L * 60L * 1000L;
 
     /**
      * Stores reference to <tt>EventHandler</tt> registration, so that it can be
