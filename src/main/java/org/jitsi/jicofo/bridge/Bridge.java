@@ -99,7 +99,7 @@ public class Bridge
     /**
      * The parent {@link BridgeSelector}.
      */
-    private BridgeSelector bridgeSelector;
+    private final BridgeSelector bridgeSelector;
 
     /**
      * The XMPP address of the bridge.
@@ -110,12 +110,6 @@ public class Bridge
      * Keep track of the recently allocated or removed channels.
      */
     private final RateStatistics videoChannelsRate = new RateStatistics(10000);
-
-    /**
-     * The last reported bitrate in Kbps.
-     */
-    @SuppressWarnings("unused")
-    private int lastReportedBitrateKbps = 0;
 
     /**
      * The last reported packet rate in packets per second.
@@ -167,39 +161,15 @@ public class Bridge
         }
         stats = this.stats;
 
-        Integer bitrateUpKbps = null;
-        Integer bitrateDownKbps = null;
-        Integer octoReceiveBitrate = null;
-        Integer octoSendBitrate = null;
         Integer packetRateDown = null;
         Integer packetRateUp = null;
         try
         {
-            bitrateUpKbps = stats.getValueAsInt(BITRATE_UPLOAD);
-            bitrateDownKbps = stats.getValueAsInt(BITRATE_DOWNLOAD);
-            octoReceiveBitrate
-                    = stats.getValueAsInt(OCTO_RECEIVE_BITRATE);
-            octoSendBitrate = stats.getValueAsInt(OCTO_SEND_BITRATE);
             packetRateDown = stats.getValueAsInt(PACKET_RATE_DOWNLOAD);
             packetRateUp = stats.getValueAsInt(PACKET_RATE_UPLOAD);
         }
         catch (NumberFormatException nfe)
         {
-        }
-
-        if (bitrateUpKbps != null && bitrateDownKbps != null)
-        {
-            int bitrate = bitrateDownKbps + bitrateUpKbps;
-            if (octoReceiveBitrate != null)
-            {
-                bitrate += octoReceiveBitrate;
-            }
-            if (octoSendBitrate != null)
-            {
-                bitrate += octoSendBitrate;
-            }
-
-            lastReportedBitrateKbps = bitrate;
         }
 
         if (packetRateDown != null && packetRateUp != null)
