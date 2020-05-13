@@ -535,7 +535,8 @@ public class JingleOfferFactory
      */
     private static ParameterPacketExtension addParameterExtension(
         PayloadTypePacketExtension ptExt,
-                                              String name, String value)
+        String name,
+        String value)
     {
         ParameterPacketExtension parameterPacketExtension
             = new ParameterPacketExtension();
@@ -621,8 +622,10 @@ public class JingleOfferFactory
      * @return the added {@link PayloadTypePacketExtension}.
      */
     private static PayloadTypePacketExtension addPayloadTypeExtension(
-        RtpDescriptionPacketExtension rtpDesc, int id, String name,
-        int clockRate)
+            RtpDescriptionPacketExtension rtpDesc,
+            int id,
+            String name,
+            int clockRate)
     {
         PayloadTypePacketExtension payloadTypePacketExtension
             = new PayloadTypePacketExtension();
@@ -642,9 +645,11 @@ public class JingleOfferFactory
      * @param enableRemb Whether to enable REMB.
      * @param enableTcc Whether to enable transport-cc.
      */
-    private static void addAudioToContent(ContentPacketExtension content,
-                                          boolean stereo, boolean enableRemb,
-                                          boolean enableTcc)
+    private static void addAudioToContent(
+            ContentPacketExtension content,
+            boolean stereo,
+            boolean enableRemb,
+            boolean enableTcc)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -719,24 +724,5 @@ public class JingleOfferFactory
         rdpe.setMedia("application");
 
         content.addChildExtension(rdpe);
-    }
-
-    /**
-     * Check if given offer contains video contents.
-     * @param contents the list of <tt>ContentPacketExtension</tt> describing
-     *        Jingle offer.
-     * @return <tt>true</tt> if given offer has video content.
-     */
-    public static boolean containsVideoContent(
-        List<ContentPacketExtension> contents)
-    {
-        for (ContentPacketExtension content : contents)
-        {
-            if (content.getName().equalsIgnoreCase("video"))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 }
