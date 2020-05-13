@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
+import org.jitsi.utils.logging.*;
 
 /**
  * Thread does the job of registering given <tt>ProtocolProviderService</tt>.

@@ -17,9 +17,8 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.util.*;
-
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smackx.disco.*;
@@ -39,7 +38,7 @@ public class OpSetSimpleCapsImpl
      * The logger.
      */
     private final static Logger logger
-        = Logger.getLogger(OpSetSimpleCapsImpl.class);
+            = Logger.getLogger(OpSetSimpleCapsImpl.class);
 
     private ServiceDiscoveryManager discoveryManager;
 

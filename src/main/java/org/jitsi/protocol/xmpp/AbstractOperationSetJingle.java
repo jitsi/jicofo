@@ -18,8 +18,8 @@
 package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;

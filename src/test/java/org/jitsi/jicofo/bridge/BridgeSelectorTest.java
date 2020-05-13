@@ -21,8 +21,8 @@ import mock.*;
 import mock.xmpp.*;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import net.java.sip.communicator.util.*;
 
 import org.junit.*;
 import org.junit.runner.*;
@@ -64,7 +64,7 @@ public class BridgeSelectorTest
         osgi.init();
 
         this.meetServices
-            = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+            = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
 
         ProviderListener providerListener
                 = new ProviderListener(FocusBundleActivator.bundleContext);
@@ -216,7 +216,7 @@ public class BridgeSelectorTest
             throws InterruptedException
     {
         JitsiMeetServices meetServices
-                = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+                = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
@@ -304,7 +304,7 @@ public class BridgeSelectorTest
             throws Exception
     {
         JitsiMeetServices meetServices
-                = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+                = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
         BridgeSelector selector = meetServices.getBridgeSelector();
 
         String region1 = "region1";

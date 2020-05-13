@@ -17,8 +17,8 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 

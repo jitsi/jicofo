@@ -19,8 +19,8 @@ package mock.muc;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -39,7 +39,7 @@ public class MockMucShare
 
     private final EntityBareJid roomName;
 
-    private List<MockMultiUserChat> groupedChats = new ArrayList<>();
+    private final List<MockMultiUserChat> groupedChats = new ArrayList<>();
 
     public MockMucShare(EntityBareJid roomName)
     {

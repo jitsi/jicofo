@@ -18,10 +18,10 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.impl.protocol.jabber.*;
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
 

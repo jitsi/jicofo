@@ -17,8 +17,9 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.util.*;
+import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
+import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
 
 /**
@@ -159,7 +160,7 @@ public class JitsiMeetGlobalConfig
             = ctx.registerService(JitsiMeetGlobalConfig.class, config, null);
 
         ConfigurationService configService
-            = ServiceUtils.getService(ctx, ConfigurationService.class);
+            = ServiceUtils2.getService(ctx, ConfigurationService.class);
 
         if (configService == null)
             throw new RuntimeException("ConfigService not found !");
@@ -180,7 +181,7 @@ public class JitsiMeetGlobalConfig
      */
     public static JitsiMeetGlobalConfig getGlobalConfig(BundleContext bc)
     {
-        return ServiceUtils.getService(bc, JitsiMeetGlobalConfig.class);
+        return ServiceUtils2.getService(bc, JitsiMeetGlobalConfig.class);
     }
 
     private JitsiMeetGlobalConfig()

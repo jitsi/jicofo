@@ -18,9 +18,9 @@
 package mock.xmpp;
 
 import mock.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
