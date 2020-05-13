@@ -124,6 +124,11 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>jitsi-utils</artifactId>
+      <version>${jitsi.utils.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-configuration</artifactId>
       <version>${jitsi-desktop.version}</version>
     </dependency>
@@ -142,11 +147,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-util</artifactId>
       <version>${jitsi-desktop.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>jitsi-utils</artifactId>
-      <version>${jitsi.utils.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
