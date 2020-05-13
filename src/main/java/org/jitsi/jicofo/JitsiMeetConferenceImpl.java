@@ -394,14 +394,14 @@ public class JitsiMeetConferenceImpl
             //    services.setSipGateway(config.getPreConfiguredSipGateway());
             //}
 
+            idleTimestamp = System.currentTimeMillis();
+
             if (protocolProviderHandler.isRegistered())
             {
                 joinTheRoom();
             }
 
             protocolProviderHandler.addRegistrationListener(this);
-
-            idleTimestamp = System.currentTimeMillis();
 
             // Register for bridge events
             eventHandlerRegistration
