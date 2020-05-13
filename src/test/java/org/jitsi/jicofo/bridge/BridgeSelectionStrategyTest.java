@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 package org.jitsi.jicofo.bridge;
-import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.impl.*;
@@ -24,9 +24,7 @@ import org.jxmpp.jid.impl.*;
 import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
-import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.RELAY_ID;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class BridgeSelectionStrategyTest
 {
@@ -48,7 +46,7 @@ public class BridgeSelectionStrategyTest
         osgi.init();
 
         JitsiMeetServices meetServices
-            = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+            = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
 

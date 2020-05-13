@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.reservation.rest;
 
-import net.java.sip.communicator.util.*;
 import org.apache.http.*;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.*;
@@ -26,6 +25,7 @@ import org.apache.http.impl.client.*;
 import org.apache.http.message.*;
 import org.apache.http.util.*;
 import org.jitsi.impl.reservation.rest.json.*;
+import org.jitsi.utils.logging.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
 import org.jxmpp.jid.*;

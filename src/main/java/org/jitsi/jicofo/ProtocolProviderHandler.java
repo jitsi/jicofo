@@ -19,11 +19,11 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;

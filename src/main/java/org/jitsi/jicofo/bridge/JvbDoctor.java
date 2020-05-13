@@ -21,7 +21,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
@@ -167,7 +166,7 @@ public class JvbDoctor
             = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
 
         FocusManager focusManager
-            = ServiceUtils.getService(osgiBc, FocusManager.class);
+            = ServiceUtils2.getService(osgiBc, FocusManager.class);
 
         protocolProvider
             = focusManager.getJvbProtocolProvider();
@@ -192,7 +191,7 @@ public class JvbDoctor
         super.start(bundleContext);
 
         JitsiMeetServices services
-            = ServiceUtils.getService(bundleContext, JitsiMeetServices.class);
+            = ServiceUtils2.getService(bundleContext, JitsiMeetServices.class);
 
         initializeHealthChecks(services.getBridgeSelector().getBridges());
     }

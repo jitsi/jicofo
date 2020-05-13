@@ -17,8 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.util.*;
-
 import org.jitsi.protocol.xmpp.*;
 
 import org.jxmpp.jid.*;
@@ -32,12 +30,6 @@ import org.jxmpp.jid.*;
 public class OperationSetJingleImpl
     extends AbstractOperationSetJingle
 {
-    /**
-     * The logger used by this class.
-     */
-    private final static Logger logger
-            = Logger.getLogger(OperationSetJingleImpl.class);
-
     /**
      * Parent {@link XmppProtocolProvider}.
      */

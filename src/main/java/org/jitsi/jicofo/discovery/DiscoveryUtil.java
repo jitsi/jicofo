@@ -17,11 +17,10 @@
  */
 package org.jitsi.jicofo.discovery;
 
-import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;

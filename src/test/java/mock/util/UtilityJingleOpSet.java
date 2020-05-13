@@ -18,8 +18,8 @@
 package mock.util;
 
 import mock.*;
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
 

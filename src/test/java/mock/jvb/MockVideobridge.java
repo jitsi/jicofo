@@ -17,9 +17,9 @@
  */
 package mock.jvb;
 
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.health.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
@@ -82,7 +82,7 @@ public class MockVideobridge
 
         jvbActivator.start(bc);
 
-        bridge = ServiceUtils.getService(bc, Videobridge.class);
+        bridge = ServiceUtils2.getService(bc, Videobridge.class);
 
         connection.registerIQRequestHandler(confIqGetHandler);
         connection.registerIQRequestHandler(confIqSetHandler);

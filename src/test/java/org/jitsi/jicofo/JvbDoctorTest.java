@@ -22,14 +22,12 @@ import mock.jvb.*;
 import mock.util.*;
 import mock.xmpp.*;
 
-import net.java.sip.communicator.util.*;
-
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.bridge.*;
-import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.event.*;
 
 import org.jitsi.jicofo.util.*;
+import org.jitsi.osgi.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -86,7 +84,7 @@ public class JvbDoctorTest
         Jid jvb1 = JidCreate.from("jvb1.example.com");
 
         FocusManager focusManager
-            = ServiceUtils.getService(osgi.bc, FocusManager.class);
+            = ServiceUtils2.getService(osgi.bc, FocusManager.class);
 
         assertNotNull(focusManager);
 
@@ -104,7 +102,7 @@ public class JvbDoctorTest
         mockBridge.start(osgi.bc);
 
         JitsiMeetServices meetServices
-            = ServiceUtils.getService(osgi.bc, JitsiMeetServices.class);
+            = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
 
         EventHandler eventSpy = mock(EventHandler.class);
         EventUtil.registerEventHandler(

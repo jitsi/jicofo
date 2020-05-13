@@ -18,12 +18,12 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -382,11 +382,11 @@ public class JitsiMeetConferenceImpl
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
             executor
-                = ServiceUtils.getService(
+                = ServiceUtils2.getService(
                         osgiCtx, ScheduledExecutorService.class);
 
             services
-                = ServiceUtils.getService(osgiCtx, JitsiMeetServices.class);
+                = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
 
             // Set pre-configured SIP gateway
             //if (config.getPreConfiguredSipGateway() != null)
@@ -3136,7 +3136,7 @@ public class JitsiMeetConferenceImpl
 
     protected FocusManager getFocusManager()
     {
-        return ServiceUtils.getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
     }
 
     /**
