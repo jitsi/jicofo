@@ -786,8 +786,7 @@ public class JitsiMeetConferenceImpl
         if (findBridgeSession(participant) != null)
         {
             // This should never happen.
-            logger.error("The participant already has a bridge:"
-                             + participant.getMucJid());
+            logger.error(participant + " already has a bridge");
             return null;
         }
 
@@ -821,16 +820,8 @@ public class JitsiMeetConferenceImpl
         {
             // Can not find a bridge to use.
             logger.error(
-                "Can not invite participant -- no bridge available.");
+                "Can not invite " + participant + " -- no bridge available.");
 
-            if (chatRoom != null
-                && !chatRoom.containsPresenceExtension(
-                BridgeNotAvailablePacketExt.ELEMENT_NAME,
-                BridgeNotAvailablePacketExt.NAMESPACE))
-            {
-                meetTools.sendPresenceExtension(
-                    chatRoom, new BridgeNotAvailablePacketExt());
-            }
             return null;
 
         }
@@ -2543,15 +2534,6 @@ public class JitsiMeetConferenceImpl
                             roomName,
                             getId(),
                             videobridgeJid));
-        }
-
-        // Remove "bridge not available" from Jicofo's presence
-        // There is no check if it was ever added, but should be harmless
-        ChatRoom chatRoom = this.chatRoom;
-        if (meetTools != null && chatRoom != null)
-        {
-            meetTools.removePresenceExtension(
-                    chatRoom, new BridgeNotAvailablePacketExt());
         }
     }
 
