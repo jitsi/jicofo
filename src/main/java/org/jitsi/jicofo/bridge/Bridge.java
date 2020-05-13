@@ -109,7 +109,7 @@ public class Bridge
     /**
      * Keep track of the recently allocated or removed channels.
      */
-    private final RateStatistics videoChannelsRate = new RateStatistics(10000);
+    private final RateStatistics newEndpointsRate = new RateStatistics(10000);
 
     /**
      * The last reported packet rate in packets per second.
@@ -264,24 +264,21 @@ public class Bridge
         return Double.compare(this.getStress(), o.getStress());
     }
 
-    void onVideoChannelsChanged(Integer diff)
+    /**
+     * Notifies this {@link Bridge} that it was used for a new endpoint.
+     */
+    public void endpointAdded()
     {
-        if (diff == null)
-        {
-            logger.error("diff is null");
-            return;
-        }
-
-        videoChannelsRate.update(diff, System.currentTimeMillis());
+        newEndpointsRate.update(1, System.currentTimeMillis());
     }
 
     /**
      * Returns the net number of video channels recently allocated or removed
      * from this bridge.
      */
-    private long getRecentVideoChannelChange()
+    private long getRecentlyAddedEndpointCount()
     {
-        return videoChannelsRate.getAccumulatedCount();
+        return newEndpointsRate.getAccumulatedCount();
     }
 
     public Jid getJid()
@@ -330,7 +327,7 @@ public class Bridge
     {
         double stress =
             (lastReportedPacketRatePps
-                + Math.max(0, getRecentVideoChannelChange()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
+                + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
             / MAX_TOTAL_PACKET_RATE_PPS;
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.

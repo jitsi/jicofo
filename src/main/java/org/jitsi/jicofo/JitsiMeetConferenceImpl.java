@@ -906,7 +906,7 @@ public class JitsiMeetConferenceImpl
                 }
             }
 
-            bridgeSession.participants.add(participant);
+            bridgeSession.addParticipant(participant);
             participant.setBridgeSession(bridgeSession);
             logger.info("Added participant jid= " + participant.getMucJid()
                             + ", bridge=" + bridgeSession.bridge.getJid());
@@ -2799,7 +2799,7 @@ public class JitsiMeetConferenceImpl
          * The list of participants in the conference which use this
          * {@link BridgeSession}.
          */
-        List<Participant> participants = new LinkedList<>();
+        private List<Participant> participants = new LinkedList<>();
 
         /**
          * The {@link ColibriConference} instance used to communicate with
@@ -2830,6 +2830,12 @@ public class JitsiMeetConferenceImpl
             this.bridge = Objects.requireNonNull(bridge, "bridge");
             this.colibriConference
                 = createNewColibriConference(bridge.getJid());
+        }
+
+        private void addParticipant(Participant participant)
+        {
+            participants.add(participant);
+            bridge.endpointAdded();
         }
 
         /**
