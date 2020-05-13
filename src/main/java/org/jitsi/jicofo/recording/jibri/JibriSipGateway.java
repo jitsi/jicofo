@@ -21,7 +21,6 @@ import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
@@ -30,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * A Jibri SIP gateway that manages SIP calls for single conference. Relies on
@@ -54,7 +54,7 @@ public class JibriSipGateway
      * Map of SIP {@link JibriSession}s mapped per SIP address which
      * identifies a SIP Jibri session.
      */
-    private Map<String, JibriSession> sipSessions = new HashMap<>();
+    private final Map<String, JibriSession> sipSessions = new HashMap<>();
 
     /**
      * Creates new instance of {@link JibriSipGateway}.
@@ -93,7 +93,7 @@ public class JibriSipGateway
     {
         // the packet must contain a SIP address (otherwise it will be handled
         // by JibriRecorder)
-        return !StringUtils.isNullOrEmpty(packet.getSipAddress());
+        return isNotBlank(packet.getSipAddress());
     }
 
     /**
@@ -145,7 +145,7 @@ public class JibriSipGateway
         String displayName = iq.getDisplayName();
 
         // Proceed if not empty
-        if (!StringUtils.isNullOrEmpty(sipAddress))
+        if (isNotBlank(sipAddress))
         {
             String sessionId = generateSessionId();
             JibriSession jibriSession
@@ -215,7 +215,7 @@ public class JibriSipGateway
     public void onSessionStateChanged(
         JibriSession jibriSession, JibriIq.Status newStatus, JibriIq.FailureReason failureReason)
     {
-        if (!sipSessions.values().contains(jibriSession))
+        if (!sipSessions.containsValue(jibriSession))
         {
             logger.error(
                 "onSessionStateChanged for unknown session: " + jibriSession);

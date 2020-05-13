@@ -177,6 +177,7 @@ public class JibriStats
         return totalRecordingFailures;
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject stats = new JSONObject();

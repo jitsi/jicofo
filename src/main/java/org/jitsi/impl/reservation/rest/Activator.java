@@ -17,14 +17,14 @@
  */
 package org.jitsi.impl.reservation.rest;
 
-import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
+import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.Logger;
 import org.osgi.framework.*;
 
+import static org.apache.commons.lang3.StringUtils.*;
 /**
  * Plugin bundle activator for REST reservation system.
  *
@@ -54,11 +54,11 @@ public class Activator
             throws Exception
     {
         ConfigurationService config
-            = ServiceUtils.getService(context, ConfigurationService.class);
+            = ServiceUtils2.getService(context, ConfigurationService.class);
         String apiBaseUrl
             = config.getString(RESTReservations.API_BASE_URL_PNAME);
 
-        if (StringUtils.isNullOrEmpty(apiBaseUrl))
+        if (isBlank(apiBaseUrl))
             return;
 
         logger.info("REST reservation API will use base URL: " + apiBaseUrl);
@@ -69,7 +69,7 @@ public class Activator
             ReservationSystem.class, restReservations, null);
 
         FocusManager focusManager
-            = ServiceUtils.getService(context, FocusManager.class);
+            = ServiceUtils2.getService(context, FocusManager.class);
 
         restReservations.start(focusManager);
     }

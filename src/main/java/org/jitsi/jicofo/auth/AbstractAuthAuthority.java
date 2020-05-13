@@ -21,17 +21,17 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.utils.
-        *;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging.*;
 import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
 
-import net.java.sip.communicator.util.*;
 import org.jxmpp.jid.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Common class for {@link AuthenticationAuthority} implementations.
@@ -132,7 +132,7 @@ public abstract class AbstractAuthAuthority
     {
         if (eventAdmin == null)
         {
-            eventAdmin = ServiceUtils.getService(
+            eventAdmin = ServiceUtils2.getService(
                     AuthBundleActivator.bundleContext,
                     EventAdmin.class);
         }
@@ -252,8 +252,7 @@ public abstract class AbstractAuthAuthority
     protected AuthenticationSession findSessionForIdentity(
             String machineUID, String authIdentity)
     {
-        if (StringUtils.isNullOrEmpty(authIdentity)
-                || StringUtils.isNullOrEmpty(machineUID))
+        if (isBlank(authIdentity) || isBlank(machineUID))
         {
             return null;
         }
@@ -446,7 +445,7 @@ public abstract class AbstractAuthAuthority
         String sessionId = query.getSessionId();
         AuthenticationSession session = getSession(sessionId);
 
-        if (!StringUtils.isNullOrEmpty(sessionId))
+        if (isNotBlank(sessionId))
         {
             // Session not found: session-invalid
             if (session == null)
@@ -555,7 +554,7 @@ public abstract class AbstractAuthAuthority
             new ExpireTask(), EXPIRE_POLLING_INTERVAL, EXPIRE_POLLING_INTERVAL);
 
         focusManager
-            = ServiceUtils.getService(
+            = ServiceUtils2.getService(
                     AuthBundleActivator.bundleContext, FocusManager.class);
 
         focusManager.setFocusAllocationListener(this);

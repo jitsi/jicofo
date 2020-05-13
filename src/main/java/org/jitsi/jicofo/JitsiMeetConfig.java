@@ -17,13 +17,14 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class encapsulates configuration properties for Jitsi Meet conference that
@@ -184,7 +185,7 @@ public class JitsiMeetConfig
         try
         {
             String enforcedBridge = properties.get(PNAME_ENFORCED_BRIDGE);
-            if (StringUtils.isNullOrEmpty(enforcedBridge))
+            if (isBlank(enforcedBridge))
             {
                 return null;
             }
@@ -240,8 +241,7 @@ public class JitsiMeetConfig
     public boolean isRtxEnabled()
     {
         String disableRtxStr = properties.get(PNAME_DISABLE_RTX);
-        return StringUtils.isNullOrEmpty(disableRtxStr)
-            || !Boolean.parseBoolean(disableRtxStr);
+        return isBlank(disableRtxStr) || !Boolean.parseBoolean(disableRtxStr);
     }
 
     /**
@@ -289,7 +289,7 @@ public class JitsiMeetConfig
         String stringValue = properties.get(name);
         Boolean boolValue = null;
 
-        if (!StringUtils.isNullOrEmpty(stringValue))
+        if (isNotBlank(stringValue))
         {
             //try
             //{
@@ -309,7 +309,7 @@ public class JitsiMeetConfig
         String stringValue = properties.get(name);
         Integer intValue = null;
 
-        if (!StringUtils.isNullOrEmpty(stringValue))
+        if (isNotBlank(stringValue))
         {
             try
             {

@@ -20,7 +20,6 @@ package org.jitsi.jicofo.auth;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -29,6 +28,8 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.*;
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Implements a Jetty <tt>Handler</tt> which is meant to be used as a servlet
@@ -196,7 +197,7 @@ class ShibbolethHandler
             = JidCreate.entityBareFrom(request.getParameter("room"));
 
         String machineUID = request.getParameter("machineUID");
-        if (StringUtils.isNullOrEmpty(machineUID))
+        if (isBlank(machineUID))
         {
             response.sendError(
                 HttpServletResponse.SC_BAD_REQUEST,
@@ -206,7 +207,7 @@ class ShibbolethHandler
 
         // Check 'mail' attribute which should be set by Shibboleth through AJP
         String email = getShibAttr(request, "mail");
-        if (StringUtils.isNullOrEmpty(email))
+        if (isBlank(email))
         {
             response.sendError(
                 HttpServletResponse.SC_INTERNAL_SERVER_ERROR,

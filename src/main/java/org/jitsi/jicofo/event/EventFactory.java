@@ -18,10 +18,11 @@
 package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * A utility class with static methods which initialize <tt>Event</tt> instances
@@ -310,7 +311,7 @@ public class EventFactory
         Map<String, String> map = new Hashtable<>(entries.length);
         for (String entry : entries)
         {
-            if (StringUtils.isNullOrEmpty(entry))
+            if (isBlank(entry))
                 continue;
 
             int colonIdx = entry.indexOf(":");

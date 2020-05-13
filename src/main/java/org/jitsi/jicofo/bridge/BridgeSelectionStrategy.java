@@ -407,6 +407,7 @@ abstract class BridgeSelectionStrategy
     }
 
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject json = new JSONObject();
