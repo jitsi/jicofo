@@ -21,7 +21,8 @@ import org.jitsi.cmd.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
-import org.jitsi.utils.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Provides the <tt>main</tt> entry point of Jitsi Meet conference focus.
@@ -140,7 +141,7 @@ public class Main
                 HOST_ARG_NAME,
                 componentDomain == null ? HOST_ARG_VALUE : componentDomain);
         // Try to fix component domain
-        if (StringUtils.isNullOrEmpty(componentDomain))
+        if (isBlank(componentDomain))
         {
             componentDomain = host;
         }
@@ -168,7 +169,7 @@ public class Main
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
-        if (!StringUtils.isNullOrEmpty(focusPassword))
+        if (isNotBlank(focusPassword))
         {
             System.setProperty(
                     FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
@@ -176,7 +177,7 @@ public class Main
 
         ComponentMain componentMain = new ComponentMain();
 
-        boolean focusAnonymous = StringUtils.isNullOrEmpty(focusPassword);
+        boolean focusAnonymous = isBlank(focusPassword);
 
         focusXmppComponent
             = new FocusComponent(

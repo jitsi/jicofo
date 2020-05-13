@@ -24,7 +24,6 @@ import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -34,6 +33,8 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Default implementation of {@link ColibriConference} that uses Smack for
@@ -172,7 +173,7 @@ public class ColibriConferenceImpl
     @Override
     public void setJitsiVideobridge(Jid videobridgeJid)
     {
-        if (!StringUtils.isNullOrEmpty(conferenceState.getID()))
+        if (isNotBlank(conferenceState.getID()))
         {
             throw new IllegalStateException(
                 "Cannot change the bridge on active conference");
@@ -541,7 +542,7 @@ public class ColibriConferenceImpl
                 return;
             }
 
-            if (StringUtils.isNullOrEmpty(conferenceState.getID()))
+            if (isBlank(conferenceState.getID()))
             {
                 logger.error(
                         "Have not updated source info on the bridge - "
@@ -633,7 +634,7 @@ public class ColibriConferenceImpl
 
             colibriBuilder.reset();
 
-            if (StringUtils.isNullOrEmpty(conferenceState.getID()))
+            if (isBlank(conferenceState.getID()))
             {
                 logger.info("Nothing to expire - no conference allocated yet");
                 return;
@@ -688,7 +689,7 @@ public class ColibriConferenceImpl
         ColibriConferenceIQ.Content audioContent
             = channelsInfo.getContent("audio");
 
-        if (audioContent == null || StringUtils.isNullOrEmpty(request.getID()))
+        if (audioContent == null || isBlank(request.getID()))
         {
             logger.error("Failed to mute - no audio content." +
                              " Conf ID: " + request.getID());

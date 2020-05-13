@@ -20,11 +20,12 @@ package org.jitsi.protocol.xmpp.util;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
-import org.jitsi.utils.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * The map of media <tt>SourcePacketExtension</tt> encapsulates various
@@ -195,7 +196,7 @@ public class MediaSourceMap
     public List<SourcePacketExtension> findSourcesWithMsid(
             String mediaType, String groupMsid)
     {
-        if (StringUtils.isNullOrEmpty(groupMsid))
+        if (isBlank(groupMsid))
         {
             throw new IllegalArgumentException("Null or empty 'groupMsid'");
         }

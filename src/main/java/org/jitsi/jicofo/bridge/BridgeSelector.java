@@ -432,22 +432,6 @@ public class BridgeSelector
     }
 
     /**
-     * Finds the version of the videobridge identified by given
-     * <tt>bridgeJid</tt>.
-     *
-     * @param bridgeJid the XMPP address of the videobridge for which we want to
-     *        obtain the version.
-     *
-     * @return JVB version or <tt>null</tt> if unknown.
-     */
-    synchronized public String getBridgeVersion(Jid bridgeJid)
-    {
-        Bridge bridge = bridges.get(bridgeJid);
-
-        return bridge != null ? bridge.getVersion() : null;
-    }
-
-    /**
      * Unregisters any event listeners.
      */
     public void dispose()
@@ -490,6 +474,7 @@ public class BridgeSelector
         return (int) bridges.values().stream().filter(Bridge::isOperational).count();
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,

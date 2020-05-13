@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.health.*;
@@ -30,9 +29,10 @@ import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.meet.*;
+import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -468,7 +468,7 @@ public class FocusManager
      * @param properties configuration properties, see {@link JitsiMeetConfig}
      *                   for the list of valid properties.
      *
-     * @returns new {@link JitsiMeetConferenceImpl} instance
+     * @return new {@link JitsiMeetConferenceImpl} instance
      *
      * @throws Exception if any error occurs.
      */
@@ -515,6 +515,7 @@ public class FocusManager
                     .append(option.getValue())
                     .append(" ");
             }
+            sb.append(options);
 
             logger.info(sb);
         }
@@ -678,7 +679,7 @@ public class FocusManager
                 // hold the lock or not. Presumably it is safe to call it
                 // multiple times.
                 ShutdownService shutdownService
-                    = ServiceUtils.getService(
+                    = ServiceUtils2.getService(
                         FocusBundleActivator.bundleContext,
                         ShutdownService.class);
 
@@ -729,6 +730,7 @@ public class FocusManager
         return jitsiMeetServices;
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
@@ -790,7 +792,7 @@ public class FocusManager
         }
 
         HealthCheckService healthService
-            = ServiceUtils.getService(
+            = ServiceUtils2.getService(
                     FocusBundleActivator.bundleContext,
                     HealthCheckService.class);
         if (healthService instanceof Health)
@@ -924,14 +926,7 @@ public class FocusManager
                 throw new IllegalStateException();
             }
 
-            timeoutThread = new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    expireLoop();
-                }
-            }, "FocusExpireThread");
+            timeoutThread = new Thread(this::expireLoop, "FocusExpireThread");
 
             enabled = true;
 

@@ -17,19 +17,20 @@
  */
 package org.jitsi.jicofo.auth;
 
-import net.java.sip.communicator.util.*;
-
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.glassfish.jersey.servlet.*;
 import org.jitsi.jicofo.rest.*;
+import org.jitsi.osgi.*;
 import org.jitsi.rest.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Implements <tt>BundleActivator</tt> for the OSGi bundle responsible for
@@ -179,7 +180,7 @@ public class AuthBundleActivator
         AuthBundleActivator.bundleContext = bundleContext;
 
         ConfigurationService cfg
-            = ServiceUtils.getService(
+            = ServiceUtils2.getService(
                     bundleContext,
                     ConfigurationService.class);
         String loginUrl = cfg.getString(LOGIN_URL_PNAME);
@@ -191,7 +192,7 @@ public class AuthBundleActivator
             = cfg.getBoolean(
                     DISABLE_AUTOLOGIN_PNAME, false);
 
-        if (!StringUtils.isNullOrEmpty(loginUrl))
+        if (isNotBlank(loginUrl))
         {
             logger.info("Starting authentication service... URL: " + loginUrl);
 

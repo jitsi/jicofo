@@ -19,13 +19,14 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Detects jitsi-videobridge instances through a MUC.
@@ -93,7 +94,8 @@ public class BridgeMucDetector
             String hostName = config.getString(BRIDGE_MUC_XMPP_HOST);
 
             //  Assume not configured if there's no XMPP host
-            if (StringUtils.isNullOrEmpty(hostName)) {
+            if (isBlank(hostName))
+            {
                 return null;
             }
 

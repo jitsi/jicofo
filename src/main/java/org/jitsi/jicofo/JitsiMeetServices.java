@@ -29,9 +29,7 @@ import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 
 import org.json.simple.*;
@@ -41,6 +39,7 @@ import org.osgi.framework.*;
 import java.util.*;
 
 import static org.jitsi.jicofo.bridge.BridgeSelector.*;
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -91,7 +90,7 @@ public class JitsiMeetServices
      */
     private final BridgeSelector bridgeSelector;
 
-    private Set<BaseBrewery> breweryDetectors = new HashSet<>();
+    private final Set<BaseBrewery> breweryDetectors = new HashSet<>();
 
     /**
      * The name of XMPP domain to which Jicofo user logs in.
@@ -331,7 +330,7 @@ public class JitsiMeetServices
         String jibriBreweryName
             = config.getString(JibriDetector.JIBRI_ROOM_PNAME);
 
-        if (!StringUtils.isNullOrEmpty(jibriBreweryName))
+        if (isNotBlank(jibriBreweryName))
         {
             JibriDetector jibriDetector
                 = new JibriDetector(protocolProvider, jibriBreweryName, false);
@@ -343,7 +342,7 @@ public class JitsiMeetServices
 
         String jigasiBreweryName
             = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
-        if (!StringUtils.isNullOrEmpty(jigasiBreweryName))
+        if (isNotBlank(jigasiBreweryName))
         {
             JigasiDetector jigasiDetector
                 = new JigasiDetector(
@@ -358,7 +357,7 @@ public class JitsiMeetServices
 
         String jibriSipBreweryName
             = config.getString(JibriDetector.JIBRI_SIP_ROOM_PNAME);
-        if (!StringUtils.isNullOrEmpty(jibriSipBreweryName))
+        if (isNotBlank(jibriSipBreweryName))
         {
             JibriDetector sipJibriDetector
                 = new JibriDetector(
@@ -372,7 +371,7 @@ public class JitsiMeetServices
 
         String bridgeBreweryName
             = config.getString(BridgeMucDetector.BRIDGE_MUC_PNAME);
-        if (!StringUtils.isNullOrEmpty(bridgeBreweryName))
+        if (isNotBlank(bridgeBreweryName))
         {
             BridgeMucDetector bridgeMucDetector
                 = new BridgeMucDetector(
@@ -433,20 +432,7 @@ public class JitsiMeetServices
         return XMPPServerVersion;
     }
 
-    /**
-     * Finds the version of the videobridge identified by given
-     * <tt>bridgeJid</tt>.
-     *
-     * @param bridgeJid the XMPP address of the videobridge for which we want to
-     *        obtain the version.
-     *
-     * @return JVB version or <tt>null</tt> if unknown.
-     */
-    public String getBridgeVersion(Jid bridgeJid)
-    {
-        return bridgeSelector.getBridgeVersion(bridgeJid);
-    }
-
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject json = new JSONObject();

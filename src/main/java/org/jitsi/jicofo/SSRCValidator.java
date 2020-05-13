@@ -17,11 +17,11 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -29,6 +29,8 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.stream.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Utility class that wraps the process of validating new sources and source
@@ -163,7 +165,7 @@ public class SSRCValidator
                 // Skip RID simulcast group
                 continue;
             }
-            else if (StringUtils.isNullOrEmpty(simulcastMsid))
+            else if (isBlank(simulcastMsid))
             {
                 throw new InvalidSSRCsException(
                         "No MSID in simulcast group: " + simGrouping);
@@ -436,7 +438,7 @@ public class SSRCValidator
                     {
                         String msid = SSRCSignaling.getMsid(source);
                         // Grouped SSRC needs to have a valid MSID
-                        if (StringUtils.isNullOrEmpty(groupMSID))
+                        if (isBlank(groupMSID))
                         {
                             throw new InvalidSSRCsException(
                                     "Grouped " + source + " has no 'msid'");

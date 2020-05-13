@@ -20,18 +20,18 @@ package org.jitsi.impl.protocol.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
-import net.java.sip.communicator.util.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
 import org.jitsi.service.configuration.*;
 
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -224,7 +224,7 @@ public class XmppProtocolProvider
         connection = new XMPPTCPConnection(connConfig.build());
 
         ScheduledExecutorService executorService
-            = ServiceUtils.getService(
+            = ServiceUtils2.getService(
                     XmppProtocolActivator.bundleContext,
                     ScheduledExecutorService.class);
 
@@ -475,6 +475,7 @@ public class XmppProtocolProvider
      * provider instance.
      * @return JSON stats
      */
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject stats = new JSONObject();
@@ -539,6 +540,7 @@ public class XmppProtocolProvider
          * Deprecated and will be removed in smack 4.3
          */
         @Override
+        @SuppressWarnings("deprecation")
         public void reconnectionSuccessful()
         {}
 
@@ -547,6 +549,7 @@ public class XmppProtocolProvider
          * @param e
          */
         @Override
+        @SuppressWarnings("deprecation")
         public void reconnectionFailed(Exception e)
         {}
 
@@ -555,6 +558,7 @@ public class XmppProtocolProvider
          * @param i
          */
         @Override
+        @SuppressWarnings("deprecation")
         public void reconnectingIn(int i)
         {}
     }

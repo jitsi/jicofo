@@ -19,12 +19,13 @@ package org.jitsi.jicofo.util;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.jabber.*;
-import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class contains factory methods for creating <tt>JabberAccountID</tt> used by
@@ -53,7 +54,7 @@ public class FocusAccountFactory
             DomainBareJid domain,
             Resourcepart userName)
     {
-        HashMap<String, String> properties = new HashMap<String, String>();
+        HashMap<String, String> properties = new HashMap<>();
 
         Resourcepart resource = null;
         try
@@ -71,9 +72,12 @@ public class FocusAccountFactory
         properties.put(ProtocolProviderFactory.USER_ID, userID);
         properties.put(ProtocolProviderFactory.SERVER_ADDRESS, serverAddress);
 
-        if (StringUtils.isNullOrEmpty(serverPort, true)) {
+        if (isBlank(serverPort))
+        {
             properties.put(ProtocolProviderFactory.SERVER_PORT, "5222");
-        } else {
+        }
+        else
+        {
             properties.put(ProtocolProviderFactory.SERVER_PORT, serverPort.trim());
         }
 

@@ -41,6 +41,7 @@ public class Statistics
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
     public String getStats()
     {
         JSONObject stats = new JSONObject();

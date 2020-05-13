@@ -22,7 +22,6 @@ import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.osgi.framework.*;
@@ -31,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Handles conference recording through Jibri.
@@ -108,7 +108,7 @@ public class JibriRecorder
     {
         // the packet cannot contain a SIP address (must be handled
         // by JibriSipGateway)
-        return StringUtils.isNullOrEmpty(packet.getSipAddress());
+        return isBlank(packet.getSipAddress());
     }
 
     /**
@@ -148,7 +148,7 @@ public class JibriRecorder
     {
         RecordingMode recordingMode = iq.getRecordingMode();
         String streamID = iq.getStreamId();
-        boolean emptyStreamId = StringUtils.isNullOrEmpty(streamID);
+        boolean emptyStreamId = isBlank(streamID);
         String youTubeBroadcastId = iq.getYoutubeBroadcastId();
         String displayName = iq.getDisplayName();
         String applicationData = iq.getAppData();

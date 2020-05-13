@@ -188,6 +188,7 @@ public class JibriDetector
         }
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject stats = new JSONObject();

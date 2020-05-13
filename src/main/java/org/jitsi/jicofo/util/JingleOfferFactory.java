@@ -22,10 +22,8 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.neomedia.codec.*;
-import org.jitsi.utils.*;
 
 import java.net.*;
-import java.util.*;
 
 /**
  * Contains factory methods for creating Jingle offer sent in 'session-invite'
@@ -253,7 +251,7 @@ public class JingleOfferFactory
     {
         ContentPacketExtension content
             = createContentPacketExtension(
-                    MediaType.AUDIO, disableIce, useDtls);
+                    "audio", disableIce, useDtls);
 
         addAudioToContent(content, stereo, enableRemb, enableTcc);
 
@@ -277,7 +275,7 @@ public class JingleOfferFactory
     {
         ContentPacketExtension content
             = createContentPacketExtension(
-                    MediaType.DATA, disableIce, useDtls);
+                    "data", disableIce, useDtls);
 
         addDataToContent(content);
 
@@ -308,7 +306,7 @@ public class JingleOfferFactory
     {
         ContentPacketExtension videoContentPe
             = createContentPacketExtension(
-                    MediaType.VIDEO, disableIce, useDtls);
+                    "video", disableIce, useDtls);
 
         addVideoToContent(videoContentPe, useRtx, enableRemb, enableTcc,
                 minBitrate, startBitrate);
@@ -321,7 +319,7 @@ public class JingleOfferFactory
      * the media and basic transport information based on given parameters.
      * The creator attribute is set to "initiator" and "senders" to "both".
      *
-     * @param mediaType the <tt>MediaType</tt> for the content
+     * @param name the Jingle name for the content
      * @param disableIce <tt>true</tt> if ICE transport should be disabled
      * @param useDtls <tt>true</tt> if DTLS should be used on top of ICE
      * transport(will have effect only if <tt>disableIce</tt></tt> is
@@ -330,12 +328,12 @@ public class JingleOfferFactory
      * @return new, parametrized instance of <tt>ContentPacketExtension</tt>.
      */
     private static ContentPacketExtension createContentPacketExtension(
-            MediaType mediaType, boolean disableIce, boolean useDtls)
+            String name, boolean disableIce, boolean useDtls)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
                     ContentPacketExtension.CreatorEnum.initiator,
-                    mediaType.name().toLowerCase());
+                    name);
 
         content.setSenders(ContentPacketExtension.SendersEnum.both);
 
