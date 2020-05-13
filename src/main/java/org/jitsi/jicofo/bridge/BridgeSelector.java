@@ -367,25 +367,6 @@ public class BridgeSelector
         return bridges.size();
     }
 
-    /**
-     * Lists all operational JVB instance JIDs currently known to this
-     * <tt>BridgeSelector</tt> instance.
-     *
-     * @return a <tt>List</tt> of <tt>String</tt> with bridges JIDs.
-     */
-    synchronized public List<Jid> listActiveJVBs()
-    {
-        ArrayList<Jid> listing = new ArrayList<>(bridges.size());
-        for (Bridge bridge : bridges.values())
-        {
-            if (bridge.isOperational())
-            {
-                listing.add(bridge.getJid());
-            }
-        }
-        return listing;
-    }
-
     private void notifyBridgeUp(Bridge bridge)
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());
