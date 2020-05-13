@@ -44,7 +44,6 @@ import java.util.stream.*;
  * @author Boris Grozev
  */
 public class BridgeSelector
-    implements EventHandler
 {
     /**
      * The logger.
@@ -389,43 +388,6 @@ public class BridgeSelector
     }
 
     /**
-     * Handles {@link BridgeEvent#VIDEOSTREAMS_CHANGED}.
-     * @param event <tt>BridgeEvent</tt>
-     */
-    @Override
-    synchronized public void handleEvent(Event event)
-    {
-        String topic = event.getTopic();
-        Bridge bridge;
-        BridgeEvent bridgeEvent;
-        Jid bridgeJid;
-
-        if (!BridgeEvent.isBridgeEvent(event))
-        {
-            logger.warn("Received non-bridge event: " + event);
-            return;
-        }
-
-        bridgeEvent = (BridgeEvent) event;
-        bridgeJid = bridgeEvent.getBridgeJid();
-
-        bridge = bridges.get(bridgeEvent.getBridgeJid());
-        if (bridge == null)
-        {
-            logger.warn("Unable to handle bridge event for: " + bridgeJid);
-            return;
-        }
-
-        switch (topic)
-        {
-        case BridgeEvent.VIDEO_CHANNELS_CHANGED:
-            bridge.onVideoChannelsChanged(bridgeEvent.getVideoChannelCount());
-            break;
-        }
-    }
-
-
-    /**
      * Initializes this instance by loading the config and obtaining required
      * service references.
      */
@@ -462,20 +424,11 @@ public class BridgeSelector
             Bridge.setAvgParticipantPacketRatePps(avgParticipantPacketRate);
         }
 
-
-
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
         {
             throw new IllegalStateException("EventAdmin service not found");
         }
-
-        this.handlerRegistration = EventUtil.registerEventHandler(
-            FocusBundleActivator.bundleContext,
-            new String[] {
-                BridgeEvent.VIDEO_CHANNELS_CHANGED
-            },
-            this);
     }
 
     /**

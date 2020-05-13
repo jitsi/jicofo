@@ -19,7 +19,6 @@ package mock.xmpp.colibri;
 
 import mock.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 
@@ -32,27 +31,21 @@ public class MockColibriOpSet
 {
     private final MockProtocolProvider protocolProvider;
 
-    private final EventAdmin eventAdmin;
+    private final OperationSetColibriConferenceImpl colibriImpl;
 
-    private OperationSetColibriConferenceImpl colibriImpl;
-
-    public MockColibriOpSet(MockProtocolProvider protocolProvider,
-                            EventAdmin           eventAdmin)
+    public MockColibriOpSet(MockProtocolProvider protocolProvider)
     {
         this.protocolProvider = protocolProvider;
 
         colibriImpl = new OperationSetColibriConferenceImpl();
 
-        this.eventAdmin = eventAdmin;
-
-        colibriImpl.initialize(
-            protocolProvider.getXmppConnection(), eventAdmin);
+        colibriImpl.initialize(protocolProvider.getXmppConnection());
     }
 
     public AllocThreadingTestColibriConference createAllocThreadingConf()
     {
         return new AllocThreadingTestColibriConference(
-            protocolProvider.getXmppConnection(), eventAdmin);
+            protocolProvider.getXmppConnection());
     }
 
     @Override
