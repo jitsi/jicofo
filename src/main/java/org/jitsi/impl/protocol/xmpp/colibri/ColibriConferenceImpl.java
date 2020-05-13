@@ -18,10 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.colibri;
 
 import net.java.sip.communicator.service.protocol.*;
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.event.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
@@ -58,12 +55,6 @@ public class ColibriConferenceImpl
     private final XmppConnection connection;
 
     /**
-     * The {@link EventAdmin} instance used to emit video stream estimation
-     * events.
-     */
-    private final EventAdmin eventAdmin;
-
-    /**
      * XMPP address of videobridge component.
      */
     private Jid jitsiVideobridge;
@@ -72,12 +63,6 @@ public class ColibriConferenceImpl
      * The {@link ColibriConferenceIQ} that stores the state of whole conference
      */
     private ColibriConferenceIQ conferenceState = new ColibriConferenceIQ();
-
-    /**
-     * Lock used to synchronise access to the fields related with video channels
-     * counting and video stream estimation events.
-     */
-    private final Object stateEstimationSync = new Object();
 
     /**
      * Synchronization root to sync access to {@link #colibriBuilder} and
@@ -130,12 +115,6 @@ public class ColibriConferenceImpl
     private boolean disposed;
 
     /**
-     * Counts how many video channels have been allocated in order to be able
-     * to estimate video stream count changes.
-     */
-    private int videoChannels;
-
-    /**
      * The global ID of the conference.
      */
     private String gid;
@@ -144,14 +123,10 @@ public class ColibriConferenceImpl
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by the new
      *        instance to communicate.
-     * @param eventAdmin {@link EventAdmin} instance which will be used to post
-     *        {@link BridgeEvent#VIDEOSTREAMS_CHANGED}.
      */
-    public ColibriConferenceImpl(XmppConnection    connection,
-                                 EventAdmin        eventAdmin)
+    public ColibriConferenceImpl(XmppConnection connection)
     {
         this.connection = Objects.requireNonNull(connection, "connection");
-        this.eventAdmin = Objects.requireNonNull(eventAdmin, "eventAdmin");
     }
 
     /**
@@ -254,9 +229,6 @@ public class ColibriConferenceImpl
         throws ColibriException
     {
         ColibriConferenceIQ allocateRequest;
-        // How many new video channels will be allocated
-        final int newVideoChannelsCount
-            = JingleOfferFactory.containsVideoContent(contents) ? 1 : 0;
 
         boolean conferenceExisted;
         try
@@ -267,14 +239,6 @@ public class ColibriConferenceImpl
                 if (checkIfDisposed("createColibriChannels"))
                 {
                     return null;
-                }
-
-                if (newVideoChannelsCount != 0)
-                {
-                    synchronized (stateEstimationSync)
-                    {
-                        trackVideoChannelsAddedRemoved(newVideoChannelsCount);
-                    }
                 }
 
                 conferenceExisted
@@ -337,31 +301,6 @@ public class ColibriConferenceImpl
             return ColibriAnalyser.getResponseContents(
                         (ColibriConferenceIQ) response, contents);
 
-        }
-        catch (ColibriException e)
-        {
-            try
-            {
-                synchronized (syncRoot)
-                {
-                    // Emit channels expired
-                    if (!checkIfDisposed("post channels expired on Exception"))
-                    {
-                        synchronized (stateEstimationSync)
-                        {
-                            trackVideoChannelsAddedRemoved(
-                                -newVideoChannelsCount);
-                        }
-                    }
-                }
-            }
-            catch (Exception innerException)
-            {
-                // Log the inner Exception
-                logger.error(innerException.getMessage(), innerException);
-            }
-
-            throw e;
         }
         finally
         {
@@ -580,15 +519,6 @@ public class ColibriConferenceImpl
 
             // Send and forget
             connection.sendStanza(request);
-
-            synchronized (stateEstimationSync)
-            {
-                int expiredVideoChannels
-                    = ColibriConferenceIQUtil.getChannelCount(
-                            channelInfo, "video");
-
-                trackVideoChannelsAddedRemoved(-expiredVideoChannels);
-            }
         }
     }
 
@@ -898,28 +828,6 @@ public class ColibriConferenceImpl
 
             connection.sendStanza(request);
         }
-    }
-
-    /**
-     * Method called whenever video channels are about to be allocated/expired,
-     * but before the actual request is sent. It will track the current video
-     * channel count and emit {@link BridgeEvent#VIDEOSTREAMS_CHANGED}.
-     *
-     * @param channelsDiff how many new video channels are to be
-     *        allocated/expired.
-     */
-    private void trackVideoChannelsAddedRemoved(int channelsDiff)
-    {
-        if (channelsDiff == 0)
-        {
-            return;
-        }
-
-        videoChannels += channelsDiff;
-
-        eventAdmin.postEvent(
-                    BridgeEvent.createVideoChannelsChanged(
-                            jitsiVideobridge, channelsDiff));
     }
 
     /**

@@ -272,12 +272,7 @@ public class XmppProtocolProvider
                 connection.login(login, pass, resource);
             }
 
-            EventAdmin eventAdmin
-                = ServiceUtils.getService(
-                    XmppProtocolActivator.bundleContext,
-                    EventAdmin.class);
-
-            colibriTools.initialize(getConnectionAdapter(), eventAdmin);
+            colibriTools.initialize(getConnectionAdapter());
 
             connection.registerIQRequestHandler(jingleOpSet);
 

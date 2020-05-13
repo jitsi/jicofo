@@ -19,9 +19,7 @@ package mock.xmpp.colibri;
 
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.*;
 
@@ -110,10 +108,9 @@ public class AllocThreadingTestColibriConference
      * @param connection XMPP connection object that wil be used by new
      *                   instance.
      */
-    public AllocThreadingTestColibriConference(
-        XmppConnection connection, EventAdmin eventAdmin)
+    public AllocThreadingTestColibriConference(XmppConnection connection)
     {
-        super(connection, eventAdmin);
+        super(connection);
     }
 
     /**

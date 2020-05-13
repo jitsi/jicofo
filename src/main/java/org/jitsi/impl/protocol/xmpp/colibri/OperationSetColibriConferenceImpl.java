@@ -20,7 +20,6 @@ package org.jitsi.impl.protocol.xmpp.colibri;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 
@@ -42,20 +41,15 @@ public class OperationSetColibriConferenceImpl
 
     private XmppConnection connection;
 
-    private EventAdmin eventAdmin;
-
     /**
      * Initializes this operation set.
      *
      * @param connection Smack XMPP connection impl that will be used to send
      *                   and receive XMPP packets.
-     * @param eventAdmin the <tt>EventAdmin</tt> which will be used by
-     *                   the underlying components to emit events.
      */
-    public void initialize(XmppConnection connection, EventAdmin eventAdmin)
+    public void initialize(XmppConnection connection)
     {
         this.connection = connection;
-        this.eventAdmin = eventAdmin;
 
         // Register Colibri
         ProviderManager.addIQProvider(
@@ -77,7 +71,7 @@ public class OperationSetColibriConferenceImpl
     public ColibriConference createNewConference()
     {
         ColibriConference conf
-            = new ColibriConferenceImpl(connection, eventAdmin);
+            = new ColibriConferenceImpl(connection);
         logger.info("Conference created: " + conf);
         return conf;
     }
