@@ -21,6 +21,7 @@ import org.jitsi.cmd.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
+import org.jitsi.utils.logging.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -31,6 +32,8 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class Main
 {
+    private static Logger logger = Logger.getLogger(Main.class);
+
     /**
      * The name of the command-line argument which specifies the XMPP domain
      * to use for the XMPP client connection.
@@ -124,6 +127,9 @@ public class Main
     public static void main(String[] args)
         throws ParseException
     {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) ->
+            logger.error("An uncaught exception occurred in thread=" + t, e));
+
         CmdLine cmdLine = new CmdLine();
 
         cmdLine.addRequiredArgument(SECRET_ARG_NAME);
