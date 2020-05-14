@@ -176,7 +176,7 @@ public class MockVideobridge
         }
     }
 
-    public List<RtpLayerDesc> getSimulcastLayers(
+    public List<RtpEncodingDesc> getSimulcastEncodings(
             String confId, String endpointId)
     {
         Conference conference = bridge.getConference(confId, null);
@@ -187,11 +187,11 @@ public class MockVideobridge
         if (ArrayUtils.isNullOrEmpty(sources))
             return new ArrayList<>();
 
-        RtpLayerDesc[] layers = sources[0].getRtpLayers();
-        if (ArrayUtils.isNullOrEmpty(layers))
+        RtpEncodingDesc[] encodings = sources[0].getRtpEncodings();
+        if (ArrayUtils.isNullOrEmpty(encodings))
             return new ArrayList<>();
 
-        return Arrays.asList(layers);
+        return Arrays.asList(encodings);
     }
 
     /**

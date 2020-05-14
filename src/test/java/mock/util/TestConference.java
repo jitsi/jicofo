@@ -173,14 +173,14 @@ public class TestConference
     {
         String conferenceId = conference.getJvbConferenceId();
         String endpointId = peerJid.getResourceOrEmpty().toString();
-        List<RtpLayerDesc> layers
-            = mockBridge.getSimulcastLayers(conferenceId, endpointId);
+        List<RtpEncodingDesc> encodings
+            = mockBridge.getSimulcastEncodings(conferenceId, endpointId);
 
-        long[] ssrcs = new long[layers.size()];
+        long[] ssrcs = new long[encodings.size()];
         int idx = 0;
-        for (RtpLayerDesc layer : layers)
+        for (RtpEncodingDesc encoding: encodings)
         {
-            ssrcs[idx++] = layer.getPrimarySSRC();
+            ssrcs[idx++] = encoding.getPrimarySSRC();
         }
         return ssrcs;
     }
