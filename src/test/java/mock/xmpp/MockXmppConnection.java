@@ -82,6 +82,7 @@ public class MockXmppConnection
         }
     }
 
+    @SuppressWarnings("deprecation")
     public MockXmppConnection(final Jid ourJid)
     {
         super(new MockXmppConnectionConfiguration.Builder()
