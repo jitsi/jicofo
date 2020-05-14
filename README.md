@@ -140,6 +140,11 @@ the **/etc/jitsi/jicofo/sip-communicator.properties** file:
 org.jitsi.jicofo.auth.URL=XMPP:jitsi-meet.example.com
 ```
 
+When using token based authentication, the URL must use `EXT_JWT` as the scheme instead:
+```
+org.jitsi.jicofo.auth.URL=EXT_JWT:jitsi-meet.example.com
+```
+
 4 To create users use the command:
 ```
 prosodyctl register <username> jitsi-meet.example.com <password>
