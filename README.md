@@ -147,8 +147,9 @@ org.jitsi.jicofo.auth.URL=EXT_JWT:jitsi-meet.example.com
 
 4 To create users use the command:
 ```
-prosodyctl register <username> jitsi-meet.example.com <password>
+prosodyctl adduser <username>@jitsi-meet.example.com
 ```
+You will be prompted to enter the user's password
 
 5 If you are using jigasi:
 
