@@ -94,7 +94,7 @@ public class JvbDoctor
     /**
      * OSGi bundle context.
      */
-    private BundleContext osgiBc;
+    private BundleContext bundleContext;
 
     /**
      * Health check tasks map.
@@ -138,7 +138,7 @@ public class JvbDoctor
     synchronized public void start(BundleContext bundleContext)
         throws Exception
     {
-        if (this.osgiBc != null)
+        if (this.bundleContext != null)
         {
             throw new IllegalStateException("Started already?");
         }
@@ -158,15 +158,15 @@ public class JvbDoctor
                     SECOND_CHANCE_DELAY_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL / 2);
 
-        this.osgiBc = bundleContext;
+        this.bundleContext = bundleContext;
 
-        this.eventAdminRef = new OSGIServiceRef<>(osgiBc, EventAdmin.class);
+        this.eventAdminRef = new OSGIServiceRef<>(this.bundleContext, EventAdmin.class);
 
         this.executorServiceRef
-            = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
+            = new OSGIServiceRef<>(this.bundleContext, ScheduledExecutorService.class);
 
         FocusManager focusManager
-            = ServiceUtils2.getService(osgiBc, FocusManager.class);
+            = ServiceUtils2.getService(this.bundleContext, FocusManager.class);
 
         protocolProvider
             = focusManager.getJvbProtocolProvider();
@@ -222,7 +222,7 @@ public class JvbDoctor
     synchronized public void stop(BundleContext bundleContext)
         throws Exception
     {
-        if (this.osgiBc == null)
+        if (this.bundleContext == null)
             return;
 
         super.stop(bundleContext);
@@ -246,7 +246,7 @@ public class JvbDoctor
                     .removeRegistrationStateChangeListener(this);
             }
             this.protocolProvider = null;
-            this.osgiBc = null;
+            this.bundleContext = null;
         }
     }
 
