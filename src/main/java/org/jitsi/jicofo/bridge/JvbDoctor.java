@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -142,9 +143,12 @@ public class JvbDoctor
         {
             throw new IllegalStateException("Started already?");
         }
+        this.bundleContext = bundleContext;
 
+        ConfigurationService configurationService
+                = ServiceUtils2.getService(bundleContext, ConfigurationService.class);
         healthCheckInterval
-            = FocusBundleActivator.getConfigService().getLong(
+            = configurationService.getLong(
                     HEALTH_CHECK_INTERVAL_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL);
         if (healthCheckInterval <= 0)
@@ -154,19 +158,17 @@ public class JvbDoctor
         }
 
         secondChanceDelay
-            = FocusBundleActivator.getConfigService().getLong(
+            = configurationService.getLong(
                     SECOND_CHANCE_DELAY_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL / 2);
 
-        this.bundleContext = bundleContext;
-
-        this.eventAdminRef = new OSGIServiceRef<>(this.bundleContext, EventAdmin.class);
+        this.eventAdminRef = new OSGIServiceRef<>(bundleContext, EventAdmin.class);
 
         this.executorServiceRef
-            = new OSGIServiceRef<>(this.bundleContext, ScheduledExecutorService.class);
+            = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
 
         FocusManager focusManager
-            = ServiceUtils2.getService(this.bundleContext, FocusManager.class);
+            = ServiceUtils2.getService(bundleContext, FocusManager.class);
 
         protocolProvider
             = focusManager.getJvbProtocolProvider();
