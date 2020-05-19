@@ -1005,6 +1005,9 @@ public class ChatRoomImpl
             return;
         }
 
+        // Reset the stanza ID before sending
+        lastPresenceSent.setStanzaId(null);
+
         connection.sendStanza(lastPresenceSent);
     }
 
@@ -1051,6 +1054,9 @@ public class ChatRoomImpl
             logger.error("Failed to send presence extension - no connection");
             return;
         }
+
+        // Reset the stanza ID before sending
+        lastPresenceSent.setStanzaId(null);
 
         connection.sendStanza(lastPresenceSent);
     }
