@@ -25,13 +25,16 @@ import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.utils.logging.*;
+import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 
+import java.time.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
@@ -47,6 +50,8 @@ import static org.apache.commons.lang3.StringUtils.*;
 public class ColibriConferenceImpl
     implements ColibriConference
 {
+    public final static Stats stats = new Stats();
+
     private final static Logger logger
         = Logger.getLogger(ColibriConferenceImpl.class);
 
@@ -442,7 +447,11 @@ public class ColibriConferenceImpl
     {
         try
         {
-            return connection.sendPacketAndGetReply(request);
+            long start = System.nanoTime();
+            Stanza reply = connection.sendPacketAndGetReply(request);
+            long end = System.nanoTime();
+            stats.allocateChannelsRequestTook(end - start);
+            return reply;
         }
         catch (OperationFailedException ofe)
         {
@@ -941,6 +950,33 @@ public class ColibriConferenceImpl
                     syncRoot.notifyAll();
                 }
             }
+        }
+    }
+
+    public static class Stats {
+        /**
+         * An average of the time it takes to make allocate channel requests
+         * to JVB.
+         */
+        private final MovingAverage<Long> allocateChannelsReqTimes =
+            new MovingAverage<>(Duration.ofMinutes(1));
+
+        /**
+         * Notify the stats object how long an allocate channels request took
+         * to execute
+         * @param nanos the time, in nanoseconds
+         */
+        void allocateChannelsRequestTook(long nanos) {
+            allocateChannelsReqTimes.add(nanos);
+        }
+
+        @SuppressWarnings("unchecked")
+        public JSONObject toJson()
+        {
+            JSONObject json = new JSONObject();
+            json.put("avg_allocate_channels_req_time_nanos", allocateChannelsReqTimes.get());
+
+            return json;
         }
     }
 }
