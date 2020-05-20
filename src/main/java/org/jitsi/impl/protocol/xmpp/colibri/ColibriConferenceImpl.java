@@ -970,11 +970,8 @@ public class ColibriConferenceImpl
          * An average of the time it takes to make allocate channel requests
          * to JVB.
          */
-        private final RateStatistics allocateChannelsReqTimes =
-            new RateStatistics((int)Duration.ofMinutes(1).toMillis());
-
-        private final RateStatistics healthCheckReqTimes =
-            new RateStatistics((int)Duration.ofMinutes(1).toMillis());
+        private final MovingAverage<Long> allocateChannelsReqTimes =
+            new MovingAverage<>(Duration.ofMinutes(1));
 
         /**
          * Notify the stats object how long an allocate channels request took
@@ -982,14 +979,14 @@ public class ColibriConferenceImpl
          * @param nanos the time, in nanoseconds
          */
         void allocateChannelsRequestTook(long nanos) {
-            allocateChannelsReqTimes.update((int)nanos, clock.millis());
+            allocateChannelsReqTimes.add(nanos);
         }
 
         @SuppressWarnings("unchecked")
         public JSONObject toJson()
         {
             JSONObject json = new JSONObject();
-            json.put("avg_allocate_channels_req_time_nanos", allocateChannelsReqTimes.getRate());
+            json.put("avg_allocate_channels_req_time_nanos", allocateChannelsReqTimes.get());
 
             return json;
         }
