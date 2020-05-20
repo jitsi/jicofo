@@ -21,7 +21,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
@@ -54,7 +53,6 @@ import java.util.concurrent.*;
  */
 public class JvbDoctor
     extends EventHandlerActivator
-    implements RegistrationStateChangeListener
 {
     /**
      * The logger.
@@ -115,12 +113,13 @@ public class JvbDoctor
     private OSGIServiceRef<EventAdmin> eventAdminRef;
 
     /**
-     * XMPP protocol provider.
+     * The XMPP protocol provider we have to use to determined whether
+     * {@link #connection} is connected.
      */
     private ProtocolProviderService protocolProvider;
 
     /**
-     * XMPP operation set obtained from {@link #protocolProvider}.
+     * The XMPP connection to use to send stanzas.
      */
     private XmppConnection connection;
 
@@ -180,7 +179,6 @@ public class JvbDoctor
                     "ProtocolProvider is not an XMPP one");
         }
 
-        protocolProvider.addRegistrationStateChangeListener(this);
         connection
             = Objects.requireNonNull(
                     protocolProvider.getOperationSet(
@@ -237,12 +235,6 @@ public class JvbDoctor
         {
             this.eventAdminRef = null;
             this.executorServiceRef = null;
-            if (this.protocolProvider != null)
-            {
-                this.protocolProvider
-                    .removeRegistrationStateChangeListener(this);
-            }
-            this.protocolProvider = null;
             this.bundleContext = null;
         }
     }
@@ -351,30 +343,6 @@ public class JvbDoctor
         }
 
         eventAdmin.postEvent(BridgeEvent.createHealthPassed(bridgeJid));
-    }
-
-    /**
-     * When the xmpp protocol provider got registered, its maybe reconnection
-     * we need to get the connection. It can happen that on startup the initial
-     * obtaining the connection returns null and we get it later when the
-     * provider got actually registered.
-     *
-     * @param registrationStateChangeEvent
-     */
-    @Override
-    public void registrationStateChanged(
-        RegistrationStateChangeEvent registrationStateChangeEvent)
-    {
-        RegistrationState newState = registrationStateChangeEvent.getNewState();
-
-        if (RegistrationState.REGISTERED.equals(newState))
-        {
-            connection
-                = Objects.requireNonNull(
-                    protocolProvider.getOperationSet(
-                        OperationSetDirectSmackXmpp.class),
-                    "xmppOpSet").getXmppConnection();
-        }
     }
 
     private class HealthCheckTask implements Runnable
