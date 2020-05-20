@@ -101,8 +101,7 @@ public class JicofoBundleConfig
             },
             {
                 "org/jitsi/jicofo/bridge/JvbDoctor",
-                "org/jitsi/jicofo/recording/jibri/JibriStats",
-                "org/jitsi/jicofo/VersionBroadcaster"
+                "org/jitsi/jicofo/recording/jibri/JibriStats"
             },
             {
                 "org/jitsi/jicofo/health/Health"

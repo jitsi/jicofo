@@ -81,4 +81,6 @@ public interface ChatRoom2
                         Collection<ExtensionElement> toAdd);
 
     void setConference(JitsiMeetConference conference);
+
+    void addInitialPresenceExtensions(ExtensionElement ex);
 }
