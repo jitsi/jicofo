@@ -132,11 +132,9 @@ public class JvbDoctor
         super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_OFFLINE });
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void start(BundleContext bundleContext)
+    synchronized public void start(
+            BundleContext bundleContext,
+            Collection<Bridge> initialBridges)
         throws Exception
     {
         if (this.bundleContext != null)
@@ -192,10 +190,7 @@ public class JvbDoctor
 
         super.start(bundleContext);
 
-        JitsiMeetServices services
-            = ServiceUtils2.getService(bundleContext, JitsiMeetServices.class);
-
-        initializeHealthChecks(services.getBridgeSelector().getBridges());
+        initializeHealthChecks(initialBridges);
     }
 
     /**
@@ -204,7 +199,7 @@ public class JvbDoctor
      * @param bridges - the list of bridges connected at the time when
      * the {@link JvbDoctor} bundle starts.
      */
-    private void initializeHealthChecks(List<Bridge> bridges)
+    private void initializeHealthChecks(Collection<Bridge> bridges)
     {
         for (Bridge b : bridges)
         {

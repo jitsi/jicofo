@@ -102,11 +102,6 @@ public class FocusBundleActivator
     private FocusManager focusManager;
 
     /**
-     * <tt>FocusManager</tt> service registration.
-     */
-    private ServiceRegistration<FocusManager> focusManagerRegistration;
-
-    /**
      * Global configuration of Jitsi COnference FOcus
      */
     private JitsiMeetGlobalConfig globalConfig;
@@ -150,19 +145,12 @@ public class FocusBundleActivator
 
         focusManager = new FocusManager();
         focusManager.start();
-        focusManagerRegistration
-            = context.registerService(FocusManager.class, focusManager, null);
     }
 
     @Override
     public void stop(BundleContext context)
         throws Exception
     {
-        if (focusManagerRegistration != null)
-        {
-            focusManagerRegistration.unregister();
-            focusManagerRegistration = null;
-        }
         if (focusManager != null)
         {
             focusManager.stop();

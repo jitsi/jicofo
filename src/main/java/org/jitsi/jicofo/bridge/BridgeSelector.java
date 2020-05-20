@@ -113,6 +113,8 @@ public class BridgeSelector
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy;
 
+    private final JvbDoctor jvbDoctor = new JvbDoctor();
+
     /**
      * Creates new instance of {@link BridgeSelector}.
      *
@@ -428,6 +430,15 @@ public class BridgeSelector
         if (eventAdmin == null)
         {
             throw new IllegalStateException("EventAdmin service not found");
+        }
+
+        try
+        {
+            jvbDoctor.start(FocusBundleActivator.bundleContext, getBridges());
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to start JvbDoctor", e);
         }
     }
 
