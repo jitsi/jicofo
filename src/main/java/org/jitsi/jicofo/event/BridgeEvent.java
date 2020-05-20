@@ -121,27 +121,6 @@ public class BridgeEvent
         return new BridgeEvent(HEALTH_CHECK_PASSED, bridgeJid);
     }
 
-    /**
-     * Checks whether or not given <tt>Event</tt> is a <tt>BridgeEvent</tt>.
-     *
-     * @param event the <tt>Event</tt> instance to be checked.
-     *
-     * @return <tt>true</tt> if given <tt>Event</tt> instance is one of bridge
-     *         events or <tt>false</tt> otherwise.
-     */
-    static public boolean isBridgeEvent(Event event)
-    {
-        switch (event.getTopic())
-        {
-        case BRIDGE_DOWN:
-        case BRIDGE_UP:
-        case HEALTH_CHECK_FAILED:
-            return true;
-        default:
-            return false;
-        }
-    }
-
     private BridgeEvent(String topic, Jid bridgeJid)
     {
         super(topic, initDictionary(bridgeJid));
