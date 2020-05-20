@@ -290,7 +290,7 @@ public class FocusManager
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     focusUserDomain);
-        jitsiMeetServices.start(bundleContext);
+        jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
         componentsDiscovery.start(xmppDomain, protocolProviderHandler);
@@ -328,7 +328,7 @@ public class FocusManager
         {
             try
             {
-                jitsiMeetServices.stop(FocusBundleActivator.bundleContext);
+                jitsiMeetServices.stop();
             }
             catch (Exception e)
             {

@@ -22,8 +22,6 @@ import org.jitsi.service.configuration.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
@@ -107,11 +105,6 @@ public class JvbDoctor
     private OSGIServiceRef<ScheduledExecutorService> executorServiceRef;
 
     /**
-     * <tt>EventAdmin</tt> reference.
-     */
-    private OSGIServiceRef<EventAdmin> eventAdminRef;
-
-    /**
      * The XMPP protocol provider we have to use to determined whether
      * {@link #connection} is connected.
      */
@@ -122,11 +115,14 @@ public class JvbDoctor
      */
     private XmppConnection connection;
 
+    private final HealthCheckListener listener;
+
     /**
      * Creates new instance of <tt>JvbDoctor</tt>.
      */
-    public JvbDoctor()
+    public JvbDoctor(HealthCheckListener listener)
     {
+        this.listener = listener;
     }
 
     synchronized public void start(
@@ -155,8 +151,6 @@ public class JvbDoctor
             = configurationService.getLong(
                     SECOND_CHANCE_DELAY_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL / 2);
-
-        this.eventAdminRef = new OSGIServiceRef<>(bundleContext, EventAdmin.class);
 
         this.executorServiceRef
             = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
@@ -224,7 +218,6 @@ public class JvbDoctor
         }
         finally
         {
-            this.eventAdminRef = null;
             this.executorServiceRef = null;
             this.bundleContext = null;
         }
@@ -271,42 +264,6 @@ public class JvbDoctor
         logger.info("Stopping health-check task for: " + bridgeJid);
 
         healthTask.cancel(true);
-    }
-
-    private void notifyHealthCheckFailed(Jid bridgeJid, XMPPError error)
-    {
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin == null)
-        {
-            logger.error(
-                    "Unable to trigger health-check failed event: "
-                        + "no EventAdmin service found!");
-            return;
-        }
-
-        logger.warn("Health check failed on: " + bridgeJid + " error: "
-                + (error != null ? error.toXML() : "timeout"));
-
-        eventAdmin.postEvent(BridgeEvent.createHealthFailed(bridgeJid));
-    }
-
-    private void notifyHealthCheckPassed(Jid bridgeJid)
-    {
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin == null)
-        {
-            logger.error(
-                    "Unable to trigger health-check passed event: "
-                            + "no EventAdmin service found!");
-            return;
-        }
-
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("Health check passed on: " + bridgeJid);
-        }
-
-        eventAdmin.postEvent(BridgeEvent.createHealthPassed(bridgeJid));
     }
 
     private class HealthCheckTask implements Runnable
@@ -423,7 +380,8 @@ public class JvbDoctor
 
                 if (response == null)
                 {
-                    notifyHealthCheckFailed(bridgeJid, null);
+                    logger.warn("Health check timed out for: " + bridgeJid);
+                    listener.healthCheckFailed(bridgeJid);
                     return;
                 }
 
@@ -431,7 +389,11 @@ public class JvbDoctor
                 if (IQ.Type.result.equals(responseType))
                 {
                     // OK
-                    notifyHealthCheckPassed(bridgeJid);
+                    if (logger.isDebugEnabled())
+                    {
+                        logger.debug("Health check passed on: " + bridgeJid);
+                    }
+                    listener.healthCheckPassed(bridgeJid);
                     return;
                 }
 
@@ -446,7 +408,9 @@ public class JvbDoctor
                             .equals(condition))
                     {
                         // Health check failure
-                        notifyHealthCheckFailed(bridgeJid, error);
+                        logger.warn("Health check failed for: " + bridgeJid
+                                + ": " + error.toXML().toString());
+                        listener.healthCheckFailed(bridgeJid);
                     }
                     else
                     {
@@ -457,5 +421,11 @@ public class JvbDoctor
                 }
             }
         }
+    }
+
+    interface HealthCheckListener
+    {
+        void healthCheckPassed(Jid bridgeJid);
+        void healthCheckFailed(Jid bridgeJid);
     }
 }

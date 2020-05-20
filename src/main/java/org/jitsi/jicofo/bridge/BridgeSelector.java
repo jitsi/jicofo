@@ -44,6 +44,7 @@ import java.util.stream.*;
  * @author Boris Grozev
  */
 public class BridgeSelector
+    implements JvbDoctor.HealthCheckListener
 {
     /**
      * The logger.
@@ -113,7 +114,7 @@ public class BridgeSelector
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy;
 
-    private final JvbDoctor jvbDoctor = new JvbDoctor();
+    private final JvbDoctor jvbDoctor = new JvbDoctor(this);
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -271,6 +272,17 @@ public class BridgeSelector
         }
     }
 
+    @Override
+    public void healthCheckPassed(Jid bridgeJid)
+    {
+        Bridge bridge = bridges.get(bridgeJid);
+        if (bridge != null)
+        {
+            bridge.setIsOperational(true);
+        }
+    }
+
+    @Override
     public void healthCheckFailed(Jid bridgeJid)
     {
         Bridge bridge = bridges.get(bridgeJid);

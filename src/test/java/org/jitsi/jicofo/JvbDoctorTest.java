@@ -109,8 +109,8 @@ public class JvbDoctorTest
             osgi.bc,
             new String[] {
                 BridgeEvent.BRIDGE_UP,
-                BridgeEvent.BRIDGE_DOWN,
-                BridgeEvent.HEALTH_CHECK_FAILED },
+                BridgeEvent.BRIDGE_DOWN
+            },
             eventSpy);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
@@ -142,10 +142,6 @@ public class JvbDoctorTest
                 focusManager.getConference(testConf1.getRoomName()));
         }
 
-        // Here we verify that first there was HEALTH_CHECK_FAILED event
-        // send by JvbDoctor
-        verify(eventSpy, timeout(HEALTH_CHECK_INT + 100))
-            .handleEvent(BridgeEvent.createHealthFailed(jvb1));
         // and after that BRIDGE_DOWN should be triggered
         // by BridgeSelector
         verify(eventSpy, timeout(100))
