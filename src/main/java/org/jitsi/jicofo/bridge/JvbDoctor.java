@@ -52,7 +52,6 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class JvbDoctor
-    extends EventHandlerActivator
 {
     /**
      * The logger.
@@ -128,13 +127,11 @@ public class JvbDoctor
      */
     public JvbDoctor()
     {
-        super(new String[] { BridgeEvent.BRIDGE_UP });
     }
 
     synchronized public void start(
             BundleContext bundleContext,
             Collection<Bridge> initialBridges)
-        throws Exception
     {
         if (this.bundleContext != null)
         {
@@ -186,8 +183,6 @@ public class JvbDoctor
                     "xmppOpSet")
                  .getXmppConnection();
 
-        super.start(bundleContext);
-
         initializeHealthChecks(initialBridges);
     }
 
@@ -210,17 +205,13 @@ public class JvbDoctor
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void stop(BundleContext bundleContext)
-        throws Exception
+    synchronized public void stop()
     {
         if (this.bundleContext == null)
+        {
             return;
-
-        super.stop(bundleContext);
+        }
+        bundleContext = null;
 
         try
         {
@@ -239,31 +230,7 @@ public class JvbDoctor
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void handleEvent(Event event)
-    {
-        if (!BridgeEvent.isBridgeEvent(event))
-        {
-            throw new RuntimeException("We should NEVER get non-BridgeEvents!");
-        }
-
-        BridgeEvent bridgeEvent = (BridgeEvent) event;
-
-        switch (bridgeEvent.getTopic())
-        {
-        case BridgeEvent.BRIDGE_UP:
-            addBridge(bridgeEvent.getBridgeJid());
-            break;
-        default:
-            logger.error("Received unwanted event: " + event.getTopic());
-            break;
-        }
-    }
-
-    private void addBridge(Jid bridgeJid)
+    void addBridge(Jid bridgeJid)
     {
         if (tasks.containsKey(bridgeJid))
         {

@@ -233,6 +233,7 @@ public class BridgeSelector
         bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
+        jvbDoctor.addBridge(newBridge.getJid());
         return newBridge;
     }
 
@@ -425,14 +426,7 @@ public class BridgeSelector
             throw new IllegalStateException("EventAdmin service not found");
         }
 
-        try
-        {
-            jvbDoctor.start(FocusBundleActivator.bundleContext, getBridges());
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to start JvbDoctor", e);
-        }
+        jvbDoctor.start(FocusBundleActivator.bundleContext, getBridges());
     }
 
     /**
@@ -440,6 +434,10 @@ public class BridgeSelector
      */
     public void dispose()
     {
+        if (jvbDoctor != null)
+        {
+            jvbDoctor.stop();
+        }
         if (handlerRegistration != null)
         {
             handlerRegistration.unregister();
