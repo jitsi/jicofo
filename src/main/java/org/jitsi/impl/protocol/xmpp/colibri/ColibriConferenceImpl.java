@@ -954,18 +954,6 @@ public class ColibriConferenceImpl
     }
 
     public static class Stats {
-        private final Clock clock;
-
-        public Stats(Clock clock)
-        {
-            this.clock = clock;
-        }
-
-        public Stats()
-        {
-            this(Clock.systemUTC());
-        }
-
         /**
          * An average of the time it takes to make allocate channel requests
          * to JVB.
