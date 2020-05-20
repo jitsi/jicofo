@@ -266,7 +266,7 @@ public class BridgeSelector
         if (bridge != null)
         {
             notifyBridgeDown(bridge);
-            notifyBridgeOffline(bridge);
+            jvbDoctor.removeBridge(bridgeJid);
         }
     }
 
@@ -380,13 +380,6 @@ public class BridgeSelector
         logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
         eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.getJid()));
-    }
-
-    private void notifyBridgeOffline(Bridge bridge)
-    {
-        logger.debug("Propagating bridge went offline event: " + bridge.getJid());
-
-        eventAdmin.postEvent(BridgeEvent.createBridgeOffline(bridge.getJid()));
     }
 
     /**

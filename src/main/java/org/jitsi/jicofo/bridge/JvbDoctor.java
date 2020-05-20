@@ -128,7 +128,7 @@ public class JvbDoctor
      */
     public JvbDoctor()
     {
-        super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_OFFLINE });
+        super(new String[] { BridgeEvent.BRIDGE_UP });
     }
 
     synchronized public void start(
@@ -257,9 +257,6 @@ public class JvbDoctor
         case BridgeEvent.BRIDGE_UP:
             addBridge(bridgeEvent.getBridgeJid());
             break;
-        case BridgeEvent.BRIDGE_OFFLINE:
-            removeBridge(bridgeEvent.getBridgeJid());
-            break;
         default:
             logger.error("Received unwanted event: " + event.getTopic());
             break;
@@ -293,7 +290,7 @@ public class JvbDoctor
         logger.info("Scheduled health-check task for: " + bridgeJid);
     }
 
-    private void removeBridge(Jid bridgeJid)
+    void removeBridge(Jid bridgeJid)
     {
         ScheduledFuture healthTask = tasks.remove(bridgeJid);
         if (healthTask == null)
