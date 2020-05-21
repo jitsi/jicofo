@@ -26,6 +26,7 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.utils.stats.*;
+import org.jitsi.videobridge.api.client.v1.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.util.*;
@@ -75,6 +76,8 @@ public class ColibriConferenceImpl
      * {@link #conferenceState}.
      */
     private final Object syncRoot = new Object();
+
+    private JvbApi jvbApi = new JvbApi("localhost", 9099);
 
     /**
      * Custom type of semaphore that allows only 1 thread to send initial
@@ -445,18 +448,11 @@ public class ColibriConferenceImpl
                                       ColibriConferenceIQ request)
         throws ColibriException
     {
-        try
-        {
-            long start = System.nanoTime();
-            Stanza reply = connection.sendPacketAndGetReply(request);
-            long end = System.nanoTime();
-            stats.allocateChannelsRequestTook(end - start);
-            return reply;
-        }
-        catch (OperationFailedException ofe)
-        {
-            throw new ColibriException(ofe.getMessage());
-        }
+        long start = System.nanoTime();
+        Stanza reply = jvbApi.sendIqAndGetReply(request); //connection.sendPacketAndGetReply(request);
+        long end = System.nanoTime();
+        stats.allocateChannelsRequestTook(end - start);
+        return reply;
     }
 
     /**
