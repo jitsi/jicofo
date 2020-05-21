@@ -22,6 +22,7 @@ import org.jitsi.jicofo.util.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.osgi.*;
 
+import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
 
@@ -116,7 +117,7 @@ public class FocusBundleActivator
         scheduledPool
             = Executors.newScheduledThreadPool(
                 SHARED_SCHEDULED_POOL_SIZE,
-                    new DaemonThreadFactory("Jicofo Scheduled"));
+                new CustomizableThreadFactory("Jicofo Scheduled", true));
 
         eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 
@@ -134,7 +135,7 @@ public class FocusBundleActivator
                 0, maxSharedPoolSize,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
-                new DaemonThreadFactory("Jicofo Cached"));
+                new CustomizableThreadFactory("Jicofo Cached", true));
 
         jingleOfferFactory = new JingleOfferFactory(configServiceRef.get());
 
