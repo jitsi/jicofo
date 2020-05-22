@@ -77,7 +77,11 @@ public class ColibriConferenceImpl
      */
     private final Object syncRoot = new Object();
 
-    private JvbApi jvbApi = new JvbApi("localhost", 9099);
+    /**
+     * The JVB API instance this conference will use to control the JVB, if
+     * it is set.  If it is null, we fall back to the XMPP connection.
+     */
+    private JvbApi jvbApi;
 
     /**
      * Custom type of semaphore that allows only 1 thread to send initial
@@ -449,7 +453,30 @@ public class ColibriConferenceImpl
         throws ColibriException
     {
         long start = System.nanoTime();
-        Stanza reply = jvbApi.sendIqAndGetReply(request); //connection.sendPacketAndGetReply(request);
+        Stanza reply;
+        if (jvbApi != null)
+        {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Using JVB API for request");
+            }
+            reply = jvbApi.sendIqAndGetReply(request);
+        }
+        else
+        {
+            try
+            {
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug("Using XMPP connection for request");
+                }
+                reply = connection.sendPacketAndGetReply(request);
+            }
+            catch (OperationFailedException ofe)
+            {
+                throw new ColibriException(ofe.getMessage());
+            }
+        }
         long end = System.nanoTime();
         stats.allocateChannelsRequestTook(end - start);
         return reply;
@@ -834,6 +861,13 @@ public class ColibriConferenceImpl
 
             connection.sendStanza(request);
         }
+    }
+
+
+    @Override
+    public void setJvbApi(JvbApi jvbApi)
+    {
+        this.jvbApi = jvbApi;
     }
 
     /**

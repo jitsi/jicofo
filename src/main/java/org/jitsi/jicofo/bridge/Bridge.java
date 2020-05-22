@@ -143,6 +143,9 @@ public class Bridge
      */
     private ColibriStatsExtension stats = EMPTY_STATS;
 
+    private String jvbApiUrl = null;
+    private Integer jvbApiPort = null;
+
     /**
      * Notifies this instance that a new {@link ColibriStatsExtension} was
      * received for this instance.
@@ -193,6 +196,9 @@ public class Bridge
         {
             version = newVersion;
         }
+
+        jvbApiUrl = stats.getValueAsString("jvb-api-base-url");
+        jvbApiPort = stats.getValueAsInt("jvb-api-port");
     }
 
     Bridge(BridgeSelector bridgeSelector,
@@ -346,6 +352,24 @@ public class Bridge
     public int getLastReportedPacketRatePps()
     {
         return lastReportedPacketRatePps;
+    }
+
+    /**
+     * Get the URL of the JVB API for this bridge
+     * @return
+     */
+    public String getJvbApiUrl()
+    {
+        return this.jvbApiUrl;
+    }
+
+    /**
+     * Get the port of the JVB API for this bridge
+     * @return
+     */
+    public Integer getJvbApiPort()
+    {
+        return this.jvbApiPort;
     }
 
 }

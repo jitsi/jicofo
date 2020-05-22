@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
+import org.jitsi.videobridge.api.client.v1.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -734,6 +735,26 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Creates a new {@link ColibriConference} and creates a {@link JvbApi}
+     * instance for it to use to control the JVB
+     * @param bridgeJid see
+     *                  {@link JitsiMeetConferenceImpl#createNewColibriConference(Jid)}
+     * @param jvbApiUrl the base URL of the JVB API instance
+     * @param jvbApiPort the port that the JVB API is listening on
+     * @return the created {@link ColibriConference}
+     * @throws XmppStringprepException see
+     * {@link JitsiMeetConferenceImpl#createNewColibriConference(Jid)}
+     */
+    private ColibriConference createNewColibriConference(Jid bridgeJid, String jvbApiUrl, int jvbApiPort)
+        throws XmppStringprepException
+    {
+        ColibriConference conf =  createNewColibriConference(bridgeJid);
+
+        conf.setJvbApi(new JvbApi(jvbApiUrl, jvbApiPort));
+        return conf;
+    }
+
+        /**
      * Adds a {@link XmppChatMember} to the conference. Creates the
      * {@link Participant} instance corresponding to the {@link XmppChatMember}.
      * established and videobridge channels being allocated.
@@ -2828,8 +2849,20 @@ public class JitsiMeetConferenceImpl
                 throws XmppStringprepException
         {
             this.bridge = Objects.requireNonNull(bridge, "bridge");
-            this.colibriConference
-                = createNewColibriConference(bridge.getJid());
+            String jvbApiUrl = bridge.getJvbApiUrl();
+            Integer jvbApiPort = bridge.getJvbApiPort();
+            if (jvbApiUrl != null && jvbApiPort != null)
+            {
+                logger.info("Using JVB API to control bridge " + bridge.getJid());
+                this.colibriConference
+                    = createNewColibriConference(bridge.getJid(), jvbApiUrl, jvbApiPort);
+            }
+            else
+            {
+                logger.info("Using XMPP to control bridge " + bridge.getJvbApiUrl());
+                this.colibriConference
+                    = createNewColibriConference(bridge.getJid());
+            }
         }
 
         private void addParticipant(Participant participant)
