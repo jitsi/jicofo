@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.version.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -593,7 +594,7 @@ public class JitsiMeetConferenceImpl
         chatRoom.addInitialPresenceExtensions(
             ConferenceProperties.clone(conferenceProperties));
         chatRoom.addInitialPresenceExtensions(
-            VersionBroadcaster.getVersionsExtension(this));
+            Versions.getVersionsExtension(this));
 
         chatRoom.join();
     }

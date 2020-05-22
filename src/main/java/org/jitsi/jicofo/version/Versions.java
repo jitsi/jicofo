@@ -15,44 +15,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.version;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.utils.version.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.Version;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.osgi.*;
-
-import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.stream.*;
 
 /**
- * Providers info about all conference components versions to Jicofo's MUC
+ * Provides info about all conference components versions to Jicofo's MUC
  * presence.
  *
  * @author Pawel Domas
  * @author Damian Minkov
  */
-public class VersionBroadcaster
+public class Versions
 {
     /**
      * The logger
      */
-    private static final Logger logger
-        = Logger.getLogger(VersionBroadcaster.class);
+    private static final Logger logger = Logger.getLogger(Versions.class);
 
     /**
      * Constructs versions extension to be sent with presence.
      * {@inheritDoc}
      */
-    static ComponentVersionsExtension getVersionsExtension(
+    public static ComponentVersionsExtension getVersionsExtension(
         JitsiMeetConference conference)
     {
         FocusManager focusManager = ServiceUtils2.getService(

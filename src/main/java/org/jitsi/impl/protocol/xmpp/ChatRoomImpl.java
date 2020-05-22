@@ -131,6 +131,11 @@ public class ChatRoomImpl
      */
     private Presence lastPresenceSent;
 
+    /**
+     * List of presence extensions to be added to the first presence sent
+     * to join the room. Those extensions will be used in any subsequent
+     * presence sent.
+     */
     private List<ExtensionElement> initialPresenceExtensions
         = new ArrayList<ExtensionElement>();
 
