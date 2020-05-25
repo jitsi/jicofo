@@ -133,6 +133,7 @@ public class Main
         CmdLine cmdLine = new CmdLine();
 
         cmdLine.addRequiredArgument(SECRET_ARG_NAME);
+        cmdLine.addRequiredArgument(USER_DOMAIN_ARG_NAME);
 
         // We may end execution here if one of required arguments is missing
         cmdLine.parse(args);
