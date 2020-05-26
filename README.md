@@ -78,6 +78,8 @@ var config = {
 - --user_name=USERNAME specifies the username used by the focus XMPP user to login. (default: focus@user_domain)
 - --user_password=PASSWORD specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method
 
+NB: SECRET and PASSWORD can alternatively be set via the environment variables JICOFO_SECRET and JICOFO_AUTH_PASSWORD respectively, which prevents them showing up in a process listing.
+
 ## Secure domain
 
 This section has been moved to [The Handbook](https://jitsi.github.io/handbook/docs/devops-guide/secure-domain).
