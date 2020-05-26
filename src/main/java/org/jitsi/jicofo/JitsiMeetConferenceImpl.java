@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.version.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -575,12 +576,6 @@ public class JitsiMeetConferenceImpl
             services.getJigasiDetector());
         transcriberManager.init();
 
-        chatRoom.join();
-
-        // Advertise shared Etherpad document
-        meetTools.sendPresenceExtension(
-            chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
-
         // Advertise the conference creation time in presence
         setConferenceProperty(
             ConferenceProperties.KEY_CREATED_MS,
@@ -590,17 +585,18 @@ public class JitsiMeetConferenceImpl
         // Advertise whether octo is enabled/disabled in presence
         setConferenceProperty(
             ConferenceProperties.KEY_OCTO_ENABLED,
-            Boolean.toString(config.isOctoEnabled()));
+            Boolean.toString(config.isOctoEnabled()),
+            false);
 
-        // Trigger focus joined room event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.focusJoinedRoom(
-                            roomName,
-                            getId()));
-        }
+        // let's add all initial extensions before join, so they are added
+        chatRoom.addInitialPresenceExtensions(
+            EtherpadPacketExt.forDocumentName(etherpadName));
+        chatRoom.addInitialPresenceExtensions(
+            ConferenceProperties.clone(conferenceProperties));
+        chatRoom.addInitialPresenceExtensions(
+            Versions.getVersionsExtension(this));
+
+        chatRoom.join();
     }
 
     /**

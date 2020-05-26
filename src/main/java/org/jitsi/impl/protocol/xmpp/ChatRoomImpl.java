@@ -132,6 +132,14 @@ public class ChatRoomImpl
     private Presence lastPresenceSent;
 
     /**
+     * List of presence extensions to be added to the first presence sent
+     * to join the room. Those extensions will be used in any subsequent
+     * presence sent.
+     */
+    private List<ExtensionElement> initialPresenceExtensions
+        = new ArrayList<ExtensionElement>();
+
+    /**
      * Number of members in the chat room. That excludes the focus member.
      */
     private Integer memberCount = 0;
@@ -232,6 +240,14 @@ public class ChatRoomImpl
                 @Override
                 public void processPresence(Presence packet)
                 {
+                    // make sure this is the first presence we send
+                    if (lastPresenceSent == null)
+                    {
+                        initialPresenceExtensions.forEach(e -> {
+                            packet.removeExtension(e);
+                            packet.addExtension(e);
+                        });
+                    }
                     lastPresenceSent = packet;
                 }
             };
@@ -1260,6 +1276,12 @@ public class ChatRoomImpl
         {
             processOtherPresence(presence);
         }
+    }
+
+    @Override
+    public void addInitialPresenceExtensions(ExtensionElement ex)
+    {
+        this.initialPresenceExtensions.add(ex);
     }
 
     class MemberListener
