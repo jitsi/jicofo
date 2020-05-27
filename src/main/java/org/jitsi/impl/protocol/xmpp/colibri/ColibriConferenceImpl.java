@@ -453,14 +453,36 @@ public class ColibriConferenceImpl
         throws ColibriException
     {
         long start = System.nanoTime();
+        Stanza reply = sendAndGetReply(request);
+        long end = System.nanoTime();
+        stats.allocateChannelsRequestTook(end - start);
+        return reply;
+    }
+
+    /**
+     * Send the given {@link IQ} and return the reply, using the JVB API
+     * if the API is configured, otherwise the XMPP connection
+     * @param iq the IQ to send
+     * @return the reply
+     * @throws ColibriException in case of error
+     */
+    protected Stanza sendAndGetReply(IQ iq)
+        throws ColibriException
+    {
         Stanza reply;
         if (jvbApi != null)
         {
-            if (logger.isDebugEnabled())
+            try
             {
-                logger.debug("Using JVB API for request");
+                if (logger.isDebugEnabled())
+                {
+                    logger.debug("Using JVB API for request");
+                }
+                reply = jvbApi.sendIqAndGetReply(iq);
+            } catch (JvbApiException e)
+            {
+                throw new ColibriException(e.getMessage());
             }
-            reply = jvbApi.sendIqAndGetReply(request);
         }
         else
         {
@@ -470,16 +492,40 @@ public class ColibriConferenceImpl
                 {
                     logger.debug("Using XMPP connection for request");
                 }
-                reply = connection.sendPacketAndGetReply(request);
+                reply = connection.sendPacketAndGetReply(iq);
             }
             catch (OperationFailedException ofe)
             {
                 throw new ColibriException(ofe.getMessage());
             }
         }
-        long end = System.nanoTime();
-        stats.allocateChannelsRequestTook(end - start);
         return reply;
+
+    }
+
+    /**
+     * Send and forget the given IQ, using the JVB API if the API is configured,
+     * otherwise the XMPP connection
+     * @param iq
+     */
+    protected void sendAndForget(IQ iq)
+    {
+        if (jvbApi != null)
+        {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Using JVB API for request");
+            }
+            jvbApi.sendAndForget(iq);
+        }
+        else
+        {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Using XMPP connection for request");
+            }
+            connection.sendStanza(iq);
+        }
     }
 
     /**
@@ -551,7 +597,7 @@ public class ColibriConferenceImpl
             logRequest("Expire peer channels", request);
 
             // Send and forget
-            connection.sendStanza(request);
+            sendAndForget(request);
         }
     }
 
@@ -608,7 +654,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending source update: ", request);
 
-            connection.sendStanza(request);
+            sendAndForget(request);
         }
     }
 
@@ -643,7 +689,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending bundle transport info update: ", request);
 
-            connection.sendStanza(request);
+            sendAndForget(request);
         }
     }
 
@@ -681,7 +727,7 @@ public class ColibriConferenceImpl
                 {
                     logRequest("Expire conference: ", request);
 
-                    connection.sendStanza(request);
+                    sendAndForget(request);
                 }
             }
 
@@ -757,7 +803,7 @@ public class ColibriConferenceImpl
 
         request.addContent(requestContent);
 
-        connection.sendStanza(request);
+        sendAndForget(request);
 
         // FIXME wait for response and set local status
 
@@ -859,7 +905,7 @@ public class ColibriConferenceImpl
         {
             logRequest("Sending channel info update: ", request);
 
-            connection.sendStanza(request);
+            sendAndForget(request);
         }
     }
 
