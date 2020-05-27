@@ -20,7 +20,9 @@ package org.jitsi.jicofo;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
+import org.jitsi.videobridge.api.client.*;
 import org.jitsi.videobridge.api.client.v1.*;
+import org.jitsi.videobridge.api.types.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -745,12 +747,38 @@ public class JitsiMeetConferenceImpl
      * @throws XmppStringprepException see
      * {@link JitsiMeetConferenceImpl#createNewColibriConference(Jid)}
      */
-    private ColibriConference createNewColibriConference(Jid bridgeJid, String jvbApiUrl, int jvbApiPort)
+    private ColibriConference createNewColibriConference(Bridge bridge)
         throws XmppStringprepException
     {
-        ColibriConference conf =  createNewColibriConference(bridgeJid);
+        ColibriConference conf =  createNewColibriConference(bridge.getJid());
 
-        conf.setJvbApi(new JvbApi(jvbApiUrl, jvbApiPort));
+        if (bridge.getJvbApiUrl() != null &&
+            bridge.getJvbApiPort() != null &&
+            bridge.getSupportedApiVersions() != null)
+        {
+            logger.info("Bridge advertised a JVB API address.  JVB API " +
+                "client supports " + VersionKt.SUPPORTED_API_VERSIONS +
+                ", bridge supports " + bridge.getSupportedApiVersions());
+            ApiVersion maxApiVersion = VersionKt.SUPPORTED_API_VERSIONS.maxSupported(bridge.getSupportedApiVersions());
+            if (maxApiVersion == null)
+            {
+                logger.info("No JVB API version compatibility found between " +
+                    "client and server");
+            }
+            else
+            {
+                logger.info("Got common api version " + maxApiVersion);
+                switch (maxApiVersion) {
+                    case V1: {
+                        conf.setJvbApi(new org.jitsi.videobridge.api.client.v1.JvbApi(bridge.getJvbApiUrl(), bridge.getJvbApiPort()));
+                        break;
+                    }
+                    default: throw new RuntimeException("Found common JVB API version " +
+                        maxApiVersion + " but logic to instantiate client missing");
+                }
+            }
+        }
+
         return conf;
     }
 
@@ -2849,20 +2877,7 @@ public class JitsiMeetConferenceImpl
                 throws XmppStringprepException
         {
             this.bridge = Objects.requireNonNull(bridge, "bridge");
-            String jvbApiUrl = bridge.getJvbApiUrl();
-            Integer jvbApiPort = bridge.getJvbApiPort();
-            if (jvbApiUrl != null && jvbApiPort != null)
-            {
-                logger.info("Using JVB API to control bridge " + bridge.getJid());
-                this.colibriConference
-                    = createNewColibriConference(bridge.getJid(), jvbApiUrl, jvbApiPort);
-            }
-            else
-            {
-                logger.info("Using XMPP to control bridge " + bridge.getJvbApiUrl());
-                this.colibriConference
-                    = createNewColibriConference(bridge.getJid());
-            }
+            this.colibriConference = createNewColibriConference(bridge);
         }
 
         private void addParticipant(Participant participant)

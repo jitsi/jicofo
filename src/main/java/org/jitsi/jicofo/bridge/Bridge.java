@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.stats.*;
+import org.jitsi.videobridge.api.types.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
@@ -143,8 +144,21 @@ public class Bridge
      */
     private ColibriStatsExtension stats = EMPTY_STATS;
 
+    /**
+     * The base url of the HTTP API for this bridge, if it is supported.
+     */
     private String jvbApiUrl = null;
+
+    /**
+     * The base port of the HTTP API for this bridge, if it is supported.
+     */
     private Integer jvbApiPort = null;
+
+    /**
+     * The {@link SupportedApiVersions} of the HTTP API for this bridge,
+     * if it is supported.
+     */
+    private SupportedApiVersions supportedApiVersions = null;
 
     /**
      * Notifies this instance that a new {@link ColibriStatsExtension} was
@@ -199,6 +213,10 @@ public class Bridge
 
         jvbApiUrl = stats.getValueAsString("jvb-api-base-url");
         jvbApiPort = stats.getValueAsInt("jvb-api-port");
+        supportedApiVersions = SupportedApiVersionsKt.fromPresenceString(
+            SupportedApiVersions.Companion,
+            stats.getValueAsString("jvb-api-version")
+        );
     }
 
     Bridge(BridgeSelector bridgeSelector,
@@ -372,4 +390,8 @@ public class Bridge
         return this.jvbApiPort;
     }
 
+    public SupportedApiVersions getSupportedApiVersions()
+    {
+        return this.supportedApiVersions;
+    }
 }
