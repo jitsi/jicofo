@@ -759,22 +759,32 @@ public class JitsiMeetConferenceImpl
             logger.info("Bridge advertised a JVB API address.  JVB API " +
                 "client supports " + VersionKt.SUPPORTED_API_VERSIONS +
                 ", bridge supports " + bridge.getSupportedApiVersions());
-            ApiVersion maxApiVersion = VersionKt.SUPPORTED_API_VERSIONS.maxSupported(bridge.getSupportedApiVersions());
+            ApiVersion maxApiVersion =
+                VersionKt.SUPPORTED_API_VERSIONS.maxSupported(
+                    bridge.getSupportedApiVersions());
             if (maxApiVersion == null)
             {
-                logger.info("No JVB API version compatibility found between " +
-                    "client and server");
+                logger.info("No JVB API version compatibility found " +
+                    "between client and server");
             }
             else
             {
                 logger.info("Got common api version " + maxApiVersion);
-                switch (maxApiVersion) {
-                    case V1: {
-                        conf.setJvbApi(new org.jitsi.videobridge.api.client.v1.JvbApi(bridge.getJvbApiUrl(), bridge.getJvbApiPort()));
+                switch (maxApiVersion)
+                {
+                    case V1:
+                    {
+                        conf.setJvbApi(
+                            new org.jitsi.videobridge.api.client.v1.JvbApi(
+                                bridge.getJvbApiUrl(),
+                                bridge.getJvbApiPort()
+                            )
+                        );
                         break;
                     }
-                    default: throw new RuntimeException("Found common JVB API version " +
-                        maxApiVersion + " but logic to instantiate client missing");
+                    default: throw new RuntimeException("Found common JVB " +
+                        "API version " + maxApiVersion + " but logic to " +
+                        "instantiate client missing");
                 }
             }
         }
