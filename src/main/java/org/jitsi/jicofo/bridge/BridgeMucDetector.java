@@ -171,9 +171,9 @@ public class BridgeMucDetector
         Jid jid,
         ColibriStatsExtension stats)
     {
-//        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled())
         {
-            logger.info(
+            logger.debug(
                 "Received updated status for " + jid + ": " + stats.toXML());
         }
 
