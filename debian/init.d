@@ -62,7 +62,7 @@ start() {
         exit 1
     fi
     echo -n "Starting $NAME: "
-    export JICOFO_SECRET JICOFO_AUTH_PASSWORD
+    export JICOFO_SECRET JICOFO_AUTH_PASSWORD JICOFO_MAX_MEMORY
     start-stop-daemon --start --quiet --background --chuid $USER --make-pidfile --pidfile $PIDFILE \
         --exec /bin/bash -- -c "cd $DAEMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
     echo "$NAME started."
