@@ -159,6 +159,11 @@ public class FocusManager
     private final FocusExpireThread expireThread = new FocusExpireThread();
 
     /**
+     * <tt>FocusManager</tt> service registration.
+     */
+    private ServiceRegistration<FocusManager> serviceRegistration;
+
+    /**
      * Jitsi Meet conferences mapped by MUC room names.
      *
      * Note that access to this field is almost always protected by a lock on
@@ -240,6 +245,12 @@ public class FocusManager
     {
         BundleContext bundleContext = FocusBundleActivator.bundleContext;
 
+        // Register early, because some of the dependencies e.g.
+        // (JitsiMeeetServices -> BridgeSelector -> JvbDoctor) need it. This
+        // will be cleaned up at a later stage.
+        serviceRegistration
+                = bundleContext.registerService(FocusManager.class, this, null);
+
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
@@ -279,7 +290,7 @@ public class FocusManager
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     focusUserDomain);
-        jitsiMeetServices.start(bundleContext);
+        jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
         componentsDiscovery.start(xmppDomain, protocolProviderHandler);
@@ -300,6 +311,11 @@ public class FocusManager
      */
     public void stop()
     {
+        if (serviceRegistration != null)
+        {
+            serviceRegistration.unregister();
+            serviceRegistration = null;
+        }
         expireThread.stop();
 
         if (componentsDiscovery != null)
@@ -312,7 +328,7 @@ public class FocusManager
         {
             try
             {
-                jitsiMeetServices.stop(FocusBundleActivator.bundleContext);
+                jitsiMeetServices.stop();
             }
             catch (Exception e)
             {

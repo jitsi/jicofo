@@ -18,12 +18,10 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.service.configuration.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
-import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
@@ -52,8 +50,6 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class JvbDoctor
-    extends EventHandlerActivator
-    implements RegistrationStateChangeListener
 {
     /**
      * The logger.
@@ -94,7 +90,7 @@ public class JvbDoctor
     /**
      * OSGi bundle context.
      */
-    private BundleContext osgiBc;
+    private BundleContext bundleContext;
 
     /**
      * Health check tasks map.
@@ -109,42 +105,40 @@ public class JvbDoctor
     private OSGIServiceRef<ScheduledExecutorService> executorServiceRef;
 
     /**
-     * <tt>EventAdmin</tt> reference.
-     */
-    private OSGIServiceRef<EventAdmin> eventAdminRef;
-
-    /**
-     * XMPP protocol provider.
+     * The XMPP protocol provider we have to use to determined whether
+     * {@link #connection} is connected.
      */
     private ProtocolProviderService protocolProvider;
 
     /**
-     * XMPP operation set obtained from {@link #protocolProvider}.
+     * The XMPP connection to use to send stanzas.
      */
     private XmppConnection connection;
+
+    private final HealthCheckListener listener;
 
     /**
      * Creates new instance of <tt>JvbDoctor</tt>.
      */
-    public JvbDoctor()
+    public JvbDoctor(HealthCheckListener listener)
     {
-        super(new String[] { BridgeEvent.BRIDGE_UP, BridgeEvent.BRIDGE_OFFLINE });
+        this.listener = listener;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void start(BundleContext bundleContext)
-        throws Exception
+    synchronized public void start(
+            BundleContext bundleContext,
+            Collection<Bridge> initialBridges)
     {
-        if (this.osgiBc != null)
+        if (this.bundleContext != null)
         {
             throw new IllegalStateException("Started already?");
         }
+        this.bundleContext = bundleContext;
 
+        ConfigurationService configurationService
+                = ServiceUtils2.getService(bundleContext, ConfigurationService.class);
         healthCheckInterval
-            = FocusBundleActivator.getConfigService().getLong(
+            = configurationService.getLong(
                     HEALTH_CHECK_INTERVAL_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL);
         if (healthCheckInterval <= 0)
@@ -154,19 +148,15 @@ public class JvbDoctor
         }
 
         secondChanceDelay
-            = FocusBundleActivator.getConfigService().getLong(
+            = configurationService.getLong(
                     SECOND_CHANCE_DELAY_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL / 2);
 
-        this.osgiBc = bundleContext;
-
-        this.eventAdminRef = new OSGIServiceRef<>(osgiBc, EventAdmin.class);
-
         this.executorServiceRef
-            = new OSGIServiceRef<>(osgiBc, ScheduledExecutorService.class);
+            = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
 
         FocusManager focusManager
-            = ServiceUtils2.getService(osgiBc, FocusManager.class);
+            = ServiceUtils2.getService(bundleContext, FocusManager.class);
 
         protocolProvider
             = focusManager.getJvbProtocolProvider();
@@ -180,7 +170,6 @@ public class JvbDoctor
                     "ProtocolProvider is not an XMPP one");
         }
 
-        protocolProvider.addRegistrationStateChangeListener(this);
         connection
             = Objects.requireNonNull(
                     protocolProvider.getOperationSet(
@@ -188,12 +177,7 @@ public class JvbDoctor
                     "xmppOpSet")
                  .getXmppConnection();
 
-        super.start(bundleContext);
-
-        JitsiMeetServices services
-            = ServiceUtils2.getService(bundleContext, JitsiMeetServices.class);
-
-        initializeHealthChecks(services.getBridgeSelector().getBridges());
+        initializeHealthChecks(initialBridges);
     }
 
     /**
@@ -202,7 +186,7 @@ public class JvbDoctor
      * @param bridges - the list of bridges connected at the time when
      * the {@link JvbDoctor} bundle starts.
      */
-    private void initializeHealthChecks(List<Bridge> bridges)
+    private void initializeHealthChecks(Collection<Bridge> bridges)
     {
         for (Bridge b : bridges)
         {
@@ -215,17 +199,13 @@ public class JvbDoctor
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void stop(BundleContext bundleContext)
-        throws Exception
+    synchronized public void stop()
     {
-        if (this.osgiBc == null)
+        if (this.bundleContext == null)
+        {
             return;
-
-        super.stop(bundleContext);
+        }
+        bundleContext = null;
 
         try
         {
@@ -238,46 +218,12 @@ public class JvbDoctor
         }
         finally
         {
-            this.eventAdminRef = null;
             this.executorServiceRef = null;
-            if (this.protocolProvider != null)
-            {
-                this.protocolProvider
-                    .removeRegistrationStateChangeListener(this);
-            }
-            this.protocolProvider = null;
-            this.osgiBc = null;
+            this.bundleContext = null;
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void handleEvent(Event event)
-    {
-        if (!BridgeEvent.isBridgeEvent(event))
-        {
-            throw new RuntimeException("We should NEVER get non-BridgeEvents!");
-        }
-
-        BridgeEvent bridgeEvent = (BridgeEvent) event;
-
-        switch (bridgeEvent.getTopic())
-        {
-        case BridgeEvent.BRIDGE_UP:
-            addBridge(bridgeEvent.getBridgeJid());
-            break;
-        case BridgeEvent.BRIDGE_OFFLINE:
-            removeBridge(bridgeEvent.getBridgeJid());
-            break;
-        default:
-            logger.error("Received unwanted event: " + event.getTopic());
-            break;
-        }
-    }
-
-    private void addBridge(Jid bridgeJid)
+    void addBridge(Jid bridgeJid)
     {
         if (tasks.containsKey(bridgeJid))
         {
@@ -304,7 +250,7 @@ public class JvbDoctor
         logger.info("Scheduled health-check task for: " + bridgeJid);
     }
 
-    private void removeBridge(Jid bridgeJid)
+    void removeBridge(Jid bridgeJid)
     {
         ScheduledFuture healthTask = tasks.remove(bridgeJid);
         if (healthTask == null)
@@ -318,66 +264,6 @@ public class JvbDoctor
         logger.info("Stopping health-check task for: " + bridgeJid);
 
         healthTask.cancel(true);
-    }
-
-    private void notifyHealthCheckFailed(Jid bridgeJid, XMPPError error)
-    {
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin == null)
-        {
-            logger.error(
-                    "Unable to trigger health-check failed event: "
-                        + "no EventAdmin service found!");
-            return;
-        }
-
-        logger.warn("Health check failed on: " + bridgeJid + " error: "
-                + (error != null ? error.toXML() : "timeout"));
-
-        eventAdmin.postEvent(BridgeEvent.createHealthFailed(bridgeJid));
-    }
-
-    private void notifyHealthCheckPassed(Jid bridgeJid)
-    {
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin == null)
-        {
-            logger.error(
-                    "Unable to trigger health-check passed event: "
-                            + "no EventAdmin service found!");
-            return;
-        }
-
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("Health check passed on: " + bridgeJid);
-        }
-
-        eventAdmin.postEvent(BridgeEvent.createHealthPassed(bridgeJid));
-    }
-
-    /**
-     * When the xmpp protocol provider got registered, its maybe reconnection
-     * we need to get the connection. It can happen that on startup the initial
-     * obtaining the connection returns null and we get it later when the
-     * provider got actually registered.
-     *
-     * @param registrationStateChangeEvent
-     */
-    @Override
-    public void registrationStateChanged(
-        RegistrationStateChangeEvent registrationStateChangeEvent)
-    {
-        RegistrationState newState = registrationStateChangeEvent.getNewState();
-
-        if (RegistrationState.REGISTERED.equals(newState))
-        {
-            connection
-                = Objects.requireNonNull(
-                    protocolProvider.getOperationSet(
-                        OperationSetDirectSmackXmpp.class),
-                    "xmppOpSet").getXmppConnection();
-        }
     }
 
     private class HealthCheckTask implements Runnable
@@ -494,7 +380,8 @@ public class JvbDoctor
 
                 if (response == null)
                 {
-                    notifyHealthCheckFailed(bridgeJid, null);
+                    logger.warn("Health check timed out for: " + bridgeJid);
+                    listener.healthCheckFailed(bridgeJid);
                     return;
                 }
 
@@ -502,7 +389,11 @@ public class JvbDoctor
                 if (IQ.Type.result.equals(responseType))
                 {
                     // OK
-                    notifyHealthCheckPassed(bridgeJid);
+                    if (logger.isDebugEnabled())
+                    {
+                        logger.debug("Health check passed on: " + bridgeJid);
+                    }
+                    listener.healthCheckPassed(bridgeJid);
                     return;
                 }
 
@@ -517,7 +408,9 @@ public class JvbDoctor
                             .equals(condition))
                     {
                         // Health check failure
-                        notifyHealthCheckFailed(bridgeJid, error);
+                        logger.warn("Health check failed for: " + bridgeJid
+                                + ": " + error.toXML().toString());
+                        listener.healthCheckFailed(bridgeJid);
                     }
                     else
                     {
@@ -528,5 +421,11 @@ public class JvbDoctor
                 }
             }
         }
+    }
+
+    interface HealthCheckListener
+    {
+        void healthCheckPassed(Jid bridgeJid);
+        void healthCheckFailed(Jid bridgeJid);
     }
 }

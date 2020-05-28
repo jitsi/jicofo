@@ -48,7 +48,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  * @author Pawel Domas
  */
 public class JitsiMeetServices
-    extends EventHandlerActivator
 {
     /**
      * The logger
@@ -146,11 +145,6 @@ public class JitsiMeetServices
                              ProtocolProviderHandler jvbMucProtocolProvider,
                              DomainBareJid jicofoUserDomain)
     {
-        super(new String[] {
-                BridgeEvent.HEALTH_CHECK_FAILED,
-                BridgeEvent.HEALTH_CHECK_PASSED
-        });
-
         Objects.requireNonNull(
             protocolProviderHandler, "protocolProviderHandler");
         Objects.requireNonNull(
@@ -318,13 +312,9 @@ public class JitsiMeetServices
         this.mucService = mucService;
     }
 
-    @Override
-    public void start(BundleContext bundleContext)
-        throws Exception
+    public void start()
     {
         bridgeSelector.init();
-
-        super.start(bundleContext);
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
         String jibriBreweryName
@@ -386,39 +376,12 @@ public class JitsiMeetServices
         }
     }
 
-    @Override
-    public void stop(BundleContext bundleContext)
-        throws Exception
+    public void stop()
     {
         breweryDetectors.forEach(BaseBrewery::dispose);
         breweryDetectors.clear();
 
         bridgeSelector.dispose();
-
-        super.stop(bundleContext);
-    }
-
-    @Override
-    public void handleEvent(Event event)
-    {
-        if (!(event instanceof BridgeEvent))
-        {
-            return;
-        }
-
-        BridgeEvent bridgeEvent = (BridgeEvent) event;
-        Bridge jvb = bridgeSelector.getBridge(bridgeEvent.getBridgeJid());
-
-        if (BridgeEvent.HEALTH_CHECK_PASSED.equals(event.getTopic()))
-        {
-            jvb.setIsOperational(true);
-        }
-        else if (BridgeEvent.HEALTH_CHECK_FAILED.equals(event.getTopic()))
-        {
-            // Don't remove it, because the next presence in the muc will re-add
-            // it
-            bridgeSelector.healthCheckFailed(bridgeEvent.getBridgeJid());
-        }
     }
 
     /**

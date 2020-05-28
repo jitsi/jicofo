@@ -44,6 +44,7 @@ import java.util.stream.*;
  * @author Boris Grozev
  */
 public class BridgeSelector
+    implements JvbDoctor.HealthCheckListener
 {
     /**
      * The logger.
@@ -112,6 +113,8 @@ public class BridgeSelector
      * The bridge selection strategy.
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy;
+
+    private final JvbDoctor jvbDoctor = new JvbDoctor(this);
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -231,6 +234,7 @@ public class BridgeSelector
         bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
+        jvbDoctor.addBridge(newBridge.getJid());
         return newBridge;
     }
 
@@ -264,10 +268,21 @@ public class BridgeSelector
         if (bridge != null)
         {
             notifyBridgeDown(bridge);
-            notifyBridgeOffline(bridge);
+            jvbDoctor.removeBridge(bridgeJid);
         }
     }
 
+    @Override
+    public void healthCheckPassed(Jid bridgeJid)
+    {
+        Bridge bridge = bridges.get(bridgeJid);
+        if (bridge != null)
+        {
+            bridge.setIsOperational(true);
+        }
+    }
+
+    @Override
     public void healthCheckFailed(Jid bridgeJid)
     {
         Bridge bridge = bridges.get(bridgeJid);
@@ -380,13 +395,6 @@ public class BridgeSelector
         eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.getJid()));
     }
 
-    private void notifyBridgeOffline(Bridge bridge)
-    {
-        logger.debug("Propagating bridge went offline event: " + bridge.getJid());
-
-        eventAdmin.postEvent(BridgeEvent.createBridgeOffline(bridge.getJid()));
-    }
-
     /**
      * Initializes this instance by loading the config and obtaining required
      * service references.
@@ -429,6 +437,8 @@ public class BridgeSelector
         {
             throw new IllegalStateException("EventAdmin service not found");
         }
+
+        jvbDoctor.start(FocusBundleActivator.bundleContext, getBridges());
     }
 
     /**
@@ -436,6 +446,10 @@ public class BridgeSelector
      */
     public void dispose()
     {
+        if (jvbDoctor != null)
+        {
+            jvbDoctor.stop();
+        }
         if (handlerRegistration != null)
         {
             handlerRegistration.unregister();
