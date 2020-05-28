@@ -472,17 +472,11 @@ public class ColibriConferenceImpl
         Stanza reply;
         if (jvbApi != null)
         {
-            try
+            if (logger.isDebugEnabled())
             {
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug("Using JVB API for request");
-                }
-                reply = jvbApi.sendIqAndGetReply(iq);
-            } catch (JvbApiException e)
-            {
-                throw new ColibriException(e.getMessage());
+                logger.debug("Using JVB API for request");
             }
+            reply = jvbApi.sendIqAndGetReply(iq);
         }
         else
         {
