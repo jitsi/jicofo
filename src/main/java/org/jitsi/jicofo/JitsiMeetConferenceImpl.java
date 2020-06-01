@@ -737,6 +737,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * The versions of the JVB API for which support has been implemented.
+     *
+     * NOTE: this is defined here because it should be as close as possible
+     * to the switch statement below which instantiates the proper API client
+     * instance.  BOTH the switch statement AND this member must be updated
+     * when adding support for a new JVB API version.
+     */
+    private static SupportedApiVersions implementedJvbApiVersions =
+        new SupportedApiVersions(ApiVersion.V1);
+    /**
      * Creates a new {@link ColibriConference} and creates a {@link JvbApi}
      * instance for it to use to control the JVB
      * @param bridgeJid see
@@ -760,8 +770,9 @@ public class JitsiMeetConferenceImpl
                 "client supports " + VersionKt.SUPPORTED_API_VERSIONS +
                 ", bridge supports " + bridge.getSupportedApiVersions());
             ApiVersion maxApiVersion =
-                VersionKt.SUPPORTED_API_VERSIONS.maxSupported(
-                    bridge.getSupportedApiVersions());
+                VersionKt.SUPPORTED_API_VERSIONS.intersect(
+                    bridge.getSupportedApiVersions())
+                    .maxSupported(implementedJvbApiVersions);
             if (maxApiVersion == null)
             {
                 logger.info("No JVB API version compatibility found " +
@@ -770,6 +781,11 @@ public class JitsiMeetConferenceImpl
             else
             {
                 logger.info("Got common api version " + maxApiVersion);
+                /**
+                 * NOTE: when adding or removing versions to this switch
+                 * statement, the changes must also be made to
+                 * {@link implementedJvbApiVersions} member.
+                 */
                 switch (maxApiVersion)
                 {
                     case V1:
