@@ -3083,6 +3083,7 @@ public class JitsiMeetConferenceImpl
 
             OctoParticipant octoParticipant = getOctoParticipant(remoteRelays);
             octoParticipant.setRelays(remoteRelays);
+            updateColibriOctoChannels(octoParticipant);
         }
 
         /**
