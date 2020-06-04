@@ -26,7 +26,6 @@ import org.jitsi.utils.*;
 import org.jitsi.utils.logging.Logger;
 import org.jitsi.videobridge.*;
 
-import org.jitsi_modified.impl.neomedia.rtp.*;
 import org.jitsi.nlj.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
