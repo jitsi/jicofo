@@ -213,10 +213,14 @@ public class Bridge
 
         jvbApiUrl = stats.getValueAsString("jvb-api-base-url");
         jvbApiPort = stats.getValueAsInt("jvb-api-port");
-        supportedApiVersions = SupportedApiVersionsKt.fromPresenceString(
-            SupportedApiVersions.Companion,
-            stats.getValueAsString("jvb-api-version")
-        );
+        String supportedVersions = stats.getValueAsString("jvb-api-version");
+        if (supportedVersions != null)
+        {
+            supportedApiVersions = SupportedApiVersionsKt.fromPresenceString(
+                SupportedApiVersions.Companion,
+                supportedVersions
+            );
+        }
     }
 
     Bridge(BridgeSelector bridgeSelector,
