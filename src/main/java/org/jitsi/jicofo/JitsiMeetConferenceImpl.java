@@ -767,10 +767,10 @@ public class JitsiMeetConferenceImpl
             bridge.getSupportedApiVersions() != null)
         {
             logger.info("Bridge advertised a JVB API address.  JVB API " +
-                "client supports " + VersionKt.SUPPORTED_API_VERSIONS +
+                "client supports " + JvbApiClientInfo.SUPPORTED_API_VERSIONS +
                 ", bridge supports " + bridge.getSupportedApiVersions());
             ApiVersion maxApiVersion =
-                VersionKt.SUPPORTED_API_VERSIONS.intersect(
+                JvbApiClientInfo.SUPPORTED_API_VERSIONS.intersect(
                     bridge.getSupportedApiVersions())
                     .maxSupported(implementedJvbApiVersions);
             if (maxApiVersion == null)
