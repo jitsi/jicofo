@@ -472,20 +472,12 @@ public class ColibriConferenceImpl
         Stanza reply;
         if (jvbApi != null)
         {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Using JVB API for request");
-            }
             reply = jvbApi.sendIqAndGetReply(iq);
         }
         else
         {
             try
             {
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug("Using XMPP connection for request");
-                }
                 reply = connection.sendPacketAndGetReply(iq);
             }
             catch (OperationFailedException ofe)
@@ -908,6 +900,10 @@ public class ColibriConferenceImpl
     public void setJvbApi(JvbApi jvbApi)
     {
         this.jvbApi = jvbApi;
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("Using JVB API for requests");
+        }
     }
 
     /**
