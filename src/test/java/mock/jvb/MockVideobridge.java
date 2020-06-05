@@ -205,7 +205,7 @@ public class MockVideobridge
                 .collect(Collectors.toList());
     }
 
-    public int getEnpointCount()
+    public int getEndpointCount()
     {
         return bridge.getConferences().stream()
                 .mapToInt(Conference::getEndpointCount)
