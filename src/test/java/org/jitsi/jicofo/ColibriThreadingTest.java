@@ -192,7 +192,7 @@ public class ColibriThreadingTest
         }
 
         assertEquals(1, mockBridge.getConferenceCount());
-        assertEquals(allocators.length * 3, mockBridge.getChannelsCount());
+        assertEquals(allocators.length, mockBridge.getEnpointCount());
 
         mockBridge.stop(osgi.bc);
     }

@@ -112,13 +112,13 @@ public class ColibriTest
             = colibriConf.createColibriChannels(
                 peer1, null, true, contents);
 
-        assertEquals(3 , mockBridge.getChannelsCount());
+        assertEquals(1 , mockBridge.getEnpointCount());
 
         ColibriConferenceIQ peer2Channels
             = colibriConf.createColibriChannels(
                 peer2, null, true, contents);
 
-        assertEquals(6 , mockBridge.getChannelsCount());
+        assertEquals(2 , mockBridge.getEnpointCount());
 
         assertEquals("Peer 1 should have 3 channels allocated",
                      3, countChannels(peer1Channels));
@@ -143,14 +143,14 @@ public class ColibriTest
         //FIXME: fix unreliable sleep call
         Thread.sleep(5000);
 
-        assertEquals(3, mockBridge.getChannelsCount());
+        assertEquals(1, mockBridge.getEnpointCount());
 
         colibriConf.expireChannels(peer1Channels);
 
         //FIXME: fix unreliable sleep call
         Thread.sleep(1000);
 
-        assertEquals(0 , mockBridge.getChannelsCount());
+        assertEquals(0 , mockBridge.getEnpointCount());
 
         testConference.stop();
     }
