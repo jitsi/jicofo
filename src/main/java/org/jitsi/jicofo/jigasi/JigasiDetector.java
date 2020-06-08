@@ -347,6 +347,13 @@ public class JigasiDetector
         return (int) instances.stream().filter(i -> supportSip(i)).count();
     }
 
+    public int getJigasiSipInGracefulShutdownCount()
+    {
+        return (int) instances.stream()
+            .filter(i -> supportSip(i))
+            .filter(i -> isInGracefulShutdown(i)).count();
+    }
+
     public int getJigasiTranscriberCount()
     {
         return (int) instances.stream().filter(i -> supportTranscription(i)).count();
@@ -357,6 +364,8 @@ public class JigasiDetector
     {
         JSONObject stats = new JSONObject();
         stats.put("sip_count", getJigasiSipCount());
+        stats.put("sip_in_graceful_shutdown_count",
+            getJigasiSipInGracefulShutdownCount());
         stats.put("transcriber_count", getJigasiTranscriberCount());
 
         return stats;
