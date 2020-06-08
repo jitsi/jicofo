@@ -25,7 +25,6 @@ import mock.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.colibri.*;
@@ -192,7 +191,7 @@ public class ColibriThreadingTest
         }
 
         assertEquals(1, mockBridge.getConferenceCount());
-        assertEquals(allocators.length * 3, mockBridge.getChannelsCount());
+        assertEquals(allocators.length, mockBridge.getEndpointCount());
 
         mockBridge.stop(osgi.bc);
     }

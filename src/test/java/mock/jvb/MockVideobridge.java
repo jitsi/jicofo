@@ -124,8 +124,7 @@ public class MockVideobridge
             try
             {
                 IQ confResult = bridge.handleColibriConferenceIQ(
-                        (ColibriConferenceIQ) iqRequest,
-                        Videobridge.OPTION_ALLOW_ANY_FOCUS);
+                        (ColibriConferenceIQ) iqRequest);
                 confResult.setTo(iqRequest.getFrom());
                 confResult.setStanzaId(iqRequest.getStanzaId());
                 return confResult;
@@ -178,7 +177,7 @@ public class MockVideobridge
     public List<RtpEncodingDesc> getSimulcastEncodings(
             String confId, String endpointId)
     {
-        Conference conference = bridge.getConference(confId, null);
+        Conference conference = bridge.getConference(confId);
         AbstractEndpoint endpoint = conference.getEndpoint(endpointId);
 
         MediaSourceDesc[] sources = endpoint.getMediaSources();
@@ -201,14 +200,16 @@ public class MockVideobridge
     public List<Conference> getNonHealthCheckConferences()
     {
         // Filter out conferences created for health checks
-        return Arrays.stream(bridge.getConferences())
+        return bridge.getConferences().stream()
                 .filter(Conference::includeInStatistics)
                 .collect(Collectors.toList());
     }
 
-    public int getChannelsCount()
+    public int getEndpointCount()
     {
-        return bridge.getChannelCount();
+        return bridge.getConferences().stream()
+                .mapToInt(Conference::getEndpointCount)
+                .sum();
     }
 
     public Jid getBridgeJid()
