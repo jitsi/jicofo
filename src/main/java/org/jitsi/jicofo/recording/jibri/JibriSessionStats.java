@@ -155,6 +155,7 @@ public class JibriSessionStats
      * Describes as JSON.
      * @param stats the JSON object where the stats will end up.
      */
+    @SuppressWarnings("unchecked")
     public void toJSON(JSONObject stats)
     {
         stats.put("live_streaming_active", activeLiveStreamingSessions);

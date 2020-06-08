@@ -19,10 +19,10 @@ package org.jitsi.jicofo.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -279,7 +279,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return;
         }
 
-        ExtensionElement ext
+        T ext
             = presence.getExtension(extensionElementName, extensionNamespace);
 
         // if the extension is missing skip processing
@@ -288,7 +288,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return;
         }
 
-        processInstanceStatusChanged(getJid(member), (T) ext);
+        processInstanceStatusChanged(getJid(member), ext);
     }
 
     /**

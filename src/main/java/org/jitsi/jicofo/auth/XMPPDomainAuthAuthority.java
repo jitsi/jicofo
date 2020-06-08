@@ -18,9 +18,10 @@
 package org.jitsi.jicofo.auth;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.utils.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * XMPP domain authentication authority that authorizes user who are logged
@@ -82,7 +83,7 @@ public class XMPPDomainAuthAuthority
             // Create new session
             BareJid bareJid = peerJid.asBareJid();
             String machineUID = query.getMachineUID();
-            if (StringUtils.isNullOrEmpty(machineUID))
+            if (isBlank(machineUID))
             {
                 return ErrorFactory.createNotAcceptableError(query,
                         "Missing mandatory attribute '"

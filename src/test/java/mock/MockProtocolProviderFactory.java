@@ -18,8 +18,6 @@
 package mock;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
-import org.jitsi.eventadmin.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -72,14 +70,8 @@ public class MockProtocolProviderFactory
     protected ProtocolProviderService createService(String userID,
                                                     AccountID accountID)
     {
-        EventAdmin eventAdmin
-            = Objects.requireNonNull(
-                    ServiceUtils.getService(
-                            getBundleContext(), EventAdmin.class),
-                    "eventAdmin");
-
         MockProtocolProvider protocolProvider
-            = new MockProtocolProvider((MockAccountID) accountID, eventAdmin);
+            = new MockProtocolProvider((MockAccountID) accountID);
 
         protocolProvider.includeBasicTeleOpSet();
 
@@ -91,7 +83,6 @@ public class MockProtocolProviderFactory
             protocolProvider.includeJingleOpSet();
             protocolProvider.includeSimpleCapsOpSet();
             protocolProvider.includeDirectXmppOpSet();
-            protocolProvider.includeSubscriptionOpSet();
         }
 
         return protocolProvider;

@@ -17,11 +17,11 @@
  */
 package org.jitsi.impl.reservation.rest.json;
 
-import org.jitsi.utils.*;
 import org.json.simple.parser.*;
 
 import java.io.*;
 
+import static org.apache.commons.lang3.StringUtils.*;
 /**
  * Abstract template class for implementing JSON paring with
  * {@link ContentHandler} interface.
@@ -200,7 +200,7 @@ public abstract class AbstractJsonHandler<T>
                                            String key)
         throws ParseException
     {
-        if(!StringUtils.isNullOrEmpty(oldValue) && !oldValue.equals(newValue))
+        if(isNotBlank(oldValue) && !oldValue.equals(newValue))
         {
             throw new ParseException(
                 ParseException.ERROR_UNEXPECTED_EXCEPTION,

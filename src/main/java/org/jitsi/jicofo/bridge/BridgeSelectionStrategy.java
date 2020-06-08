@@ -163,14 +163,25 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.keySet().stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region " + participantRegion);
-
             totalNotLoadedAlreadyInConferenceInRegion++;
+            logSelection(result.get(), conferenceBridges, participantRegion);
         }
 
         return result;
+    }
+
+    private void logSelection(
+            Bridge bridge,
+            Map<Bridge, Integer> conferenceBridges,
+            String participantRegion)
+    {
+        String method = Thread.currentThread().getStackTrace()[2].getMethodName();
+        logger.debug("Bridge selected: method=" + method
+            + ", participantRegion=" + participantRegion
+            + ", bridge=" + bridge
+            + ", conference_bridges="
+            + conferenceBridges.keySet().stream().map(Bridge::toString)
+                .collect(Collectors.joining(", ")));
     }
 
     /**
@@ -195,12 +206,9 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,bridge=" + result.get() +
-                "participant_region " + participantRegion);
-
             totalNotLoadedInRegion++;
-
             updateSplitStats(conferenceBridges, result.get(), participantRegion);
+            logSelection(result.get(), conferenceBridges, participantRegion);
         }
 
         return result;
@@ -250,10 +258,8 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.keySet().stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region " + participantRegion);
             totalLeastLoadedAlreadyInConferenceInRegion++;
+            logSelection(result.get(), conferenceBridges, participantRegion);
         }
 
         return result;
@@ -279,13 +285,9 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-
-            logger.info("bridge_selected,bridge="  + result.get() +
-                "participant_region " + participantRegion);
-
             totalLeastLoadedInRegion++;
-
             updateSplitStats(conferenceBridges, result.get(), participantRegion);
+            logSelection(result.get(), conferenceBridges, participantRegion);
         }
 
         return result;
@@ -313,10 +315,8 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,bridge=" + result.get() +
-                ",conference_bridges=" + conferenceBridges.keySet().stream().map(Bridge::toString).collect(Collectors.joining(", ")) +
-                "participant_region " + participantRegion);
             totalLeastLoadedAlreadyInConference++;
+            logSelection(result.get(), conferenceBridges, participantRegion);
         }
 
         return result;
@@ -338,10 +338,9 @@ abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            logger.info("bridge_selected,bridge=" + result.get());
             totalLeastLoaded++;
-
             updateSplitStats(conferenceBridges, result.get(), participantRegion);
+            logSelection(result.get(), conferenceBridges, participantRegion);
         }
 
         return result;
@@ -407,6 +406,7 @@ abstract class BridgeSelectionStrategy
     }
 
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject json = new JSONObject();

@@ -36,15 +36,6 @@ public class JicofoBundleConfig
     private boolean useMockProtocols = false;
 
     /**
-     * Indicates whether mock protocol providers should be used instead of
-     * original Jitsi protocol providers.
-     */
-    public boolean isUseMockProtocols()
-    {
-        return useMockProtocols;
-    }
-
-    /**
      * Make OSGi use mock protocol providers instead of original Jitsi protocols
      * implementation.
      *
@@ -80,7 +71,6 @@ public class JicofoBundleConfig
                 "org/jitsi/service/libjitsi/LibJitsiActivator"
             },
             {
-                "net/java/sip/communicator/util/UtilActivator",
                 "org/jitsi/eventadmin/Activator",
             },
             {
@@ -96,15 +86,6 @@ public class JicofoBundleConfig
             {
                 "net/java/sip/communicator/service/protocol/media/ProtocolMediaActivator"
             },
-            useMockProtocols
-                ? new String[]
-                {
-                    "mock/media/MockMediaActivator"
-                }
-                : new String[]
-                {
-                    //"net/java/sip/communicator/impl/neomedia/NeomediaActivator"
-                },
             {
                 "org/jitsi/jicofo/version/VersionActivator"
             },
@@ -119,7 +100,6 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/jicofo/bridge/JvbDoctor",
                 "org/jitsi/jicofo/recording/jibri/JibriStats",
                 "org/jitsi/jicofo/VersionBroadcaster"
             },

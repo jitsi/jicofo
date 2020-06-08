@@ -17,6 +17,8 @@ echo    --user_domain=DOMAIN specifies the name of XMPP domain used by the focus
 echo    --user_name=USERNAME specifies the username used by the focus XMPP user to login. (default: focus@user_domain)
 echo    --user_password=PASSWORD specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method.
 echo.
+echo    SECRET and PASSWORD can alternatively be set via the environment variables JICOFO_SECRET and JICOFO_AUTH_PASSWORD respectively.
+echo.
 exit /B 1
 
 :begin
@@ -30,4 +32,4 @@ FOR %%F IN (lib/*.jar) DO (
   SET cp=!cp!;lib/%%F%
 )
 
-java -Djava.util.logging.config.file=lib/logging.properties -cp %cp% %mainClass% %*
+java -Djava.util.logging.config.file=lib/logging.properties -Djdk.tls.ephemeralDHKeySize=2048 -cp %cp% %mainClass% %*

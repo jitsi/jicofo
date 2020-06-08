@@ -18,11 +18,12 @@
 package org.jitsi.impl.reservation.rest;
 
 import org.jitsi.impl.reservation.rest.json.*;
-import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class represents a conference in reservation system model.
@@ -343,7 +344,7 @@ public class Conference
      */
     private void putString(Map<String, Object> map, String key, String value)
     {
-        if (!StringUtils.isNullOrEmpty(value))
+        if (isNotBlank(value))
         {
             map.put(key, value);
         }

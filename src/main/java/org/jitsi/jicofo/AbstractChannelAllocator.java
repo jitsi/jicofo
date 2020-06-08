@@ -21,11 +21,12 @@ import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * A task which allocates Colibri channels and (optionally) initiates a
@@ -172,7 +173,15 @@ public abstract class AbstractChannelAllocator implements Runnable
     {
         List<ContentPacketExtension> offer;
 
-        offer = createOffer();
+        try
+        {
+            offer = createOffer();
+        }
+        catch (UnsupportedFeatureConfigurationException e)
+        {
+            logger.error("Error creating offer", e);
+            return;
+        }
         if (canceled)
         {
             return;
@@ -228,7 +237,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * Creates a Jingle offer for the {@link Participant} of this
      * {@link AbstractChannelAllocator}.
      */
-    protected abstract List<ContentPacketExtension> createOffer();
+    protected abstract List<ContentPacketExtension> createOffer() throws UnsupportedFeatureConfigurationException;
 
     /**
      * Allocates Colibri channels for this {@link AbstractChannelAllocator}'s
@@ -249,9 +258,9 @@ public abstract class AbstractChannelAllocator implements Runnable
         }
 
         // The bridge is faulty.
-        boolean faulty = false;
+        boolean faulty;
         // We want to re-invite the participants in this conference.
-        boolean restartConference = false;
+        boolean restartConference;
         try
         {
             logger.info(
@@ -322,8 +331,8 @@ public abstract class AbstractChannelAllocator implements Runnable
 
         // If the ColibriConference is in use, and we want to retry,
         // notify the JitsiMeetConference.
-        if (restartConference && !StringUtils.isNullOrEmpty(
-                    bridgeSession.colibriConference.getConferenceId()))
+        if (restartConference &&
+                isNotBlank(bridgeSession.colibriConference.getConferenceId()))
         {
             meetConference.channelAllocationFailed(jvb);
         }

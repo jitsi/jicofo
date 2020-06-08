@@ -99,7 +99,7 @@ public class Bridge
     /**
      * The parent {@link BridgeSelector}.
      */
-    private BridgeSelector bridgeSelector;
+    private final BridgeSelector bridgeSelector;
 
     /**
      * The XMPP address of the bridge.
@@ -109,13 +109,7 @@ public class Bridge
     /**
      * Keep track of the recently allocated or removed channels.
      */
-    private final RateStatistics videoChannelsRate = new RateStatistics(10000);
-
-    /**
-     * The last reported bitrate in Kbps.
-     */
-    @SuppressWarnings("unused")
-    private int lastReportedBitrateKbps = 0;
+    private final RateStatistics newEndpointsRate = new RateStatistics(10000);
 
     /**
      * The last reported packet rate in packets per second.
@@ -167,19 +161,10 @@ public class Bridge
         }
         stats = this.stats;
 
-        Integer bitrateUpKbps = null;
-        Integer bitrateDownKbps = null;
-        Integer octoReceiveBitrate = null;
-        Integer octoSendBitrate = null;
         Integer packetRateDown = null;
         Integer packetRateUp = null;
         try
         {
-            bitrateUpKbps = stats.getValueAsInt(BITRATE_UPLOAD);
-            bitrateDownKbps = stats.getValueAsInt(BITRATE_DOWNLOAD);
-            octoReceiveBitrate
-                    = stats.getValueAsInt(OCTO_RECEIVE_BITRATE);
-            octoSendBitrate = stats.getValueAsInt(OCTO_SEND_BITRATE);
             packetRateDown = stats.getValueAsInt(PACKET_RATE_DOWNLOAD);
             packetRateUp = stats.getValueAsInt(PACKET_RATE_UPLOAD);
         }
@@ -187,28 +172,21 @@ public class Bridge
         {
         }
 
-        if (bitrateUpKbps != null && bitrateDownKbps != null)
-        {
-            int bitrate = bitrateDownKbps + bitrateUpKbps;
-            if (octoReceiveBitrate != null)
-            {
-                bitrate += octoReceiveBitrate;
-            }
-            if (octoSendBitrate != null)
-            {
-                bitrate += octoSendBitrate;
-            }
-
-            lastReportedBitrateKbps = bitrate;
-        }
-
         if (packetRateDown != null && packetRateUp != null)
         {
             lastReportedPacketRatePps = packetRateDown + packetRateUp;
         }
 
-        setIsOperational(!Boolean.parseBoolean(stats.getValueAsString(
-            SHUTDOWN_IN_PROGRESS)));
+        // FIXME graceful shutdown should be treated separately from
+        //  "operational". When jvb is in graceful shutdown it does not allow
+        //  any new conferences but it allows to add participants to
+        //  the existing ones. Marking a bridge not operational while in
+        //  graceful shutdown will move the conference as soon as any new
+        //  participant joins and that is not very graceful.
+        if (Boolean.parseBoolean(stats.getValueAsString(SHUTDOWN_IN_PROGRESS)))
+        {
+            setIsOperational(false);
+        }
 
         String newVersion = stats.getValueAsString(VERSION);
         if (newVersion != null)
@@ -251,29 +229,15 @@ public class Bridge
 
     public boolean isOperational()
     {
-        // Check if we should give this bridge another try
-        verifyFailureThreshold();
+        // To filter out intermittent failures, do not return operational
+        // until past the reset threshold since the last failure.
+        if (System.currentTimeMillis() - failureTimestamp
+                < bridgeSelector.getFailureResetThreshold())
+        {
+            return false;
+        }
 
         return isOperational;
-    }
-
-    /**
-     * Verifies if it has been long enough since last bridge failure to give
-     * it another try(reset isOperational flag).
-     */
-    private void verifyFailureThreshold()
-    {
-        if (isOperational)
-        {
-            return;
-        }
-
-        if (System.currentTimeMillis() - failureTimestamp
-                > bridgeSelector.getFailureResetThreshold())
-        {
-            logger.info("Resetting operational status for " + jid);
-            isOperational = true;
-        }
     }
 
     /**
@@ -300,24 +264,21 @@ public class Bridge
         return Double.compare(this.getStress(), o.getStress());
     }
 
-    void onVideoChannelsChanged(Integer diff)
+    /**
+     * Notifies this {@link Bridge} that it was used for a new endpoint.
+     */
+    public void endpointAdded()
     {
-        if (diff == null)
-        {
-            logger.error("diff is null");
-            return;
-        }
-
-        videoChannelsRate.update(diff, System.currentTimeMillis());
+        newEndpointsRate.update(1, System.currentTimeMillis());
     }
 
     /**
      * Returns the net number of video channels recently allocated or removed
      * from this bridge.
      */
-    private long getRecentVideoChannelChange()
+    private long getRecentlyAddedEndpointCount()
     {
-        return videoChannelsRate.getAccumulatedCount();
+        return newEndpointsRate.getAccumulatedCount();
     }
 
     public Jid getJid()
@@ -366,7 +327,7 @@ public class Bridge
     {
         double stress =
             (lastReportedPacketRatePps
-                + Math.max(0, getRecentVideoChannelChange()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
+                + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
             / MAX_TOTAL_PACKET_RATE_PPS;
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.

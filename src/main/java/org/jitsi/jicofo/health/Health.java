@@ -70,10 +70,9 @@ public class Health
     private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
 
     /**
-     * Config property to control health checks:
-     * <li>true - enabled</li>
-     * <li>false - disabled</li>
-     * <li>(null - not set) - auto enable on first REST request(default)</li>
+     * The name of the property to enable health checks. When enabled, health
+     * checks will be performed periodically (every 10 seconds) and the result
+     * available on the {@code /about/health} HTTP endpoint.
      */
     private static final String ENABLE_HEALTH_CHECKS_PNAME
             = "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS";
@@ -83,18 +82,6 @@ public class Health
      */
     private long totalSlowHealthChecks = 0;
 
-    /**
-     * Whether internal health checks are enabled. If not enabled, the rest
-     * API will always return 500 error. If {@link #ENABLE_HEALTH_CHECKS_PNAME}
-     * is not set then the first request will auto enable them.
-     */
-    private Boolean enabled = null;
-
-    /**
-     * FIXME: Temporary override for max health check duration.
-     * Jicofo has been occasionally failing health checks by the join MUC
-     * operation taking too long to finish. The issue is under investigation.
-     */
     public Health()
     {
         super(Duration.ofSeconds(10),
@@ -110,32 +97,21 @@ public class Health
                 = ServiceUtils2.getService(
                         bundleContext, ConfigurationService.class);
 
-        String enableHealthChecksStr
-                = cfg.getString(ENABLE_HEALTH_CHECKS_PNAME);
-
-        enabled = enableHealthChecksStr != null
-                ? "true".equalsIgnoreCase(enableHealthChecksStr)
-                : null;
-
-        if (enabled == null)
+        if (cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false))
         {
-            logger.info(
-                "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS" +
-                    " is not set - the health checks will auto enable on"
-                        + " the first health REST request");
+            focusManager
+                = Objects.requireNonNull(
+                    ServiceUtils2.getService(bundleContext, FocusManager.class),
+                    "Can not find FocusManager.");
+
+            super.start(bundleContext);
         }
-        else if (enabled == false)
+        else
         {
-            logger.warn("Internal health checks are disabled.");
+            logger.info("Health checks are disabled.");
         }
-
-        focusManager
-            = Objects.requireNonNull(
-                ServiceUtils2.getService(bundleContext, FocusManager.class),
-                "Can not find FocusManager.");
-
-        super.start(bundleContext);
     }
+
 
     @Override
     public void stop(BundleContext bundleContext)
@@ -144,38 +120,6 @@ public class Health
         focusManager = null;
 
         super.stop(bundleContext);
-    }
-
-    @Override
-    public Exception getResult()
-    {
-        // The very first request will block when enabled == null to avoid
-        // running twice
-        synchronized (this)
-        {
-            if(enabled == null)
-            {
-                logger.info(
-                        "Auto-enabling health checks - " +
-                                "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS not set");
-                enabled = true;
-                // Must initialize or will fail the first check with:
-                // "No health checks performed recently"
-                run();
-            }
-        }
-        return super.getResult();
-    }
-
-    @Override
-    public void run()
-    {
-        // Block the periodic runnable if not enabled
-        if (enabled == null || enabled == false)
-        {
-            return;
-        }
-        super.run();
     }
 
     @Override

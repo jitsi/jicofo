@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.auth;
 
 import mock.*;
-import net.java.sip.communicator.util.*;
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -73,7 +73,7 @@ public class XMPPAuthenticationAuthorityTest
             = MockMainMethodActivator.getFocusComponent();
 
         XMPPDomainAuthAuthority xmppAuth
-            = (XMPPDomainAuthAuthority) ServiceUtils.getService(
+            = (XMPPDomainAuthAuthority) ServiceUtils2.getService(
                 FocusBundleActivator.bundleContext,
                 AuthenticationAuthority.class);
 

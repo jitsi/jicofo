@@ -19,9 +19,7 @@ package mock.xmpp.colibri;
 
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.*;
 
@@ -50,7 +48,7 @@ public class AllocThreadingTestColibriConference
     /**
      * Blocking queue used to put and acquire conference creator endpoint.
      */
-    private BlockingQueue<String> confCreatorQueue
+    private final BlockingQueue<String> confCreatorQueue
         = new ArrayBlockingQueue<>(1);
 
     /**
@@ -70,14 +68,14 @@ public class AllocThreadingTestColibriConference
      * {@link ColibriConferenceImpl.ConferenceCreationSemaphore}.
      * Used to verify if all running threads have reached the semaphore.
      */
-    private BlockingQueue<String> createConfSemaphoreQueue
+    private final BlockingQueue<String> createConfSemaphoreQueue
         = new LinkedBlockingQueue<>();
 
     /**
      * Blocking queue used to put and acquire endpoints that have sent it's
      * request packets.
      */
-    private BlockingQueue<String> requestsSentQueue
+    private final BlockingQueue<String> requestsSentQueue
         = new LinkedBlockingQueue<>();
 
     /**
@@ -95,7 +93,7 @@ public class AllocThreadingTestColibriConference
      * response packets. Used to verify if all threads have received their
      * response packets.
      */
-    private BlockingQueue<String> responseReceivedQueue
+    private final BlockingQueue<String> responseReceivedQueue
         = new LinkedBlockingQueue<>();
 
     /**
@@ -110,10 +108,9 @@ public class AllocThreadingTestColibriConference
      * @param connection XMPP connection object that wil be used by new
      *                   instance.
      */
-    public AllocThreadingTestColibriConference(
-        XmppConnection connection, EventAdmin eventAdmin)
+    public AllocThreadingTestColibriConference(XmppConnection connection)
     {
-        super(connection, eventAdmin);
+        super(connection);
     }
 
     /**

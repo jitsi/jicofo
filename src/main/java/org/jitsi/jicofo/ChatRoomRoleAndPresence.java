@@ -19,10 +19,10 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.event.*;
+import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger;
 import org.jitsi.eventadmin.*;
@@ -107,7 +107,7 @@ public class ChatRoomRoleAndPresence
     {
         autoOwner = conference.getGlobalConfig().isAutoOwnerEnabled();
 
-        authAuthority = ServiceUtils.getService(
+        authAuthority = ServiceUtils2.getService(
                 FocusBundleActivator.bundleContext,
                 AuthenticationAuthority.class);
 

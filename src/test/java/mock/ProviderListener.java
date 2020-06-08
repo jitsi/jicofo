@@ -18,7 +18,7 @@
 package mock;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
+import org.jitsi.osgi.*;
 import org.osgi.framework.*;
 
 /**
@@ -35,7 +35,7 @@ public class ProviderListener
     {
         this.context = context;
 
-        pps = ServiceUtils.getService(context, ProtocolProviderService.class);
+        pps = ServiceUtils2.getService(context, ProtocolProviderService.class);
 
         if (pps == null)
         {

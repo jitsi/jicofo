@@ -21,10 +21,10 @@ import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
 
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -53,8 +53,6 @@ public class MockParticipant
 
     private final String nick;
 
-    private final boolean useBundle;
-
     private XmppPeer xmppPeer;
 
     private MockRoomMember user;
@@ -69,21 +67,21 @@ public class MockParticipant
 
     private final Object joinLock = new Object();
 
-    private MediaSourceMap remoteSSRCs = new MediaSourceMap();
+    private final MediaSourceMap remoteSSRCs = new MediaSourceMap();
 
-    private MediaSourceGroupMap remoteSSRCgroups = new MediaSourceGroupMap();
+    private final MediaSourceGroupMap remoteSSRCgroups = new MediaSourceGroupMap();
 
     private HashMap<String, IceUdpTransportPacketExtension> transportMap;
 
     private JingleSession jingleSession;
 
-    private JingleHandler jingleHandler = new JingleHandler();
+    private final JingleHandler jingleHandler = new JingleHandler();
 
     private Jid myJid;
 
     private Jid remoteJid;
 
-    private MediaSourceMap localSSRCs = new MediaSourceMap();
+    private final MediaSourceMap localSSRCs = new MediaSourceMap();
 
     private MediaSourceGroupMap localSSRCGroups = new MediaSourceGroupMap();
 
@@ -91,21 +89,15 @@ public class MockParticipant
 
     private boolean useSsrcGroups;
 
-    private BlockingQueue<JingleIQ> ssrcAddQueue
+    private final BlockingQueue<JingleIQ> ssrcAddQueue
         = new LinkedBlockingQueue<>();
 
-    private BlockingQueue<JingleIQ> ssrcRemoveQueue
+    private final BlockingQueue<JingleIQ> ssrcRemoveQueue
         = new LinkedBlockingQueue<>();
 
     public MockParticipant(String nick)
     {
-        this(nick, true);
-    }
-
-    public MockParticipant(String nick, boolean useBundle)
-    {
         this.nick = nick;
-        this.useBundle = useBundle;
     }
 
     public MockRoomMember getChatMember()
@@ -115,14 +107,7 @@ public class MockParticipant
 
     public void joinInNewThread(final MockMultiUserChat chat)
     {
-        new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                join(chat);
-            }
-        }).start();
+        new Thread(() -> join(chat)).start();
     }
 
     public void waitForJoinThread(long timeout)
@@ -154,7 +139,7 @@ public class MockParticipant
             throw new RuntimeException(e);
         }
 
-        user.setupFeatures(useBundle);
+        user.setupFeatures();
 
 
         try
@@ -255,26 +240,6 @@ public class MockParticipant
         myContents.add(video);
     }
 
-    public void acceptInviteInBg()
-    {
-        new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    acceptInvite(5000);
-                }
-                catch (InterruptedException e)
-                {
-                    logger.error(e, e);
-                    Thread.currentThread().interrupt();
-                }
-            }
-        },"Accept invite " + nick).start();
-    }
-
     public JingleIQ[] acceptInvite(long timeout)
         throws InterruptedException
     {
@@ -326,11 +291,8 @@ public class MockParticipant
             IceUdpTransportPacketExtension transport
                 = new IceUdpTransportPacketExtension();
 
-            if (useBundle)
-            {
-                // Bundle uses RTCP mux
-                transport.addChildExtension(new RtcpmuxPacketExtension());
-            }
+            // Bundle uses RTCP mux
+            transport.addChildExtension(new RtcpmuxPacketExtension());
 
             DtlsFingerprintPacketExtension dtlsFingerprint
                 = new DtlsFingerprintPacketExtension();

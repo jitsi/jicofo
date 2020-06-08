@@ -18,17 +18,13 @@
 package mock;
 
 import mock.muc.*;
-import mock.util.UtilityJingleOpSet;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
-import mock.xmpp.pubsub.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
-import org.jitsi.eventadmin.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
+import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -48,8 +44,6 @@ public class MockProtocolProvider
 
     private final MockAccountID accountId;
 
-    private final EventAdmin eventAdmin;
-
     private RegistrationState registrationState
         = RegistrationState.UNREGISTERED;
 
@@ -57,10 +51,9 @@ public class MockProtocolProvider
 
     private AbstractOperationSetJingle jingleOpSet;
 
-    public MockProtocolProvider(MockAccountID accountId, EventAdmin eventAdmin)
+    public MockProtocolProvider(MockAccountID accountId)
     {
         this.accountId = accountId;
-        this.eventAdmin = eventAdmin;
     }
 
     @Override
@@ -173,7 +166,7 @@ public class MockProtocolProvider
     {
         addSupportedOperationSet(
             OperationSetColibriConference.class,
-            new MockColibriOpSet(this, eventAdmin));
+            new MockColibriOpSet(this));
     }
 
     public void includeJingleOpSet()
@@ -214,13 +207,6 @@ public class MockProtocolProvider
             new MockJitsiMeetTools(this));
     }
 
-    public void includeSubscriptionOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetSubscription.class,
-            new MockSubscriptionOpSetImpl());
-    }
-
     public OperationSetBasicTelephony getTelephony()
     {
         return getOperationSet(OperationSetBasicTelephony.class);
@@ -252,12 +238,6 @@ public class MockProtocolProvider
     {
         return (MockMultiUserChatOpSet)
             getOperationSet(OperationSetMultiUserChat.class);
-    }
-
-    public MockSubscriptionOpSetImpl getMockSubscriptionOpSet()
-    {
-        return (MockSubscriptionOpSetImpl)
-            getOperationSet(OperationSetSubscription.class);
     }
 
     public MockSetSimpleCapsOpSet getMockCapsOpSet()

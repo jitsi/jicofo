@@ -120,7 +120,6 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
         // This is a blocking call.
         ColibriConferenceIQ result =
             bridgeSession.colibriConference.createColibriChannels(
-                true /* bundle */,
                 null /* endpoint */,
                 null /* statsId */,
                 false/* initiator */,
@@ -178,7 +177,6 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
                     null,
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
-                    null,
                     null,
                     null,
                     participant.getRelays());

@@ -39,7 +39,7 @@ public class JigasiSelectorTest
     public static void setUpClass()
         throws Exception
     {
-        brewery = new MockBrewery(
+        brewery = new MockBrewery<>(
             new ProtocolProviderHandler(),
             "roomName@muc-servicename.jabserver.com"
         );

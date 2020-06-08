@@ -17,14 +17,12 @@
  */
 package org.jitsi.protocol.xmpp.util;
 
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.service.neomedia.*;
-import org.jitsi.util.*;
-import org.jitsi.utils.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -32,6 +30,8 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class gathers utility method related to SSRC signaling.
@@ -218,7 +218,7 @@ public class SSRCSignaling
     public static String getMsid(SourcePacketExtension source)
     {
         ParameterPacketExtension msid = getParam(source, "msid");
-        if (msid != null && !StringUtils.isNullOrEmpty(msid.getValue()))
+        if (msid != null && isNotBlank(msid.getValue()))
         {
             return msid.getValue();
         }
@@ -432,7 +432,7 @@ public class SSRCSignaling
         List<SourceGroup>    groups,
         String               groupMsid)
     {
-        if (StringUtils.isNullOrEmpty(groupMsid))
+        if (isBlank(groupMsid))
         {
             throw new IllegalArgumentException("Null or empty 'groupMsid'");
         }

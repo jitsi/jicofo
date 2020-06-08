@@ -352,6 +352,7 @@ public class JigasiDetector
         return (int) instances.stream().filter(i -> supportTranscription(i)).count();
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject stats = new JSONObject();

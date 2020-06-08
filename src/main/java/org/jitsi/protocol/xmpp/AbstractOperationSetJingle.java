@@ -18,8 +18,8 @@
 package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -197,13 +197,6 @@ public abstract class AbstractOperationSetJingle
                 = GroupPacketExtension.createBundleGroup(contents);
 
             inviteIQ.addExtension(group);
-
-            for (ContentPacketExtension content : contents)
-            {
-                // FIXME: is it mandatory ?
-                // http://estos.de/ns/bundle
-                content.addChildExtension(new BundlePacketExtension());
-            }
         }
 
         // FIXME Move this to a place where offer's contents are created or

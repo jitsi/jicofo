@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.auth;
 
 import mock.*;
-import net.java.sip.communicator.util.*;
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 
@@ -71,7 +71,7 @@ public class ShibbolethAuthenticationAuthorityTest
             = MockMainMethodActivator.getFocusComponent();
 
         ShibbolethAuthAuthority shibbolethAuth
-            = (ShibbolethAuthAuthority) ServiceUtils.getService(
+            = (ShibbolethAuthAuthority) ServiceUtils2.getService(
                     FocusBundleActivator.bundleContext,
                     AuthenticationAuthority.class);
 

@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.jicofo.util.*;
-import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -35,6 +34,8 @@ import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class holds the information about Jibri session. It can be either live
@@ -181,7 +182,7 @@ public class JibriSession
     /**
      * The full JID of the entity that has initiated the recording flow.
      */
-    private Jid initiator;
+    private final Jid initiator;
 
     /**
      * The full JID of the entity that has initiated the stop of the recording.
@@ -292,7 +293,7 @@ public class JibriSession
         {
             return JibriSessionEvent.Type.SIP_CALL;
         }
-        else if (StringUtils.isNullOrEmpty(streamID))
+        else if (isBlank(streamID))
         {
             return JibriSessionEvent.Type.RECORDING;
         }
@@ -420,10 +421,8 @@ public class JibriSession
                             processJibriIqFromJibri(error);
                         }
                     },
-                    exception -> {
-                        logger.error(
-                            "Error sending stop iq: " + exception.toString());
-                    },
+                    exception -> logger.error(
+                        "Error sending stop iq: " + exception.toString()),
                     60000);
         } catch (SmackException.NotConnectedException | InterruptedException e)
         {

@@ -17,8 +17,8 @@
  */
 package org.jitsi.impl.reservation.rest.json;
 
-import net.java.sip.communicator.util.*;
 import org.jitsi.impl.reservation.rest.*;
+import org.jitsi.utils.logging.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
 import org.jxmpp.jid.parts.*;
@@ -38,7 +38,7 @@ public class ConferenceJsonHandler
      * The logger.
      */
     private final static Logger logger
-        = Logger.getLogger(ConferenceJsonHandler.class);
+            = Logger.getLogger(ConferenceJsonHandler.class);
 
     /**
      * The key for conference identifier.

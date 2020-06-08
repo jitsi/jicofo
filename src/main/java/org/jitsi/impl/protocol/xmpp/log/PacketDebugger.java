@@ -1,6 +1,21 @@
-package org.jitsi.impl.protocol.xmpp;
+/*
+ * Copyright @ 2018 - present 8x8, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.jitsi.impl.protocol.xmpp.log;
 
-import net.java.sip.communicator.util.*;
+import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 
@@ -38,18 +53,6 @@ public class PacketDebugger
         return debuggerMap.get(connection);
     }
 
-    static private boolean packetLoggingEnabled = false;
-
-    static public boolean isPacketLoggingEnabled()
-    {
-        return packetLoggingEnabled;
-    }
-
-    static public void setPacketLoggingEnabled(boolean enabled)
-    {
-        packetLoggingEnabled = enabled;
-    }
-
     /**
      * Total XMPP packets  received.
      */
@@ -67,6 +70,8 @@ public class PacketDebugger
     public PacketDebugger(XMPPConnection connection, Writer writer, Reader reader)
     {
         super(connection, writer, reader);
+
+        AbstractDebugger.printInterpreted = true;
 
         debuggerMap.put(connection, this);
     }
@@ -97,18 +102,18 @@ public class PacketDebugger
     @Override
     protected void log(String logMessage)
     {
-        if (logMessage.contains("SENT"))
+        if (logMessage.startsWith("SENT"))
         {
             totalPacketsSent += 1;
         }
-        else if (logMessage.contains("RECV"))
+        else if (logMessage.startsWith("RCV PKT ("))
         {
             totalPacketsRecv += 1;
         }
 
-        if (packetLoggingEnabled)
+        if (logger.isDebugEnabled() && !logMessage.startsWith("RECV ("))
         {
-            logger.info(logMessage);
+            logger.debug(logMessage);
         }
     }
 

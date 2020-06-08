@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.xmpp;
 
-import net.java.sip.communicator.util.*;
-
+import org.jetbrains.annotations.*;
+import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
@@ -26,7 +26,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.meet.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.*;
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.component.*;
 import org.jitsi.xmpp.util.*;
 
@@ -36,6 +36,8 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 import org.xmpp.packet.IQ;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * XMPP component that listens for {@link ConferenceIq}
@@ -135,7 +137,7 @@ public class FocusComponent
         throws Exception
     {
         ConfigurationService configService
-            = ServiceUtils.getService(bc, ConfigurationService.class);
+            = ServiceUtils2.getService(bc, ConfigurationService.class);
 
         loadConfig(configService, "org.jitsi.jicofo");
 
@@ -145,15 +147,15 @@ public class FocusComponent
         String shutdownAllowedJid
                 = configService.getString(SHUTDOWN_ALLOWED_JID_PNAME);
         this.shutdownAllowedJid
-            = StringUtils.isNullOrEmpty(shutdownAllowedJid)
+            = isBlank(shutdownAllowedJid)
                 ? null
                 : JidCreate.from(shutdownAllowedJid);
 
         authAuthority
-            = ServiceUtils.getService(bc, AuthenticationAuthority.class);
-        focusManager = ServiceUtils.getService(bc, FocusManager.class);
+            = ServiceUtils2.getService(bc, AuthenticationAuthority.class);
+        focusManager = ServiceUtils2.getService(bc, FocusManager.class);
         reservationSystem
-            = ServiceUtils.getService(bc, ReservationSystem.class);
+            = ServiceUtils2.getService(bc, ReservationSystem.class);
     }
 
     /**
@@ -208,13 +210,6 @@ public class FocusComponent
         try
         {
             org.jivesoftware.smack.packet.IQ smackIq = IQUtils.convert(iq);
-            // We intentionally don't handle ColibriStatsIQ, because we don't
-            // want to expose it publicly. The code is left because it might
-            // be needed in the near future.
-            //if (smackIq instanceof ColibriStatsIQ)
-            //{
-            //    return handleColibriStatsIQ((ColibriStatsIQ) smackIq);
-            //}
             if (smackIq instanceof LoginUrlIq)
             {
                 org.jivesoftware.smack.packet.IQ result
@@ -258,7 +253,7 @@ public class FocusComponent
                 org.jivesoftware.smack.packet.IQ response
                     = handleConferenceIq((ConferenceIq) smackIq);
 
-                return response != null ? IQUtils.convert(response) : null;
+                return IQUtils.convert(response);
             }
             else if (smackIq instanceof ShutdownIQ)
             {
@@ -391,6 +386,7 @@ public class FocusComponent
         return null;
     }
 
+    @NotNull
     private org.jivesoftware.smack.packet.IQ handleConferenceIq(
             ConferenceIq query)
         throws Exception
@@ -493,7 +489,7 @@ public class FocusComponent
             authUrlIq.getPopup() != null && authUrlIq.getPopup();
 
         String machineUID = authUrlIq.getMachineUID();
-        if (StringUtils.isNullOrEmpty(machineUID))
+        if (isBlank(machineUID))
         {
             XMPPError.Builder error
                 = XMPPError.from(
@@ -512,37 +508,5 @@ public class FocusComponent
         logger.info("Sending url: " + result.toXML());
 
         return result;
-    }
-
-    /**
-     * Handles an IQ which contains a COLIBRI "stats" element.
-     * @param iq the iq.
-     * @return the response which should be returned.
-     */
-    private IQ handleColibriStatsIQ(ColibriStatsIQ iq)
-        throws Exception
-    {
-        // Reply with stats
-        ColibriStatsIQ statsReply = new ColibriStatsIQ();
-
-        statsReply.setType(
-            org.jivesoftware.smack.packet.IQ.Type.result);
-        statsReply.setStanzaId(iq.getStanzaId());
-        statsReply.setTo(iq.getFrom());
-
-        int conferenceCount = focusManager.getConferenceCount();
-
-        // Return conference count
-        statsReply.addStat(
-            new ColibriStatsExtension.Stat(
-                "conferences",
-                Integer.toString(conferenceCount)));
-        statsReply.addStat(
-            new ColibriStatsExtension.Stat(
-                "graceful_shutdown",
-                focusManager.isShutdownInProgress()
-                    ? "true" : "false"));
-
-        return IQUtils.convert(statsReply);
     }
 }

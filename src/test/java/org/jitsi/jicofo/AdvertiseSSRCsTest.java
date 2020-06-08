@@ -21,10 +21,10 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
+import org.jitsi.osgi.*;
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
@@ -46,7 +46,7 @@ public class AdvertiseSSRCsTest
     private static final Logger logger
         = Logger.getLogger(AdvertiseSSRCsTest.class);
 
-    private OSGiHandler osgi = OSGiHandler.getInstance();
+    private final OSGiHandler osgi = OSGiHandler.getInstance();
 
     @Before
     public void setUpClass()
@@ -268,7 +268,7 @@ public class AdvertiseSSRCsTest
         user1.videoSourceAdd(new long[]{ u1VideoSSRC2, u1VideoSSRC }, false);
 
         // There should be no source-add notifications sent
-        assertEquals(null, user2.waitForAddSource(500));
+        assertNull(user2.waitForAddSource(500));
 
         assertEquals(1 + /* jvb */ + 1, user2.getRemoteSSRCs("audio").size());
         // There is 1 + 2 extra we've created here in the test
@@ -292,7 +292,7 @@ public class AdvertiseSSRCsTest
             = TestConference.allocate(osgi.bc, serverName, roomName);
 
         JitsiMeetGlobalConfig globalConfig
-            = ServiceUtils.getService(osgi.bc, JitsiMeetGlobalConfig.class);
+            = ServiceUtils2.getService(osgi.bc, JitsiMeetGlobalConfig.class);
 
         assertNotNull(globalConfig);
 
@@ -367,7 +367,7 @@ public class AdvertiseSSRCsTest
         assertEquals(expectedMax, user2.getRemoteSSRCs("video").size());
 
         user1.audioSourceAdd(5);
-        assertTrue(null == user2.waitForAddSource(300));
+        assertNull(user2.waitForAddSource(300));
         assertEquals(expectedMax, user2.getRemoteSSRCs("audio").size());
 
         // User2 has video SSRCs filled already and audio will be filled

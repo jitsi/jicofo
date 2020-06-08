@@ -86,11 +86,11 @@ public class BundleTest
         MockMultiUserChat chat
             = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
-        MockParticipant user1 = new MockParticipant("user1", true);
+        MockParticipant user1 = new MockParticipant("user1");
 
         user1.join(chat);
 
-        MockParticipant user2 = new MockParticipant("user2", true);
+        MockParticipant user2 = new MockParticipant("user2");
 
         user2.join(chat);
 
@@ -142,20 +142,6 @@ public class BundleTest
                                     ContentPacketExtension firstContent,
                                     boolean isBundle)
     {
-        // We expect to find estos bundle
-        BundlePacketExtension bundle
-            = content.getFirstChildOfType(
-                    BundlePacketExtension.class);
-
-        if (isBundle)
-        {
-            assertNotNull(bundle);
-        }
-        else
-        {
-            assertNull(bundle);
-        }
-
         // We expect to find rtcp-mux if there is an RTP description
         RtpDescriptionPacketExtension rtpDesc
             = JingleUtils.getRtpDescription(content);

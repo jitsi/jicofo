@@ -12,6 +12,8 @@ if [[ "$1" == "--help"  || $# -lt 1 ]]; then
     echo -e "\t--user_name=USERNAME\t specifies the username used by the focus XMPP user to login. (default: focus@user_domain)"
     echo -e "\t--user_password=PASSWORD\t specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method."
     echo
+    echo -e "\tSECRET and PASSWORD can alternatively be set via the environment variables JICOFO_SECRET and JICOFO_AUTH_PASSWORD respectively."
+    echo
     exit 1
 fi
 
@@ -26,4 +28,6 @@ if [ -f $logging_config ]; then
     LOGGING_CONFIG_PARAM="-Djava.util.logging.config.file=$logging_config"
 fi
 
-exec java -Xmx3072m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp $LOGGING_CONFIG_PARAM $JAVA_SYS_PROPS -cp $cp $mainClass $@
+if [ -z "$JICOFO_MAX_MEMORY" ]; then JICOFO_MAX_MEMORY=3072m; fi
+
+exec java -Xmx$JICOFO_MAX_MEMORY -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -Djdk.tls.ephemeralDHKeySize=2048 $LOGGING_CONFIG_PARAM $JAVA_SYS_PROPS -cp $cp $mainClass $@

@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.health.*;
@@ -30,9 +29,10 @@ import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.meet.*;
+import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -139,28 +139,6 @@ public class FocusManager
         = "org.jitsi.jicofo.SHORT_ID";
 
     /**
-     * The name of the configuration property used to configure the PubSub node
-     * to which videobridges are publishing their stats. It is used to discover
-     * bridges automatically.
-     */
-    public static final String SHARED_STATS_PUBSUB_NODE_PNAME
-        = "org.jitsi.jicofo.STATS_PUBSUB_NODE";
-
-    /**
-     * A property to enable health check debug. Enabling this will result an
-     * extra thread which will be monitoring the health-checks execution times.
-     * The thread will print thread dump in the logs for those health checks
-     * which execute for more than 3 seconds.
-     */
-    private static final String HEALTH_CHECK_DEBUG_PROP_NAME =
-        "org.jitsi.jicofo.rest.HEALTH_CHECK_DEBUG_ENABLED";
-
-    /**
-     * Whether health check debug is enabled. Off by default.
-     */
-    private boolean healthChecksDebugEnabled = false;
-
-    /**
      * The pseudo-random generator which is to be used when generating IDs.
      */
     private static final Random RANDOM = new Random();
@@ -179,6 +157,11 @@ public class FocusManager
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private final FocusExpireThread expireThread = new FocusExpireThread();
+
+    /**
+     * <tt>FocusManager</tt> service registration.
+     */
+    private ServiceRegistration<FocusManager> serviceRegistration;
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
@@ -262,6 +245,12 @@ public class FocusManager
     {
         BundleContext bundleContext = FocusBundleActivator.bundleContext;
 
+        // Register early, because some of the dependencies e.g.
+        // (JitsiMeeetServices -> BridgeSelector -> JvbDoctor) need it. This
+        // will be cleaned up at a later stage.
+        serviceRegistration
+                = bundleContext.registerService(FocusManager.class, this, null);
+
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
@@ -301,14 +290,10 @@ public class FocusManager
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     focusUserDomain);
-        jitsiMeetServices.start(bundleContext);
-
-        String statsPubSubNode
-            = config.getString(SHARED_STATS_PUBSUB_NODE_PNAME);
+        jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(
-            xmppDomain, statsPubSubNode, protocolProviderHandler);
+        componentsDiscovery.start(xmppDomain, protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -319,9 +304,6 @@ public class FocusManager
 
         protocolProviderHandler.addRegistrationListener(this);
         protocolProviderHandler.register();
-
-        healthChecksDebugEnabled
-            = config.getBoolean(HEALTH_CHECK_DEBUG_PROP_NAME, false);
     }
 
     /**
@@ -329,6 +311,11 @@ public class FocusManager
      */
     public void stop()
     {
+        if (serviceRegistration != null)
+        {
+            serviceRegistration.unregister();
+            serviceRegistration = null;
+        }
         expireThread.stop();
 
         if (componentsDiscovery != null)
@@ -341,7 +328,7 @@ public class FocusManager
         {
             try
             {
-                jitsiMeetServices.stop(FocusBundleActivator.bundleContext);
+                jitsiMeetServices.stop();
             }
             catch (Exception e)
             {
@@ -480,7 +467,7 @@ public class FocusManager
      * @param properties configuration properties, see {@link JitsiMeetConfig}
      *                   for the list of valid properties.
      *
-     * @returns new {@link JitsiMeetConferenceImpl} instance
+     * @return new {@link JitsiMeetConferenceImpl} instance
      *
      * @throws Exception if any error occurs.
      */
@@ -527,6 +514,7 @@ public class FocusManager
                     .append(option.getValue())
                     .append(" ");
             }
+            sb.append(options);
 
             logger.info(sb);
         }
@@ -690,7 +678,7 @@ public class FocusManager
                 // hold the lock or not. Presumably it is safe to call it
                 // multiple times.
                 ShutdownService shutdownService
-                    = ServiceUtils.getService(
+                    = ServiceUtils2.getService(
                         FocusBundleActivator.bundleContext,
                         ShutdownService.class);
 
@@ -741,6 +729,7 @@ public class FocusManager
         return jitsiMeetServices;
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
@@ -802,7 +791,7 @@ public class FocusManager
         }
 
         HealthCheckService healthService
-            = ServiceUtils.getService(
+            = ServiceUtils2.getService(
                     FocusBundleActivator.bundleContext,
                     HealthCheckService.class);
         if (healthService instanceof Health)
@@ -879,15 +868,6 @@ public class FocusManager
     }
 
     /**
-     * {@see FocusManager#healthChecksDebugEnabled}
-     * @return true if enabled.
-     */
-    public boolean isHealthChecksDebugEnabled()
-    {
-        return healthChecksDebugEnabled;
-    }
-
-    /**
      * Class takes care of stopping {@link JitsiMeetConference} if there is no
      * active session for too long.
      */
@@ -936,14 +916,7 @@ public class FocusManager
                 throw new IllegalStateException();
             }
 
-            timeoutThread = new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    expireLoop();
-                }
-            }, "FocusExpireThread");
+            timeoutThread = new Thread(this::expireLoop, "FocusExpireThread");
 
             enabled = true;
 

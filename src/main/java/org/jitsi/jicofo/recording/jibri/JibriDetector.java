@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
@@ -188,6 +188,7 @@ public class JibriDetector
         }
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         JSONObject stats = new JSONObject();
