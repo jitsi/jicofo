@@ -26,7 +26,7 @@ import org.jitsi.utils.*;
 import org.jitsi.utils.logging.Logger;
 import org.jitsi.videobridge.*;
 
-import org.jitsi_modified.impl.neomedia.rtp.*;
+import org.jitsi.nlj.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -174,22 +174,22 @@ public class MockVideobridge
         }
     }
 
-    public List<RTPEncodingDesc> getSimulcastLayers(
+    public List<RtpEncodingDesc> getSimulcastEncodings(
             String confId, String endpointId)
     {
         Conference conference = bridge.getConference(confId);
         AbstractEndpoint endpoint = conference.getEndpoint(endpointId);
 
-        MediaStreamTrackDesc[] tracks = endpoint.getMediaStreamTracks();
+        MediaSourceDesc[] sources = endpoint.getMediaSources();
 
-        if (ArrayUtils.isNullOrEmpty(tracks))
+        if (ArrayUtils.isNullOrEmpty(sources))
             return new ArrayList<>();
 
-        RTPEncodingDesc[] layers = tracks[0].getRTPEncodings();
-        if (ArrayUtils.isNullOrEmpty(layers))
+        RtpEncodingDesc[] encodings = sources[0].getRtpEncodings();
+        if (ArrayUtils.isNullOrEmpty(encodings))
             return new ArrayList<>();
 
-        return Arrays.asList(layers);
+        return Arrays.asList(encodings);
     }
 
     /**
