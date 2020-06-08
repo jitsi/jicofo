@@ -198,6 +198,11 @@
       <artifactId>jersey-media-json-jackson</artifactId>
       <version>${jersey.version}</version>
     </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jvb-api-client</artifactId>
+      <version>2.1-227-g3ce5bf97</version>
+    </dependency>
     <!-- jersey relies on this version of javassist or we get hk2
     errors, but other libs (Powermock, at this time) also rely on
     it but an older version, and that version is getting selected
