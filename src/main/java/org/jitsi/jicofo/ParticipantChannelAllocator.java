@@ -111,7 +111,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             contents.add(
                 jingleOfferFactory.createAudioContent(
                     disableIce, useDtls, config.stereoEnabled(),
-                    enableRemb, enableTcc));
+                    config.getOpusMaxAverageBitrate(), enableRemb, enableTcc));
         }
 
         if (participant.hasVideoSupport())

@@ -313,7 +313,7 @@ public class ColibriThreadingTest
             = FocusBundleActivator.getJingleOfferFactory();
 
         contents.add(jingleOfferFactory.createAudioContent(
-                    false, true, false, false, false));
+                    false, true, false, -1, false, false));
 
         contents.add(jingleOfferFactory.createVideoContent(
                     false, true, false, false, false, -1, -1));

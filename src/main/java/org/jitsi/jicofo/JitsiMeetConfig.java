@@ -132,6 +132,11 @@ public class JitsiMeetConfig
     public static final String PNAME_STEREO = "stereo";
 
     /**
+     * The name of the "maxaveragebitrate" property.
+     */
+    public static final String PNAME_OPUS_MAX_AVG_BITRATE = "opusMaxAverageBitrate";
+
+    /**
      * The name of the "octo" property.
      */
     public static final String PNAME_OCTO = "octo";
@@ -366,6 +371,15 @@ public class JitsiMeetConfig
     {
         Boolean stereo = getBoolean(PNAME_STEREO);
         return stereo != null && stereo;
+    }
+
+    /**
+     * @return the "maxaveragebitrate" which should be included in offers or -1 if not specified.
+     */
+    public int getOpusMaxAverageBitrate()
+    {
+        Integer maxAvgBitrate = getInt(PNAME_OPUS_MAX_AVG_BITRATE);
+        return maxAvgBitrate == null ? -1 : maxAvgBitrate;
     }
 
     public boolean isOctoEnabled()

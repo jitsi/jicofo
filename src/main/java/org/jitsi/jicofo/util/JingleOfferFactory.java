@@ -247,13 +247,13 @@ public class JingleOfferFactory
      */
     public ContentPacketExtension createAudioContent(
         boolean disableIce, boolean useDtls, boolean stereo,
-        boolean enableRemb, boolean enableTcc)
+        int maxAvgBitrate, boolean enableRemb, boolean enableTcc)
     {
         ContentPacketExtension content
             = createContentPacketExtension(
                     "audio", disableIce, useDtls);
 
-        addAudioToContent(content, stereo, enableRemb, enableTcc);
+        addAudioToContent(content, stereo, maxAvgBitrate, enableRemb, enableTcc);
 
         return content;
     }
@@ -640,12 +640,14 @@ public class JingleOfferFactory
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      * @param stereo Whether to enable stereo for opus.
+     * @param maxAvgBitrate The {@code maxaveragebitrate} to be set for opus.
      * @param enableRemb Whether to enable REMB.
      * @param enableTcc Whether to enable transport-cc.
      */
     private static void addAudioToContent(
             ContentPacketExtension content,
             boolean stereo,
+            int maxAvgBitrate,
             boolean enableRemb,
             boolean enableTcc)
     {
@@ -672,6 +674,11 @@ public class JingleOfferFactory
         {
             // fmtp: 111 stereo=1
             addParameterExtension(opus, "stereo", "1");
+        }
+
+        if (maxAvgBitrate != -1)
+        {
+            addParameterExtension(opus, "maxaveragebitrate", String.valueOf(maxAvgBitrate));
         }
 
         // fmtp:111 useinbandfec=1

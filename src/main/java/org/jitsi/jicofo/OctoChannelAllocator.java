@@ -93,7 +93,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
         contents.add(
             jingleOfferFactory.createAudioContent(
                     !useIce, useDtls, config.stereoEnabled(),
-                    enableRemb, enableTcc));
+                    config.getOpusMaxAverageBitrate(), enableRemb, enableTcc));
 
         contents.add(
             jingleOfferFactory.createVideoContent(
