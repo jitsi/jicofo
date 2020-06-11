@@ -17,24 +17,18 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import org.jitsi.jicofo.bridge.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.*;
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -54,19 +48,6 @@ public class JitsiMeetServices
      */
     private final static Logger logger
         = Logger.getLogger(JitsiMeetServices.class);
-
-    /**
-     * The set of features sufficient for a node to be recognized as a
-     * jitsi-videobridge.
-     */
-    public static final String[] VIDEOBRIDGE_FEATURES = new String[]
-        {
-            ColibriConferenceIQ.NAMESPACE,
-            ProtocolProviderServiceJabberImpl
-                .URN_XMPP_JINGLE_DTLS_SRTP,
-            ProtocolProviderServiceJabberImpl
-                .URN_XMPP_JINGLE_ICE_UDP_1
-        };
 
     /**
      * The XMPP Service Discovery features of MUC service provided by the XMPP
@@ -123,17 +104,6 @@ public class JitsiMeetServices
     private Version XMPPServerVersion;
 
     /**
-     * Returns <tt>true</tt> if given list of features complies with JVB feature
-     * list.
-     * @param features the list of feature to be checked.
-     */
-    static public boolean isJitsiVideobridge(List<String> features)
-    {
-        return DiscoveryUtil.checkFeatureSupport(
-                VIDEOBRIDGE_FEATURES, features);
-    }
-
-    /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo
      *        XMPP connection.
@@ -157,15 +127,6 @@ public class JitsiMeetServices
     }
 
     /**
-     * Called by other classes when they detect JVB instance.
-     * @param bridgeJid the JID of discovered JVB component.
-     */
-    void newBridgeDiscovered(Jid bridgeJid, Version version)
-    {
-        bridgeSelector.addJvbAddress(bridgeJid, version);
-    }
-
-    /**
      * Call when new component becomes available.
      *
      * @param node component XMPP address
@@ -177,11 +138,7 @@ public class JitsiMeetServices
                            List<String> features,
                            Version version)
     {
-        if (isJitsiVideobridge(features))
-        {
-            newBridgeDiscovered(node, version);
-        }
-        else if (sipGateway == null
+        if (sipGateway == null
             && DiscoveryUtil.checkFeatureSupport(SIP_GW_FEATURES, features))
         {
             logger.info("Discovered SIP gateway: " + node);
