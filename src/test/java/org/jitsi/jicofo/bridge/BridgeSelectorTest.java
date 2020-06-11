@@ -17,9 +17,6 @@
  */
 package org.jitsi.jicofo.bridge;
 
-import mock.*;
-import mock.xmpp.*;
-
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -66,13 +63,10 @@ public class BridgeSelectorTest
         this.meetServices
             = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
 
-        ProviderListener providerListener
-                = new ProviderListener(FocusBundleActivator.bundleContext);
-
-        MockProtocolProvider mockProvider
-                = (MockProtocolProvider) providerListener.obtainProvider(1000);
-
-        createMockJvbNodes(this.meetServices, mockProvider);
+        BridgeSelector bridgeSelector = meetServices.getBridgeSelector();
+        jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
+        jvb2 = bridgeSelector.addJvbAddress(jvb2Jid);
+        jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
     }
 
     @After
@@ -80,32 +74,6 @@ public class BridgeSelectorTest
         throws Exception
     {
         osgi.shutdown();
-    }
-
-    private void createMockJvbNodes(JitsiMeetServices meetServices,
-                                    MockProtocolProvider protocolProvider)
-    {
-        MockSetSimpleCapsOpSet capsOpSet = protocolProvider.getMockCapsOpSet();
-
-        MockCapsNode jvb1Node
-            = new MockCapsNode(
-                    jvb1Jid, JitsiMeetServices.VIDEOBRIDGE_FEATURES);
-
-        MockCapsNode jvb2Node
-            = new MockCapsNode(
-                    jvb2Jid, JitsiMeetServices.VIDEOBRIDGE_FEATURES);
-
-        MockCapsNode jvb3Node
-            = new MockCapsNode(
-                    jvb3Jid, JitsiMeetServices.VIDEOBRIDGE_FEATURES);
-
-        capsOpSet.addChildNode(jvb1Node);
-        capsOpSet.addChildNode(jvb2Node);
-        capsOpSet.addChildNode(jvb3Node);
-
-        jvb1 = meetServices.getBridgeSelector().addJvbAddress(jvb1Jid);
-        jvb2 = meetServices.getBridgeSelector().addJvbAddress(jvb2Jid);
-        jvb3 = meetServices.getBridgeSelector().addJvbAddress(jvb3Jid);
     }
 
     @Test
