@@ -61,7 +61,7 @@ public class Bridge
     /**
      * We assume this is the maximum packet rate that a bridge can handle.
      */
-    private static double MAX_TOTAL_PACKET_RATE_PPS;
+    public static double MAX_TOTAL_PACKET_RATE_PPS;
 
     static
     {
