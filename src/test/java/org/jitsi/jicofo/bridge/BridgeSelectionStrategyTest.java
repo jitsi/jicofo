@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 package org.jitsi.jicofo.bridge;
-import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.util.*;
-import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.impl.*;
@@ -28,39 +25,64 @@ import static org.junit.Assert.assertEquals;
 
 public class BridgeSelectionStrategyTest
 {
-    private final OSGiHandler osgi = OSGiHandler.getInstance();
+    private static Random RANDOM = new Random(23571113);
 
-    private final String region1 = "region1",
-        region2 = "region2",
-        region3 = "region3",
-        invalidRegion = "invalid region";
-
-    private Bridge bridge1, bridge2, bridge3;
-
-    private List<Bridge> availableBridges;
-
-    @Before
-    public void init()
-        throws Exception
+    private static Bridge createBridge(String region, double stress)
     {
-        osgi.init();
-
-        JitsiMeetServices meetServices
-            = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
-
-        BridgeSelector selector = meetServices.getBridgeSelector();
-
-        bridge1 = selector.addJvbAddress(JidCreate.from("bridge1"));
-        bridge2 = selector.addJvbAddress(JidCreate.from("bridge2"));
-        bridge3 = selector.addJvbAddress(JidCreate.from("bridge3"));
-        availableBridges = Collections.unmodifiableList(Arrays.asList(bridge1, bridge2, bridge3));
+        return createBridge(region, stress, "jvb-" + RANDOM.nextInt());
     }
 
-    @After
-    public void tearDown()
-        throws Exception
+    private static Bridge createBridge(String region, double stress, String jid)
     {
-        osgi.shutdown();
+        try
+        {
+            return new Bridge(JidCreate.from(jid)){{
+                setStats(createJvbStats(region, stress));
+            }};
+        }
+        catch (Exception e)
+        {
+            System.err.println("Failed to create jid: " + e);
+            return null;
+        }
+    }
+
+    private static ColibriStatsExtension createJvbStats(String region, double stress)
+    {
+        // Divide by two because we use half of it for upload, half for download
+        int packetRate = (int) (Bridge.MAX_TOTAL_PACKET_RATE_PPS * stress / 2);
+
+        ColibriStatsExtension statsExtension = new ColibriStatsExtension();
+
+        statsExtension.addStat(
+                new ColibriStatsExtension.Stat(
+                        PACKET_RATE_DOWNLOAD, packetRate));
+        statsExtension.addStat(
+                new ColibriStatsExtension.Stat(
+                        PACKET_RATE_UPLOAD, packetRate));
+
+        if (region != null)
+        {
+            statsExtension.addStat(
+                    new ColibriStatsExtension.Stat(
+                            REGION, region));
+            statsExtension.addStat(
+                    new ColibriStatsExtension.Stat(
+                            RELAY_ID, region));
+        }
+
+        return statsExtension;
+    }
+
+    @Test
+    public void createBridgeStress()
+    {
+        // Make sure createBridge sets the stress level as expected.
+        for (double stress = 0.1; stress < 1.0; stress += 0.1)
+        {
+            Bridge bridge = createBridge("region", stress);
+            assertEquals(stress, bridge.getStress(), 0.01);
+        }
     }
 
     /**
@@ -70,46 +92,25 @@ public class BridgeSelectionStrategyTest
     @Test
     public void preferLowestStress()
     {
-        Bridge localBridge = bridge1,
-            lowStressBridge = bridge3,
-            mediumStressBridge = bridge2,
-            highStressBridge = bridge1;
-
-        String lowStressRegion = region3,
-            mediumStressRegion = region2,
-            highStressRegion = region1;
-
         // Here we specify 3 bridges in 3 different regions: one high-stressed,
-        // one medium-stressed and one low-stressed. The numbers bellow are
-        // bitrates, as our stress calculation is based on bitrate.
-        //
-        // The exact values don't really matter and they're only meaningful when
-        // interpreted relative to each other; i.e. 75_000 is high compared to
-        // 50_000, but low compared to 750_000.
-        //
-        // The selector takes care of splitting the available bridges into
-        // groups of bridges with similar stress level and allocate participants
-        // to a bridge in the least stressed group.
-        highStressBridge.setStats(
-            createJvbStats(20, 5, highStressRegion));
+        // one medium-stressed and one low-stressed.
+        String lowStressRegion = "lowStressRegion";
+        String mediumStressRegion = "mediumStressRegion";
+        String highStressRegion = "highStressRegion";
 
-        mediumStressBridge.setStats(
-            createJvbStats(10, 2, mediumStressRegion));
+        Bridge lowStressBridge = createBridge(lowStressRegion, 0.1);
+        Bridge mediumStressBridge = createBridge(mediumStressRegion, 0.3);
+        Bridge highStressBridge = createBridge(highStressRegion, 0.8);
 
-        lowStressBridge.setStats(
-            createJvbStats(1, 0, lowStressRegion));
-
+        List<Bridge> allBridges = Arrays.asList(lowStressBridge, mediumStressBridge, highStressBridge);
+        Collections.sort(allBridges);
 
         BridgeSelectionStrategy strategy
             = new RegionBasedBridgeSelectionStrategy();
-        strategy.setLocalRegion(localBridge.getRegion());
+        strategy.setLocalRegion(highStressRegion);
 
         Map<Bridge, Integer> conferenceBridges = new HashMap<>();
-        List<Bridge> allBridges = new ArrayList<>(availableBridges);
-        Collections.sort(allBridges);
-
         // Initial selection should select a bridge in the participant's region.
-
         assertEquals(
             highStressBridge,
             strategy.select(allBridges, conferenceBridges, highStressRegion, true));
@@ -118,7 +119,7 @@ public class BridgeSelectionStrategyTest
             strategy.select(allBridges, conferenceBridges, mediumStressRegion, true));
         assertEquals(
             lowStressBridge,
-            strategy.select(allBridges, conferenceBridges, invalidRegion, true));
+            strategy.select(allBridges, conferenceBridges, "invalid region", true));
         assertEquals(
             lowStressBridge,
             strategy.select(allBridges, conferenceBridges, null, true));
@@ -150,104 +151,53 @@ public class BridgeSelectionStrategyTest
         // conference bridge.
         assertEquals(
             lowStressBridge,
-            strategy.select(allBridges, conferenceBridges, invalidRegion, true));
+            strategy.select(allBridges, conferenceBridges, "invalid region", true));
     }
 
-
-    private ColibriStatsExtension createJvbStats(int numberOfLocalSenders, int numberOfLocalReceivers, String region)
-    {
-        MaxPacketRateCalculator maxPacketRateCalculator = new MaxPacketRateCalculator(
-            4 /* numberOfConferenceBridges */,
-            20 /* numberOfGlobalSenders */,
-            2 /* numberOfSpeakers */,
-            numberOfLocalSenders,
-            numberOfLocalReceivers
-        );
-
-        int maxDownload = maxPacketRateCalculator.computeIngressPacketRatePps()
-            , maxUpload = maxPacketRateCalculator.computeEgressPacketRatePps();
-
-        ColibriStatsExtension statsExtension = new ColibriStatsExtension();
-
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                PACKET_RATE_DOWNLOAD, maxDownload));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                PACKET_RATE_UPLOAD, maxUpload));
-
-        if (region != null)
-        {
-            statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
-                    REGION, region));
-            statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
-                    RELAY_ID, region));
-        }
-
-        return statsExtension;
-    }
 
     @Test
     public void preferRegionWhenStressIsEqual()
+            throws Exception
     {
-        Bridge localBridge = bridge1,
-            mediumStressBridge3 = bridge3,
-            mediumStressBridge2 = bridge2,
-            highStressBridge = bridge1;
-
-        String mediumStressRegion3 = region3,
-            mediumStressRegion2 = region2,
-            highStressRegion = region1;
-
         // Here we specify 3 bridges in 3 different regions: one high-stressed
-        // and two medium-stressed. The numbers bellow are bitrates, as our
-        // stress calculation is based on bitrate.
-        //
-        // The exact values don't really matter and they're only meaningful when
-        // interpreted relative to each other; i.e. 75_000 is high compared to
-        // 50_000, but low compared to 750_000.
-        //
-        // The selector takes care of splitting the available bridges into
-        // groups of bridges with similar stress level and allocate participants
-        // to a bridge in the least stressed group.
-        highStressBridge.setStats(
-            createJvbStats(20, 5, highStressRegion));
-        mediumStressBridge3.setStats(
-            createJvbStats(10, 2, mediumStressRegion3));
-        mediumStressBridge2.setStats(
-            createJvbStats(10, 2, mediumStressRegion2));
+        // and two medium-stressed.
+        String mediumStressRegion1 = "mediumStressRegion1";
+        String mediumStressRegion2 = "mediumStressRegion2";
+        String highStressRegion = "highStressRegion";
+
+        Bridge mediumStressBridge1 = createBridge(mediumStressRegion1, 0.25);
+        Bridge mediumStressBridge2 = createBridge(mediumStressRegion2, 0.3);
+        Bridge highStressBridge = createBridge(highStressRegion, 0.8);
+
+        List<Bridge> allBridges = Arrays.asList(mediumStressBridge1, mediumStressBridge2, highStressBridge);
+        Collections.sort(allBridges);
 
         BridgeSelectionStrategy strategy
             = new RegionBasedBridgeSelectionStrategy();
-        strategy.setLocalRegion(localBridge.getRegion());
+        strategy.setLocalRegion(highStressRegion);
 
         Map<Bridge, Integer> conferenceBridges = new HashMap<>();
-        List<Bridge> allBridges = new ArrayList<>(availableBridges);
-        Collections.sort(allBridges);
 
         // Initial selection should select a bridge in the participant's region.
-
         assertEquals(
             highStressBridge,
             strategy.select(allBridges, conferenceBridges, highStressRegion, true));
 
-        Bridge b = strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true);
         assertEquals(
-            mediumStressBridge2, b);
+            mediumStressBridge2,
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true));
 
         assertEquals(
-            mediumStressBridge2,
-            strategy.select(allBridges, conferenceBridges, invalidRegion, true));
+            mediumStressBridge1,
+            strategy.select(allBridges, conferenceBridges, "invalid region", true));
         assertEquals(
-            mediumStressBridge2,
+            mediumStressBridge1,
             strategy.select(allBridges, conferenceBridges, null, true));
 
         conferenceBridges.put(mediumStressBridge2, 1);
         assertEquals(
-            mediumStressBridge3,
-            strategy.select(allBridges, conferenceBridges, mediumStressRegion3, true));
+            mediumStressBridge1,
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion1, true));
         assertEquals(
             mediumStressBridge2,
             strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true));
@@ -270,6 +220,6 @@ public class BridgeSelectionStrategyTest
         // conference bridge.
         assertEquals(
             mediumStressBridge2,
-            strategy.select(allBridges, conferenceBridges, invalidRegion, true));
+            strategy.select(allBridges, conferenceBridges, "invalid region", true));
     }
 }
