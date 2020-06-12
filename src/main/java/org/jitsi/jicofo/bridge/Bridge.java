@@ -162,18 +162,14 @@ public class Bridge
      */
     private SupportedApiVersions supportedApiVersions = null;
 
-    Bridge(Jid jid, Version version)
+    Bridge(Jid jid)
     {
-        this(jid, version, BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
+        this(jid, BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
     }
 
-    Bridge(Jid jid, Version version, long failureResetThreshold)
+    Bridge(Jid jid, long failureResetThreshold)
     {
         this.jid = Objects.requireNonNull(jid, "jid");
-        if (version != null)
-        {
-            this.version = version.getVersion();
-        }
         this.failureResetThreshold = failureResetThreshold;
     }
 

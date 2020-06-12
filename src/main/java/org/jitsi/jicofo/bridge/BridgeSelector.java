@@ -190,18 +190,7 @@ public class BridgeSelector
      */
     public Bridge addJvbAddress(Jid bridgeJid)
     {
-        return addJvbAddress(bridgeJid, null, null);
-    }
-
-    /**
-     * Adds a brige to this selector and sets it's version. If a bridge with
-     * the given JID already exists, it does nothing.
-     *
-     * @return the {@link Bridge} instance for thee given JID.
-     */
-    public Bridge addJvbAddress(Jid bridgeJid, Version version)
-    {
-        return addJvbAddress(bridgeJid, version, null);
+        return addJvbAddress(bridgeJid, null);
     }
 
     /**
@@ -210,13 +199,11 @@ public class BridgeSelector
      *
      * @param bridgeJid the JID of videobridge to be added to this selector's
      * set of videobridges.
-     * @param version the {@link Version} IQ instance which contains the info
-     * about JVB version.
      * @param stats the last reported statistics
      * @return the {@link Bridge} instance for thee given JID.
      */
     synchronized public Bridge addJvbAddress(
-            Jid bridgeJid, Version version, ColibriStatsExtension stats)
+            Jid bridgeJid, ColibriStatsExtension stats)
     {
         Bridge bridge = bridges.get(bridgeJid);
         if (bridge != null)
@@ -225,7 +212,7 @@ public class BridgeSelector
             return bridge;
         }
 
-        Bridge newBridge = new Bridge(bridgeJid, version, getFailureResetThreshold());
+        Bridge newBridge = new Bridge(bridgeJid, getFailureResetThreshold());
         if (stats != null)
         {
             newBridge.setStats(stats);
