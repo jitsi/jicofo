@@ -74,6 +74,13 @@ public class BridgeSelectionStrategyTest
         return statsExtension;
     }
 
+    private static void setOctoVersion(Bridge bridge, int octoVersion)
+    {
+        ColibriStatsExtension stats = new ColibriStatsExtension();
+        stats.addStat(new ColibriStatsExtension.Stat("octo_version", octoVersion));
+        bridge.setStats(stats);
+    }
+
     @Test
     public void createBridgeStress()
     {
@@ -157,7 +164,6 @@ public class BridgeSelectionStrategyTest
 
     @Test
     public void preferRegionWhenStressIsEqual()
-            throws Exception
     {
         // Here we specify 3 bridges in 3 different regions: one high-stressed
         // and two medium-stressed.
@@ -221,5 +227,29 @@ public class BridgeSelectionStrategyTest
         assertEquals(
             mediumStressBridge2,
             strategy.select(allBridges, conferenceBridges, "invalid region", true));
+    }
+
+    @Test
+    public void doNotMixOctoVersions()
+    {
+        Bridge highStressBridge = createBridge("region", 0.9);
+        Bridge lowStressBridge = createBridge("region", 0.1);
+
+        setOctoVersion(highStressBridge, 13);
+        setOctoVersion(lowStressBridge, 12);
+
+        List<Bridge> allBridges = Arrays.asList(lowStressBridge, highStressBridge);
+        Collections.sort(allBridges);
+
+        Map<Bridge, Integer> conferenceBridges = new HashMap<>();
+        conferenceBridges.put(highStressBridge, 1);
+
+        BridgeSelectionStrategy strategy = new RegionBasedBridgeSelectionStrategy();
+
+        // lowStressBridge must not be selected, because the conference already
+        // has a bridge and its octo_version does not match.
+        assertEquals(
+                highStressBridge,
+                strategy.select(allBridges, conferenceBridges, "region", true));
     }
 }
