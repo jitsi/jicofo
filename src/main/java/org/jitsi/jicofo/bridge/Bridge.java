@@ -124,6 +124,11 @@ public class Bridge
     private String version = null;
 
     /**
+     * The version of Octo that this bridge supports.
+     */
+    private int octoVersion = 0;
+
+    /**
      * Stores the {@code operational} status of the bridge, which is
      * {@code true} if the bridge has been successfully used by the focus to
      * allocate channels. It is reset to {@code false} when the focus fails
@@ -220,6 +225,12 @@ public class Bridge
                 SupportedApiVersions.Companion,
                 supportedVersions
             );
+        }
+
+        Integer octoVersion = stats.getValueAsInt("octo_version");
+        if (octoVersion != null)
+        {
+            this.octoVersion = octoVersion;
         }
     }
 
@@ -398,4 +409,10 @@ public class Bridge
     {
         return this.supportedApiVersions;
     }
+
+    public int getOctoVersion()
+    {
+        return octoVersion;
+    }
+
 }
