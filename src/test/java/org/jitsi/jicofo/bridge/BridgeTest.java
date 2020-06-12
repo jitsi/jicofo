@@ -18,7 +18,7 @@ public class BridgeTest
     {
         // Everything should work regardless of the type of jid.
         Jid jvb1Jid = JidCreate.from("jvb.example.com");
-        Bridge bridge = new Bridge(null, jvb1Jid, null);
+        Bridge bridge = new Bridge(jvb1Jid, null);
 
         // In the most balanced scenario, in a 100 people call over 4 bridges,
         // each bridge handles 25 participants. Note that we can't know in

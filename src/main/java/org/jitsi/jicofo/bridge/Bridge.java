@@ -97,10 +97,7 @@ public class Bridge
      */
     private static final double OVERSTRESSED_THRESHOLD = .8;
 
-    /**
-     * The parent {@link BridgeSelector}.
-     */
-    private final BridgeSelector bridgeSelector;
+    private long failureResetThreshold;
 
     /**
      * The XMPP address of the bridge.
@@ -164,6 +161,21 @@ public class Bridge
      * if it is supported.
      */
     private SupportedApiVersions supportedApiVersions = null;
+
+    Bridge(Jid jid, Version version)
+    {
+        this(jid, version, BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
+    }
+
+    Bridge(Jid jid, Version version, long failureResetThreshold)
+    {
+        this.jid = Objects.requireNonNull(jid, "jid");
+        if (version != null)
+        {
+            this.version = version.getVersion();
+        }
+        this.failureResetThreshold = failureResetThreshold;
+    }
 
     /**
      * Notifies this instance that a new {@link ColibriStatsExtension} was
@@ -234,18 +246,6 @@ public class Bridge
         }
     }
 
-    Bridge(BridgeSelector bridgeSelector,
-           Jid jid,
-           Version version)
-    {
-        this.bridgeSelector = bridgeSelector;
-        this.jid = Objects.requireNonNull(jid, "jid");
-        if (version != null)
-        {
-            this.version = version.getVersion();
-        }
-    }
-
     /**
      * @return the relay ID advertised by the bridge, or {@code null} if
      * none was advertised.
@@ -271,7 +271,7 @@ public class Bridge
         // To filter out intermittent failures, do not return operational
         // until past the reset threshold since the last failure.
         if (System.currentTimeMillis() - failureTimestamp
-                < bridgeSelector.getFailureResetThreshold())
+                < failureResetThreshold)
         {
             return false;
         }
@@ -415,4 +415,8 @@ public class Bridge
         return octoVersion;
     }
 
+    void setFailureResetThreshold(long failureResetThreshold)
+    {
+        this.failureResetThreshold = failureResetThreshold;
+    }
 }

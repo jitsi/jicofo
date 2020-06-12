@@ -225,7 +225,7 @@ public class BridgeSelector
             return bridge;
         }
 
-        Bridge newBridge = new Bridge(this, bridgeJid, version);
+        Bridge newBridge = new Bridge(bridgeJid, version, getFailureResetThreshold());
         if (stats != null)
         {
             newBridge.setStats(stats);
@@ -370,6 +370,7 @@ public class BridgeSelector
     void setFailureResetThreshold(long failureResetThreshold)
     {
         this.failureResetThreshold = failureResetThreshold;
+        bridges.values().forEach(b -> b.setFailureResetThreshold(failureResetThreshold));
     }
 
     /**
