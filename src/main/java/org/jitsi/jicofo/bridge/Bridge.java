@@ -121,7 +121,9 @@ public class Bridge
     private String version = null;
 
     /**
-     * The version of Octo that this bridge supports.
+     * The version of Octo that this bridge supports. This is set to the default
+     * version (0) which will be assumed if the bridge does not explicitly
+     * advertise a version.
      */
     private int octoVersion = 0;
 
