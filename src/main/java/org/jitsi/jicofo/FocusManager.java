@@ -131,7 +131,7 @@ public class FocusManager
         = "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED";
 
     /**
-     * The name of the property used to configure a 1-byte identifier of this
+     * The name of the property used to configure an identifier of this
      * Jicofo instance, used for the purpose of generating conference IDs unique
      * across a set of Jicofo instances.
      */
@@ -180,11 +180,11 @@ public class FocusManager
     /**
      * The set of the IDs of conferences in {@link #conferences}.
      */
-    private final Set<String> conferenceIds = new HashSet<>();
+    private final Set<Integer> conferenceGids = new HashSet<>();
 
     /**
      * The object used to synchronize access to {@link #conferences} and
-     * {@link #conferenceIds}.
+     * {@link #conferenceGids}.
      */
     private final Object conferencesSyncRoot = new Object();
 
@@ -238,6 +238,12 @@ public class FocusManager
     private final Statistics statistics = new Statistics();
 
     /**
+     * The ID of this Jicofo instance, used to generate conference GIDs. The
+     * special value 0 is used when none is explicitly configured.
+     */
+    private int jicofoId = 0;
+
+    /**
      * Starts this manager for given <tt>hostName</tt>.
      */
     public void start()
@@ -257,6 +263,20 @@ public class FocusManager
         String hostName = config.getString(HOSTNAME_PNAME);
         DomainBareJid xmppDomain = JidCreate.domainBareFrom(
                 config.getString(XMPP_DOMAIN_PNAME));
+
+        int jicofoId = config.getInt(JICOFO_SHORT_ID_PNAME, -1);
+        if (jicofoId < 1 || jicofoId > 0xffff)
+        {
+            logger.warn(
+                "Jicofo ID is not set. Configure a valid value [1-65535] by "
+                + "setting " + JICOFO_SHORT_ID_PNAME + ". Future versions "
+                + "will require this for Octo.");
+            this.jicofoId = 0;
+        }
+        else
+        {
+            this.jicofoId = jicofoId;
+        }
 
         focusUserDomain = JidCreate.domainBareFrom(
                 config.getString(FOCUS_USER_DOMAIN_PNAME));
@@ -474,7 +494,6 @@ public class FocusManager
     private JitsiMeetConferenceImpl createConference(
             EntityBareJid room, Map<String, String> properties,
             Level logLevel, boolean includeInStatistics)
-        throws Exception
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
@@ -482,7 +501,7 @@ public class FocusManager
             = JitsiMeetGlobalConfig.getGlobalConfig(
                 FocusBundleActivator.bundleContext);
 
-        String id = generateConferenceId();
+        int id = generateConferenceId();
         JitsiMeetConferenceImpl conference
             = new JitsiMeetConferenceImpl(
                     room,
@@ -493,7 +512,7 @@ public class FocusManager
                     id, includeInStatistics);
 
         conferences.put(room, conference);
-        conferenceIds.add(id);
+        conferenceGids.add(id);
 
         if (includeInStatistics)
         {
@@ -525,7 +544,7 @@ public class FocusManager
         {
             eventAdmin.postEvent(
                 EventFactory.focusCreated(
-                    conference.getId(), conference.getRoomName()));
+                    String.valueOf(conference.getId()), conference.getRoomName()));
         }
 
         return conference;
@@ -536,23 +555,17 @@ public class FocusManager
      * conference in a specific format (6 hexadecimal symbols).
      * @return the generated ID.
      */
-    private String generateConferenceId()
+    private int generateConferenceId()
     {
-        // TODO: verify the format
-        String jicofoShortId
-            = FocusBundleActivator.getConfigService()
-                .getString(JICOFO_SHORT_ID_PNAME, "ff");
-
-        String id;
+        int id;
 
         synchronized (conferencesSyncRoot)
         {
             do
             {
-                id = jicofoShortId +
-                        String.format("%04x", RANDOM.nextInt(0x1_0000));
+                id = (jicofoId << 16) | RANDOM.nextInt(0x1_0000);
             }
-            while (conferenceIds.contains(id));
+            while (conferenceGids.contains(id));
         }
 
         return id;
@@ -594,7 +607,7 @@ public class FocusManager
         synchronized (conferencesSyncRoot)
         {
             conferences.remove(roomName);
-            conferenceIds.remove(conference.getId());
+            conferenceGids.remove(conference.getId());
 
             if (conference.getLogger().isInfoEnabled())
                 logger.info(
@@ -614,7 +627,7 @@ public class FocusManager
             {
                 eventAdmin.postEvent(
                     EventFactory.focusDestroyed(
-                        conference.getId(), conference.getRoomName()));
+                        String.valueOf(conference.getId()), conference.getRoomName()));
             }
 
             maybeDoShutdown();
@@ -867,6 +880,10 @@ public class FocusManager
         return statistics;
     }
 
+    boolean isJicofoIdConfigured()
+    {
+        return jicofoId != 0;
+    }
     /**
      * Class takes care of stopping {@link JitsiMeetConference} if there is no
      * active session for too long.
