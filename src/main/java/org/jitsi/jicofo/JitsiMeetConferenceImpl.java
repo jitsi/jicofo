@@ -92,7 +92,7 @@ public class JitsiMeetConferenceImpl
      * A "global" identifier of this {@link JitsiMeetConferenceImpl} (i.e.
      * a unique ID accross a set of independent jicofo instances).
      */
-    private final int gid;
+    private final long gid;
 
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -299,7 +299,7 @@ public class JitsiMeetConferenceImpl
             JitsiMeetConfig config,
             JitsiMeetGlobalConfig globalConfig,
             Level logLevel,
-            int gid,
+            long gid,
             boolean includeInStatistics)
     {
         this.protocolProviderHandler
@@ -2466,9 +2466,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Focus instance ID
+     * Conference ID.
      */
-    public int getId()
+    public long getId()
     {
         return gid;
     }

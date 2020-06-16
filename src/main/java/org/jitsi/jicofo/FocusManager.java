@@ -180,7 +180,7 @@ public class FocusManager
     /**
      * The set of the IDs of conferences in {@link #conferences}.
      */
-    private final Set<Integer> conferenceGids = new HashSet<>();
+    private final Set<Long> conferenceGids = new HashSet<>();
 
     /**
      * The object used to synchronize access to {@link #conferences} and
@@ -504,7 +504,7 @@ public class FocusManager
         JitsiMeetConferenceImpl conference;
         synchronized (conferencesSyncRoot)
         {
-            int id = generateConferenceId();
+            long id = generateConferenceId();
             conference
                     = new JitsiMeetConferenceImpl(
                     room,
@@ -559,9 +559,9 @@ public class FocusManager
      * conference in a specific format (6 hexadecimal symbols).
      * @return the generated ID.
      */
-    private int generateConferenceId()
+    private long generateConferenceId()
     {
-        int id;
+        long id;
 
         synchronized (conferencesSyncRoot)
         {
