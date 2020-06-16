@@ -501,9 +501,12 @@ public class FocusManager
             = JitsiMeetGlobalConfig.getGlobalConfig(
                 FocusBundleActivator.bundleContext);
 
-        int id = generateConferenceId();
-        JitsiMeetConferenceImpl conference
-            = new JitsiMeetConferenceImpl(
+        JitsiMeetConferenceImpl conference;
+        synchronized (conferencesSyncRoot)
+        {
+            int id = generateConferenceId();
+            conference
+                    = new JitsiMeetConferenceImpl(
                     room,
                     focusUserName,
                     protocolProviderHandler,
@@ -511,8 +514,9 @@ public class FocusManager
                     this, config, globalConfig, logLevel,
                     id, includeInStatistics);
 
-        conferences.put(room, conference);
-        conferenceGids.add(id);
+            conferences.put(room, conference);
+            conferenceGids.add(id);
+        }
 
         if (includeInStatistics)
         {
