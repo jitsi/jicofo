@@ -81,23 +81,18 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
 
         boolean useIce = false;
         boolean useDtls = false;
-        boolean useRtx = false; // config.isRtxEnabled();
-        boolean enableRemb = false; // config.isRembEnabled();
-        boolean enableTcc = false; // config.isTccEnabled();
+        boolean useRtx = false;
 
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();
 
         List<ContentPacketExtension> contents = new ArrayList<>();
         contents.add(
-            jingleOfferFactory.createAudioContent(
-                    useIce, useDtls, config.stereoEnabled(),
-                    config.getOpusMaxAverageBitrate(), enableRemb, enableTcc));
+            jingleOfferFactory.createAudioContent(useIce, useDtls, config));
 
         contents.add(
             jingleOfferFactory.createVideoContent(
-                    useIce, useDtls, useRtx, enableRemb, enableTcc,
-                    -1, -1));
+                    useIce, useDtls, useRtx, config));
 
         return contents;
     }

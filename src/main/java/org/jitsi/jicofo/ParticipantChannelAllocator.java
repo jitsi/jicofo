@@ -98,10 +98,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
         boolean useIce = participant.hasIceSupport();
         boolean useDtls = participant.hasDtlsSupport();
+        // TODO We have a single `config` for the conference, but the rtx flag
+        // is per participant. Perhaps we should have each participant have its
+        // own config.
         boolean useRtx
             = config.isRtxEnabled() && participant.hasRtxSupport();
-        boolean enableRemb = config.isRembEnabled();
-        boolean enableTcc = config.isTccEnabled();
 
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();
@@ -109,19 +110,14 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         if (participant.hasAudioSupport())
         {
             contents.add(
-                jingleOfferFactory.createAudioContent(
-                    useIce, useDtls, config.stereoEnabled(),
-                    config.getOpusMaxAverageBitrate(), enableRemb, enableTcc));
+                jingleOfferFactory.createAudioContent(useIce, useDtls, config));
         }
 
         if (participant.hasVideoSupport())
         {
             contents.add(
                 jingleOfferFactory.createVideoContent(
-                    useIce, useDtls, useRtx,
-                    enableRemb, enableTcc,
-                    config.getMinBitrate(),
-                    config.getStartBitrate()));
+                    useIce, useDtls, useRtx, config));
         }
 
         // Is SCTP enabled ?

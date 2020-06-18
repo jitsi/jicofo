@@ -304,6 +304,11 @@ public class ColibriThreadingTest
         mockBridge.stop(osgi.bc);
     }
 
+    /**
+     * Default config.
+     */
+    private static JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
+
     static List<ContentPacketExtension> createContents()
     {
         List<ContentPacketExtension> contents
@@ -312,11 +317,9 @@ public class ColibriThreadingTest
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();
 
-        contents.add(jingleOfferFactory.createAudioContent(
-                    true, true, false, -1, false, false));
+        contents.add(jingleOfferFactory.createAudioContent(true, true, config));
 
-        contents.add(jingleOfferFactory.createVideoContent(
-                    true, true, false, false, false, -1, -1));
+        contents.add(jingleOfferFactory.createVideoContent(true, true, false, config));
 
         contents.add(jingleOfferFactory.createDataContent(true, true));
 
