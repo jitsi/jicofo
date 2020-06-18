@@ -237,7 +237,7 @@ public class JingleOfferFactory
      * Creates a {@link ContentPacketExtension} for the audio media type that
      * will be included in initial conference offer.
      *
-     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     * @param useIce pass <tt>false</tt> if RAW transport instead of ICE
      * should be indicated in the offer.
      * @param useDtls whether to add a DTLS element under the transport
      * elements in the offer.
@@ -246,12 +246,12 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public ContentPacketExtension createAudioContent(
-        boolean disableIce, boolean useDtls, boolean stereo,
+        boolean useIce, boolean useDtls, boolean stereo,
         int maxAvgBitrate, boolean enableRemb, boolean enableTcc)
     {
         ContentPacketExtension content
             = createContentPacketExtension(
-                    "audio", !disableIce, useDtls);
+                    "audio", useIce, useDtls);
 
         addAudioToContent(content, stereo, maxAvgBitrate, enableRemb, enableTcc);
 
@@ -262,7 +262,7 @@ public class JingleOfferFactory
      * Creates a {@link ContentPacketExtension} for the data media type that
      * will be included in initial conference offer.
      *
-     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     * @param useIce pass <tt>false</tt> if RAW transport instead of ICE
      * should be indicated in the offer.
      * @param useDtls whether to add a DTLS element under the transport
      * elements in the offer.
@@ -271,11 +271,11 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public ContentPacketExtension createDataContent(
-        boolean disableIce, boolean useDtls)
+        boolean useIce, boolean useDtls)
     {
         ContentPacketExtension content
             = createContentPacketExtension(
-                    "data", !disableIce, useDtls);
+                    "data", useIce, useDtls);
 
         addDataToContent(content);
 
@@ -286,7 +286,7 @@ public class JingleOfferFactory
      * Creates a {@link ContentPacketExtension} for the video media type that
      * will be included in initial conference offer.
      *
-     * @param disableIce pass <tt>true</tt> if RAW transport instead of ICE
+     * @param useIce pass <tt>false</tt> if RAW transport instead of ICE
      * should be indicated in the offer.
      * @param useDtls whether to add a DTLS element under the transport
      * elements in the offer.
@@ -300,13 +300,13 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public ContentPacketExtension createVideoContent(
-            boolean disableIce, boolean useDtls, boolean useRtx,
+            boolean useIce, boolean useDtls, boolean useRtx,
             boolean enableRemb, boolean enableTcc,
             int minBitrate, int startBitrate)
     {
         ContentPacketExtension videoContentPe
             = createContentPacketExtension(
-                    "video", !disableIce, useDtls);
+                    "video", useIce, useDtls);
 
         addVideoToContent(videoContentPe, useRtx, enableRemb, enableTcc,
                 minBitrate, startBitrate);
