@@ -93,9 +93,9 @@ public class JitsiMeetServices
     private Jid sipGateway;
 
     /**
-     * The address of MUC component served by our XMPP domain.
+     * The address of the conference MUC component served by our XMPP domain.
      */
-    private Jid mucService;
+    private Jid conferenceMucService;
 
     /**
      * <tt>Version</tt> IQ instance holding detected XMPP server's version
@@ -145,12 +145,13 @@ public class JitsiMeetServices
 
             setSipGateway(node);
         }
-        else if (mucService == null
+        else if (conferenceMucService == null
             && DiscoveryUtil.checkFeatureSupport(MUC_FEATURES, features))
         {
-            logger.info("MUC component discovered: " + node);
 
-            setMucService(node);
+            logger.info("Conference MUC component discovered: " + node);
+
+            setConferenceMucService(node);
         }
         else if (jicofoUserDomain != null && jicofoUserDomain.equals(node) && version != null)
         {
@@ -177,11 +178,11 @@ public class JitsiMeetServices
 
             sipGateway = null;
         }
-        else if (node.equals(mucService))
+        else if (node.equals(conferenceMucService))
         {
             logger.warn("MUC component went offline: " + node);
 
-            mucService = null;
+            conferenceMucService = null;
         }
     }
 
@@ -255,18 +256,18 @@ public class JitsiMeetServices
     /**
      * Returns the address of MUC component for our XMPP domain.
      */
-    public Jid getMucService()
+    public Jid getConferenceMucService()
     {
-        return mucService;
+        return conferenceMucService;
     }
 
     /**
      * Sets the address of MUC component.
-     * @param mucService component sub domain that refers to MUC
+     * @param conferenceMucService component sub domain that refers to MUC
      */
-    public void setMucService(Jid mucService)
+    private void setConferenceMucService(Jid conferenceMucService)
     {
-        this.mucService = mucService;
+        this.conferenceMucService = conferenceMucService;
     }
 
     public void start()

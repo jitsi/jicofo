@@ -160,7 +160,7 @@ public class Health
             throw new RuntimeException("No JitsiMeetServices available");
         }
 
-        Jid mucService = services.getMucService();
+        Jid mucService = services.getConferenceMucService();
         if (mucService == null)
         {
             throw new RuntimeException("No MUC component");
