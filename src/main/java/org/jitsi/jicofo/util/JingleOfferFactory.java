@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.util;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.service.configuration.*;
@@ -246,14 +248,14 @@ public class JingleOfferFactory
      *         used in initial conference offer.
      */
     public ContentPacketExtension createAudioContent(
-        boolean useIce, boolean useDtls, boolean stereo,
-        int maxAvgBitrate, boolean enableRemb, boolean enableTcc)
+        boolean useIce,
+        boolean useDtls,
+        @NotNull JitsiMeetConfig config)
     {
         ContentPacketExtension content
-            = createContentPacketExtension(
-                    "audio", useIce, useDtls);
+            = createContentPacketExtension("audio", useIce, useDtls);
 
-        addAudioToContent(content, stereo, maxAvgBitrate, enableRemb, enableTcc);
+        addAudioToContent(content, config);
 
         return content;
     }
@@ -274,8 +276,7 @@ public class JingleOfferFactory
         boolean useIce, boolean useDtls)
     {
         ContentPacketExtension content
-            = createContentPacketExtension(
-                    "data", useIce, useDtls);
+            = createContentPacketExtension("data", useIce, useDtls);
 
         addDataToContent(content);
 
@@ -291,25 +292,20 @@ public class JingleOfferFactory
      * @param useDtls whether to add a DTLS element under the transport
      * elements in the offer.
      * @param useRtx whether RTX should be included in the offer.
-     * @param minBitrate the value to set to the "x-google-min-bitrate" fmtp
-     * line for video, or -1 to not add such a line.
-     * @param startBitrate the value to set to the "x-google-start-bitrate" fmtp
-     * line for video, or -1 to not add such a line.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
     public ContentPacketExtension createVideoContent(
-            boolean useIce, boolean useDtls, boolean useRtx,
-            boolean enableRemb, boolean enableTcc,
-            int minBitrate, int startBitrate)
+            boolean useIce,
+            boolean useDtls,
+            boolean useRtx,
+            @NotNull JitsiMeetConfig config)
     {
         ContentPacketExtension videoContentPe
-            = createContentPacketExtension(
-                    "video", useIce, useDtls);
+            = createContentPacketExtension("video", useIce, useDtls);
 
-        addVideoToContent(videoContentPe, useRtx, enableRemb, enableTcc,
-                minBitrate, startBitrate);
+        addVideoToContent(videoContentPe, useRtx, config);
 
         return videoContentPe;
     }
@@ -363,12 +359,10 @@ public class JingleOfferFactory
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
-    private void addVideoToContent(ContentPacketExtension content,
-                                          boolean useRtx,
-                                          boolean enableRemb,
-                                          boolean enableTcc,
-                                          int minBitrate,
-                                          int startBitrate)
+    private void addVideoToContent(
+            ContentPacketExtension content,
+            boolean useRtx,
+            JitsiMeetConfig config)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -428,8 +422,7 @@ public class JingleOfferFactory
             PayloadTypePacketExtension vp8
                     = addPayloadTypeExtension(rtpDesc, VP8_PT, Constants.VP8, 90000);
 
-            addExtensionsToVideoPayloadType(
-                    vp8, minBitrate, startBitrate, enableRemb, enableTcc);
+            addExtensionsToVideoPayloadType(vp8, config);
         }
 
         if (ENABLE_H264 && H264_PT > 0)
@@ -440,8 +433,7 @@ public class JingleOfferFactory
                     // fail to enable h264, if the encoding name is in lower case.
                     rtpDesc, H264_PT, Constants.H264.toUpperCase(), 90000);
 
-            addExtensionsToVideoPayloadType(
-                    h264, minBitrate, startBitrate, enableRemb, enableTcc);
+            addExtensionsToVideoPayloadType(h264, config);
             addParameterExtension(
                 h264,
                 "profile-level-id",
@@ -454,12 +446,11 @@ public class JingleOfferFactory
             PayloadTypePacketExtension vp9
                     = addPayloadTypeExtension(rtpDesc, VP9_PT, Constants.VP9, 90000);
 
-            addExtensionsToVideoPayloadType(
-                    vp9, minBitrate, startBitrate, enableRemb, enableTcc);
+            addExtensionsToVideoPayloadType(vp9, config);
         }
 
 
-        if (enableTcc)
+        if (config.isTccEnabled())
         {
             // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
             RTPHdrExtPacketExtension tcc = new RTPHdrExtPacketExtension();
@@ -547,10 +538,7 @@ public class JingleOfferFactory
 
     private static void addExtensionsToVideoPayloadType(
             PayloadTypePacketExtension pt,
-            int minBitrate,
-            int startBitrate,
-            boolean enableRemb,
-            boolean enableTcc)
+            JitsiMeetConfig config)
     {
         // a=rtcp-fb:XXX ccm fir
         pt.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
@@ -562,26 +550,28 @@ public class JingleOfferFactory
         pt.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
 
 
+        int minBitrate = config.getMinBitrate();
         if (minBitrate != -1)
         {
             addParameterExtension(
                     pt, "x-google-min-bitrate", String.valueOf(minBitrate));
         }
 
+        int startBitrate = config.getStartBitrate();
         if (startBitrate != -1)
         {
             addParameterExtension(
                     pt, "x-google-start-bitrate", String.valueOf(startBitrate));
         }
 
-        if (enableRemb)
+        if (config.isRembEnabled())
         {
             // a=rtcp-fb:XXX goog-remb
             pt.addRtcpFeedbackType(
                     createRtcpFbPacketExtension("goog-remb", null));
         }
 
-        if (enableTcc)
+        if (config.isTccEnabled())
         {
             // a=rtcp-fb:XXX transport-cc
             pt.addRtcpFeedbackType(
@@ -646,10 +636,7 @@ public class JingleOfferFactory
      */
     private static void addAudioToContent(
             ContentPacketExtension content,
-            boolean stereo,
-            int maxAvgBitrate,
-            boolean enableRemb,
-            boolean enableTcc)
+            JitsiMeetConfig config)
     {
         RtpDescriptionPacketExtension rtpDesc
             = new RtpDescriptionPacketExtension();
@@ -670,21 +657,25 @@ public class JingleOfferFactory
         // fmtp:111 minptime=10
         addParameterExtension(opus, "minptime", "10");
 
-        if (stereo)
+        if (config.stereoEnabled())
         {
             // fmtp: 111 stereo=1
             addParameterExtension(opus, "stereo", "1");
         }
 
-        if (maxAvgBitrate != -1)
+        int opusMaxAverageBitrate = config.getOpusMaxAverageBitrate();
+        if (opusMaxAverageBitrate != -1)
         {
-            addParameterExtension(opus, "maxaveragebitrate", String.valueOf(maxAvgBitrate));
+            addParameterExtension(
+                    opus,
+                    "maxaveragebitrate",
+                    String.valueOf(opusMaxAverageBitrate));
         }
 
         // fmtp:111 useinbandfec=1
         addParameterExtension(opus, "useinbandfec", "1");
 
-        if (enableTcc)
+        if (config.isTccEnabled())
         {
             // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
             RTPHdrExtPacketExtension tcc = new RTPHdrExtPacketExtension();

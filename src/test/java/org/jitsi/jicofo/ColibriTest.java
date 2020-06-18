@@ -93,11 +93,9 @@ public class ColibriTest
         JingleOfferFactory jingleOfferFactory
             = FocusBundleActivator.getJingleOfferFactory();
         ContentPacketExtension audio
-            = jingleOfferFactory.createAudioContent(
-                    true, true, false, -1, false, false);
+            = jingleOfferFactory.createAudioContent(true, true, config);
         ContentPacketExtension video
-            = jingleOfferFactory.createVideoContent(
-                    true, true, false, false, false, -1, -1);
+            = jingleOfferFactory.createVideoContent(true, true, false, config);
         ContentPacketExtension data
             = jingleOfferFactory.createDataContent(true, true);
 
