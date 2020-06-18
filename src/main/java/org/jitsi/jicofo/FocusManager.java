@@ -88,6 +88,13 @@ public class FocusManager
     public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
 
     /**
+     * The name of configuration property that specifies XMPP conference muc
+     * component prefix, defaults to "conference".
+     */
+    public static final String XMPP_MUC_COMPONENT_PREFIX_PNAME
+        = "org.jitsi.jicofo.XMPP_MUC_COMPONENT_PREFIX";
+
+    /**
      * The name of configuration property that specifies XMPP domain that hosts
      * the conference and will be used in components auto-discovery. This is the
      * domain on which the jitsi-videobridge runs.
@@ -255,8 +262,8 @@ public class FocusManager
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
         String hostName = config.getString(HOSTNAME_PNAME);
-        DomainBareJid xmppDomain = JidCreate.domainBareFrom(
-                config.getString(XMPP_DOMAIN_PNAME));
+        String xmppDomainConfig = config.getString(XMPP_DOMAIN_PNAME);
+        DomainBareJid xmppDomain = JidCreate.domainBareFrom(xmppDomainConfig);
 
         focusUserDomain = JidCreate.domainBareFrom(
                 config.getString(FOCUS_USER_DOMAIN_PNAME));
@@ -265,6 +272,10 @@ public class FocusManager
 
         String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
         String xmppServerPort = config.getString(XMPP_PORT_PNAME);
+
+        // We default to "conference" prefix for the muc component
+        String conferenceMucPrefix
+            = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
 
         protocolProviderHandler.start(
             hostName,
@@ -289,7 +300,9 @@ public class FocusManager
             = new JitsiMeetServices(
                     protocolProviderHandler,
                     jvbProtocolProvider,
-                    focusUserDomain);
+                    focusUserDomain,
+                    JidCreate.domainBareFrom(
+                        conferenceMucPrefix + "." + xmppDomainConfig));
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);

@@ -98,6 +98,11 @@ public class JitsiMeetServices
     private Jid conferenceMucService;
 
     /**
+     * The jid for the {@code conferenceMucService}.
+     */
+    private Jid conferenceMucServiceJid;
+
+    /**
      * <tt>Version</tt> IQ instance holding detected XMPP server's version
      * (if any).
      */
@@ -113,7 +118,8 @@ public class JitsiMeetServices
      */
     public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
                              ProtocolProviderHandler jvbMucProtocolProvider,
-                             DomainBareJid jicofoUserDomain)
+                             DomainBareJid jicofoUserDomain,
+                             DomainBareJid conferenceMucServiceJid)
     {
         Objects.requireNonNull(
             protocolProviderHandler, "protocolProviderHandler");
@@ -124,6 +130,7 @@ public class JitsiMeetServices
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
         this.bridgeSelector = new BridgeSelector();
+        this.conferenceMucServiceJid = conferenceMucServiceJid;
     }
 
     /**
@@ -146,9 +153,9 @@ public class JitsiMeetServices
             setSipGateway(node);
         }
         else if (conferenceMucService == null
+            && node.getDomain().equals(this.conferenceMucServiceJid)
             && DiscoveryUtil.checkFeatureSupport(MUC_FEATURES, features))
         {
-
             logger.info("Conference MUC component discovered: " + node);
 
             setConferenceMucService(node);
