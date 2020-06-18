@@ -96,7 +96,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
         JitsiMeetConfig config = meetConference.getConfig();
 
-        boolean disableIce = !participant.hasIceSupport();
+        boolean useIce = participant.hasIceSupport();
         boolean useDtls = participant.hasDtlsSupport();
         boolean useRtx
             = config.isRtxEnabled() && participant.hasRtxSupport();
@@ -110,7 +110,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         {
             contents.add(
                 jingleOfferFactory.createAudioContent(
-                    disableIce, useDtls, config.stereoEnabled(),
+                    useIce, useDtls, config.stereoEnabled(),
                     config.getOpusMaxAverageBitrate(), enableRemb, enableTcc));
         }
 
@@ -118,7 +118,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         {
             contents.add(
                 jingleOfferFactory.createVideoContent(
-                    disableIce, useDtls, useRtx,
+                    useIce, useDtls, useRtx,
                     enableRemb, enableTcc,
                     config.getMinBitrate(),
                     config.getStartBitrate()));
@@ -129,7 +129,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         if (openSctp && participant.hasSctpSupport())
         {
             contents.add(
-                jingleOfferFactory.createDataContent(disableIce, useDtls));
+                jingleOfferFactory.createDataContent(useIce, useDtls));
         }
 
         return contents;
