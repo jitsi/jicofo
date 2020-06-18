@@ -18,7 +18,6 @@
 package org.jitsi.protocol.xmpp.colibri;
 
 import org.jitsi.protocol.xmpp.colibri.exception.*;
-import org.jitsi.videobridge.api.client.v1.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -286,11 +285,4 @@ public interface ColibriConference
      * Sets the "global" id of the conference.
      */
     void setGID(String gid) ;
-
-    /**
-     * Set a JVB API instance for this conference to use to control
-     * the JVB
-     * @param api
-     */
-    void setJvbApi(JvbApi api);
 }

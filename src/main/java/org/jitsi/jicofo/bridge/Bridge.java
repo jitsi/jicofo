@@ -19,7 +19,6 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.stats.*;
-import org.jitsi.videobridge.api.types.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
@@ -148,22 +147,6 @@ public class Bridge
      */
     private ColibriStatsExtension stats = EMPTY_STATS;
 
-    /**
-     * The base url of the HTTP API for this bridge, if it is supported.
-     */
-    private String jvbApiUrl = null;
-
-    /**
-     * The base port of the HTTP API for this bridge, if it is supported.
-     */
-    private Integer jvbApiPort = null;
-
-    /**
-     * The {@link SupportedApiVersions} of the HTTP API for this bridge,
-     * if it is supported.
-     */
-    private SupportedApiVersions supportedApiVersions = null;
-
     Bridge(Jid jid)
     {
         this(jid, BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
@@ -224,17 +207,6 @@ public class Bridge
         if (newVersion != null)
         {
             version = newVersion;
-        }
-
-        jvbApiUrl = stats.getValueAsString("jvb-api-base-url");
-        jvbApiPort = stats.getValueAsInt("jvb-api-port");
-        String supportedVersions = stats.getValueAsString("jvb-api-version");
-        if (supportedVersions != null)
-        {
-            supportedApiVersions = SupportedApiVersionsKt.fromPresenceString(
-                SupportedApiVersions.Companion,
-                supportedVersions
-            );
         }
 
         Integer octoVersion = stats.getValueAsInt("octo_version");
@@ -383,29 +355,6 @@ public class Bridge
     public int getLastReportedPacketRatePps()
     {
         return lastReportedPacketRatePps;
-    }
-
-    /**
-     * Get the URL of the JVB API for this bridge
-     * @return
-     */
-    public String getJvbApiUrl()
-    {
-        return this.jvbApiUrl;
-    }
-
-    /**
-     * Get the port of the JVB API for this bridge
-     * @return
-     */
-    public Integer getJvbApiPort()
-    {
-        return this.jvbApiPort;
-    }
-
-    public SupportedApiVersions getSupportedApiVersions()
-    {
-        return this.supportedApiVersions;
     }
 
     public int getOctoVersion()

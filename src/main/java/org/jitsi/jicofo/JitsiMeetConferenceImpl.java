@@ -20,9 +20,6 @@ package org.jitsi.jicofo;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
-import org.jitsi.videobridge.api.client.*;
-import org.jitsi.videobridge.api.client.v1.*;
-import org.jitsi.videobridge.api.types.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -737,78 +734,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * The versions of the JVB API for which support has been implemented.
-     *
-     * NOTE: this is defined here because it should be as close as possible
-     * to the switch statement below which instantiates the proper API client
-     * instance.  BOTH the switch statement AND this member must be updated
-     * when adding support for a new JVB API version.
-     */
-    private static SupportedApiVersions implementedJvbApiVersions =
-        new SupportedApiVersions(ApiVersion.V1);
-    /**
-     * Creates a new {@link ColibriConference} and creates a {@link JvbApi}
-     * instance for it to use to control the JVB
-     * @param bridgeJid see
-     *                  {@link JitsiMeetConferenceImpl#createNewColibriConference(Jid)}
-     * @param jvbApiUrl the base URL of the JVB API instance
-     * @param jvbApiPort the port that the JVB API is listening on
-     * @return the created {@link ColibriConference}
-     * @throws XmppStringprepException see
-     * {@link JitsiMeetConferenceImpl#createNewColibriConference(Jid)}
-     */
-    private ColibriConference createNewColibriConference(Bridge bridge)
-        throws XmppStringprepException
-    {
-        ColibriConference conf =  createNewColibriConference(bridge.getJid());
-
-        if (bridge.getJvbApiUrl() != null &&
-            bridge.getJvbApiPort() != null &&
-            bridge.getSupportedApiVersions() != null)
-        {
-            logger.info("Bridge advertised a JVB API address.  JVB API " +
-                "client supports " + JvbApiClientInfo.SUPPORTED_API_VERSIONS +
-                ", bridge supports " + bridge.getSupportedApiVersions());
-            ApiVersion maxApiVersion =
-                JvbApiClientInfo.SUPPORTED_API_VERSIONS.intersect(
-                    bridge.getSupportedApiVersions())
-                    .maxSupported(implementedJvbApiVersions);
-            if (maxApiVersion == null)
-            {
-                logger.info("No JVB API version compatibility found " +
-                    "between client and server");
-            }
-            else
-            {
-                logger.info("Got common api version " + maxApiVersion);
-                /**
-                 * NOTE: when adding or removing versions to this switch
-                 * statement, the changes must also be made to
-                 * {@link implementedJvbApiVersions} member.
-                 */
-                switch (maxApiVersion)
-                {
-                    case V1:
-                    {
-                        conf.setJvbApi(
-                            new org.jitsi.videobridge.api.client.v1.JvbApi(
-                                bridge.getJvbApiUrl(),
-                                bridge.getJvbApiPort()
-                            )
-                        );
-                        break;
-                    }
-                    default: throw new RuntimeException("Found common JVB " +
-                        "API version " + maxApiVersion + " but logic to " +
-                        "instantiate client missing");
-                }
-            }
-        }
-
-        return conf;
-    }
-
-        /**
      * Adds a {@link XmppChatMember} to the conference. Creates the
      * {@link Participant} instance corresponding to the {@link XmppChatMember}.
      * established and videobridge channels being allocated.
@@ -2903,7 +2828,8 @@ public class JitsiMeetConferenceImpl
                 throws XmppStringprepException
         {
             this.bridge = Objects.requireNonNull(bridge, "bridge");
-            this.colibriConference = createNewColibriConference(bridge);
+            this.colibriConference
+                = createNewColibriConference(bridge.getJid());
         }
 
         private void addParticipant(Participant participant)
