@@ -50,13 +50,6 @@ public class JitsiMeetServices
         = Logger.getLogger(JitsiMeetServices.class);
 
     /**
-     * The XMPP Service Discovery features of MUC service provided by the XMPP
-     * server.
-     */
-    private static final String[] MUC_FEATURES
-        = { "http://jabber.org/protocol/muc" };
-
-    /**
      * Features advertised by SIP gateway component.
      */
     private static final String[] SIP_GW_FEATURES = new String[]
@@ -93,16 +86,6 @@ public class JitsiMeetServices
     private Jid sipGateway;
 
     /**
-     * The address of the conference MUC component served by our XMPP domain.
-     */
-    private Jid conferenceMucService;
-
-    /**
-     * The jid for the {@code conferenceMucService}.
-     */
-    private Jid conferenceMucServiceJid;
-
-    /**
      * <tt>Version</tt> IQ instance holding detected XMPP server's version
      * (if any).
      */
@@ -118,8 +101,7 @@ public class JitsiMeetServices
      */
     public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
                              ProtocolProviderHandler jvbMucProtocolProvider,
-                             DomainBareJid jicofoUserDomain,
-                             DomainBareJid conferenceMucServiceJid)
+                             DomainBareJid jicofoUserDomain)
     {
         Objects.requireNonNull(
             protocolProviderHandler, "protocolProviderHandler");
@@ -130,7 +112,6 @@ public class JitsiMeetServices
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
         this.bridgeSelector = new BridgeSelector();
-        this.conferenceMucServiceJid = conferenceMucServiceJid;
     }
 
     /**
@@ -152,19 +133,13 @@ public class JitsiMeetServices
 
             setSipGateway(node);
         }
-        else if (conferenceMucService == null
-            && node.getDomain().equals(this.conferenceMucServiceJid)
-            && DiscoveryUtil.checkFeatureSupport(MUC_FEATURES, features))
-        {
-            logger.info("Conference MUC component discovered: " + node);
-
-            setConferenceMucService(node);
-        }
-        else if (jicofoUserDomain != null && jicofoUserDomain.equals(node) && version != null)
+        else if (jicofoUserDomain != null
+                && jicofoUserDomain.equals(node) && version != null)
         {
             this.XMPPServerVersion = version;
 
-            logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
+            logger.info("Detected XMPP server version: "
+                + version.getNameVersionOsString());
         }
     }
 
@@ -184,12 +159,6 @@ public class JitsiMeetServices
             logger.warn("SIP gateway went offline: " + node);
 
             sipGateway = null;
-        }
-        else if (node.equals(conferenceMucService))
-        {
-            logger.warn("MUC component went offline: " + node);
-
-            conferenceMucService = null;
         }
     }
 
@@ -258,23 +227,6 @@ public class JitsiMeetServices
     public BridgeSelector getBridgeSelector()
     {
         return bridgeSelector;
-    }
-
-    /**
-     * Returns the address of MUC component for our XMPP domain.
-     */
-    public Jid getConferenceMucService()
-    {
-        return conferenceMucService;
-    }
-
-    /**
-     * Sets the address of MUC component.
-     * @param conferenceMucService component sub domain that refers to MUC
-     */
-    private void setConferenceMucService(Jid conferenceMucService)
-    {
-        this.conferenceMucService = conferenceMucService;
     }
 
     public void start()

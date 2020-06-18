@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,6 +228,11 @@ public class FocusManager
     private ComponentsDiscovery componentsDiscovery;
 
     /**
+     * The address of the conference MUC component served by our XMPP domain.
+     */
+    private Jid conferenceMucService;
+
+    /**
      * Indicates if graceful shutdown mode has been enabled and
      * no new conference request will be accepted.
      */
@@ -276,6 +281,8 @@ public class FocusManager
         // We default to "conference" prefix for the muc component
         String conferenceMucPrefix
             = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
+        conferenceMucService = JidCreate.domainBareFrom(
+            conferenceMucPrefix + "." + xmppDomainConfig);
 
         protocolProviderHandler.start(
             hostName,
@@ -300,9 +307,7 @@ public class FocusManager
             = new JitsiMeetServices(
                     protocolProviderHandler,
                     jvbProtocolProvider,
-                    focusUserDomain,
-                    JidCreate.domainBareFrom(
-                        conferenceMucPrefix + "." + xmppDomainConfig));
+                    focusUserDomain);
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
@@ -878,6 +883,14 @@ public class FocusManager
     public @NotNull Statistics getStatistics()
     {
         return statistics;
+    }
+
+    /**
+     * Returns the address of MUC component for our XMPP domain.
+     */
+    public Jid getConferenceMucService()
+    {
+        return conferenceMucService;
     }
 
     /**
