@@ -251,7 +251,7 @@ public class JingleOfferFactory
     {
         ContentPacketExtension content
             = createContentPacketExtension(
-                    "audio", disableIce, useDtls);
+                    "audio", !disableIce, useDtls);
 
         addAudioToContent(content, stereo, maxAvgBitrate, enableRemb, enableTcc);
 
@@ -275,7 +275,7 @@ public class JingleOfferFactory
     {
         ContentPacketExtension content
             = createContentPacketExtension(
-                    "data", disableIce, useDtls);
+                    "data", !disableIce, useDtls);
 
         addDataToContent(content);
 
@@ -306,7 +306,7 @@ public class JingleOfferFactory
     {
         ContentPacketExtension videoContentPe
             = createContentPacketExtension(
-                    "video", disableIce, useDtls);
+                    "video", !disableIce, useDtls);
 
         addVideoToContent(videoContentPe, useRtx, enableRemb, enableTcc,
                 minBitrate, startBitrate);
@@ -320,15 +320,15 @@ public class JingleOfferFactory
      * The creator attribute is set to "initiator" and "senders" to "both".
      *
      * @param name the Jingle name for the content
-     * @param disableIce <tt>true</tt> if ICE transport should be disabled
+     * @param useIce <tt>true</tt> if ICE transport should be enabled
      * @param useDtls <tt>true</tt> if DTLS should be used on top of ICE
-     * transport(will have effect only if <tt>disableIce</tt></tt> is
-     * <tt>false</tt>)
+     * transport (will have effect only if <tt>useIce</tt></tt> is
+     * <tt>true</tt>)
      *
      * @return new, parametrized instance of <tt>ContentPacketExtension</tt>.
      */
     private static ContentPacketExtension createContentPacketExtension(
-            String name, boolean disableIce, boolean useDtls)
+            String name, boolean useIce, boolean useDtls)
     {
         ContentPacketExtension content
             = new ContentPacketExtension(
@@ -337,7 +337,7 @@ public class JingleOfferFactory
 
         content.setSenders(ContentPacketExtension.SendersEnum.both);
 
-        if (!disableIce)
+        if (useIce)
         {
             IceUdpTransportPacketExtension iceUdpTransportPacketExtension
                 = new IceUdpTransportPacketExtension();
