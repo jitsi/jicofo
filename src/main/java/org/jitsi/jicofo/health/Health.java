@@ -160,12 +160,6 @@ public class Health
             throw new RuntimeException("No JitsiMeetServices available");
         }
 
-        Jid mucService = services.getMucService();
-        if (mucService == null)
-        {
-            throw new RuntimeException("No MUC component");
-        }
-
         FocusComponent focusComponent = Main.getFocusXmppComponent();
         if (focusComponent == null)
         {
@@ -197,7 +191,7 @@ public class Health
         {
             roomName = JidCreate.entityBareFrom(
                 generateRoomName(),
-                mucService.asDomainBareJid()
+                focusManager.getConferenceMucService().asDomainBareJid()
             );
         }
         while (focusManager.getConference(roomName) != null);

@@ -50,13 +50,6 @@ public class JitsiMeetServices
         = Logger.getLogger(JitsiMeetServices.class);
 
     /**
-     * The XMPP Service Discovery features of MUC service provided by the XMPP
-     * server.
-     */
-    private static final String[] MUC_FEATURES
-        = { "http://jabber.org/protocol/muc" };
-
-    /**
      * Features advertised by SIP gateway component.
      */
     private static final String[] SIP_GW_FEATURES = new String[]
@@ -91,11 +84,6 @@ public class JitsiMeetServices
      * SIP gateway component XMPP address.
      */
     private Jid sipGateway;
-
-    /**
-     * The address of MUC component served by our XMPP domain.
-     */
-    private Jid mucService;
 
     /**
      * <tt>Version</tt> IQ instance holding detected XMPP server's version
@@ -145,18 +133,13 @@ public class JitsiMeetServices
 
             setSipGateway(node);
         }
-        else if (mucService == null
-            && DiscoveryUtil.checkFeatureSupport(MUC_FEATURES, features))
-        {
-            logger.info("MUC component discovered: " + node);
-
-            setMucService(node);
-        }
-        else if (jicofoUserDomain != null && jicofoUserDomain.equals(node) && version != null)
+        else if (jicofoUserDomain != null
+                && jicofoUserDomain.equals(node) && version != null)
         {
             this.XMPPServerVersion = version;
 
-            logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
+            logger.info("Detected XMPP server version: "
+                + version.getNameVersionOsString());
         }
     }
 
@@ -176,12 +159,6 @@ public class JitsiMeetServices
             logger.warn("SIP gateway went offline: " + node);
 
             sipGateway = null;
-        }
-        else if (node.equals(mucService))
-        {
-            logger.warn("MUC component went offline: " + node);
-
-            mucService = null;
         }
     }
 
@@ -250,23 +227,6 @@ public class JitsiMeetServices
     public BridgeSelector getBridgeSelector()
     {
         return bridgeSelector;
-    }
-
-    /**
-     * Returns the address of MUC component for our XMPP domain.
-     */
-    public Jid getMucService()
-    {
-        return mucService;
-    }
-
-    /**
-     * Sets the address of MUC component.
-     * @param mucService component sub domain that refers to MUC
-     */
-    public void setMucService(Jid mucService)
-    {
-        this.mucService = mucService;
     }
 
     public void start()

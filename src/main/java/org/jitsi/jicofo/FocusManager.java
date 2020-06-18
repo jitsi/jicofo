@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2018 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,13 @@ public class FocusManager
      * which the focus user will connect to.
      */
     public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
+
+    /**
+     * The name of configuration property that specifies XMPP conference muc
+     * component prefix, defaults to "conference".
+     */
+    public static final String XMPP_MUC_COMPONENT_PREFIX_PNAME
+        = "org.jitsi.jicofo.XMPP_MUC_COMPONENT_PREFIX";
 
     /**
      * The name of configuration property that specifies XMPP domain that hosts
@@ -221,6 +228,11 @@ public class FocusManager
     private ComponentsDiscovery componentsDiscovery;
 
     /**
+     * The address of the conference MUC component served by our XMPP domain.
+     */
+    private Jid conferenceMucService;
+
+    /**
      * Indicates if graceful shutdown mode has been enabled and
      * no new conference request will be accepted.
      */
@@ -255,8 +267,8 @@ public class FocusManager
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
         String hostName = config.getString(HOSTNAME_PNAME);
-        DomainBareJid xmppDomain = JidCreate.domainBareFrom(
-                config.getString(XMPP_DOMAIN_PNAME));
+        String xmppDomainConfig = config.getString(XMPP_DOMAIN_PNAME);
+        DomainBareJid xmppDomain = JidCreate.domainBareFrom(xmppDomainConfig);
 
         focusUserDomain = JidCreate.domainBareFrom(
                 config.getString(FOCUS_USER_DOMAIN_PNAME));
@@ -265,6 +277,12 @@ public class FocusManager
 
         String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
         String xmppServerPort = config.getString(XMPP_PORT_PNAME);
+
+        // We default to "conference" prefix for the muc component
+        String conferenceMucPrefix
+            = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
+        conferenceMucService = JidCreate.domainBareFrom(
+            conferenceMucPrefix + "." + xmppDomainConfig);
 
         protocolProviderHandler.start(
             hostName,
@@ -865,6 +883,14 @@ public class FocusManager
     public @NotNull Statistics getStatistics()
     {
         return statistics;
+    }
+
+    /**
+     * Returns the address of MUC component for our XMPP domain.
+     */
+    public Jid getConferenceMucService()
+    {
+        return conferenceMucService;
     }
 
     /**
