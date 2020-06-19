@@ -140,7 +140,7 @@ public class OpSetSimpleCapsImpl
         }
         catch (Exception e)
         {
-            logger.error(
+            logger.warn(
                     String.format(
                             "Failed to discover features for %s: %s", node, e.getMessage()));
         }

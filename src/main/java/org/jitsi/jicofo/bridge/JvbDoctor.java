@@ -104,17 +104,6 @@ public class JvbDoctor
      */
     private OSGIServiceRef<ScheduledExecutorService> executorServiceRef;
 
-    /**
-     * The XMPP protocol provider we have to use to determined whether
-     * {@link #connection} is connected.
-     */
-    private ProtocolProviderService protocolProvider;
-
-    /**
-     * The XMPP connection to use to send stanzas.
-     */
-    private XmppConnection connection;
-
     private final HealthCheckListener listener;
 
     /**
@@ -123,6 +112,18 @@ public class JvbDoctor
     public JvbDoctor(HealthCheckListener listener)
     {
         this.listener = listener;
+    }
+
+    private XmppConnection getConnection() {
+        FocusManager focusManager
+                = ServiceUtils2.getService(bundleContext, FocusManager.class);
+        ProtocolProviderService protocolProvider
+                = focusManager.getJvbProtocolProvider();
+        OperationSetDirectSmackXmpp xmppOpSet
+                = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
+
+        return protocolProvider.isRegistered()
+                ? xmppOpSet.getXmppConnection() : null;
     }
 
     synchronized public void start(
@@ -154,28 +155,6 @@ public class JvbDoctor
 
         this.executorServiceRef
             = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
-
-        FocusManager focusManager
-            = ServiceUtils2.getService(bundleContext, FocusManager.class);
-
-        protocolProvider
-            = focusManager.getJvbProtocolProvider();
-
-        Objects.requireNonNull(protocolProvider, "protocolProvider");
-
-        // Assert XMPP protocol used.
-        if (!ProtocolNames.JABBER.equals(protocolProvider.getProtocolName()))
-        {
-            throw new IllegalArgumentException(
-                    "ProtocolProvider is not an XMPP one");
-        }
-
-        connection
-            = Objects.requireNonNull(
-                    protocolProvider.getOperationSet(
-                            OperationSetDirectSmackXmpp.class),
-                    "xmppOpSet")
-                 .getXmppConnection();
 
         initializeHealthChecks(initialBridges);
     }
@@ -320,8 +299,9 @@ public class JvbDoctor
         private void doHealthCheck()
             throws OperationFailedException
         {
+            XmppConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
-            if (!protocolProvider.isRegistered() || connection == null)
+            if (connection == null)
             {
                 logger.warn(
                         "XMPP disconnected - skipping health check for: "
