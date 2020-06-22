@@ -3256,7 +3256,7 @@ public class JitsiMeetConferenceImpl
     {
         return
             String.format(
-                    "JitsiMeetConferenceImpl[gid=%s, name=%s]",
+                    "JitsiMeetConferenceImpl[gid=%d, name=%s]",
                     gid,
                     getRoomName().toString());
     }
