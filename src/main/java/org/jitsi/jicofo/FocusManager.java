@@ -134,6 +134,8 @@ public class FocusManager
      * The name of the property used to configure an identifier of this
      * Jicofo instance, used for the purpose of generating conference IDs unique
      * across a set of Jicofo instances.
+     * Valid values are [1, 65535]. The value "0" is reserved for the case where
+     * an ID is not configured.
      */
     public static final String JICOFO_SHORT_ID_PNAME
         = "org.jitsi.jicofo.SHORT_ID";
@@ -252,7 +254,7 @@ public class FocusManager
         BundleContext bundleContext = FocusBundleActivator.bundleContext;
 
         // Register early, because some of the dependencies e.g.
-        // (JitsiMeeetServices -> BridgeSelector -> JvbDoctor) need it. This
+        // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
         // will be cleaned up at a later stage.
         serviceRegistration
                 = bundleContext.registerService(FocusManager.class, this, null);
@@ -275,6 +277,7 @@ public class FocusManager
         }
         else
         {
+            logger.info("Initialized jicofoId=" + jicofoId);
             this.jicofoId = jicofoId;
         }
 
@@ -704,14 +707,6 @@ public class FocusManager
         }
     }
 
-    /**
-     * Returns the number of currently allocated focus instances.
-     */
-    public int getConferenceCount()
-    {
-        return conferences.size();
-    }
-
     private int getNonHealthCheckConferenceCount()
     {
         return (int)conferences.values().stream()
@@ -888,6 +883,7 @@ public class FocusManager
     {
         return jicofoId != 0;
     }
+
     /**
      * Class takes care of stopping {@link JitsiMeetConference} if there is no
      * active session for too long.
