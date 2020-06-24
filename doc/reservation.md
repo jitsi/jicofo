@@ -30,6 +30,14 @@ endpoint is supported, so all request will go to:
 http://reservation.example.com/conference
 ```
 
+#### Bearer token
+
+If you need to authenticate against the REST API you can add an access token.
+
+```
+org.jitsi.impl.reservation.rest.ACCESS_TOKEN=******
+```
+
 #### Call flow
 
 ##### Notes

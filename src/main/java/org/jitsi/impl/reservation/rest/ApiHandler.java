@@ -53,6 +53,11 @@ public class ApiHandler
     private final String baseUrl;
 
     /**
+     * Access token of the REST API.
+     */
+    private final String accessToken;
+
+    /**
      * HTTP client used for sending requests.
      */
     private final CloseableHttpClient client
@@ -77,11 +82,12 @@ public class ApiHandler
     /**
      * Creates new instance of <tt>ApiHandler</tt>.
      *
-     * @param baseUrl the base URL of REST API.
+     * @param baseUrl     the base URL of REST API.
+     * @param accessToken the access token of REST API.
      */
-    public ApiHandler(String baseUrl)
-    {
+    public ApiHandler(String baseUrl, String accessToken) {
         this.baseUrl = baseUrl;
+        this.accessToken = accessToken;
     }
 
     /**
@@ -108,6 +114,10 @@ public class ApiHandler
             = new Conference(mucRoomName, ownerEmail, new Date());
 
         HttpPost post = new HttpPost(baseUrl + "/conference");
+
+        if (accessToken != null) {
+            post.addHeader("Authorization", "Bearer " + accessToken);
+        }
 
         List<NameValuePair> nameValuePairs = new ArrayList<>(1);
         Map<String, Object> jsonMap = conference.createJSonMap();
@@ -174,6 +184,10 @@ public class ApiHandler
     {
         HttpGet get = new HttpGet(baseUrl + "/conference/" + conferenceId);
 
+        if (accessToken != null) {
+            get.addHeader("Authorization", "Bearer " + accessToken);
+        }
+
         HttpResponse response = null;
         
         try
@@ -222,6 +236,10 @@ public class ApiHandler
     {
         HttpDelete delete
             = new HttpDelete(baseUrl + "/conference/" + conferenceId);
+
+        if (accessToken != null) {
+            delete.addHeader("Authorization", "Bearer " + accessToken);
+        }
 
         HttpResponse response = null;
 

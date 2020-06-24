@@ -57,13 +57,19 @@ public class Activator
             = ServiceUtils2.getService(context, ConfigurationService.class);
         String apiBaseUrl
             = config.getString(RESTReservations.API_BASE_URL_PNAME);
+        String accessToken
+                = config.getString(RESTReservations.API_ACCESS_TOKEN_PNAME);
 
         if (isBlank(apiBaseUrl))
             return;
 
         logger.info("REST reservation API will use base URL: " + apiBaseUrl);
 
-        restReservations = new RESTReservations(apiBaseUrl);
+        if (!isBlank(accessToken)) {
+            logger.info("REST reservation API will use an access token");
+        }
+
+        restReservations = new RESTReservations(apiBaseUrl, accessToken);
 
         serviceRegistration = context.registerService(
             ReservationSystem.class, restReservations, null);

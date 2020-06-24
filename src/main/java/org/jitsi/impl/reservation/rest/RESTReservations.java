@@ -50,6 +50,12 @@ public class RESTReservations
         = "org.jitsi.impl.reservation.rest.BASE_URL";
 
     /**
+     * Configuration property name which specifies REST API access token.
+     */
+    public static final String API_ACCESS_TOKEN_PNAME
+            = "org.jitsi.impl.reservation.rest.ACCESS_TOKEN";
+
+    /**
      * Focus manager instance.
      */
     private FocusManager focusManager;
@@ -77,12 +83,13 @@ public class RESTReservations
     /**
      * Creates new instance of <tt>RESTReservations</tt> instance.
      * @param baseUrl base URL for RESP API endpoint.
+     * @param accessToken access token for RESP API endpoint.
      */
-    public RESTReservations(String baseUrl)
+    public RESTReservations(String baseUrl, String accessToken)
     {
         Assert.notNullNorEmpty(baseUrl, "baseUrl: " + baseUrl);
 
-        this.api = new ApiHandler(baseUrl);
+        this.api = new ApiHandler(baseUrl, accessToken);
     }
 
     /**
