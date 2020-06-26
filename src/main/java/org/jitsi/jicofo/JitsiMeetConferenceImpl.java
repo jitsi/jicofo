@@ -86,9 +86,10 @@ public class JitsiMeetConferenceImpl
     private final static Random RANDOM = new Random();
 
     /**
-     * An identifier of this {@link JitsiMeetConferenceImpl}.
+     * A "global" identifier of this {@link JitsiMeetConferenceImpl} (i.e.
+     * a unique ID accross a set of independent jicofo instances).
      */
-    private final String id;
+    private final long gid;
 
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -286,16 +287,17 @@ public class JitsiMeetConferenceImpl
      * @param logLevel (optional) the logging level to be used by this instance.
      *        See {@link #logger} for more details.
      */
-    public JitsiMeetConferenceImpl(EntityBareJid            roomName,
-                                   Resourcepart             focusUserName,
-                                   ProtocolProviderHandler  protocolProviderHandler,
-                                   ProtocolProviderHandler  jvbXmppConnection,
-                                   ConferenceListener       listener,
-                                   JitsiMeetConfig          config,
-                                   JitsiMeetGlobalConfig    globalConfig,
-                                   Level                    logLevel,
-                                   String                   id,
-                                   boolean                  includeInStatistics)
+    public JitsiMeetConferenceImpl(
+            EntityBareJid roomName,
+            Resourcepart focusUserName,
+            ProtocolProviderHandler protocolProviderHandler,
+            ProtocolProviderHandler jvbXmppConnection,
+            ConferenceListener listener,
+            JitsiMeetConfig config,
+            JitsiMeetGlobalConfig globalConfig,
+            Level logLevel,
+            long gid,
+            boolean includeInStatistics)
     {
         this.protocolProviderHandler
             = Objects.requireNonNull(
@@ -305,7 +307,7 @@ public class JitsiMeetConferenceImpl
                     jvbXmppConnection, "jvbXmppConnection");
         this.config = Objects.requireNonNull(config, "config");
 
-        this.id = id;
+        this.gid = gid;
         this.roomName = roomName;
         this.focusUserName = focusUserName;
         this.listener = listener;
@@ -319,18 +321,19 @@ public class JitsiMeetConferenceImpl
         this.includeInStatistics = includeInStatistics;
     }
 
-    public JitsiMeetConferenceImpl(EntityBareJid            roomName,
-                                   Resourcepart             focusUserName,
-                                   ProtocolProviderHandler  protocolProviderHandler,
-                                   ProtocolProviderHandler  jvbXmppConnection,
-                                   ConferenceListener       listener,
-                                   JitsiMeetConfig          config,
-                                   JitsiMeetGlobalConfig    globalConfig,
-                                   Level                    logLevel,
-                                   String                   id)
+    public JitsiMeetConferenceImpl(
+            EntityBareJid roomName,
+            Resourcepart focusUserName,
+            ProtocolProviderHandler protocolProviderHandler,
+            ProtocolProviderHandler jvbXmppConnection,
+            ConferenceListener listener,
+            JitsiMeetConfig config,
+            JitsiMeetGlobalConfig globalConfig,
+            Level logLevel,
+            long gid)
     {
        this(roomName, focusUserName, protocolProviderHandler, jvbXmppConnection,
-            listener, config, globalConfig, logLevel, id, false);
+            listener, config, globalConfig, logLevel, gid, false);
     }
 
     /**
@@ -599,7 +602,7 @@ public class JitsiMeetConferenceImpl
             eventAdmin.postEvent(
                     EventFactory.focusJoinedRoom(
                             roomName,
-                            getId()));
+                            String.valueOf(getId())));
         }
     }
 
@@ -718,11 +721,10 @@ public class JitsiMeetConferenceImpl
      * {@link JitsiMeetConferenceImpl}.
      */
     private ColibriConference createNewColibriConference(Jid bridgeJid)
-            throws XmppStringprepException
     {
         ColibriConferenceImpl colibriConference
             = (ColibriConferenceImpl) colibri.createNewConference();
-        colibriConference.setGID(id);
+        colibriConference.setGID(String.valueOf(gid));
 
         colibriConference.setConfig(config);
 
@@ -898,6 +900,14 @@ public class JitsiMeetConferenceImpl
 
                 if (operationalBridges().count() >= 2)
                 {
+                    if (!getFocusManager().isJicofoIdConfigured())
+                    {
+                        logger.warn(
+                            "Enabling Octo while the jicofo ID is not set. "
+                            + "Configure a valid value [1-65535] by setting "
+                            + FocusManager.JICOFO_SHORT_ID_PNAME
+                            + ". Future versions will require this for Octo.");
+                    }
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
                     // the list of relays for each bridge may need to be
@@ -2381,11 +2391,11 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Focus instance ID
+     * Conference ID.
      */
-    public String getId()
+    public long getId()
     {
-        return id;
+        return gid;
     }
 
     @Override
@@ -2541,7 +2551,7 @@ public class JitsiMeetConferenceImpl
                     EventFactory.conferenceRoom(
                             colibriConference.getConferenceId(),
                             roomName,
-                            getId(),
+                            String.valueOf(getId()),
                             videobridgeJid));
         }
 
@@ -2792,7 +2802,7 @@ public class JitsiMeetConferenceImpl
          * discarded.
          */
         final String id
-            = JitsiMeetConferenceImpl.this.id
+            = JitsiMeetConferenceImpl.this.gid
                     + "_" +Integer.toHexString(RANDOM.nextInt(0x1_000000));
 
         /**
@@ -3172,8 +3182,8 @@ public class JitsiMeetConferenceImpl
     {
         return
             String.format(
-                    "JitsiMeetConferenceImpl[id=%s, name=%s]",
-                    id,
+                    "JitsiMeetConferenceImpl[gid=%d, name=%s]",
+                    gid,
                     getRoomName().toString());
     }
 }

@@ -366,7 +366,7 @@ public class ChatRoomRoleAndPresence
                 eventAdmin.postEvent(
                     EventFactory.endpointAuthenticated(
                             authSessionId,
-                            conference.getId(),
+                            String.valueOf(conference.getId()),
                             Participant.getEndpointId(xmppMember)
                     )
                 );
