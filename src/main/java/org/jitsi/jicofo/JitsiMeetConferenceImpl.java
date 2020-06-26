@@ -333,7 +333,7 @@ public class JitsiMeetConferenceImpl
             JitsiMeetConfig config,
             JitsiMeetGlobalConfig globalConfig,
             Level logLevel,
-            int gid)
+            long gid)
     {
        this(roomName, focusUserName, protocolProviderHandler, jvbXmppConnection,
             listener, config, globalConfig, logLevel, gid, false);
