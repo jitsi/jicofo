@@ -44,7 +44,8 @@ class SplitBridgeSelectionStrategy
     {
         // If there's any bridge not yet in this conference, use that; otherwise
         // find the bridge with the fewest participants
-        Optional<Bridge> bridgeNotYetInConf = bridges.stream().filter(b -> !conferenceBridges.containsKey(b)).findFirst();
+        Optional<Bridge> bridgeNotYetInConf = bridges.stream()
+            .filter(b -> !conferenceBridges.containsKey(b)).findFirst();
         return bridgeNotYetInConf.orElseGet(() -> conferenceBridges.entrySet().stream()
             .min(Map.Entry.comparingByValue())
             .map(Map.Entry::getKey)

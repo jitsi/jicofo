@@ -52,6 +52,9 @@ class IntraRegionBridgeSelectionStrategy
 
         return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion).orElseGet(
                 () -> notLoadedInRegion(bridges, conferenceBridges, conferenceRegion).orElseGet(
-                () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion).orElse(null)));
+                    () -> leastLoadedAlreadyInConferenceInRegion(
+                        bridges,
+                        conferenceBridges,
+                        conferenceRegion).orElse(null)));
     }
 }
