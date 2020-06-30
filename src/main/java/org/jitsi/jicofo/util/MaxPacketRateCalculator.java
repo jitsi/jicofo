@@ -87,7 +87,8 @@ public class MaxPacketRateCalculator
 
     public int computeParticipantEgressPacketRatePps()
     {
-        return (numberOfSpeakers * maxPacketRatePps[0] + (numberOfGlobalSenders - 2) * maxPacketRatePps[1] + maxPacketRatePps[3]);
+        return (numberOfSpeakers * maxPacketRatePps[0] +
+            (numberOfGlobalSenders - 2) * maxPacketRatePps[1] + maxPacketRatePps[3]);
     }
 
     public int computeIngressPacketRatePps()
