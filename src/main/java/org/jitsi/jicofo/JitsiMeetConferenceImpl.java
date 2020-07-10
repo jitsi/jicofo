@@ -1319,13 +1319,15 @@ public class JitsiMeetConferenceImpl
                 JingleSession jingleSession = participant.getJingleSession();
                 logger.info("Terminating: " + contactAddress);
 
-                jingle.terminateSession(jingleSession, reason, message);
+                jingle.terminateSession(jingleSession, reason, message, true);
 
                 removeSources(
                     jingleSession,
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
                     false /* no JVB update - will expire */);
+
+                participant.setJingleSession(null);
             }
 
             bridgeSession = participant.terminateBridgeSession();
@@ -1523,7 +1525,7 @@ public class JitsiMeetConferenceImpl
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         BridgeSession bridgeSession = findBridgeSession(participant);
 
-        if (bridgeSession != null)
+        if (bridgeSession != null && bridgeSession.id.equals(bridgeSessionId))
         {
             logger.info(String.format(
                     "Received ICE failed notification from %s, session: %s",
@@ -1538,6 +1540,72 @@ public class JitsiMeetConferenceImpl
                         + " participant: %s, bridge session ID: %s",
                     address,
                     bridgeSessionId));
+        }
+
+        return null;
+    }
+
+    /**
+     * Handles 'session-terminate' received from the client.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public XMPPError onSessionTerminate(JingleSession session, JingleIQ iq)
+    {
+        Participant participant = findParticipantForJingleSession(session);
+
+        // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
+        if (participant == null)
+        {
+            String errorMsg = "No session for " + session.getAddress();
+
+            logger.warn("onSessionInfo: " + errorMsg);
+
+            return XMPPError.from(
+                    XMPPError.Condition.item_not_found, errorMsg).build();
+        }
+
+        BridgeSessionPacketExtension bsPE
+            = iq.getExtension(
+                    BridgeSessionPacketExtension.ELEMENT_NAME,
+                    BridgeSessionPacketExtension.NAMESPACE);
+        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
+        BridgeSession bridgeSession = findBridgeSession(participant);
+        boolean restartRequested = bsPE != null ? bsPE.isRestart() : false;
+
+        if (bridgeSession == null || !bridgeSession.id.equals(bridgeSessionId))
+        {
+            logger.info(String.format(
+                    "Ignored session-terminate for invalid session: %s, bridge session ID: %s restart: %s",
+                    participant,
+                    bridgeSessionId,
+                    restartRequested));
+
+            return XMPPError.from(XMPPError.Condition.item_not_found, "invalid bridge session ID").build();
+        }
+
+        logger.info(String.format(
+                "Received session-terminate from %s, session: %s, restart: %s",
+                participant,
+                bridgeSession,
+                restartRequested));
+
+        terminateParticipant(participant, null, null);
+
+        if (restartRequested)
+        {
+            if (participant.incrementAndCheckRestartRequests())
+            {
+                participants.add(participant);
+                inviteParticipant(participant, false, hasToStartMuted(participant, false));
+            }
+            else
+            {
+                logger.warn(String.format("Rate limiting %s for restart requests", participant));
+
+                return XMPPError.from(XMPPError.Condition.resource_constraint, "rate-limited").build();
+            }
         }
 
         return null;

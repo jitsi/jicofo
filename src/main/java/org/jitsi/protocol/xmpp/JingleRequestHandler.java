@@ -88,6 +88,17 @@ public interface JingleRequestHandler
     XMPPError onSessionInfo(JingleSession jingleSession, JingleIQ iq);
 
     /**
+     * Callback fired when 'session-terminate' is received from the client.
+     *
+     * @param jingleSession the session that has received the notification.
+     * @param iq the full message sent by the client.
+     *
+     * @return <tt>XMPPError</tt> if an error should be returned as response to the original request or <tt>null</tt>
+     * to reply with RESULT.
+     */
+    XMPPError onSessionTerminate(JingleSession jingleSession, JingleIQ iq);
+
+    /**
      * Callback fired when 'transport-info' is received from the client.
      *
      * @param jingleSession the session that has received the notification.
