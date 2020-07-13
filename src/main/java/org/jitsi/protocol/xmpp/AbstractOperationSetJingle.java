@@ -584,7 +584,11 @@ public abstract class AbstractOperationSetJingle
                                  String           message,
                                  boolean          sendTerminate)
     {
-        logger.info("Terminate session: " + session.getAddress() + ", reason: " + reason);
+        logger.info(String.format(
+                "Terminate session: %s, reason: %s, send terminate: %s",
+                session.getAddress(),
+                reason,
+                sendTerminate));
 
         if (sendTerminate)
         {
