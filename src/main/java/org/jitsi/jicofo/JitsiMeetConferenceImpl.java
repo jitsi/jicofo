@@ -1319,7 +1319,7 @@ public class JitsiMeetConferenceImpl
                 JingleSession jingleSession = participant.getJingleSession();
                 logger.info("Terminating: " + contactAddress);
 
-                jingle.terminateSession(jingleSession, reason, message, true);
+                jingle.terminateSession(jingleSession, reason, message, reason != null);
 
                 removeSources(
                     jingleSession,
