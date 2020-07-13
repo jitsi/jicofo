@@ -307,6 +307,9 @@ public abstract class AbstractOperationSetJingle
         case SESSION_INFO:
             error = requestHandler.onSessionInfo(session, iq);
             break;
+        case SESSION_TERMINATE:
+            error = requestHandler.onSessionTerminate(session, iq);
+            break;
         case TRANSPORT_ACCEPT:
             error = requestHandler.onTransportAccept(session, iq.getContentList());
             break;
@@ -558,39 +561,47 @@ public abstract class AbstractOperationSetJingle
         {
             if (session.getRequestHandler() == requestHandler)
             {
-                terminateSession(session, Reason.GONE, null);
+                terminateSession(session, Reason.GONE, null, true);
             }
         }
     }
 
     /**
-     * Terminates given Jingle session by sending 'session-terminate' with some
-     * {@link Reason} if provided.
+     * Terminates given Jingle session. This method is to be called either to send 'session-terminate' or to inform
+     * this operation set that the session has been terminated as a result of 'session-terminate' received from
+     * the other peer in which case {@code sendTerminate} should be set to {@code false}.
      *
      * @param session the <tt>JingleSession</tt> to terminate.
      * @param reason one of {@link Reason} enum that indicates why the session
      *               is being ended or <tt>null</tt> to omit.
+     * @param sendTerminate when {@code true} it means that a 'session-terminate' is to be sent, otherwise it means
+     * the session is being ended on the remote peer's request.
      * {@inheritDoc}
      */
     @Override
     public void terminateSession(JingleSession    session,
                                  Reason           reason,
-                                 String           message)
+                                 String           message,
+                                 boolean          sendTerminate)
     {
-        logger.info("Terminate session: " + session.getAddress());
+        logger.info(String.format(
+                "Terminate session: %s, reason: %s, send terminate: %s",
+                session.getAddress(),
+                reason,
+                sendTerminate));
 
-        // we do not send session-terminate as muc addresses are invalid at this
-        // point
-        // FIXME: but there is also connection address available
-        JingleIQ terminate
-            = JinglePacketFactory.createSessionTerminate(
+        if (sendTerminate)
+        {
+            JingleIQ terminate
+                    = JinglePacketFactory.createSessionTerminate(
                     getOurJID(),
                     session.getAddress(),
                     session.getSessionID(),
                     reason,
                     message);
 
-        getConnection().sendStanza(terminate);
+            getConnection().sendStanza(terminate);
+        }
 
         sessions.remove(session.getSessionID());
     }

@@ -26,7 +26,10 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
 import java.util.*;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 /**
  * Class represent Jitsi Meet conference participant. Stores information about
@@ -65,6 +68,17 @@ public class Participant
      * has assigned a bridge to this instance.
      */
     private JitsiMeetConferenceImpl.BridgeSession bridgeSession;
+
+    /**
+     * The {@link Clock} used by this participant.
+     */
+    private Clock clock = Clock.systemUTC();
+
+    /**
+     * The list stored the timestamp when the last restart requests have been received for this participant and is used
+     * for rate limiting. See {@link #incrementAndCheckRestartRequests()} for more details.
+     */
+    private final Deque<Instant> restartRequests = new LinkedList<>();
 
     /**
      * MUC chat member of this participant.
@@ -153,6 +167,15 @@ public class Participant
     }
 
     /**
+     * Sets the new clock instance to be used by this participant. Meant for testing.
+     * @param newClock - the new {@link Clock}
+     */
+    public void setClock(Clock newClock)
+    {
+        this.clock = newClock;
+    }
+
+    /**
      * Sets {@link JingleSession} established with this peer.
      * @param jingleSession the new Jingle session to be assigned to this peer.
      */
@@ -168,6 +191,14 @@ public class Participant
     public XmppChatMember getChatMember()
     {
         return roomMember;
+    }
+
+    /**
+     * @return {@link Clock} used by this participant instance.
+     */
+    public Clock getClock()
+    {
+        return clock;
     }
 
     /**
@@ -203,6 +234,44 @@ public class Participant
     public boolean hasRtxSupport()
     {
         return supportedFeatures.contains(DiscoveryUtil.FEATURE_RTX);
+    }
+
+    /**
+     * Rate limiting mechanism for session restart requests received from participants.
+     * The rules ar as follows:
+     * - must be at least 10 second gap between the requests
+     * - no more than 3 requests within the last minute
+     *
+     * @return {@code true} if it's okay to process the request, as in it doesn't violate the current rate limiting
+     * policy, or {@code false} if the request should be denied.
+     */
+    public boolean incrementAndCheckRestartRequests()
+    {
+        final Instant now = Instant.now(clock);
+        Instant previousRequest = this.restartRequests.peekLast();
+
+        if (previousRequest == null)
+        {
+            this.restartRequests.add(now);
+
+            return true;
+        }
+
+        if (previousRequest.until(now, SECONDS) < 10)
+        {
+            return false;
+        }
+
+        // Allow only 3 requests within the last minute
+        this.restartRequests.removeIf(requestTime -> requestTime.until(now, SECONDS) > 60);
+        if (this.restartRequests.size() > 2)
+        {
+            return false;
+        }
+
+        this.restartRequests.add(now);
+
+        return true;
     }
 
     /**

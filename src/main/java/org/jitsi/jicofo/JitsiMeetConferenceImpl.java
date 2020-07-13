@@ -1286,7 +1286,11 @@ public class JitsiMeetConferenceImpl
                 = findParticipantForChatMember(chatRoomMember);
             if (leftParticipant != null)
             {
-                terminateParticipant(leftParticipant, Reason.GONE, null);
+                terminateParticipant(
+                        leftParticipant,
+                        Reason.GONE,
+                        null,
+                        /* no need to send session-terminate - gone */ false);
             }
             else
             {
@@ -1308,8 +1312,15 @@ public class JitsiMeetConferenceImpl
 
     private void terminateParticipant(Participant    participant,
                                       Reason         reason,
-                                      String         message)
+                                      String         message,
+                                      boolean        sendSessionTerminate)
     {
+        logger.info(String.format(
+                "Terminating %s, reason: %s, send st: %s",
+                participant,
+                reason,
+                sendSessionTerminate));
+
         BridgeSession bridgeSession;
         synchronized (participantLock)
         {
@@ -1317,22 +1328,22 @@ public class JitsiMeetConferenceImpl
             if (participant.isSessionEstablished())
             {
                 JingleSession jingleSession = participant.getJingleSession();
-                logger.info("Terminating: " + contactAddress);
 
-                jingle.terminateSession(jingleSession, reason, message);
+                jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
 
                 removeSources(
                     jingleSession,
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
                     false /* no JVB update - will expire */);
+
+                participant.setJingleSession(null);
             }
 
             bridgeSession = participant.terminateBridgeSession();
 
             boolean removed = participants.remove(participant);
-            logger.info(
-                "Removed participant: " + removed + ", " + contactAddress);
+            logger.info("Removed participant: " + removed + ", " + contactAddress);
         }
 
         if (bridgeSession != null)
@@ -1523,7 +1534,7 @@ public class JitsiMeetConferenceImpl
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         BridgeSession bridgeSession = findBridgeSession(participant);
 
-        if (bridgeSession != null)
+        if (bridgeSession != null && bridgeSession.id.equals(bridgeSessionId))
         {
             logger.info(String.format(
                     "Received ICE failed notification from %s, session: %s",
@@ -1538,6 +1549,75 @@ public class JitsiMeetConferenceImpl
                         + " participant: %s, bridge session ID: %s",
                     address,
                     bridgeSessionId));
+        }
+
+        return null;
+    }
+
+    /**
+     * Handles 'session-terminate' received from the client.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public XMPPError onSessionTerminate(JingleSession session, JingleIQ iq)
+    {
+        Participant participant = findParticipantForJingleSession(session);
+
+        // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
+        if (participant == null)
+        {
+            String errorMsg = "No participant for " + session.getAddress();
+
+            logger.warn("onSessionTerminate: " + errorMsg);
+
+            return XMPPError.from(
+                    XMPPError.Condition.item_not_found, errorMsg).build();
+        }
+
+        BridgeSessionPacketExtension bsPE
+            = iq.getExtension(
+                    BridgeSessionPacketExtension.ELEMENT_NAME,
+                    BridgeSessionPacketExtension.NAMESPACE);
+        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
+        BridgeSession bridgeSession = findBridgeSession(participant);
+        boolean restartRequested = bsPE != null ? bsPE.isRestart() : false;
+
+        if (bridgeSession == null || !bridgeSession.id.equals(bridgeSessionId))
+        {
+            logger.info(String.format(
+                    "Ignored session-terminate for invalid session: %s, bridge session ID: %s restart: %s",
+                    participant,
+                    bridgeSessionId,
+                    restartRequested));
+
+            return XMPPError.from(XMPPError.Condition.item_not_found, "invalid bridge session ID").build();
+        }
+
+        logger.info(String.format(
+                "Received session-terminate from %s, session: %s, restart: %s",
+                participant,
+                bridgeSession,
+                restartRequested));
+
+        synchronized (participantLock)
+        {
+            terminateParticipant(participant, null, null, /* do not send session-terminate */ false);
+
+            if (restartRequested)
+            {
+                if (participant.incrementAndCheckRestartRequests())
+                {
+                    participants.add(participant);
+                    inviteParticipant(participant, false, hasToStartMuted(participant, false));
+                }
+                else
+                {
+                    logger.warn(String.format("Rate limiting %s for restart requests", participant));
+
+                    return XMPPError.from(XMPPError.Condition.resource_constraint, "rate-limited").build();
+                }
+            }
         }
 
         return null;
@@ -2507,7 +2587,8 @@ public class JitsiMeetConferenceImpl
         terminateParticipant(
                 channelAllocator.getParticipant(),
                 Reason.GENERAL_ERROR,
-                "jingle session failed");
+                "jingle session failed",
+                /* send session-terminate */ true);
     }
 
     /**
@@ -2712,19 +2793,20 @@ public class JitsiMeetConferenceImpl
                 if (participants.size() == 1)
                 {
                     Participant p = participants.get(0);
-                    logger.info(
-                            "Timing out single participant: " + p.getMucJid());
+
+                    logger.info("Timing out single participant: " + p.getMucJid());
 
                     terminateParticipant(
-                            p, Reason.EXPIRED, "Idle session timeout");
+                            p,
+                            Reason.EXPIRED,
+                            "Idle session timeout",
+                            /* send session-terminate */ true);
 
                     disposeConference();
                 }
                 else
                 {
-                    logger.error(
-                        "Should never execute if more than 1 participant? "
-                            + getRoomName());
+                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
                 }
                 singleParticipantTout = null;
             }

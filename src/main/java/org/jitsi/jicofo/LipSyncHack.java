@@ -366,9 +366,10 @@ public class LipSyncHack implements OperationSetJingle
     @Override
     public void terminateSession(JingleSession    session,
                                  Reason           reason,
-                                 String           msg)
+                                 String           msg,
+                                 boolean          sendTerminate)
     {
-        jingleImpl.terminateSession(session, reason, msg);
+        jingleImpl.terminateSession(session, reason, msg, sendTerminate);
     }
 
     /**

@@ -44,7 +44,7 @@ public class MockRoomMember
 
     private ChatRoomMemberRole role = ChatRoomMemberRole.MEMBER;
 
-    MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
+    public MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
     {
         this.address = address;
         this.name = address.getResourceOrThrow();

@@ -67,6 +67,14 @@ public class DefaultJingleRequestHandler
     }
 
     @Override
+    public XMPPError onSessionTerminate(JingleSession jingleSession, JingleIQ iq)
+    {
+        logger.warn("Ignored Jingle 'session-terminate'");
+
+        return null;
+    }
+
+    @Override
     public XMPPError onSessionInfo(JingleSession session, JingleIQ iq)
     {
         logger.warn("Ignored Jingle 'session-info'");
