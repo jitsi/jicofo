@@ -39,6 +39,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
+import org.jivesoftware.smackx.disco.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -163,6 +164,14 @@ public class XmppProtocolProvider
     }
 
     /**
+     * Initializes Jicofo's feature list.
+     */
+    private void initializeFeaturesList() {
+        ServiceDiscoveryManager serviceDiscoveryManager = ServiceDiscoveryManager.getInstanceFor(connection);
+        serviceDiscoveryManager.addFeature("https://jitsi.org/meet/jicofo/terminate-restart");
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -222,6 +231,8 @@ public class XmppProtocolProvider
         }
 
         connection = new XMPPTCPConnection(connConfig.build());
+
+        this.initializeFeaturesList();
 
         ScheduledExecutorService executorService
             = ServiceUtils2.getService(
