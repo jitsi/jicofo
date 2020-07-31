@@ -398,10 +398,6 @@ public class BridgeSelector
         logger.info(
             "Bridge failure reset threshold: " + getFailureResetThreshold());
 
-        bridgeSelectionStrategy.setLocalRegion(
-                config.getString(LOCAL_REGION_PNAME, null));
-        logger.info("Local region: " + bridgeSelectionStrategy.getLocalRegion());
-
         int maxParticipantsPerBridge = config.getInt(MAX_PARTICIPANTS_PER_BRIDGE_PNAME, -1);
         if (maxParticipantsPerBridge > 0)
         {

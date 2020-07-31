@@ -63,11 +63,6 @@ abstract class BridgeSelectionStrategy
     private int totalSplitDueToLoad;
 
     /**
-     * The local region of the jicofo instance.
-     */
-    private String localRegion = null;
-
-    /**
      * Maximum participants per bridge in one conference.
      */
     private int maxParticipantsPerBridge = Integer.MAX_VALUE;
@@ -396,16 +391,6 @@ abstract class BridgeSelectionStrategy
                     = conferenceBridges.iterator().next().getOctoVersion();
             return b -> b.getOctoVersion() == existingVersion;
         }
-    }
-
-    String getLocalRegion()
-    {
-        return localRegion;
-    }
-
-    void setLocalRegion(String localRegion)
-    {
-        this.localRegion = localRegion;
     }
 
     void setMaxParticipantsPerBridge(int maxParticipantsPerBridge)

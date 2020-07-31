@@ -114,7 +114,6 @@ public class BridgeSelectionStrategyTest
 
         BridgeSelectionStrategy strategy
             = new RegionBasedBridgeSelectionStrategy();
-        strategy.setLocalRegion(highStressRegion);
 
         Map<Bridge, Integer> conferenceBridges = new HashMap<>();
         // Initial selection should select a bridge in the participant's region.
@@ -178,9 +177,7 @@ public class BridgeSelectionStrategyTest
         List<Bridge> allBridges = Arrays.asList(mediumStressBridge1, mediumStressBridge2, highStressBridge);
         Collections.sort(allBridges);
 
-        BridgeSelectionStrategy strategy
-            = new RegionBasedBridgeSelectionStrategy();
-        strategy.setLocalRegion(highStressRegion);
+        BridgeSelectionStrategy strategy = new RegionBasedBridgeSelectionStrategy();
 
         Map<Bridge, Integer> conferenceBridges = new HashMap<>();
 
