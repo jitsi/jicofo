@@ -50,7 +50,7 @@ public class JigasiDetector
     /**
      * The local region of the this jicofo instance.
      */
-    private final String localRegion;
+    private final String localRegion = JicofoConfig.config.localRegion();
 
     /**
      * Constructs new JigasiDetector.
@@ -61,17 +61,12 @@ public class JigasiDetector
      * the first one. Or it can be full room id:
      * roomName@muc-servicename.jabserver.com.
      */
-    public JigasiDetector(
-        ProtocolProviderHandler protocolProvider,
-        String breweryName,
-        String localRegion)
+    public JigasiDetector(ProtocolProviderHandler protocolProvider, String breweryName)
     {
         super(protocolProvider,
             breweryName,
             ColibriStatsExtension.ELEMENT_NAME,
             ColibriStatsExtension.NAMESPACE);
-
-        this.localRegion = localRegion;
     }
 
     @Override

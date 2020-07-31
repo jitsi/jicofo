@@ -76,12 +76,6 @@ public class BridgeSelector
         = "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD";
 
     /**
-     * The name of the property which configured the local region.
-     */
-    public static final String LOCAL_REGION_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION";
-
-    /**
      * Five minutes.
      */
     public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 1L * 60L * 1000L;
