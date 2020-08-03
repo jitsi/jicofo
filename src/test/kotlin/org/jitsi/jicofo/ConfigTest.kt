@@ -15,9 +15,9 @@
  */
 package org.jitsi.jicofo
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.Spec
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.Spec
+import io.kotest.core.spec.style.ShouldSpec
 import org.jitsi.config.useLegacyConfig
 import org.jitsi.config.useNewConfig
 import org.jitsi.metaconfig.MetaconfigSettings

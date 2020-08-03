@@ -15,32 +15,32 @@
  */
 package org.jitsi.jicofo.bridge
 
-import io.kotlintest.shouldBe
+import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.ConfigTest
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 
 class BridgeConfigTest : ConfigTest() {
     init {
-        "with no config the defaults from reference.conf should be used" {
+        context("with no config the defaults from reference.conf should be used") {
             config.maxBridgeParticipants shouldBe -1
             config.maxBridgePacketRatePps shouldBe 50000
             config.averageParticipantPacketRatePps shouldBe 500
         }
-        "with legacy config" {
+        context("with legacy config") {
             withLegacyConfig(legacyConfig) {
                 config.maxBridgeParticipants shouldBe 111
                 config.maxBridgePacketRatePps shouldBe 111
                 config.averageParticipantPacketRatePps shouldBe 111
             }
         }
-        "with new config" {
+        context("with new config") {
             withNewConfig(newConfig) {
                 config.maxBridgeParticipants shouldBe 222
                 config.maxBridgePacketRatePps shouldBe 222
                 config.averageParticipantPacketRatePps shouldBe 222
             }
         }
-        "with both legacy and new config the legacy values should be used" {
+        context("with both legacy and new config the legacy values should be used") {
             withLegacyConfig(legacyConfig) {
                 withNewConfig(newConfig) {
                     config.maxBridgeParticipants shouldBe 111

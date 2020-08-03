@@ -15,26 +15,26 @@
  */
 package org.jitsi.jicofo
 
-import io.kotlintest.shouldBe
+import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.JicofoConfig.Companion.config
 
 class JicofoConfigTest : ConfigTest() {
     init {
-        "Local region config" {
-            "With no config" {
+        context("Local region config") {
+            context("With no config") {
                 config.localRegion shouldBe null
             }
-            "With legacy config" {
+            context("With legacy config") {
                 withLegacyConfig("org.jitsi.jicofo.BridgeSelector.LOCAL_REGION=legacy") {
                     config.localRegion shouldBe "legacy"
                 }
             }
-            "With new config" {
+            context("With new config") {
                 withNewConfig("jicofo { local-region=new }") {
                     config.localRegion shouldBe "new"
                 }
             }
-            "With both new and legacy" {
+            context("With both new and legacy") {
                 withNewConfig("jicofo { local-region=new }") {
                     withLegacyConfig("org.jitsi.jicofo.BridgeSelector.LOCAL_REGION=legacy") {
                         config.localRegion shouldBe "legacy"
@@ -43,11 +43,11 @@ class JicofoConfigTest : ConfigTest() {
             }
         }
 
-        "SCTP" {
-            "Should be enabled by default" {
+        context("SCTP") {
+            context("Should be enabled by default") {
                 config.enableSctp shouldBe true
             }
-            "Should be disabled with new config" {
+            context("Should be disabled with new config") {
                 withNewConfig("jicofo { sctp { enabled=false } }") {
                     config.enableSctp shouldBe false
                 }
