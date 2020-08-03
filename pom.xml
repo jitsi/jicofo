@@ -22,7 +22,7 @@
     <slf4j.version>1.7.26</slf4j.version>
     <apache-http.version>4.4.1</apache-http.version>
     <jersey.version>2.30.1</jersey.version>
-    <jicoco.version>1.1-38-g8d7369a</jicoco.version>
+    <jicoco.version>1.1-39-g6b2d353</jicoco.version>
     <jitsi.utils.version>1.0-49-gef466fc</jitsi.utils.version>
   </properties>
 
@@ -137,7 +137,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-metaconfig</artifactId>
-      <version>1.0</version>
+      <version>ab50680335</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -281,8 +281,25 @@
       <version>${jersey.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.kotlintest</groupId>
+      <artifactId>kotlintest-runner-junit5</artifactId>
+      <version>3.4.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <version>5.5.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicoco-test-kotlin</artifactId>
+      <version>${jicoco.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>
