@@ -27,7 +27,6 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
@@ -88,8 +87,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         EntityFullJid address = participant.getMucJid();
 
         // Feature discovery
-        List<String> features = DiscoveryUtil.discoverParticipantFeatures(
-            meetConference.getXmppProvider(), address);
+        List<String> features = DiscoveryUtil.discoverParticipantFeatures(meetConference.getXmppProvider(), address);
         participant.setSupportedFeatures(features);
 
         List<ContentPacketExtension> contents = new ArrayList<>();
@@ -101,31 +99,25 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         // TODO We have a single `config` for the conference, but the rtx flag
         // is per participant. Perhaps we should have each participant have its
         // own config.
-        boolean useRtx
-            = config.isRtxEnabled() && participant.hasRtxSupport();
+        boolean useRtx = config.isRtxEnabled() && participant.hasRtxSupport();
 
-        JingleOfferFactory jingleOfferFactory
-            = FocusBundleActivator.getJingleOfferFactory();
+        JingleOfferFactory jingleOfferFactory = FocusBundleActivator.getJingleOfferFactory();
 
         if (participant.hasAudioSupport())
         {
-            contents.add(
-                jingleOfferFactory.createAudioContent(useIce, useDtls, config));
+            contents.add(jingleOfferFactory.createAudioContent(useIce, useDtls, config));
         }
 
         if (participant.hasVideoSupport())
         {
-            contents.add(
-                jingleOfferFactory.createVideoContent(
-                    useIce, useDtls, useRtx, config));
+            contents.add(jingleOfferFactory.createVideoContent(useIce, useDtls, useRtx, config));
         }
 
         // Is SCTP enabled ?
         boolean openSctp = config.openSctp() == null || config.openSctp();
         if (openSctp && participant.hasSctpSupport())
         {
-            contents.add(
-                jingleOfferFactory.createDataContent(useIce, useDtls));
+            contents.add(jingleOfferFactory.createDataContent(useIce, useDtls));
         }
 
         return contents;
