@@ -42,5 +42,16 @@ class JicofoConfigTest : ConfigTest() {
                 }
             }
         }
+
+        "SCTP" {
+            "Should be enabled by default" {
+                config.enableSctp shouldBe true
+            }
+            "Should be disabled with new config" {
+                withNewConfig("jicofo { sctp { enabled=false } }") {
+                    config.enableSctp shouldBe false
+                }
+            }
+        }
     }
 }

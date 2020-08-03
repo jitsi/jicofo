@@ -114,7 +114,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         }
 
         // Is SCTP enabled ?
-        boolean openSctp = config.openSctp() == null || config.openSctp();
+        boolean openSctp = config.openSctp() && JicofoConfig.config.enableSctp();
         if (openSctp && participant.hasSctpSupport())
         {
             contents.add(jingleOfferFactory.createDataContent(useIce, useDtls));

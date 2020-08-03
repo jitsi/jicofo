@@ -284,9 +284,10 @@ public class JitsiMeetConfig
      * Returns the value of the open sctp configuration property or
      * <tt>null</tt> if it has not been specified.
      */
-    public Boolean openSctp()
+    public boolean openSctp()
     {
-        return getBoolean(PNAME_OPEN_SCTP);
+        Boolean openSctp = getBoolean(PNAME_OPEN_SCTP);
+        return openSctp == null || openSctp;
     }
 
     private Boolean getBoolean(String name)

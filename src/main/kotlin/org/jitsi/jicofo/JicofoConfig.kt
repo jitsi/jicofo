@@ -19,12 +19,18 @@ package org.jitsi.jicofo
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.optionalconfig
+import org.jitsi.metaconfig.config
 
 class JicofoConfig {
     val localRegion: String? by optionalconfig {
         "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(JitsiConfig.legacyConfig)
         "$BASE.local-region".from(JitsiConfig.newConfig)
     }
+
+    val enableSctp: Boolean by config {
+        "$BASE.sctp.enabled".from(JitsiConfig.newConfig)
+    }
+    fun enableSctp() = enableSctp
 
     fun localRegion() = localRegion
 
