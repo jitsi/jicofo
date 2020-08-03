@@ -8,6 +8,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 import static org.glassfish.jersey.internal.guava.Predicates.not;
+import static org.jitsi.jicofo.bridge.BridgeConfig.config;
 
 /**
  * Represents an algorithm for bridge selection.
@@ -64,7 +65,7 @@ abstract class BridgeSelectionStrategy
     /**
      * Maximum participants per bridge in one conference, or {@code -1} for no maximum.
      */
-    private int maxParticipantsPerBridge = BridgeConfig.config.maxBridgeParticipants();
+    private int maxParticipantsPerBridge = config.maxBridgeParticipants();
 
     /**
      * Selects a bridge to be used for a new participant in a conference.
