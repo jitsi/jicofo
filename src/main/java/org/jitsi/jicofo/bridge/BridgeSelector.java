@@ -22,7 +22,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.service.configuration.*;
 
@@ -59,27 +58,12 @@ public class BridgeSelector
     public static final String BRIDGE_SELECTION_STRATEGY_PNAME
         = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
 
-    public static final String MAX_PARTICIPANTS_PER_BRIDGE_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE";
-
-    public static final String MAX_BRIDGE_PACKET_RATE_PNAME
-            = "org.jitsi.jicofo.BridgeSelector.MAX_BRIDGE_PACKET_RATE";
-
-    public static final String AVG_PARTICIPANT_PACKET_RATE_PNAME
-            = "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE";
-
     /**
      * Configuration property which specifies the amount of time since bridge
      * instance failure before the selector will give it another try.
      */
     public static final String BRIDGE_FAILURE_RESET_THRESHOLD_PNAME
         = "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD";
-
-    /**
-     * The name of the property which configured the local region.
-     */
-    public static final String LOCAL_REGION_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION";
 
     /**
      * Five minutes.
@@ -395,30 +379,7 @@ public class BridgeSelector
                 config.getLong(
                         BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
                         DEFAULT_FAILURE_RESET_THRESHOLD));
-        logger.info(
-            "Bridge failure reset threshold: " + getFailureResetThreshold());
-
-        bridgeSelectionStrategy.setLocalRegion(
-                config.getString(LOCAL_REGION_PNAME, null));
-        logger.info("Local region: " + bridgeSelectionStrategy.getLocalRegion());
-
-        int maxParticipantsPerBridge = config.getInt(MAX_PARTICIPANTS_PER_BRIDGE_PNAME, -1);
-        if (maxParticipantsPerBridge > 0)
-        {
-            bridgeSelectionStrategy.setMaxParticipantsPerBridge(maxParticipantsPerBridge);
-        }
-
-        int maxBridgePacketRate = config.getInt(MAX_BRIDGE_PACKET_RATE_PNAME, -1);
-        if (maxBridgePacketRate > 0)
-        {
-            Bridge.setMaxTotalPacketRatePps(maxBridgePacketRate);
-        }
-
-        int avgParticipantPacketRate = config.getInt(AVG_PARTICIPANT_PACKET_RATE_PNAME, -1);
-        if (avgParticipantPacketRate > 0)
-        {
-            Bridge.setAvgParticipantPacketRatePps(avgParticipantPacketRate);
-        }
+        logger.info("Bridge failure reset threshold: " + getFailureResetThreshold());
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
@@ -434,10 +395,7 @@ public class BridgeSelector
      */
     public void dispose()
     {
-        if (jvbDoctor != null)
-        {
-            jvbDoctor.stop();
-        }
+        jvbDoctor.stop();
         if (handlerRegistration != null)
         {
             handlerRegistration.unregister();

@@ -32,7 +32,6 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 
-import static org.jitsi.jicofo.bridge.BridgeSelector.*;
 import static org.apache.commons.lang3.StringUtils.*;
 
 /**
@@ -251,11 +250,7 @@ public class JitsiMeetServices
             = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
         if (isNotBlank(jigasiBreweryName))
         {
-            JigasiDetector jigasiDetector
-                = new JigasiDetector(
-                    protocolProvider,
-                    jigasiBreweryName,
-                    config.getString(LOCAL_REGION_PNAME, null));
+            JigasiDetector jigasiDetector = new JigasiDetector(protocolProvider, jigasiBreweryName);
             logger.info("Using a Jigasi detector with MUC: " + jigasiBreweryName);
 
             jigasiDetector.init();

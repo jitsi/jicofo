@@ -271,8 +271,7 @@ public class BridgeSelectorTest
     public void testRegionBasedSelection()
             throws Exception
     {
-        JitsiMeetServices meetServices
-                = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
+        JitsiMeetServices meetServices = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
         BridgeSelector selector = meetServices.getBridgeSelector();
 
         String region1 = "region1";
@@ -288,13 +287,10 @@ public class BridgeSelectorTest
         bridge3.setStats(createJvbStats(0, region3));
 
         Bridge localBridge = bridge1;
-        BridgeSelectionStrategy strategy
-                = new RegionBasedBridgeSelectionStrategy();
-        strategy.setLocalRegion(localBridge.getRegion());
+        BridgeSelectionStrategy strategy = new RegionBasedBridgeSelectionStrategy();
 
 
-        List<Bridge> allBridges
-                = Arrays.asList(bridge1, bridge2, bridge3);
+        List<Bridge> allBridges = Arrays.asList(bridge1, bridge2, bridge3);
         Map<Bridge, Integer> conferenceBridges = new HashMap<>();
 
         // Initial selection should select a bridge in the participant's region
