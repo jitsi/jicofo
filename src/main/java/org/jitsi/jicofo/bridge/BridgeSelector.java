@@ -22,7 +22,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.service.configuration.*;
 
@@ -58,15 +57,6 @@ public class BridgeSelector
      */
     public static final String BRIDGE_SELECTION_STRATEGY_PNAME
         = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
-
-    public static final String MAX_PARTICIPANTS_PER_BRIDGE_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE";
-
-    public static final String MAX_BRIDGE_PACKET_RATE_PNAME
-            = "org.jitsi.jicofo.BridgeSelector.MAX_BRIDGE_PACKET_RATE";
-
-    public static final String AVG_PARTICIPANT_PACKET_RATE_PNAME
-            = "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE";
 
     /**
      * Configuration property which specifies the amount of time since bridge
@@ -389,26 +379,7 @@ public class BridgeSelector
                 config.getLong(
                         BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
                         DEFAULT_FAILURE_RESET_THRESHOLD));
-        logger.info(
-            "Bridge failure reset threshold: " + getFailureResetThreshold());
-
-        int maxParticipantsPerBridge = config.getInt(MAX_PARTICIPANTS_PER_BRIDGE_PNAME, -1);
-        if (maxParticipantsPerBridge > 0)
-        {
-            bridgeSelectionStrategy.setMaxParticipantsPerBridge(maxParticipantsPerBridge);
-        }
-
-        int maxBridgePacketRate = config.getInt(MAX_BRIDGE_PACKET_RATE_PNAME, -1);
-        if (maxBridgePacketRate > 0)
-        {
-            Bridge.setMaxTotalPacketRatePps(maxBridgePacketRate);
-        }
-
-        int avgParticipantPacketRate = config.getInt(AVG_PARTICIPANT_PACKET_RATE_PNAME, -1);
-        if (avgParticipantPacketRate > 0)
-        {
-            Bridge.setAvgParticipantPacketRatePps(avgParticipantPacketRate);
-        }
+        logger.info("Bridge failure reset threshold: " + getFailureResetThreshold());
 
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
@@ -424,10 +395,7 @@ public class BridgeSelector
      */
     public void dispose()
     {
-        if (jvbDoctor != null)
-        {
-            jvbDoctor.stop();
-        }
+        jvbDoctor.stop();
         if (handlerRegistration != null)
         {
             handlerRegistration.unregister();

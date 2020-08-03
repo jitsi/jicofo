@@ -17,16 +17,14 @@
  */
 package org.jitsi.jicofo.bridge;
 
-import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
-
-import org.jitsi.jicofo.discovery.*;
-import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+
+import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
+import static org.jitsi.jicofo.bridge.BridgeConfig.config;
 
 /**
  * Represents a jitsi-videobridge instance, reachable at a certain JID, which
@@ -41,11 +39,6 @@ public class Bridge
     implements Comparable<Bridge>
 {
     /**
-     * The {@link Logger} used by the {@link Bridge} class and its instances.
-     */
-    private static final Logger logger = Logger.getLogger(Bridge.class);
-
-    /**
      * A {@link ColibriStatsExtension} instance with no stats.
      */
     private static final ColibriStatsExtension EMPTY_STATS
@@ -55,41 +48,13 @@ public class Bridge
      * We assume that each recently added participant contributes this much
      * to the bridge's packet rate.
      */
-    private static int AVG_PARTICIPANT_PACKET_RATE_PPS;
+    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS = config.averageParticipantPacketRatePps();
 
     /**
      * We assume this is the maximum packet rate that a bridge can handle.
      */
-    public static double MAX_TOTAL_PACKET_RATE_PPS;
+    public static final int MAX_TOTAL_PACKET_RATE_PPS = config.maxBridgePacketRatePps();
 
-    static
-    {
-        MaxPacketRateCalculator packetRateCalculator = new MaxPacketRateCalculator(
-            4 /* numberOfConferenceBridges */,
-            20 /* numberOfGlobalSenders */,
-            2 /* numberOfSpeakers */,
-            20 /* numberOfLocalSenders */,
-            5 /* numberOfLocalReceivers */
-        );
-
-        setMaxTotalPacketRatePps(
-            packetRateCalculator.computeIngressPacketRatePps()
-                + packetRateCalculator.computeEgressPacketRatePps());
-
-        setAvgParticipantPacketRatePps(500);
-    }
-
-    static void setMaxTotalPacketRatePps(int maxTotalPacketRatePps)
-    {
-        MAX_TOTAL_PACKET_RATE_PPS = maxTotalPacketRatePps;
-        logger.info("Setting max total packet rate of " + MAX_TOTAL_PACKET_RATE_PPS);
-    }
-
-    static void setAvgParticipantPacketRatePps(int avgParticipantPacketRatePps)
-    {
-        AVG_PARTICIPANT_PACKET_RATE_PPS = avgParticipantPacketRatePps;
-        logger.info("Setting average participant packet rate of " + AVG_PARTICIPANT_PACKET_RATE_PPS);
-    }
     /**
      * The stress-level beyond which we consider a bridge to be
      * overloaded/overstressed.
@@ -337,7 +302,7 @@ public class Bridge
         double stress =
             (lastReportedPacketRatePps
                 + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
-            / MAX_TOTAL_PACKET_RATE_PPS;
+            / (double) MAX_TOTAL_PACKET_RATE_PPS;
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
         return stress;

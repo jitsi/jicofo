@@ -17,8 +17,7 @@ abstract class BridgeSelectionStrategy
     /**
      * The logger.
      */
-    private final static Logger logger
-            = Logger.getLogger(BridgeSelectionStrategy.class);
+    private final static Logger logger = Logger.getLogger(BridgeSelectionStrategy.class);
 
     /**
      * Total number of times selection succeeded because there was a bridge
@@ -63,9 +62,9 @@ abstract class BridgeSelectionStrategy
     private int totalSplitDueToLoad;
 
     /**
-     * Maximum participants per bridge in one conference.
+     * Maximum participants per bridge in one conference, or {@code -1} for no maximum.
      */
-    private int maxParticipantsPerBridge = Integer.MAX_VALUE;
+    private int maxParticipantsPerBridge = BridgeConfig.config.maxBridgeParticipants();
 
     /**
      * Selects a bridge to be used for a new participant in a conference.
@@ -393,12 +392,6 @@ abstract class BridgeSelectionStrategy
         }
     }
 
-    void setMaxParticipantsPerBridge(int maxParticipantsPerBridge)
-    {
-        logger.info("Using max participants per bridge: " + maxParticipantsPerBridge);
-        this.maxParticipantsPerBridge = maxParticipantsPerBridge;
-    }
-
     /**
      * Checks whether a {@link Bridge} should be considered overloaded for a
      * particular conference.
@@ -411,7 +404,7 @@ abstract class BridgeSelectionStrategy
             Map<Bridge, Integer> conferenceBridges)
     {
         return bridge.isOverloaded()
-            || (conferenceBridges.containsKey(bridge)
+            || (maxParticipantsPerBridge > 0 && conferenceBridges.containsKey(bridge)
                 && conferenceBridges.get(bridge) >= maxParticipantsPerBridge);
     }
 
