@@ -282,9 +282,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.kotlintest</groupId>
-      <artifactId>kotlintest-runner-junit5</artifactId>
-      <version>3.4.2</version>
+      <groupId>io.kotest</groupId>
+      <artifactId>kotest-runner-junit5-jvm</artifactId>
+      <version>4.1.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
