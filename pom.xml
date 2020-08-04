@@ -58,24 +58,8 @@
     </dependency>
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smack-extensions</artifactId>
-      <version>${smack.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smack-core</artifactId>
-      <version>${smack.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
       <artifactId>smack-tcp</artifactId>
       <version>${smack.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.igniterealtime.whack</groupId>
-      <artifactId>core</artifactId>
-      <version>2.0.1</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
     <dependency>
