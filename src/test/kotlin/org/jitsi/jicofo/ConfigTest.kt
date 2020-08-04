@@ -32,7 +32,6 @@ abstract class ConfigTest : ShouldSpec() {
     override fun beforeSpec(spec: Spec) {
         super.beforeSpec(spec)
         MetaconfigSettings.cacheEnabled = false
-        MetaconfigSettings.logger = StdOutLogger
     }
 
     inline fun withLegacyConfig(props: String, block: () -> Unit) {
