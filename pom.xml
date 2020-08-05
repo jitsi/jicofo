@@ -23,7 +23,7 @@
     <slf4j.version>1.7.26</slf4j.version>
     <apache-http.version>4.4.1</apache-http.version>
     <jersey.version>2.30.1</jersey.version>
-    <jicoco.version>1.1-39-g6b2d353</jicoco.version>
+    <jicoco.version>1.1-42-geac01c8</jicoco.version>
     <jitsi.utils.version>1.0-49-gef466fc</jitsi.utils.version>
   </properties>
 
@@ -77,11 +77,6 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco</artifactId>
-      <version>${jicoco.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>jicoco-kotlin</artifactId>
       <version>${jicoco.version}</version>
     </dependency>
     <dependency>
