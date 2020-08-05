@@ -81,11 +81,6 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>jicoco-kotlin</artifactId>
-      <version>${jicoco.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>jicoco-config</artifactId>
       <version>${jicoco.version}</version>
     </dependency>
