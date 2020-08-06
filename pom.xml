@@ -240,6 +240,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+        <groupId>io.kotest</groupId>
+        <artifactId>kotest-runner-console-jvm</artifactId>
+        <version>${kotest.version}</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
       <version>5.5.2</version>
