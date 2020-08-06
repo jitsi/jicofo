@@ -137,7 +137,7 @@ public class FocusBundleActivator
                 new SynchronousQueue<>(),
                 new CustomizableThreadFactory("Jicofo Cached", true));
 
-        jingleOfferFactory = new JingleOfferFactory(configServiceRef.get());
+        jingleOfferFactory = new JingleOfferFactory();
 
         this.scheduledPoolRegistration = context.registerService(
                 ScheduledExecutorService.class, scheduledPool, null);
