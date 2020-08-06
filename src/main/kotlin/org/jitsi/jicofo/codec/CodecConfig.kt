@@ -117,9 +117,9 @@ class Config {
     val h264: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "$VIDEO_BASE.h264", "H264")
 
     @JvmField
-    val icas16 = CodecConfig("$AUDIO_BASE.icas-16000", "icas-16000")
+    val isac16 = CodecConfig("$AUDIO_BASE.isac-16000", "isac-16000")
     @JvmField
-    val icas32 = CodecConfig("$AUDIO_BASE.icas-32000", "icas-32000")
+    val isac32 = CodecConfig("$AUDIO_BASE.isac-32000", "isac-32000")
     @JvmField
     val opus = OpusConfig()
     @JvmField

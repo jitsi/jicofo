@@ -44,11 +44,11 @@ class CodecConfigTest : ConfigTest() {
             config.opus.red.enabled() shouldBe false
             shouldThrow<Throwable> { config.opus.red.pt() }
 
-            config.icas16.enabled() shouldBe true
-            config.icas16.pt() shouldBe 103
+            config.isac16.enabled() shouldBe true
+            config.isac16.pt() shouldBe 103
 
-            config.icas32.enabled() shouldBe true
-            config.icas32.pt() shouldBe 104
+            config.isac32.enabled() shouldBe true
+            config.isac32.pt() shouldBe 104
 
             config.framemarking.enabled shouldBe false
             config.framemarking.id shouldBe 9

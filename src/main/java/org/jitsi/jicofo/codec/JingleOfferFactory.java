@@ -487,16 +487,16 @@ public class JingleOfferFactory
             }
         }
 
-        if (config.icas16.enabled())
+        if (config.isac16.enabled())
         {
             // a=rtpmap:103 ISAC/16000
-            addPayloadTypeExtension(rtpDesc, config.icas16.pt(), "ISAC", 16000);
+            addPayloadTypeExtension(rtpDesc, config.isac16.pt(), "ISAC", 16000);
         }
 
-        if (config.icas32.enabled())
+        if (config.isac32.enabled())
         {
             // a=rtpmap:104 ISAC/32000
-            addPayloadTypeExtension(rtpDesc, config.icas32.pt(), "ISAC", 32000);
+            addPayloadTypeExtension(rtpDesc, config.isac32.pt(), "ISAC", 32000);
         }
 
         if (config.telephoneEvent.enabled())
