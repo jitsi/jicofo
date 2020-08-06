@@ -16,7 +16,7 @@
 package org.jitsi.jicofo
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotlintest.shouldBe
+import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.codec.Config.Companion.config
 
 class CodecConfigTest : ConfigTest() {
@@ -36,6 +36,19 @@ class CodecConfigTest : ConfigTest() {
             config.h264.pt() shouldBe 107
             config.h264.rtxEnabled() shouldBe true
             config.h264.rtxPt() shouldBe 99
+
+            config.opus.enabled() shouldBe true
+            config.opus.pt() shouldBe 111
+            config.opus.minptime() shouldBe 10
+            config.opus.useInbandFec() shouldBe true
+            config.opus.red.enabled() shouldBe false
+            shouldThrow<Throwable> { config.opus.red.pt() }
+
+            config.icas16.enabled() shouldBe true
+            config.icas16.pt() shouldBe 103
+
+            config.icas32.enabled() shouldBe true
+            config.icas32.pt() shouldBe 104
 
             config.framemarking.enabled shouldBe false
             config.framemarking.id shouldBe 9
@@ -129,19 +142,19 @@ class CodecConfigTest : ConfigTest() {
         }
         context("New config") {
             context("Disabling a codec") {
-                withNewConfig("jicofo { codec { vp8 { enabled=false } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { enabled=false } } } }") {
                     config.vp8.enabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.pt() }
                     config.vp8.rtxEnabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.rtxPt() }
                 }
-                withNewConfig("jicofo { codec { vp8 { pt=-1 } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { pt=-1 } } } }") {
                     config.vp8.enabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.pt() }
                     config.vp8.rtxEnabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.rtxPt() }
                 }
-                withNewConfig("jicofo { codec { vp8 { rtx-pt=-1 } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { rtx-pt=-1 } } } }") {
                     config.vp8.enabled() shouldBe true
                     config.vp8.pt() shouldBe 100
                     config.vp8.rtxEnabled() shouldBe false
@@ -151,10 +164,12 @@ class CodecConfigTest : ConfigTest() {
                     """
                     jicofo {
                       codec {
-                        vp8 {
-                          enabled=true
-                          pt=-1
-                          rtp-pt=111
+                        video {
+                          vp8 {
+                            enabled=true
+                            pt=-1
+                            rtp-pt=111
+                          }
                         }
                       }
                     }
@@ -167,11 +182,11 @@ class CodecConfigTest : ConfigTest() {
                 }
             }
             context("Changing the PT and RTX PT") {
-                withNewConfig("jicofo { codec { vp8 { pt=111 } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { pt=111 } } } }") {
                     config.vp8.enabled() shouldBe true
                     config.vp8.pt() shouldBe 111
                 }
-                withNewConfig("jicofo { codec { vp8 { rtx-pt=112 } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { rtx-pt=112 } } } }") {
                     config.vp8.enabled() shouldBe true
                     config.vp8.pt() shouldBe 100
                     config.vp8.rtxEnabled() shouldBe true
@@ -218,15 +233,21 @@ class CodecConfigTest : ConfigTest() {
                     config.absSendTime.id shouldBe 1
                 }
             }
+            context("Opus config") {
+                withNewConfig("jicofo { codec { audio { opus { red { enabled=true } } } } }") {
+                    config.opus.red.enabled() shouldBe true
+                    config.opus.red.pt() shouldBe 112
+                }
+            }
         }
         context("With both legacy and new config, legacy should take precedence") {
             withLegacyConfig("org.jitsi.jicofo.ENABLE_VP8=false") {
-                withNewConfig("jicofo { codec { vp8 { enabled=true } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { enabled=true } } } }") {
                     config.vp8.enabled() shouldBe false
                 }
             }
             withLegacyConfig("org.jitsi.jicofo.ENABLE_VP8=true") {
-                withNewConfig("jicofo { codec { vp8 { enabled=false } } }") {
+                withNewConfig("jicofo { codec { video { vp8 { enabled=false } } } }") {
                     config.vp8.enabled() shouldBe true
                 }
             }

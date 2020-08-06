@@ -434,51 +434,75 @@ public class JingleOfferFactory
             rtpDesc.addExtmap(ssrcAudioLevel);
         }
 
-        // a=rtpmap:111 opus/48000/2
-        PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, 111, Constants.OPUS, 48000);
-        opus.setChannels(2);
-
-        // fmtp:111 minptime=10
-        addParameterExtension(opus, "minptime", "10");
-
-        if (jitsiMeetConfig.stereoEnabled())
+        if (config.opus.enabled())
         {
-            // fmtp: 111 stereo=1
-            addParameterExtension(opus, "stereo", "1");
+            // a=rtpmap:111 opus/48000/2
+            PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, config.opus.pt(), Constants.OPUS, 48000);
+            // Opus is always signaled with 2 channels, regardless of 'stereo'
+            opus.setChannels(2);
+
+            // Though RED has a payload type of its own and can be used to encode multiple other payload types, we need
+            // it to be advertised with the same clock rate as opus, so its defined here.
+            if (config.opus.red.enabled())
+            {
+                PayloadTypePacketExtension red = addPayloadTypeExtension(rtpDesc, config.opus.red.pt(), "red", 48000);
+                red.setChannels(2);
+            }
+
+            // fmtp:111 minptime=10
+            addParameterExtension(opus, "minptime", String.valueOf(config.opus.minptime()));
+
+            if (jitsiMeetConfig.stereoEnabled())
+            {
+                // fmtp: 111 stereo=1
+                addParameterExtension(opus, "stereo", "1");
+            }
+
+            int opusMaxAverageBitrate = jitsiMeetConfig.getOpusMaxAverageBitrate();
+            if (opusMaxAverageBitrate != -1)
+            {
+                addParameterExtension(
+                        opus,
+                        "maxaveragebitrate",
+                        String.valueOf(opusMaxAverageBitrate));
+            }
+
+            if (config.opus.useInbandFec())
+            {
+                // fmtp:111 useinbandfec=1
+                addParameterExtension(opus, "useinbandfec", "1");
+            }
+
+            if (config.tcc.enabled() && jitsiMeetConfig.isTccEnabled())
+            {
+                // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+                RTPHdrExtPacketExtension tcc = new RTPHdrExtPacketExtension();
+                tcc.setID(String.valueOf(config.tcc.id()));
+                tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
+                rtpDesc.addExtmap(tcc);
+
+                // a=rtcp-fb:111 transport-cc
+                opus.addRtcpFeedbackType(createRtcpFbPacketExtension("transport-cc", null));
+            }
         }
 
-        int opusMaxAverageBitrate = jitsiMeetConfig.getOpusMaxAverageBitrate();
-        if (opusMaxAverageBitrate != -1)
+        if (config.icas16.enabled())
         {
-            addParameterExtension(
-                    opus,
-                    "maxaveragebitrate",
-                    String.valueOf(opusMaxAverageBitrate));
+            // a=rtpmap:103 ISAC/16000
+            addPayloadTypeExtension(rtpDesc, config.icas16.pt(), "ISAC", 16000);
         }
 
-        // fmtp:111 useinbandfec=1
-        addParameterExtension(opus, "useinbandfec", "1");
-
-        if (config.tcc.enabled() && jitsiMeetConfig.isTccEnabled())
+        if (config.icas32.enabled())
         {
-            // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
-            RTPHdrExtPacketExtension tcc = new RTPHdrExtPacketExtension();
-            tcc.setID(String.valueOf(config.tcc.id()));
-            tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
-            rtpDesc.addExtmap(tcc);
-
-            // a=rtcp-fb:111 transport-cc
-            opus.addRtcpFeedbackType(createRtcpFbPacketExtension("transport-cc", null));
+            // a=rtpmap:104 ISAC/32000
+            addPayloadTypeExtension(rtpDesc, config.icas32.pt(), "ISAC", 32000);
         }
 
-        // a=rtpmap:103 ISAC/16000
-        addPayloadTypeExtension(rtpDesc, 103, "ISAC", 16000);
-
-        // a=rtpmap:104 ISAC/32000
-        addPayloadTypeExtension(rtpDesc, 104, "ISAC", 32000);
-
-        // rtpmap:126 telephone-event/8000
-        addPayloadTypeExtension(rtpDesc, 126, Constants.TELEPHONE_EVENT, 8000);
+        if (config.telephoneEvent.enabled())
+        {
+            // rtpmap:126 telephone-event/8000
+            addPayloadTypeExtension(rtpDesc, config.telephoneEvent.pt(), Constants.TELEPHONE_EVENT, 8000);
+        }
 
         // a=maxptime:60
         rtpDesc.setAttribute("maxptime", "60");
