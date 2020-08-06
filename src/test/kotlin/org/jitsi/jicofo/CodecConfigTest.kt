@@ -142,19 +142,19 @@ class CodecConfigTest : ConfigTest() {
         }
         context("New config") {
             context("Disabling a codec") {
-                withNewConfig("jicofo { codec { video { vp8 { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.enabled=false") {
                     config.vp8.enabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.pt() }
                     config.vp8.rtxEnabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.rtxPt() }
                 }
-                withNewConfig("jicofo { codec { video { vp8 { pt=-1 } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.pt=-1") {
                     config.vp8.enabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.pt() }
                     config.vp8.rtxEnabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.rtxPt() }
                 }
-                withNewConfig("jicofo { codec { video { vp8 { rtx-pt=-1 } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.rtx-pt=-1") {
                     config.vp8.enabled() shouldBe true
                     config.vp8.pt() shouldBe 100
                     config.vp8.rtxEnabled() shouldBe false
@@ -182,11 +182,11 @@ class CodecConfigTest : ConfigTest() {
                 }
             }
             context("Changing the PT and RTX PT") {
-                withNewConfig("jicofo { codec { video { vp8 { pt=111 } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.pt=111") {
                     config.vp8.enabled() shouldBe true
                     config.vp8.pt() shouldBe 111
                 }
-                withNewConfig("jicofo { codec { video { vp8 { rtx-pt=112 } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.rtx-pt=112") {
                     config.vp8.enabled() shouldBe true
                     config.vp8.pt() shouldBe 100
                     config.vp8.rtxEnabled() shouldBe true
@@ -194,47 +194,47 @@ class CodecConfigTest : ConfigTest() {
                 }
             }
             context("Disabling/enabling extensions") {
-                withNewConfig("jicofo { codec { rtp-extensions { framemarking { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.framemarking.enabled=false") {
                     config.framemarking.enabled shouldBe false
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { framemarking { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.framemarking.enabled=true") {
                     config.framemarking.enabled shouldBe true
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { abs-send-time { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.abs-send-time.enabled=false") {
                     config.absSendTime.enabled shouldBe false
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { abs-send-time { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.abs-send-time.enabled=true") {
                     config.absSendTime.enabled shouldBe true
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { rid { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.rid.enabled=false") {
                     config.rid.enabled shouldBe false
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { rid { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.rid.enabled=true") {
                     config.rid.enabled shouldBe true
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { tof { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.tof.enabled=false") {
                     config.tof.enabled shouldBe false
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { tof { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.tof.enabled=true") {
                     config.tof.enabled shouldBe true
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { tcc { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.tcc.enabled=false") {
                     config.tcc.enabled shouldBe false
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { tcc { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.tcc.enabled=true") {
                     config.tcc.enabled shouldBe true
                 }
             }
             context("Changing extension IDs") {
-                withNewConfig("jicofo { codec { rtp-extensions { tcc { id=1 } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.tcc.id=1") {
                     config.tcc.id shouldBe 1
                 }
-                withNewConfig("jicofo { codec { rtp-extensions { abs-send-time { id=1 } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.abs-send-time.id=1") {
                     config.absSendTime.id shouldBe 1
                 }
             }
             context("Opus config") {
-                withNewConfig("jicofo { codec { audio { opus { red { enabled=true } } } } }") {
+                withNewConfig("jicofo.codec.audio.opus.red.enabled=true") {
                     config.opus.red.enabled() shouldBe true
                     config.opus.red.pt() shouldBe 112
                 }
@@ -242,22 +242,22 @@ class CodecConfigTest : ConfigTest() {
         }
         context("With both legacy and new config, legacy should take precedence") {
             withLegacyConfig("org.jitsi.jicofo.ENABLE_VP8=false") {
-                withNewConfig("jicofo { codec { video { vp8 { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.enabled=true") {
                     config.vp8.enabled() shouldBe false
                 }
             }
             withLegacyConfig("org.jitsi.jicofo.ENABLE_VP8=true") {
-                withNewConfig("jicofo { codec { video { vp8 { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.video.vp8.enabled=false") {
                     config.vp8.enabled() shouldBe true
                 }
             }
             withLegacyConfig("org.jitsi.jicofo.ENABLE_FRAMEMARKING=true") {
-                withNewConfig("jicofo { codec { rtp-extensions { framemarking { enabled=false } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.framemarking.enabled=false") {
                     config.framemarking.enabled() shouldBe true
                 }
             }
             withLegacyConfig("org.jitsi.jicofo.ENABLE_FRAMEMARKING=false") {
-                withNewConfig("jicofo { codec { rtp-extensions { framemarking { enabled=true } } } }") {
+                withNewConfig("jicofo.codec.rtp-extensions.framemarking.enabled=true") {
                     config.framemarking.enabled() shouldBe false
                 }
             }
