@@ -54,6 +54,9 @@ class CodecConfigTest : ConfigTest() {
 
             config.tcc.enabled shouldBe true
             config.tcc.id shouldBe 5
+
+            config.audioLevel.enabled shouldBe true
+            config.audioLevel.id shouldBe 1
         }
         context("Legacy config") {
             context("Disabling a codec") {

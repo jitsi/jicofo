@@ -426,10 +426,13 @@ public class JingleOfferFactory
 
         rtpDesc.setMedia("audio");
 
-        RTPHdrExtPacketExtension ssrcAudioLevel = new RTPHdrExtPacketExtension();
-        ssrcAudioLevel.setID("1");
-        ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
-        rtpDesc.addExtmap(ssrcAudioLevel);
+        if (config.audioLevel.enabled())
+        {
+            RTPHdrExtPacketExtension ssrcAudioLevel = new RTPHdrExtPacketExtension();
+            ssrcAudioLevel.setID(String.valueOf(config.audioLevel.id()));
+            ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
+            rtpDesc.addExtmap(ssrcAudioLevel);
+        }
 
         // a=rtpmap:111 opus/48000/2
         PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, 111, Constants.OPUS, 48000);

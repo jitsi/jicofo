@@ -53,25 +53,25 @@ class VideoCodecConfig(
 
 }
 
-open class RtpExtensionConfig(
-    legacyEnabledName: String,
-    protected val newBase: String
-) {
+open class RtpExtensionConfig(base: String ) {
     open val enabled: Boolean by config {
-        legacyEnabledName.from(JitsiConfig.legacyConfig)
-        "$newBase.enabled".from(JitsiConfig.newConfig)
+        "$base.enabled".from(JitsiConfig.newConfig)
     }
     fun enabled() = enabled
 
     val id: Int by config {
-        "$newBase.id".from(JitsiConfig.newConfig)
+        "$base.id".from(JitsiConfig.newConfig)
     }
     fun id() = id
 }
 
-class TccConfig : RtpExtensionConfig("none", "${Config.EXTENSIONS_BASE}.tcc") {
+private class RtpExtensionConfigWithLegacy(
+    legacyEnabledName: String,
+    base: String
+) : RtpExtensionConfig(base) {
     override val enabled: Boolean by config {
-        "$newBase.enabled".from(JitsiConfig.newConfig)
+        legacyEnabledName.from(JitsiConfig.legacyConfig)
+        "$base.enabled".from(JitsiConfig.newConfig)
     }
 }
 
@@ -84,18 +84,24 @@ class Config {
     val h264 = VideoCodecConfig(LEGACY_BASE, "$BASE.h264", "H264")
 
     @JvmField
-    val framemarking = RtpExtensionConfig("$LEGACY_BASE.ENABLE_FRAMEMARKING", "$EXTENSIONS_BASE.framemarking")
+    val framemarking: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "$EXTENSIONS_BASE.framemarking")
     @JvmField
-    val absSendTime = RtpExtensionConfig("$LEGACY_BASE.ENABLE_AST", "$EXTENSIONS_BASE.abs-send-time")
+    val absSendTime: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_AST", "$EXTENSIONS_BASE.abs-send-time")
     @JvmField
-    val rid = RtpExtensionConfig("$LEGACY_BASE.ENABLE_RID", "$EXTENSIONS_BASE.rid")
+    val rid: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_RID", "$EXTENSIONS_BASE.rid")
     @JvmField
-    val tof = RtpExtensionConfig("$LEGACY_BASE.ENABLE_TOF", "$EXTENSIONS_BASE.tof")
+    val tof: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "$EXTENSIONS_BASE.tof")
     @JvmField
-    val videoContentType =
-        RtpExtensionConfig("$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE", "$EXTENSIONS_BASE.video-content-type")
+    val videoContentType: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE", "$EXTENSIONS_BASE.video-content-type")
     @JvmField
-    val tcc = TccConfig()
+    val tcc = RtpExtensionConfig("$EXTENSIONS_BASE.tcc")
+    @JvmField
+    val audioLevel = RtpExtensionConfig("$EXTENSIONS_BASE.audio-level")
 
     companion object {
         const val LEGACY_BASE = "org.jitsi.jicofo"
