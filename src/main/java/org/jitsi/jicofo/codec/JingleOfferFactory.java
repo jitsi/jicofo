@@ -436,18 +436,19 @@ public class JingleOfferFactory
 
         if (config.opus.enabled())
         {
-            // a=rtpmap:111 opus/48000/2
-            PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, config.opus.pt(), Constants.OPUS, 48000);
-            // Opus is always signaled with 2 channels, regardless of 'stereo'
-            opus.setChannels(2);
-
             // Though RED has a payload type of its own and can be used to encode multiple other payload types, we need
-            // it to be advertised with the same clock rate as opus, so its defined here.
+            // it to be advertised with the same clock rate as opus, so it's defined here.
+            // Add the RED payload type before Opus, so that it is the selected codec.
             if (config.opus.red.enabled())
             {
                 PayloadTypePacketExtension red = addPayloadTypeExtension(rtpDesc, config.opus.red.pt(), "red", 48000);
                 red.setChannels(2);
             }
+
+            // a=rtpmap:111 opus/48000/2
+            PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, config.opus.pt(), Constants.OPUS, 48000);
+            // Opus is always signaled with 2 channels, regardless of 'stereo'
+            opus.setChannels(2);
 
             // fmtp:111 minptime=10
             addParameterExtension(opus, "minptime", String.valueOf(config.opus.minptime()));
