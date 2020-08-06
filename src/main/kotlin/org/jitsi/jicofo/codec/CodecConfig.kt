@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.jitsi.jicofo
+package org.jitsi.jicofo.codec
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
@@ -69,13 +69,13 @@ open class RtpExtensionConfig(
     fun id() = id
 }
 
-class TccConfig : RtpExtensionConfig("none", "${CodecConfig.EXTENSIONS_BASE}.tcc") {
+class TccConfig : RtpExtensionConfig("none", "${Config.EXTENSIONS_BASE}.tcc") {
     override val enabled: Boolean by config {
         "$newBase.enabled".from(JitsiConfig.newConfig)
     }
 }
 
-class CodecConfig {
+class Config {
     @JvmField
     val vp8 = VideoCodecConfig(LEGACY_BASE, "$BASE.vp8", "VP8")
     @JvmField
@@ -103,7 +103,7 @@ class CodecConfig {
         const val EXTENSIONS_BASE = "$BASE.rtp-extensions"
 
         @JvmField
-        val config = CodecConfig()
+        val config = Config()
     }
 }
 

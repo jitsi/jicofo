@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.util;
+package org.jitsi.jicofo.codec;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
@@ -26,7 +26,7 @@ import org.jitsi.service.neomedia.codec.*;
 
 import java.net.*;
 
-import static org.jitsi.jicofo.CodecConfig.config;
+import static org.jitsi.jicofo.codec.Config.config;
 
 /**
  * Contains factory methods for creating Jingle offer sent in 'session-invite'

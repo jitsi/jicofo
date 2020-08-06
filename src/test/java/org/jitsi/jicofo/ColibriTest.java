@@ -21,10 +21,10 @@ import mock.*;
 import mock.jvb.*;
 import mock.util.*;
 
+import org.jitsi.jicofo.codec.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 
 import org.junit.*;
