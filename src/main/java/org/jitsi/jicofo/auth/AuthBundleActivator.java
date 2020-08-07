@@ -109,31 +109,7 @@ public class AuthBundleActivator
      */
     public AuthBundleActivator()
     {
-        super(AUTH_PNAME);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getDefaultPort()
-    {
-        // The idea of overriding Videobridge's default is probably an attempt
-        // to have Videobridge and Jicofo running on the same machine with their
-        // defaults and without them clashing.
-        return 8888;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getDefaultTlsPort()
-    {
-        // The idea of overriding Videobridge's default is probably an attempt
-        // to have Videobridge and Jicofo running on the same machine with their
-        // defaults and without them clashing.
-        return 8843;
+        super(AUTH_PNAME, "jicofo.apis.auth");
     }
 
     /**
