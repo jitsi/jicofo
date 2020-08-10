@@ -109,7 +109,9 @@ public class AuthBundleActivator
      */
     public AuthBundleActivator()
     {
-        super(AUTH_PNAME, "jicofo.apis.auth");
+        // The server started here handles many endpoints (health checks, etc.), hence the generic
+        // configuration key scope (jicofo.rest), but this class is responsible for starting it.
+        super(AUTH_PNAME, "jicofo.rest");
     }
 
     /**
