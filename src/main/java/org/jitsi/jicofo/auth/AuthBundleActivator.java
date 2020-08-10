@@ -109,31 +109,9 @@ public class AuthBundleActivator
      */
     public AuthBundleActivator()
     {
-        super(AUTH_PNAME);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getDefaultPort()
-    {
-        // The idea of overriding Videobridge's default is probably an attempt
-        // to have Videobridge and Jicofo running on the same machine with their
-        // defaults and without them clashing.
-        return 8888;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getDefaultTlsPort()
-    {
-        // The idea of overriding Videobridge's default is probably an attempt
-        // to have Videobridge and Jicofo running on the same machine with their
-        // defaults and without them clashing.
-        return 8843;
+        // The server started here handles many endpoints (health checks, etc.), hence the generic
+        // configuration key scope (jicofo.rest), but this class is responsible for starting it.
+        super(AUTH_PNAME, "jicofo.rest");
     }
 
     /**
