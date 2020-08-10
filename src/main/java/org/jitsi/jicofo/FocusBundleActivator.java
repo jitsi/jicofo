@@ -18,7 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.codec.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.osgi.*;
 
@@ -137,7 +137,7 @@ public class FocusBundleActivator
                 new SynchronousQueue<>(),
                 new CustomizableThreadFactory("Jicofo Cached", true));
 
-        jingleOfferFactory = new JingleOfferFactory(configServiceRef.get());
+        jingleOfferFactory = new JingleOfferFactory();
 
         this.scheduledPoolRegistration = context.registerService(
                 ScheduledExecutorService.class, scheduledPool, null);

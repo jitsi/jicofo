@@ -21,7 +21,6 @@ import io.kotest.core.spec.style.ShouldSpec
 import org.jitsi.config.useLegacyConfig
 import org.jitsi.config.useNewConfig
 import org.jitsi.metaconfig.MetaconfigSettings
-import org.jitsi.metaconfig.StdOutLogger
 
 /**
  * A helper class for testing configuration properties
@@ -39,7 +38,7 @@ abstract class ConfigTest : ShouldSpec() {
     }
 
     inline fun withNewConfig(config: String, block: () -> Unit) {
-        useNewConfig("new-${this::class.simpleName}", config, false, block)
+        useNewConfig("new-${this::class.simpleName}", config, true, block)
     }
 
     inline fun withNewConfig(config: String, loadDefaults: Boolean, block: () -> Unit) {
