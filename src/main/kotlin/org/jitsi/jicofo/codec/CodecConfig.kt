@@ -68,7 +68,7 @@ private class RtxCodecConfigWithLegacy(
     }
 }
 
-class OpusConfig : CodecConfig("${Config.AUDIO_BASE}.opus", "opus") {
+class OpusConfig : CodecConfig("jicofo.codec.audio.opus", "opus") {
     private val minptime: Int by config {
         "$base.minptime".from(JitsiConfig.newConfig)
     }
@@ -110,47 +110,45 @@ private class RtpExtensionConfigWithLegacy(
 
 class Config {
     @JvmField
-    val vp8: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "$VIDEO_BASE.vp8", "VP8")
+    val vp8: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.vp8", "VP8")
     @JvmField
-    val vp9: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "$VIDEO_BASE.vp9", "VP9")
+    val vp9: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.vp9", "VP9")
     @JvmField
-    val h264: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "$VIDEO_BASE.h264", "H264")
+    val h264: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.h264", "H264")
 
     @JvmField
-    val isac16 = CodecConfig("$AUDIO_BASE.isac-16000", "isac-16000")
+    val isac16 = CodecConfig("jicofo.codec.audio.isac-16000", "isac-16000")
     @JvmField
-    val isac32 = CodecConfig("$AUDIO_BASE.isac-32000", "isac-32000")
+    val isac32 = CodecConfig("jicofo.codec.audio.isac-32000", "isac-32000")
     @JvmField
     val opus = OpusConfig()
     @JvmField
-    val telephoneEvent = CodecConfig("$AUDIO_BASE.telephone-event", "telephone-event")
+    val telephoneEvent = CodecConfig("jicofo.codec.audio.telephone-event", "telephone-event")
 
     @JvmField
-    val audioLevel = RtpExtensionConfig("$EXTENSIONS_BASE.audio-level")
+    val audioLevel = RtpExtensionConfig("jicofo.codec.rtp-extensions.audio-level")
     @JvmField
     val tof: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "$EXTENSIONS_BASE.tof")
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "jicofo.codec.rtp-extensions.tof")
     @JvmField
     val absSendTime: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_AST", "$EXTENSIONS_BASE.abs-send-time")
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_AST", "jicofo.codec.rtp-extensions.abs-send-time")
     @JvmField
     val rid: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_RID", "$EXTENSIONS_BASE.rid")
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_RID", "jicofo.codec.rtp-extensions.rid")
     @JvmField
-    val tcc = RtpExtensionConfig("$EXTENSIONS_BASE.tcc")
+    val tcc = RtpExtensionConfig("jicofo.codec.rtp-extensions.tcc")
     @JvmField
     val videoContentType: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE", "$EXTENSIONS_BASE.video-content-type")
+        RtpExtensionConfigWithLegacy(
+            "$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE",
+            "jicofo.codec.rtp-extensions.video-content-type")
     @JvmField
     val framemarking: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "$EXTENSIONS_BASE.framemarking")
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "jicofo.codec.rtp-extensions.framemarking")
 
     companion object {
         const val LEGACY_BASE = "org.jitsi.jicofo"
-        const val BASE = "jicofo.codec"
-        const val VIDEO_BASE = "$BASE.video"
-        const val AUDIO_BASE = "$BASE.audio"
-        const val EXTENSIONS_BASE = "$BASE.rtp-extensions"
 
         @JvmField
         val config = Config()
