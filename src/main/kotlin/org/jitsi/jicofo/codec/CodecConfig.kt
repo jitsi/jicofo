@@ -126,8 +126,10 @@ class Config {
     val telephoneEvent = CodecConfig("$AUDIO_BASE.telephone-event", "telephone-event")
 
     @JvmField
-    val framemarking: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "$EXTENSIONS_BASE.framemarking")
+    val audioLevel = RtpExtensionConfig("$EXTENSIONS_BASE.audio-level")
+    @JvmField
+    val tof: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "$EXTENSIONS_BASE.tof")
     @JvmField
     val absSendTime: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_AST", "$EXTENSIONS_BASE.abs-send-time")
@@ -135,15 +137,13 @@ class Config {
     val rid: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_RID", "$EXTENSIONS_BASE.rid")
     @JvmField
-    val tof: RtpExtensionConfig =
-        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "$EXTENSIONS_BASE.tof")
+    val tcc = RtpExtensionConfig("$EXTENSIONS_BASE.tcc")
     @JvmField
     val videoContentType: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE", "$EXTENSIONS_BASE.video-content-type")
     @JvmField
-    val tcc = RtpExtensionConfig("$EXTENSIONS_BASE.tcc")
-    @JvmField
-    val audioLevel = RtpExtensionConfig("$EXTENSIONS_BASE.audio-level")
+    val framemarking: RtpExtensionConfig =
+        RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "$EXTENSIONS_BASE.framemarking")
 
     companion object {
         const val LEGACY_BASE = "org.jitsi.jicofo"
