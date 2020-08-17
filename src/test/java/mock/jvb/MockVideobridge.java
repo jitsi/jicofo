@@ -57,8 +57,6 @@ public class MockVideobridge
 
     private boolean returnServerError = false;
 
-    private VideobridgeBundleActivator jvbActivator;
-
     private ColibriConferenceIqHandler confIqGetHandler
             = new ColibriConferenceIqHandler(IQ.Type.get);
 
@@ -76,13 +74,9 @@ public class MockVideobridge
     }
 
     public void start(BundleContext bc)
-        throws Exception
     {
-        this.jvbActivator = new VideobridgeBundleActivator();
-
-        jvbActivator.start(bc);
-
-        bridge = ServiceUtils2.getService(bc, Videobridge.class);
+        bridge = new Videobridge();
+        bridge.start(bc);
 
         connection.registerIQRequestHandler(confIqGetHandler);
         connection.registerIQRequestHandler(confIqSetHandler);
@@ -91,13 +85,12 @@ public class MockVideobridge
 
     @Override
     public void stop(BundleContext bundleContext)
-        throws Exception
     {
         connection.unregisterIQRequestHandler(confIqGetHandler);
         connection.unregisterIQRequestHandler(confIqSetHandler);
         connection.unregisterIQRequestHandler(healthCheckIqHandler);
 
-        jvbActivator.stop(bundleContext);
+        bridge.stop(bundleContext);
     }
 
     private class ColibriConferenceIqHandler extends AbstractIqRequestHandler
