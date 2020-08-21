@@ -45,8 +45,7 @@ public class Participant
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    private final static Logger classLogger
-        = Logger.getLogger(Participant.class);
+    private final static Logger classLogger = Logger.getLogger(Participant.class);
 
     /**
      * Returns the endpoint ID for a participant in the videobridge (Colibri)
@@ -234,6 +233,14 @@ public class Participant
     public boolean hasRtxSupport()
     {
         return supportedFeatures.contains(DiscoveryUtil.FEATURE_RTX);
+    }
+
+    /**
+     * Returns {@code true} iff this participant supports RED for opus.
+     */
+    public boolean hasOpusRedSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_OPUS_RED);
     }
 
     /**

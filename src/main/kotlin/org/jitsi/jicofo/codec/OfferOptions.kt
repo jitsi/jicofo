@@ -34,6 +34,7 @@ data class OfferOptions(
     var tcc: Boolean = true,
     var rtx: Boolean = true,
     var remb: Boolean = true,
+    var opusRed: Boolean = true,
     var minBitrate: Int? = null,
     var startBitrate: Int? = null,
     var opusMaxAverageBitrate: Int? = null
@@ -52,6 +53,7 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     tcc = tcc && jitsiMeetConfig.isTccEnabled
     rtx = rtx && jitsiMeetConfig.isRtxEnabled
     remb = remb && jitsiMeetConfig.isRembEnabled
+    opusRed = opusRed && jitsiMeetConfig.isOpusRedEnabled
     if (jitsiMeetConfig.minBitrate > 0) {
         minBitrate = min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
     }
@@ -62,6 +64,7 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
         opusMaxAverageBitrate = min(jitsiMeetConfig.opusMaxAverageBitrate, opusMaxAverageBitrate ?: Int.MAX_VALUE)
     }
 }
+
 fun OfferOptions.applyConstraints(participant: Participant) {
     ice = ice && participant.hasIceSupport()
     dtls = dtls && participant.hasDtlsSupport()
@@ -69,4 +72,5 @@ fun OfferOptions.applyConstraints(participant: Participant) {
     video = video && participant.hasVideoSupport()
     sctp = sctp && participant.hasSctpSupport()
     rtx = rtx && participant.hasRtxSupport()
+    opusRed = opusRed && participant.hasOpusRedSupport()
 }
