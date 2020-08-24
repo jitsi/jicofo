@@ -80,7 +80,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
         OfferOptionsKt.applyConstraints(options, meetConference.getConfig());
 
         JingleOfferFactory jingleOfferFactory = FocusBundleActivator.getJingleOfferFactory();
-        return jingleOfferFactory.createOffer(OfferOptionsKt.getOctoOptions());
+        return jingleOfferFactory.createOffer(options);
     }
 
     /**
