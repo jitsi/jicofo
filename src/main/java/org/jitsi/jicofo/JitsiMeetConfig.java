@@ -80,6 +80,11 @@ public class JitsiMeetConfig
     public static final String PNAME_ENABLE_TCC = "enableTcc";
 
     /**
+     * Whether RED should be enabled for opus.
+     */
+    public static final String PNAME_ENABLE_OPUS_RED = "enableOpusRed";
+
+    /**
      * The name of the property that specifies JID of the bridge which should be
      * used instead of any bridges elected by <tt>BridgeSelector</tt>.
      * The property is meant to be used in a test that aims to run a conference
@@ -267,6 +272,12 @@ public class JitsiMeetConfig
     {
         Boolean enableTcc = getBoolean(PNAME_ENABLE_TCC);
         return enableTcc == null ? DEFAULT_ENABLE_TCC : enableTcc;
+    }
+
+    public boolean isOpusRedEnabled()
+    {
+        Boolean enableOpusRed = getBoolean(PNAME_ENABLE_OPUS_RED);
+        return enableOpusRed != null && enableOpusRed;
     }
 
     /**

@@ -38,8 +38,7 @@ public class DiscoveryUtil
     /**
      * The logger
      */
-    private final static Logger logger
-        = Logger.getLogger(DiscoveryUtil.class);
+    private final static Logger logger = Logger.getLogger(DiscoveryUtil.class);
 
     /**
      * List contains default feature set.
@@ -61,20 +60,17 @@ public class DiscoveryUtil
     /**
      * ICE feature name.
      */
-    public final static String FEATURE_ICE
-            = "urn:xmpp:jingle:transports:ice-udp:1";
+    public final static String FEATURE_ICE = "urn:xmpp:jingle:transports:ice-udp:1";
 
     /**
      * DTLS/SCTP feature name.
      */
-    public final static String FEATURE_SCTP
-            = "urn:xmpp:jingle:transports:dtls-sctp:1";
+    public final static String FEATURE_SCTP = "urn:xmpp:jingle:transports:dtls-sctp:1";
 
     /**
      * RTX (RFC4588) support.
      */
-    public final static String FEATURE_RTX
-        = "urn:ietf:rfc:4588";
+    public final static String FEATURE_RTX = "urn:ietf:rfc:4588";
 
     /**
      * The Jingle DTLS feature name (XEP-0320).
@@ -91,26 +87,25 @@ public class DiscoveryUtil
      */
     public final static String FEATURE_RTP_BUNDLE = "urn:ietf:rfc:5888";
 
+    public final static String FEATURE_OPUS_RED = "http://jitsi.org/opus-red";
+
     /**
      * A namespace for our custom "lip-sync" feature. Advertised by the clients
      * that support all of the functionality required for doing the lip-sync
      * properly.
      */
-    public final static String FEATURE_LIPSYNC
-        = "http://jitsi.org/meet/lipsync";
+    public final static String FEATURE_LIPSYNC = "http://jitsi.org/meet/lipsync";
 
     /**
      * A namespace for detecting participants as jigasi users.
      */
-    public final static String FEATURE_JIGASI
-        = "http://jitsi.org/protocol/jigasi";
+    public final static String FEATURE_JIGASI = "http://jitsi.org/protocol/jigasi";
 
     /**
      * A namespace for detecting whether a participant (jigasi users) can be
      * muted.
      */
-    public final static String FEATURE_AUDIO_MUTE
-        = "http://jitsi.org/protocol/audio-mute";
+    public final static String FEATURE_AUDIO_MUTE = "http://jitsi.org/protocol/audio-mute";
 
     /**
      * Array constant which can be used to check for Version IQ support.

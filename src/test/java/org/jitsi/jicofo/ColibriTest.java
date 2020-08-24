@@ -88,20 +88,11 @@ public class ColibriTest
 
         colibriConf.setJitsiVideobridge(mockBridge.getBridgeJid());
 
-        List<ContentPacketExtension> contents = new ArrayList<>();
+        OfferOptions offerOptions = new OfferOptions();
+        OfferOptionsKt.applyConstraints(offerOptions, config);
+        offerOptions.setRtx(false);
 
-        JingleOfferFactory jingleOfferFactory
-            = FocusBundleActivator.getJingleOfferFactory();
-        ContentPacketExtension audio
-            = jingleOfferFactory.createAudioContent(true, true, config);
-        ContentPacketExtension video
-            = jingleOfferFactory.createVideoContent(true, true, false, config);
-        ContentPacketExtension data
-            = jingleOfferFactory.createDataContent(true, true);
-
-        contents.add(audio);
-        contents.add(video);
-        contents.add(data);
+        List<ContentPacketExtension> contents = FocusBundleActivator.getJingleOfferFactory().createOffer(offerOptions);
 
         String peer1 = "endpoint1";
         String peer2 = "endpoint2";

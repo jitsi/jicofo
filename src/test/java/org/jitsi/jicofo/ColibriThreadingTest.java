@@ -311,19 +311,11 @@ public class ColibriThreadingTest
 
     static List<ContentPacketExtension> createContents()
     {
-        List<ContentPacketExtension> contents
-            = new ArrayList<>();
+        OfferOptions offerOptions = new OfferOptions();
+        OfferOptionsKt.applyConstraints(offerOptions, config);
+        offerOptions.setRtx(false);
 
-        JingleOfferFactory jingleOfferFactory
-            = FocusBundleActivator.getJingleOfferFactory();
-
-        contents.add(jingleOfferFactory.createAudioContent(true, true, config));
-
-        contents.add(jingleOfferFactory.createVideoContent(true, true, false, config));
-
-        contents.add(jingleOfferFactory.createDataContent(true, true));
-
-        return contents;
+        return FocusBundleActivator.getJingleOfferFactory().createOffer(offerOptions);
     }
 
     class MockPeerAllocator
