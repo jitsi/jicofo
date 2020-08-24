@@ -42,6 +42,9 @@ class BridgeConfig {
     }
     fun averageParticipantPacketRatePps() = averageParticipantPacketRatePps
 
+    val stressThreshold: Double by config { "$BASE.stress-threshold".from(JitsiConfig.newConfig) }
+    fun stressThreshold() = stressThreshold
+
     companion object {
         const val BASE = "jicofo.bridge"
         @JvmField

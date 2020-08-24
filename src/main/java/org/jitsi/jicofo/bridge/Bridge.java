@@ -59,7 +59,7 @@ public class Bridge
      * The stress-level beyond which we consider a bridge to be
      * overloaded/overstressed.
      */
-    private static final double OVERSTRESSED_THRESHOLD = .8;
+    private static final double OVERSTRESSED_THRESHOLD = config.stressThreshold();
 
     private long failureResetThreshold;
 
