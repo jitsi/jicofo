@@ -55,12 +55,6 @@ public class Bridge
      */
     public static final int MAX_TOTAL_PACKET_RATE_PPS = config.maxBridgePacketRatePps();
 
-    /**
-     * The stress-level beyond which we consider a bridge to be
-     * overloaded/overstressed.
-     */
-    private static final double OVERSTRESSED_THRESHOLD = .8;
-
     private long failureResetThreshold;
 
     /**
@@ -309,12 +303,11 @@ public class Bridge
     }
 
     /**
-     * @return true if the stress of the bridge is greater-than-or-equal to
-     * {@link #OVERSTRESSED_THRESHOLD}.
+     * @return true if the stress of the bridge is greater-than-or-equal to the threshold.
      */
     public boolean isOverloaded()
     {
-        return getStress() >= OVERSTRESSED_THRESHOLD;
+        return getStress() >= config.stressThreshold();
     }
 
     public int getLastReportedPacketRatePps()
