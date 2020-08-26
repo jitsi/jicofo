@@ -745,7 +745,7 @@ public class ColibriConferenceImpl
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
-    public void setName(Localpart name)
+    public void setName(String name)
     {
         conferenceState.setName(name);
     }
@@ -754,7 +754,7 @@ public class ColibriConferenceImpl
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
-    public Localpart getName()
+    public String getName()
     {
         return conferenceState.getName();
     }

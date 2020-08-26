@@ -728,8 +728,7 @@ public class JitsiMeetConferenceImpl
 
         colibriConference.setConfig(config);
 
-        Localpart roomName = chatRoom.getRoomJid().getLocalpart();
-        colibriConference.setName(roomName);
+        colibriConference.setName(chatRoom.getRoomJid().toString());
         colibriConference.setJitsiVideobridge(bridgeJid);
 
         return colibriConference;
