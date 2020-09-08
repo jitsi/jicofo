@@ -90,7 +90,7 @@ public class MockVideobridge
         connection.unregisterIQRequestHandler(confIqSetHandler);
         connection.unregisterIQRequestHandler(healthCheckIqHandler);
 
-        bridge.stop(bundleContext);
+        bridge.stop();
     }
 
     private class ColibriConferenceIqHandler extends AbstractIqRequestHandler
