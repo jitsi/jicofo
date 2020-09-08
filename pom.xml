@@ -123,7 +123,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-13-ga40f9c3</version>
+      <version>1.0-14-gba982f0</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
