@@ -109,7 +109,7 @@ public class ColibriConferenceImpl
     /**
      * Flag used to figure out if Colibri conference has been
      * allocated during last
-     * {@link #createColibriChannels(boolean, String, String, boolean, List)}
+     * {@link #createColibriChannels(String, String, boolean, List)}
      * call.
      */
     private boolean justAllocated = false;
@@ -427,7 +427,7 @@ public class ColibriConferenceImpl
 
     /**
      * Sends Colibri packet and waits for response in
-     * {@link #createColibriChannels(boolean, String, String, boolean, List)}
+     * {@link #createColibriChannels(String, String, boolean, List)}
      * call.
      *
      * Exposed for unit tests purpose.
@@ -745,7 +745,7 @@ public class ColibriConferenceImpl
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
-    public void setName(Localpart name)
+    public void setName(EntityBareJid name)
     {
         conferenceState.setName(name);
     }
@@ -754,7 +754,7 @@ public class ColibriConferenceImpl
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
-    public Localpart getName()
+    public EntityBareJid getName()
     {
         return conferenceState.getName();
     }

@@ -71,13 +71,13 @@ public interface ColibriConference
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
-    void setName(Localpart name);
+    void setName(EntityBareJid name);
 
     /**
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
-    Localpart getName();
+    EntityBareJid getName();
 
     /**
      * Returns <tt>true</tt> if conference has been allocated during last
