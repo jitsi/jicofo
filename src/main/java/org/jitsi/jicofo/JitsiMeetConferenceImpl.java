@@ -728,7 +728,7 @@ public class JitsiMeetConferenceImpl
 
         colibriConference.setConfig(config);
 
-        colibriConference.setName(chatRoom.getRoomJid().toString());
+        colibriConference.setName(chatRoom.getRoomJid());
         colibriConference.setJitsiVideobridge(bridgeJid);
 
         return colibriConference;
