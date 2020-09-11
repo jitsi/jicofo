@@ -100,6 +100,7 @@ case "$1" in
 
         OLD_JITSI_CONFIG="/usr/share/jicofo/.sip-communicator/sip-communicator.properties"
         NEW_JITSI_CONFIG="/etc/jitsi/jicofo/sip-communicator.properties"
+        HOCON_CONFIG="/etc/jitsi/jicofo/jicofo.conf"
         if [ -f $OLD_JITSI_CONFIG ]; then
             mv $OLD_JITSI_CONFIG $NEW_JITSI_CONFIG
             echo "# Config has moved to /etc/jitsi/jicofo/
@@ -114,6 +115,20 @@ case "$1" in
         # we are migrating old configs to use mucs now
         if ! grep -q "org.jitsi.jicofo.BRIDGE_MUC" "$NEW_JITSI_CONFIG" ;then
             echo "org.jitsi.jicofo.BRIDGE_MUC=JvbBrewery@internal.auth.${JVB_HOSTNAME}" >> $NEW_JITSI_CONFIG
+        fi
+
+        # Updates config so new and old installs will start using the new config file
+        if ! grep -q "\-Dconfig.file" "$CONFIG"; then
+            echo "Updating $CONFIG to use jicofo.conf"
+            sed -i 's|JAVA_SYS_PROPS="|JAVA_SYS_PROPS="-Dconfig.file='"$HOCON_CONFIG"' |g' $CONFIG
+        fi
+
+        if [ ! -f $HOCON_CONFIG ]; then
+            echo "Generating an empty jicofo.conf file"
+            echo "# Jicofo HOCON configuration. See /usr/share/jicofo/jicofo.jar/reference.conf for
+#available options, syntax, and default values.
+jicofo {
+}" >> $HOCON_CONFIG
         fi
 
         # we don't want to start the daemon as root
