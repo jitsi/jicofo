@@ -126,9 +126,9 @@ case "$1" in
         if [ ! -f $HOCON_CONFIG ]; then
             echo "Generating an empty jicofo.conf file"
             echo "# Jicofo HOCON configuration. See /usr/share/jicofo/jicofo.jar/reference.conf for
-            available options, syntax, and default values.
-            jicofo {
-            }" >> $HOCON_CONFIG
+#available options, syntax, and default values.
+jicofo {
+}" >> $HOCON_CONFIG
         fi
 
         # we don't want to start the daemon as root
