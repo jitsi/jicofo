@@ -19,6 +19,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.jicofo.ConfigTest
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
+import org.jitsi.utils.mins
+import org.jitsi.utils.secs
 
 class BridgeConfigTest : ConfigTest() {
     init {
@@ -64,6 +66,12 @@ class BridgeConfigTest : ConfigTest() {
                 withNewConfig("jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy") {
                     config.selectionStrategy.shouldBeInstanceOf<RegionBasedBridgeSelectionStrategy>()
                 }
+            }
+        }
+        context("Health checks") {
+            withNewConfig("jicofo.bridge.health-checks.interval = 2 minutes".trimIndent()) {
+                config.healthChecksInterval shouldBe 2.mins
+                config.healthChecksRetryDelay shouldBe 1.mins
             }
         }
     }

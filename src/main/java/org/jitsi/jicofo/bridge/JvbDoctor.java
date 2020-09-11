@@ -68,8 +68,7 @@ public class JvbDoctor
      * delay. This is how long we will wait to retry the health check after 1st
      * timeout.
      */
-    public static final String SECOND_CHANCE_DELAY_PNAME
-        = "org.jitsi.jicofo.HEALTH_CHECK_2NDTRY_DELAY";
+    public static final String SECOND_CHANCE_DELAY_PNAME = "org.jitsi.jicofo.HEALTH_CHECK_2NDTRY_DELAY";
 
     /**
      * Default value for JVB health checks is 10 seconds.
@@ -153,8 +152,7 @@ public class JvbDoctor
                     SECOND_CHANCE_DELAY_PNAME,
                     DEFAULT_HEALTH_CHECK_INTERVAL / 2);
 
-        this.executorServiceRef
-            = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
+        this.executorServiceRef = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
 
         initializeHealthChecks(initialBridges);
     }

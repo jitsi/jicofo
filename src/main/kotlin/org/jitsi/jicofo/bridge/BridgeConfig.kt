@@ -70,6 +70,26 @@ class BridgeConfig {
         }
     }
 
+    val healthChecksEnabled: Boolean by config {
+        "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL".from(JitsiConfig.legacyConfig)
+            .convertFrom<Int> { it > 0 }
+        "$BASE.health-checks.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val healthChecksInterval: Duration by config {
+        "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL".from(JitsiConfig.legacyConfig)
+            .convertFrom<Long> { Duration.ofMillis(it) }
+        "$BASE.health-checks.interval".from(JitsiConfig.newConfig)
+    }
+
+    val healthChecksRetryDelay: Duration by config {
+        "org.jitsi.jicofo.HEALTH_CHECK_2NDTRY_DELAY".from(JitsiConfig.legacyConfig)
+            .convertFrom<Long> { Duration.ofMillis(it) }
+        "$BASE.health-checks.retry-delay".from(JitsiConfig.newConfig)
+        "$BASE.health-checks.interval".from(JitsiConfig.newConfig)
+            .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
+    }
+
     companion object {
         const val BASE = "jicofo.bridge"
         @JvmField
