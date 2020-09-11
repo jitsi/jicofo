@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
+import java.time.Duration
 
 /**
  * Config for classes in the org.jicofo.bridge package.
@@ -44,6 +45,13 @@ class BridgeConfig {
 
     val stressThreshold: Double by config { "$BASE.stress-threshold".from(JitsiConfig.newConfig) }
     fun stressThreshold() = stressThreshold
+
+    val failureResetThreshold: Duration by config {
+        "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD".from(JitsiConfig.legacyConfig)
+            .convertFrom<Long> { Duration.ofMillis(it) }
+        "$BASE.failure-reset-threshold".from(JitsiConfig.newConfig)
+    }
+    fun failureResetThreshold() = failureResetThreshold
 
     companion object {
         const val BASE = "jicofo.bridge"
