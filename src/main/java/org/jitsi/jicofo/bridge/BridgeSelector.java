@@ -51,14 +51,6 @@ public class BridgeSelector
     private final static Logger logger = Logger.getLogger(BridgeSelector.class);
 
     /**
-     * The name of the property which controls the
-     * {@link BridgeSelectionStrategy} to be used by this
-     * {@link BridgeSelector}.
-     */
-    public static final String BRIDGE_SELECTION_STRATEGY_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
-
-    /**
      * Stores reference to <tt>EventHandler</tt> registration, so that it can be
      * unregistered on {@link #dispose()}.
      */
@@ -78,7 +70,7 @@ public class BridgeSelector
     /**
      * The bridge selection strategy.
      */
-    private final BridgeSelectionStrategy bridgeSelectionStrategy;
+    private final BridgeSelectionStrategy bridgeSelectionStrategy = BridgeConfig.config.getSelectionStrategy();
 
     private final JvbDoctor jvbDoctor = new JvbDoctor(this);
 
@@ -88,63 +80,7 @@ public class BridgeSelector
      */
     public BridgeSelector()
     {
-        bridgeSelectionStrategy
-            = Objects.requireNonNull(createBridgeSelectionStrategy());
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
-    }
-
-    /**
-     * Creates a {@link BridgeSelectionStrategy} for this {@link BridgeSelector}.
-     * The class that will be instantiated is based on configuration.
-     */
-    private BridgeSelectionStrategy createBridgeSelectionStrategy()
-    {
-        BridgeSelectionStrategy strategy = null;
-
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-        if (config != null)
-        {
-            String clazzName
-                = config.getString(BRIDGE_SELECTION_STRATEGY_PNAME);
-            if (clazzName != null)
-            {
-                try
-                {
-                    Class<?> clazz = Class.forName(clazzName);
-                    strategy = (BridgeSelectionStrategy)clazz.getConstructor().newInstance();
-                }
-                catch (ClassNotFoundException | InstantiationException |
-                    IllegalAccessException | NoSuchMethodException |
-                    InvocationTargetException e)
-                {
-                }
-
-                if (strategy == null)
-                {
-                    try
-                    {
-                        Class<?> clazz =
-                            Class.forName(
-                                getClass().getPackage().getName() + "." + clazzName);
-                        strategy = (BridgeSelectionStrategy)clazz.getConstructor().newInstance();
-                    }
-                    catch (ClassNotFoundException | InstantiationException |
-                        IllegalAccessException | NoSuchMethodException |
-                        InvocationTargetException e)
-                    {
-                        logger.error("Failed to find class for: " + clazzName, e);
-                    }
-                }
-            }
-        }
-
-        if (strategy == null)
-        {
-            strategy = new SingleBridgeSelectionStrategy();
-        }
-
-
-        return strategy;
     }
 
     /**

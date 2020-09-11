@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.bridge
 
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.jicofo.ConfigTest
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 
@@ -46,6 +47,22 @@ class BridgeConfigTest : ConfigTest() {
                     config.maxBridgeParticipants shouldBe 111
                     config.maxBridgePacketRatePps shouldBe 111
                     config.averageParticipantPacketRatePps shouldBe 111
+                }
+            }
+        }
+        context("Selection strategy") {
+            context("With default config") {
+                config.selectionStrategy.shouldBeInstanceOf<SingleBridgeSelectionStrategy>()
+            }
+            context("With legacy config") {
+                withLegacyConfig(
+                    "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY=SplitBridgeSelectionStrategy") {
+                    config.selectionStrategy.shouldBeInstanceOf<SplitBridgeSelectionStrategy>()
+                }
+            }
+            context("With new config") {
+                withNewConfig("jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy") {
+                    config.selectionStrategy.shouldBeInstanceOf<RegionBasedBridgeSelectionStrategy>()
                 }
             }
         }

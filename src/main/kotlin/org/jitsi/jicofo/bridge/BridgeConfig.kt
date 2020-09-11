@@ -53,6 +53,23 @@ class BridgeConfig {
     }
     fun failureResetThreshold() = failureResetThreshold
 
+    val selectionStrategy: BridgeSelectionStrategy by config {
+        "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY".from(JitsiConfig.legacyConfig)
+            .convertFrom<String> { createSelectionStrategy(it) }
+        "$BASE.selection-strategy".from(JitsiConfig.newConfig)
+            .convertFrom<String> { createSelectionStrategy(it) }
+    }
+
+    private fun createSelectionStrategy(className: String): BridgeSelectionStrategy {
+        return try {
+            val clazz = Class.forName("${javaClass.getPackage().name}.${className}")
+            clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+        } catch (e: Exception) {
+                val clazz = Class.forName(className)
+                clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+        }
+    }
+
     companion object {
         const val BASE = "jicofo.bridge"
         @JvmField
