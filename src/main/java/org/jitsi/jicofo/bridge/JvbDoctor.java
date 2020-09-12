@@ -30,7 +30,6 @@ import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -69,21 +68,14 @@ public class JvbDoctor
     private final long secondChanceDelay = config.getHealthChecksRetryDelay().toMillis();
 
     /**
-     * OSGi bundle context.
-     */
-    private BundleContext bundleContext;
-
-    /**
      * Health check tasks map.
      */
-    private final Map<Jid, ScheduledFuture> tasks
-        = new ConcurrentHashMap<>();
+    private final Map<Jid, ScheduledFuture> tasks = new ConcurrentHashMap<>();
 
     /**
-     * <tt>ScheduledExecutorService</tt> reference used to schedule periodic
-     * health check tasks.
+     * The executor to use to schedule periodic health check tasks.
      */
-    private OSGIServiceRef<ScheduledExecutorService> executorServiceRef;
+    private ScheduledExecutorService executor;
 
     private final HealthCheckListener listener;
 
@@ -97,7 +89,7 @@ public class JvbDoctor
 
     private XmppConnection getConnection() {
         FocusManager focusManager
-                = ServiceUtils2.getService(bundleContext, FocusManager.class);
+                = ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
         ProtocolProviderService protocolProvider
                 = focusManager.getJvbProtocolProvider();
         OperationSetDirectSmackXmpp xmppOpSet
@@ -107,24 +99,15 @@ public class JvbDoctor
                 ? xmppOpSet.getXmppConnection() : null;
     }
 
-    synchronized public void start(
-            BundleContext bundleContext,
-            Collection<Bridge> initialBridges)
+    synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
     {
-        if (this.bundleContext != null)
-        {
-            throw new IllegalStateException("Started already?");
-        }
-        this.bundleContext = bundleContext;
-
         if (!config.getHealthChecksEnabled())
         {
             logger.warn("JVB health-checks disabled");
             return;
         }
 
-        this.executorServiceRef = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
-
+        this.executor = executor;
         initializeHealthChecks(initialBridges);
     }
 
@@ -149,12 +132,6 @@ public class JvbDoctor
 
     synchronized public void stop()
     {
-        if (this.bundleContext == null)
-        {
-            return;
-        }
-        bundleContext = null;
-
         try
         {
             // Remove scheduled tasks
@@ -166,8 +143,7 @@ public class JvbDoctor
         }
         finally
         {
-            this.executorServiceRef = null;
-            this.bundleContext = null;
+            this.executor = null;
         }
     }
 
@@ -179,15 +155,8 @@ public class JvbDoctor
             return;
         }
 
-        ScheduledExecutorService executorService = executorServiceRef.get();
-        if (executorService == null)
-        {
-            throw new IllegalStateException(
-                    "No ScheduledExecutorService running!");
-        }
-
         ScheduledFuture healthTask
-            = executorService.scheduleAtFixedRate(
+            = executor.scheduleAtFixedRate(
                     new HealthCheckTask(bridgeJid),
                     healthCheckInterval,
                     healthCheckInterval,
@@ -203,9 +172,7 @@ public class JvbDoctor
         ScheduledFuture healthTask = tasks.remove(bridgeJid);
         if (healthTask == null)
         {
-            logger.warn(
-                    "Trying to remove a bridge that does not exist anymore: "
-                        + bridgeJid);
+            logger.warn("Trying to remove a bridge that does not exist anymore: " + bridgeJid);
             return;
         }
 
@@ -232,9 +199,7 @@ public class JvbDoctor
             }
             catch (Exception e)
             {
-                logger.error(
-                        "Error when doing health-check on: " + bridgeJid,
-                        e);
+                logger.error("Error when doing health-check on: " + bridgeJid, e);
             }
         }
 
@@ -244,8 +209,7 @@ public class JvbDoctor
             {
                 if (!tasks.containsKey(bridgeJid))
                 {
-                    logger.info(
-                            "Health check task canceled for: " + bridgeJid);
+                    logger.info("Health check task canceled for: " + bridgeJid);
                     return true;
                 }
                 return false;
@@ -272,9 +236,7 @@ public class JvbDoctor
             // If XMPP is currently not connected skip the health-check
             if (connection == null)
             {
-                logger.warn(
-                        "XMPP disconnected - skipping health check for: "
-                            + bridgeJid);
+                logger.warn("XMPP disconnected - skipping health check for: " + bridgeJid);
                 return;
             }
 
@@ -306,14 +268,11 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    response
-                        = connection.sendPacketAndGetReply(
-                                newHealthCheckIQ(bridgeJid));
+                    response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
                 }
                 catch (InterruptedException e)
                 {
-                    logger.error(
-                        bridgeJid + " second chance delay wait interrupted", e);
+                    logger.error(bridgeJid + " second chance delay wait interrupted", e);
                 }
             }
 
@@ -323,9 +282,7 @@ public class JvbDoctor
                 if (taskInvalid())
                     return;
 
-                logger.debug(
-                        "Health check response from: " + bridgeJid + ": "
-                            + IQUtils.responseToXML(response));
+                logger.debug("Health check response from: " + bridgeJid + ": " + IQUtils.responseToXML(response));
 
                 if (response == null)
                 {
@@ -357,15 +314,13 @@ public class JvbDoctor
                             .equals(condition))
                     {
                         // Health check failure
-                        logger.warn("Health check failed for: " + bridgeJid
-                                + ": " + error.toXML().toString());
+                        logger.warn("Health check failed for: " + bridgeJid + ": " + error.toXML().toString());
                         listener.healthCheckFailed(bridgeJid);
                     }
                     else
                     {
                         logger.error(
-                                "Unexpected error returned by the bridge: "
-                                    + bridgeJid + ", err: " + response.toXML());
+                                "Unexpected error returned by the bridge: " + bridgeJid + ", err: " + response.toXML());
                     }
                 }
             }

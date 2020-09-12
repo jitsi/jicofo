@@ -23,7 +23,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.service.configuration.*;
 
 import org.jitsi.utils.logging.*;
 
@@ -31,7 +30,6 @@ import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -273,7 +271,7 @@ public class BridgeSelector
             throw new IllegalStateException("EventAdmin service not found");
         }
 
-        jvbDoctor.start(FocusBundleActivator.bundleContext, getBridges());
+        jvbDoctor.start(FocusBundleActivator.getSharedScheduledThreadPool(), getBridges());
     }
 
     /**
