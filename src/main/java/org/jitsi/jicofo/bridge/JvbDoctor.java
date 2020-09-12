@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 
@@ -35,6 +34,8 @@ import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.jitsi.jicofo.bridge.BridgeConfig.config;
 
 /**
  * The class is responsible for doing health checks of currently known
@@ -57,34 +58,15 @@ public class JvbDoctor
     private static final Logger logger = Logger.getLogger(JvbDoctor.class);
 
     /**
-     * The name of the configuration property used to configure health check
-     * intervals.
-     */
-    public static final String HEALTH_CHECK_INTERVAL_PNAME
-        = "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL";
-
-    /**
-     * The name of the configuration property used to configure 2nd chance
-     * delay. This is how long we will wait to retry the health check after 1st
-     * timeout.
-     */
-    public static final String SECOND_CHANCE_DELAY_PNAME = "org.jitsi.jicofo.HEALTH_CHECK_2NDTRY_DELAY";
-
-    /**
-     * Default value for JVB health checks is 10 seconds.
-     */
-    public static final long DEFAULT_HEALTH_CHECK_INTERVAL = 10000;
-
-    /**
      * Tells how often we send health checks to the bridge in ms.
      */
-    private long healthCheckInterval;
+    private final long healthCheckInterval = config.getHealthChecksInterval().toMillis();
 
     /**
      * 2nd chance delay which tells how long we will wait to retry the health
      * check after 1st attempt has timed out.
      */
-    private long secondChanceDelay;
+    private final long secondChanceDelay = config.getHealthChecksRetryDelay().toMillis();
 
     /**
      * OSGi bundle context.
@@ -135,22 +117,11 @@ public class JvbDoctor
         }
         this.bundleContext = bundleContext;
 
-        ConfigurationService configurationService
-                = ServiceUtils2.getService(bundleContext, ConfigurationService.class);
-        healthCheckInterval
-            = configurationService.getLong(
-                    HEALTH_CHECK_INTERVAL_PNAME,
-                    DEFAULT_HEALTH_CHECK_INTERVAL);
-        if (healthCheckInterval <= 0)
+        if (!config.getHealthChecksEnabled())
         {
             logger.warn("JVB health-checks disabled");
             return;
         }
-
-        secondChanceDelay
-            = configurationService.getLong(
-                    SECOND_CHANCE_DELAY_PNAME,
-                    DEFAULT_HEALTH_CHECK_INTERVAL / 2);
 
         this.executorServiceRef = new OSGIServiceRef<>(bundleContext, ScheduledExecutorService.class);
 
