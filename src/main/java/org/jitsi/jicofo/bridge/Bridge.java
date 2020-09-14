@@ -54,7 +54,7 @@ public class Bridge
      * We assume that each recently added participant will contribute this much
      * to the bridge's load
      */
-    private static final Double AVG_PARTICIPANT_LOAD = config.averageParticipantLoad();
+    private static final Double AVG_PARTICIPANT_STRESS = config.averageParticipantStress();
 
     /**
      * We assume this is the maximum packet rate that a bridge can handle.
@@ -328,7 +328,7 @@ public class Bridge
         }
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
-        return (lastReportedStressLevel + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_LOAD);
+        return (lastReportedStressLevel + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_STRESS);
     }
 
     /**

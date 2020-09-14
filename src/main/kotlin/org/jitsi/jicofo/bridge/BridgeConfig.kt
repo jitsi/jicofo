@@ -44,10 +44,10 @@ class BridgeConfig {
     }
     fun averageParticipantPacketRatePps() = averageParticipantPacketRatePps
 
-    val averageParticipantLoad: Double by config {
-        "$BASE.average-participant-load".from(JitsiConfig.newConfig)
+    val averageParticipantStress: Double by config {
+        "$BASE.average-participant-stress".from(JitsiConfig.newConfig)
     }
-    fun averageParticipantLoad() = averageParticipantLoad
+    fun averageParticipantStress() = averageParticipantStress
 
     val stressThreshold: Double by config { "$BASE.stress-threshold".from(JitsiConfig.newConfig) }
     fun stressThreshold() = stressThreshold
