@@ -45,23 +45,6 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * We assume that each recently added participant contributes this much
-     * to the bridge's packet rate.
-     */
-    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS = config.averageParticipantPacketRatePps();
-
-    /**
-     * We assume that each recently added participant will contribute this much
-     * to the bridge's load
-     */
-    private static final Double AVG_PARTICIPANT_STRESS = config.averageParticipantStress();
-
-    /**
-     * We assume this is the maximum packet rate that a bridge can handle.
-     */
-    public static final int MAX_TOTAL_PACKET_RATE_PPS = config.maxBridgePacketRatePps();
-
-    /**
      * This is static for the purposes of tests.
      * TODO: just use the config and port the tests.
      */
@@ -328,7 +311,8 @@ public class Bridge
         }
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
-        return (lastReportedStressLevel + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_STRESS);
+        return (lastReportedStressLevel +
+            Math.max(0, getRecentlyAddedEndpointCount()) * config.getAverageParticipantStress());
     }
 
     /**
@@ -347,8 +331,8 @@ public class Bridge
     {
         double stress =
             (lastReportedPacketRatePps
-                + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
-                / (double) MAX_TOTAL_PACKET_RATE_PPS;
+                + Math.max(0, getRecentlyAddedEndpointCount()) * config.averageParticipantPacketRatePps())
+                / (double) config.maxBridgePacketRatePps();
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
         return stress;
