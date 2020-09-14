@@ -28,7 +28,6 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.meet.*;
 import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
@@ -233,12 +232,6 @@ public class FocusManager
      * The address of the conference MUC component served by our XMPP domain.
      */
     private Jid conferenceMucService;
-
-    /**
-     * Indicates if graceful shutdown mode has been enabled and
-     * no new conference request will be accepted.
-     */
-    private boolean shutdownInProgress;
 
     /**
      * Handler that takes care of pre-processing various Jitsi Meet extensions
@@ -461,11 +454,6 @@ public class FocusManager
             isConferenceCreator = conference == null;
             if (isConferenceCreator)
             {
-                if (shutdownInProgress)
-                {
-                    return false;
-                }
-
                 conference = createConference(room, properties, loggingLevel, includeInStatistics);
             }
         }
@@ -654,8 +642,6 @@ public class FocusManager
                     EventFactory.focusDestroyed(
                         String.valueOf(conference.getId()), conference.getRoomName()));
             }
-
-            maybeDoShutdown();
         }
     }
 
@@ -690,55 +676,11 @@ public class FocusManager
         }
     }
 
-    /**
-     * Enables shutdown mode which means that no new focus instances will
-     * be allocated. After conference count drops to zero the process will exit.
-     */
-    public void enableGracefulShutdownMode()
-    {
-        if (!this.shutdownInProgress)
-        {
-            logger.info("Focus entered graceful shutdown mode");
-        }
-        this.shutdownInProgress = true;
-        maybeDoShutdown();
-    }
-
-    private void maybeDoShutdown()
-    {
-        synchronized (conferencesSyncRoot)
-        {
-            if (shutdownInProgress && conferences.isEmpty())
-            {
-                logger.info("Focus is shutting down NOW");
-
-                // It is not clear whether the code below necessarily needs to
-                // hold the lock or not. Presumably it is safe to call it
-                // multiple times.
-                ShutdownService shutdownService
-                    = ServiceUtils2.getService(
-                        FocusBundleActivator.bundleContext,
-                        ShutdownService.class);
-
-                shutdownService.beginShutdown();
-            }
-        }
-    }
-
     private int getNonHealthCheckConferenceCount()
     {
         return (int)conferences.values().stream()
             .filter(JitsiMeetConferenceImpl::includeInStatistics)
             .count();
-    }
-
-    /**
-     * Returns <tt>true</tt> if graceful shutdown mode has been enabled and
-     * the process is going to be finished once conference count drops to zero.
-     */
-    public boolean isShutdownInProgress()
-    {
-        return shutdownInProgress;
     }
 
     /**
