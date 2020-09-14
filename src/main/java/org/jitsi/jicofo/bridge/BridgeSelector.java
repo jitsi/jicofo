@@ -23,7 +23,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.event.*;
-import org.jitsi.service.configuration.*;
 
 import org.jitsi.utils.logging.*;
 
@@ -31,7 +30,6 @@ import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -51,36 +49,10 @@ public class BridgeSelector
     private final static Logger logger = Logger.getLogger(BridgeSelector.class);
 
     /**
-     * The name of the property which controls the
-     * {@link BridgeSelectionStrategy} to be used by this
-     * {@link BridgeSelector}.
-     */
-    public static final String BRIDGE_SELECTION_STRATEGY_PNAME
-        = "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY";
-
-    /**
-     * Configuration property which specifies the amount of time since bridge
-     * instance failure before the selector will give it another try.
-     */
-    public static final String BRIDGE_FAILURE_RESET_THRESHOLD_PNAME
-        = "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD";
-
-    /**
-     * Five minutes.
-     */
-    public static final long DEFAULT_FAILURE_RESET_THRESHOLD = 1L * 60L * 1000L;
-
-    /**
      * Stores reference to <tt>EventHandler</tt> registration, so that it can be
      * unregistered on {@link #dispose()}.
      */
     private ServiceRegistration<EventHandler> handlerRegistration;
-
-    /**
-     * The amount of time we will wait after bridge instance failure before it
-     * will get another chance.
-     */
-    private long failureResetThreshold = DEFAULT_FAILURE_RESET_THRESHOLD;
 
     /**
      * The map of bridge JID to <tt>Bridge</tt>.
@@ -96,7 +68,7 @@ public class BridgeSelector
     /**
      * The bridge selection strategy.
      */
-    private final BridgeSelectionStrategy bridgeSelectionStrategy;
+    private final BridgeSelectionStrategy bridgeSelectionStrategy = BridgeConfig.config.getSelectionStrategy();
 
     private final JvbDoctor jvbDoctor = new JvbDoctor(this);
 
@@ -106,63 +78,7 @@ public class BridgeSelector
      */
     public BridgeSelector()
     {
-        bridgeSelectionStrategy
-            = Objects.requireNonNull(createBridgeSelectionStrategy());
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
-    }
-
-    /**
-     * Creates a {@link BridgeSelectionStrategy} for this {@link BridgeSelector}.
-     * The class that will be instantiated is based on configuration.
-     */
-    private BridgeSelectionStrategy createBridgeSelectionStrategy()
-    {
-        BridgeSelectionStrategy strategy = null;
-
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-        if (config != null)
-        {
-            String clazzName
-                = config.getString(BRIDGE_SELECTION_STRATEGY_PNAME);
-            if (clazzName != null)
-            {
-                try
-                {
-                    Class<?> clazz = Class.forName(clazzName);
-                    strategy = (BridgeSelectionStrategy)clazz.getConstructor().newInstance();
-                }
-                catch (ClassNotFoundException | InstantiationException |
-                    IllegalAccessException | NoSuchMethodException |
-                    InvocationTargetException e)
-                {
-                }
-
-                if (strategy == null)
-                {
-                    try
-                    {
-                        Class<?> clazz =
-                            Class.forName(
-                                getClass().getPackage().getName() + "." + clazzName);
-                        strategy = (BridgeSelectionStrategy)clazz.getConstructor().newInstance();
-                    }
-                    catch (ClassNotFoundException | InstantiationException |
-                        IllegalAccessException | NoSuchMethodException |
-                        InvocationTargetException e)
-                    {
-                        logger.error("Failed to find class for: " + clazzName, e);
-                    }
-                }
-            }
-        }
-
-        if (strategy == null)
-        {
-            strategy = new SingleBridgeSelectionStrategy();
-        }
-
-
-        return strategy;
     }
 
     /**
@@ -196,7 +112,7 @@ public class BridgeSelector
             return bridge;
         }
 
-        Bridge newBridge = new Bridge(bridgeJid, getFailureResetThreshold());
+        Bridge newBridge = new Bridge(bridgeJid);
         if (stats != null)
         {
             newBridge.setStats(stats);
@@ -321,30 +237,6 @@ public class BridgeSelector
     }
 
     /**
-     * The time since last bridge failure we will wait before it gets another
-     * chance.
-     *
-     * @return failure reset threshold in millis.
-     */
-    long getFailureResetThreshold()
-    {
-        return failureResetThreshold;
-    }
-
-    /**
-     * Sets the amount of time we will wait after bridge failure before it will
-     * get another chance.
-     *
-     * @param failureResetThreshold the amount of time in millis.
-     *
-     */
-    void setFailureResetThreshold(long failureResetThreshold)
-    {
-        this.failureResetThreshold = failureResetThreshold;
-        bridges.values().forEach(b -> b.setFailureResetThreshold(failureResetThreshold));
-    }
-
-    /**
      * Returns the number of JVBs known to this bridge selector. Not all of them
      * have to be operational.
      */
@@ -373,21 +265,13 @@ public class BridgeSelector
      */
     public void init()
     {
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-
-        setFailureResetThreshold(
-                config.getLong(
-                        BRIDGE_FAILURE_RESET_THRESHOLD_PNAME,
-                        DEFAULT_FAILURE_RESET_THRESHOLD));
-        logger.info("Bridge failure reset threshold: " + getFailureResetThreshold());
-
         this.eventAdmin = FocusBundleActivator.getEventAdmin();
         if (eventAdmin == null)
         {
             throw new IllegalStateException("EventAdmin service not found");
         }
 
-        jvbDoctor.start(FocusBundleActivator.bundleContext, getBridges());
+        jvbDoctor.start(FocusBundleActivator.getSharedScheduledThreadPool(), getBridges());
     }
 
     /**

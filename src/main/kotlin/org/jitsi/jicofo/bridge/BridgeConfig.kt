@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
+import java.time.Duration
 
 /**
  * Config for classes in the org.jicofo.bridge package.
@@ -44,6 +45,50 @@ class BridgeConfig {
 
     val stressThreshold: Double by config { "$BASE.stress-threshold".from(JitsiConfig.newConfig) }
     fun stressThreshold() = stressThreshold
+
+    val failureResetThreshold: Duration by config {
+        "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD".from(JitsiConfig.legacyConfig)
+            .convertFrom<Long> { Duration.ofMillis(it) }
+        "$BASE.failure-reset-threshold".from(JitsiConfig.newConfig)
+    }
+    fun failureResetThreshold() = failureResetThreshold
+
+    val selectionStrategy: BridgeSelectionStrategy by config {
+        "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY".from(JitsiConfig.legacyConfig)
+            .convertFrom<String> { createSelectionStrategy(it) }
+        "$BASE.selection-strategy".from(JitsiConfig.newConfig)
+            .convertFrom<String> { createSelectionStrategy(it) }
+    }
+
+    private fun createSelectionStrategy(className: String): BridgeSelectionStrategy {
+        return try {
+            val clazz = Class.forName("${javaClass.getPackage().name}.${className}")
+            clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+        } catch (e: Exception) {
+                val clazz = Class.forName(className)
+                clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+        }
+    }
+
+    val healthChecksEnabled: Boolean by config {
+        "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL".from(JitsiConfig.legacyConfig)
+            .convertFrom<Int> { it > 0 }
+        "$BASE.health-checks.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val healthChecksInterval: Duration by config {
+        "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL".from(JitsiConfig.legacyConfig)
+            .convertFrom<Long> { Duration.ofMillis(it) }
+        "$BASE.health-checks.interval".from(JitsiConfig.newConfig)
+    }
+
+    val healthChecksRetryDelay: Duration by config {
+        "org.jitsi.jicofo.HEALTH_CHECK_2NDTRY_DELAY".from(JitsiConfig.legacyConfig)
+            .convertFrom<Long> { Duration.ofMillis(it) }
+        "$BASE.health-checks.retry-delay".from(JitsiConfig.newConfig)
+        "$BASE.health-checks.interval".from(JitsiConfig.newConfig)
+            .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
+    }
 
     companion object {
         const val BASE = "jicofo.bridge"

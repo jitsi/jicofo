@@ -89,7 +89,7 @@ public class BridgeSelectorTest
         workingBridges.add(jvb3Jid);
 
         // This part of the test doesn't care about reset threshold
-        selector.setFailureResetThreshold(0);
+        Bridge.setFailureResetThreshold(0);
         Bridge bridgeState = selector.selectBridge(conference);
         assertTrue(workingBridges.contains(bridgeState.getJid()));
 
@@ -190,7 +190,7 @@ public class BridgeSelectorTest
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
 
         // Will restore failure status after 100 ms
-        selector.setFailureResetThreshold(100);
+        Bridge.setFailureResetThreshold(100);
 
         for (int testedIdx = 0; testedIdx < bridges.length; testedIdx++)
         {
@@ -228,8 +228,7 @@ public class BridgeSelectorTest
                     selector.selectBridge(new MockJitsiMeetConference()).getJid());
         }
 
-        selector.setFailureResetThreshold(
-            BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
+        Bridge.setFailureResetThreshold(BridgeConfig.config.failureResetThreshold().toMillis());
     }
 
     private ColibriStatsExtension createJvbStats(int bitrate)

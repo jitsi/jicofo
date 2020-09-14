@@ -13,7 +13,7 @@ import static org.jitsi.jicofo.bridge.BridgeConfig.config;
 /**
  * Represents an algorithm for bridge selection.
  */
-abstract class BridgeSelectionStrategy
+public abstract class BridgeSelectionStrategy
 {
     /**
      * The logger.

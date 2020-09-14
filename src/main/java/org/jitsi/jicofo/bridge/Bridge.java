@@ -55,7 +55,16 @@ public class Bridge
      */
     public static final int MAX_TOTAL_PACKET_RATE_PPS = config.maxBridgePacketRatePps();
 
-    private long failureResetThreshold;
+    /**
+     * This is static for the purposes of tests.
+     * TODO: just use the config and port the tests.
+     */
+    private static long failureResetThreshold = config.failureResetThreshold().toMillis();
+
+    static void setFailureResetThreshold(long newValue)
+    {
+        failureResetThreshold = newValue;
+    }
 
     /**
      * The XMPP address of the bridge.
@@ -108,13 +117,7 @@ public class Bridge
 
     Bridge(Jid jid)
     {
-        this(jid, BridgeSelector.DEFAULT_FAILURE_RESET_THRESHOLD);
-    }
-
-    Bridge(Jid jid, long failureResetThreshold)
-    {
         this.jid = Objects.requireNonNull(jid, "jid");
-        this.failureResetThreshold = failureResetThreshold;
     }
 
     /**
@@ -318,10 +321,5 @@ public class Bridge
     public int getOctoVersion()
     {
         return octoVersion;
-    }
-
-    void setFailureResetThreshold(long failureResetThreshold)
-    {
-        this.failureResetThreshold = failureResetThreshold;
     }
 }

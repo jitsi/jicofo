@@ -48,14 +48,11 @@ public class JvbDoctorTest
 {
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static final int HEALTH_CHECK_INT = 300;
-
     @BeforeClass
     public static void setUpClass()
         throws Exception
     {
-        System.setProperty(
-            JvbDoctor.HEALTH_CHECK_INTERVAL_PNAME, "" + HEALTH_CHECK_INT);
+        System.setProperty("jicofo.bridge.health-checks.interval", "0.3 seconds");
 
         osgi.init();
     }
