@@ -125,14 +125,14 @@ public class BridgeSelectorTest
         jvb3.setIsOperational(true);
 
         // Jvb 1 and 3 are occupied by some conferences, 2 is free
-        jvb1.setStats(createJvbStats(10));
-        jvb2.setStats(createJvbStats(23));
+        jvb1.setStats(createJvbStats(.1));
+        jvb2.setStats(createJvbStats(.23));
         jvb3.setStats(createJvbStats(0));
 
         assertEquals(jvb3Jid, selector.selectBridge(conference).getJid());
 
         // Now Jvb 3 gets occupied the most
-        jvb3.setStats(createJvbStats(300));
+        jvb3.setStats(createJvbStats(.3));
 
         assertEquals(jvb1Jid, selector.selectBridge(conference).getJid());
 
@@ -152,7 +152,7 @@ public class BridgeSelectorTest
         jvb2.setIsOperational(true);
         jvb3.setIsOperational(true);
 
-        jvb1.setStats(createJvbStats(1));
+        jvb1.setStats(createJvbStats(.01));
         jvb2.setStats(createJvbStats(0));
         jvb3.setStats(createJvbStats(0));
 
@@ -160,9 +160,9 @@ public class BridgeSelectorTest
         assertNotEquals(jvb1Jid, selector.selectBridge(conference).getJid());
 
         // JVB 2 least occupied
-        jvb1.setStats(createJvbStats(1));
+        jvb1.setStats(createJvbStats(.01));
         jvb2.setStats(createJvbStats(0));
-        jvb3.setStats(createJvbStats(1));
+        jvb3.setStats(createJvbStats(.01));
 
         assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
 
@@ -199,7 +199,7 @@ public class BridgeSelectorTest
                 boolean isTestNode = idx == testedIdx;
 
                 // Test node has 0 load...
-                bridges[idx].setStats(createJvbStats(isTestNode ? 0 : 100));
+                bridges[idx].setStats(createJvbStats(isTestNode ? 0 : .1));
 
                 // ... and is not operational
                 bridges[idx].setIsOperational(!isTestNode);
@@ -231,36 +231,33 @@ public class BridgeSelectorTest
         Bridge.setFailureResetThreshold(BridgeConfig.config.failureResetThreshold().toMillis());
     }
 
-    private ColibriStatsExtension createJvbStats(int bitrate)
+    private ColibriStatsExtension createJvbStats(double stress)
     {
-        return createJvbStats(bitrate, null);
+        return createJvbStats(stress, null);
     }
 
-    private ColibriStatsExtension createJvbStats(int bitrate, String region)
+    private ColibriStatsExtension createJvbStats(double stress, String region)
     {
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                BITRATE_DOWNLOAD, bitrate));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                BITRATE_UPLOAD, bitrate));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                PACKET_RATE_DOWNLOAD, bitrate));
-        statsExtension.addStat(
-            new ColibriStatsExtension.Stat(
-                PACKET_RATE_UPLOAD, bitrate));
+                "stress_level", stress
+            )
+        );
 
         if (region != null)
         {
             statsExtension.addStat(
-                    new ColibriStatsExtension.Stat(
-                           REGION, region));
+                new ColibriStatsExtension.Stat(
+                       REGION, region
+                )
+            );
             statsExtension.addStat(
-                    new ColibriStatsExtension.Stat(
-                            RELAY_ID, region));
+                new ColibriStatsExtension.Stat(
+                        RELAY_ID, region
+                )
+            );
         }
 
         return statsExtension;

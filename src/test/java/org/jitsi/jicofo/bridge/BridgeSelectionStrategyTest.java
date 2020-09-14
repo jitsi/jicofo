@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 public class BridgeSelectionStrategyTest
 {
-    private static Random RANDOM = new Random(23571113);
+    private static final Random RANDOM = new Random(23571113);
 
     private static Bridge createBridge(String region, double stress)
     {
@@ -49,17 +49,14 @@ public class BridgeSelectionStrategyTest
 
     private static ColibriStatsExtension createJvbStats(String region, double stress)
     {
-        // Divide by two because we use half of it for upload, half for download
-        int packetRate = (int) (Bridge.MAX_TOTAL_PACKET_RATE_PPS * stress / 2);
-
         ColibriStatsExtension statsExtension = new ColibriStatsExtension();
 
         statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
-                        PACKET_RATE_DOWNLOAD, packetRate));
-        statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
-                        PACKET_RATE_UPLOAD, packetRate));
+            new ColibriStatsExtension.Stat(
+                "stress_level",
+                stress
+            )
+        );
 
         if (region != null)
         {

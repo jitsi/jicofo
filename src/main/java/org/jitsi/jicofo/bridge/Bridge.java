@@ -45,10 +45,10 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * We assume that each recently added participant contributes this much
-     * to the bridge's packet rate.
+     * We assume that each recently added participant will contribute this much
+     * to the bridge's load
      */
-    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS = config.averageParticipantPacketRatePps();
+    private static final Double AVG_PARTICIPANT_LOAD = config.averageParticipantLoad();
 
     /**
      * We assume this is the maximum packet rate that a bridge can handle.
@@ -77,9 +77,9 @@ public class Bridge
     private final RateStatistics newEndpointsRate = new RateStatistics(10000);
 
     /**
-     * The last reported packet rate in packets per second.
+     * The last report stress level
      */
-    private int lastReportedPacketRatePps = 0;
+    private double lastReportedStressLevel = 0.0;
 
     /**
      * Holds bridge version (if known - not all bridge version are capable of
@@ -138,20 +138,18 @@ public class Bridge
         }
         stats = this.stats;
 
-        Integer packetRateDown = null;
-        Integer packetRateUp = null;
-        try
+        double stressLevel;
+        String stressLevelStr = stats.getValueAsString("stress_level");
+        if (stressLevelStr != null)
         {
-            packetRateDown = stats.getValueAsInt(PACKET_RATE_DOWNLOAD);
-            packetRateUp = stats.getValueAsInt(PACKET_RATE_UPLOAD);
-        }
-        catch (NumberFormatException nfe)
-        {
-        }
-
-        if (packetRateDown != null && packetRateUp != null)
-        {
-            lastReportedPacketRatePps = packetRateDown + packetRateUp;
+            try
+            {
+                stressLevel = Double.parseDouble(stressLevelStr);
+                lastReportedStressLevel = stressLevel;
+            }
+            catch (Exception ignored)
+            {
+            }
         }
 
         // FIXME graceful shutdown should be treated separately from
@@ -296,13 +294,9 @@ public class Bridge
      */
     public double getStress()
     {
-        double stress =
-            (lastReportedPacketRatePps
-                + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
-            / (double) MAX_TOTAL_PACKET_RATE_PPS;
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
-        return stress;
+        return (lastReportedStressLevel + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_LOAD);
     }
 
     /**
@@ -313,9 +307,9 @@ public class Bridge
         return getStress() >= config.stressThreshold();
     }
 
-    public int getLastReportedPacketRatePps()
+    public double getLastReportedStressLevel()
     {
-        return lastReportedPacketRatePps;
+        return lastReportedStressLevel;
     }
 
     public int getOctoVersion()
