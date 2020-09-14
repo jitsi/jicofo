@@ -194,7 +194,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.1-326-gdb537977</version>
+      <version>2.1-340-g9f92e4ad</version>
       <scope>test</scope>
     </dependency>
     <dependency>
