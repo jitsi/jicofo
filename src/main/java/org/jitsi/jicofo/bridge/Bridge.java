@@ -92,7 +92,11 @@ public class Bridge
      */
     private double lastReportedStressLevel = 0.0;
 
-    private boolean usePacketRateStat = false;
+    /**
+     * For older bridges which don't support reporting their stress level we'll fall back
+     * to calculating the stress manually via the packet rate.
+     */
+    private boolean usePacketRateStatForStress = true;
 
     /**
      * Holds bridge version (if known - not all bridge version are capable of
@@ -159,7 +163,7 @@ public class Bridge
             {
                 stressLevel = Double.parseDouble(stressLevelStr);
                 lastReportedStressLevel = stressLevel;
-                usePacketRateStat = false;
+                usePacketRateStatForStress = false;
             }
             catch (Exception ignored)
             {
@@ -318,7 +322,7 @@ public class Bridge
      */
     public double getStress()
     {
-        if (usePacketRateStat)
+        if (usePacketRateStatForStress)
         {
             return getStressFromPacketRate();
         }
@@ -330,7 +334,9 @@ public class Bridge
     /**
      * Returns the "stress" of the bridge. The stress is computed based on the
      * total packet rate reported by the bridge and the video stream diff
-     * estimation since the last update from the bridge.
+     * estimation since the last update from the bridge. Note that this is techincally
+     * deprecated and only exists for backwards compatibility with bridges who don't
+     * yet support reporting their stress level directly.
      *
      * @return the sum of the last total reported packet rate (in pps) and an
      * estimation of the packet rate of the streams that we estimate that the bridge
