@@ -42,6 +42,7 @@ class BridgeConfig {
         "$BASE.average-participant-packet-rate-pps"
             .from(JitsiConfig.newConfig).softDeprecated("use $BASE.average-participant-load")
     }
+    fun averageParticipantPacketRatePps() = averageParticipantPacketRatePps
 
     val averageParticipantLoad: Double by config {
         "$BASE.average-participant-load".from(JitsiConfig.newConfig)
