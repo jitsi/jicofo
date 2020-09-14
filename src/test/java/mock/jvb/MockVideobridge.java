@@ -67,7 +67,7 @@ public class MockVideobridge
     public void start(BundleContext bc)
     {
         bridge = new Videobridge();
-        bridge.start(bc);
+        bridge.start();
 
         connection.registerIQRequestHandler(confIqGetHandler);
         connection.registerIQRequestHandler(confIqSetHandler);
