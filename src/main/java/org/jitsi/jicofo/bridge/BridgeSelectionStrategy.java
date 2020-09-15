@@ -102,7 +102,7 @@ public abstract class BridgeSelectionStrategy
             if (bridge != null)
             {
                 logger.info("Selected initial bridge " + bridge
-                        + " with packetRate=" + bridge.getLastReportedPacketRatePps()
+                        + " with stress=" + bridge.getLastReportedStressLevel()
                         + " for participantRegion=" + participantRegion);
             }
             else
@@ -133,7 +133,7 @@ public abstract class BridgeSelectionStrategy
             if (bridge != null)
             {
                 logger.info("Selected bridge " + bridge
-                        + " with packetRate=" + bridge.getLastReportedPacketRatePps()
+                        + " with stress=" + bridge.getLastReportedStressLevel()
                         + " for participantRegion=" + participantRegion);
             }
             else

@@ -45,17 +45,6 @@ public class Bridge
         = new ColibriStatsExtension();
 
     /**
-     * We assume that each recently added participant contributes this much
-     * to the bridge's packet rate.
-     */
-    private static final int AVG_PARTICIPANT_PACKET_RATE_PPS = config.averageParticipantPacketRatePps();
-
-    /**
-     * We assume this is the maximum packet rate that a bridge can handle.
-     */
-    public static final int MAX_TOTAL_PACKET_RATE_PPS = config.maxBridgePacketRatePps();
-
-    /**
      * This is static for the purposes of tests.
      * TODO: just use the config and port the tests.
      */
@@ -80,6 +69,17 @@ public class Bridge
      * The last reported packet rate in packets per second.
      */
     private int lastReportedPacketRatePps = 0;
+
+    /**
+     * The last report stress level
+     */
+    private double lastReportedStressLevel = 0.0;
+
+    /**
+     * For older bridges which don't support reporting their stress level we'll fall back
+     * to calculating the stress manually via the packet rate.
+     */
+    private boolean usePacketRateStatForStress = true;
 
     /**
      * Holds bridge version (if known - not all bridge version are capable of
@@ -138,6 +138,20 @@ public class Bridge
         }
         stats = this.stats;
 
+        double stressLevel;
+        String stressLevelStr = stats.getValueAsString("stress_level");
+        if (stressLevelStr != null)
+        {
+            try
+            {
+                stressLevel = Double.parseDouble(stressLevelStr);
+                lastReportedStressLevel = stressLevel;
+                usePacketRateStatForStress = false;
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
         Integer packetRateDown = null;
         Integer packetRateUp = null;
         try
@@ -145,7 +159,7 @@ public class Bridge
             packetRateDown = stats.getValueAsInt(PACKET_RATE_DOWNLOAD);
             packetRateUp = stats.getValueAsInt(PACKET_RATE_UPLOAD);
         }
-        catch (NumberFormatException nfe)
+        catch (NumberFormatException ignored)
         {
         }
 
@@ -285,21 +299,40 @@ public class Bridge
     }
 
     /**
+     * Gets the "stress" of the bridge, represented as a double between 0 and 1 (though technically the value
+     * can exceed 1).
+     * @return this bridge's stress level
+     */
+    public double getStress()
+    {
+        if (usePacketRateStatForStress)
+        {
+            return getStressFromPacketRate();
+        }
+        // While a stress of 1 indicates a bridge is fully loaded, we allow
+        // larger values to keep sorting correctly.
+        return (lastReportedStressLevel +
+            Math.max(0, getRecentlyAddedEndpointCount()) * config.getAverageParticipantStress());
+    }
+
+    /**
      * Returns the "stress" of the bridge. The stress is computed based on the
      * total packet rate reported by the bridge and the video stream diff
-     * estimation since the last update from the bridge.
+     * estimation since the last update from the bridge. Note that this is techincally
+     * deprecated and only exists for backwards compatibility with bridges who don't
+     * yet support reporting their stress level directly.
      *
      * @return the sum of the last total reported packet rate (in pps) and an
      * estimation of the packet rate of the streams that we estimate that the bridge
      * hasn't reported to Jicofo yet. The estimation is the product of the
      * number of unreported streams and a constant C (which we set to 500 pps).
      */
-    public double getStress()
+    private double getStressFromPacketRate()
     {
         double stress =
             (lastReportedPacketRatePps
-                + Math.max(0, getRecentlyAddedEndpointCount()) * AVG_PARTICIPANT_PACKET_RATE_PPS)
-            / (double) MAX_TOTAL_PACKET_RATE_PPS;
+                + Math.max(0, getRecentlyAddedEndpointCount()) * config.averageParticipantPacketRatePps())
+                / (double) config.maxBridgePacketRatePps();
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
         return stress;
@@ -313,9 +346,9 @@ public class Bridge
         return getStress() >= config.stressThreshold();
     }
 
-    public int getLastReportedPacketRatePps()
+    public double getLastReportedStressLevel()
     {
-        return lastReportedPacketRatePps;
+        return lastReportedStressLevel;
     }
 
     public int getOctoVersion()
