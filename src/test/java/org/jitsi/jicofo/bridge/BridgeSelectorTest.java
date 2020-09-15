@@ -224,8 +224,9 @@ public class BridgeSelectorTest
             Thread.sleep(150);
             // Test node should recover
             assertEquals(
-                    bridges[testedIdx].getJid(),
-                    selector.selectBridge(new MockJitsiMeetConference()).getJid());
+                bridges[testedIdx].getJid(),
+                selector.selectBridge(new MockJitsiMeetConference()).getJid()
+            );
         }
 
         Bridge.setFailureResetThreshold(BridgeConfig.config.failureResetThreshold().toMillis());
@@ -242,22 +243,14 @@ public class BridgeSelectorTest
 
         statsExtension.addStat(
             new ColibriStatsExtension.Stat(
-                "stress_level", stress
+            "stress_level", stress
             )
         );
 
         if (region != null)
         {
-            statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
-                       REGION, region
-                )
-            );
-            statsExtension.addStat(
-                new ColibriStatsExtension.Stat(
-                        RELAY_ID, region
-                )
-            );
+            statsExtension.addStat(new ColibriStatsExtension.Stat(REGION, region));
+            statsExtension.addStat(new ColibriStatsExtension.Stat(RELAY_ID, region));
         }
 
         return statsExtension;
@@ -300,37 +293,44 @@ public class BridgeSelectorTest
         // Or a bridge in the local region otherwise
         assertEquals(
             localBridge,
-            strategy.select(allBridges, conferenceBridges, "invalid region", true));
+            strategy.select(allBridges, conferenceBridges, "invalid region", true)
+        );
         assertEquals(
             localBridge,
-            strategy.select(allBridges, conferenceBridges, null, true));
+            strategy.select(allBridges, conferenceBridges, null, true)
+        );
 
         conferenceBridges.put(bridge3, 1);
         assertEquals(
-                bridge3,
-                strategy.select(allBridges, conferenceBridges, region3, true));
+            bridge3,
+            strategy.select(allBridges, conferenceBridges, region3, true)
+        );
         assertEquals(
-                bridge2,
-                strategy.select(allBridges, conferenceBridges, region2, true));
+            bridge2,
+            strategy.select(allBridges, conferenceBridges, region2, true)
+        );
         // A participant in an unknown region should be allocated on the existing
         // conference bridge.
         assertEquals(
-                bridge3,
-                strategy.select(allBridges, conferenceBridges, null, true));
+            bridge3,
+            strategy.select(allBridges, conferenceBridges, null, true)
+        );
 
         conferenceBridges.put(bridge2, 1);
         // A participant in an unknown region should be allocated on the least
         // loaded (according to the order of 'allBridges') existing conference
         // bridge.
         assertEquals(
-                bridge2,
-                strategy.select(allBridges, conferenceBridges, null, true));
+            bridge2,
+            strategy.select(allBridges, conferenceBridges, null, true)
+        );
         // A participant in a region with no bridges should also be allocated
         // on the least loaded (according to the order of 'allBridges') existing
         // conference bridge.
         assertEquals(
-                bridge2,
-                strategy.select(allBridges, conferenceBridges, "invalid region", true));
+            bridge2,
+            strategy.select(allBridges, conferenceBridges, "invalid region", true)
+        );
     }
 }
 

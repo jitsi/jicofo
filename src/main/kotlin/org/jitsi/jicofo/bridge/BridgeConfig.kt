@@ -40,7 +40,7 @@ class BridgeConfig {
     val averageParticipantPacketRatePps: Int by config {
         "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE".from(JitsiConfig.legacyConfig)
         "$BASE.average-participant-packet-rate-pps"
-            .from(JitsiConfig.newConfig).softDeprecated("use $BASE.average-participant-load")
+            .from(JitsiConfig.newConfig).softDeprecated("use $BASE.average-participant-stress")
     }
     fun averageParticipantPacketRatePps() = averageParticipantPacketRatePps
 
