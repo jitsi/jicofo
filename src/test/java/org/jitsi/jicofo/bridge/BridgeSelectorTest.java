@@ -124,7 +124,7 @@ public class BridgeSelectorTest
         jvb2.setIsOperational(true);
         jvb3.setIsOperational(true);
 
-        // Jvb 1 and 3 are occupied by some conferences, 2 is free
+        // Jvb 1 and 2 are occupied by some conferences, 3 is free
         jvb1.setStats(createJvbStats(.1));
         jvb2.setStats(createJvbStats(.23));
         jvb3.setStats(createJvbStats(0));
