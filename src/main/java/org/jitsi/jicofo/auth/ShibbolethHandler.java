@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.auth;
 
+import com.google.common.html.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 
@@ -240,7 +241,7 @@ class ShibbolethHandler
         boolean close = "true".equalsIgnoreCase(request.getParameter("close"));
 
         responseWriter.println("<html><head><head/><body>");
-        responseWriter.println("<h1>Hello " + displayName + "!<h1/>");
+        responseWriter.println("<h1>Hello " + HtmlEscapers.htmlEscaper().escape(displayName) + "!<h1/>");
         if (!close)
         {
             responseWriter.println(
