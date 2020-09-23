@@ -17,13 +17,10 @@
  */
 package mock.jvb;
 
-import org.jitsi.nlj.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.health.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -50,13 +47,9 @@ public class MockVideobridge
 
     private Videobridge bridge;
 
-    private boolean returnServerError = false;
-
     private final ColibriConferenceIqHandler confIqGetHandler = new ColibriConferenceIqHandler(IQ.Type.get);
 
     private final ColibriConferenceIqHandler confIqSetHandler = new ColibriConferenceIqHandler(IQ.Type.set);
-
-    private final HealthCheckIqHandler healthCheckIqHandler = new HealthCheckIqHandler();
 
     public MockVideobridge(XmppConnection connection, Jid bridgeJid)
     {
@@ -71,7 +64,6 @@ public class MockVideobridge
 
         connection.registerIQRequestHandler(confIqGetHandler);
         connection.registerIQRequestHandler(confIqSetHandler);
-        connection.registerIQRequestHandler(healthCheckIqHandler);
     }
 
     @Override
@@ -79,7 +71,6 @@ public class MockVideobridge
     {
         connection.unregisterIQRequestHandler(confIqGetHandler);
         connection.unregisterIQRequestHandler(confIqSetHandler);
-        connection.unregisterIQRequestHandler(healthCheckIqHandler);
 
         bridge.stop();
     }
@@ -98,14 +89,6 @@ public class MockVideobridge
         @Override
         public IQ handleIQRequest(IQ iqRequest)
         {
-            if (isReturnServerError())
-            {
-                return IQ.createErrorResponse(
-                        iqRequest,
-                        XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
-                );
-            }
-
             try
             {
                 IQ confResult = bridge.handleColibriConferenceIQ((ColibriConferenceIQ) iqRequest);
@@ -119,63 +102,6 @@ public class MockVideobridge
                 return null;
             }
         }
-    }
-
-    private class HealthCheckIqHandler extends AbstractIqRequestHandler
-    {
-        HealthCheckIqHandler()
-        {
-            super(HealthCheckIQ.ELEMENT_NAME,
-                    HealthCheckIQ.NAMESPACE,
-                    IQ.Type.get,
-                    Mode.sync);
-        }
-
-        @Override
-        public IQ handleIQRequest(IQ iqRequest)
-        {
-            if (isReturnServerError())
-            {
-                return IQ.createErrorResponse(
-                    iqRequest,
-                    XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
-                );
-            }
-
-            try
-            {
-                IQ healthResult = bridge.handleHealthCheckIQ((HealthCheckIQ) iqRequest);
-                healthResult.setTo(iqRequest.getFrom());
-                healthResult.setStanzaId(iqRequest.getStanzaId());
-                return healthResult;
-            }
-            catch (Exception e)
-            {
-                logger.error("JVB internal error!", e);
-                return null;
-            }
-        }
-    }
-
-    public List<RtpEncodingDesc> getSimulcastEncodings(String confId, String endpointId)
-    {
-        Conference conference = bridge.getConference(confId);
-        AbstractEndpoint endpoint = conference.getEndpoint(endpointId);
-
-        MediaSourceDesc[] sources = endpoint.getMediaSources();
-
-        if (ArrayUtils.isNullOrEmpty(sources))
-        {
-            return new ArrayList<>();
-        }
-
-        RtpEncodingDesc[] encodings = sources[0].getRtpEncodings();
-        if (ArrayUtils.isNullOrEmpty(encodings))
-        {
-            return new ArrayList<>();
-        }
-
-        return Arrays.asList(encodings);
     }
 
     /**
@@ -206,15 +132,5 @@ public class MockVideobridge
     public int getConferenceCount()
     {
         return getNonHealthCheckConferences().size();
-    }
-
-    public boolean isReturnServerError()
-    {
-        return returnServerError;
-    }
-
-    public void setReturnServerError(boolean returnServerError)
-    {
-        this.returnServerError = returnServerError;
     }
 }
