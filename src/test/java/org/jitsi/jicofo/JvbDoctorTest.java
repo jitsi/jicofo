@@ -119,13 +119,11 @@ public class JvbDoctorTest
 
         TestConference[] testConfs = new TestConference[5];
         String roomName = "testHealth@conference.pawel.jitsi.net";
-        String serverName = "test-server";
 
         for (int i=0; i<testConfs.length; i++)
         {
             testConfs[i] = TestConference.allocate(
                     osgi.bc,
-                    serverName,
                     JidCreate.entityBareFrom(roomName + i),
                     mockBridge);
 

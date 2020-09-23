@@ -67,13 +67,13 @@ public class TestConference
     }
 
     static public TestConference allocate(
-        BundleContext ctx, String serverName, EntityBareJid roomName,
+        BundleContext ctx, EntityBareJid roomName,
         MockVideobridge mockBridge)
         throws Exception
     {
         TestConference newConf = new TestConference(ctx);
 
-        newConf.createConferenceRoom(serverName, roomName, mockBridge);
+        newConf.createConferenceRoom(roomName, mockBridge);
 
         return newConf;
     }
@@ -81,8 +81,7 @@ public class TestConference
     public TestConference(BundleContext osgi)
     {
         this.bc = osgi;
-        this.meetServicesRef
-            = new OSGIServiceRef<>(osgi, JitsiMeetServices.class);
+        this.meetServicesRef = new OSGIServiceRef<>(osgi, JitsiMeetServices.class);
         this.focusManagerRef = new OSGIServiceRef<>(osgi, FocusManager.class);
     }
 
@@ -91,26 +90,21 @@ public class TestConference
     {
         this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
 
-        MockVideobridge mockBridge
-            = new MockVideobridge(
-                    new MockXmppConnection(mockBridgeJid),
-                    mockBridgeJid);
+        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
 
         mockBridge.start(bc);
 
         meetServicesRef.get().getBridgeSelector().addJvbAddress(mockBridgeJid);
 
-        createConferenceRoom(serverName, roomName, mockBridge);
+        createConferenceRoom(roomName, mockBridge);
     }
 
     public void stop()
-        throws Exception
     {
         mockBridge.stop(bc);
     }
 
-    private void createConferenceRoom(String serverName, EntityBareJid roomName,
-                                      MockVideobridge mockJvb)
+    private void createConferenceRoom(EntityBareJid roomName, MockVideobridge mockJvb)
         throws Exception
     {
         this.roomName = roomName;
