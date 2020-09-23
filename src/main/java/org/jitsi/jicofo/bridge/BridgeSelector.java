@@ -126,20 +126,6 @@ public class BridgeSelector
     }
 
     /**
-     * Returns <tt>true</tt> if given JVB XMPP address is already known to this
-     * <tt>BridgeSelector</tt>.
-     *
-     * @param jvbJid the JVB JID to be checked eg. jitsi-videobridge.example.com
-     *
-     * @return <tt>true</tt> if given JVB XMPP address is already known to this
-     * <tt>BridgeSelector</tt>.
-     */
-    public synchronized boolean isJvbOnTheList(Jid jvbJid)
-    {
-        return bridges.containsKey(jvbJid);
-    }
-
-    /**
      * Removes Jitsi Videobridge XMPP address from the list videobridge
      * instances available in the system .
      *

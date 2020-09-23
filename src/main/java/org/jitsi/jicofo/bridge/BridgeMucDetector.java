@@ -45,38 +45,32 @@ public class BridgeMucDetector
      * The name of the property used to configure the full JID of the MUC to
      * use for detection of jitsi-videobridge instances.
      */
-    public static final String BRIDGE_MUC_PNAME
-        = "org.jitsi.jicofo.BRIDGE_MUC";
+    public static final String BRIDGE_MUC_PNAME = "org.jitsi.jicofo.BRIDGE_MUC";
 
     /**
      * Config property for JVB connection's XMPP host.
      */
-    private static final String BRIDGE_MUC_XMPP_HOST
-            = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST";
+    private static final String BRIDGE_MUC_XMPP_HOST = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST";
 
     /**
      * Config property for JVB connection's XMPP username.
      */
-    private static final String BRIDGE_MUC_XMPP_USER
-            = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER";
+    private static final String BRIDGE_MUC_XMPP_USER = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER";
 
     /**
      * Config property for JVB connection's XMPP user domain.
      */
-    private static final String BRIDGE_MUC_XMPP_USER_DOMAIN
-            = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN";
+    private static final String BRIDGE_MUC_XMPP_USER_DOMAIN = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN";
 
     /**
      * Config property for JVB connection's XMPP user password.
      */
-    private static final String BRIDGE_MUC_XMPP_USER_PASS
-            = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS";
+    private static final String BRIDGE_MUC_XMPP_USER_PASS = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS";
 
     /**
      * Config property for JVB connection's XMPP port.
      */
-    private static final String BRIDGE_MUC_XMPP_PORT
-            = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_PORT";
+    private static final String BRIDGE_MUC_XMPP_PORT = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_PORT";
 
     /**
      * Tries to load a {@link ProtocolProviderHandler}  for dedicated JVB
@@ -102,16 +96,12 @@ public class BridgeMucDetector
             String xmppServerPort = config.getString(BRIDGE_MUC_XMPP_PORT);
 
             DomainBareJid userDomain
-                = JidCreate.domainBareFrom(config.getString(
-                        BRIDGE_MUC_XMPP_USER_DOMAIN));
+                = JidCreate.domainBareFrom(config.getString(BRIDGE_MUC_XMPP_USER_DOMAIN));
             Resourcepart userName
-                = Resourcepart.from(
-                        config.getString(BRIDGE_MUC_XMPP_USER));
-            String userPassword
-                = config.getString(BRIDGE_MUC_XMPP_USER_PASS);
+                = Resourcepart.from(config.getString(BRIDGE_MUC_XMPP_USER));
+            String userPassword = config.getString(BRIDGE_MUC_XMPP_USER_PASS);
 
-            ProtocolProviderHandler protocolProviderHandler
-                = new ProtocolProviderHandler();
+            ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
 
             protocolProviderHandler.start(
                     hostName,
@@ -124,8 +114,7 @@ public class BridgeMucDetector
         }
         catch (Exception e)
         {
-            logger.error(
-                "Failed to create dedicated JVB XMPP connection provider", e);
+            logger.error("Failed to create dedicated JVB XMPP connection provider", e);
 
             return null;
         }
@@ -167,14 +156,11 @@ public class BridgeMucDetector
      * @param stats
      */
     @Override
-    protected void onInstanceStatusChanged(
-        Jid jid,
-        ColibriStatsExtension stats)
+    protected void onInstanceStatusChanged(Jid jid, ColibriStatsExtension stats)
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug(
-                "Received updated status for " + jid + ": " + stats.toXML());
+            logger.debug("Received updated status for " + jid + ": " + stats.toXML());
         }
 
         bridgeSelector.addJvbAddress(jid, stats);
