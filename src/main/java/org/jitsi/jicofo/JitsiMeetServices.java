@@ -149,11 +149,7 @@ public class JitsiMeetServices
      */
     void nodeNoLongerAvailable(Jid node)
     {
-        if (bridgeSelector.isJvbOnTheList(node))
-        {
-            bridgeSelector.removeJvbAddress(node);
-        }
-        else if (node.equals(sipGateway))
+        if (node.equals(sipGateway))
         {
             logger.warn("SIP gateway went offline: " + node);
 
