@@ -26,7 +26,6 @@ import mock.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.osgi.*;
 
-import org.jitsi.nlj.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
@@ -39,8 +38,6 @@ import java.util.*;
 public class TestConference
 {
     private final BundleContext bc;
-
-    private String serverName;
 
     private EntityBareJid roomName;
 
@@ -116,7 +113,6 @@ public class TestConference
                                       MockVideobridge mockJvb)
         throws Exception
     {
-        this.serverName = serverName;
         this.roomName = roomName;
         this.mockBridge = mockJvb;
         this.mockBridgeJid = mockJvb.getBridgeJid();
@@ -149,11 +145,6 @@ public class TestConference
         return mockBridge;
     }
 
-    public void addParticipant(MockParticipant user)
-    {
-        user.join(chat);
-    }
-
     public MockParticipant addParticipant()
     {
         MockParticipant newParticipant
@@ -162,27 +153,6 @@ public class TestConference
         newParticipant.join(chat);
 
         return newParticipant;
-    }
-
-    public ConferenceUtility getConferenceUtility()
-    {
-        return new ConferenceUtility(conference);
-    }
-
-    public long[] getSimulcastLayersSSRCs(Jid peerJid)
-    {
-        String conferenceId = conference.getJvbConferenceId();
-        String endpointId = peerJid.getResourceOrEmpty().toString();
-        List<RtpEncodingDesc> encodings
-            = mockBridge.getSimulcastEncodings(conferenceId, endpointId);
-
-        long[] ssrcs = new long[encodings.size()];
-        int idx = 0;
-        for (RtpEncodingDesc encoding: encodings)
-        {
-            ssrcs[idx++] = encoding.getPrimarySSRC();
-        }
-        return ssrcs;
     }
 
     public int getParticipantCount()

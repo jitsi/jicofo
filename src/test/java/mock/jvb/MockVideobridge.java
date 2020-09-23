@@ -17,9 +17,7 @@
  */
 package mock.jvb;
 
-import org.jitsi.nlj.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -155,27 +153,6 @@ public class MockVideobridge
                 return null;
             }
         }
-    }
-
-    public List<RtpEncodingDesc> getSimulcastEncodings(String confId, String endpointId)
-    {
-        Conference conference = bridge.getConference(confId);
-        AbstractEndpoint endpoint = conference.getEndpoint(endpointId);
-
-        MediaSourceDesc[] sources = endpoint.getMediaSources();
-
-        if (ArrayUtils.isNullOrEmpty(sources))
-        {
-            return new ArrayList<>();
-        }
-
-        RtpEncodingDesc[] encodings = sources[0].getRtpEncodings();
-        if (ArrayUtils.isNullOrEmpty(encodings))
-        {
-            return new ArrayList<>();
-        }
-
-        return Arrays.asList(encodings);
     }
 
     /**
