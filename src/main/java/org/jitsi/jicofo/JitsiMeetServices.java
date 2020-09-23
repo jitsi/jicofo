@@ -45,8 +45,7 @@ public class JitsiMeetServices
     /**
      * The logger
      */
-    private final static Logger logger
-        = Logger.getLogger(JitsiMeetServices.class);
+    private final static Logger logger = Logger.getLogger(JitsiMeetServices.class);
 
     /**
      * Features advertised by SIP gateway component.
@@ -102,10 +101,8 @@ public class JitsiMeetServices
                              ProtocolProviderHandler jvbMucProtocolProvider,
                              DomainBareJid jicofoUserDomain)
     {
-        Objects.requireNonNull(
-            protocolProviderHandler, "protocolProviderHandler");
-        Objects.requireNonNull(
-            jvbMucProtocolProvider, "jvbMucProtocolProvider");
+        Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
+        Objects.requireNonNull(jvbMucProtocolProvider, "jvbMucProtocolProvider");
 
         this.jicofoUserDomain = jicofoUserDomain;
         this.protocolProvider = protocolProviderHandler;
@@ -125,20 +122,15 @@ public class JitsiMeetServices
                            List<String> features,
                            Version version)
     {
-        if (sipGateway == null
-            && DiscoveryUtil.checkFeatureSupport(SIP_GW_FEATURES, features))
+        if (sipGateway == null && DiscoveryUtil.checkFeatureSupport(SIP_GW_FEATURES, features))
         {
             logger.info("Discovered SIP gateway: " + node);
-
             setSipGateway(node);
         }
-        else if (jicofoUserDomain != null
-                && jicofoUserDomain.equals(node) && version != null)
+        else if (jicofoUserDomain != null && jicofoUserDomain.equals(node) && version != null)
         {
             this.XMPPServerVersion = version;
-
-            logger.info("Detected XMPP server version: "
-                + version.getNameVersionOsString());
+            logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
         }
     }
 
@@ -152,7 +144,6 @@ public class JitsiMeetServices
         if (node.equals(sipGateway))
         {
             logger.warn("SIP gateway went offline: " + node);
-
             sipGateway = null;
         }
     }
@@ -229,21 +220,18 @@ public class JitsiMeetServices
         bridgeSelector.init();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
-        String jibriBreweryName
-            = config.getString(JibriDetector.JIBRI_ROOM_PNAME);
+        String jibriBreweryName = config.getString(JibriDetector.JIBRI_ROOM_PNAME);
 
         if (isNotBlank(jibriBreweryName))
         {
-            JibriDetector jibriDetector
-                = new JibriDetector(protocolProvider, jibriBreweryName, false);
+            JibriDetector jibriDetector = new JibriDetector(protocolProvider, jibriBreweryName, false);
             logger.info("Using a Jibri detector with MUC: " + jibriBreweryName);
 
             jibriDetector.init();
             breweryDetectors.add(jibriDetector);
         }
 
-        String jigasiBreweryName
-            = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
+        String jigasiBreweryName = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
         if (isNotBlank(jigasiBreweryName))
         {
             JigasiDetector jigasiDetector = new JigasiDetector(protocolProvider, jigasiBreweryName);
@@ -253,22 +241,17 @@ public class JitsiMeetServices
             breweryDetectors.add(jigasiDetector);
         }
 
-        String jibriSipBreweryName
-            = config.getString(JibriDetector.JIBRI_SIP_ROOM_PNAME);
+        String jibriSipBreweryName = config.getString(JibriDetector.JIBRI_SIP_ROOM_PNAME);
         if (isNotBlank(jibriSipBreweryName))
         {
-            JibriDetector sipJibriDetector
-                = new JibriDetector(
-                        protocolProvider, jibriSipBreweryName, true);
-            logger.info(
-                "Using a SIP Jibri detector with MUC: " + jibriSipBreweryName);
+            JibriDetector sipJibriDetector = new JibriDetector(protocolProvider, jibriSipBreweryName, true);
+            logger.info("Using a SIP Jibri detector with MUC: " + jibriSipBreweryName);
 
             sipJibriDetector.init();
             breweryDetectors.add(sipJibriDetector);
         }
 
-        String bridgeBreweryName
-            = config.getString(BridgeMucDetector.BRIDGE_MUC_PNAME);
+        String bridgeBreweryName = config.getString(BridgeMucDetector.BRIDGE_MUC_PNAME);
         if (isNotBlank(bridgeBreweryName))
         {
             BridgeMucDetector bridgeMucDetector
@@ -276,8 +259,7 @@ public class JitsiMeetServices
                     jvbBreweryProtocolProvider,
                     bridgeBreweryName,
                     bridgeSelector);
-            logger.info(
-                "Using a Bridge MUC detector with MUC: " + bridgeBreweryName);
+            logger.info("Using a Bridge MUC detector with MUC: " + bridgeBreweryName);
 
             bridgeMucDetector.init();
             breweryDetectors.add(bridgeMucDetector);
@@ -288,7 +270,6 @@ public class JitsiMeetServices
     {
         breweryDetectors.forEach(BaseBrewery::dispose);
         breweryDetectors.clear();
-
         bridgeSelector.dispose();
     }
 
