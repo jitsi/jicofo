@@ -334,39 +334,41 @@ public class RESTReservations
         @Override
         public void run()
         {
-            synchronized (RESTReservations.this)
-            {
-                Iterator<Conference> conferenceIterator
-                    = conferenceMap.values().iterator();
-
-                while (conferenceIterator.hasNext())
+            synchronized (focusManager.getLock()){ //prevent deadlock           
+                synchronized (RESTReservations.this)
                 {
-                    Conference conference = conferenceIterator.next();
-                    Date startTimeDate = conference.getStartTime();
-                    if (startTimeDate == null)
+                    Iterator<Conference> conferenceIterator
+                        = conferenceMap.values().iterator();
+
+                    while (conferenceIterator.hasNext())
                     {
-                        logger.error(
-                            "No 'start_time' for conference: "
-                                    + conference.getName());
-                        continue;
-                    }
-                    long startTime = startTimeDate.getTime();
-                    long duration = conference.getDuration();
-                    // Convert duration to millis
-                    duration = duration * 1000L;
-                    long now = System.currentTimeMillis();
-                    if (now - startTime > duration - EXPIRE_INTERVAL)
-                    {
-                        // Destroy the conference
-                        EntityBareJid mucRoomName = conference.getMucRoomName();
+                        Conference conference = conferenceIterator.next();
+                        Date startTimeDate = conference.getStartTime();
+                        if (startTimeDate == null)
+                        {
+                            logger.error(
+                                "No 'start_time' for conference: "
+                                        + conference.getName());
+                            continue;
+                        }
+                        long startTime = startTimeDate.getTime();
+                        long duration = conference.getDuration();
+                        // Convert duration to millis
+                        duration = duration * 1000L;
+                        long now = System.currentTimeMillis();
+                        if (now - startTime > duration - EXPIRE_INTERVAL)
+                        {
+                            // Destroy the conference
+                            EntityBareJid mucRoomName = conference.getMucRoomName();
 
-                        deleteConference(conference.getId());
+                            deleteConference(conference.getId());
 
-                        conferenceIterator.remove();
+                            conferenceIterator.remove();
 
-                        focusManager.destroyConference(
-                            mucRoomName,
-                            "Scheduled conference duration exceeded.");
+                            focusManager.destroyConference(
+                                mucRoomName,
+                                "Scheduled conference duration exceeded.");
+                        }
                     }
                 }
             }
