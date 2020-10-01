@@ -196,12 +196,10 @@ public class FocusManager
      */
     private final Object conferencesSyncRoot = new Object();
 
-    // Convert to list when needed
     /**
-     * FIXME: remove eventually if not used anymore
      * The list of {@link FocusAllocationListener}.
      */
-    private FocusAllocationListener focusAllocListener;
+    private final List<FocusAllocationListener> focusAllocListeners = new ArrayList<>();
 
     /**
      * XMPP protocol provider handler used by the focus.
@@ -629,10 +627,15 @@ public class FocusManager
 
             // It is not clear whether the code below necessarily needs to
             // hold the lock or not.
-            if (focusAllocListener != null)
+            Iterable<FocusAllocationListener> listeners;
+
+            synchronized (focusAllocListeners)
             {
-                focusAllocListener.onFocusDestroyed(roomName);
+                listeners = new ArrayList<>(focusAllocListeners);
             }
+
+            for (FocusAllocationListener listener : listeners)
+                listener.onFocusDestroyed(roomName);
 
             // Send focus destroyed event
             EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
@@ -684,13 +687,29 @@ public class FocusManager
     }
 
     /**
-     * Sets the listener that will be notified about conference focus
+     * Add the listener that will be notified about conference focus
      * allocation/disposal.
-     * @param l the listener instance to be registered.
+     * @param listener the listener instance to be registered.
      */
-    public void setFocusAllocationListener(FocusAllocationListener l)
+    public void addFocusAllocationListener(FocusAllocationListener listener)
     {
-        this.focusAllocListener = l;
+        synchronized (focusAllocListeners)
+        {
+            focusAllocListeners.add(listener);
+        }
+    }
+
+    /**
+     * Remove the listener that will be notified about conference focus
+     * allocation/disposal.
+     * @param listener the listener instance to be registered.
+     */
+    public void removeFocusAllocationListener(FocusAllocationListener listener)
+    {
+        synchronized (focusAllocListeners)
+        {
+            focusAllocListeners.remove(listener);
+        }
     }
 
     /**
