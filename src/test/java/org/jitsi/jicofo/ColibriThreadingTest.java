@@ -118,6 +118,7 @@ public class ColibriThreadingTest
             = colibriOpSet.createAllocThreadingConf();
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
+        colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 
         colibriConf.blockConferenceCreator(true);
         colibriConf.blockResponseReceive(true);
