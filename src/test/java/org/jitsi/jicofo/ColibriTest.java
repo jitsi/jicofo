@@ -85,7 +85,6 @@ public class ColibriTest
         ColibriConference colibriConf = colibriTool.createNewConference();
 
         colibriConf.setConfig(config);
-        colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 
         colibriConf.setJitsiVideobridge(mockBridge.getBridgeJid());
 

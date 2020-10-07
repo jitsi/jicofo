@@ -105,6 +105,19 @@ public class MockVideobridge
         }
     }
 
+    /**
+     * Return all conferences that were not created by health checks
+     * @return a list of the currently active conferences that were not created by
+     * health checks
+     */
+    public List<Conference> getNonHealthCheckConferences()
+    {
+        // Filter out conferences created for health checks
+        return bridge.getConferences().stream()
+            .filter(Conference::includeInStatistics)
+            .collect(Collectors.toList());
+    }
+
     public int getEndpointCount()
     {
         return bridge.getConferences().stream()
@@ -119,6 +132,6 @@ public class MockVideobridge
 
     public int getConferenceCount()
     {
-        return bridge.getConferences().size();
+        return getNonHealthCheckConferences().size();
     }
 }
