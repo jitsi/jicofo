@@ -372,6 +372,7 @@ public class JibriSession
         catch (Exception e)
         {
             logger.error("Failed to send start Jibri IQ: " + e, e);
+            jibriDetector.memberHadTransientError(jibriJid);
 
             throw new StartException(StartException.INTERNAL_SERVER_ERROR);
         }
