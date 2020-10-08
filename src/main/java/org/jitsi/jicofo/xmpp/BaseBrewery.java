@@ -325,9 +325,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         if (instance == null)
         {
             instance = new BrewInstance(jid, extension);
-            instances.add(instance);
-
-            logger.info("Added brewery instance: " + jid);
+            addInstance(instance);
         }
         else
         {
@@ -371,6 +369,13 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             .filter(i -> i.jid.equals(jid))
             .findFirst()
             .orElse(null);
+    }
+
+    private void addInstance(BrewInstance i)
+    {
+        instances.add(i);
+
+        logger.info("Added brewery instance: " + i.jid);
     }
 
     /**
