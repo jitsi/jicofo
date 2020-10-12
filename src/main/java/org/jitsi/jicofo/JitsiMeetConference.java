@@ -20,7 +20,9 @@ package org.jitsi.jicofo;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
+import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
+
 
 import java.util.*;
 
@@ -96,4 +98,13 @@ public interface JitsiMeetConference
      * Whether this conference should be considered when generating statistics.
      */
     boolean includeInStatistics();
+
+    /**
+     * Set participant mute status on the bridge.
+     * @param jid the participant's jid.
+     * @param doMute mute/unmute.
+     * @param mediaType the media type to set.
+     * @return Did the setting succeed or not.
+     */
+    boolean muteParticipantBridgeChannel(Jid jid, boolean doMute, MediaType mediaType);
 }

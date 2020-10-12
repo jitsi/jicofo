@@ -82,6 +82,11 @@ public class ChatMemberImpl
      */
     private boolean robot = false;
 
+    /**
+     * Indicates whether this MUC member is an exception for audio moderation.
+     */
+    private boolean isAudioModerationException;
+
     private ChatRoomMemberRole role;
 
     /**
@@ -148,6 +153,16 @@ public class ChatMemberImpl
     void resetCachedRole()
     {
         this.role = null;
+    }
+
+    public boolean getIsAudioModerationException()
+    {
+        return this.isAudioModerationException;
+    }
+
+    public void setIsAudioModerationException(boolean value)
+    {
+        this.isAudioModerationException = value;
     }
 
     @Override

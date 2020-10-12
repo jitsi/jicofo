@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.utils.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -83,4 +84,9 @@ public class MockJitsiMeetConference
     {
         return true;
     }
+
+    @Override
+    public boolean muteParticipantBridgeChannel(Jid jid, boolean doMute, MediaType mediaType) {
+        return true;
+    };
 }

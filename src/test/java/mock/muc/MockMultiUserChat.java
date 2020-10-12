@@ -403,4 +403,10 @@ public class MockMultiUserChat
     {
         return findMember(mucJid.getResourceOrNull());
     }
+
+    @Override
+    public boolean getIsAudioModerationEnabled()
+    {
+        return false;
+    }
 }

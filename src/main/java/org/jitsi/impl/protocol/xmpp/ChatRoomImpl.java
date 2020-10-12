@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
@@ -47,7 +48,7 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  * @author Pawel Domas
  */
 public class ChatRoomImpl
-    implements ChatRoom, PresenceListener
+    implements ChatRoom, PresenceListener, org.jivesoftware.smack.MessageListener
 {
     static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
         if (affiliation != null) {
@@ -79,6 +80,12 @@ public class ChatRoomImpl
     private final Logger logger;
 
     /**
+     * XEP-0045
+     * Status code for unknown room configuration changes.
+     */
+    public final MUCUser.Status ROOM_CONFIGURATION_CHANGED_104 = MUCUser.Status.create(104);
+
+    /**
      * Constant used to return empty presence list from
      * {@link #getPresenceExtensions()} in case there's no presence available.
      */
@@ -108,6 +115,11 @@ public class ChatRoomImpl
      * Smack multi user chat backend instance.
      */
     private final MultiUserChat muc;
+
+    /**
+     * Smack multi user chat manager instance.
+     */
+    private final MultiUserChatManager mucManager;
 
     /**
      * The resource part of our occupant JID.
@@ -164,6 +176,11 @@ public class ChatRoomImpl
     private String meetingId = null;
 
     /**
+     * The value of thee "meetingId" field from the MUC form, if present.
+     */
+    private boolean isAudioModerationEnabled = false;
+
+    /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param roomJid the room JID (e.g. "room@service").
@@ -173,12 +190,14 @@ public class ChatRoomImpl
         logger = new LoggerImpl(getClass().getName());
         logger.addContext("room", roomJid.getResourceOrEmpty().toString());
         this.xmppProvider = xmppProvider;
+
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
 
-        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnection());
-        muc = manager.getMultiUserChat(this.roomJid);
+        mucManager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnection());
+        muc = mucManager.getMultiUserChat(this.roomJid);
 
+        muc.addMessageListener(this);
         muc.addParticipantStatusListener(memberListener);
         muc.addParticipantListener(this);
     }
@@ -831,6 +850,138 @@ public class ChatRoomImpl
                 fireMemberPresenceEvent(new PresenceUpdated(chatMember));
             }
         }
+    }
+
+    private void refreshConfiguration()
+    {
+        try
+        {
+            Form config = mucManager.getRoomInfo(muc.getRoom()).getForm();
+            List<FormField> fields = config.getFields();
+
+            // exception list field - jid-multi
+            Optional<FormField> exceptionList = fields.stream()
+                .filter(f -> "muc#roomconfig_moderatedaudio-exception-list".equals(f.getVariable()))
+                .findFirst();
+
+            // moderationenabled field - boolean
+            Optional<FormField> moderationEnabled = fields.stream()
+                .filter(f -> "muc#roomconfig_moderatedaudio-enable".equals(f.getVariable()))
+                .findFirst();
+
+            if (!exceptionList.isPresent())
+            {
+                logger.trace("missing moderatedaudio-exception-list in room configuration");
+                return;
+            }
+
+            if (!moderationEnabled.isPresent())
+            {
+                logger.trace("missing moderatedaudio-enabled in room configuration");
+                return;
+            }
+
+            // build exception lookup for incoming state
+            HashMap<EntityFullJid, Boolean> exceptions = new HashMap<>();
+            exceptionList.get().getValues().stream()
+                .map(jid -> {
+                    try {
+                        return JidCreate.entityFullFrom(jid);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .filter(jid -> members.containsKey(jid))
+                .forEach(jid -> exceptions.put(jid, true));
+
+            // get incoming moderationenabled value
+            boolean moderationEnabledValue = false;
+            List<String> values = moderationEnabled.get().getValues();
+            if (values.size() > 0)
+            {
+                moderationEnabledValue = values.get(0).equals("1");
+            }
+
+            synchronized (members)
+            {
+                for (HashMap.Entry<EntityFullJid, ChatMemberImpl> entry : members.entrySet())
+                {
+                    EntityFullJid jid = entry.getKey();
+                    ChatMemberImpl member = entry.getValue();
+                    boolean wasEnabled = this.isAudioModerationEnabled;
+                    boolean wasException = member.getIsAudioModerationException();
+                    boolean isEnabled = moderationEnabledValue;
+                    boolean isException = Boolean.TRUE.equals(exceptions.get(jid));
+
+                    member.setIsAudioModerationException(isException);
+
+                    if ((!wasEnabled && isEnabled && !isException)
+                    || (wasEnabled && isEnabled && wasException && !isException))
+                    {
+                        logger.info("muting participant: " + jid);
+                        this.conference.muteParticipantBridgeChannel(jid, true, MediaType.AUDIO);
+
+                        continue;
+                    }
+
+                    if ((wasEnabled && !isEnabled)
+                    || (wasEnabled && isEnabled && !wasException && isException))
+                    {
+                        logger.info("unmuting participant: " + jid);
+                        this.conference.muteParticipantBridgeChannel(jid, false, MediaType.AUDIO);
+
+                        continue;
+                    }
+                }
+            }
+
+            this.isAudioModerationEnabled = moderationEnabledValue;
+        }
+        catch ( InterruptedException
+            | NoResponseException
+            | NotConnectedException
+            | XMPPException e)
+        {
+            logger.info("!! exception: " +  e.toString());
+            logger.error("Failed to get configuration form", e);
+        }
+    }
+
+    /**
+     *
+     */
+    @Override
+    public void processMessage(org.jivesoftware.smack.packet.Message message)
+    {
+        if (message == null || message.getError() != null){
+            return;
+        }
+
+        MUCUser mucUser = message.getExtension("x",
+            "http://jabber.org/protocol/muc#user");
+        if (mucUser == null)
+        {
+            return;
+        }
+
+        for (MUCUser.Status status: mucUser.getStatus()) {
+            if (status.getCode() == ROOM_CONFIGURATION_CHANGED_104.getCode())
+            {
+                logger.info("!! Room configuration changed!");
+                refreshConfiguration();
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * Is audio moderation enabled?
+     */
+    public boolean getIsAudioModerationEnabled()
+    {
+        return this.isAudioModerationEnabled;
     }
 
     /**

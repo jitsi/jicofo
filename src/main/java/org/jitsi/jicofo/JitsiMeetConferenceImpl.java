@@ -23,6 +23,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -2126,10 +2127,27 @@ public class JitsiMeetConferenceImpl
         }
 
         // do not allow unmuting other participants even for the moderator
-        if (!doMute && !fromJid.equals(toBeMutedJid))
+        if (!doMute)
         {
-            logger.warn("Blocking an unmute request (jid not the same).");
-            return false;
+            if (!fromJid.equals(toBeMutedJid))
+            {
+                logger.warn("Blocking an unmute request (jid not the same).");
+                return false;
+            }
+
+            ChatMemberImpl toBeMutedMember = (ChatMemberImpl)findMember(toBeMutedJid);
+            if (toBeMutedMember == null)
+            {
+                logger.warn("Member for unmute request with jid: " + toBeMutedJid + " not found");
+                return false;
+            }
+
+            if (this.chatRoom.getIsAudioModerationEnabled() && !toBeMutedMember.getIsAudioModerationException())
+            {
+                logger.warn("Blocking unmute for force muted participant" +
+                    " with jid: " + toBeMutedJid);
+                return false;
+            }
         }
 
         if (doMute
@@ -2149,8 +2167,17 @@ public class JitsiMeetConferenceImpl
 
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + fromJid);
 
+        return muteParticipantBridgeChannel(toBeMutedJid, doMute, mediaType);
+    }
+
+    /**
+     */
+    public boolean muteParticipantBridgeChannel(Jid jid, boolean doMute, MediaType mediaType)
+    {
+        Participant participant = findParticipantForRoomJid(jid);
         BridgeSession bridgeSession = findBridgeSession(participant);
         ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
+
         boolean succeeded
             = bridgeSession != null
                     && participantChannels != null

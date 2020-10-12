@@ -197,4 +197,9 @@ public interface ChatRoom
      * Get the unique meeting ID associated by this room (set by the MUC service).
      */
     String getMeetingId();
+
+    /**
+     * Is audio moderation enabled?
+     */
+    public boolean getIsAudioModerationEnabled();
 }
