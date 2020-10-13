@@ -372,8 +372,15 @@ public class JibriSession
         catch (Exception e)
         {
             logger.error("Failed to send start Jibri IQ: " + e, e);
-
-            throw new StartException(StartException.INTERNAL_SERVER_ERROR);
+            jibriDetector.memberHadTransientError(jibriJid);
+            if (!maxRetriesExceeded())
+            {
+                retryRequestWithAnotherJibri();
+            }
+            else
+            {
+                throw new StartException(StartException.INTERNAL_SERVER_ERROR);
+            }
         }
     }
 
