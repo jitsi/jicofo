@@ -102,8 +102,9 @@ public abstract class BridgeSelectionStrategy
             if (bridge != null)
             {
                 logger.info("Selected initial bridge " + bridge
-                        + " with stress=" + bridge.getLastReportedStressLevel()
-                        + " for participantRegion=" + participantRegion);
+                        + " with reported stress=" + bridge.getLastReportedStressLevel()
+                        + " for participantRegion=" + participantRegion
+                        + " using strategy " + this.getClass().getSimpleName());
             }
             else
             {
