@@ -5,7 +5,7 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.HashMap;
 
-public class TestJitsiMeetConfig {
+public class JitsiMeetConfigTest {
     @Test
     public void testGetMinParticipants() {
         Map<String, String> properties = new HashMap<String, String> ();
