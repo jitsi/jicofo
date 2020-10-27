@@ -724,7 +724,8 @@ public class JitsiMeetConferenceImpl
     {
         ColibriConferenceImpl colibriConference
             = (ColibriConferenceImpl) colibri.createNewConference();
-        colibriConference.setGID(String.valueOf(gid));
+        // JVB expects the hex string
+        colibriConference.setGID(Long.toHexString(gid));
 
         colibriConference.setConfig(config);
 
