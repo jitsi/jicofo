@@ -162,7 +162,41 @@ public class BridgeSelector
 
         if (bridge != null)
         {
-            bridge.setIsOperational(false);
+            // When a bridge returns a non-healthy status, we mark it as non-operational AND we move all conferences
+            // away from it.
+            setBridgeNonOperational(bridge, true);
+        }
+    }
+
+    @Override
+    public void healthCheckTimedOut(Jid bridgeJid)
+    {
+        Bridge bridge = bridges.get(bridgeJid);
+
+        if (bridge != null)
+        {
+            // We are more lenient when a health check times out as opposed to failing with an error. We mark it as
+            // non-operational to prevent new conferences being allocated there, but do not move existing conferences
+            // away from it (which is what `notifyBridgeDown` would trigger).
+            //
+            // The reason for this is to better handle the case of an intermittent network failure between the bridge
+            // and jicofo that does not affect the endpoints. In this case a conference will be moved away from the
+            // bridge if and when a request for that conference fails or times out. This prevents unnecessary moves when
+            // the bridge eventually recovers (the XMPP/MUC disconnect takes much longer than a health check timing
+            // out), and prevents a burst of requests due to all conferences being moved together (this is especially
+            // bad when multiple bridges experience network problems, and conference from one failing bridge are
+            // attempted to be moved to another failing bridge).
+            // The other possible case is that the bridge is not responding to jicofo, and is also unavailable to
+            // endpoints. In this case we rely on endpoints reporting ICE failures to jicofo, which then trigger a move.
+            setBridgeNonOperational(bridge, /* notifyBridgeDown= */ false);
+        }
+    }
+
+    private void setBridgeNonOperational(@NotNull Bridge bridge, boolean notifyBridgeDown)
+    {
+        bridge.setIsOperational(false);
+        if (notifyBridgeDown)
+        {
             notifyBridgeDown(bridge);
         }
     }

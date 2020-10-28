@@ -287,7 +287,7 @@ public class JvbDoctor
                 if (response == null)
                 {
                     logger.warn("Health check timed out for: " + bridgeJid);
-                    listener.healthCheckFailed(bridgeJid);
+                    listener.healthCheckTimedOut(bridgeJid);
                     return;
                 }
 
@@ -331,5 +331,6 @@ public class JvbDoctor
     {
         void healthCheckPassed(Jid bridgeJid);
         void healthCheckFailed(Jid bridgeJid);
+        void healthCheckTimedOut(Jid bridgeJid);
     }
 }
