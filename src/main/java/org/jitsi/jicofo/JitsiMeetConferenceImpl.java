@@ -846,8 +846,22 @@ public class JitsiMeetConferenceImpl
      */
     private Stream<BridgeSession> operationalBridges()
     {
-        return bridges.stream().
-            filter(session -> !session.hasFailed && session.bridge.isOperational());
+        return bridges.stream().filter(session -> !session.hasFailed && session.bridge.isOperational());
+    }
+
+    /**
+     * Removes all non-operational bridges from the conference and re-invites their participants.
+     */
+    private void removeNonOperationalBridges()
+    {
+        Set<Jid> nonOperationalBridges = bridges.stream()
+                .filter(session -> session.hasFailed || !session.bridge.isOperational())
+                .map(session -> session.bridge.getJid())
+                .collect(Collectors.toSet());
+        if (nonOperationalBridges.size() > 0)
+        {
+            onMultipleBridgesDown(nonOperationalBridges);
+        }
     }
 
     /**
@@ -870,12 +884,23 @@ public class JitsiMeetConferenceImpl
             boolean[] startMuted)
     {
         BridgeSession bridgeSession;
+
+        // Some of the bridge in the conference may have become non-operational. Inviting a new participant to the
+        // conference requires communication with its bridges, so we remove them from the conference first.
+        removeNonOperationalBridges();
+
         synchronized (bridges)
         {
             Bridge bridge = selectBridge(participant);
             if (bridge == null)
             {
+                logger.error("Failed to select a bridge for " + participant);
                 return;
+            }
+
+            if (!bridge.isOperational())
+            {
+                logger.error("The selected bridge is non-operational.");
             }
 
             bridgeSession = findBridgeSession(bridge);
@@ -2549,26 +2574,39 @@ public class JitsiMeetConferenceImpl
      */
     void onBridgeDown(Jid bridgeJid)
     {
-        List<Participant> participantsToReinvite = Collections.emptyList();
+        onMultipleBridgesDown(Collections.singleton(bridgeJid));
+    }
+
+    /**
+     * Handles the case of some of the bridges in the conference becoming non-operational.
+     * @param bridgeJids the JIDs of the bridges that are non-operational.
+     */
+    private void onMultipleBridgesDown(Set<Jid> bridgeJids)
+    {
+        List<Participant> participantsToReinvite = new ArrayList<>();
 
         synchronized (bridges)
         {
-            BridgeSession bridgeSession = findBridgeSession(bridgeJid);
-            if (bridgeSession != null)
+            bridgeJids.forEach(bridgeJid ->
             {
-                logger.error("One of our bridges failed: " + bridgeJid);
+                BridgeSession bridgeSession = findBridgeSession(bridgeJid);
+                if (bridgeSession != null)
+                {
+                    logger.error("One of our bridges failed: " + bridgeJid);
 
-                // Note: the Jingle sessions are still alive, we'll just
-                // (try to) move to a new bridge and send transport-replace.
-                participantsToReinvite = bridgeSession.terminateAll();
+                    // Note: the Jingle sessions are still alive, we'll just
+                    // (try to) move to a new bridge and send transport-replace.
+                    participantsToReinvite.addAll(bridgeSession.terminateAll());
 
-                bridges.remove(bridgeSession);
-                setConferenceProperty(
+                    bridges.remove(bridgeSession);
+                }
+            });
+
+            setConferenceProperty(
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridges.size()));
 
-                updateOctoRelays();
-            }
+            updateOctoRelays();
         }
 
         if (!participantsToReinvite.isEmpty())
