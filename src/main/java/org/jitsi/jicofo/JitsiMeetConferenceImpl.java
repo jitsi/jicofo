@@ -1575,6 +1575,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
+        listener.participantIceFailed();
 
         return null;
     }
@@ -1607,6 +1608,11 @@ public class JitsiMeetConferenceImpl
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         BridgeSession bridgeSession = findBridgeSession(participant);
         boolean restartRequested = bsPE != null ? bsPE.isRestart() : false;
+
+        if (restartRequested)
+        {
+            listener.participantRequestedRestart();
+        }
 
         if (bridgeSession == null || !bridgeSession.id.equals(bridgeSessionId))
         {
@@ -2599,6 +2605,7 @@ public class JitsiMeetConferenceImpl
                     participantsToReinvite.addAll(bridgeSession.terminateAll());
 
                     bridges.remove(bridgeSession);
+                    listener.bridgeRemoved();
                 }
             });
 
@@ -2611,6 +2618,7 @@ public class JitsiMeetConferenceImpl
 
         if (!participantsToReinvite.isEmpty())
         {
+            listener.participantsMoved(participantsToReinvite.size());
             reInviteParticipants(participantsToReinvite);
         }
     }
@@ -2890,6 +2898,28 @@ public class JitsiMeetConferenceImpl
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConferenceImpl conference);
+
+        /**
+         * {@code count} participants were moved away from a failed bridge.
+         *
+         * @param count the number of participants that were moved.
+         */
+        void participantsMoved(int count);
+
+        /**
+         * A participant reported that its ICE connection to the bridge failed.
+         */
+        void participantIceFailed();
+
+        /**
+         * A participant requested to be re-invited via session-terminate.
+         */
+        void participantRequestedRestart();
+
+        /**
+         * A bridge was removed from the conference because it was non-operational.
+         */
+        void bridgeRemoved();
     }
 
     /**
