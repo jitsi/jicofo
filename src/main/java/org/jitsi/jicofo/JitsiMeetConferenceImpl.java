@@ -2815,43 +2815,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * The task is scheduled with some delay when we end up with single
-     * <tt>Participant</tt> in the room to terminate its media session. There
-     * is no point in streaming media to the videobridge and using
-     * the bandwidth when nobody is receiving it.
-     */
-    private class SinglePersonTimeout
-        implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            synchronized (participantLock)
-            {
-                if (participants.size() == 1)
-                {
-                    Participant p = participants.get(0);
-
-                    logger.info("Timing out single participant: " + p.getMucJid());
-
-                    terminateParticipant(
-                            p,
-                            Reason.EXPIRED,
-                            "Idle session timeout",
-                            /* send session-terminate */ true);
-
-                    disposeConference();
-                }
-                else
-                {
-                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
-                }
-                singleParticipantTout = null;
-            }
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -2872,6 +2835,50 @@ public class JitsiMeetConferenceImpl
         return bridges;
     }
 
+    @Override
+    public boolean includeInStatistics()
+    {
+        return includeInStatistics;
+    }
+
+    protected FocusManager getFocusManager()
+    {
+        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JibriSessionStats getJibriSessionStats()
+    {
+        List<JibriSession> sessions = new ArrayList<>();
+
+        if (jibriRecorder != null)
+        {
+            sessions.addAll(jibriRecorder.getJibriSessions());
+        }
+
+        if  (jibriSipGateway != null)
+        {
+            sessions.addAll(jibriSipGateway.getJibriSessions());
+        }
+
+        return new JibriSessionStats(sessions);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return
+                String.format(
+                        "JitsiMeetConferenceImpl[gid=%d, name=%s]",
+                        gid,
+                        getRoomName().toString());
+    }
 
     /**
      * The interface used to listen for conference events.
@@ -3249,48 +3256,40 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    @Override
-    public boolean includeInStatistics()
-    {
-        return includeInStatistics;
-    }
-
-    protected FocusManager getFocusManager()
-    {
-        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
-    }
-
     /**
-     * {@inheritDoc}
+     * The task is scheduled with some delay when we end up with single
+     * <tt>Participant</tt> in the room to terminate its media session. There
+     * is no point in streaming media to the videobridge and using
+     * the bandwidth when nobody is receiving it.
      */
-    @Override
-    public JibriSessionStats getJibriSessionStats()
+    private class SinglePersonTimeout
+            implements Runnable
     {
-        List<JibriSession> sessions = new ArrayList<>();
-
-        if (jibriRecorder != null)
+        @Override
+        public void run()
         {
-            sessions.addAll(jibriRecorder.getJibriSessions());
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    Participant p = participants.get(0);
+
+                    logger.info("Timing out single participant: " + p.getMucJid());
+
+                    terminateParticipant(
+                            p,
+                            Reason.EXPIRED,
+                            "Idle session timeout",
+                            /* send session-terminate */ true);
+
+                    disposeConference();
+                }
+                else
+                {
+                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
+                }
+                singleParticipantTout = null;
+            }
         }
-
-        if  (jibriSipGateway != null)
-        {
-            sessions.addAll(jibriSipGateway.getJibriSessions());
-        }
-
-        return new JibriSessionStats(sessions);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString()
-    {
-        return
-            String.format(
-                    "JitsiMeetConferenceImpl[gid=%d, name=%s]",
-                    gid,
-                    getRoomName().toString());
     }
 }
