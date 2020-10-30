@@ -2852,23 +2852,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns the COLIBRI conference ID of one of the bridges used by this
-     * conference.
-     * TODO: remove this (it is only used for testing)
-     */
-    public String getJvbConferenceId()
-    {
-        for (BridgeSession bridgeSession : bridges)
-        {
-            if (bridgeSession != null)
-            {
-                return bridgeSession.colibriConference.getConferenceId();
-            }
-        }
-        return null;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
