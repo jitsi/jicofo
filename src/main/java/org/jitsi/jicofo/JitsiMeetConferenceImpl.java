@@ -858,7 +858,7 @@ public class JitsiMeetConferenceImpl
                 .filter(session -> session.hasFailed || !session.bridge.isOperational())
                 .map(session -> session.bridge.getJid())
                 .collect(Collectors.toSet());
-        if (nonOperationalBridges.size() > 0)
+        if (!nonOperationalBridges.isEmpty())
         {
             onMultipleBridgesDown(nonOperationalBridges);
         }
@@ -885,7 +885,7 @@ public class JitsiMeetConferenceImpl
     {
         BridgeSession bridgeSession;
 
-        // Some of the bridge in the conference may have become non-operational. Inviting a new participant to the
+        // Some of the bridges in the conference may have become non-operational. Inviting a new participant to the
         // conference requires communication with its bridges, so we remove them from the conference first.
         removeNonOperationalBridges();
 
