@@ -846,8 +846,22 @@ public class JitsiMeetConferenceImpl
      */
     private Stream<BridgeSession> operationalBridges()
     {
-        return bridges.stream().
-            filter(session -> !session.hasFailed && session.bridge.isOperational());
+        return bridges.stream().filter(session -> !session.hasFailed && session.bridge.isOperational());
+    }
+
+    /**
+     * Removes all non-operational bridges from the conference and re-invites their participants.
+     */
+    private void removeNonOperationalBridges()
+    {
+        Set<Jid> nonOperationalBridges = bridges.stream()
+                .filter(session -> session.hasFailed || !session.bridge.isOperational())
+                .map(session -> session.bridge.getJid())
+                .collect(Collectors.toSet());
+        if (!nonOperationalBridges.isEmpty())
+        {
+            onMultipleBridgesDown(nonOperationalBridges);
+        }
     }
 
     /**
@@ -870,12 +884,23 @@ public class JitsiMeetConferenceImpl
             boolean[] startMuted)
     {
         BridgeSession bridgeSession;
+
+        // Some of the bridges in the conference may have become non-operational. Inviting a new participant to the
+        // conference requires communication with its bridges, so we remove them from the conference first.
+        removeNonOperationalBridges();
+
         synchronized (bridges)
         {
             Bridge bridge = selectBridge(participant);
             if (bridge == null)
             {
+                logger.error("Failed to select a bridge for " + participant);
                 return;
+            }
+
+            if (!bridge.isOperational())
+            {
+                logger.error("The selected bridge is non-operational.");
             }
 
             bridgeSession = findBridgeSession(bridge);
@@ -1550,6 +1575,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
+        listener.participantIceFailed();
 
         return null;
     }
@@ -1582,6 +1608,11 @@ public class JitsiMeetConferenceImpl
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         BridgeSession bridgeSession = findBridgeSession(participant);
         boolean restartRequested = bsPE != null ? bsPE.isRestart() : false;
+
+        if (restartRequested)
+        {
+            listener.participantRequestedRestart();
+        }
 
         if (bridgeSession == null || !bridgeSession.id.equals(bridgeSessionId))
         {
@@ -2549,30 +2580,45 @@ public class JitsiMeetConferenceImpl
      */
     void onBridgeDown(Jid bridgeJid)
     {
-        List<Participant> participantsToReinvite = Collections.emptyList();
+        onMultipleBridgesDown(Collections.singleton(bridgeJid));
+    }
+
+    /**
+     * Handles the case of some of the bridges in the conference becoming non-operational.
+     * @param bridgeJids the JIDs of the bridges that are non-operational.
+     */
+    private void onMultipleBridgesDown(Set<Jid> bridgeJids)
+    {
+        List<Participant> participantsToReinvite = new ArrayList<>();
 
         synchronized (bridges)
         {
-            BridgeSession bridgeSession = findBridgeSession(bridgeJid);
-            if (bridgeSession != null)
+            bridgeJids.forEach(bridgeJid ->
             {
-                logger.error("One of our bridges failed: " + bridgeJid);
+                BridgeSession bridgeSession = findBridgeSession(bridgeJid);
+                if (bridgeSession != null)
+                {
+                    logger.error("One of our bridges failed: " + bridgeJid);
 
-                // Note: the Jingle sessions are still alive, we'll just
-                // (try to) move to a new bridge and send transport-replace.
-                participantsToReinvite = bridgeSession.terminateAll();
+                    // Note: the Jingle sessions are still alive, we'll just
+                    // (try to) move to a new bridge and send transport-replace.
+                    participantsToReinvite.addAll(bridgeSession.terminateAll());
 
-                bridges.remove(bridgeSession);
-                setConferenceProperty(
+                    bridges.remove(bridgeSession);
+                    listener.bridgeRemoved();
+                }
+            });
+
+            setConferenceProperty(
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridges.size()));
 
-                updateOctoRelays();
-            }
+            updateOctoRelays();
         }
 
         if (!participantsToReinvite.isEmpty())
         {
+            listener.participantsMoved(participantsToReinvite.size());
             reInviteParticipants(participantsToReinvite);
         }
     }
@@ -2777,60 +2823,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * The task is scheduled with some delay when we end up with single
-     * <tt>Participant</tt> in the room to terminate its media session. There
-     * is no point in streaming media to the videobridge and using
-     * the bandwidth when nobody is receiving it.
-     */
-    private class SinglePersonTimeout
-        implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            synchronized (participantLock)
-            {
-                if (participants.size() == 1)
-                {
-                    Participant p = participants.get(0);
-
-                    logger.info("Timing out single participant: " + p.getMucJid());
-
-                    terminateParticipant(
-                            p,
-                            Reason.EXPIRED,
-                            "Idle session timeout",
-                            /* send session-terminate */ true);
-
-                    disposeConference();
-                }
-                else
-                {
-                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
-                }
-                singleParticipantTout = null;
-            }
-        }
-    }
-
-    /**
-     * Returns the COLIBRI conference ID of one of the bridges used by this
-     * conference.
-     * TODO: remove this (it is only used for testing)
-     */
-    public String getJvbConferenceId()
-    {
-        for (BridgeSession bridgeSession : bridges)
-        {
-            if (bridgeSession != null)
-            {
-                return bridgeSession.colibriConference.getConferenceId();
-            }
-        }
-        return null;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -2851,6 +2843,50 @@ public class JitsiMeetConferenceImpl
         return bridges;
     }
 
+    @Override
+    public boolean includeInStatistics()
+    {
+        return includeInStatistics;
+    }
+
+    protected FocusManager getFocusManager()
+    {
+        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JibriSessionStats getJibriSessionStats()
+    {
+        List<JibriSession> sessions = new ArrayList<>();
+
+        if (jibriRecorder != null)
+        {
+            sessions.addAll(jibriRecorder.getJibriSessions());
+        }
+
+        if  (jibriSipGateway != null)
+        {
+            sessions.addAll(jibriSipGateway.getJibriSessions());
+        }
+
+        return new JibriSessionStats(sessions);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return
+                String.format(
+                        "JitsiMeetConferenceImpl[gid=%d, name=%s]",
+                        gid,
+                        getRoomName().toString());
+    }
 
     /**
      * The interface used to listen for conference events.
@@ -2862,6 +2898,28 @@ public class JitsiMeetConferenceImpl
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConferenceImpl conference);
+
+        /**
+         * {@code count} participants were moved away from a failed bridge.
+         *
+         * @param count the number of participants that were moved.
+         */
+        void participantsMoved(int count);
+
+        /**
+         * A participant reported that its ICE connection to the bridge failed.
+         */
+        void participantIceFailed();
+
+        /**
+         * A participant requested to be re-invited via session-terminate.
+         */
+        void participantRequestedRestart();
+
+        /**
+         * A bridge was removed from the conference because it was non-operational.
+         */
+        void bridgeRemoved();
     }
 
     /**
@@ -3228,48 +3286,40 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    @Override
-    public boolean includeInStatistics()
-    {
-        return includeInStatistics;
-    }
-
-    protected FocusManager getFocusManager()
-    {
-        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
-    }
-
     /**
-     * {@inheritDoc}
+     * The task is scheduled with some delay when we end up with single
+     * <tt>Participant</tt> in the room to terminate its media session. There
+     * is no point in streaming media to the videobridge and using
+     * the bandwidth when nobody is receiving it.
      */
-    @Override
-    public JibriSessionStats getJibriSessionStats()
+    private class SinglePersonTimeout
+            implements Runnable
     {
-        List<JibriSession> sessions = new ArrayList<>();
-
-        if (jibriRecorder != null)
+        @Override
+        public void run()
         {
-            sessions.addAll(jibriRecorder.getJibriSessions());
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    Participant p = participants.get(0);
+
+                    logger.info("Timing out single participant: " + p.getMucJid());
+
+                    terminateParticipant(
+                            p,
+                            Reason.EXPIRED,
+                            "Idle session timeout",
+                            /* send session-terminate */ true);
+
+                    disposeConference();
+                }
+                else
+                {
+                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
+                }
+                singleParticipantTout = null;
+            }
         }
-
-        if  (jibriSipGateway != null)
-        {
-            sessions.addAll(jibriSipGateway.getJibriSessions());
-        }
-
-        return new JibriSessionStats(sessions);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString()
-    {
-        return
-            String.format(
-                    "JitsiMeetConferenceImpl[gid=%d, name=%s]",
-                    gid,
-                    getRoomName().toString());
     }
 }

@@ -648,6 +648,30 @@ public class FocusManager
         }
     }
 
+    @Override
+    public void participantsMoved(int count)
+    {
+        statistics.totalParticipantsMoved.addAndGet(count);
+    }
+
+    @Override
+    public void participantIceFailed()
+    {
+        statistics.totalParticipantsIceFailed.incrementAndGet();
+    }
+
+    @Override
+    public void participantRequestedRestart()
+    {
+        statistics.totalParticipantsRequestedRestart.incrementAndGet();
+    }
+
+    @Override
+    public void bridgeRemoved()
+    {
+        statistics.totalBridgesRemoved.incrementAndGet();
+    }
+
     /**
      * Returns {@link JitsiMeetConference} for given MUC {@code roomName} or
      * {@code null} if no conference has been allocated yet.
@@ -729,6 +753,16 @@ public class FocusManager
         stats.put("total_participants", statistics.totalParticipants.get());
         stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
         stats.put("conferences", getNonHealthCheckConferenceCount());
+
+        JSONObject bridgeFailures = new JSONObject();
+        bridgeFailures.put("bridges_removed", statistics.totalBridgesRemoved.get());
+        bridgeFailures.put("participants_moved", statistics.totalParticipantsMoved.get());
+        stats.put("bridge_failures", bridgeFailures);
+
+        JSONObject participantNotifications = new JSONObject();
+        bridgeFailures.put("ice_failed", statistics.totalParticipantsIceFailed.get());
+        bridgeFailures.put("request_restart", statistics.totalParticipantsRequestedRestart.get());
+        stats.put("participant_notifications", participantNotifications);
 
         // Calculate the number of participants and conference size distribution
         int numParticipants = 0;
