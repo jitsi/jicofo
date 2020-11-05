@@ -63,7 +63,8 @@ public class Bridge
     /**
      * Keep track of the recently allocated or removed channels.
      */
-    private final RateStatistics newEndpointsRate = new RateStatistics(10000);
+    private final RateStatistics newEndpointsRate
+            = new RateStatistics((int) config.participantRampupInterval().toMillis());
 
     /**
      * The last reported packet rate in packets per second.

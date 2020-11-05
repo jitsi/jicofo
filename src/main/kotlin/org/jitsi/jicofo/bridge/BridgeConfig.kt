@@ -59,6 +59,11 @@ class BridgeConfig {
     }
     fun failureResetThreshold() = failureResetThreshold
 
+    val participantRampupInterval: Duration by config {
+        "$BASE.participant-rampup-interval".from(JitsiConfig.newConfig)
+    }
+    fun participantRampupInterval() = participantRampupInterval
+
     val selectionStrategy: BridgeSelectionStrategy by config {
         "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY".from(JitsiConfig.legacyConfig)
             .convertFrom<String> { createSelectionStrategy(it) }
