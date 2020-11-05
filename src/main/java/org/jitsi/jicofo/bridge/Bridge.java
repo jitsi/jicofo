@@ -21,6 +21,7 @@ import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
 import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
@@ -61,10 +62,10 @@ public class Bridge
     private final Jid jid;
 
     /**
-     * Keep track of the recently allocated or removed channels.
+     * Keep track of the recently added endpoints.
      */
-    private final RateStatistics newEndpointsRate
-            = new RateStatistics((int) config.participantRampupInterval().toMillis());
+    private final RateTracker newEndpointsRate
+            = new RateTracker(config.participantRampupInterval(), Duration.ofMillis(100));
 
     /**
      * The last reported packet rate in packets per second.
@@ -255,7 +256,7 @@ public class Bridge
      */
     public void endpointAdded()
     {
-        newEndpointsRate.update(1, System.currentTimeMillis());
+        newEndpointsRate.update(1);
     }
 
     /**
