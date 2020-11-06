@@ -2823,9 +2823,12 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Expires the COLIBRI channels for all participants.
-         * @return the list of participants which were removed from {@link #participants} as a result of this call
-         * (does not include the Octo participant).
+         * Expires the COLIBRI channels (via
+         * {@link Participant#terminateBridgeSession()}) for all
+         * participants.
+         * @return the list of participants which were removed from
+         * {@link #participants} as a result of this call (does not include
+         * the Octo participant).
          */
         private List<Participant> terminateAll()
         {
