@@ -760,8 +760,8 @@ public class FocusManager
         stats.put("bridge_failures", bridgeFailures);
 
         JSONObject participantNotifications = new JSONObject();
-        bridgeFailures.put("ice_failed", statistics.totalParticipantsIceFailed.get());
-        bridgeFailures.put("request_restart", statistics.totalParticipantsRequestedRestart.get());
+        participantNotifications.put("ice_failed", statistics.totalParticipantsIceFailed.get());
+        participantNotifications.put("request_restart", statistics.totalParticipantsRequestedRestart.get());
         stats.put("participant_notifications", participantNotifications);
 
         // Calculate the number of participants and conference size distribution
