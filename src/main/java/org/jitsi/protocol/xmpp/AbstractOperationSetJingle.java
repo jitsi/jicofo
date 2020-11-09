@@ -438,7 +438,7 @@ public abstract class AbstractOperationSetJingle
 
         addSourceIq.setTo(session.getAddress());
 
-        logger.info(
+        logger.debug(
             "Notify add SSRC " + session.getAddress()
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
@@ -541,7 +541,7 @@ public abstract class AbstractOperationSetJingle
 
         removeSourceIq.setTo(session.getAddress());
 
-        logger.info(
+        logger.debug(
             "Notify remove SSRC " + session.getAddress()
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
