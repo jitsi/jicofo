@@ -229,6 +229,7 @@ class ShibbolethHandler
             return;
         }
 
+        response.setContentType("text/html");
         PrintWriter responseWriter = response.getWriter();
 
         String displayName = getShibAttr(request, "displayName");
