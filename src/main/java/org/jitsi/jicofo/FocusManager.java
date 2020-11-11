@@ -37,8 +37,6 @@ import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 
 import java.util.*;
@@ -83,21 +81,6 @@ public class FocusManager
      * mode (no peers in the room).
      */
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
-
-    /**
-     * The name of configuration property that specifies XMPP conference muc
-     * component prefix, defaults to "conference".
-     */
-    public static final String XMPP_MUC_COMPONENT_PREFIX_PNAME
-        = "org.jitsi.jicofo.XMPP_MUC_COMPONENT_PREFIX";
-
-    /**
-     * The name of configuration property that specifies XMPP domain that hosts
-     * the conference and will be used in components auto-discovery. This is the
-     * domain on which the jitsi-videobridge runs.
-     */
-    public static final String XMPP_DOMAIN_PNAME
-        = "org.jitsi.jicofo.XMPP_DOMAIN";
 
     /**
      * The name of the configuration property that specifies if certificates of
@@ -224,11 +207,6 @@ public class FocusManager
     private ComponentsDiscovery componentsDiscovery;
 
     /**
-     * The address of the conference MUC component served by our XMPP domain.
-     */
-    private Jid conferenceMucService;
-
-    /**
      * Handler that takes care of pre-processing various Jitsi Meet extensions
      * IQs sent from conference participants to the focus.
      */
@@ -261,8 +239,6 @@ public class FocusManager
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
-        String xmppDomainConfig = config.getString(XMPP_DOMAIN_PNAME);
-        DomainBareJid xmppDomain = JidCreate.domainBareFrom(xmppDomainConfig);
 
         int jicofoId = config.getInt(JICOFO_SHORT_ID_PNAME, -1);
         if (jicofoId < 1 || jicofoId > 0xffff)
@@ -282,9 +258,6 @@ public class FocusManager
         ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
 
         // We default to "conference" prefix for the muc component
-        String conferenceMucPrefix = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
-        conferenceMucService = JidCreate.domainBareFrom(conferenceMucPrefix + "." + xmppDomainConfig);
-
         protocolProviderHandler.start(
             clientConnectionConfig.getHostname(),
             String.valueOf(clientConnectionConfig.getPort()),
@@ -309,7 +282,7 @@ public class FocusManager
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(xmppDomain, protocolProviderHandler);
+        componentsDiscovery.start(clientConnectionConfig.getXmppDomain(), protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -879,14 +852,6 @@ public class FocusManager
     boolean isJicofoIdConfigured()
     {
         return jicofoId != 0;
-    }
-
-    /**
-     * Returns the address of MUC component for our XMPP domain.
-     */
-    public Jid getConferenceMucService()
-    {
-        return conferenceMucService;
     }
 
     /**
