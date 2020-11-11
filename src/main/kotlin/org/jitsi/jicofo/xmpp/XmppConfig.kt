@@ -20,6 +20,8 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.metaconfig.config
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jxmpp.jid.DomainBareJid
+import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
 class XmppConfig {
@@ -95,7 +97,20 @@ class ClientConnectionConfig {
         "jicofo.xmpp.client.port".from(newConfig)
     }
 
+    /**
+     * This is the domain used for login. Not necessarily the root XMPP domain.
+     */
+    val domain: DomainBareJid by config {
+        legacyDomainPropertyName.from(legacyConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+        "jicofo.xmpp.client.domain".from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+    }
+
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
+        const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
     }
 }

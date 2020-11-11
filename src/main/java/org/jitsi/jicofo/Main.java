@@ -208,7 +208,10 @@ public class Main
             System.setProperty(ClientConnectionConfig.legacyHostnamePropertyName, host);
         }
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
-        System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
+        if (focusDomain != null)
+        {
+            System.setProperty(ClientConnectionConfig.legacyDomainPropertyName, focusDomain);
+        }
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
         if (isNotBlank(focusPassword))
         {

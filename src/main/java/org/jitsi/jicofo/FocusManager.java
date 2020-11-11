@@ -100,13 +100,6 @@ public class FocusManager
         = "org.jitsi.jicofo.XMPP_DOMAIN";
 
     /**
-     * The name of the configuration property that specifies XMPP domain of
-     * the focus user.
-     */
-    public static final String FOCUS_USER_DOMAIN_PNAME
-        = "org.jitsi.jicofo.FOCUS_USER_DOMAIN";
-
-    /**
      * The name of configuration property that specifies the user name used by
      * the focus to login to XMPP server.
      */
@@ -180,11 +173,6 @@ public class FocusManager
             return null;
         }
     }
-
-    /**
-     * The XMPP domain used by the focus user to register to.
-     */
-    private DomainBareJid focusUserDomain;
 
     /**
      * The username used by the focus to login.
@@ -311,8 +299,7 @@ public class FocusManager
             this.jicofoId = jicofoId;
         }
 
-        focusUserDomain = JidCreate.domainBareFrom(
-                config.getString(FOCUS_USER_DOMAIN_PNAME));
+        ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
         focusUserName = Resourcepart.from(
                 config.getString(FOCUS_USER_NAME_PNAME));
 
@@ -322,11 +309,10 @@ public class FocusManager
         String conferenceMucPrefix = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
         conferenceMucService = JidCreate.domainBareFrom(conferenceMucPrefix + "." + xmppDomainConfig);
 
-        ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
         protocolProviderHandler.start(
             clientConnectionConfig.getHostname(),
             String.valueOf(clientConnectionConfig.getPort()),
-            focusUserDomain,
+            clientConnectionConfig.getDomain(),
             focusUserPassword,
             focusUserName);
 
@@ -343,11 +329,7 @@ public class FocusManager
             jvbProtocolProvider.register();
         }
 
-        jitsiMeetServices
-            = new JitsiMeetServices(
-                    protocolProviderHandler,
-                    jvbProtocolProvider,
-                    focusUserDomain);
+        jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
@@ -559,7 +541,7 @@ public class FocusManager
         if (conference.getLogger().isInfoEnabled())
         {
             StringBuilder sb = new StringBuilder("Created new focus for ");
-            sb.append(room).append("@").append(focusUserDomain);
+            sb.append(room).append("@").append(xmppConfig.getClientConnectionConfig().getDomain());
             sb.append(". Conference count ").append(conferences.size());
             sb.append(",").append("options: ");
             StringBuilder options = new StringBuilder();

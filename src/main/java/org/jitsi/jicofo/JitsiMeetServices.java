@@ -33,6 +33,7 @@ import org.jxmpp.jid.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
+import static org.jitsi.jicofo.xmpp.XmppConfig.xmppConfig;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -64,11 +65,6 @@ public class JitsiMeetServices
     private final Set<BaseBrewery> breweryDetectors = new HashSet<>();
 
     /**
-     * The name of XMPP domain to which Jicofo user logs in.
-     */
-    private final DomainBareJid jicofoUserDomain;
-
-    /**
      * The {@link ProtocolProviderHandler} for JVB XMPP connection.
      */
     private final ProtocolProviderHandler jvbBreweryProtocolProvider;
@@ -91,20 +87,15 @@ public class JitsiMeetServices
 
     /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
-     *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo
-     *        XMPP connection.
-     * @param jvbMucProtocolProvider {@link ProtocolProviderHandler} for JVB
-     *        XMPP connection.
-     * @param jicofoUserDomain the name of the XMPP domain to which Jicofo user
+     *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo XMPP connection.
+     * @param jvbMucProtocolProvider {@link ProtocolProviderHandler} for JVB XMPP connection.
      */
     public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
-                             ProtocolProviderHandler jvbMucProtocolProvider,
-                             DomainBareJid jicofoUserDomain)
+                             ProtocolProviderHandler jvbMucProtocolProvider)
     {
         Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
         Objects.requireNonNull(jvbMucProtocolProvider, "jvbMucProtocolProvider");
 
-        this.jicofoUserDomain = jicofoUserDomain;
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
         this.bridgeSelector = new BridgeSelector();
@@ -127,7 +118,7 @@ public class JitsiMeetServices
             logger.info("Discovered SIP gateway: " + node);
             setSipGateway(node);
         }
-        else if (jicofoUserDomain != null && jicofoUserDomain.equals(node) && version != null)
+        else if (xmppConfig.getClientConnectionConfig().getDomain().equals(node) && version != null)
         {
             this.XMPPServerVersion = version;
             logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
