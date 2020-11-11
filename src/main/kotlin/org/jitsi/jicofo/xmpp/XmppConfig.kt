@@ -31,6 +31,8 @@ class XmppConfig {
 
     val clientConnectionConfig = ClientConnectionConfig()
 
+    val componentConfig = ComponentConfig()
+
     companion object {
         @JvmField
         val xmppConfig = XmppConfig()
@@ -75,7 +77,7 @@ class ServiceConnectionConfig {
         }
     }
 
-    val password: String by config {
+    val password: String? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS".from(legacyConfig)
         "jicofo.xmpp.service.password".from(newConfig)
     }
@@ -152,5 +154,27 @@ class ClientConnectionConfig {
         const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
         const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
         const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
+    }
+}
+
+/**
+ * The XMPP component connection is deprecated and will be removed. These properties are configured via command line
+ * arguments and only supported temporarily.
+ */
+class ComponentConfig {
+    // We read from new config, because they are set as System properties.
+    val hostname: String by config { hostnamePropertyName.from(newConfig) }
+    val domain: String by config { domainPropertyName.from(newConfig) }
+    val subdomain: String by config { subdomainPropertyName.from(newConfig) }
+    val port: Int by config { portPropertyName.from(newConfig) }
+    val secret: String by config { secretPropertyName.from(newConfig) }
+
+
+    companion object {
+        const val hostnamePropertyName = "org.jitsi.jicofo.component.HOSTNAME"
+        const val domainPropertyName = "org.jitsi.jicofo.component.DOMAIN"
+        const val subdomainPropertyName = "org.jitsi.jicofo.component.SUBDOMAIN"
+        const val portPropertyName = "org.jitsi.jicofo.component.PORT"
+        const val secretPropertyName = "org.jitsi.jicofo.component.SECRET"
     }
 }
