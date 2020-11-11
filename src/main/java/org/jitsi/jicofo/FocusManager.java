@@ -264,6 +264,9 @@ public class FocusManager
             xmppClientConnectionConfig.getPassword(),
             xmppClientConnectionConfig.getUsername());
 
+        protocolProviderHandler.getXmppConnection().setReplyTimeout(
+                xmppClientConnectionConfig.getReplyTimeout().toMillis());
+
         jvbProtocolProvider = loadServiceXmppProvider();
 
         if (jvbProtocolProvider == null)

@@ -166,6 +166,10 @@ class XmppClientConnectionConfig {
         "default" { JidCreate.domainBareFrom("conference.$xmppDomain") }
     }
 
+    val replyTimeout: Duration by config {
+        "jicofo.xmpp.client.reply-timeout".from(newConfig)
+    }
+
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
         const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
