@@ -88,6 +88,8 @@ class ServiceConnectionConfig {
 class ClientConnectionConfig {
 
     private val legacyHostname: String? by optionalconfig {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyHostnamePropertyName.from(newConfig)
         legacyHostnamePropertyName.from(legacyConfig)
     }
 
@@ -98,6 +100,8 @@ class ClientConnectionConfig {
     fun enabled() = legacyHostname != null || enabled
 
     val hostname: String by config {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyHostnamePropertyName.from(newConfig)
         legacyHostnamePropertyName.from(legacyConfig)
         "jicofo.xmpp.client.hostname".from(newConfig)
     }
@@ -111,6 +115,10 @@ class ClientConnectionConfig {
      * This is the domain used for login. Not necessarily the root XMPP domain.
      */
     val domain: DomainBareJid by config {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyDomainPropertyName.from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
         legacyDomainPropertyName.from(legacyConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }
@@ -120,6 +128,10 @@ class ClientConnectionConfig {
     }
 
     val username: Resourcepart by config {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyUsernamePropertyName.from(newConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
         legacyUsernamePropertyName.from(legacyConfig).convertFrom<String> {
             Resourcepart.from(it)
         }
@@ -128,7 +140,9 @@ class ClientConnectionConfig {
         }
     }
 
-    val password: String by config {
+    val password: String? by optionalconfig {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyPasswordPropertyName.from(newConfig)
         legacyPasswordPropertyName.from(legacyConfig)
         "jicofo.xmpp.client.password".from(newConfig)
     }
