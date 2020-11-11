@@ -31,7 +31,6 @@ import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
@@ -227,8 +226,6 @@ public class FocusManager
 
         expireThread.start();
 
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-
         int octoId = JicofoConfig.config.getOctoId(); //config.getInt(JICOFO_SHORT_ID_PNAME, -1);
         if (octoId < 1 || octoId > 0xffff)
         {
@@ -244,18 +241,17 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        XmppClientConnectionConfig xmppClientConnectionConfig = XmppConfig.client;
+        XmppClientConnectionConfig config = XmppConfig.client;
 
         // We default to "conference" prefix for the muc component
         protocolProviderHandler.start(
-            xmppClientConnectionConfig.getHostname(),
-            String.valueOf(xmppClientConnectionConfig.getPort()),
-            xmppClientConnectionConfig.getDomain(),
-            xmppClientConnectionConfig.getPassword(),
-            xmppClientConnectionConfig.getUsername());
+            config.getHostname(),
+            String.valueOf(config.getPort()),
+            config.getDomain(),
+            config.getPassword(),
+            config.getUsername());
 
-        protocolProviderHandler.getXmppConnection().setReplyTimeout(
-                xmppClientConnectionConfig.getReplyTimeout().toMillis());
+        protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
 
         jvbProtocolProvider = loadServiceXmppProvider();
 
@@ -274,7 +270,7 @@ public class FocusManager
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(xmppClientConnectionConfig.getXmppDomain(), protocolProviderHandler);
+        componentsDiscovery.start(config.getXmppDomain(), protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 

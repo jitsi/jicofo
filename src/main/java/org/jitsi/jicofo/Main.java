@@ -67,13 +67,11 @@ public class Main
 
         ComponentMain componentMain = new ComponentMain();
 
-        XmppClientConnectionConfig xmppClientConnectionConfig = XmppConfig.client;
-
         // Whether the XMPP user connection is authenticated or anonymous
-        boolean isAnonymous = isBlank(xmppClientConnectionConfig.getPassword());
+        boolean isAnonymous = isBlank(XmppConfig.client.getPassword());
         // The JID of the XMPP user connection
         String jicofoClientJid
-            = xmppClientConnectionConfig.getUsername().toString() + "@" + xmppClientConnectionConfig.getDomain().toString();
+            = XmppConfig.client.getUsername().toString() + "@" + XmppConfig.client.getDomain().toString();
 
         focusXmppComponent = new FocusComponent(new XmppComponentConfig(), isAnonymous, jicofoClientJid);
 
