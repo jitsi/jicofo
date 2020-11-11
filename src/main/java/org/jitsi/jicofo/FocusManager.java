@@ -344,12 +344,13 @@ public class FocusManager
 
         jvbProtocolProvider = loadServiceXmppProvider();
 
-        if (jvbProtocolProvider == null) {
-            logger.warn(
-                "No dedicated JVB MUC XMPP connection configured"
-                    + " - falling back to the default XMPP connection");
+        if (jvbProtocolProvider == null)
+        {
+            logger.warn("No dedicated JVB MUC XMPP connection configured. Falling back to the default XMPP connection");
             jvbProtocolProvider = protocolProviderHandler;
-        } else {
+        }
+        else
+        {
             logger.info("Using dedicated XMPP connection for JVB MUC: " + jvbProtocolProvider);
             jvbProtocolProvider.register();
         }

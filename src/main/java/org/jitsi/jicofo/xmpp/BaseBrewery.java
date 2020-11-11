@@ -96,8 +96,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         String presenceExtensionElementName,
         String presenceExtensionNamespace)
     {
-        this.protocolProvider
-            = Objects.requireNonNull(protocolProvider, "protocolProvider");
+        this.protocolProvider = Objects.requireNonNull(protocolProvider, "protocolProvider");
         Assert.notNullNorEmpty(breweryJid, "breweryJid");
 
         this.breweryJid = breweryJid;
@@ -130,8 +129,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     private void maybeStart()
     {
-        if (chatRoom == null
-            && protocolProvider.getProtocolProvider().isRegistered())
+        if (chatRoom == null && protocolProvider.getProtocolProvider().isRegistered())
         {
             start();
         }
