@@ -160,7 +160,7 @@ public class FocusManager
                     String.valueOf(config.getPort()),
                     config.getDomain(),
                     config.getPassword(),
-                    Resourcepart.from(config.getUsername()));
+                    config.getUsername());
 
             protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
 

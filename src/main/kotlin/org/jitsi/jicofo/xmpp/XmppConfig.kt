@@ -23,6 +23,7 @@ import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 
 class XmppConfig {
@@ -65,9 +66,13 @@ class ServiceConnectionConfig {
         }
     }
 
-    val username: String by config {
-        "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER".from(legacyConfig)
-        "jicofo.xmpp.service.username".from(newConfig)
+    val username: Resourcepart by config {
+        "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER".from(legacyConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
+        "jicofo.xmpp.service.username".from(newConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
     }
 
     val password: String by config {
