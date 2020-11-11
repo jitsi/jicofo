@@ -20,6 +20,7 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.metaconfig.config
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
@@ -41,7 +42,7 @@ class ServiceConnectionConfig {
     }
     fun enabled() = legacyHostname != null || enabled
 
-    private val legacyHostname: String? by config {
+    private val legacyHostname: String? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig)
     }
 
@@ -77,7 +78,7 @@ class ServiceConnectionConfig {
 
 class ClientConnectionConfig {
 
-    private val legacyHostname: String? by config {
+    private val legacyHostname: String? by optionalconfig {
         legacyHostnamePropertyName.from(legacyConfig)
     }
 

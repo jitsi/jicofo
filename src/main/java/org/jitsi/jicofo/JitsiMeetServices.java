@@ -242,9 +242,12 @@ public class JitsiMeetServices
             breweryDetectors.add(sipJibriDetector);
         }
 
-        BridgeMucDetector bridgeMucDetector = new BridgeMucDetector(jvbBreweryProtocolProvider, bridgeSelector);
-        bridgeMucDetector.init();
-        breweryDetectors.add(bridgeMucDetector);
+        if (BridgeConfig.config.breweryEnabled())
+        {
+            BridgeMucDetector bridgeMucDetector = new BridgeMucDetector(jvbBreweryProtocolProvider, bridgeSelector);
+            bridgeMucDetector.init();
+            breweryDetectors.add(bridgeMucDetector);
+        }
     }
 
     public void stop()

@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
+import org.jitsi.metaconfig.optionalconfig
 import java.time.Duration
 
 /**
@@ -101,10 +102,11 @@ class BridgeConfig {
             .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
     }
 
-    val brewery: String by config {
+    val brewery: String? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC".from(JitsiConfig.legacyConfig)
         "$BASE.brewery".from(JitsiConfig.newConfig)
     }
+    fun breweryEnabled() = brewery != null
 
     companion object {
         const val BASE = "jicofo.bridge"
