@@ -87,7 +87,7 @@ public class FocusComponent
      * @param focusAuthJid the JID of authenticated focus user which will be
      *                     advertised to conference participants.
      */
-    public FocusComponent(ComponentConfig config, boolean anonymousFocus, String focusAuthJid)
+    public FocusComponent(XmppComponentConfig config, boolean anonymousFocus, String focusAuthJid)
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
