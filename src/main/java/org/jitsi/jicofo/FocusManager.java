@@ -90,16 +90,6 @@ public class FocusManager
         = "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED";
 
     /**
-     * The name of the property used to configure an identifier of this
-     * Jicofo instance, used for the purpose of generating conference IDs unique
-     * across a set of Jicofo instances.
-     * Valid values are [1, 65535]. The value "0" is reserved for the case where
-     * an ID is not configured.
-     */
-    public static final String JICOFO_SHORT_ID_PNAME
-        = "org.jitsi.jicofo.SHORT_ID";
-
-    /**
      * The pseudo-random generator which is to be used when generating IDs.
      */
     private static final Random RANDOM = new Random();
@@ -220,7 +210,7 @@ public class FocusManager
      * The ID of this Jicofo instance, used to generate conference GIDs. The
      * special value 0 is used when none is explicitly configured.
      */
-    private int jicofoId = 0;
+    private int octoId = 0;
 
     /**
      * Starts this manager.
@@ -239,19 +229,19 @@ public class FocusManager
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
 
-        int jicofoId = config.getInt(JICOFO_SHORT_ID_PNAME, -1);
-        if (jicofoId < 1 || jicofoId > 0xffff)
+        int octoId = JicofoConfig.config.getOctoId(); //config.getInt(JICOFO_SHORT_ID_PNAME, -1);
+        if (octoId < 1 || octoId > 0xffff)
         {
             logger.warn(
-                "Jicofo ID is not set. Configure a valid value [1-65535] by "
-                + "setting " + JICOFO_SHORT_ID_PNAME + ". Future versions "
-                + "will require this for Octo.");
-            this.jicofoId = 0;
+                "Jicofo ID is not set correctly set (value=" + octoId + "). Configure a valid value [1-65535] by "
+                + "setting org.jitsi.jicofo.SHORT_ID in sip-communicator.properties or jicofo.octo.id in jicofo.conf. "
+                + "Future versions will require this for Octo.");
+            this.octoId = 0;
         }
         else
         {
-            logger.info("Initialized jicofoId=" + jicofoId);
-            this.jicofoId = jicofoId;
+            logger.info("Initialized octoId=" + octoId);
+            this.octoId = octoId;
         }
 
         XmppClientConnectionConfig xmppClientConnectionConfig = XmppConfig.client;
@@ -533,7 +523,7 @@ public class FocusManager
         {
             do
             {
-                id = (jicofoId << 16) | RANDOM.nextInt(0x1_0000);
+                id = (octoId << 16) | RANDOM.nextInt(0x1_0000);
             }
             while (conferenceGids.contains(id));
         }
@@ -853,7 +843,7 @@ public class FocusManager
 
     boolean isJicofoIdConfigured()
     {
-        return jicofoId != 0;
+        return octoId != 0;
     }
 
     /**

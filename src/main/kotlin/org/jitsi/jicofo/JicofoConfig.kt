@@ -30,6 +30,15 @@ class JicofoConfig {
     val enableSctp: Boolean by config {
         "$BASE.sctp.enabled".from(JitsiConfig.newConfig)
     }
+
+    /**
+     * The ID of the jicofo instance to use for Octo.
+     */
+    val octoId: Int by config {
+        "org.jitsi.jicofo.SHORT_ID".from(JitsiConfig.legacyConfig)
+        "jicofo.octo.id".from(JitsiConfig.newConfig)
+    }
+
     fun enableSctp() = enableSctp
 
     fun localRegion() = localRegion
