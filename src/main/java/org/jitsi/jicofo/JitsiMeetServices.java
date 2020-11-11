@@ -251,19 +251,9 @@ public class JitsiMeetServices
             breweryDetectors.add(sipJibriDetector);
         }
 
-        String bridgeBreweryName = config.getString(BridgeMucDetector.BRIDGE_MUC_PNAME);
-        if (isNotBlank(bridgeBreweryName))
-        {
-            BridgeMucDetector bridgeMucDetector
-                = new BridgeMucDetector(
-                    jvbBreweryProtocolProvider,
-                    bridgeBreweryName,
-                    bridgeSelector);
-            logger.info("Using a Bridge MUC detector with MUC: " + bridgeBreweryName);
-
-            bridgeMucDetector.init();
-            breweryDetectors.add(bridgeMucDetector);
-        }
+        BridgeMucDetector bridgeMucDetector = new BridgeMucDetector(jvbBreweryProtocolProvider, bridgeSelector);
+        bridgeMucDetector.init();
+        breweryDetectors.add(bridgeMucDetector);
     }
 
     public void stop()

@@ -101,6 +101,11 @@ class BridgeConfig {
             .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
     }
 
+    val brewery: String by config {
+        "org.jitsi.jicofo.BRIDGE_MUC".from(JitsiConfig.legacyConfig)
+        "$BASE.brewery".from(JitsiConfig.newConfig)
+    }
+
     companion object {
         const val BASE = "jicofo.bridge"
         @JvmField

@@ -23,6 +23,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
+import static org.jitsi.jicofo.bridge.BridgeConfig.config;
 /**
  * Detects jitsi-videobridge instances through a MUC.
  *
@@ -37,12 +38,6 @@ public class BridgeMucDetector
     private static final Logger logger = Logger.getLogger(BaseBrewery.class);
 
     /**
-     * The name of the property used to configure the full JID of the MUC to
-     * use for detection of jitsi-videobridge instances.
-     */
-    public static final String BRIDGE_MUC_PNAME = "org.jitsi.jicofo.BRIDGE_MUC";
-
-    /**
      * The {@link BridgeSelector} instance which will be notified when new
      * jitsi-videobridge instances are detected, or when they update their
      * status.
@@ -54,21 +49,20 @@ public class BridgeMucDetector
      *
      * @param protocolProvider the {@link ProtocolProviderHandler} instance
      * to which this {@link BridgeMucDetector} will attach.
-     * @param breweryJid the MUC JID of the room which this detector will join.
      * @param bridgeSelector the {@link BridgeSelector} instance which will be
      * notified when new jitsi-videobridge instances are detected, or when they
      * update their status.
      */
     public BridgeMucDetector(
         ProtocolProviderHandler protocolProvider,
-        String breweryJid,
         BridgeSelector bridgeSelector)
     {
         super(protocolProvider,
-              breweryJid,
+              config.getBrewery(),
               ColibriStatsExtension.ELEMENT_NAME,
               ColibriStatsExtension.NAMESPACE);
 
+        logger.info("Created BridgeMucDetector with address " + config.getBrewery());
         this.bridgeSelector = bridgeSelector;
     }
 
