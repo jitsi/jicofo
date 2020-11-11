@@ -1062,4 +1062,8 @@ public class FocusManager
             }
         }
     }
+
+    public final Object getLock(){
+        return conferencesSyncRoot;
+    }
 }
