@@ -100,20 +100,6 @@ public class FocusManager
         = "org.jitsi.jicofo.XMPP_DOMAIN";
 
     /**
-     * The name of configuration property that specifies the user name used by
-     * the focus to login to XMPP server.
-     */
-    public static final String FOCUS_USER_NAME_PNAME
-        = "org.jitsi.jicofo.FOCUS_USER_NAME";
-
-    /**
-     * The name of the configuration property that specifies login password of
-     * the focus user. If not provided then anonymous login method is used.
-     */
-    public static final String FOCUS_USER_PASSWORD_PNAME
-        = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
-
-    /**
      * The name of the configuration property that specifies if certificates of
      * the XMPP domain name should be verified, or always trusted. If not
      * provided then 'false' (should verify) is used.
@@ -173,11 +159,6 @@ public class FocusManager
             return null;
         }
     }
-
-    /**
-     * The username used by the focus to login.
-     */
-    private Resourcepart focusUserName;
 
     /**
      * The thread that expires {@link JitsiMeetConference}s.
@@ -275,8 +256,7 @@ public class FocusManager
         // Register early, because some of the dependencies e.g.
         // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
         // will be cleaned up at a later stage.
-        serviceRegistration
-                = bundleContext.registerService(FocusManager.class, this, null);
+        serviceRegistration = bundleContext.registerService(FocusManager.class, this, null);
 
         expireThread.start();
 
@@ -300,10 +280,6 @@ public class FocusManager
         }
 
         ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
-        focusUserName = Resourcepart.from(
-                config.getString(FOCUS_USER_NAME_PNAME));
-
-        String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
 
         // We default to "conference" prefix for the muc component
         String conferenceMucPrefix = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
@@ -313,8 +289,8 @@ public class FocusManager
             clientConnectionConfig.getHostname(),
             String.valueOf(clientConnectionConfig.getPort()),
             clientConnectionConfig.getDomain(),
-            focusUserPassword,
-            focusUserName);
+            clientConnectionConfig.getPassword(),
+            clientConnectionConfig.getUsername());
 
         jvbProtocolProvider = loadServiceXmppProvider();
 
@@ -523,7 +499,7 @@ public class FocusManager
             conference
                     = new JitsiMeetConferenceImpl(
                     room,
-                    focusUserName,
+                    xmppConfig.getClientConnectionConfig().getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     this, config, globalConfig, logLevel,

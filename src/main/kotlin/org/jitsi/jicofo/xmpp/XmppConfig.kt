@@ -119,8 +119,24 @@ class ClientConnectionConfig {
         }
     }
 
+    val username: Resourcepart by config {
+        legacyUsernamePropertyName.from(legacyConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
+        "jicofo.xmpp.client.username".from(newConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
+    }
+
+    val password: String by config {
+        legacyPasswordPropertyName.from(legacyConfig)
+        "jicofo.xmpp.client.password".from(newConfig)
+    }
+
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
         const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
+        const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
+        const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
     }
 }
