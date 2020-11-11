@@ -23,11 +23,12 @@ import net.java.sip.communicator.service.protocol.event.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.health.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.ServiceConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
@@ -152,6 +153,44 @@ public class FocusManager
     private static final Random RANDOM = new Random();
 
     /**
+     * Tries to load a {@link ProtocolProviderHandler} to be used for services (JVB) connection if configured.
+     *
+     * @return protocol provider or {@code null} if not configured or failed to load.
+     */
+    static public ProtocolProviderHandler loadServiceXmppProvider()
+    {
+        try
+        {
+            ServiceConnectionConfig config = XmppConfig.xmppConfig.getServiceConnectionConfig();
+
+            if (!config.enabled())
+            {
+                logger.info("Service XMPP connection noot enabled.");
+                return null;
+            }
+
+            ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
+
+            protocolProviderHandler.start(
+                    config.getHostname(),
+                    String.valueOf(config.getPort()),
+                    JidCreate.domainBareFrom(config.getDomain()),
+                    config.getPassword(),
+                    Resourcepart.from(config.getUsername()));
+
+            protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+
+            return protocolProviderHandler;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to create dedicated JVB XMPP connection provider", e);
+
+            return null;
+        }
+    }
+
+    /**
      * The XMPP domain used by the focus user to register to.
      */
     private DomainBareJid focusUserDomain;
@@ -214,9 +253,7 @@ public class FocusManager
     private JitsiMeetServices jitsiMeetServices;
 
     /**
-     * The XMPP connection provider that will be used to detect JVB's and
-     * allocate channels.
-     * See {@link BridgeMucDetector#tryLoadingJvbXmppProvider()}.
+     * The XMPP connection provider that will be used to detect JVB's and allocate channels.
      */
     private ProtocolProviderHandler jvbProtocolProvider;
 
@@ -305,7 +342,7 @@ public class FocusManager
             focusUserPassword,
             focusUserName);
 
-        jvbProtocolProvider = BridgeMucDetector.tryLoadingJvbXmppProvider();
+        jvbProtocolProvider = loadServiceXmppProvider();
 
         if (jvbProtocolProvider == null) {
             logger.warn(

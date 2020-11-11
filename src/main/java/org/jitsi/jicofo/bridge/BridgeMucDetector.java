@@ -22,8 +22,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.jid.parts.*;
 
 /**
  * Detects jitsi-videobridge instances through a MUC.
@@ -43,46 +41,6 @@ public class BridgeMucDetector
      * use for detection of jitsi-videobridge instances.
      */
     public static final String BRIDGE_MUC_PNAME = "org.jitsi.jicofo.BRIDGE_MUC";
-
-    /**
-     * Tries to load a {@link ProtocolProviderHandler}  for dedicated JVB
-     * connection if configured. See static properties starting with
-     * "BRIDGE_MUC" in this class for config properties names.
-     * @return protocol provider or {@code null} if not configured or failed
-     * to load.
-     */
-    static public ProtocolProviderHandler tryLoadingJvbXmppProvider()
-    {
-        try
-        {
-            ServiceConnectionConfig config = XmppConfig.xmppConfig.getServiceConnectionConfig();
-
-            if (!config.enabled())
-            {
-                logger.info("Service XMPP connection noot enabled.");
-                return null;
-            }
-
-            ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
-
-            protocolProviderHandler.start(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    JidCreate.domainBareFrom(config.getDomain()),
-                    config.getPassword(),
-                    Resourcepart.from(config.getUsername()));
-
-            protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
-
-            return protocolProviderHandler;
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to create dedicated JVB XMPP connection provider", e);
-
-            return null;
-        }
-    }
 
     /**
      * The {@link BridgeSelector} instance which will be notified when new
