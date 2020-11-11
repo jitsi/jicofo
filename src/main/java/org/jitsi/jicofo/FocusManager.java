@@ -27,6 +27,7 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.ClientConnectionConfig;
 import org.jitsi.jicofo.xmpp.ServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
@@ -43,6 +44,8 @@ import org.osgi.framework.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
+
+import static org.jitsi.jicofo.xmpp.XmppConfig.xmppConfig;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -82,12 +85,6 @@ public class FocusManager
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
-     * The name of the configuration property that specifies server hostname to
-     * which the focus user will connect to.
-     */
-    public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
-
-    /**
      * The name of configuration property that specifies XMPP conference muc
      * component prefix, defaults to "conference".
      */
@@ -101,12 +98,6 @@ public class FocusManager
      */
     public static final String XMPP_DOMAIN_PNAME
         = "org.jitsi.jicofo.XMPP_DOMAIN";
-
-    /**
-     * The XMPP port for the main Jicofo user's XMPP connection.
-     */
-    public static final String XMPP_PORT_PNAME
-        = "org.jitsi.jicofo.XMPP_PORT";
 
     /**
      * The name of the configuration property that specifies XMPP domain of
@@ -286,7 +277,7 @@ public class FocusManager
     private int jicofoId = 0;
 
     /**
-     * Starts this manager for given <tt>hostName</tt>.
+     * Starts this manager.
      */
     public void start()
         throws Exception
@@ -302,7 +293,6 @@ public class FocusManager
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
-        String hostName = config.getString(HOSTNAME_PNAME);
         String xmppDomainConfig = config.getString(XMPP_DOMAIN_PNAME);
         DomainBareJid xmppDomain = JidCreate.domainBareFrom(xmppDomainConfig);
 
@@ -327,7 +317,6 @@ public class FocusManager
                 config.getString(FOCUS_USER_NAME_PNAME));
 
         String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
-        String xmppServerPort = config.getString(XMPP_PORT_PNAME);
 
         // We default to "conference" prefix for the muc component
         String conferenceMucPrefix
@@ -335,9 +324,10 @@ public class FocusManager
         conferenceMucService = JidCreate.domainBareFrom(
             conferenceMucPrefix + "." + xmppDomainConfig);
 
+        ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
         protocolProviderHandler.start(
-            hostName,
-            xmppServerPort,
+            clientConnectionConfig.getHostname(),
+            String.valueOf(clientConnectionConfig.getPort()),
             focusUserDomain,
             focusUserPassword,
             focusUserName);

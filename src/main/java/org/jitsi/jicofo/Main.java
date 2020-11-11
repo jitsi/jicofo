@@ -203,7 +203,10 @@ public class Main
         }
 
         // Focus specific config properties
-        System.setProperty(FocusManager.HOSTNAME_PNAME, host);
+        if (host != null)
+        {
+            System.setProperty(ClientConnectionConfig.legacyHostnamePropertyName, host);
+        }
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);

@@ -25,6 +25,8 @@ import java.time.Duration
 class XmppConfig {
     val serviceConnectionConfig = ServiceConnectionConfig()
 
+    val clientConnectionConfig = ClientConnectionConfig()
+
     companion object {
         @JvmField
         val xmppConfig = XmppConfig()
@@ -71,3 +73,29 @@ class ServiceConnectionConfig {
     }
 }
 
+class ClientConnectionConfig {
+
+    private val legacyHostname: String? by config {
+        legacyHostnamePropertyName.from(legacyConfig)
+    }
+
+    private val enabled: Boolean by config {
+        "jicofo.xmpp.client.enabled".from(newConfig)
+    }
+
+    fun enabled() = legacyHostname != null || enabled
+
+    val hostname: String by config {
+        legacyHostnamePropertyName.from(legacyConfig)
+        "jicofo.xmpp.client.hostname".from(newConfig)
+    }
+
+    val port: Int by config {
+        "org.jitsi.jicofo.XMPP_PORT".from(legacyConfig)
+        "jicofo.xmpp.client.port".from(newConfig)
+    }
+
+    companion object {
+        const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
+    }
+}
