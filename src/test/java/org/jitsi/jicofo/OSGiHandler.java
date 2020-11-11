@@ -18,9 +18,10 @@
 package org.jitsi.jicofo;
 
 import mock.*;
-import net.java.sip.communicator.impl.configuration.*;
+import org.jitsi.config.JitsiConfig;
 import org.jitsi.jicofo.osgi.*;
-import org.jitsi.jicofo.xmpp.ClientConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppComponentConfig;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
 
@@ -77,11 +78,14 @@ public class OSGiHandler
 
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
-        System.setProperty(ClientConnectionConfig.legacyHostnamePropertyName, "test.domain.net");
-        System.setProperty(ClientConnectionConfig.legacyTopDomainPropertyName, "test.domain.net");
-        System.setProperty(ClientConnectionConfig.legacyDomainPropertyName, "focusdomain");
-        System.setProperty(ClientConnectionConfig.legacyUsernamePropertyName, "focus");
-        System.setProperty(ConfigurationActivator.PNAME_USE_PROPFILE_CONFIG, "true");
+        System.setProperty(XmppComponentConfig.hostnamePropertyName, "test.domain.net");
+        System.setProperty(XmppComponentConfig.portPropertyName, "5347");
+        System.setProperty(XmppComponentConfig.domainPropertyName, "focusdomain");
+        System.setProperty(XmppComponentConfig.subdomainPropertyName, "focus");
+        System.setProperty(XmppComponentConfig.secretPropertyName, "secret");
+        System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, "test.domain.net");
+        System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "focusdomain");
+        JitsiConfig.Companion.reloadNewConfig();
 
         this.bundleActivator = new BundleActivator()
         {

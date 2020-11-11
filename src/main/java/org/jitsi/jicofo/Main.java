@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
+import org.jitsi.config.JitsiConfig;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
@@ -62,18 +63,19 @@ public class Main
 
         setupMetaconfigLogger();
         setSystemProperties(args);
+        JitsiConfig.Companion.reloadNewConfig();
 
         ComponentMain componentMain = new ComponentMain();
 
-        ClientConnectionConfig clientConnectionConfig = XmppConfig.xmppConfig.getClientConnectionConfig();
+        XmppClientConnectionConfig xmppClientConnectionConfig = XmppConfig.client;
 
         // Whether the XMPP user connection is authenticated or anonymous
-        boolean isAnonymous = isBlank(clientConnectionConfig.getPassword());
+        boolean isAnonymous = isBlank(xmppClientConnectionConfig.getPassword());
         // The JID of the XMPP user connection
         String jicofoClientJid
-            = clientConnectionConfig.getUsername().toString() + "@" + clientConnectionConfig.getDomain().toString();
+            = xmppClientConnectionConfig.getUsername().toString() + "@" + xmppClientConnectionConfig.getDomain().toString();
 
-        focusXmppComponent = new FocusComponent(new ComponentConfig(), isAnonymous, jicofoClientJid);
+        focusXmppComponent = new FocusComponent(new XmppComponentConfig(), isAnonymous, jicofoClientJid);
 
         JicofoBundleConfig osgiBundles = new JicofoBundleConfig();
 
@@ -115,25 +117,25 @@ public class Main
         {
             // For backward compat, the "--domain" command line argument controls the domain for the XMPP component
             // as well as XMPP client connection.
-            System.setProperty(ClientConnectionConfig.legacyTopDomainPropertyName, componentDomain);
-            System.setProperty(ComponentConfig.domainPropertyName, componentDomain);
+            System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, componentDomain);
+            System.setProperty(XmppComponentConfig.domainPropertyName, componentDomain);
         }
         if (host != null)
         {
             // For backward compat, the "--host" command line argument controls the hostname for the XMPP component
             // as well as XMPP client connection.
-            System.setProperty(ComponentConfig.hostnamePropertyName, host);
-            System.setProperty(ClientConnectionConfig.legacyHostnamePropertyName, host);
+            System.setProperty(XmppComponentConfig.hostnamePropertyName, host);
+            System.setProperty(XmppClientConnectionConfig.legacyHostnamePropertyName, host);
         }
 
         String componentSubDomain = cmdLine.getOptionValue("--subdomain", "focus");
         if (componentSubDomain != null)
         {
-            System.setProperty(ComponentConfig.subdomainPropertyName, componentSubDomain);
+            System.setProperty(XmppComponentConfig.subdomainPropertyName, componentSubDomain);
         }
 
         int port = cmdLine.getIntOptionValue("--port", 5347);
-        System.setProperty(ComponentConfig.portPropertyName, String.valueOf(port));
+        System.setProperty(XmppComponentConfig.portPropertyName, String.valueOf(port));
 
         String secret = cmdLine.getOptionValue("--secret");
         if (isBlank(secret))
@@ -142,7 +144,7 @@ public class Main
         }
         if (secret != null)
         {
-            System.setProperty(ComponentConfig.secretPropertyName, secret);
+            System.setProperty(XmppComponentConfig.secretPropertyName, secret);
         }
 
         // XMPP client connection
@@ -156,15 +158,15 @@ public class Main
 
         if (focusDomain != null)
         {
-            System.setProperty(ClientConnectionConfig.legacyDomainPropertyName, focusDomain);
+            System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, focusDomain);
         }
         if (focusUserName != null)
         {
-            System.setProperty(ClientConnectionConfig.legacyUsernamePropertyName, focusUserName);
+            System.setProperty(XmppClientConnectionConfig.legacyUsernamePropertyName, focusUserName);
         }
         if (isNotBlank(focusPassword))
         {
-            System.setProperty(ClientConnectionConfig.legacyPasswordPropertyName, focusPassword);
+            System.setProperty(XmppClientConnectionConfig.legacyPasswordPropertyName, focusPassword);
         }
     }
 

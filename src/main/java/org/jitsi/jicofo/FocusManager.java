@@ -27,8 +27,8 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.ClientConnectionConfig;
-import org.jitsi.jicofo.xmpp.ServiceConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
@@ -43,7 +43,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 
-import static org.jitsi.jicofo.xmpp.XmppConfig.xmppConfig;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -114,7 +113,7 @@ public class FocusManager
     {
         try
         {
-            ServiceConnectionConfig config = XmppConfig.xmppConfig.getServiceConnectionConfig();
+            XmppServiceConnectionConfig config = XmppConfig.service;
 
             if (!config.enabled())
             {
@@ -255,15 +254,15 @@ public class FocusManager
             this.jicofoId = jicofoId;
         }
 
-        ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
+        XmppClientConnectionConfig xmppClientConnectionConfig = XmppConfig.client;
 
         // We default to "conference" prefix for the muc component
         protocolProviderHandler.start(
-            clientConnectionConfig.getHostname(),
-            String.valueOf(clientConnectionConfig.getPort()),
-            clientConnectionConfig.getDomain(),
-            clientConnectionConfig.getPassword(),
-            clientConnectionConfig.getUsername());
+            xmppClientConnectionConfig.getHostname(),
+            String.valueOf(xmppClientConnectionConfig.getPort()),
+            xmppClientConnectionConfig.getDomain(),
+            xmppClientConnectionConfig.getPassword(),
+            xmppClientConnectionConfig.getUsername());
 
         jvbProtocolProvider = loadServiceXmppProvider();
 
@@ -282,7 +281,7 @@ public class FocusManager
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(clientConnectionConfig.getXmppDomain(), protocolProviderHandler);
+        componentsDiscovery.start(xmppClientConnectionConfig.getXmppDomain(), protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -472,7 +471,7 @@ public class FocusManager
             conference
                     = new JitsiMeetConferenceImpl(
                     room,
-                    xmppConfig.getClientConnectionConfig().getUsername(),
+                    XmppConfig.client.getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     this, config, globalConfig, logLevel,
@@ -490,7 +489,7 @@ public class FocusManager
         if (conference.getLogger().isInfoEnabled())
         {
             StringBuilder sb = new StringBuilder("Created new focus for ");
-            sb.append(room).append("@").append(xmppConfig.getClientConnectionConfig().getDomain());
+            sb.append(room).append("@").append(XmppConfig.client.getDomain());
             sb.append(". Conference count ").append(conferences.size());
             sb.append(",").append("options: ");
             StringBuilder options = new StringBuilder();

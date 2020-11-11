@@ -38,7 +38,7 @@ public class MockMainMethodActivator
         throws Exception
     {
         // These properties are set in OSGiHandler
-        focusComponent = new FocusComponent(new ComponentConfig(), true, "focus@test.domain.net");
+        focusComponent = new FocusComponent(new XmppComponentConfig(), true, "focus@test.domain.net");
 
         focusComponent.init();
 

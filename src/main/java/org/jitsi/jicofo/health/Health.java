@@ -191,7 +191,7 @@ public class Health
         {
             roomName = JidCreate.entityBareFrom(
                 generateRoomName(),
-                XmppConfig.xmppConfig.getClientConnectionConfig().getConferenceMucJid()
+                XmppConfig.client.getConferenceMucJid()
             );
         }
         while (focusManager.getConference(roomName) != null);
