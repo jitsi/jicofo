@@ -319,10 +319,8 @@ public class FocusManager
         String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
 
         // We default to "conference" prefix for the muc component
-        String conferenceMucPrefix
-            = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
-        conferenceMucService = JidCreate.domainBareFrom(
-            conferenceMucPrefix + "." + xmppDomainConfig);
+        String conferenceMucPrefix = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
+        conferenceMucService = JidCreate.domainBareFrom(conferenceMucPrefix + "." + xmppDomainConfig);
 
         ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
         protocolProviderHandler.start(

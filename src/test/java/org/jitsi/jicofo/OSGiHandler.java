@@ -81,8 +81,7 @@ public class OSGiHandler
         System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
         System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, "focusdomain");
         System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, "focus");
-        System.setProperty(ConfigurationActivator.PNAME_USE_PROPFILE_CONFIG,
-                "true");
+        System.setProperty(ConfigurationActivator.PNAME_USE_PROPFILE_CONFIG, "true");
 
         this.bundleActivator = new BundleActivator()
         {
