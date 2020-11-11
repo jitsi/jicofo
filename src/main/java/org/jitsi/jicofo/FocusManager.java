@@ -175,12 +175,12 @@ public class FocusManager
      * Jitsi Meet conferences mapped by MUC room names.
      *
      * Note that access to this field is almost always protected by a lock on
-     * {@code this}. However, {@link #getConferenceCount()} executes
+     * {@code this}. However, {@code #getConferenceCount()} executes
      * {@link Map#size()} on it, which wouldn't be safe with a
      * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
      * I've chosen this solution, because I don't know whether the cleaner
      * solution of synchronizing on {@link #conferencesSyncRoot} in
-     * {@link #getConferenceCount()} is safe.
+     * {@code #getConferenceCount()} is safe.
      */
     private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences
         = new ConcurrentHashMap<>();
@@ -216,7 +216,7 @@ public class FocusManager
     /**
      * The XMPP connection provider that will be used to detect JVB's and
      * allocate channels.
-     * See {@link BridgeMucDetector#tryLoadingJvbXmppProvider(ConfigurationService)}.
+     * See {@link BridgeMucDetector#tryLoadingJvbXmppProvider()}.
      */
     private ProtocolProviderHandler jvbProtocolProvider;
 
@@ -305,7 +305,7 @@ public class FocusManager
             focusUserPassword,
             focusUserName);
 
-        jvbProtocolProvider = BridgeMucDetector.tryLoadingJvbXmppProvider(config);
+        jvbProtocolProvider = BridgeMucDetector.tryLoadingJvbXmppProvider();
 
         if (jvbProtocolProvider == null) {
             logger.warn(

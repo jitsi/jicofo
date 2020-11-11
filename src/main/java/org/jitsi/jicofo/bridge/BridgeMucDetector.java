@@ -18,15 +18,12 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-
-import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Detects jitsi-videobridge instances through a MUC.
@@ -48,67 +45,34 @@ public class BridgeMucDetector
     public static final String BRIDGE_MUC_PNAME = "org.jitsi.jicofo.BRIDGE_MUC";
 
     /**
-     * Config property for JVB connection's XMPP host.
-     */
-    private static final String BRIDGE_MUC_XMPP_HOST = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST";
-
-    /**
-     * Config property for JVB connection's XMPP username.
-     */
-    private static final String BRIDGE_MUC_XMPP_USER = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER";
-
-    /**
-     * Config property for JVB connection's XMPP user domain.
-     */
-    private static final String BRIDGE_MUC_XMPP_USER_DOMAIN = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN";
-
-    /**
-     * Config property for JVB connection's XMPP user password.
-     */
-    private static final String BRIDGE_MUC_XMPP_USER_PASS = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS";
-
-    /**
-     * Config property for JVB connection's XMPP port.
-     */
-    private static final String BRIDGE_MUC_XMPP_PORT = "org.jitsi.jicofo.BRIDGE_MUC_XMPP_PORT";
-
-    /**
      * Tries to load a {@link ProtocolProviderHandler}  for dedicated JVB
      * connection if configured. See static properties starting with
      * "BRIDGE_MUC" in this class for config properties names.
-     * @param config - The  configuration service instance.
      * @return protocol provider or {@code null} if not configured or failed
      * to load.
      */
-    static public ProtocolProviderHandler tryLoadingJvbXmppProvider(
-            ConfigurationService config)
+    static public ProtocolProviderHandler tryLoadingJvbXmppProvider()
     {
         try
         {
-            String hostName = config.getString(BRIDGE_MUC_XMPP_HOST);
+            ServiceConnectionConfig config = XmppConfig.xmppConfig.getServiceConnectionConfig();
 
-            //  Assume not configured if there's no XMPP host
-            if (isBlank(hostName))
+            if (!config.enabled())
             {
+                logger.info("Service XMPP connection noot enabled.");
                 return null;
             }
-
-            String xmppServerPort = config.getString(BRIDGE_MUC_XMPP_PORT);
-
-            DomainBareJid userDomain
-                = JidCreate.domainBareFrom(config.getString(BRIDGE_MUC_XMPP_USER_DOMAIN));
-            Resourcepart userName
-                = Resourcepart.from(config.getString(BRIDGE_MUC_XMPP_USER));
-            String userPassword = config.getString(BRIDGE_MUC_XMPP_USER_PASS);
 
             ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
 
             protocolProviderHandler.start(
-                    hostName,
-                    xmppServerPort,
-                    userDomain,
-                    userPassword,
-                    userName);
+                    config.getHostname(),
+                    String.valueOf(config.getPort()),
+                    JidCreate.domainBareFrom(config.getDomain()),
+                    config.getPassword(),
+                    Resourcepart.from(config.getUsername()));
+
+            protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
 
             return protocolProviderHandler;
         }
