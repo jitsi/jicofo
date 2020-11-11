@@ -78,7 +78,7 @@ public class OSGiHandler
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
         System.setProperty(ClientConnectionConfig.legacyHostnamePropertyName, "test.domain.net");
-        System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, "test.domain.net");
+        System.setProperty(ClientConnectionConfig.legacyTopDomainPropertyName, "test.domain.net");
         System.setProperty(ClientConnectionConfig.legacyDomainPropertyName, "focusdomain");
         System.setProperty(ClientConnectionConfig.legacyUsernamePropertyName, "focus");
         System.setProperty(ConfigurationActivator.PNAME_USE_PROPFILE_CONFIG, "true");

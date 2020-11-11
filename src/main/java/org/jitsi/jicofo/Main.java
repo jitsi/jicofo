@@ -35,7 +35,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class Main
 {
-    private static Logger logger = Logger.getLogger(Main.class);
+    private static final Logger logger = Logger.getLogger(Main.class);
 
     /**
      * Stores {@link FocusComponent} instance for the health check purpose.
@@ -115,7 +115,7 @@ public class Main
         {
             // For backward compat, the "--domain" command line argument controls the domain for the XMPP component
             // as well as XMPP client connection.
-            System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
+            System.setProperty(ClientConnectionConfig.legacyTopDomainPropertyName, componentDomain);
             System.setProperty(ComponentConfig.domainPropertyName, componentDomain);
         }
         if (host != null)

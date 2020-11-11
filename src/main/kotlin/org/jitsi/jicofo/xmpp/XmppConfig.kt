@@ -88,7 +88,6 @@ class ServiceConnectionConfig {
 }
 
 class ClientConnectionConfig {
-
     private val legacyHostname: String? by optionalconfig {
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyHostnamePropertyName.from(newConfig)
@@ -149,11 +148,35 @@ class ClientConnectionConfig {
         "jicofo.xmpp.client.password".from(newConfig)
     }
 
+    /**
+     * This is the top-level domain hosted by the XMPP server (not necessarily the one used for login).
+     */
+    val xmppDomain: DomainBareJid by config {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyTopDomainPropertyName.from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+        legacyTopDomainPropertyName.from(legacyConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+    }
+
+    val conferenceMucJid: DomainBareJid by config {
+        "org.jitsi.jicofo.XMPP_MUC_COMPONENT_PREFIX".from(legacyConfig).convertFrom<String> {
+            JidCreate.domainBareFrom("$it.$xmppDomain")
+        }
+        "jicofo.xmpp.client.conference-muc-jid".from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+        "default" { JidCreate.domainBareFrom("conference.$xmppDomain") }
+    }
+
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
         const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
         const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
         const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
+        const val legacyTopDomainPropertyName = "org.jitsi.jicofo.XMPP_DOMAIN"
     }
 }
 
