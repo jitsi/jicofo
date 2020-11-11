@@ -158,7 +158,7 @@ public class FocusManager
             protocolProviderHandler.start(
                     config.getHostname(),
                     String.valueOf(config.getPort()),
-                    JidCreate.domainBareFrom(config.getDomain()),
+                    config.getDomain(),
                     config.getPassword(),
                     Resourcepart.from(config.getUsername()));
 

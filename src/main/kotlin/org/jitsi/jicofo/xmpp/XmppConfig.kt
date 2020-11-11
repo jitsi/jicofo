@@ -56,9 +56,13 @@ class ServiceConnectionConfig {
         "jicofo.xmpp.service.port".from(newConfig)
     }
 
-    val domain: String by config {
-        "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN".from(legacyConfig)
-        "jicofo.xmpp.service.domain".from(newConfig)
+    val domain: DomainBareJid by config {
+        "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN".from(legacyConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+        "jicofo.xmpp.service.domain".from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
     }
 
     val username: String by config {
