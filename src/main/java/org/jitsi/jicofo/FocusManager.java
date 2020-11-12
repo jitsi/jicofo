@@ -27,8 +27,6 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
-import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.eventadmin.*;
@@ -86,44 +84,6 @@ public class FocusManager
     private static final Random RANDOM = new Random();
 
     /**
-     * Tries to load a {@link ProtocolProviderHandler} to be used for services (JVB) connection if configured.
-     *
-     * @return protocol provider or {@code null} if not configured or failed to load.
-     */
-    static public ProtocolProviderHandler loadServiceXmppProvider()
-    {
-        try
-        {
-            XmppServiceConnectionConfig config = XmppConfig.service;
-
-            if (!config.enabled())
-            {
-                logger.info("Service XMPP connection not enabled.");
-                return null;
-            }
-
-            ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
-
-            protocolProviderHandler.start(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    config.getDomain(),
-                    config.getPassword(),
-                    config.getUsername(),
-                    config.getReplyTimeout(),
-                    config.getDisableCertificateVerification());
-
-            return protocolProviderHandler;
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to create dedicated JVB XMPP connection provider", e);
-
-            return null;
-        }
-    }
-
-    /**
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private final FocusExpireThread expireThread = new FocusExpireThread();
@@ -165,7 +125,7 @@ public class FocusManager
     /**
      * XMPP protocol provider handler used by the focus.
      */
-    private final ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
+    private ProtocolProviderHandler protocolProviderHandler;
 
     /**
      * <tt>JitsiMeetServices</tt> instance that recognizes currently available
@@ -231,36 +191,26 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        XmppClientConnectionConfig config = XmppConfig.client;
+        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
 
-        // We default to "conference" prefix for the muc component
-        protocolProviderHandler.start(
-            config.getHostname(),
-            String.valueOf(config.getPort()),
-            config.getDomain(),
-            config.getPassword(),
-            config.getUsername(),
-            config.getReplyTimeout(),
-            config.getDisableCertificateVerification());
-
-        jvbProtocolProvider = loadServiceXmppProvider();
-
-        if (jvbProtocolProvider == null)
+        if (XmppConfig.service.getEnabled())
         {
-            logger.warn("No dedicated JVB MUC XMPP connection configured. Falling back to the default XMPP connection");
-            jvbProtocolProvider = protocolProviderHandler;
+            logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
+            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
+            jvbProtocolProvider.register();
         }
         else
         {
-            logger.info("Using dedicated XMPP connection for JVB MUC: " + jvbProtocolProvider);
-            jvbProtocolProvider.register();
+            logger.warn("No dedicated Service XMPP connection configured." +
+                        " Falling back to the client XMPP connection for JVB MUC");
+            jvbProtocolProvider = protocolProviderHandler;
         }
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(config.getXmppDomain(), protocolProviderHandler);
+        componentsDiscovery.start(XmppConfig.client.getXmppDomain(), protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
