@@ -96,8 +96,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         OfferOptionsKt.applyConstraints(offerOptions, config);
         OfferOptionsKt.applyConstraints(offerOptions, participant);
 
-        JingleOfferFactory jingleOfferFactory = FocusBundleActivator.getJingleOfferFactory();
-        return jingleOfferFactory.createOffer(offerOptions);
+        return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
     }
 
     /**

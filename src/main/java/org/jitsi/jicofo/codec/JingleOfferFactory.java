@@ -39,6 +39,8 @@ import static org.jitsi.jicofo.codec.Config.config;
  */
 public class JingleOfferFactory
 {
+    public static final JingleOfferFactory INSTANCE = new JingleOfferFactory();
+
     public List<ContentPacketExtension> createOffer(OfferOptions options)
     {
         List<ContentPacketExtension> contents = new ArrayList<>();
