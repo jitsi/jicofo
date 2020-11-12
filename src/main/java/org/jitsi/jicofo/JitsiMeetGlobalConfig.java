@@ -36,18 +36,6 @@ public class JitsiMeetGlobalConfig
     private final static Logger logger = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
-     * The name of the config property which specifies how long we're going to
-     * wait for Jibri to start recording from the time it accepted START request
-     */
-    private static final String JIBRI_PENDING_TIMEOUT_PROP_NAME
-        = "org.jitsi.jicofo.jibri.PENDING_TIMEOUT";
-
-    /**
-     * The default value for {@link #JIBRI_PENDING_TIMEOUT_PROP_NAME}.
-     */
-    private static final int JIBRI_DEFAULT_PENDING_TIMEOUT = 90;
-
-    /**
      * The name of the config property which specifies how many times
      * we'll retry a given Jibri request before giving up.  Set to
      * -1 to allow infinite retries.
@@ -61,23 +49,10 @@ public class JitsiMeetGlobalConfig
     private static final int DEFAULT_NUM_JIBRI_RETRIES = 5;
 
     /**
-     * Tells how many seconds we're going to wait for the Jibri to start
-     * recording. If set to <tt>-1</tt> it means that these timeouts are
-     * disabled in the current session.
-     */
-    private int jibriPendingTimeout;
-
-    /**
      * How many attempts we'll make to retry a given Jibri request if the Jibri
      * fails.
      */
     private int numJibriRetries;
-
-    /**
-     * Maximal amount of sources per media that can be advertised by
-     * conference participant.
-     */
-    private int maxSourcesPerUser;
 
     /**
      * OSGi service registration instance.
@@ -134,20 +109,6 @@ public class JitsiMeetGlobalConfig
      */
     private void init(ConfigurationService configService)
     {
-        jibriPendingTimeout
-            = configService.getInt(
-                    JIBRI_PENDING_TIMEOUT_PROP_NAME,
-                    JIBRI_DEFAULT_PENDING_TIMEOUT);
-
-        if (jibriPendingTimeout > 0)
-        {
-            logger.info("Jibri requests in PENDING state will be timed out after: " + jibriPendingTimeout + " seconds");
-        }
-        else
-        {
-            logger.warn("Jibri PENDING timeouts are disabled");
-        }
-
         numJibriRetries = configService.getInt(NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
         if (numJibriRetries >= 0)
         {
@@ -169,19 +130,6 @@ public class JitsiMeetGlobalConfig
             serviceRegistration.unregister();
             serviceRegistration = null;
         }
-    }
-
-    /**
-     * Tells how many seconds we're going to wait for the Jibri to start
-     * recording. If set to <tt>-1</tt> it means that these timeouts are
-     * disabled in the current session.
-     *
-     * @return <tt>int</tt> which is the number of seconds we wait for the Jibri
-     *         to start recording after it accepted our request.
-     */
-    public int getJibriPendingTimeout()
-    {
-        return jibriPendingTimeout;
     }
 
     /**
