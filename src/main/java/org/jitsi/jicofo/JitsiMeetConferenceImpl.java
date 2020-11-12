@@ -2628,10 +2628,9 @@ public class JitsiMeetConferenceImpl
         {
             cancelSingleParticipantTimeout();
 
-            long timeout = globalConfig.getSingleParticipantTimeout();
+            long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
-            singleParticipantTout
-                = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
+            singleParticipantTout = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
             logger.debug("Scheduled single person timeout for " + getRoomName());
         }
