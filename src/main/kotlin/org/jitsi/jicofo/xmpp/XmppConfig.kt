@@ -83,6 +83,11 @@ class XmppServiceConnectionConfig {
     val replyTimeout: Duration by config {
         "jicofo.xmpp.service.reply-timeout".from(newConfig)
     }
+
+    val disableCertificateVerification: Boolean by config {
+        "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
+        "jicofo.xmpp.service.disable-certificate-verification".from(newConfig)
+    }
 }
 
 class XmppClientConnectionConfig {
@@ -168,6 +173,11 @@ class XmppClientConnectionConfig {
 
     val replyTimeout: Duration by config {
         "jicofo.xmpp.client.reply-timeout".from(newConfig)
+    }
+
+    val disableCertificateVerification: Boolean by config {
+        "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
+        "jicofo.xmpp.client.disable-certificate-verification".from(newConfig)
     }
 
     companion object {

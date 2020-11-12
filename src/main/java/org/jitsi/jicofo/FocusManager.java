@@ -81,14 +81,6 @@ public class FocusManager
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
-     * The name of the configuration property that specifies if certificates of
-     * the XMPP domain name should be verified, or always trusted. If not
-     * provided then 'false' (should verify) is used.
-     */
-    public static final String ALWAYS_TRUST_PNAME
-        = "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED";
-
-    /**
      * The pseudo-random generator which is to be used when generating IDs.
      */
     private static final Random RANDOM = new Random();
@@ -118,7 +110,8 @@ public class FocusManager
                     config.getDomain(),
                     config.getPassword(),
                     config.getUsername(),
-                    config.getReplyTimeout());
+                    config.getReplyTimeout(),
+                    config.getDisableCertificateVerification());
 
             return protocolProviderHandler;
         }
@@ -251,7 +244,8 @@ public class FocusManager
             config.getDomain(),
             config.getPassword(),
             config.getUsername(),
-            config.getReplyTimeout());
+            config.getReplyTimeout(),
+            config.getDisableCertificateVerification());
 
         jvbProtocolProvider = loadServiceXmppProvider();
 

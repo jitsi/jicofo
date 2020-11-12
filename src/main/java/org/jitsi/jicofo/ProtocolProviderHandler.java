@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
+import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.protocol.xmpp.*;
 
@@ -86,7 +87,8 @@ public class ProtocolProviderHandler
                       DomainBareJid xmppDomain,
                       String xmppLoginPassword,
                       Resourcepart nickName,
-                      Duration replyTimeout)
+                      Duration replyTimeout,
+                      boolean disableCertificateVerification)
     {
         this.replyTimeout = replyTimeout;
 
@@ -126,6 +128,10 @@ public class ProtocolProviderHandler
 
         protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
+        if (protocolService instanceof XmppProtocolProvider && disableCertificateVerification)
+        {
+            ((XmppProtocolProvider) protocolService).setDisableCertificateVerification(true);
+        }
     }
 
     /**
