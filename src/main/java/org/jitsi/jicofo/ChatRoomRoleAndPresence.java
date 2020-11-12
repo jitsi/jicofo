@@ -48,8 +48,7 @@ public class ChatRoomRoleAndPresence
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    private static final Logger classLogger
-        = Logger.getLogger(ChatRoomRoleAndPresence.class);
+    private static final Logger classLogger = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
      * The {@link JitsiMeetConferenceImpl} for which this instance is handling
@@ -77,7 +76,7 @@ public class ChatRoomRoleAndPresence
      * join the room will become conference owner. When the owner leaves the
      * room next participant will be selected as new owner.
      */
-    private final boolean autoOwner = JicofoConfig.config.getAutoOwner();
+    private final boolean autoOwner = ConferenceConfig.config.getAutoOwner();
 
     /**
      * The logger for this instance. Uses the logging level either of the
