@@ -70,9 +70,7 @@ public class JigasiDetector
     }
 
     @Override
-    protected void onInstanceStatusChanged(
-        Jid jid,
-        ColibriStatsExtension status)
+    protected void onInstanceStatusChanged(Jid jid, ColibriStatsExtension status)
     {}
 
     @Override
@@ -90,8 +88,7 @@ public class JigasiDetector
     public Jid selectTranscriber(
         List<Jid> exclude, Collection<String> preferredRegions)
     {
-        return JigasiDetector.selectJigasi(
-            instances, exclude, preferredRegions, localRegion, true);
+        return JigasiDetector.selectJigasi(instances, exclude, preferredRegions, localRegion, true);
     }
 
     /**
@@ -103,11 +100,9 @@ public class JigasiDetector
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectJigasi(
-        List<Jid> exclude, Collection<String> preferredRegions)
+    public Jid selectJigasi(List<Jid> exclude, Collection<String> preferredRegions)
     {
-        return selectJigasi(
-            instances, exclude, preferredRegions, localRegion, false);
+        return selectJigasi(instances, exclude, preferredRegions, localRegion, false);
     }
 
     /**
@@ -128,8 +123,7 @@ public class JigasiDetector
         String localRegion,
         boolean transcriber)
     {
-        final Collection<String> regions
-            = preferredRegions != null ? preferredRegions : new ArrayList<>();
+        final Collection<String> regions = preferredRegions != null ? preferredRegions : new ArrayList<>();
 
         // let's filter using the provided exclude list
         // and those in graceful shutdown
@@ -150,8 +144,7 @@ public class JigasiDetector
             // with info is it transcriber or sipgw so let's check are we in
             // this legacy mode
 
-            boolean legacyMode = filteredInstances.stream()
-                .anyMatch(JigasiDetector::isLegacyInstance);
+            boolean legacyMode = filteredInstances.stream().anyMatch(JigasiDetector::isLegacyInstance);
 
             if (legacyMode)
             {
@@ -258,8 +251,7 @@ public class JigasiDetector
     private static boolean isInGracefulShutdown(BrewInstance bi)
     {
         return bi.status != null
-            && Boolean.parseBoolean(
-                bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
+            && Boolean.parseBoolean(bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
     }
 
     /**
@@ -270,8 +262,7 @@ public class JigasiDetector
     private static boolean supportTranscription(BrewInstance bi)
     {
         return bi.status != null
-            && Boolean.parseBoolean(
-                bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
+            && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
     }
 
     /**
@@ -282,8 +273,7 @@ public class JigasiDetector
     private static boolean supportSip(BrewInstance bi)
     {
         return bi.status != null
-            && Boolean.parseBoolean(
-                bi.status.getValueAsString(SUPPORTS_SIP));
+            && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_SIP));
     }
 
     /**
@@ -297,7 +287,7 @@ public class JigasiDetector
     {
         return bi.status != null
             && (bi.status.getValue(SUPPORTS_TRANSCRIPTION) == null
-                && bi.status.getValue(SUPPORTS_SIP) == null);
+            && bi.status.getValue(SUPPORTS_SIP) == null);
     }
 
     /**
@@ -309,8 +299,7 @@ public class JigasiDetector
     private static boolean isInPreferredRegion(
         BrewInstance bi, Collection<String> preferredRegions)
     {
-        return bi.status != null
-            && preferredRegions.contains(bi.status.getValueAsString(REGION));
+        return bi.status != null && preferredRegions.contains(bi.status.getValueAsString(REGION));
     }
 
     /**
@@ -359,8 +348,7 @@ public class JigasiDetector
     {
         JSONObject stats = new JSONObject();
         stats.put("sip_count", getJigasiSipCount());
-        stats.put("sip_in_graceful_shutdown_count",
-            getJigasiSipInGracefulShutdownCount());
+        stats.put("sip_in_graceful_shutdown_count", getJigasiSipInGracefulShutdownCount());
         stats.put("transcriber_count", getJigasiTranscriberCount());
 
         return stats;
