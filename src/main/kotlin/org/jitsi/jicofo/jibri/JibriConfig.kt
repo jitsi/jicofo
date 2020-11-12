@@ -51,6 +51,11 @@ class JibriConfig {
         "jicofo.jibri.pending-timeout".from(newConfig)
     }
 
+    val numRetries: Int by config {
+        "org.jitsi.jicofo.NUM_JIBRI_RETRIES".from(legacyConfig)
+        "jicofo.jibri.num-retries".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = JibriConfig()
