@@ -187,14 +187,6 @@ public class FocusBundleActivator
     }
 
     /**
-     * Returns the instance of <tt>ConfigurationService</tt>.
-     */
-    public static ConfigurationService getConfigService()
-    {
-        return configServiceRef.get();
-    }
-
-    /**
      * Gets the Jingle offer factory to use in this bundle.
      *
      * @return the Jingle offer factory to use in this bundle
