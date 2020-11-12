@@ -44,26 +44,6 @@ public class JibriDetector
     private static final Logger logger = Logger.getLogger(JibriDetector.class);
 
     /**
-     * The name of config property which provides the name of the MUC room in
-     * which all Jibri instances report their availability status.
-     * Can be just roomName, then the muc service will be discovered from server
-     * and in case of multiple will use the first one.
-     * Or it can be full room id: roomName@muc-servicename.jabserver.com.
-     */
-    public static final String JIBRI_ROOM_PNAME
-        = "org.jitsi.jicofo.jibri.BREWERY";
-
-    /**
-     * The name of config property which provides the name of the MUC room in
-     * which all SIP Jibri instances report their availability status.
-     * Can be just roomName, then the muc service will be discovered from server
-     * and in case of multiple will use the first one.
-     * Or it can be full room id: roomName@muc-servicename.jabserver.com.
-     */
-    public static final String JIBRI_SIP_ROOM_PNAME
-        = "org.jitsi.jicofo.jibri.SIP_BREWERY";
-
-    /**
      * The reference to the <tt>EventAdmin</tt> service which is used to send
      * {@link JibriEvent}s.
      */
@@ -94,9 +74,7 @@ public class JibriDetector
             JibriStatusPacketExt.ELEMENT_NAME,
             JibriStatusPacketExt.NAMESPACE);
 
-        this.eventAdminRef
-            = new OSGIServiceRef<>(
-                    FocusBundleActivator.bundleContext, EventAdmin.class);
+        this.eventAdminRef = new OSGIServiceRef<>(FocusBundleActivator.bundleContext, EventAdmin.class);
         this.isSip = isSip;
     }
 
@@ -161,8 +139,7 @@ public class JibriDetector
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin != null)
         {
-            eventAdmin.postEvent(
-                    JibriEvent.newWentOfflineEvent(jid, this.isSip));
+            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid, this.isSip));
         }
         else
         {
@@ -172,15 +149,12 @@ public class JibriDetector
 
     private void notifyJibriStatus(Jid jibriJid, boolean available)
     {
-        logger.info(
-            getLogName() + ": " + jibriJid + " available: " + available);
+        logger.info(getLogName() + ": " + jibriJid + " available: " + available);
 
         EventAdmin eventAdmin = eventAdminRef.get();
         if (eventAdmin != null)
         {
-            eventAdmin.postEvent(
-                    JibriEvent.newStatusChangedEvent(
-                        jibriJid, available, isSip));
+            eventAdmin.postEvent(JibriEvent.newStatusChangedEvent(jibriJid, available, isSip));
         }
         else
         {
@@ -195,10 +169,7 @@ public class JibriDetector
         stats.put("count", getInstanceCount(null));
         stats.put(
             "available",
-            getInstanceCount(
-                    brewInstance ->
-                        brewInstance.status != null
-                            && brewInstance.status.isAvailable()));
+            getInstanceCount(brewInstance -> brewInstance.status != null && brewInstance.status.isAvailable()));
         return stats;
     }
 }

@@ -21,18 +21,16 @@ import org.jitsi.jicofo.bridge.*;
 
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
+import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.*;
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
-
-import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -209,13 +207,10 @@ public class JitsiMeetServices
     {
         bridgeSelector.init();
 
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-        String jibriBreweryName = config.getString(JibriDetector.JIBRI_ROOM_PNAME);
-
-        if (isNotBlank(jibriBreweryName))
+        if (JibriConfig.config.breweryEnabled())
         {
-            JibriDetector jibriDetector = new JibriDetector(protocolProvider, jibriBreweryName, false);
-            logger.info("Using a Jibri detector with MUC: " + jibriBreweryName);
+            JibriDetector jibriDetector = new JibriDetector(protocolProvider, JibriConfig.config.getBrewery(), false);
+            logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.getBrewery());
 
             jibriDetector.init();
             breweryDetectors.add(jibriDetector);
@@ -230,11 +225,11 @@ public class JitsiMeetServices
             breweryDetectors.add(jigasiDetector);
         }
 
-        String jibriSipBreweryName = config.getString(JibriDetector.JIBRI_SIP_ROOM_PNAME);
-        if (isNotBlank(jibriSipBreweryName))
+        if (JibriConfig.config.sipBreweryEnabled())
         {
-            JibriDetector sipJibriDetector = new JibriDetector(protocolProvider, jibriSipBreweryName, true);
-            logger.info("Using a SIP Jibri detector with MUC: " + jibriSipBreweryName);
+            JibriDetector sipJibriDetector
+                    = new JibriDetector(protocolProvider, JibriConfig.config.getSipBrewery(), true);
+            logger.info("Using a SIP Jibri detector with MUC: " + JibriConfig.config.getSipBrewery());
 
             sipJibriDetector.init();
             breweryDetectors.add(sipJibriDetector);
