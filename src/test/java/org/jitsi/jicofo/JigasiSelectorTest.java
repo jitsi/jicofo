@@ -41,7 +41,7 @@ public class JigasiSelectorTest
         throws Exception
     {
         brewery = new MockBrewery<>(
-            new ProtocolProviderHandler(XmppConfig.client),
+            new ProtocolProviderHandler(null),
             "roomName@muc-servicename.jabserver.com"
         );
     }

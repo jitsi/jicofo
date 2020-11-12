@@ -46,17 +46,17 @@ public class ProtocolProviderHandler
      * XMPP provider factory used to create and destroy XMPP account used by
      * the focus.
      */
-    private final ProtocolProviderFactory xmppProviderFactory;
+    private ProtocolProviderFactory xmppProviderFactory;
 
     /**
      * XMPP account used by the focus.
      */
-    private final AccountID xmppAccount;
+    private AccountID xmppAccount;
 
     /**
      * XMPP protocol provider service used by the focus.
      */
-    private final ProtocolProviderService protocolService;
+    private ProtocolProviderService protocolService;
 
     /**
      * Registration listeners notified about encapsulated protocol service
@@ -69,7 +69,10 @@ public class ProtocolProviderHandler
     public ProtocolProviderHandler(XmppConnectionConfig config)
     {
         this.config = config;
+    }
 
+    public void start()
+    {
         xmppProviderFactory
             = ProtocolProviderFactory.getProtocolProviderFactory(
                     FocusBundleActivator.bundleContext,
