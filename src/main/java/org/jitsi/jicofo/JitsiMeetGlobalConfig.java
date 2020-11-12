@@ -33,8 +33,7 @@ public class JitsiMeetGlobalConfig
     /**
      * The logger instance used by this class.
      */
-    private final static Logger logger
-        = Logger.getLogger(JitsiMeetGlobalConfig.class);
+    private final static Logger logger = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
      * The name of the property which controls whether jicofo will inject a
@@ -47,15 +46,13 @@ public class JitsiMeetGlobalConfig
     /**
      * The name of configuration property that sets {@link #maxSourcesPerUser}.
      */
-    private final static String MAX_SSRC_PER_USER_CONFIG_PNAME
-        = "org.jitsi.jicofo.MAX_SSRC_PER_USER";
+    private final static String MAX_SSRC_PER_USER_CONFIG_PNAME = "org.jitsi.jicofo.MAX_SSRC_PER_USER";
 
     /**
      * The name of configuration property that sets
      * {@link #singleParticipantTimeout}.
      */
-    private final static String SINGLE_PARTICIPANT_TIMEOUT_CONFIG_PNAME
-        = "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT";
+    private final static String SINGLE_PARTICIPANT_TIMEOUT_CONFIG_PNAME = "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT";
 
     /**
      * The default value for {@link #maxSourcesPerUser}.

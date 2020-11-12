@@ -18,35 +18,23 @@
 package org.jitsi.jicofo
 
 import org.jitsi.config.JitsiConfig
-import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.metaconfig.config
+import java.time.Duration
 
-class JicofoConfig {
-    val localRegion: String? by optionalconfig {
-        "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(JitsiConfig.legacyConfig)
-        "$BASE.local-region".from(JitsiConfig.newConfig)
+class ConferenceConfig {
+    val conferenceStartTimeout: Duration by config {
+        "org.jitsi.focus.IDLE_TIMEOUT".from(JitsiConfig.legacyConfig)
+        "jicofo.conference.initial-timeout".from(JitsiConfig.newConfig)
     }
 
-    val enableSctp: Boolean by config {
-        "$BASE.sctp.enabled".from(JitsiConfig.newConfig)
+    val autoOwner: Boolean by config {
+        "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(JitsiConfig.legacyConfig)
+        "jicofo.conference.auto-owner".from(JitsiConfig.newConfig)
     }
 
-    /**
-     * The ID of the jicofo instance to use for Octo.
-     */
-    val octoId: Int? by optionalconfig {
-        "org.jitsi.jicofo.SHORT_ID".from(JitsiConfig.legacyConfig)
-        "jicofo.octo.id".from(JitsiConfig.newConfig)
-    }
-
-    fun enableSctp() = enableSctp
-
-    fun localRegion() = localRegion
 
     companion object {
-        const val BASE = "jicofo"
-
         @JvmField
-        val config = JicofoConfig()
+        val config = ConferenceConfig()
     }
 }

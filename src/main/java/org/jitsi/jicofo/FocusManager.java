@@ -775,7 +775,7 @@ public class FocusManager
     {
         private static final long POLL_INTERVAL = 5000;
 
-        private final Duration timeout = JicofoConfig.config.getConferenceStartTimeout();
+        private final Duration timeout = ConferenceConfig.config.getConferenceStartTimeout();
 
         private Thread timeoutThread;
 
