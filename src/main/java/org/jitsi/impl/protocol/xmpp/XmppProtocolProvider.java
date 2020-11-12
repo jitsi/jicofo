@@ -120,6 +120,11 @@ public class XmppProtocolProvider
     private XmppConnectionAdapter connectionAdapter;
 
     /**
+     * Whether to disable TLS certificate verification.
+     */
+    private boolean disableCertificateVerification = false;
+
+    /**
      * Creates new instance of {@link XmppProtocolProvider} for given AccountID.
      *
      * @param accountID the <tt>JabberAccountID</tt> that will be used by new
@@ -196,11 +201,9 @@ public class XmppProtocolProvider
             connConfig.performSaslAnonymousAuthentication();
         }
 
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-        if (config.getBoolean(FocusManager.ALWAYS_TRUST_PNAME,false))
+        if (disableCertificateVerification)
         {
-            logger.warn("The always_trust config option is enabled. All" +
-                        " XMPP server provided certificates are accepted.");
+            logger.warn("Disabling TLS certificate verification!");
             connConfig.setCustomX509TrustManager(new TrustAllX509TrustManager());
             connConfig.setHostnameVerifier(new TrustAllHostnameVerifier());
         }
@@ -482,6 +485,12 @@ public class XmppProtocolProvider
 
         return stats;
     }
+
+    public void setDisableCertificateVerification(boolean disableCertificateVerification)
+    {
+        this.disableCertificateVerification = disableCertificateVerification;
+    }
+
 
     class XmppConnectionListener
         implements ConnectionListener
