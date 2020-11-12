@@ -20,6 +20,7 @@ package org.jitsi.jicofo
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.metaconfig.config
+import java.time.Duration
 
 class JicofoConfig {
     val localRegion: String? by optionalconfig {
@@ -37,6 +38,11 @@ class JicofoConfig {
     val octoId: Int? by optionalconfig {
         "org.jitsi.jicofo.SHORT_ID".from(JitsiConfig.legacyConfig)
         "jicofo.octo.id".from(JitsiConfig.newConfig)
+    }
+
+    val conferenceStartTimeout: Duration by config {
+        "org.jitsi.focus.IDLE_TIMEOUT".from(JitsiConfig.legacyConfig)
+        "jicofo.conference-initial-timeout".from(JitsiConfig.newConfig)
     }
 
     fun enableSctp() = enableSctp

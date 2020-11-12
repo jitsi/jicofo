@@ -43,6 +43,7 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -216,11 +217,15 @@ public class JitsiMeetConferenceImpl
     private volatile boolean started;
 
     /**
-     * Idle timestamp for this focus, -1 means active, otherwise
-     * System.currentTimeMillis() is set when focus becomes idle.
-     * Used to detect idle session and expire it if idle time limit is exceeded.
+     * The time at which this conference was created.
      */
-    private long idleTimestamp = -1;
+    private final Instant creationTime = Instant.now();
+
+    /**
+     * Whether at least one participant has joined this conference. This is exposed because to facilitate pruning
+     * conferences without any participants (which uses a separate code path than conferences with participants).
+     */
+    private boolean hasHadAtLeastOneParticipant = false;
 
     /**
      * A timeout task which will terminate media session of the user who is
@@ -382,8 +387,6 @@ public class JitsiMeetConferenceImpl
             //{
             //    services.setSipGateway(config.getPreConfiguredSipGateway());
             //}
-
-            idleTimestamp = System.currentTimeMillis();
 
             if (protocolProviderHandler.isRegistered())
             {
@@ -665,14 +668,12 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            logger.info(
-                    "Member "
-                        + chatRoomMember.getContactAddress() + " joined.");
+            logger.info("Member " + chatRoomMember.getContactAddress() + " joined.");
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
 
             if (!isFocusMember(chatRoomMember))
             {
-                idleTimestamp = -1;
+                hasHadAtLeastOneParticipant = true;
             }
 
             // Are we ready to start ?
@@ -689,9 +690,7 @@ public class JitsiMeetConferenceImpl
             {
                 for (final ChatRoomMember member : chatRoom.getMembers())
                 {
-                    inviteChatMember(
-                            (XmppChatMember) member,
-                            member == chatRoomMember);
+                    inviteChatMember((XmppChatMember) member, member == chatRoomMember);
                 }
             }
             // Only the one who has just joined
@@ -2361,14 +2360,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns {@link System#currentTimeMillis()} timestamp indicating the time
-     * when this conference has become idle(we can measure how long is it).
-     * -1 is returned if this conference is considered active.
-     *
+     * Return the time this conference was created.
      */
-    public long getIdleTimestamp()
+    public Instant getCreationTime()
     {
-        return idleTimestamp;
+        return creationTime;
+    }
+
+    public boolean hasHadAtLeastOneParticipant()
+    {
+        return hasHadAtLeastOneParticipant;
     }
 
     /**
