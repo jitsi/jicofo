@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
 
 /**
@@ -30,30 +29,6 @@ import org.osgi.framework.*;
  */
 public class JitsiMeetGlobalConfig
 {
-    /**
-     * The logger instance used by this class.
-     */
-    private final static Logger logger = Logger.getLogger(JitsiMeetGlobalConfig.class);
-
-    /**
-     * The name of the config property which specifies how many times
-     * we'll retry a given Jibri request before giving up.  Set to
-     * -1 to allow infinite retries.
-     */
-    public static final String NUM_JIBRI_RETRIES_PNAME
-            = "org.jitsi.jicofo.NUM_JIBRI_RETRIES";
-
-    /**
-     * The default value for {@link #NUM_JIBRI_RETRIES_PNAME}
-     */
-    private static final int DEFAULT_NUM_JIBRI_RETRIES = 5;
-
-    /**
-     * How many attempts we'll make to retry a given Jibri request if the Jibri
-     * fails.
-     */
-    private int numJibriRetries;
-
     /**
      * OSGi service registration instance.
      */
@@ -76,8 +51,6 @@ public class JitsiMeetGlobalConfig
 
         if (configService == null)
             throw new RuntimeException("ConfigService not found !");
-
-        config.init(configService);
 
         return config;
     }
@@ -102,25 +75,6 @@ public class JitsiMeetGlobalConfig
     }
 
     /**
-     * Initializes this instance.
-     *
-     * @param configService <tt>ConfigService</tt> the configuration service
-     *        which will be used to obtain values.
-     */
-    private void init(ConfigurationService configService)
-    {
-        numJibriRetries = configService.getInt(NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
-        if (numJibriRetries >= 0)
-        {
-            logger.info("Will attempt a maximum of " + numJibriRetries + " Jibri retries after failure");
-        }
-        else
-        {
-            logger.info("Will retry Jibri requests infinitely " + "(if a Jibri is available)");
-        }
-    }
-
-    /**
      * Unregisters this service instance from OSGi context.
      */
     void stopGlobalConfigService()
@@ -130,16 +84,5 @@ public class JitsiMeetGlobalConfig
             serviceRegistration.unregister();
             serviceRegistration = null;
         }
-    }
-
-    /**
-     * Tells how many retry attempts we'll make for a Jibri request when
-     * a Jibri fails
-     * @return the amount of retry attempts we'll make for a Jibri request when
-     * a Jibri fails
-     */
-    public int getNumJibriRetries()
-    {
-        return numJibriRetries;
     }
 }

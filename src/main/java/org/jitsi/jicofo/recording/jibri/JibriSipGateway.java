@@ -156,7 +156,7 @@ public class JibriSipGateway
                         conference.getRoomName(),
                         iq.getFrom(),
                         JibriConfig.config.getPendingTimeout().getSeconds(),
-                        globalConfig.getNumJibriRetries(),
+                        JibriConfig.config.getNumRetries(),
                         connection,
                         scheduledExecutor,
                         jibriDetector,
