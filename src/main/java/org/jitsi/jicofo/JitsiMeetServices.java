@@ -221,11 +221,10 @@ public class JitsiMeetServices
             breweryDetectors.add(jibriDetector);
         }
 
-        String jigasiBreweryName = config.getString(JigasiDetector.JIGASI_ROOM_PNAME);
-        if (isNotBlank(jigasiBreweryName))
+        if (JigasiConfig.config.breweryEnabled())
         {
-            JigasiDetector jigasiDetector = new JigasiDetector(protocolProvider, jigasiBreweryName);
-            logger.info("Using a Jigasi detector with MUC: " + jigasiBreweryName);
+            JigasiDetector jigasiDetector = new JigasiDetector(protocolProvider, JigasiConfig.config.getBreweryJid());
+            logger.info("Using a Jigasi detector with MUC: " + JigasiConfig.config.getBreweryJid());
 
             jigasiDetector.init();
             breweryDetectors.add(jigasiDetector);
