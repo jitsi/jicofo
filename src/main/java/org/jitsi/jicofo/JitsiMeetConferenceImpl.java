@@ -741,7 +741,7 @@ public class JitsiMeetConferenceImpl
                 = new Participant(
                         this,
                         chatRoomMember,
-                        globalConfig.getMaxSourcesPerUser());
+                        ConferenceConfig.config.getMaxSsrcsPerUser());
 
             participants.add(participant);
             inviteParticipant(
@@ -1962,7 +1962,7 @@ public class JitsiMeetConferenceImpl
                         participant.getEndpointId(),
                         conferenceSources,
                         conferenceSourceGroups,
-                        globalConfig.getMaxSourcesPerUser(),
+                        ConferenceConfig.config.getMaxSsrcsPerUser(),
                         this.logger);
 
         Object[] removed;
@@ -2090,7 +2090,7 @@ public class JitsiMeetConferenceImpl
                     participant.getEndpointId(),
                     conferenceSources,
                     conferenceSourceGroups,
-                    globalConfig.getMaxSourcesPerUser(),
+                    ConferenceConfig.config.getMaxSsrcsPerUser(),
                     this.logger);
 
         // Claim the new sources by injecting owner tag into packet extensions,

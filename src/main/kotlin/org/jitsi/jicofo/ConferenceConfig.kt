@@ -38,6 +38,11 @@ class ConferenceConfig {
         "jicofo.conference.inject-ssrc-for-recv-only-endpoints".from(newConfig)
     }
 
+    val maxSsrcsPerUser: Int by config {
+        "org.jitsi.jicofo.MAX_SSRC_PER_USER".from(legacyConfig)
+        "jicofo.conference.max-ssrcs-per-user".from(newConfig)
+    }
+
     val singleParticipantTimeout: Duration by config {
         "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT".from(legacyConfig)
         "jicofo.conference.single-participant-timeout".from(newConfig)

@@ -178,9 +178,7 @@ public class SSRCValidatorTest
 
     private SSRCValidator createValidator()
     {
-        return createValidator(
-                JitsiMeetGlobalConfig.getGlobalConfig(osgi.bc)
-                    .getMaxSourcesPerUser());
+        return createValidator(ConferenceConfig.config.getMaxSsrcsPerUser());
     }
 
     @Test
