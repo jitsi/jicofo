@@ -59,11 +59,6 @@ public abstract class CommonJibriStuff
     protected final XmppConnection connection;
 
     /**
-     * The global config used by this instance to obtain some config options.
-     */
-    final JitsiMeetGlobalConfig globalConfig;
-
-    /**
      * The logger instance pass to the constructor that wil be used by this
      * instance for logging.
      */
@@ -95,32 +90,23 @@ public abstract class CommonJibriStuff
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param bundleContext OSGi {@link BundleContext}.
-     * @param isSIP indicates whether this stuff is for SIP Jibri or for regular
-     *        Jibris.
-     * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
-     *        instance.
-     * @param xmppConnection XMPP operation set which wil be used to send XMPP
-     *        queries.
+     * @param isSIP indicates whether this stuff is for SIP Jibri or for regular Jibris.
+     * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
+     * @param xmppConnection XMPP operation set which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
-     * @param globalConfig the global config that provides some values required
-     *        by <tt>JibriRecorder</tt> to work.
      */
-    CommonJibriStuff(      BundleContext                   bundleContext,
-                           boolean                         isSIP,
-                           JitsiMeetConferenceImpl         conference,
-                           XmppConnection                  xmppConnection,
-                           ScheduledExecutorService        scheduledExecutor,
-                           JitsiMeetGlobalConfig           globalConfig,
-                           Logger                          logger)
+    CommonJibriStuff(
+            BundleContext bundleContext,
+            boolean isSIP,
+            JitsiMeetConferenceImpl conference,
+            XmppConnection xmppConnection,
+            ScheduledExecutorService scheduledExecutor,
+            Logger logger)
     {
         this.bundleContext = Objects.requireNonNull(bundleContext, "bundleContext");
-        this.connection
-            = Objects.requireNonNull(xmppConnection, "xmppConnection");
+        this.connection = Objects.requireNonNull(xmppConnection, "xmppConnection");
         this.conference = Objects.requireNonNull(conference, "conference");
-        this.scheduledExecutor
-            = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
-        this.globalConfig
-            = Objects.requireNonNull(globalConfig, "globalConfig");
+        this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.jibriDetector
             = isSIP
                 ? conference.getServices().getSipJibriDetector()
@@ -128,8 +114,7 @@ public abstract class CommonJibriStuff
 
         ProtocolProviderService protocolService = conference.getXmppProvider();
 
-        this.meetTools
-            = protocolService.getOperationSet(OperationSetJitsiMeetTools.class);
+        this.meetTools = protocolService.getOperationSet(OperationSetJitsiMeetTools.class);
 
         this.logger = logger;
     }

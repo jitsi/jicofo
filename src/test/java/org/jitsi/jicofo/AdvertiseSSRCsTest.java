@@ -261,10 +261,6 @@ public class AdvertiseSSRCsTest
         String serverName = "test-server";
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
 
-        JitsiMeetGlobalConfig globalConfig = ServiceUtils2.getService(osgi.bc, JitsiMeetGlobalConfig.class);
-
-        assertNotNull(globalConfig);
-
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
         MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());

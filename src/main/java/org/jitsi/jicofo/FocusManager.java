@@ -372,8 +372,6 @@ public class FocusManager
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
-        JitsiMeetGlobalConfig globalConfig = JitsiMeetGlobalConfig.getGlobalConfig(FocusBundleActivator.bundleContext);
-
         JitsiMeetConferenceImpl conference;
         synchronized (conferencesSyncRoot)
         {
@@ -384,7 +382,7 @@ public class FocusManager
                     XmppConfig.client.getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
-                    this, config, globalConfig, logLevel,
+                    this, config, logLevel,
                     id, includeInStatistics);
 
             conferences.put(room, conference);

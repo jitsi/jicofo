@@ -102,11 +102,6 @@ public class FocusBundleActivator
      */
     private FocusManager focusManager;
 
-    /**
-     * Global configuration of Jitsi COnference FOcus
-     */
-    private JitsiMeetGlobalConfig globalConfig;
-
     @Override
     public void start(BundleContext context)
         throws Exception
@@ -139,10 +134,7 @@ public class FocusBundleActivator
 
         jingleOfferFactory = new JingleOfferFactory();
 
-        this.scheduledPoolRegistration = context.registerService(
-                ScheduledExecutorService.class, scheduledPool, null);
-
-        globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
+        this.scheduledPoolRegistration = context.registerService(ScheduledExecutorService.class, scheduledPool, null);
 
         focusManager = new FocusManager();
         focusManager.start();
@@ -178,12 +170,6 @@ public class FocusBundleActivator
 
         configServiceRef = null;
         eventAdminRef = null;
-
-        if (globalConfig != null)
-        {
-            globalConfig.stopGlobalConfigService();
-            globalConfig = null;
-        }
     }
 
     /**
