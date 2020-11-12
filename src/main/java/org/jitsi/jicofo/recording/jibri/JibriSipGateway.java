@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
@@ -154,7 +155,7 @@ public class JibriSipGateway
                         this,
                         conference.getRoomName(),
                         iq.getFrom(),
-                        globalConfig.getJibriPendingTimeout(),
+                        JibriConfig.config.getPendingTimeout().getSeconds(),
                         globalConfig.getNumJibriRetries(),
                         connection,
                         scheduledExecutor,

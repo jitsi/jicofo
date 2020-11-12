@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
@@ -606,9 +607,8 @@ public class JibriSession
     }
 
     /**
-     * Method schedules/reschedules {@link PendingStatusTimeout} which will
-     * clear recording state after
-     * {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}.
+     * Method schedules/reschedules {@link PendingStatusTimeout} which will clear recording state after a timeout of
+     * {@link JibriConfig#getPendingTimeout()}.
      */
     private void reschedulePendingTimeout()
     {
@@ -832,10 +832,8 @@ public class JibriSession
     }
 
     /**
-     * Task scheduled after we have received RESULT response from Jibri and
-     * entered PENDING state. Will abort the recording if we do not transit to
-     * ON state, after {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}
-     * limit is exceeded.
+     * Task scheduled after we have received RESULT response from Jibri and entered PENDING state. Will abort the
+     * recording if we do not transit to ON state, after a timeout of {@link JibriConfig#getPendingTimeout()}.
      */
     private class PendingStatusTimeout implements Runnable
     {

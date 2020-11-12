@@ -59,8 +59,7 @@ public abstract class CommonJibriStuff
     protected final XmppConnection connection;
 
     /**
-     * The global config used by this instance to obtain some config options
-     * like {@link JitsiMeetGlobalConfig#getJibriPendingTimeout()}.
+     * The global config used by this instance to obtain some config options.
      */
     final JitsiMeetGlobalConfig globalConfig;
 

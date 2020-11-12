@@ -17,9 +17,11 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import java.time.Duration
 
 class JibriConfig {
     val brewery: String? by optionalconfig {
@@ -33,6 +35,11 @@ class JibriConfig {
         "jicofo.jibri-sip.brewery".from(newConfig)
     }
     fun sipBreweryEnabled() = sipBrewery != null
+
+    val pendingTimeout: Duration by config {
+        "org.jitsi.jicofo.jibri.PENDING_TIMEOUT".from(legacyConfig)
+        "jicofo.jibri.pending-timeout".from(newConfig)
+    }
 
     companion object {
         @JvmField
