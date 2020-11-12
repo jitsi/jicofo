@@ -22,6 +22,7 @@ import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
+import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 
@@ -43,20 +44,7 @@ public class ComponentsDiscovery
     /**
      * The logger
      */
-    private final static Logger logger
-        = Logger.getLogger(ComponentsDiscovery.class);
-
-    /**
-     * Re-discovers every 30 seconds.
-     */
-    private static final long DEFAULT_REDISCOVERY_INT = -1;
-
-    /**
-     * The name of configuration property which specifies how often XMPP
-     * components re-discovery will be performed. Time interval in millis.
-     */
-    private final static String REDISCOVERY_INTERVAL_PNAME
-        = "org.jitsi.jicofo.SERVICE_REDISCOVERY_INTERVAL";
+    private final static Logger logger = Logger.getLogger(ComponentsDiscovery.class);
 
     /**
      * {@link JitsiMeetServices} which is notified about new components
@@ -67,7 +55,7 @@ public class ComponentsDiscovery
     /**
      * Maps a node (XMPP address) to the list of its features.
      */
-    private Map<Jid, List<String>> itemMap = new ConcurrentHashMap<>();
+    private final Map<Jid, List<String>> itemMap = new ConcurrentHashMap<>();
 
     /**
      * Timer which runs re-discovery task.
@@ -138,11 +126,7 @@ public class ComponentsDiscovery
 
     private void scheduleRediscovery()
     {
-        long interval
-            = FocusBundleActivator.getConfigService()
-                    .getLong(REDISCOVERY_INTERVAL_PNAME, DEFAULT_REDISCOVERY_INT);
-
-        if (interval > 0)
+        if (XmppConfig.config.rediscoveryEnabled())
         {
             if (rediscoveryTimer != null)
             {
@@ -150,11 +134,12 @@ public class ComponentsDiscovery
                 return;
             }
 
-            logger.info("Services re-discovery interval: " + interval);
+            logger.info("Services re-discovery interval: " + XmppConfig.config.getRediscoveryInterval());
 
             rediscoveryTimer = new Timer();
 
-            rediscoveryTimer.schedule(new RediscoveryTask(), interval, interval);
+            long intervalMs = XmppConfig.config.getRediscoveryInterval().toMillis();
+            rediscoveryTimer.schedule(new RediscoveryTask(), intervalMs, intervalMs);
         }
         else
         {
