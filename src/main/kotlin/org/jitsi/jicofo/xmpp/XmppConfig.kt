@@ -39,25 +39,35 @@ class XmppConfig {
     }
 }
 
-class XmppServiceConnectionConfig {
-    private val enabled: Boolean by config {
+interface XmppConnectionConfig {
+    val enabled: Boolean
+    val hostname: String
+    val port: Int
+    val domain: DomainBareJid
+    val username: Resourcepart
+    val password: String?
+    val replyTimeout: Duration
+    val disableCertificateVerification: Boolean
+}
+
+class XmppServiceConnectionConfig : XmppConnectionConfig {
+    override val enabled: Boolean by config {
         // If the legacy host is set to anything, the connection is enabled.
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig).convertFrom<String> { true }
         "jicofo.xmpp.service.enabled".from(newConfig)
     }
-    fun enabled() = enabled
 
-    val hostname: String by config {
+    override val hostname: String by config {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig)
         "jicofo.xmpp.service.hostname".from(newConfig)
     }
 
-    val port: Int by config {
+    override val port: Int by config {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_PORT".from(legacyConfig)
         "jicofo.xmpp.service.port".from(newConfig)
     }
 
-    val domain: DomainBareJid by config {
+    override val domain: DomainBareJid by config {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN".from(legacyConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }
@@ -66,7 +76,7 @@ class XmppServiceConnectionConfig {
         }
     }
 
-    val username: Resourcepart by config {
+    override val username: Resourcepart by config {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER".from(legacyConfig).convertFrom<String> {
             Resourcepart.from(it)
         }
@@ -75,39 +85,38 @@ class XmppServiceConnectionConfig {
         }
     }
 
-    val password: String? by optionalconfig {
+    override val password: String? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS".from(legacyConfig)
         "jicofo.xmpp.service.password".from(newConfig)
     }
 
-    val replyTimeout: Duration by config {
+    override val replyTimeout: Duration by config {
         "jicofo.xmpp.service.reply-timeout".from(newConfig)
     }
 
-    val disableCertificateVerification: Boolean by config {
+    override val disableCertificateVerification: Boolean by config {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.service.disable-certificate-verification".from(newConfig)
     }
 }
 
-class XmppClientConnectionConfig {
-    private val enabled: Boolean by config {
+class XmppClientConnectionConfig : XmppConnectionConfig {
+    override val enabled: Boolean by config {
         // If the legacy host is set to anything, the connection is enabled.
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyHostnamePropertyName.from(newConfig)
         legacyHostnamePropertyName.from(legacyConfig)
         "jicofo.xmpp.client.enabled".from(newConfig)
     }
-    fun enabled() = enabled
 
-    val hostname: String by config {
+    override val hostname: String by config {
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyHostnamePropertyName.from(newConfig)
         legacyHostnamePropertyName.from(legacyConfig)
         "jicofo.xmpp.client.hostname".from(newConfig)
     }
 
-    val port: Int by config {
+    override val port: Int by config {
         "org.jitsi.jicofo.XMPP_PORT".from(legacyConfig)
         "jicofo.xmpp.client.port".from(newConfig)
     }
@@ -115,7 +124,7 @@ class XmppClientConnectionConfig {
     /**
      * This is the domain used for login. Not necessarily the root XMPP domain.
      */
-    val domain: DomainBareJid by config {
+    override val domain: DomainBareJid by config {
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyDomainPropertyName.from(newConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
@@ -128,7 +137,7 @@ class XmppClientConnectionConfig {
         }
     }
 
-    val username: Resourcepart by config {
+    override val username: Resourcepart by config {
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyUsernamePropertyName.from(newConfig).convertFrom<String> {
             Resourcepart.from(it)
@@ -141,7 +150,7 @@ class XmppClientConnectionConfig {
         }
     }
 
-    val password: String? by optionalconfig {
+    override val password: String? by optionalconfig {
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyPasswordPropertyName.from(newConfig)
         legacyPasswordPropertyName.from(legacyConfig)
@@ -171,11 +180,11 @@ class XmppClientConnectionConfig {
         "default" { JidCreate.domainBareFrom("conference.$xmppDomain") }
     }
 
-    val replyTimeout: Duration by config {
+    override val replyTimeout: Duration by config {
         "jicofo.xmpp.client.reply-timeout".from(newConfig)
     }
 
-    val disableCertificateVerification: Boolean by config {
+    override val disableCertificateVerification: Boolean by config {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.client.disable-certificate-verification".from(newConfig)
     }
