@@ -62,19 +62,15 @@ public class JibriRecorder
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param bundleContext OSGi {@link BundleContext}.
-     * @param conference <tt>JitsiMeetConference</tt> to be recorded by new
-     *        instance.
-     * @param connection the XMPP connection which will be used for
-     *        communication.
+     * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
+     * @param connection the XMPP connection which will be used for communication.
      * @param scheduledExecutor the executor service used by this instance
-     * @param globalConfig the global config that provides some values required
-     *                     by <tt>JibriRecorder</tt> to work.
      */
-    public JibriRecorder(BundleContext                   bundleContext,
-                         JitsiMeetConferenceImpl         conference,
-                         XmppConnection                  connection,
-                         ScheduledExecutorService        scheduledExecutor,
-                         JitsiMeetGlobalConfig           globalConfig)
+    public JibriRecorder(
+            BundleContext bundleContext,
+            JitsiMeetConferenceImpl conference,
+            XmppConnection connection,
+            ScheduledExecutorService scheduledExecutor)
     {
         super(
             bundleContext,
@@ -82,7 +78,6 @@ public class JibriRecorder
             conference,
             connection,
             scheduledExecutor,
-            globalConfig,
             Logger.getLogger(classLogger, conference.getLogger()));
     }
 

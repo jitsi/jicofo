@@ -40,7 +40,6 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
 import java.time.Instant;
@@ -113,11 +112,6 @@ public class JitsiMeetConferenceImpl
      * The instance of conference configuration.
      */
     private final JitsiMeetConfig config;
-
-    /**
-     * The instance of global configuration.
-     */
-    private final JitsiMeetGlobalConfig globalConfig;
 
     /**
      * XMPP protocol provider handler used by the focus.
@@ -286,7 +280,6 @@ public class JitsiMeetConferenceImpl
      * @param listener the listener that will be notified about this instance
      *        events.
      * @param config the conference configuration instance.
-     * @param globalConfig an instance of the global config service.
      * @param logLevel (optional) the logging level to be used by this instance.
      *        See {@link #logger} for more details.
      */
@@ -297,7 +290,6 @@ public class JitsiMeetConferenceImpl
             ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
             JitsiMeetConfig config,
-            JitsiMeetGlobalConfig globalConfig,
             Level logLevel,
             long gid,
             boolean includeInStatistics)
@@ -310,7 +302,6 @@ public class JitsiMeetConferenceImpl
         this.roomName = roomName;
         this.focusUserName = focusUserName;
         this.listener = listener;
-        this.globalConfig = globalConfig;
         this.etherpadName = createSharedDocumentName();
 
         if (logLevel != null)
@@ -327,12 +318,11 @@ public class JitsiMeetConferenceImpl
             ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
             JitsiMeetConfig config,
-            JitsiMeetGlobalConfig globalConfig,
             Level logLevel,
             long gid)
     {
        this(roomName, focusUserName, protocolProviderHandler, jvbXmppConnection,
-            listener, config, globalConfig, logLevel, gid, false);
+            listener, config, logLevel, gid, false);
     }
 
     /**
@@ -408,8 +398,7 @@ public class JitsiMeetConferenceImpl
                             osgiCtx,
                             this,
                             getXmppConnection(),
-                            executor,
-                            globalConfig);
+                            executor);
 
                 jibriOpSet.addJibri(jibriRecorder);
             }
@@ -422,8 +411,7 @@ public class JitsiMeetConferenceImpl
                             osgiCtx,
                             this,
                             getXmppConnection(),
-                            FocusBundleActivator.getSharedScheduledThreadPool(),
-                            globalConfig);
+                            FocusBundleActivator.getSharedScheduledThreadPool());
 
                 jibriOpSet.addJibri(jibriSipGateway);
             }
