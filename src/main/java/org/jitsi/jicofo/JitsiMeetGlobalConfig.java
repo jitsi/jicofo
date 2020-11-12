@@ -36,16 +36,6 @@ public class JitsiMeetGlobalConfig
     private final static Logger logger = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
-     * The name of configuration property that sets {@link #maxSourcesPerUser}.
-     */
-    private final static String MAX_SSRC_PER_USER_CONFIG_PNAME = "org.jitsi.jicofo.MAX_SSRC_PER_USER";
-
-    /**
-     * The default value for {@link #maxSourcesPerUser}.
-     */
-    private final static int DEFAULT_MAX_SSRC_PER_USER = 20;
-
-    /**
      * The name of the config property which specifies how long we're going to
      * wait for Jibri to start recording from the time it accepted START request
      */
@@ -144,9 +134,6 @@ public class JitsiMeetGlobalConfig
      */
     private void init(ConfigurationService configService)
     {
-        this.maxSourcesPerUser
-            = configService.getInt(MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
-
         jibriPendingTimeout
             = configService.getInt(
                     JIBRI_PENDING_TIMEOUT_PROP_NAME,
@@ -182,17 +169,6 @@ public class JitsiMeetGlobalConfig
             serviceRegistration.unregister();
             serviceRegistration = null;
         }
-    }
-
-    /**
-     * Returns maximal amount of SSRCs per media that can be advertised by
-     * conference participant.
-     *
-     * @return <tt>int</tt> value - see above.
-     */
-    public int getMaxSourcesPerUser()
-    {
-        return maxSourcesPerUser;
     }
 
     /**
