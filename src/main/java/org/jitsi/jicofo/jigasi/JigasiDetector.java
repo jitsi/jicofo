@@ -38,16 +38,6 @@ public class JigasiDetector
     extends BaseBrewery<ColibriStatsExtension>
 {
     /**
-     * The name of config property which provides the name of the MUC room in
-     * which all Jigasi instances.
-     * Can be just roomName, then the muc service will be discovered from server
-     * and in case of multiple will use the first one.
-     * Or it can be full room id: roomName@muc-servicename.jabserver.com.
-     */
-    public static final String JIGASI_ROOM_PNAME
-        = "org.jitsi.jicofo.jigasi.BREWERY";
-
-    /**
      * The local region of the this jicofo instance.
      */
     private final String localRegion = JicofoConfig.config.localRegion();
