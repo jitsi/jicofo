@@ -174,8 +174,7 @@ public class ChatRoomRoleAndPresence
                 owner = null;
                 electNewOwner();
             }
-            if (ChatRoomMemberPresenceChangeEvent
-                        .MEMBER_KICKED.equals(eventType))
+            if (ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType))
             {
                 conference.onMemberKicked(sourceMember);
             }
@@ -209,12 +208,16 @@ public class ChatRoomRoleAndPresence
             logger.info("Obtained focus role: " + userRole);
 
             if (userRole == null)
+            {
                 return;
+            }
 
             focusRole = userRole;
 
             if (!verifyFocusRole())
+            {
                 return;
+            }
         }
 
         if (authAuthority != null)
@@ -237,8 +240,7 @@ public class ChatRoomRoleAndPresence
             {
                 // Select existing owner
                 owner = member;
-                logger.info(
-                    "Owner already in the room: " + member.getName());
+                logger.info("Owner already in the room: " + member.getName());
                 break;
             }
             else
@@ -246,8 +248,7 @@ public class ChatRoomRoleAndPresence
                 // Elect new owner
                 if (grantOwner(((XmppChatMember)member).getJid()))
                 {
-                    logger.info(
-                        "Granted owner to " + member.getContactAddress());
+                    logger.info("Granted owner to " + member.getContactAddress());
 
                     owner = member;
                 }
@@ -334,8 +335,7 @@ public class ChatRoomRoleAndPresence
         }
         catch(RuntimeException e)
         {
-            logger.error(
-                "Failed to grant owner status to " + jid , e);
+            logger.error("Failed to grant owner status to " + jid , e);
         }
         return false;
     }
