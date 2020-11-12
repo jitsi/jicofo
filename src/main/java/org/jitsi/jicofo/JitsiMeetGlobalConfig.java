@@ -197,8 +197,7 @@ public class JitsiMeetGlobalConfig
      */
     private void init(ConfigurationService configService)
     {
-        if (FocusBundleActivator.getConfigService()
-                .getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
+        if (FocusBundleActivator.getConfigService().getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
         {
             autoOwner = false;
         }
