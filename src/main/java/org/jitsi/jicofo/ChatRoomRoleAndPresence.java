@@ -77,7 +77,7 @@ public class ChatRoomRoleAndPresence
      * join the room will become conference owner. When the owner leaves the
      * room next participant will be selected as new owner.
      */
-    private boolean autoOwner;
+    private final boolean autoOwner = JicofoConfig.config.getAutoOwner();
 
     /**
      * The logger for this instance. Uses the logging level either of the
@@ -105,8 +105,6 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
-        autoOwner = conference.getGlobalConfig().isAutoOwnerEnabled();
-
         authAuthority = ServiceUtils2.getService(
                 FocusBundleActivator.bundleContext,
                 AuthenticationAuthority.class);
