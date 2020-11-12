@@ -40,8 +40,7 @@ import java.util.concurrent.*;
 public class ProtocolProviderHandler
     implements RegistrationStateChangeListener
 {
-    private final static Logger logger
-        = Logger.getLogger(ProtocolProviderHandler.class);
+    private final static Logger logger = Logger.getLogger(ProtocolProviderHandler.class);
 
     /**
      * XMPP provider factory used to create and destroy XMPP account used by
@@ -63,8 +62,7 @@ public class ProtocolProviderHandler
      * Registration listeners notified about encapsulated protocol service
      * instance registration state changes.
      */
-    private final List<RegistrationStateChangeListener> regListeners
-        = new CopyOnWriteArrayList<>();
+    private final List<RegistrationStateChangeListener> regListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Start this instance by created XMPP account using the given parameters.
@@ -76,7 +74,7 @@ public class ProtocolProviderHandler
      *
      */
     public void start(String serverAddress,
-                      String  serverPort,
+                      String serverPort,
                       DomainBareJid xmppDomain,
                       String xmppLoginPassword,
                       Resourcepart nickName)
@@ -110,15 +108,12 @@ public class ProtocolProviderHandler
 
         if (!xmppProviderFactory.loadAccount(xmppAccount))
         {
-            throw new RuntimeException(
-                "Failed to load account: " + xmppAccount);
+            throw new RuntimeException("Failed to load account: " + xmppAccount);
         }
 
-        ServiceReference<ProtocolProviderService> protoRef
-            = xmppProviderFactory.getProviderForAccount(xmppAccount);
+        ServiceReference<ProtocolProviderService> protoRef = xmppProviderFactory.getProviderForAccount(xmppAccount);
 
-        protocolService
-            = FocusBundleActivator.bundleContext.getService(protoRef);
+        protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
     }
 
@@ -221,8 +216,8 @@ public class ProtocolProviderHandler
     public XmppConnection getXmppConnection()
     {
         return Objects.requireNonNull(
-                getOperationSet(OperationSetDirectSmackXmpp.class),
-                "OperationSetDirectSmackXmpp").getXmppConnection();
+                getOperationSet(OperationSetDirectSmackXmpp.class), "OperationSetDirectSmackXmpp")
+                    .getXmppConnection();
     }
 
     /**
@@ -231,7 +226,6 @@ public class ProtocolProviderHandler
     @Override
     public String toString()
     {
-        return protocolService != null
-            ? protocolService.toString() : super.toString();
+        return protocolService != null ? protocolService.toString() : super.toString();
     }
 }

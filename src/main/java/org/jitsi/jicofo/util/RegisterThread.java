@@ -31,8 +31,7 @@ public class RegisterThread
     /**
      * The logger.
      */
-    private final static Logger logger
-        = Logger.getLogger(RegisterThread.class);
+    private final static Logger logger = Logger.getLogger(RegisterThread.class);
 
     private final ProtocolProviderService pps;
 
