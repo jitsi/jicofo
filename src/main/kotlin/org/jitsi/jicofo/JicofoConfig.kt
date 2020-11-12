@@ -45,6 +45,11 @@ class JicofoConfig {
         "jicofo.conference-initial-timeout".from(JitsiConfig.newConfig)
     }
 
+    val autoOwner: Boolean by config {
+        "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(JitsiConfig.legacyConfig)
+        "jicofo.auto-owner".from(JitsiConfig.newConfig)
+    }
+
     fun enableSctp() = enableSctp
 
     fun localRegion() = localRegion

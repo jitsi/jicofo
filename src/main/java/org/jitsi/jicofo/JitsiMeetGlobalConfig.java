@@ -45,12 +45,6 @@ public class JitsiMeetGlobalConfig
             = "org.jitsi.jicofo.INJECT_SSRC_FOR_RECVONLY_ENDPOINTS";
 
     /**
-     * The name of configuration property that disable auto owner role granting.
-     */
-    private final static String DISABLE_AUTO_OWNER_PNAME
-        = "org.jitsi.jicofo.DISABLE_AUTO_OWNER";
-
-    /**
      * The name of configuration property that sets {@link #maxSourcesPerUser}.
      */
     private final static String MAX_SSRC_PER_USER_CONFIG_PNAME
@@ -97,14 +91,6 @@ public class JitsiMeetGlobalConfig
      * The default value for {@link #NUM_JIBRI_RETRIES_PNAME}
      */
     private static final int DEFAULT_NUM_JIBRI_RETRIES = 5;
-
-
-    /**
-     * Flag indicates whether auto owner feature is active. First participant to
-     * join the room will become conference owner. When the owner leaves the
-     * room next participant be selected as new owner.
-     */
-    private boolean autoOwner = true;
 
     /**
      * Tells how many seconds we're going to wait for the Jibri to start
@@ -197,16 +183,8 @@ public class JitsiMeetGlobalConfig
      */
     private void init(ConfigurationService configService)
     {
-        if (FocusBundleActivator.getConfigService().getBoolean(DISABLE_AUTO_OWNER_PNAME, false))
-        {
-            autoOwner = false;
-        }
-
-        logger.info("Automatically grant 'owner' role: " + autoOwner);
-
         this.maxSourcesPerUser
-            = configService.getInt(
-                    MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
+            = configService.getInt(MAX_SSRC_PER_USER_CONFIG_PNAME, DEFAULT_MAX_SSRC_PER_USER);
 
         jibriPendingTimeout
             = configService.getInt(
@@ -215,26 +193,21 @@ public class JitsiMeetGlobalConfig
 
         if (jibriPendingTimeout > 0)
         {
-            logger.info(
-                    "Jibri requests in PENDING state will be timed out after: "
-                        + jibriPendingTimeout + " seconds");
+            logger.info("Jibri requests in PENDING state will be timed out after: " + jibriPendingTimeout + " seconds");
         }
         else
         {
             logger.warn("Jibri PENDING timeouts are disabled");
         }
 
-        numJibriRetries = configService.getInt(
-            NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
+        numJibriRetries = configService.getInt(NUM_JIBRI_RETRIES_PNAME, DEFAULT_NUM_JIBRI_RETRIES);
         if (numJibriRetries >= 0)
         {
-            logger.info("Will attempt a maximum of " + numJibriRetries +
-                    " Jibri retries after failure");
+            logger.info("Will attempt a maximum of " + numJibriRetries + " Jibri retries after failure");
         }
         else
         {
-            logger.info("Will retry Jibri requests infinitely "
-                + "(if a Jibri is available)");
+            logger.info("Will retry Jibri requests infinitely " + "(if a Jibri is available)");
         }
 
         singleParticipantTimeout
@@ -247,8 +220,7 @@ public class JitsiMeetGlobalConfig
                     + singleParticipantTimeout +" milliseconds");
 
         injectSsrcForRecvOnlyEndpoints
-                = configService.getBoolean(
-                        INJECT_SSRC_FOR_RECVONLY_ENDPOINTS, false);
+                = configService.getBoolean(INJECT_SSRC_FOR_RECVONLY_ENDPOINTS, false);
     }
 
     /**
@@ -306,18 +278,5 @@ public class JitsiMeetGlobalConfig
     public int getNumJibriRetries()
     {
         return numJibriRetries;
-    }
-
-    /**
-     * Indicates whether auto owner feature is active. First participant to join
-     * the room will become conference owner. When the owner leaves the room
-     * next participant will be selected as the new owner.
-     *
-     * @return <tt>true</tt> if the auto-owner feature is enabled or
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isAutoOwnerEnabled()
-    {
-        return this.autoOwner;
     }
 }
