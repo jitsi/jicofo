@@ -28,6 +28,7 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -65,6 +66,13 @@ public class ProtocolProviderHandler
     private final List<RegistrationStateChangeListener> regListeners = new CopyOnWriteArrayList<>();
 
     /**
+     * The timeout to set on the XMPP connection once registered. This is stored here, because the XmppConnection is
+     * only available after `register` has completed.
+     * TODO: clean up the class hierarchy too avoid this.
+     */
+    private Duration replyTimeout = null;
+
+    /**
      * Start this instance by created XMPP account using the given parameters.
      * @param serverAddress XMPP server address.
      * @param serverPort XMPP server port.
@@ -77,8 +85,11 @@ public class ProtocolProviderHandler
                       String serverPort,
                       DomainBareJid xmppDomain,
                       String xmppLoginPassword,
-                      Resourcepart nickName)
+                      Resourcepart nickName,
+                      Duration replyTimeout)
     {
+        this.replyTimeout = replyTimeout;
+
         xmppProviderFactory
             = ProtocolProviderFactory.getProtocolProviderFactory(
                     FocusBundleActivator.bundleContext,
@@ -137,6 +148,21 @@ public class ProtocolProviderHandler
     public void registrationStateChanged(RegistrationStateChangeEvent evt)
     {
         logger.info(this + ": " + evt);
+
+        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        {
+            OperationSetDirectSmackXmpp operationSetDirectSmackXmpp
+                = protocolService.getOperationSet(OperationSetDirectSmackXmpp.class);
+            if (operationSetDirectSmackXmpp != null && replyTimeout != null)
+            {
+                operationSetDirectSmackXmpp.getXmppConnection().setReplyTimeout(replyTimeout.toMillis());
+                logger.info("Set replyTimeout=" + replyTimeout);
+            }
+            else if (replyTimeout != null)
+            {
+                logger.error("Unable to set Smack replyTimeout, no OperationSet.");
+            }
+        }
 
         for(RegistrationStateChangeListener l : regListeners)
         {

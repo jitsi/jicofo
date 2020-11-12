@@ -32,12 +32,14 @@ import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.eventadmin.*;
+import org.jitsi.protocol.xmpp.XmppConnection;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -106,7 +108,7 @@ public class FocusManager
 
             if (!config.enabled())
             {
-                logger.info("Service XMPP connection noot enabled.");
+                logger.info("Service XMPP connection not enabled.");
                 return null;
             }
 
@@ -117,9 +119,8 @@ public class FocusManager
                     String.valueOf(config.getPort()),
                     config.getDomain(),
                     config.getPassword(),
-                    config.getUsername());
-
-            protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+                    config.getUsername(),
+                    config.getReplyTimeout());
 
             return protocolProviderHandler;
         }
@@ -152,8 +153,7 @@ public class FocusManager
      * solution of synchronizing on {@link #conferencesSyncRoot} in
      * {@code #getConferenceCount()} is safe.
      */
-    private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences
-        = new ConcurrentHashMap<>();
+    private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences = new ConcurrentHashMap<>();
 
     /**
      * The set of the IDs of conferences in {@link #conferences}.
@@ -174,8 +174,7 @@ public class FocusManager
     /**
      * XMPP protocol provider handler used by the focus.
      */
-    private final ProtocolProviderHandler protocolProviderHandler
-        = new ProtocolProviderHandler();
+    private final ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
 
     /**
      * <tt>JitsiMeetServices</tt> instance that recognizes currently available
@@ -249,9 +248,8 @@ public class FocusManager
             String.valueOf(config.getPort()),
             config.getDomain(),
             config.getPassword(),
-            config.getUsername());
-
-        protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+            config.getUsername(),
+            config.getReplyTimeout());
 
         jvbProtocolProvider = loadServiceXmppProvider();
 
