@@ -93,7 +93,7 @@ public class ColibriTest
         OfferOptionsKt.applyConstraints(offerOptions, config);
         offerOptions.setRtx(false);
 
-        List<ContentPacketExtension> contents = FocusBundleActivator.getJingleOfferFactory().createOffer(offerOptions);
+        List<ContentPacketExtension> contents = JingleOfferFactory.INSTANCE.createOffer(offerOptions);
 
         String peer1 = "endpoint1";
         String peer2 = "endpoint2";

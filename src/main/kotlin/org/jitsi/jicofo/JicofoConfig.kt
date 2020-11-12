@@ -17,26 +17,32 @@
  */
 package org.jitsi.jicofo
 
-import org.jitsi.config.JitsiConfig
+import org.jitsi.config.JitsiConfig.Companion.legacyConfig
+import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.metaconfig.config
 
 class JicofoConfig {
     val localRegion: String? by optionalconfig {
-        "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(JitsiConfig.legacyConfig)
-        "$BASE.local-region".from(JitsiConfig.newConfig)
+        "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(legacyConfig)
+        "$BASE.local-region".from(newConfig)
     }
 
     val enableSctp: Boolean by config {
-        "$BASE.sctp.enabled".from(JitsiConfig.newConfig)
+        "$BASE.sctp.enabled".from(newConfig)
     }
 
     /**
      * The ID of the jicofo instance to use for Octo.
      */
     val octoId: Int by config {
-        "org.jitsi.jicofo.SHORT_ID".from(JitsiConfig.legacyConfig)
-        "jicofo.octo.id".from(JitsiConfig.newConfig)
+        "org.jitsi.jicofo.SHORT_ID".from(legacyConfig)
+        "jicofo.octo.id".from(newConfig)
+    }
+
+    val sharedPoolMaxSize: Int by config {
+        "org.jitsi.jicofo.SHARED_POOL_SIZE".from(legacyConfig)
+        "jicofo.task-pools.shared-pool-max-size".from(newConfig)
     }
 
     fun enableSctp() = enableSctp
