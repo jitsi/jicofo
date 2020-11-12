@@ -177,11 +177,13 @@ public class FocusManager
         }
 
         protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
+        protocolProviderHandler.start();
 
         if (XmppConfig.service.getEnabled())
         {
             logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
             jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
+            jvbProtocolProvider.start();
             jvbProtocolProvider.register();
         }
         else
