@@ -31,7 +31,7 @@ class XmppConfig {
         "org.jitsi.jicofo.SERVICE_REDISCOVERY_INTERVAL".from(legacyConfig)
         "jicofo.xmpp.rediscovery-interval".from(newConfig)
     }
-    fun rediscoveryEnabled() = rediscoveryInterval.isZero
+    fun rediscoveryEnabled() = !rediscoveryInterval.isZero
 
     companion object {
         @JvmField
