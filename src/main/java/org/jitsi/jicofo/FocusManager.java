@@ -36,6 +36,8 @@ import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -56,27 +58,6 @@ public class FocusManager
      * The logger used by this instance.
      */
     private final static Logger logger = Logger.getLogger(FocusManager.class);
-
-    /**
-     * Name of configuration property for focus idle timeout.
-     */
-    public static final String IDLE_TIMEOUT_PNAME
-        = "org.jitsi.focus.IDLE_TIMEOUT";
-
-    /**
-     * Name of configuration property which enables logging a thread dump when
-     * an idle focus timeout occurs. The value is a minimal interval in between
-     * the dumps logged (given in milliseconds). The features is disabled when
-     * set to negative value or not defined.
-     */
-    public static final String MIN_IDLE_THREAD_DUMP_INTERVAL_PNAME
-            = "org.jitsi.focus.MIN_IDLE_THREAD_DUMP_INTERVAL";
-
-    /**
-     * Default amount of time for which the focus is being kept alive in idle
-     * mode (no peers in the room).
-     */
-    public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
      * The pseudo-random generator which is to be used when generating IDs.
@@ -389,9 +370,7 @@ public class FocusManager
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
-        JitsiMeetGlobalConfig globalConfig
-            = JitsiMeetGlobalConfig.getGlobalConfig(
-                FocusBundleActivator.bundleContext);
+        JitsiMeetGlobalConfig globalConfig = JitsiMeetGlobalConfig.getGlobalConfig(FocusBundleActivator.bundleContext);
 
         JitsiMeetConferenceImpl conference;
         synchronized (conferencesSyncRoot)
@@ -783,46 +762,22 @@ public class FocusManager
     }
 
     /**
-     * Class takes care of stopping {@link JitsiMeetConference} if there is no
-     * active session for too long.
+     * Takes care of stopping {@link JitsiMeetConference} if no participant ever joins.
+     *
+     * TODO: this would be cleaner if it maintained a list of conferences to check, with conferences firing a
+     * "participant joined" event.
      */
     private class FocusExpireThread
     {
         private static final long POLL_INTERVAL = 5000;
 
-        /**
-         * Remembers when was the last thread dump taken for the focus idle timeout.
-         */
-        private long lastThreadDump;
-
-        /**
-         * A thread dump for the focus idle should not be taken
-         */
-        private final long minThreadDumpInterval;
-
-        private final long timeout;
+        private final Duration timeout = JicofoConfig.config.getConferenceStartTimeout();
 
         private Thread timeoutThread;
 
         private final Object sleepLock = new Object();
 
         private boolean enabled;
-
-        public FocusExpireThread()
-        {
-            timeout = FocusBundleActivator.getConfigService()
-                        .getLong(IDLE_TIMEOUT_PNAME, DEFAULT_IDLE_TIMEOUT);
-            minThreadDumpInterval
-                    = FocusBundleActivator.getConfigService()
-                        .getLong(MIN_IDLE_THREAD_DUMP_INTERVAL_PNAME, -1);
-            if (minThreadDumpInterval >= 0) {
-                logger.info(
-                    "Focus idle thread dumps are enabled"
-                            + " with min interval of "
-                            + minThreadDumpInterval
-                            + " ms");
-            }
-        }
 
         void start()
         {
@@ -832,9 +787,7 @@ public class FocusManager
             }
 
             timeoutThread = new Thread(this::expireLoop, "FocusExpireThread");
-
             enabled = true;
-
             timeoutThread.start();
         }
 
@@ -885,7 +838,9 @@ public class FocusManager
                 }
 
                 if (!enabled)
+                {
                     break;
+                }
 
                 try
                 {
@@ -898,19 +853,16 @@ public class FocusManager
                     // Loop over conferences
                     for (JitsiMeetConferenceImpl conference : conferenceCopy)
                     {
-                        long idleStamp = conference.getIdleTimestamp();
-                        // Is active ?
-                        if (idleStamp == -1)
+                        if (conference.hasHadAtLeastOneParticipant())
                         {
                             continue;
                         }
-                        if (System.currentTimeMillis() - idleStamp > timeout)
+
+                        if (Duration.between(conference.getCreationTime(), Instant.now()).compareTo(timeout) > 0)
                         {
-                            if (conference.getLogger().isInfoEnabled()) {
-                                logger.info(
-                                        "Focus idle timeout for "
-                                                + conference.getRoomName());
-                                this.maybeLogIdleTimeoutThreadDump();
+                            if (conference.getLogger().isInfoEnabled())
+                            {
+                                logger.info("Stopping conference with no participants: " + conference.getRoomName());
                             }
 
                             conference.stop();
@@ -919,23 +871,8 @@ public class FocusManager
                 }
                 catch (Exception ex)
                 {
-                    logger.warn(
-                        "Error while checking for timed out conference", ex);
+                    logger.warn("Error while checking for timed out conference", ex);
                 }
-            }
-        }
-
-        private void maybeLogIdleTimeoutThreadDump() {
-            if (minThreadDumpInterval < 0) {
-                return;
-            }
-
-            if (System.currentTimeMillis() - lastThreadDump
-                    > minThreadDumpInterval) {
-                lastThreadDump = System.currentTimeMillis();
-                logger.info(
-                    "Thread dump for idle timeout: \n"
-                            + ThreadDump.takeThreadDump());
             }
         }
     }
