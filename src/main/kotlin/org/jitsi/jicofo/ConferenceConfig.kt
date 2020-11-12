@@ -17,21 +17,26 @@
  */
 package org.jitsi.jicofo
 
-import org.jitsi.config.JitsiConfig
+import org.jitsi.config.JitsiConfig.Companion.legacyConfig
+import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import java.time.Duration
 
 class ConferenceConfig {
     val conferenceStartTimeout: Duration by config {
-        "org.jitsi.focus.IDLE_TIMEOUT".from(JitsiConfig.legacyConfig)
-        "jicofo.conference.initial-timeout".from(JitsiConfig.newConfig)
+        "org.jitsi.focus.IDLE_TIMEOUT".from(legacyConfig)
+        "jicofo.conference.initial-timeout".from(newConfig)
     }
 
     val autoOwner: Boolean by config {
-        "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(JitsiConfig.legacyConfig)
-        "jicofo.conference.auto-owner".from(JitsiConfig.newConfig)
+        "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(legacyConfig)
+        "jicofo.conference.auto-owner".from(newConfig)
     }
 
+    val injectSsrcForRecvOnlyEndpoints: Boolean by config {
+        "org.jitsi.jicofo.INJECT_SSRC_FOR_RECVONLY_ENDPOINTS".from(legacyConfig)
+        "jicofo.conference.inject-ssrc-for-recv-only-endpoints".from(newConfig)
+    }
 
     companion object {
         @JvmField

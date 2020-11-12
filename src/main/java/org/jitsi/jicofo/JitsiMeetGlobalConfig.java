@@ -36,14 +36,6 @@ public class JitsiMeetGlobalConfig
     private final static Logger logger = Logger.getLogger(JitsiMeetGlobalConfig.class);
 
     /**
-     * The name of the property which controls whether jicofo will inject a
-     * random SSRC for endpoints which don't advertise any SSRCs. This is a
-     * temporary workaround for an issue with signaling endpoints for Octo.
-     */
-    private final static String INJECT_SSRC_FOR_RECVONLY_ENDPOINTS
-            = "org.jitsi.jicofo.INJECT_SSRC_FOR_RECVONLY_ENDPOINTS";
-
-    /**
      * The name of configuration property that sets {@link #maxSourcesPerUser}.
      */
     private final static String MAX_SSRC_PER_USER_CONFIG_PNAME = "org.jitsi.jicofo.MAX_SSRC_PER_USER";
@@ -122,13 +114,6 @@ public class JitsiMeetGlobalConfig
      * OSGi service registration instance.
      */
     private ServiceRegistration<JitsiMeetGlobalConfig> serviceRegistration;
-
-    /**
-     * Whether jicofo should inject a random SSRC for endpoints which don't
-     * advertise any SSRCs. This is a temporary workaround for an issue with
-     * signaling endpoints for Octo.
-     */
-    boolean injectSsrcForRecvOnlyEndpoints = false;
 
     /**
      * Runs <tt>JitsiMeetGlobalConfig</tt> service on given OSGi context.
@@ -212,12 +197,7 @@ public class JitsiMeetGlobalConfig
                     SINGLE_PARTICIPANT_TIMEOUT_CONFIG_PNAME,
                     DEFAULT_SINGLE_PARTICIPANT_TIMEOUT);
 
-        logger.info(
-                "Lonely participants will be \"terminated\" after "
-                    + singleParticipantTimeout +" milliseconds");
-
-        injectSsrcForRecvOnlyEndpoints
-                = configService.getBoolean(INJECT_SSRC_FOR_RECVONLY_ENDPOINTS, false);
+        logger.info("Lonely participants will be \"terminated\" after " + singleParticipantTimeout +" milliseconds");
     }
 
     /**

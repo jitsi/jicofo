@@ -1882,30 +1882,23 @@ public class JitsiMeetConferenceImpl
      * @param contents
      * @return
      */
-    private XMPPError onSessionAcceptInternal(
-        JingleSession jingleSession,
-        List<ContentPacketExtension> contents)
+    private XMPPError onSessionAcceptInternal(JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
-        Participant participant
-            = findParticipantForJingleSession(jingleSession);
+        Participant participant = findParticipantForJingleSession(jingleSession);
         Jid participantJid = jingleSession.getAddress();
 
         if (participant == null)
         {
-            String errorMsg
-                = "No participant found for: " + participantJid;
+            String errorMsg = "No participant found for: " + participantJid;
             logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found,
-                errorMsg).build();
+            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
         JingleSession jingleSessionCopy = participant.getJingleSession();
         if (jingleSessionCopy != null && jingleSession != jingleSessionCopy)
         {
             //FIXME: we should reject it ?
-            logger.error(
-                "Reassigning jingle session for participant: "
-                    + participantJid);
+            logger.error("Reassigning jingle session for participant: " + participantJid);
         }
 
         participant.setJingleSession(jingleSession);
@@ -1914,44 +1907,33 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(contents);
         participant.addTransportFromJingle(contents);
 
-        MediaSourceMap sourcesAdvertised
-            = MediaSourceMap.getSourcesFromContent(contents);
-        MediaSourceGroupMap sourceGroupsAdvertised
-            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-        if (sourcesAdvertised.isEmpty()
-            && globalConfig.injectSsrcForRecvOnlyEndpoints)
+        MediaSourceMap sourcesAdvertised = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceGroupMap sourceGroupsAdvertised = MediaSourceGroupMap.getSourceGroupsForContents(contents);
+        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.getInjectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
             // conference will not be aware of the participant.
-            SourcePacketExtension sourcePacketExtension
-                = new SourcePacketExtension();
+            SourcePacketExtension sourcePacketExtension = new SourcePacketExtension();
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
-            logger.info(participant
-                + " did not advertise any SSRCs. Injecting " + ssrc);
+            logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
             sourcePacketExtension.setSSRC(ssrc);
-            sourcesAdvertised.addSource(
-                MediaType.AUDIO.toString(),
-                sourcePacketExtension);
+            sourcesAdvertised.addSource(MediaType.AUDIO.toString(), sourcePacketExtension);
         }
         MediaSourceMap sourcesAdded;
         MediaSourceGroupMap sourceGroupsAdded;
         try
         {
             Object[] sourcesAndGroupsAdded
-                = tryAddSourcesToParticipant(
-                participant, sourcesAdvertised, sourceGroupsAdvertised);
+                = tryAddSourcesToParticipant(participant, sourcesAdvertised, sourceGroupsAdvertised);
             sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
             sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
         }
         catch (InvalidSSRCsException e)
         {
-            logger.error(
-                "Error processing session accept from: "
-                    + participantJid +": " + e.getMessage());
+            logger.error("Error processing session accept from: " + participantJid +": " + e.getMessage());
 
-            return XMPPError.from(
-                XMPPError.Condition.bad_request, e.getMessage()).build();
+            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
         logger.info("Received session-accept from " +
