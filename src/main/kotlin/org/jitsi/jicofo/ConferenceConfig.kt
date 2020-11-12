@@ -38,6 +38,11 @@ class ConferenceConfig {
         "jicofo.conference.inject-ssrc-for-recv-only-endpoints".from(newConfig)
     }
 
+    val singleParticipantTimeout: Duration by config {
+        "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT".from(legacyConfig)
+        "jicofo.conference.single-participant-timeout".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = ConferenceConfig()
