@@ -36,7 +36,7 @@ public class OSGiHandler
     /**
      * OSGi bundle context instance.
      */
-    public BundleContext bc;
+    public FailureAwareBundleContext bc;
 
     private BundleActivator bundleActivator;
 
@@ -58,11 +58,11 @@ public class OSGiHandler
         this.deadlocked = deadlocked;
         if (deadlocked)
         {
-            ((FailureAwareBundleContext)bc).setFailureMessage("OSGi stack is blocked by a deadlock");
+            bc.setFailureMessage("OSGi stack is blocked by a deadlock");
         }
         else
         {
-            ((FailureAwareBundleContext)bc).setFailureMessage(null);
+            bc.setFailureMessage(null);
         }
     }
 
@@ -75,11 +75,6 @@ public class OSGiHandler
         FocusComponent.suppressConnect = true;
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
-        System.setProperty(XmppComponentConfig.hostnamePropertyName, "test.domain.net");
-        System.setProperty(XmppComponentConfig.portPropertyName, "5347");
-        System.setProperty(XmppComponentConfig.domainPropertyName, "focusdomain");
-        System.setProperty(XmppComponentConfig.subdomainPropertyName, "focus");
-        System.setProperty(XmppComponentConfig.secretPropertyName, "secret");
         System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, "test.domain.net");
         System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "test.domain.net");
         System.setProperty(XmppClientConnectionConfig.legacyUsernamePropertyName, "focus");
