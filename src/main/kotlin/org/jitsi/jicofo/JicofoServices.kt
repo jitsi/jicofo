@@ -18,9 +18,9 @@
 package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.health.Health
+import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
@@ -40,6 +40,8 @@ open class JicofoServices(
 ) {
     protected open var focusComponent: FocusComponent? = null
 
+    private var health: Health? = null
+
     init {
         val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
         val focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
@@ -56,22 +58,26 @@ open class JicofoServices(
         }
         startFocusComponent()
 
-        val healthService = ServiceUtils2.getService(bundleContext, HealthCheckService::class.java)
-        (healthService as? Health)?.let {
-            it.setFocusComponent(focusComponent)
+        if (HealthConfig.config.enabled) {
+            health = Health(HealthConfig.config, focusManager, focusComponent).apply {
+                // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
+                start(bundleContext)
+                focusManager.setHealth(this)
+            }
         }
     }
 
     open fun startFocusComponent() {
-        focusComponent?.start()
+        focusComponent?.connect()
     }
 
     open fun stopFocusComponent() {
-        focusComponent?.stop()
+        focusComponent?.disconnect()
     }
 
 
     fun stop() {
         stopFocusComponent()
+        health?.stop(bundleContext)
     }
 }

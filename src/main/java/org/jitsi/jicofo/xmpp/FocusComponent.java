@@ -117,7 +117,7 @@ public class FocusComponent
         super.loadConfig(config, configPropertiesBase);
     }
 
-    public void start()
+    public void connect()
     {
         if (!isPingTaskStarted())
         {
@@ -130,7 +130,7 @@ public class FocusComponent
     /**
      * Methods will be invoked by OSGi after {@link #dispose()} is called.
      */
-    public void stop()
+    public void disconnect()
     {
         authAuthority = null;
         focusManager = null;
