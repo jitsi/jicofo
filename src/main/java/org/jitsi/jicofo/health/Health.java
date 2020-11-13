@@ -66,6 +66,8 @@ public class Health
      */
     private long totalSlowHealthChecks = 0;
 
+    private FocusComponent focusComponent = null;
+
     public Health()
     {
         super(config.getInterval(), config.getTimeout(), config.getMaxCheckDuration());
@@ -90,11 +92,18 @@ public class Health
         }
     }
 
+    public void setFocusComponent(FocusComponent focusComponent)
+    {
+        this.focusComponent = focusComponent;
+    }
+
+
     @Override
     public void stop(BundleContext bundleContext)
         throws Exception
     {
         focusManager = null;
+        focusComponent = null;
 
         super.stop(bundleContext);
     }
@@ -127,7 +136,7 @@ public class Health
      * of {@code focusManager} or the check determines that {@code focusManager}
      * is not healthy
      */
-    private static void check(FocusManager focusManager)
+    private void check(FocusManager focusManager)
         throws Exception
     {
         // Get the MUC service to perform the check on.
@@ -137,7 +146,6 @@ public class Health
             throw new RuntimeException("No JitsiMeetServices available");
         }
 
-        FocusComponent focusComponent = FocusComponent.getInstance();
         if (focusComponent == null)
         {
             throw new RuntimeException("No Jicofo XMPP component");

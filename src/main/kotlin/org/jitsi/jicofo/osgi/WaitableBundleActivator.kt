@@ -41,6 +41,7 @@ class WaitableBundleActivator : BundleActivator {
     companion object {
         private var started = false
         private val lock = Object()
+        @JvmStatic
         var bundleContext: BundleContext? = null
             private set
 

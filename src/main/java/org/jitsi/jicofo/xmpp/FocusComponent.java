@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.osgi.*;
 import org.jitsi.retry.RetryStrategy;
 import org.jitsi.retry.SimpleRetryTask;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -34,7 +33,6 @@ import org.jivesoftware.smack.packet.*;
 
 import org.jivesoftware.whack.ExternalComponentManager;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 import org.xmpp.component.ComponentException;
 import org.xmpp.packet.IQ;
 
@@ -42,7 +40,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.apache.commons.lang3.StringUtils.*;
-import static org.jitsi.jicofo.xmpp.XmppComponentConfig.config;
 
 /**
  * XMPP component that listens for {@link ConferenceIq}
@@ -52,15 +49,7 @@ import static org.jitsi.jicofo.xmpp.XmppComponentConfig.config;
  */
 public class FocusComponent
     extends ComponentBase
-    implements BundleActivator
 {
-    private static FocusComponent INSTANCE;
-
-    public static FocusComponent getInstance()
-    {
-        return INSTANCE;
-    }
-
     /**
      * The logger.
      */
@@ -94,65 +83,59 @@ public class FocusComponent
      */
     private ReservationSystem reservationSystem;
 
-    private Connector connector = new Connector();
-
-    // This is temporary for tests.
-    public static boolean suppressConnect = false;
+    private final Connector connector = new Connector();
 
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
      */
-    public FocusComponent()
+    public FocusComponent(XmppComponentConfig config, boolean isFocusAnonymous, String focusAuthJid)
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
-        this.isFocusAnonymous = isBlank(XmppConfig.client.getPassword());
-        this.focusAuthJid
-                = XmppConfig.client.getUsername().toString() + "@" + XmppConfig.client.getDomain().toString();
-
-        INSTANCE = this;
+        this.isFocusAnonymous = isFocusAnonymous;
+        this.focusAuthJid = focusAuthJid;
     }
 
-    /**
-     * Method will be called by OSGi after {@link #init()} is called.
-     */
-    @Override
-    public void start(BundleContext bc)
+    public void setFocusManager(FocusManager focusManager)
     {
-        ConfigurationService configService = ServiceUtils2.getService(bc, ConfigurationService.class);
+        this.focusManager = focusManager;
+    }
 
-        loadConfig(configService, "org.jitsi.jicofo");
+    public void setAuthAuthority(AuthenticationAuthority authAuthority)
+    {
+        this.authAuthority = authAuthority;
+    }
 
+    public void setReservationSystem(ReservationSystem reservationSystem)
+    {
+        this.reservationSystem = reservationSystem;
+    }
+
+
+    public void loadConfig(ConfigurationService config, String configPropertiesBase)
+    {
+        super.loadConfig(config, configPropertiesBase);
+    }
+
+    public void start()
+    {
         if (!isPingTaskStarted())
         {
             startPingTask();
         }
 
-        authAuthority = ServiceUtils2.getService(bc, AuthenticationAuthority.class);
-        focusManager = ServiceUtils2.getService(bc, FocusManager.class);
-        reservationSystem = ServiceUtils2.getService(bc, ReservationSystem.class);
-
-        if (suppressConnect)
-        {
-            return;
-        }
         connector.connect();
     }
 
     /**
      * Methods will be invoked by OSGi after {@link #dispose()} is called.
      */
-    @Override
-    public void stop(BundleContext bundleContext)
+    public void stop()
     {
         authAuthority = null;
         focusManager = null;
         reservationSystem = null;
 
-        if (suppressConnect)
-        {
-            return;
-        }
         connector.disconnect();
     }
 

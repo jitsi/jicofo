@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.config.JitsiConfig;
 import org.jitsi.jicofo.osgi.*;
-import org.jitsi.jicofo.xmpp.FocusComponent;
-import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
 
@@ -51,6 +51,8 @@ public class OSGiHandler
         return instance;
     }
 
+    public JicofoTestServices jicofoServices;
+
     public void setDeadlocked(boolean deadlocked)
     {
         this.deadlocked = deadlocked;
@@ -70,7 +72,6 @@ public class OSGiHandler
         if (deadlocked)
             throw new RuntimeException("Running on deadlocked stack");
 
-        FocusComponent.suppressConnect = true;
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
         System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, "test.domain.net");
@@ -125,6 +126,8 @@ public class OSGiHandler
 
         // Activators are executed asynchronously, so a hack to wait for the last activator is used
         WaitableBundleActivator.waitUntilStarted();
+
+        jicofoServices = new JicofoTestServices(bc);
     }
 
     public void shutdown()
@@ -152,3 +155,4 @@ public class OSGiHandler
         return deadlocked;
     }
 }
+

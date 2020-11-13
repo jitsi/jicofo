@@ -87,6 +87,8 @@ public class Main
         }
         logger.warn("OSGi services started.");
 
+        JicofoServices jicofoServices = new JicofoServices(WaitableBundleActivator.getBundleContext());
+
         try
         {
             synchronized (exitSyncRoot)

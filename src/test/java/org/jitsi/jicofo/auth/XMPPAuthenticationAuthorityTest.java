@@ -101,7 +101,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
 
 
-        FocusComponent focusComponent = FocusComponent.getInstance();
+        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent();
         IQ authError = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: not-authorized

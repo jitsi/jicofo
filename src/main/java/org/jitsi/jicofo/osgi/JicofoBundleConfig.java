@@ -107,9 +107,6 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/health/Health"
             },
             {
-                "org/jitsi/jicofo/xmpp/FocusComponent"
-            },
-            {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"
             }
         };
