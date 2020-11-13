@@ -21,9 +21,7 @@ import org.jitsi.config.JitsiConfig;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.FocusComponent;
 import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
-import org.jitsi.jicofo.xmpp.XmppComponentConfig;
 import org.jitsi.meet.*;
-import org.jitsi.utils.ArrayUtils;
 import org.osgi.framework.*;
 
 /**
@@ -105,7 +103,7 @@ public class OSGiHandler
             }
         };
 
-        JicofoBundleConfig jicofoBundles = new TestBundleConfig();
+        JicofoBundleConfig jicofoBundles = new JicofoBundleConfig();
         jicofoBundles.setUseMockProtocols(true);
         OSGi.setBundleConfig(jicofoBundles);
         OSGi.setClassLoader(ClassLoader.getSystemClassLoader());
@@ -126,7 +124,7 @@ public class OSGiHandler
         }
 
         // Activators are executed asynchronously, so a hack to wait for the last activator is used
-        WaitableBundleActivator.waitUntilStarted(5000);
+        WaitableBundleActivator.waitUntilStarted();
     }
 
     public void shutdown()
@@ -152,15 +150,5 @@ public class OSGiHandler
     public boolean isDeadlocked()
     {
         return deadlocked;
-    }
-}
-
-class TestBundleConfig extends JicofoBundleConfig {
-    @Override
-    protected String[][] getBundlesImpl()
-    {
-        return ArrayUtils.concat(
-                super.getBundlesImpl(),
-                new String[][] { {"org/jitsi/jicofo/WaitableBundleActivator" } });
     }
 }

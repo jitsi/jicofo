@@ -108,6 +108,9 @@ public class JicofoBundleConfig
             },
             {
                 "org/jitsi/jicofo/xmpp/FocusComponent"
+            },
+            {
+                "org/jitsi/jicofo/osgi/WaitableBundleActivator"
             }
         };
 
