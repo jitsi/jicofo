@@ -912,6 +912,12 @@ public class JitsiMeetConferenceImpl
 
             participant.setChannelAllocator(channelAllocator);
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+
+            if (reInvite)
+            {
+                propagateNewSourcesToOcto(
+                    participant.getBridgeSession(), participant.getSourcesCopy(), participant.getSourceGroupsCopy());
+            }
         }
     }
 
