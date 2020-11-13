@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.auth;
 
-import mock.*;
 import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
@@ -54,6 +53,7 @@ public class XMPPAuthenticationAuthorityTest
         // Enable XMPP authentication
         System.setProperty(
                 AuthBundleActivator.LOGIN_URL_PNAME, "XMPP:" + authDomain);
+        System.err.println("Init osgi");
         osgi.init();
     }
 
@@ -69,9 +69,7 @@ public class XMPPAuthenticationAuthorityTest
     public void testXmppDomainAuthentication()
         throws Exception
     {
-        FocusComponent focusComponent
-            = MockMainMethodActivator.getFocusComponent();
-
+        System.err.println("Start test");
         XMPPDomainAuthAuthority xmppAuth
             = (XMPPDomainAuthAuthority) ServiceUtils2.getService(
                 FocusBundleActivator.bundleContext,
@@ -103,8 +101,8 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
 
 
-        IQ authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        FocusComponent focusComponent = FocusComponent.getInstance();
+        IQ authError = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: not-authorized
         assertNotNull(authError);

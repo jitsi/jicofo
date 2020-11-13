@@ -19,11 +19,12 @@ package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.osgi.*;
+import org.jitsi.retry.RetryStrategy;
+import org.jitsi.retry.SimpleRetryTask;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.reservation.*;
-import org.jitsi.meet.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.component.*;
@@ -31,11 +32,17 @@ import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import org.jivesoftware.whack.ExternalComponentManager;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
+import org.xmpp.component.ComponentException;
 import org.xmpp.packet.IQ;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 import static org.apache.commons.lang3.StringUtils.*;
+import static org.jitsi.jicofo.xmpp.XmppComponentConfig.config;
 
 /**
  * XMPP component that listens for {@link ConferenceIq}
@@ -47,6 +54,13 @@ public class FocusComponent
     extends ComponentBase
     implements BundleActivator
 {
+    private static FocusComponent INSTANCE;
+
+    public static FocusComponent getInstance()
+    {
+        return INSTANCE;
+    }
+
     /**
      * The logger.
      */
@@ -80,27 +94,23 @@ public class FocusComponent
      */
     private ReservationSystem reservationSystem;
 
+    private Connector connector = new Connector();
+
+    // This is temporary for tests.
+    public static boolean suppressConnect = false;
+
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
-     * @param config Contains the configuration for the XMPP component connection.
-     * @param anonymousFocus indicates if the focus user is anonymous.
-     * @param focusAuthJid the JID of authenticated focus user which will be
-     *                     advertised to conference participants.
      */
-    public FocusComponent(XmppComponentConfig config, boolean anonymousFocus, String focusAuthJid)
+    public FocusComponent()
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
-        this.isFocusAnonymous = anonymousFocus;
-        this.focusAuthJid = focusAuthJid;
-    }
+        this.isFocusAnonymous = isBlank(XmppConfig.client.getPassword());
+        this.focusAuthJid
+                = XmppConfig.client.getUsername().toString() + "@" + XmppConfig.client.getDomain().toString();
 
-    /**
-     * Initializes this component.
-     */
-    public void init()
-    {
-        OSGi.start(this);
+        INSTANCE = this;
     }
 
     /**
@@ -108,27 +118,25 @@ public class FocusComponent
      */
     @Override
     public void start(BundleContext bc)
-        throws Exception
     {
-        ConfigurationService configService
-            = ServiceUtils2.getService(bc, ConfigurationService.class);
+        ConfigurationService configService = ServiceUtils2.getService(bc, ConfigurationService.class);
 
         loadConfig(configService, "org.jitsi.jicofo");
 
         if (!isPingTaskStarted())
+        {
             startPingTask();
+        }
 
         authAuthority = ServiceUtils2.getService(bc, AuthenticationAuthority.class);
         focusManager = ServiceUtils2.getService(bc, FocusManager.class);
         reservationSystem = ServiceUtils2.getService(bc, ReservationSystem.class);
-    }
 
-    /**
-     * Releases resources used by this instance.
-     */
-    public void dispose()
-    {
-        OSGi.stop(this);
+        if (suppressConnect)
+        {
+            return;
+        }
+        connector.connect();
     }
 
     /**
@@ -136,11 +144,16 @@ public class FocusComponent
      */
     @Override
     public void stop(BundleContext bundleContext)
-        throws Exception
     {
         authAuthority = null;
         focusManager = null;
         reservationSystem = null;
+
+        if (suppressConnect)
+        {
+            return;
+        }
+        connector.disconnect();
     }
 
     @Override
@@ -403,5 +416,86 @@ public class FocusComponent
         logger.info("Sending url: " + result.toXML());
 
         return result;
+    }
+
+    /**
+     * The code responsible for connecting FocusComponent to the XMPP server.
+     */
+    private class Connector {
+        private ExternalComponentManager componentManager;
+        private ScheduledExecutorService executorService;
+        private RetryStrategy connectRetry;
+        private final Object connectSynRoot = new Object();
+
+        void connect()
+        {
+            componentManager = new ExternalComponentManager(getHostname(), getPort(), false);
+            componentManager.setSecretKey(getSubdomain(), getSecret());
+            componentManager.setServerName(getDomain());
+
+            executorService = Executors.newScheduledThreadPool(1);
+
+            init();
+
+            connectRetry = new RetryStrategy(executorService);
+            connectRetry.runRetryingTask(new SimpleRetryTask(0, 5000, true, () -> {
+                try
+                {
+                    synchronized (connectSynRoot)
+                    {
+                        if (componentManager == null)
+                        {
+                            // Task cancelled ?
+                            return false;
+                        }
+
+                        componentManager.addComponent(getSubdomain(), FocusComponent.this);
+
+                        return false;
+                    }
+                }
+                catch (ComponentException e)
+                {
+                    logger.error(e.getMessage() + ", host:" + getHostname() + ", port:" + getPort(), e);
+                    return true;
+                }
+            }));
+        }
+
+        void disconnect()
+        {
+            synchronized (connectSynRoot)
+            {
+                if (componentManager == null)
+                {
+                    return;
+                }
+
+                if (connectRetry != null)
+                {
+                    connectRetry.cancel();
+                    connectRetry = null;
+                }
+
+                if (executorService != null)
+                {
+                    executorService.shutdown();
+                }
+
+                shutdown();
+                try
+                {
+                    componentManager.removeComponent(getSubdomain());
+                }
+                catch (ComponentException e)
+                {
+                    logger.error(e, e);
+                }
+
+                dispose();
+
+                componentManager = null;
+            }
+        }
     }
 }
