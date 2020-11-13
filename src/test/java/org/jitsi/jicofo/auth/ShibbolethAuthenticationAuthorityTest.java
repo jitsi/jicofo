@@ -66,7 +66,7 @@ public class ShibbolethAuthenticationAuthorityTest
     public void testShibbolethAuthenticationModule()
         throws Exception
     {
-        FocusComponent focusComponent = FocusComponent.getInstance();
+        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent();
 
         ShibbolethAuthAuthority shibbolethAuth
             = (ShibbolethAuthAuthority) ServiceUtils2.getService(
