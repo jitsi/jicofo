@@ -19,7 +19,6 @@ import org.jitsi.health.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.osgi.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -41,8 +40,6 @@ import static org.jitsi.jicofo.health.HealthConfig.config;
 public class Health
     extends AbstractHealthCheckService
 {
-    private FocusManager focusManager;
-
     /**
      * The {@code Logger} utilized by the {@code Health} class to print
      * debug-related information.
@@ -66,37 +63,16 @@ public class Health
      */
     private long totalSlowHealthChecks = 0;
 
-    private FocusComponent focusComponent = null;
+    private FocusManager focusManager;
+    private FocusComponent focusComponent;
 
-    public Health()
+    public Health(HealthConfig config, FocusManager focusManager, FocusComponent focusComponent)
     {
         super(config.getInterval(), config.getTimeout(), config.getMaxCheckDuration());
-    }
 
-    @Override
-    public void start(BundleContext bundleContext)
-        throws Exception
-    {
-        if (config.getEnabled())
-        {
-            focusManager
-                = Objects.requireNonNull(
-                    ServiceUtils2.getService(bundleContext, FocusManager.class),
-                    "Can not find FocusManager.");
-
-            super.start(bundleContext);
-        }
-        else
-        {
-            logger.info("Health checks are disabled.");
-        }
-    }
-
-    public void setFocusComponent(FocusComponent focusComponent)
-    {
+        this.focusManager = focusManager;
         this.focusComponent = focusComponent;
     }
-
 
     @Override
     public void stop(BundleContext bundleContext)
@@ -115,6 +91,15 @@ public class Health
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
         long start = System.currentTimeMillis();
+
+        if (focusComponent == null)
+        {
+            throw new RuntimeException("No Jicofo XMPP component");
+        }
+        if (!focusComponent.isConnectionAlive())
+        {
+            throw new RuntimeException("Jicofo XMPP component not connected");
+        }
 
         check(focusManager);
 
@@ -136,7 +121,7 @@ public class Health
      * of {@code focusManager} or the check determines that {@code focusManager}
      * is not healthy
      */
-    private void check(FocusManager focusManager)
+    private static void check(FocusManager focusManager)
         throws Exception
     {
         // Get the MUC service to perform the check on.
@@ -144,15 +129,6 @@ public class Health
         if (services == null)
         {
             throw new RuntimeException("No JitsiMeetServices available");
-        }
-
-        if (focusComponent == null)
-        {
-            throw new RuntimeException("No Jicofo XMPP component");
-        }
-        if (!focusComponent.isConnectionAlive())
-        {
-            throw new RuntimeException("Jicofo XMPP component not connected");
         }
 
         BridgeSelector bridgeSelector = services.getBridgeSelector();

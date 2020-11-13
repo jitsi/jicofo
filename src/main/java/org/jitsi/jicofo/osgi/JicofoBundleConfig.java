@@ -104,9 +104,6 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/VersionBroadcaster"
             },
             {
-                "org/jitsi/jicofo/health/Health"
-            },
-            {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"
             }
         };
