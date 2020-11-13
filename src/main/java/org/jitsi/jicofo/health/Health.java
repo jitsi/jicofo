@@ -90,7 +90,6 @@ public class Health
         }
     }
 
-
     @Override
     public void stop(BundleContext bundleContext)
         throws Exception
@@ -138,7 +137,7 @@ public class Health
             throw new RuntimeException("No JitsiMeetServices available");
         }
 
-        FocusComponent focusComponent = Main.getFocusXmppComponent();
+        FocusComponent focusComponent = FocusComponent.getInstance();
         if (focusComponent == null)
         {
             throw new RuntimeException("No Jicofo XMPP component");

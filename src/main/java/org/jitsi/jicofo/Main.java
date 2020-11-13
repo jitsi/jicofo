@@ -39,19 +39,6 @@ public class Main
     private static final Logger logger = Logger.getLogger(Main.class);
 
     /**
-     * Stores {@link FocusComponent} instance for the health check purpose.
-     */
-    private static FocusComponent focusXmppComponent;
-
-    /**
-     * @return the Jicofo XMPP component.
-     */
-    public static FocusComponent getFocusXmppComponent()
-    {
-        return focusXmppComponent;
-    }
-
-    /**
      * Program entry point.
      * @param args command-line arguments.
      */
@@ -65,19 +52,10 @@ public class Main
         setSystemProperties(args);
         JitsiConfig.Companion.reloadNewConfig();
 
-        ComponentMain componentMain = new ComponentMain();
-
-        // Whether the XMPP user connection is authenticated or anonymous
-        boolean isAnonymous = isBlank(XmppConfig.client.getPassword());
-        // The JID of the XMPP user connection
-        String jicofoClientJid
-            = XmppConfig.client.getUsername().toString() + "@" + XmppConfig.client.getDomain().toString();
-
-        focusXmppComponent = new FocusComponent(new XmppComponentConfig(), isAnonymous, jicofoClientJid);
-
         JicofoBundleConfig osgiBundles = new JicofoBundleConfig();
 
-        componentMain.runMainProgramLoop(focusXmppComponent, osgiBundles);
+        ComponentMain componentMain = new ComponentMain();
+        componentMain.runMainProgramLoop(osgiBundles);
     }
 
     /**

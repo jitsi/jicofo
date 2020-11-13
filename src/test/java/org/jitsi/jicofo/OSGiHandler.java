@@ -17,18 +17,17 @@
  */
 package org.jitsi.jicofo;
 
-import mock.*;
 import org.jitsi.config.JitsiConfig;
 import org.jitsi.jicofo.osgi.*;
+import org.jitsi.jicofo.xmpp.FocusComponent;
 import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppComponentConfig;
 import org.jitsi.meet.*;
+import org.jitsi.utils.ArrayUtils;
 import org.osgi.framework.*;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.
- *
- * FIXME there is similar class in JVB
  *
  * @author Pawel Domas
  */
@@ -42,8 +41,6 @@ public class OSGiHandler
     private BundleActivator bundleActivator;
 
     private final Object syncRoot = new Object();
-
-    private MockMainMethodActivator mockMain;
 
     private static OSGiHandler instance = new OSGiHandler();
 
@@ -59,10 +56,9 @@ public class OSGiHandler
     public void setDeadlocked(boolean deadlocked)
     {
         this.deadlocked = deadlocked;
-        if (deadlocked)        {
-
-            ((FailureAwareBundleContext)bc)
-                .setFailureMessage("OSGi stack is blocked by a deadlock");
+        if (deadlocked)
+        {
+            ((FailureAwareBundleContext)bc).setFailureMessage("OSGi stack is blocked by a deadlock");
         }
         else
         {
@@ -76,6 +72,7 @@ public class OSGiHandler
         if (deadlocked)
             throw new RuntimeException("Running on deadlocked stack");
 
+        FocusComponent.suppressConnect = true;
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
         System.setProperty(XmppComponentConfig.hostnamePropertyName, "test.domain.net");
@@ -84,7 +81,8 @@ public class OSGiHandler
         System.setProperty(XmppComponentConfig.subdomainPropertyName, "focus");
         System.setProperty(XmppComponentConfig.secretPropertyName, "secret");
         System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, "test.domain.net");
-        System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "focusdomain");
+        System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "test.domain.net");
+        System.setProperty(XmppClientConnectionConfig.legacyUsernamePropertyName, "focus");
         JitsiConfig.Companion.reloadNewConfig();
 
         this.bundleActivator = new BundleActivator()
@@ -112,16 +110,12 @@ public class OSGiHandler
             }
         };
 
-        JicofoBundleConfig jicofoBundles = new JicofoBundleConfig();
+        JicofoBundleConfig jicofoBundles = new TestBundleConfig();
         jicofoBundles.setUseMockProtocols(true);
         OSGi.setBundleConfig(jicofoBundles);
         OSGi.setClassLoader(ClassLoader.getSystemClassLoader());
 
         OSGi.start(bundleActivator);
-
-        mockMain = new MockMainMethodActivator();
-
-        OSGi.start(mockMain);
 
         if (bc == null)
         {
@@ -132,11 +126,12 @@ public class OSGiHandler
         }
 
         if (bc == null)
+        {
             throw new RuntimeException("Failed to start OSGI");
+        }
 
-        // Activators are executed asynchronously,
-        // so a hack to wait for the last activator is used
-        MockMainMethodActivator.waitUntilStarted(5000);
+        // Activators are executed asynchronously, so a hack to wait for the last activator is used
+        WaitableBundleActivator.waitUntilStarted(5000);
     }
 
     public void shutdown()
@@ -147,11 +142,6 @@ public class OSGiHandler
 
         if (bc != null)
         {
-            if (mockMain != null)
-            {
-                OSGi.stop(mockMain);
-            }
-
             OSGi.stop(bundleActivator);
         }
 
@@ -167,5 +157,15 @@ public class OSGiHandler
     public boolean isDeadlocked()
     {
         return deadlocked;
+    }
+}
+
+class TestBundleConfig extends JicofoBundleConfig {
+    @Override
+    protected String[][] getBundlesImpl()
+    {
+        return ArrayUtils.concat(
+                super.getBundlesImpl(),
+                new String[][] { {"org/jitsi/jicofo/WaitableBundleActivator" } });
     }
 }

@@ -225,5 +225,8 @@ class XmppComponentConfig {
         const val subdomainPropertyName = "org.jitsi.jicofo.component.SUBDOMAIN"
         const val portPropertyName = "org.jitsi.jicofo.component.PORT"
         const val secretPropertyName = "org.jitsi.jicofo.component.SECRET"
+
+        @JvmField
+        val config = XmppComponentConfig()
     }
 }
