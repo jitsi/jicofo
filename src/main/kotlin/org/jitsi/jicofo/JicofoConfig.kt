@@ -40,9 +40,9 @@ class JicofoConfig {
         "jicofo.octo.id".from(newConfig)
     }
 
-    val sharedPoolMaxSize: Int by config {
+    val sharedPoolMaxThreads: Int by config {
         "org.jitsi.jicofo.SHARED_POOL_SIZE".from(legacyConfig)
-        "jicofo.task-pools.shared-pool-max-size".from(newConfig)
+        "jicofo.task-pools.shared-pool-max-threads".from(newConfig)
     }
 
     fun enableSctp() = enableSctp

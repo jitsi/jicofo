@@ -94,10 +94,10 @@ public class FocusBundleActivator
 
         eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 
-        logger.info("Shared pool max size: " + config.getSharedPoolMaxSize());
+        logger.info("Shared pool max size: " + config.getSharedPoolMaxThreads());
         sharedPool
             = new ThreadPoolExecutor(
-                0, config.getSharedPoolMaxSize(),
+                0, config.getSharedPoolMaxThreads(),
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
                 new CustomizableThreadFactory("Jicofo Cached", true));
