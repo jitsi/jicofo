@@ -401,6 +401,7 @@ public class JibriSession
         stopRequest.setType(IQ.Type.set);
         stopRequest.setTo(currentJibriJid);
         stopRequest.setAction(JibriIq.Action.STOP);
+        stopRequest.setSessionId(this.sessionId);
 
         logger.info("Trying to stop: " + stopRequest.toXML());
 
