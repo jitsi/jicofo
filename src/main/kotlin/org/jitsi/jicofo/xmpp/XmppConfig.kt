@@ -39,13 +39,11 @@ class XmppConfig {
 
 class ServiceConnectionConfig {
     private val enabled: Boolean by config {
+        // If the legacy host is set to anything, the connection is enabled.
+        "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig).convertFrom<String> { true }
         "jicofo.xmpp.service.enabled".from(newConfig)
     }
-    fun enabled() = legacyHostname != null || enabled
-
-    private val legacyHostname: String? by optionalconfig {
-        "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig)
-    }
+    fun enabled() = enabled
 
     val hostname: String by config {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig)
@@ -86,18 +84,14 @@ class ServiceConnectionConfig {
 }
 
 class ClientConnectionConfig {
-
-    private val legacyHostname: String? by optionalconfig {
+    private val enabled: Boolean by config {
+        // If the legacy host is set to anything, the connection is enabled.
         // The legacy name may be set as a system property in which case it the property is available via newConfig
         legacyHostnamePropertyName.from(newConfig)
         legacyHostnamePropertyName.from(legacyConfig)
-    }
-
-    private val enabled: Boolean by config {
         "jicofo.xmpp.client.enabled".from(newConfig)
     }
-
-    fun enabled() = legacyHostname != null || enabled
+    fun enabled() = enabled
 
     val hostname: String by config {
         // The legacy name may be set as a system property in which case it the property is available via newConfig
