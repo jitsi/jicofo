@@ -209,7 +209,8 @@ public class JitsiMeetServices
 
         if (JibriConfig.config.breweryEnabled())
         {
-            JibriDetector jibriDetector = new JibriDetector(protocolProvider, JibriConfig.config.getBreweryJid(), false);
+            JibriDetector jibriDetector
+                    = new JibriDetector(protocolProvider, JibriConfig.config.getBreweryJid(), false);
             logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.getBreweryJid());
 
             jibriDetector.init();
