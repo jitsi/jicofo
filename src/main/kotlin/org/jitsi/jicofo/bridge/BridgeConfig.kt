@@ -108,7 +108,7 @@ class BridgeConfig {
         "org.jitsi.jicofo.BRIDGE_MUC".from(JitsiConfig.legacyConfig).convertFrom<String> {
             JidCreate.bareFrom(it)
         }
-        "$BASE.brewery".from(JitsiConfig.newConfig).convertFrom<String> {
+        "$BASE.brewery-jid".from(JitsiConfig.newConfig).convertFrom<String> {
             JidCreate.bareFrom(it)
         }
     }
