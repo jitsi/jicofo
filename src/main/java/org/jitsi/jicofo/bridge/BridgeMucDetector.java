@@ -58,11 +58,11 @@ public class BridgeMucDetector
         BridgeSelector bridgeSelector)
     {
         super(protocolProvider,
-              config.getBrewery(),
+              String.valueOf(config.getBreweryJid()),
               ColibriStatsExtension.ELEMENT_NAME,
               ColibriStatsExtension.NAMESPACE);
 
-        logger.info("Created BridgeMucDetector with address " + config.getBrewery());
+        logger.info("Created BridgeMucDetector with address " + config.getBreweryJid());
         this.bridgeSelector = bridgeSelector;
     }
 
