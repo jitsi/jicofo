@@ -54,30 +54,19 @@ public class RolesTest
         osgi.shutdown();
     }
 
-    /**
-     * Allocates Colibri channels in bundle
-     */
     @Test
     public void testPassModeratorRole()
         throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testroom@conference.pawel.jitsi.net");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
-
-        TestConference testConference
-            = TestConference.allocate(osgi.bc, serverName, roomName);
-
-        MockProtocolProvider pps
-            = testConference.getFocusProtocolProvider();
-
+        TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
+        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
         MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-
-        MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
-        MockParticipant users[] = new MockParticipant[4];
+        MockParticipant[] users = new MockParticipant[4];
         for (int i=0; i < users.length; i++)
         {
             users[i] = new MockParticipant("User" + i);
@@ -94,10 +83,8 @@ public class RolesTest
         {
             // FIXME: wait for role change otherwise we might randomly fail here
             assertTrue(
-                i + " user should have moderator role("
-                    + users[i].getNickname() + ")",
-                ChatRoomMemberRole.MODERATOR.compareTo(
-                    users[i].getChatMember().getRole()) >= 0);
+                i + " user should have moderator role(" + users[i].getNickname() + ")",
+                ChatRoomMemberRole.MODERATOR.compareTo(users[i].getChatMember().getRole()) >= 0);
 
             users[i].leave();
         }

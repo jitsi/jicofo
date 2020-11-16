@@ -48,8 +48,7 @@ public class ChatRoomRoleAndPresence
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    private static final Logger classLogger
-        = Logger.getLogger(ChatRoomRoleAndPresence.class);
+    private static final Logger classLogger = Logger.getLogger(ChatRoomRoleAndPresence.class);
 
     /**
      * The {@link JitsiMeetConferenceImpl} for which this instance is handling
@@ -77,7 +76,7 @@ public class ChatRoomRoleAndPresence
      * join the room will become conference owner. When the owner leaves the
      * room next participant will be selected as new owner.
      */
-    private boolean autoOwner;
+    private final boolean autoOwner = ConferenceConfig.config.getEnableAutoOwner();
 
     /**
      * The logger for this instance. Uses the logging level either of the
@@ -105,8 +104,6 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
-        autoOwner = conference.getGlobalConfig().isAutoOwnerEnabled();
-
         authAuthority = ServiceUtils2.getService(
                 FocusBundleActivator.bundleContext,
                 AuthenticationAuthority.class);
@@ -174,8 +171,7 @@ public class ChatRoomRoleAndPresence
                 owner = null;
                 electNewOwner();
             }
-            if (ChatRoomMemberPresenceChangeEvent
-                        .MEMBER_KICKED.equals(eventType))
+            if (ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType))
             {
                 conference.onMemberKicked(sourceMember);
             }
@@ -209,12 +205,16 @@ public class ChatRoomRoleAndPresence
             logger.info("Obtained focus role: " + userRole);
 
             if (userRole == null)
+            {
                 return;
+            }
 
             focusRole = userRole;
 
             if (!verifyFocusRole())
+            {
                 return;
+            }
         }
 
         if (authAuthority != null)
@@ -237,8 +237,7 @@ public class ChatRoomRoleAndPresence
             {
                 // Select existing owner
                 owner = member;
-                logger.info(
-                    "Owner already in the room: " + member.getName());
+                logger.info("Owner already in the room: " + member.getName());
                 break;
             }
             else
@@ -246,8 +245,7 @@ public class ChatRoomRoleAndPresence
                 // Elect new owner
                 if (grantOwner(((XmppChatMember)member).getJid()))
                 {
-                    logger.info(
-                        "Granted owner to " + member.getContactAddress());
+                    logger.info("Granted owner to " + member.getContactAddress());
 
                     owner = member;
                 }
@@ -334,8 +332,7 @@ public class ChatRoomRoleAndPresence
         }
         catch(RuntimeException e)
         {
-            logger.error(
-                "Failed to grant owner status to " + jid , e);
+            logger.error("Failed to grant owner status to " + jid , e);
         }
         return false;
     }

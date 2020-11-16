@@ -20,7 +20,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.osgi.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -28,9 +27,10 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
-import java.time.*;
 import java.util.*;
 import java.util.logging.*;
+
+import static org.jitsi.jicofo.health.HealthConfig.config;
 
 /**
  * Checks the health of {@link FocusManager}.
@@ -53,8 +53,7 @@ public class Health
      * The {@code JitsiMeetConfig} properties to be utilized for the purposes of
      * checking the health (status) of Jicofo.
      */
-    private static final Map<String,String> JITSI_MEET_CONFIG
-        = Collections.emptyMap();
+    private static final Map<String,String> JITSI_MEET_CONFIG = Collections.emptyMap();
 
     /**
      * The pseudo-random generator used to generate random input for
@@ -63,41 +62,20 @@ public class Health
     private static final Random RANDOM = new Random();
 
     /**
-     * A prefix to the MUC names created for the purpose of health checks.
-     * Note that external code (e.g. prosody modules) might use this string to
-     * recognize these rooms.
-     */
-    private static final String ROOM_NAME_PREFIX = "__jicofo-health-check";
-
-    /**
-     * The name of the property to enable health checks. When enabled, health
-     * checks will be performed periodically (every 10 seconds) and the result
-     * available on the {@code /about/health} HTTP endpoint.
-     */
-    private static final String ENABLE_HEALTH_CHECKS_PNAME
-            = "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS";
-
-    /**
      * Counts how many health checks took too long.
      */
     private long totalSlowHealthChecks = 0;
 
     public Health()
     {
-        super(Duration.ofSeconds(10),
-              Duration.ofSeconds(30),
-              Duration.ofSeconds(20));
+        super(config.getInterval(), config.getTimeout(), config.getMaxCheckDuration());
     }
 
     @Override
     public void start(BundleContext bundleContext)
         throws Exception
     {
-        ConfigurationService cfg
-                = ServiceUtils2.getService(
-                        bundleContext, ConfigurationService.class);
-
-        if (cfg != null && cfg.getBoolean(ENABLE_HEALTH_CHECKS_PNAME, false))
+        if (config.getEnabled())
         {
             focusManager
                 = Objects.requireNonNull(
@@ -134,7 +112,7 @@ public class Health
 
         long duration = System.currentTimeMillis() - start;
 
-        if (duration > 3000)
+        if (duration > config.getMaxCheckDuration().toMillis())
         {
             logger.error("Health check took too long: " + duration + "ms");
             totalSlowHealthChecks++;
@@ -218,10 +196,9 @@ public class Health
         try
         {
             return
-                Localpart.from(ROOM_NAME_PREFIX
+                Localpart.from(config.getRoomNamePrefix()
                     + "-"
-                    + Long.toHexString(
-                        System.currentTimeMillis() + RANDOM.nextLong()));
+                    + Long.toHexString(System.currentTimeMillis() + RANDOM.nextLong()));
         }
         catch (XmppStringprepException e)
         {

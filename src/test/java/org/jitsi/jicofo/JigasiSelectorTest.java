@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import mock.xmpp.*;
 import org.jitsi.jicofo.jigasi.*;
+import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
@@ -40,7 +41,7 @@ public class JigasiSelectorTest
         throws Exception
     {
         brewery = new MockBrewery<>(
-            new ProtocolProviderHandler(),
+            new ProtocolProviderHandler(null),
             "roomName@muc-servicename.jabserver.com"
         );
     }

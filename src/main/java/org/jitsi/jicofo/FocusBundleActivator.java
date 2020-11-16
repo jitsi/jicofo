@@ -18,8 +18,6 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.codec.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.osgi.*;
 
 import org.jitsi.utils.concurrent.*;
@@ -27,6 +25,8 @@ import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
 
 import java.util.concurrent.*;
+
+import static org.jitsi.jicofo.JicofoConfig.config;
 
 /**
  * Activator of the Jitsi Meet Focus bundle.
@@ -37,18 +37,6 @@ public class FocusBundleActivator
     implements BundleActivator
 {
     /**
-     * The default size for the shared thread pool used by Jicofo.
-     */
-    private static final int DEFAULT_SHARED_POOL_SIZE = 1500;
-
-    /**
-     * The name of the config property that can be used to change the Jicofo
-     * thread pool size.
-     */
-    private static final String SHARED_POOL_SIZE_CFG_PROP
-        = "org.jitsi.jicofo.SHARED_POOL_SIZE";
-
-    /**
      * The number of threads available in the scheduled executor pool shared
      * through OSGi.
      */
@@ -58,16 +46,6 @@ public class FocusBundleActivator
      * OSGi bundle context held by this activator.
      */
     public static BundleContext bundleContext;
-
-    /**
-     * {@link ConfigurationService} instance cached by the activator.
-     */
-    private static OSGIServiceRef<ConfigurationService> configServiceRef;
-
-    /**
-     * The Jingle offer factory to use in this bundle.
-     */
-    private static JingleOfferFactory jingleOfferFactory;
 
     /**
      * The logger.
@@ -102,11 +80,6 @@ public class FocusBundleActivator
      */
     private FocusManager focusManager;
 
-    /**
-     * Global configuration of Jitsi COnference FOcus
-     */
-    private JitsiMeetGlobalConfig globalConfig;
-
     @Override
     public void start(BundleContext context)
         throws Exception
@@ -121,28 +94,15 @@ public class FocusBundleActivator
 
         eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 
-        configServiceRef
-            = new OSGIServiceRef<>(context, ConfigurationService.class);
-
-        int maxSharedPoolSize
-            = configServiceRef.get()
-                .getInt(SHARED_POOL_SIZE_CFG_PROP, DEFAULT_SHARED_POOL_SIZE);
-
-        logger.info("Max shared pool size: " + maxSharedPoolSize);
-
+        logger.info("Shared pool max size: " + config.getSharedPoolMaxThreads());
         sharedPool
             = new ThreadPoolExecutor(
-                0, maxSharedPoolSize,
+                0, config.getSharedPoolMaxThreads(),
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
                 new CustomizableThreadFactory("Jicofo Cached", true));
 
-        jingleOfferFactory = new JingleOfferFactory();
-
-        this.scheduledPoolRegistration = context.registerService(
-                ScheduledExecutorService.class, scheduledPool, null);
-
-        globalConfig = JitsiMeetGlobalConfig.startGlobalConfigService(context);
+        this.scheduledPoolRegistration = context.registerService(ScheduledExecutorService.class, scheduledPool, null);
 
         focusManager = new FocusManager();
         focusManager.start();
@@ -176,32 +136,7 @@ public class FocusBundleActivator
             sharedPool = null;
         }
 
-        configServiceRef = null;
         eventAdminRef = null;
-
-        if (globalConfig != null)
-        {
-            globalConfig.stopGlobalConfigService();
-            globalConfig = null;
-        }
-    }
-
-    /**
-     * Returns the instance of <tt>ConfigurationService</tt>.
-     */
-    public static ConfigurationService getConfigService()
-    {
-        return configServiceRef.get();
-    }
-
-    /**
-     * Gets the Jingle offer factory to use in this bundle.
-     *
-     * @return the Jingle offer factory to use in this bundle
-     */
-    public static JingleOfferFactory getJingleOfferFactory()
-    {
-        return jingleOfferFactory;
     }
 
     /**

@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
@@ -59,19 +60,15 @@ public class JibriSipGateway
     /**
      * Creates new instance of {@link JibriSipGateway}.
      * @param bundleContext OSGi context.
-     * @param conference parent conference for which the new instance will be
-     * managing Jibri SIP sessions.
-     * @param xmppConnection the connection which will be used to send XMPP
-     * queries.
+     * @param conference parent conference for which the new instance will be managing Jibri SIP sessions.
+     * @param xmppConnection the connection which will be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
-     * @param globalConfig the global config that provides some values required
-     * by {@link JibriSession} to work.
      */
-    public JibriSipGateway( BundleContext                   bundleContext,
-                            JitsiMeetConferenceImpl         conference,
-                            XmppConnection                  xmppConnection,
-                            ScheduledExecutorService        scheduledExecutor,
-                            JitsiMeetGlobalConfig           globalConfig)
+    public JibriSipGateway(
+           BundleContext bundleContext,
+           JitsiMeetConferenceImpl conference,
+           XmppConnection xmppConnection,
+           ScheduledExecutorService scheduledExecutor)
     {
         super(
             bundleContext,
@@ -79,7 +76,6 @@ public class JibriSipGateway
             conference,
             xmppConnection,
             scheduledExecutor,
-            globalConfig,
             Logger.getLogger(classLogger, conference.getLogger()));
 
     }
@@ -154,8 +150,8 @@ public class JibriSipGateway
                         this,
                         conference.getRoomName(),
                         iq.getFrom(),
-                        globalConfig.getJibriPendingTimeout(),
-                        globalConfig.getNumJibriRetries(),
+                        JibriConfig.config.getPendingTimeout().getSeconds(),
+                        JibriConfig.config.getNumRetries(),
                         connection,
                         scheduledExecutor,
                         jibriDetector,

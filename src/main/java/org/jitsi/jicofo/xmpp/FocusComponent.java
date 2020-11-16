@@ -245,14 +245,11 @@ public class FocusComponent
     }
 
     /**
-     * Additional logic added for conference IQ processing like
-     * authentication and room reservation.
+     * Additional logic added for conference IQ processing like authentication and room reservation.
      *
      * @param query <tt>ConferenceIq</tt> query
-     * @param response <tt>ConferenceIq</tt> response which can be modified
-     *                 during this processing.
-     * @param roomExists <tt>true</tt> if room mentioned in the <tt>query</tt>
-     *                   already exists.
+     * @param response <tt>ConferenceIq</tt> response which can be modified during this processing.
+     * @param roomExists <tt>true</tt> if room mentioned in the <tt>query</tt> already exists.
      *
      * @return <tt>null</tt> if everything went ok or an error/response IQ
      *         which should be returned to the user

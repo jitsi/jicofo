@@ -316,7 +316,7 @@ public class ColibriThreadingTest
         OfferOptionsKt.applyConstraints(offerOptions, config);
         offerOptions.setRtx(false);
 
-        return FocusBundleActivator.getJingleOfferFactory().createOffer(offerOptions);
+        return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
     }
 
     class MockPeerAllocator

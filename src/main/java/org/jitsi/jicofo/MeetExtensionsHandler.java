@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.bridge.Bridge;
 import org.jitsi.xmpp.extensions.rayo.*;
 import net.java.sip.communicator.service.protocol.*;
 
@@ -43,8 +44,7 @@ public class MeetExtensionsHandler
     /**
      * The logger
      */
-    private final static Logger logger
-        = Logger.getLogger(MeetExtensionsHandler.class);
+    private final static Logger logger = Logger.getLogger(MeetExtensionsHandler.class);
 
     /**
      * <tt>FocusManager</tt> instance for accessing info about all active
@@ -78,9 +78,7 @@ public class MeetExtensionsHandler
      */
     public void init()
     {
-        this.connection
-            = focusManager.getOperationSet(
-                    OperationSetDirectSmackXmpp.class).getXmppConnection();
+        this.connection = focusManager.getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
 
         muteIqHandler = new MuteIqHandler();
         dialIqHandler = new DialIqHandler();
@@ -156,8 +154,7 @@ public class MeetExtensionsHandler
 
         if (doMute == null || jid == null)
         {
-            return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(
-                XMPPError.Condition.item_not_found));
+            return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
         Jid from = muteIq.getFrom();
@@ -165,8 +162,7 @@ public class MeetExtensionsHandler
         if (conference == null)
         {
             logger.debug("Mute error: room not found for JID: " + from);
-            return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(
-                XMPPError.Condition.item_not_found));
+            return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
         IQ result;
@@ -189,9 +185,7 @@ public class MeetExtensionsHandler
         }
         else
         {
-            result = IQ.createErrorResponse(
-                muteIq,
-                XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
+            result = IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
         return result;
@@ -219,8 +213,7 @@ public class MeetExtensionsHandler
         if (conference == null)
         {
             logger.debug("Dial error: room not found for JID: " + from);
-            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(
-                XMPPError.Condition.item_not_found));
+            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
         ChatRoomMemberRole role = conference.getRoleForMucJid(from);
@@ -228,20 +221,18 @@ public class MeetExtensionsHandler
         if (role == null)
         {
             // Only room members are allowed to send requests
-            return IQ.createErrorResponse(
-                dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
+            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
         }
 
         if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
         {
             // Moderator permission is required
-            return IQ.createErrorResponse(
-                dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
+            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
         }
 
 
         Set<String> bridgeRegions = conference.getBridges().keySet().stream()
-            .map(b -> b.getRegion())
+            .map(Bridge::getRegion)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
@@ -249,8 +240,7 @@ public class MeetExtensionsHandler
         Jid jigasiJid;
         JigasiDetector detector = conference.getServices().getJigasiDetector();
         if (detector == null
-            || (jigasiJid = detector.selectJigasi(
-                    exclude, bridgeRegions)) == null)
+            || (jigasiJid = detector.selectJigasi(exclude, bridgeRegions)) == null)
         {
             jigasiJid = conference.getServices().getSipGateway();
         }
@@ -259,9 +249,7 @@ public class MeetExtensionsHandler
         {
             // Not available
             return IQ.createErrorResponse(
-                dialIq,
-                XMPPError.getBuilder(
-                        XMPPError.Condition.service_unavailable).build());
+                    dialIq, XMPPError.getBuilder(XMPPError.Condition.service_unavailable).build());
         }
 
         // Redirect original request to Jigasi component
@@ -290,9 +278,7 @@ public class MeetExtensionsHandler
                 else
                 {
                     return IQ.createErrorResponse(
-                        dialIq,
-                        XMPPError.getBuilder(
-                            XMPPError.Condition.remote_server_timeout));
+                        dialIq, XMPPError.getBuilder(XMPPError.Condition.remote_server_timeout));
                 }
             }
 
@@ -307,8 +293,7 @@ public class MeetExtensionsHandler
             logger.error("Failed to send DialIq - XMPP disconnected", e);
             return IQ.createErrorResponse(
                 dialIq,
-                XMPPError.getBuilder(
-                        XMPPError.Condition.internal_server_error)
+                XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
                     .setDescriptiveEnText("Failed to forward DialIq"));
         }
     }

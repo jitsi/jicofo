@@ -20,15 +20,14 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
+import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.XmppConnectionConfig;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.utils.logging.*;
-import org.jxmpp.jid.*;
-import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -65,56 +64,40 @@ public class ProtocolProviderHandler
      */
     private final List<RegistrationStateChangeListener> regListeners = new CopyOnWriteArrayList<>();
 
-    /**
-     * The timeout to set on the XMPP connection once registered. This is stored here, because the XmppConnection is
-     * only available after `register` has completed.
-     * TODO: clean up the class hierarchy too avoid this.
-     */
-    private Duration replyTimeout = null;
+    private final XmppConnectionConfig config;
 
-    /**
-     * Start this instance by created XMPP account using the given parameters.
-     * @param serverAddress XMPP server address.
-     * @param serverPort XMPP server port.
-     * @param xmppDomain XMPP authentication domain.
-     * @param xmppLoginPassword XMPP login(optional).
-     * @param nickName authentication login.
-     *
-     */
-    public void start(String serverAddress,
-                      String serverPort,
-                      DomainBareJid xmppDomain,
-                      String xmppLoginPassword,
-                      Resourcepart nickName,
-                      Duration replyTimeout)
+    public ProtocolProviderHandler(XmppConnectionConfig config)
     {
-        this.replyTimeout = replyTimeout;
+        this.config = config;
+    }
 
+    public void start()
+    {
         xmppProviderFactory
             = ProtocolProviderFactory.getProtocolProviderFactory(
                     FocusBundleActivator.bundleContext,
                     ProtocolNames.JABBER);
 
-        if (xmppLoginPassword != null)
+        if (config.getPassword() != null)
         {
             xmppAccount
                 = xmppProviderFactory.createAccount(
                 FocusAccountFactory.createFocusAccountProperties(
-                    serverAddress,
-                    serverPort,
-                    xmppDomain,
-                    nickName,
-                    xmppLoginPassword));
+                    config.getHostname(),
+                    String.valueOf(config.getPort()),
+                    config.getDomain(),
+                    config.getUsername(),
+                    config.getPassword()));
         }
         else
         {
             xmppAccount
                 = xmppProviderFactory.createAccount(
                 FocusAccountFactory.createFocusAccountProperties(
-                    serverAddress,
-                    serverPort,
-                    xmppDomain,
-                    nickName));
+                    config.getHostname(),
+                    String.valueOf(config.getPort()),
+                    config.getDomain(),
+                    config.getUsername()));
         }
 
         if (!xmppProviderFactory.loadAccount(xmppAccount))
@@ -126,6 +109,10 @@ public class ProtocolProviderHandler
 
         protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
+        if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
+        {
+            ((XmppProtocolProvider) protocolService).setDisableCertificateVerification(true);
+        }
     }
 
     /**
@@ -153,12 +140,12 @@ public class ProtocolProviderHandler
         {
             OperationSetDirectSmackXmpp operationSetDirectSmackXmpp
                 = protocolService.getOperationSet(OperationSetDirectSmackXmpp.class);
-            if (operationSetDirectSmackXmpp != null && replyTimeout != null)
+            if (operationSetDirectSmackXmpp != null)
             {
-                operationSetDirectSmackXmpp.getXmppConnection().setReplyTimeout(replyTimeout.toMillis());
-                logger.info("Set replyTimeout=" + replyTimeout);
+                operationSetDirectSmackXmpp.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+                logger.info("Set replyTimeout=" + config.getReplyTimeout());
             }
-            else if (replyTimeout != null)
+            else
             {
                 logger.error("Unable to set Smack replyTimeout, no OperationSet.");
             }

@@ -15,44 +15,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo
+package org.jitsi.jicofo.health
 
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
-import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.metaconfig.config
+import java.time.Duration
 
-class JicofoConfig {
-    val localRegion: String? by optionalconfig {
-        "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(legacyConfig)
-        "$BASE.local-region".from(newConfig)
+class HealthConfig {
+    val enabled: Boolean by config {
+        "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS".from(legacyConfig)
+        "jicofo.health.enabled".from(newConfig)
     }
 
-    val enableSctp: Boolean by config {
-        "$BASE.sctp.enabled".from(newConfig)
+    val interval: Duration by config {
+        "jicofo.health.interval".from(newConfig)
     }
 
-    /**
-     * The ID of the jicofo instance to use for Octo.
-     */
-    val octoId: Int? by optionalconfig {
-        "org.jitsi.jicofo.SHORT_ID".from(legacyConfig)
-        "jicofo.octo.id".from(newConfig)
+    val timeout: Duration by config {
+        "jicofo.health.timeout".from(newConfig)
     }
 
-    val sharedPoolMaxThreads: Int by config {
-        "org.jitsi.jicofo.SHARED_POOL_SIZE".from(legacyConfig)
-        "jicofo.task-pools.shared-pool-max-threads".from(newConfig)
+    val maxCheckDuration: Duration by config {
+        "jicofo.health.max-check-duration".from(newConfig)
     }
 
-    fun enableSctp() = enableSctp
-
-    fun localRegion() = localRegion
+    val roomNamePrefix: String by config {
+        "jicofo.health.room-name-prefix".from(newConfig)
+    }
 
     companion object {
-        const val BASE = "jicofo"
-
         @JvmField
-        val config = JicofoConfig()
+        val config = HealthConfig()
     }
 }

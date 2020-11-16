@@ -27,8 +27,6 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
-import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.eventadmin.*;
@@ -38,6 +36,8 @@ import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -60,75 +60,9 @@ public class FocusManager
     private final static Logger logger = Logger.getLogger(FocusManager.class);
 
     /**
-     * Name of configuration property for focus idle timeout.
-     */
-    public static final String IDLE_TIMEOUT_PNAME
-        = "org.jitsi.focus.IDLE_TIMEOUT";
-
-    /**
-     * Name of configuration property which enables logging a thread dump when
-     * an idle focus timeout occurs. The value is a minimal interval in between
-     * the dumps logged (given in milliseconds). The features is disabled when
-     * set to negative value or not defined.
-     */
-    public static final String MIN_IDLE_THREAD_DUMP_INTERVAL_PNAME
-            = "org.jitsi.focus.MIN_IDLE_THREAD_DUMP_INTERVAL";
-
-    /**
-     * Default amount of time for which the focus is being kept alive in idle
-     * mode (no peers in the room).
-     */
-    public static final long DEFAULT_IDLE_TIMEOUT = 15000;
-
-    /**
-     * The name of the configuration property that specifies if certificates of
-     * the XMPP domain name should be verified, or always trusted. If not
-     * provided then 'false' (should verify) is used.
-     */
-    public static final String ALWAYS_TRUST_PNAME
-        = "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED";
-
-    /**
      * The pseudo-random generator which is to be used when generating IDs.
      */
     private static final Random RANDOM = new Random();
-
-    /**
-     * Tries to load a {@link ProtocolProviderHandler} to be used for services (JVB) connection if configured.
-     *
-     * @return protocol provider or {@code null} if not configured or failed to load.
-     */
-    static public ProtocolProviderHandler loadServiceXmppProvider()
-    {
-        try
-        {
-            XmppServiceConnectionConfig config = XmppConfig.service;
-
-            if (!config.enabled())
-            {
-                logger.info("Service XMPP connection not enabled.");
-                return null;
-            }
-
-            ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
-
-            protocolProviderHandler.start(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    config.getDomain(),
-                    config.getPassword(),
-                    config.getUsername(),
-                    config.getReplyTimeout());
-
-            return protocolProviderHandler;
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to create dedicated JVB XMPP connection provider", e);
-
-            return null;
-        }
-    }
 
     /**
      * The thread that expires {@link JitsiMeetConference}s.
@@ -172,7 +106,7 @@ public class FocusManager
     /**
      * XMPP protocol provider handler used by the focus.
      */
-    private final ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
+    private ProtocolProviderHandler protocolProviderHandler;
 
     /**
      * <tt>JitsiMeetServices</tt> instance that recognizes currently available
@@ -242,35 +176,28 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        XmppClientConnectionConfig config = XmppConfig.client;
+        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
+        protocolProviderHandler.start();
 
-        // We default to "conference" prefix for the muc component
-        protocolProviderHandler.start(
-            config.getHostname(),
-            String.valueOf(config.getPort()),
-            config.getDomain(),
-            config.getPassword(),
-            config.getUsername(),
-            config.getReplyTimeout());
-
-        jvbProtocolProvider = loadServiceXmppProvider();
-
-        if (jvbProtocolProvider == null)
+        if (XmppConfig.service.getEnabled())
         {
-            logger.warn("No dedicated JVB MUC XMPP connection configured. Falling back to the default XMPP connection");
-            jvbProtocolProvider = protocolProviderHandler;
+            logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
+            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
+            jvbProtocolProvider.start();
+            jvbProtocolProvider.register();
         }
         else
         {
-            logger.info("Using dedicated XMPP connection for JVB MUC: " + jvbProtocolProvider);
-            jvbProtocolProvider.register();
+            logger.warn("No dedicated Service XMPP connection configured." +
+                        " Falling back to the client XMPP connection for JVB MUC");
+            jvbProtocolProvider = protocolProviderHandler;
         }
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(config.getXmppDomain(), protocolProviderHandler);
+        componentsDiscovery.start(XmppConfig.client.getXmppDomain(), protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -449,10 +376,6 @@ public class FocusManager
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
 
-        JitsiMeetGlobalConfig globalConfig
-            = JitsiMeetGlobalConfig.getGlobalConfig(
-                FocusBundleActivator.bundleContext);
-
         JitsiMeetConferenceImpl conference;
         synchronized (conferencesSyncRoot)
         {
@@ -463,7 +386,7 @@ public class FocusManager
                     XmppConfig.client.getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
-                    this, config, globalConfig, logLevel,
+                    this, config, logLevel,
                     id, includeInStatistics);
 
             conferences.put(room, conference);
@@ -843,46 +766,22 @@ public class FocusManager
     }
 
     /**
-     * Class takes care of stopping {@link JitsiMeetConference} if there is no
-     * active session for too long.
+     * Takes care of stopping {@link JitsiMeetConference} if no participant ever joins.
+     *
+     * TODO: this would be cleaner if it maintained a list of conferences to check, with conferences firing a
+     * "participant joined" event.
      */
     private class FocusExpireThread
     {
         private static final long POLL_INTERVAL = 5000;
 
-        /**
-         * Remembers when was the last thread dump taken for the focus idle timeout.
-         */
-        private long lastThreadDump;
-
-        /**
-         * A thread dump for the focus idle should not be taken
-         */
-        private final long minThreadDumpInterval;
-
-        private final long timeout;
+        private final Duration timeout = ConferenceConfig.config.getConferenceStartTimeout();
 
         private Thread timeoutThread;
 
         private final Object sleepLock = new Object();
 
         private boolean enabled;
-
-        public FocusExpireThread()
-        {
-            timeout = FocusBundleActivator.getConfigService()
-                        .getLong(IDLE_TIMEOUT_PNAME, DEFAULT_IDLE_TIMEOUT);
-            minThreadDumpInterval
-                    = FocusBundleActivator.getConfigService()
-                        .getLong(MIN_IDLE_THREAD_DUMP_INTERVAL_PNAME, -1);
-            if (minThreadDumpInterval >= 0) {
-                logger.info(
-                    "Focus idle thread dumps are enabled"
-                            + " with min interval of "
-                            + minThreadDumpInterval
-                            + " ms");
-            }
-        }
 
         void start()
         {
@@ -892,9 +791,7 @@ public class FocusManager
             }
 
             timeoutThread = new Thread(this::expireLoop, "FocusExpireThread");
-
             enabled = true;
-
             timeoutThread.start();
         }
 
@@ -945,7 +842,9 @@ public class FocusManager
                 }
 
                 if (!enabled)
+                {
                     break;
+                }
 
                 try
                 {
@@ -958,19 +857,16 @@ public class FocusManager
                     // Loop over conferences
                     for (JitsiMeetConferenceImpl conference : conferenceCopy)
                     {
-                        long idleStamp = conference.getIdleTimestamp();
-                        // Is active ?
-                        if (idleStamp == -1)
+                        if (conference.hasHadAtLeastOneParticipant())
                         {
                             continue;
                         }
-                        if (System.currentTimeMillis() - idleStamp > timeout)
+
+                        if (Duration.between(conference.getCreationTime(), Instant.now()).compareTo(timeout) > 0)
                         {
-                            if (conference.getLogger().isInfoEnabled()) {
-                                logger.info(
-                                        "Focus idle timeout for "
-                                                + conference.getRoomName());
-                                this.maybeLogIdleTimeoutThreadDump();
+                            if (conference.getLogger().isInfoEnabled())
+                            {
+                                logger.info("Stopping conference with no participants: " + conference.getRoomName());
                             }
 
                             conference.stop();
@@ -979,23 +875,8 @@ public class FocusManager
                 }
                 catch (Exception ex)
                 {
-                    logger.warn(
-                        "Error while checking for timed out conference", ex);
+                    logger.warn("Error while checking for timed out conference", ex);
                 }
-            }
-        }
-
-        private void maybeLogIdleTimeoutThreadDump() {
-            if (minThreadDumpInterval < 0) {
-                return;
-            }
-
-            if (System.currentTimeMillis() - lastThreadDump
-                    > minThreadDumpInterval) {
-                lastThreadDump = System.currentTimeMillis();
-                logger.info(
-                    "Thread dump for idle timeout: \n"
-                            + ThreadDump.takeThreadDump());
             }
         }
     }
