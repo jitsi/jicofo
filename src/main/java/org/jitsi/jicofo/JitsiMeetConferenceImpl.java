@@ -914,10 +914,9 @@ public class JitsiMeetConferenceImpl
                     if (!getFocusManager().isJicofoIdConfigured())
                     {
                         logger.warn(
-                            "Enabling Octo while the jicofo ID is not set. "
-                            + "Configure a valid value [1-65535] by setting "
-                            + FocusManager.JICOFO_SHORT_ID_PNAME
-                            + ". Future versions will require this for Octo.");
+                            "Enabling Octo while the jicofo ID is not set. Configure a valid value [1-65535] by "
+                            + "setting org.jitsi.jicofo.SHORT_ID in sip-communicator.properties or jicofo.octo.id in "
+                            + "jicofo.conf. Future versions will require this for Octo.");
                     }
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
@@ -3000,9 +2999,7 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Expires the COLIBRI channels (via
-         * {@link #terminate(AbstractParticipant, boolean)}) for all
-         * participants.
+         * Expires the COLIBRI channels for all participants.
          * @return the list of participants which were removed from
          * {@link #participants} as a result of this call (does not include
          * the Octo participant).

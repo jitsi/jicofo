@@ -82,25 +82,14 @@ public class FocusComponent
 
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
-     * @param host the hostname or IP address to which this component will be
-     *             connected.
-     * @param port the port of XMPP server to which this component will connect.
-     * @param domain the name of main XMPP domain on which this component will
-     *               be served.
-     * @param subDomain the name of subdomain on which this component will be
-     *                  available.
-     * @param secret the password used by the component to authenticate with
-     *               XMPP server.
+     * @param config Contains the configuration for the XMPP component connection.
      * @param anonymousFocus indicates if the focus user is anonymous.
      * @param focusAuthJid the JID of authenticated focus user which will be
      *                     advertised to conference participants.
      */
-    public FocusComponent(String host, int port,
-                          String domain, String subDomain,
-                          String secret,
-                          boolean anonymousFocus, String focusAuthJid)
+    public FocusComponent(XmppComponentConfig config, boolean anonymousFocus, String focusAuthJid)
     {
-        super(host, port, domain, subDomain, secret);
+        super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
         this.isFocusAnonymous = anonymousFocus;
         this.focusAuthJid = focusAuthJid;

@@ -27,17 +27,19 @@ import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 
 class XmppConfig {
-    val serviceConnectionConfig = ServiceConnectionConfig()
-
-    val clientConnectionConfig = ClientConnectionConfig()
-
     companion object {
         @JvmField
-        val xmppConfig = XmppConfig()
+        val service = XmppServiceConnectionConfig()
+
+        @JvmField
+        val client = XmppClientConnectionConfig()
+
+        @JvmField
+        val component = XmppComponentConfig()
     }
 }
 
-class ServiceConnectionConfig {
+class XmppServiceConnectionConfig {
     private val enabled: Boolean by config {
         // If the legacy host is set to anything, the connection is enabled.
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST".from(legacyConfig).convertFrom<String> { true }
@@ -73,7 +75,7 @@ class ServiceConnectionConfig {
         }
     }
 
-    val password: String by config {
+    val password: String? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS".from(legacyConfig)
         "jicofo.xmpp.service.password".from(newConfig)
     }
@@ -83,7 +85,7 @@ class ServiceConnectionConfig {
     }
 }
 
-class ClientConnectionConfig {
+class XmppClientConnectionConfig {
     private val enabled: Boolean by config {
         // If the legacy host is set to anything, the connection is enabled.
         // The legacy name may be set as a system property in which case it the property is available via newConfig
@@ -141,10 +143,59 @@ class ClientConnectionConfig {
         "jicofo.xmpp.client.password".from(newConfig)
     }
 
+    /**
+     * This is the top-level domain hosted by the XMPP server (not necessarily the one used for login).
+     */
+    val xmppDomain: DomainBareJid by config {
+        // The legacy name may be set as a system property in which case it the property is available via newConfig
+        legacyXmppDomainPropertyName.from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+        legacyXmppDomainPropertyName.from(legacyConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+    }
+
+    val conferenceMucJid: DomainBareJid by config {
+        "org.jitsi.jicofo.XMPP_MUC_COMPONENT_PREFIX".from(legacyConfig).convertFrom<String> {
+            JidCreate.domainBareFrom("$it.$xmppDomain")
+        }
+        "jicofo.xmpp.client.conference-muc-jid".from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+        "default" { JidCreate.domainBareFrom("conference.$xmppDomain") }
+    }
+
+    val replyTimeout: Duration by config {
+        "jicofo.xmpp.client.reply-timeout".from(newConfig)
+    }
+
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
         const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
         const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
         const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
+        const val legacyXmppDomainPropertyName = "org.jitsi.jicofo.XMPP_DOMAIN"
+    }
+}
+
+/**
+ * The XMPP component connection is deprecated and will be removed. These properties are configured via command line
+ * arguments and only supported temporarily.
+ */
+class XmppComponentConfig {
+    // We read from new config, because they are set as System properties.
+    val hostname: String by config { hostnamePropertyName.from(newConfig) }
+    val domain: String by config { domainPropertyName.from(newConfig) }
+    val subdomain: String by config { subdomainPropertyName.from(newConfig) }
+    val port: Int by config { portPropertyName.from(newConfig) }
+    val secret: String by config { secretPropertyName.from(newConfig) }
+
+    companion object {
+        const val hostnamePropertyName = "org.jitsi.jicofo.component.HOSTNAME"
+        const val domainPropertyName = "org.jitsi.jicofo.component.DOMAIN"
+        const val subdomainPropertyName = "org.jitsi.jicofo.component.SUBDOMAIN"
+        const val portPropertyName = "org.jitsi.jicofo.component.PORT"
+        const val secretPropertyName = "org.jitsi.jicofo.component.SECRET"
     }
 }

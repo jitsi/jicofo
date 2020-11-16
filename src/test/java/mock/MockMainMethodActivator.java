@@ -17,7 +17,6 @@
  */
 package mock;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.osgi.framework.*;
 
@@ -39,13 +38,7 @@ public class MockMainMethodActivator
         throws Exception
     {
         // These properties are set in OSGiHandler
-        focusComponent = new FocusComponent(
-            System.getProperty(ClientConnectionConfig.legacyHostnamePropertyName),
-            -1, // whatever port in mock
-            System.getProperty(FocusManager.XMPP_DOMAIN_PNAME),
-            "focus",
-            "secret",
-            true, "focus@test.domain.net");
+        focusComponent = new FocusComponent(new XmppComponentConfig(), true, "focus@test.domain.net");
 
         focusComponent.init();
 

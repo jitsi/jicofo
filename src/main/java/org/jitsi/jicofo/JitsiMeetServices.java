@@ -33,7 +33,6 @@ import org.jxmpp.jid.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
-import static org.jitsi.jicofo.xmpp.XmppConfig.xmppConfig;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -118,7 +117,7 @@ public class JitsiMeetServices
             logger.info("Discovered SIP gateway: " + node);
             setSipGateway(node);
         }
-        else if (xmppConfig.getClientConnectionConfig().getDomain().equals(node) && version != null)
+        else if (XmppConfig.client.getDomain().equals(node) && version != null)
         {
             this.XMPPServerVersion = version;
             logger.info("Detected XMPP server version: " + version.getNameVersionOsString());

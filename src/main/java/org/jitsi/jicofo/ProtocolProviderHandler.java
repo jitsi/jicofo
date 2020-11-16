@@ -28,6 +28,7 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -40,8 +41,7 @@ import java.util.concurrent.*;
 public class ProtocolProviderHandler
     implements RegistrationStateChangeListener
 {
-    private final static Logger logger
-        = Logger.getLogger(ProtocolProviderHandler.class);
+    private final static Logger logger = Logger.getLogger(ProtocolProviderHandler.class);
 
     /**
      * XMPP provider factory used to create and destroy XMPP account used by
@@ -63,8 +63,14 @@ public class ProtocolProviderHandler
      * Registration listeners notified about encapsulated protocol service
      * instance registration state changes.
      */
-    private final List<RegistrationStateChangeListener> regListeners
-        = new CopyOnWriteArrayList<>();
+    private final List<RegistrationStateChangeListener> regListeners = new CopyOnWriteArrayList<>();
+
+    /**
+     * The timeout to set on the XMPP connection once registered. This is stored here, because the XmppConnection is
+     * only available after `register` has completed.
+     * TODO: clean up the class hierarchy too avoid this.
+     */
+    private Duration replyTimeout = null;
 
     /**
      * Start this instance by created XMPP account using the given parameters.
@@ -76,11 +82,14 @@ public class ProtocolProviderHandler
      *
      */
     public void start(String serverAddress,
-                      String  serverPort,
+                      String serverPort,
                       DomainBareJid xmppDomain,
                       String xmppLoginPassword,
-                      Resourcepart nickName)
+                      Resourcepart nickName,
+                      Duration replyTimeout)
     {
+        this.replyTimeout = replyTimeout;
+
         xmppProviderFactory
             = ProtocolProviderFactory.getProtocolProviderFactory(
                     FocusBundleActivator.bundleContext,
@@ -110,15 +119,12 @@ public class ProtocolProviderHandler
 
         if (!xmppProviderFactory.loadAccount(xmppAccount))
         {
-            throw new RuntimeException(
-                "Failed to load account: " + xmppAccount);
+            throw new RuntimeException("Failed to load account: " + xmppAccount);
         }
 
-        ServiceReference<ProtocolProviderService> protoRef
-            = xmppProviderFactory.getProviderForAccount(xmppAccount);
+        ServiceReference<ProtocolProviderService> protoRef = xmppProviderFactory.getProviderForAccount(xmppAccount);
 
-        protocolService
-            = FocusBundleActivator.bundleContext.getService(protoRef);
+        protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
     }
 
@@ -142,6 +148,21 @@ public class ProtocolProviderHandler
     public void registrationStateChanged(RegistrationStateChangeEvent evt)
     {
         logger.info(this + ": " + evt);
+
+        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        {
+            OperationSetDirectSmackXmpp operationSetDirectSmackXmpp
+                = protocolService.getOperationSet(OperationSetDirectSmackXmpp.class);
+            if (operationSetDirectSmackXmpp != null && replyTimeout != null)
+            {
+                operationSetDirectSmackXmpp.getXmppConnection().setReplyTimeout(replyTimeout.toMillis());
+                logger.info("Set replyTimeout=" + replyTimeout);
+            }
+            else if (replyTimeout != null)
+            {
+                logger.error("Unable to set Smack replyTimeout, no OperationSet.");
+            }
+        }
 
         for(RegistrationStateChangeListener l : regListeners)
         {
@@ -221,8 +242,8 @@ public class ProtocolProviderHandler
     public XmppConnection getXmppConnection()
     {
         return Objects.requireNonNull(
-                getOperationSet(OperationSetDirectSmackXmpp.class),
-                "OperationSetDirectSmackXmpp").getXmppConnection();
+                getOperationSet(OperationSetDirectSmackXmpp.class), "OperationSetDirectSmackXmpp")
+                    .getXmppConnection();
     }
 
     /**
@@ -231,7 +252,6 @@ public class ProtocolProviderHandler
     @Override
     public String toString()
     {
-        return protocolService != null
-            ? protocolService.toString() : super.toString();
+        return protocolService != null ? protocolService.toString() : super.toString();
     }
 }

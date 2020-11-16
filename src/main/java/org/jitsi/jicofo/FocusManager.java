@@ -27,25 +27,21 @@ import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.ClientConnectionConfig;
-import org.jitsi.jicofo.xmpp.ServiceConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.jid.parts.*;
 import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 
-import static org.jitsi.jicofo.xmpp.XmppConfig.xmppConfig;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -85,37 +81,12 @@ public class FocusManager
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
-     * The name of configuration property that specifies XMPP conference muc
-     * component prefix, defaults to "conference".
-     */
-    public static final String XMPP_MUC_COMPONENT_PREFIX_PNAME
-        = "org.jitsi.jicofo.XMPP_MUC_COMPONENT_PREFIX";
-
-    /**
-     * The name of configuration property that specifies XMPP domain that hosts
-     * the conference and will be used in components auto-discovery. This is the
-     * domain on which the jitsi-videobridge runs.
-     */
-    public static final String XMPP_DOMAIN_PNAME
-        = "org.jitsi.jicofo.XMPP_DOMAIN";
-
-    /**
      * The name of the configuration property that specifies if certificates of
      * the XMPP domain name should be verified, or always trusted. If not
      * provided then 'false' (should verify) is used.
      */
     public static final String ALWAYS_TRUST_PNAME
         = "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED";
-
-    /**
-     * The name of the property used to configure an identifier of this
-     * Jicofo instance, used for the purpose of generating conference IDs unique
-     * across a set of Jicofo instances.
-     * Valid values are [1, 65535]. The value "0" is reserved for the case where
-     * an ID is not configured.
-     */
-    public static final String JICOFO_SHORT_ID_PNAME
-        = "org.jitsi.jicofo.SHORT_ID";
 
     /**
      * The pseudo-random generator which is to be used when generating IDs.
@@ -131,11 +102,11 @@ public class FocusManager
     {
         try
         {
-            ServiceConnectionConfig config = XmppConfig.xmppConfig.getServiceConnectionConfig();
+            XmppServiceConnectionConfig config = XmppConfig.service;
 
             if (!config.enabled())
             {
-                logger.info("Service XMPP connection noot enabled.");
+                logger.info("Service XMPP connection not enabled.");
                 return null;
             }
 
@@ -146,9 +117,8 @@ public class FocusManager
                     String.valueOf(config.getPort()),
                     config.getDomain(),
                     config.getPassword(),
-                    config.getUsername());
-
-            protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+                    config.getUsername(),
+                    config.getReplyTimeout());
 
             return protocolProviderHandler;
         }
@@ -181,8 +151,7 @@ public class FocusManager
      * solution of synchronizing on {@link #conferencesSyncRoot} in
      * {@code #getConferenceCount()} is safe.
      */
-    private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences
-        = new ConcurrentHashMap<>();
+    private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences = new ConcurrentHashMap<>();
 
     /**
      * The set of the IDs of conferences in {@link #conferences}.
@@ -203,8 +172,7 @@ public class FocusManager
     /**
      * XMPP protocol provider handler used by the focus.
      */
-    private final ProtocolProviderHandler protocolProviderHandler
-        = new ProtocolProviderHandler();
+    private final ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
 
     /**
      * <tt>JitsiMeetServices</tt> instance that recognizes currently available
@@ -224,11 +192,6 @@ public class FocusManager
     private ComponentsDiscovery componentsDiscovery;
 
     /**
-     * The address of the conference MUC component served by our XMPP domain.
-     */
-    private Jid conferenceMucService;
-
-    /**
      * Handler that takes care of pre-processing various Jitsi Meet extensions
      * IQs sent from conference participants to the focus.
      */
@@ -240,10 +203,10 @@ public class FocusManager
     private final Statistics statistics = new Statistics();
 
     /**
-     * The ID of this Jicofo instance, used to generate conference GIDs. The
-     * special value 0 is used when none is explicitly configured.
+     * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
+     * protocol, but only used when no value is explicitly configured.
      */
-    private int jicofoId = 0;
+    private int octoId;
 
     /**
      * Starts this manager.
@@ -260,37 +223,35 @@ public class FocusManager
 
         expireThread.start();
 
-        ConfigurationService config = FocusBundleActivator.getConfigService();
-        String xmppDomainConfig = config.getString(XMPP_DOMAIN_PNAME);
-        DomainBareJid xmppDomain = JidCreate.domainBareFrom(xmppDomainConfig);
-
-        int jicofoId = config.getInt(JICOFO_SHORT_ID_PNAME, -1);
-        if (jicofoId < 1 || jicofoId > 0xffff)
+        int octoId = 0;
+        if (JicofoConfig.config.getOctoId() != null)
+        {
+            octoId = JicofoConfig.config.getOctoId();
+        }
+        if (octoId < 1 || octoId > 0xffff)
         {
             logger.warn(
-                "Jicofo ID is not set. Configure a valid value [1-65535] by "
-                + "setting " + JICOFO_SHORT_ID_PNAME + ". Future versions "
-                + "will require this for Octo.");
-            this.jicofoId = 0;
+                "Jicofo ID is not set correctly set (value=" + octoId + "). Configure a valid value [1-65535] by "
+                + "setting org.jitsi.jicofo.SHORT_ID in sip-communicator.properties or jicofo.octo.id in jicofo.conf. "
+                + "Future versions will require this for Octo.");
+            this.octoId = 0;
         }
         else
         {
-            logger.info("Initialized jicofoId=" + jicofoId);
-            this.jicofoId = jicofoId;
+            logger.info("Initialized octoId=" + octoId);
+            this.octoId = octoId;
         }
 
-        ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
+        XmppClientConnectionConfig config = XmppConfig.client;
 
         // We default to "conference" prefix for the muc component
-        String conferenceMucPrefix = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
-        conferenceMucService = JidCreate.domainBareFrom(conferenceMucPrefix + "." + xmppDomainConfig);
-
         protocolProviderHandler.start(
-            clientConnectionConfig.getHostname(),
-            String.valueOf(clientConnectionConfig.getPort()),
-            clientConnectionConfig.getDomain(),
-            clientConnectionConfig.getPassword(),
-            clientConnectionConfig.getUsername());
+            config.getHostname(),
+            String.valueOf(config.getPort()),
+            config.getDomain(),
+            config.getPassword(),
+            config.getUsername(),
+            config.getReplyTimeout());
 
         jvbProtocolProvider = loadServiceXmppProvider();
 
@@ -309,7 +270,7 @@ public class FocusManager
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(xmppDomain, protocolProviderHandler);
+        componentsDiscovery.start(config.getXmppDomain(), protocolProviderHandler);
 
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
@@ -499,7 +460,7 @@ public class FocusManager
             conference
                     = new JitsiMeetConferenceImpl(
                     room,
-                    xmppConfig.getClientConnectionConfig().getUsername(),
+                    XmppConfig.client.getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     this, config, globalConfig, logLevel,
@@ -517,7 +478,7 @@ public class FocusManager
         if (conference.getLogger().isInfoEnabled())
         {
             StringBuilder sb = new StringBuilder("Created new focus for ");
-            sb.append(room).append("@").append(xmppConfig.getClientConnectionConfig().getDomain());
+            sb.append(room).append("@").append(XmppConfig.client.getDomain());
             sb.append(". Conference count ").append(conferences.size());
             sb.append(",").append("options: ");
             StringBuilder options = new StringBuilder();
@@ -558,7 +519,7 @@ public class FocusManager
         {
             do
             {
-                id = (jicofoId << 16) | RANDOM.nextInt(0x1_0000);
+                id = (octoId << 16) | RANDOM.nextInt(0x1_0000);
             }
             while (conferenceGids.contains(id));
         }
@@ -878,15 +839,7 @@ public class FocusManager
 
     boolean isJicofoIdConfigured()
     {
-        return jicofoId != 0;
-    }
-
-    /**
-     * Returns the address of MUC component for our XMPP domain.
-     */
-    public Jid getConferenceMucService()
-    {
-        return conferenceMucService;
+        return octoId != 0;
     }
 
     /**
