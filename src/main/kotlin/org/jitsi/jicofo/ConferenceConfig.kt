@@ -28,9 +28,9 @@ class ConferenceConfig {
         "jicofo.conference.initial-timeout".from(newConfig)
     }
 
-    val autoOwner: Boolean by config {
-        "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(legacyConfig)
-        "jicofo.conference.auto-owner".from(newConfig)
+    val enableAutoOwner: Boolean by config {
+        "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(legacyConfig).transformedBy { !it }
+        "jicofo.conference.enable-auto-owner".from(newConfig)
     }
 
     val injectSsrcForRecvOnlyEndpoints: Boolean by config {
