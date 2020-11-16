@@ -32,14 +32,12 @@ import org.jitsi.jicofo.xmpp.XmppServiceConnectionConfig;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.eventadmin.*;
-import org.jitsi.protocol.xmpp.XmppConnection;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -205,10 +203,10 @@ public class FocusManager
     private final Statistics statistics = new Statistics();
 
     /**
-     * The ID of this Jicofo instance, used to generate conference GIDs. The
-     * special value 0 is used when none is explicitly configured.
+     * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
+     * protocol, but only used when no value is explicitly configured.
      */
-    private int octoId = 0;
+    private int octoId;
 
     /**
      * Starts this manager.
@@ -225,7 +223,11 @@ public class FocusManager
 
         expireThread.start();
 
-        int octoId = JicofoConfig.config.getOctoId(); //config.getInt(JICOFO_SHORT_ID_PNAME, -1);
+        int octoId = 0;
+        if (JicofoConfig.config.getOctoId() != null)
+        {
+            octoId = JicofoConfig.config.getOctoId();
+        }
         if (octoId < 1 || octoId > 0xffff)
         {
             logger.warn(

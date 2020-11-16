@@ -34,7 +34,7 @@ class JicofoConfig {
     /**
      * The ID of the jicofo instance to use for Octo.
      */
-    val octoId: Int by config {
+    val octoId: Int? by optionalconfig {
         "org.jitsi.jicofo.SHORT_ID".from(JitsiConfig.legacyConfig)
         "jicofo.octo.id".from(JitsiConfig.newConfig)
     }
