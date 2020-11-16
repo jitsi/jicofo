@@ -192,9 +192,7 @@ public class Main
         // Jicofo user
         String focusDomain = cmdLine.getOptionValue(USER_DOMAIN_ARG_NAME);
 
-        String focusUserName
-            = cmdLine.getOptionValue(
-                    USER_NAME_ARG_NAME, USER_NAME_ARG_VALUE);
+        String focusUserName = cmdLine.getOptionValue(USER_NAME_ARG_NAME, USER_NAME_ARG_VALUE);
 
         String focusPassword = cmdLine.getOptionValue(USER_PASSWORD_ARG_NAME);
         if (isBlank(focusPassword))
@@ -203,14 +201,25 @@ public class Main
         }
 
         // Focus specific config properties
-        System.setProperty(FocusManager.HOSTNAME_PNAME, host);
-        System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
-        System.setProperty(FocusManager.FOCUS_USER_DOMAIN_PNAME, focusDomain);
-        System.setProperty(FocusManager.FOCUS_USER_NAME_PNAME, focusUserName);
+        if (host != null)
+        {
+            System.setProperty(ClientConnectionConfig.legacyHostnamePropertyName, host);
+        }
+        if (componentDomain != null)
+        {
+            System.setProperty(FocusManager.XMPP_DOMAIN_PNAME, componentDomain);
+        }
+        if (focusDomain != null)
+        {
+            System.setProperty(ClientConnectionConfig.legacyDomainPropertyName, focusDomain);
+        }
+        if (focusUserName != null)
+        {
+            System.setProperty(ClientConnectionConfig.legacyUsernamePropertyName, focusUserName);
+        }
         if (isNotBlank(focusPassword))
         {
-            System.setProperty(
-                    FocusManager.FOCUS_USER_PASSWORD_PNAME, focusPassword);
+            System.setProperty(ClientConnectionConfig.legacyPasswordPropertyName, focusPassword);
         }
 
         ComponentMain componentMain = new ComponentMain();

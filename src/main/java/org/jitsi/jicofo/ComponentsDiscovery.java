@@ -104,8 +104,7 @@ public class ComponentsDiscovery
      */
     public ComponentsDiscovery(JitsiMeetServices meetServices)
     {
-        this.meetServices
-            = Objects.requireNonNull(meetServices, "meetServices");
+        this.meetServices = Objects.requireNonNull(meetServices, "meetServices");
     }
 
     /**
@@ -117,8 +116,7 @@ public class ComponentsDiscovery
      *                                XMPP connection
      * @throws java.lang.IllegalStateException if started already.
      */
-    public void start(DomainBareJid           xmppDomain,
-                      ProtocolProviderHandler protocolProviderHandler)
+    public void start(DomainBareJid xmppDomain, ProtocolProviderHandler protocolProviderHandler)
     {
         if (this.protocolProviderHandler != null)
         {
@@ -126,13 +124,8 @@ public class ComponentsDiscovery
         }
 
         this.xmppDomain = Objects.requireNonNull(xmppDomain, "xmppDomain");
-        this.protocolProviderHandler
-            = Objects.requireNonNull(
-                    protocolProviderHandler, "protocolProviderHandler");
-
-        this.capsOpSet
-            = protocolProviderHandler.getOperationSet(
-                    OperationSetSimpleCaps.class);
+        this.protocolProviderHandler = Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
+        this.capsOpSet = protocolProviderHandler.getOperationSet(OperationSetSimpleCaps.class);
 
         if (protocolProviderHandler.isRegistered())
         {
@@ -147,15 +140,13 @@ public class ComponentsDiscovery
     {
         long interval
             = FocusBundleActivator.getConfigService()
-                    .getLong(
-                        REDISCOVERY_INTERVAL_PNAME, DEFAULT_REDISCOVERY_INT);
+                    .getLong(REDISCOVERY_INTERVAL_PNAME, DEFAULT_REDISCOVERY_INT);
 
         if (interval > 0)
         {
             if (rediscoveryTimer != null)
             {
-                logger.warn(
-                    "Attempt to schedule rediscovery when it's already done");
+                logger.warn("Attempt to schedule rediscovery when it's already done");
                 return;
             }
 
@@ -163,8 +154,7 @@ public class ComponentsDiscovery
 
             rediscoveryTimer = new Timer();
 
-            rediscoveryTimer.schedule(
-                new RediscoveryTask(), interval, interval);
+            rediscoveryTimer.schedule(new RediscoveryTask(), interval, interval);
         }
         else
         {
@@ -212,14 +202,12 @@ public class ComponentsDiscovery
                 itemMap.put(node, features);
 
                 // Try discovering version
-                Version version
-                    = DiscoveryUtil.discoverVersion(connection, node, features);
+                Version version = DiscoveryUtil.discoverVersion(connection, node, features);
 
                 String verStr
                     = version != null
                         ? version.getNameVersionOsString() : "null";
-                logger.info(
-                    "New component discovered: " + node + ", " + verStr);
+                logger.info("New component discovered: " + node + ", " + verStr);
 
                 meetServices.newNodeDiscovered(node, features, version);
             }
@@ -259,9 +247,7 @@ public class ComponentsDiscovery
 
     private void firstTimeDiscovery()
     {
-        this.connection
-            = Objects.requireNonNull(
-                    protocolProviderHandler.getXmppConnection(), "connection");
+        this.connection = Objects.requireNonNull(protocolProviderHandler.getXmppConnection(), "connection");
 
         discoverServices();
 

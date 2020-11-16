@@ -72,4 +72,6 @@ public interface XmppConnection
             ExceptionCallback exceptionCallback,
             long timeout)
         throws SmackException.NotConnectedException, InterruptedException;
+
+    default void setReplyTimeout(long replyTimeoutMs) {}
 }

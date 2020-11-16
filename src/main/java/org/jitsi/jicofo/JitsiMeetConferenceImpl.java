@@ -357,12 +357,8 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            colibri
-                = jvbXmppConnection.getOperationSet(
-                        OperationSetColibriConference.class);
-            jingle
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetJingle.class);
+            colibri = jvbXmppConnection.getOperationSet(OperationSetColibriConference.class);
+            jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
 
             // Wraps OperationSetJingle in order to introduce
             // our nasty "lip-sync" hack
@@ -372,24 +368,14 @@ public class JitsiMeetConferenceImpl
                 jingle = new LipSyncHack(this, jingle);
             }
 
-            chatOpSet
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetMultiUserChat.class);
-            meetTools
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetJitsiMeetTools.class);
-            jibriOpSet
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetJibri.class);
+            chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
+            meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
+            jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
-            executor
-                = ServiceUtils2.getService(
-                        osgiCtx, ScheduledExecutorService.class);
-
-            services
-                = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
+            executor = ServiceUtils2.getService(osgiCtx, ScheduledExecutorService.class);
+            services = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
 
             // Set pre-configured SIP gateway
             //if (config.getPreConfiguredSipGateway() != null)

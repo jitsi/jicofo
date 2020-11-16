@@ -702,5 +702,11 @@ public class XmppProtocolProvider
         {
             return connection.unregisterIQRequestHandler(handler);
         }
+
+        @Override
+        public void setReplyTimeout(long replyTimeoutMs)
+        {
+            connection.setReplyTimeout(replyTimeoutMs);
+        }
     }
 }

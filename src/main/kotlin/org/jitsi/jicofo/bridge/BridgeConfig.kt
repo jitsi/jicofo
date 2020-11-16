@@ -19,6 +19,9 @@ package org.jitsi.jicofo.bridge
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
+import org.jitsi.metaconfig.optionalconfig
+import org.jxmpp.jid.Jid
+import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
 /**
@@ -100,6 +103,16 @@ class BridgeConfig {
         "$BASE.health-checks.interval".from(JitsiConfig.newConfig)
             .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
     }
+
+    val breweryJid: Jid? by optionalconfig {
+        "org.jitsi.jicofo.BRIDGE_MUC".from(JitsiConfig.legacyConfig).convertFrom<String> {
+            JidCreate.bareFrom(it)
+        }
+        "$BASE.brewery-jid".from(JitsiConfig.newConfig).convertFrom<String> {
+            JidCreate.bareFrom(it)
+        }
+    }
+    fun breweryEnabled() = breweryJid != null
 
     companion object {
         const val BASE = "jicofo.bridge"

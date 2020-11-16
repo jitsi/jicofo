@@ -40,7 +40,7 @@ public class MockMainMethodActivator
     {
         // These properties are set in OSGiHandler
         focusComponent = new FocusComponent(
-            System.getProperty(FocusManager.HOSTNAME_PNAME),
+            System.getProperty(ClientConnectionConfig.legacyHostnamePropertyName),
             -1, // whatever port in mock
             System.getProperty(FocusManager.XMPP_DOMAIN_PNAME),
             "focus",

@@ -23,11 +23,13 @@ import net.java.sip.communicator.service.protocol.event.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.health.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.ClientConnectionConfig;
+import org.jitsi.jicofo.xmpp.ServiceConnectionConfig;
+import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.osgi.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.eventadmin.*;
@@ -42,6 +44,8 @@ import org.osgi.framework.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
+
+import static org.jitsi.jicofo.xmpp.XmppConfig.xmppConfig;
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -81,12 +85,6 @@ public class FocusManager
     public static final long DEFAULT_IDLE_TIMEOUT = 15000;
 
     /**
-     * The name of the configuration property that specifies server hostname to
-     * which the focus user will connect to.
-     */
-    public static final String HOSTNAME_PNAME = "org.jitsi.jicofo.HOSTNAME";
-
-    /**
      * The name of configuration property that specifies XMPP conference muc
      * component prefix, defaults to "conference".
      */
@@ -100,33 +98,6 @@ public class FocusManager
      */
     public static final String XMPP_DOMAIN_PNAME
         = "org.jitsi.jicofo.XMPP_DOMAIN";
-
-    /**
-     * The XMPP port for the main Jicofo user's XMPP connection.
-     */
-    public static final String XMPP_PORT_PNAME
-        = "org.jitsi.jicofo.XMPP_PORT";
-
-    /**
-     * The name of the configuration property that specifies XMPP domain of
-     * the focus user.
-     */
-    public static final String FOCUS_USER_DOMAIN_PNAME
-        = "org.jitsi.jicofo.FOCUS_USER_DOMAIN";
-
-    /**
-     * The name of configuration property that specifies the user name used by
-     * the focus to login to XMPP server.
-     */
-    public static final String FOCUS_USER_NAME_PNAME
-        = "org.jitsi.jicofo.FOCUS_USER_NAME";
-
-    /**
-     * The name of the configuration property that specifies login password of
-     * the focus user. If not provided then anonymous login method is used.
-     */
-    public static final String FOCUS_USER_PASSWORD_PNAME
-        = "org.jitsi.jicofo.FOCUS_USER_PASSWORD";
 
     /**
      * The name of the configuration property that specifies if certificates of
@@ -152,14 +123,42 @@ public class FocusManager
     private static final Random RANDOM = new Random();
 
     /**
-     * The XMPP domain used by the focus user to register to.
+     * Tries to load a {@link ProtocolProviderHandler} to be used for services (JVB) connection if configured.
+     *
+     * @return protocol provider or {@code null} if not configured or failed to load.
      */
-    private DomainBareJid focusUserDomain;
+    static public ProtocolProviderHandler loadServiceXmppProvider()
+    {
+        try
+        {
+            ServiceConnectionConfig config = XmppConfig.xmppConfig.getServiceConnectionConfig();
 
-    /**
-     * The username used by the focus to login.
-     */
-    private Resourcepart focusUserName;
+            if (!config.enabled())
+            {
+                logger.info("Service XMPP connection noot enabled.");
+                return null;
+            }
+
+            ProtocolProviderHandler protocolProviderHandler = new ProtocolProviderHandler();
+
+            protocolProviderHandler.start(
+                    config.getHostname(),
+                    String.valueOf(config.getPort()),
+                    config.getDomain(),
+                    config.getPassword(),
+                    config.getUsername());
+
+            protocolProviderHandler.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+
+            return protocolProviderHandler;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to create dedicated JVB XMPP connection provider", e);
+
+            return null;
+        }
+    }
 
     /**
      * The thread that expires {@link JitsiMeetConference}s.
@@ -175,12 +174,12 @@ public class FocusManager
      * Jitsi Meet conferences mapped by MUC room names.
      *
      * Note that access to this field is almost always protected by a lock on
-     * {@code this}. However, {@link #getConferenceCount()} executes
+     * {@code this}. However, {@code #getConferenceCount()} executes
      * {@link Map#size()} on it, which wouldn't be safe with a
      * {@link HashMap} (as opposed to a {@link ConcurrentHashMap}.
      * I've chosen this solution, because I don't know whether the cleaner
      * solution of synchronizing on {@link #conferencesSyncRoot} in
-     * {@link #getConferenceCount()} is safe.
+     * {@code #getConferenceCount()} is safe.
      */
     private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences
         = new ConcurrentHashMap<>();
@@ -214,9 +213,7 @@ public class FocusManager
     private JitsiMeetServices jitsiMeetServices;
 
     /**
-     * The XMPP connection provider that will be used to detect JVB's and
-     * allocate channels.
-     * See {@link BridgeMucDetector#tryLoadingJvbXmppProvider(ConfigurationService)}.
+     * The XMPP connection provider that will be used to detect JVB's and allocate channels.
      */
     private ProtocolProviderHandler jvbProtocolProvider;
 
@@ -249,7 +246,7 @@ public class FocusManager
     private int jicofoId = 0;
 
     /**
-     * Starts this manager for given <tt>hostName</tt>.
+     * Starts this manager.
      */
     public void start()
         throws Exception
@@ -259,13 +256,11 @@ public class FocusManager
         // Register early, because some of the dependencies e.g.
         // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
         // will be cleaned up at a later stage.
-        serviceRegistration
-                = bundleContext.registerService(FocusManager.class, this, null);
+        serviceRegistration = bundleContext.registerService(FocusManager.class, this, null);
 
         expireThread.start();
 
         ConfigurationService config = FocusBundleActivator.getConfigService();
-        String hostName = config.getString(HOSTNAME_PNAME);
         String xmppDomainConfig = config.getString(XMPP_DOMAIN_PNAME);
         DomainBareJid xmppDomain = JidCreate.domainBareFrom(xmppDomainConfig);
 
@@ -284,44 +279,33 @@ public class FocusManager
             this.jicofoId = jicofoId;
         }
 
-        focusUserDomain = JidCreate.domainBareFrom(
-                config.getString(FOCUS_USER_DOMAIN_PNAME));
-        focusUserName = Resourcepart.from(
-                config.getString(FOCUS_USER_NAME_PNAME));
-
-        String focusUserPassword = config.getString(FOCUS_USER_PASSWORD_PNAME);
-        String xmppServerPort = config.getString(XMPP_PORT_PNAME);
+        ClientConnectionConfig clientConnectionConfig = xmppConfig.getClientConnectionConfig();
 
         // We default to "conference" prefix for the muc component
-        String conferenceMucPrefix
-            = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
-        conferenceMucService = JidCreate.domainBareFrom(
-            conferenceMucPrefix + "." + xmppDomainConfig);
+        String conferenceMucPrefix = config.getString(XMPP_MUC_COMPONENT_PREFIX_PNAME, "conference");
+        conferenceMucService = JidCreate.domainBareFrom(conferenceMucPrefix + "." + xmppDomainConfig);
 
         protocolProviderHandler.start(
-            hostName,
-            xmppServerPort,
-            focusUserDomain,
-            focusUserPassword,
-            focusUserName);
+            clientConnectionConfig.getHostname(),
+            String.valueOf(clientConnectionConfig.getPort()),
+            clientConnectionConfig.getDomain(),
+            clientConnectionConfig.getPassword(),
+            clientConnectionConfig.getUsername());
 
-        jvbProtocolProvider = BridgeMucDetector.tryLoadingJvbXmppProvider(config);
+        jvbProtocolProvider = loadServiceXmppProvider();
 
-        if (jvbProtocolProvider == null) {
-            logger.warn(
-                "No dedicated JVB MUC XMPP connection configured"
-                    + " - falling back to the default XMPP connection");
+        if (jvbProtocolProvider == null)
+        {
+            logger.warn("No dedicated JVB MUC XMPP connection configured. Falling back to the default XMPP connection");
             jvbProtocolProvider = protocolProviderHandler;
-        } else {
+        }
+        else
+        {
             logger.info("Using dedicated XMPP connection for JVB MUC: " + jvbProtocolProvider);
             jvbProtocolProvider.register();
         }
 
-        jitsiMeetServices
-            = new JitsiMeetServices(
-                    protocolProviderHandler,
-                    jvbProtocolProvider,
-                    focusUserDomain);
+        jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
         componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
@@ -515,7 +499,7 @@ public class FocusManager
             conference
                     = new JitsiMeetConferenceImpl(
                     room,
-                    focusUserName,
+                    xmppConfig.getClientConnectionConfig().getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     this, config, globalConfig, logLevel,
@@ -533,7 +517,7 @@ public class FocusManager
         if (conference.getLogger().isInfoEnabled())
         {
             StringBuilder sb = new StringBuilder("Created new focus for ");
-            sb.append(room).append("@").append(focusUserDomain);
+            sb.append(room).append("@").append(xmppConfig.getClientConnectionConfig().getDomain());
             sb.append(". Conference count ").append(conferences.size());
             sb.append(",").append("options: ");
             StringBuilder options = new StringBuilder();
