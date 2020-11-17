@@ -2176,7 +2176,8 @@ public class JitsiMeetConferenceImpl
      * @param skipParticipantsWithoutBridgeSession skip source groups from participants without a bridge session.
      * @return the list of all source groups of given media type that exist in current conference state.
      */
-    private MediaSourceGroupMap getAllSourceGroups(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
+    private MediaSourceGroupMap getAllSourceGroups(
+        List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
 
