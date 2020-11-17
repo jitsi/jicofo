@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
@@ -911,6 +912,12 @@ public class JitsiMeetConferenceImpl
 
             participant.setChannelAllocator(channelAllocator);
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+
+            if (reInvite)
+            {
+                propagateNewSourcesToOcto(
+                    participant.getBridgeSession(), participant.getSourcesCopy(), participant.getSourceGroupsCopy());
+            }
         }
     }
 
@@ -1289,7 +1296,6 @@ public class JitsiMeetConferenceImpl
                 reason,
                 sendSessionTerminate));
 
-        BridgeSession bridgeSession;
         synchronized (participantLock)
         {
             Jid contactAddress = participant.getMucJid();
@@ -1308,26 +1314,13 @@ public class JitsiMeetConferenceImpl
                 participant.setJingleSession(null);
             }
 
-            bridgeSession = participant.terminateBridgeSession();
-
             boolean removed = participants.remove(participant);
             logger.info("Removed participant: " + removed + ", " + contactAddress);
         }
 
+        BridgeSession bridgeSession = terminateParticipantBridgeSession(participant);
         if (bridgeSession != null)
         {
-            MediaSourceMap removedSources = participant.getSourcesCopy();
-            MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
-
-            synchronized (bridges)
-            {
-                operationalBridges()
-                    .filter(bridge -> !bridge.equals(bridgeSession))
-                    .forEach(
-                        bridge -> bridge.removeSourcesFromOcto(
-                            removedSources, removedGroups));
-            }
-
             maybeExpireBridgeSession(bridgeSession);
         }
     }
@@ -2099,7 +2092,7 @@ public class JitsiMeetConferenceImpl
      */
     private MediaSourceMap getAllSources()
     {
-        return getAllSources(Collections.emptyList());
+        return getAllSources(Collections.emptyList(), false);
     }
 
     /**
@@ -2112,18 +2105,19 @@ public class JitsiMeetConferenceImpl
      */
     MediaSourceMap getAllSources(Participant except)
     {
-        return getAllSources(Collections.singletonList(except));
+        return getAllSources(Collections.singletonList(except), false);
     }
 
     /**
      * Gathers the list of all sources that exist in the current conference state.
      *
      * @param except optional <tt>Participant</tt> instance whose sources will be excluded from the list
+     * @param skipParticipantsWithoutBridgeSession skip sources from participants without a  bridge session.
      *
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
-    private MediaSourceMap getAllSources(List<Participant> except)
+    private MediaSourceMap getAllSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         MediaSourceMap mediaSources = new MediaSourceMap();
 
@@ -2131,6 +2125,18 @@ public class JitsiMeetConferenceImpl
         {
             // We want to exclude this one
             if (except.contains(participant))
+            {
+                continue;
+            }
+
+            // If the return value is used to create a new octo participant then
+            // we skip participants without a bridge session (which happens when
+            // a bridge fails & participant are re-invited). The reason why we
+            // do this is to avoid adding sources to the (newly created) octo
+            // participant from soon to be re-invited (and hence soon to be local)
+            // participants, causing a weird transition from octo participant to
+            // local participant in the new bridge.
+            if (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null)
             {
                 continue;
             }
@@ -2148,7 +2154,7 @@ public class JitsiMeetConferenceImpl
      */
     private MediaSourceGroupMap getAllSourceGroups()
     {
-        return getAllSourceGroups(Collections.emptyList());
+        return getAllSourceGroups(Collections.emptyList(), false);
     }
 
     /**
@@ -2160,17 +2166,17 @@ public class JitsiMeetConferenceImpl
      */
     MediaSourceGroupMap getAllSourceGroups(Participant except)
     {
-        return getAllSourceGroups(Collections.singletonList(except));
+        return getAllSourceGroups(Collections.singletonList(except), false);
     }
 
     /**
      * Gathers the list of all source groups that exist in the current conference state.
      *
      * @param except a list of participants whose sources will not be included in the result.
-     *
+     * @param skipParticipantsWithoutBridgeSession skip source groups from participants without a bridge session.
      * @return the list of all source groups of given media type that exist in current conference state.
      */
-    private MediaSourceGroupMap getAllSourceGroups(List<Participant> except)
+    private MediaSourceGroupMap getAllSourceGroups(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
 
@@ -2178,6 +2184,18 @@ public class JitsiMeetConferenceImpl
         {
             // Excluded this participant groups
             if (except.contains(participant))
+            {
+                continue;
+            }
+
+            // If the return value is used to create a new octo participant then
+            // we skip participants without a bridge session (which happens when
+            // a bridge fails & participant are re-invited). The reason why we
+            // do this is to avoid adding sources to the (newly created) octo
+            // participant from soon to be re-invited (and hence soon to be local)
+            // participants, causing a weird transition from octo participant to
+            // local participant in the new bridge.
+            if (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null)
             {
                 continue;
             }
@@ -2576,26 +2594,7 @@ public class JitsiMeetConferenceImpl
         {
             for (Participant participant : participants)
             {
-                BridgeSession session = participant.getBridgeSession();
-                participant.terminateBridgeSession();
-
-                // Expire the OctoEndpoints for this participant on other
-                // bridges.
-                if (session != null)
-                {
-                    MediaSourceMap removedSources = participant.getSourcesCopy();
-                    MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
-
-                    // Locking participantLock and the bridges is okay (or at
-                    // least used elsewhere).
-                    synchronized (bridges)
-                    {
-                        operationalBridges()
-                                .filter(bridge -> !bridge.equals(session))
-                                .forEach(
-                                    bridge -> bridge.removeSourcesFromOcto(removedSources, removedGroups));
-                    }
-                }
+                terminateParticipantBridgeSession(participant);
             }
             for (Participant participant : participants)
             {
@@ -2605,6 +2604,33 @@ public class JitsiMeetConferenceImpl
                         hasToStartMuted(participant, false));
             }
         }
+    }
+
+    private BridgeSession terminateParticipantBridgeSession(@NotNull Participant participant)
+    {
+        BridgeSession session = participant.getBridgeSession();
+        participant.terminateBridgeSession();
+
+        // Expire the OctoEndpoints for this participant on other
+        // bridges.
+        if (session != null)
+        {
+            MediaSourceMap removedSources = participant.getSourcesCopy();
+            MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
+
+            // Locking participantLock and the bridges is okay (or at
+            // least used elsewhere).
+            synchronized (bridges)
+            {
+                operationalBridges()
+                    .filter(bridge -> !bridge.equals(session))
+                    .forEach(
+                        bridge -> bridge.removeSourcesFromOcto(
+                            removedSources, removedGroups));
+            }
+        }
+
+        return session;
     }
 
     /**
@@ -2823,9 +2849,12 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Expires the COLIBRI channels for all participants.
-         * @return the list of participants which were removed from {@link #participants} as a result of this call
-         * (does not include the Octo participant).
+         * Expires the COLIBRI channels (via
+         * {@link Participant#terminateBridgeSession()}) for all
+         * participants.
+         * @return the list of participants which were removed from
+         * {@link #participants} as a result of this call (does not include
+         * the Octo participant).
          */
         private List<Participant> terminateAll()
         {
@@ -3051,8 +3080,8 @@ public class JitsiMeetConferenceImpl
 
             OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays);
 
-            MediaSourceMap remoteSources = getAllSources(participants);
-            MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants);
+            MediaSourceMap remoteSources = getAllSources(participants, true);
+            MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants, true);
 
             octoParticipant.addSourcesAndGroups(remoteSources, remoteGroups);
 
