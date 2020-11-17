@@ -23,7 +23,6 @@ import org.jitsi.retry.SimpleRetryTask;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.reservation.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.component.*;
@@ -77,12 +76,6 @@ public class FocusComponent
      */
     private AuthenticationAuthority authAuthority;
 
-    /**
-     * (Optional)Reservation system that manages new rooms allocation.
-     * Requires authentication system in order to verify user's identity.
-     */
-    private ReservationSystem reservationSystem;
-
     private final Connector connector = new Connector();
 
     /**
@@ -106,12 +99,6 @@ public class FocusComponent
         this.authAuthority = authAuthority;
     }
 
-    public void setReservationSystem(ReservationSystem reservationSystem)
-    {
-        this.reservationSystem = reservationSystem;
-    }
-
-
     public void loadConfig(ConfigurationService config, String configPropertiesBase)
     {
         super.loadConfig(config, configPropertiesBase);
@@ -134,7 +121,6 @@ public class FocusComponent
     {
         authAuthority = null;
         focusManager = null;
-        reservationSystem = null;
 
         connector.disconnect();
     }
@@ -241,7 +227,7 @@ public class FocusComponent
     }
 
     /**
-     * Additional logic added for conference IQ processing like authentication and room reservation.
+     * Additional logic added for conference IQ processing like authentication.
      *
      * @param query <tt>ConferenceIq</tt> query
      * @param response <tt>ConferenceIq</tt> response which can be modified during this processing.
@@ -279,21 +265,6 @@ public class FocusComponent
             }
         }
 
-        // Check room reservation?
-        if (!roomExists && reservationSystem != null)
-        {
-            EntityBareJid room = query.getRoom();
-
-            ReservationSystem.Result result = reservationSystem.createConference(identity, room);
-
-            logger.info("Create room result: " + result + " for " + room);
-
-            if (result.getCode() != ReservationSystem.RESULT_OK)
-            {
-                return ErrorFactory.createReservationError(query, result);
-            }
-        }
-
         return null;
     }
 
@@ -309,7 +280,7 @@ public class FocusComponent
 
         boolean roomExists = focusManager.getConference(room) != null;
 
-        // Authentication and reservations system logic
+        // Authentication system logic
         org.jivesoftware.smack.packet.IQ error = processExtensions(query, response, roomExists);
         if (error != null)
         {
