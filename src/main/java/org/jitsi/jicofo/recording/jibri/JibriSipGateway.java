@@ -146,7 +146,6 @@ public class JibriSipGateway
             String sessionId = generateSessionId();
             JibriSession jibriSession
                 = new JibriSession(
-                        bundleContext,
                         this,
                         conference.getRoomName(),
                         iq.getFrom(),

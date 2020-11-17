@@ -27,7 +27,6 @@ class JibriSessionTest : ShouldSpec({
 
     mockkStatic(ServiceUtils2::class)
     every { ServiceUtils2.getService(any(), EventAdmin::class.java)} returns mockk(relaxed = true)
-    val bundleContext: BundleContextImpl = mockk(relaxed = true)
     val owner: JibriSession.Owner = mockk(relaxed = true)
     val roomName = JidCreate.entityBareFrom("room@bar.com/baz")
     val initiator = JidCreate.bareFrom("foo@bar.com/baz")
@@ -52,7 +51,6 @@ class JibriSessionTest : ShouldSpec({
     val logger: Logger = mockk(relaxed = true)
 
     val jibriSession = JibriSession(
-        bundleContext,
         owner,
         roomName,
         initiator,
@@ -71,7 +69,7 @@ class JibriSessionTest : ShouldSpec({
         logger
     )
 
-    FocusBundleActivator.bundleContext = bundleContext
+    FocusBundleActivator.bundleContext = mockk(relaxed = true)
 
     context("When sending a request to a Jibri to start a session throws an error") {
         val iqRequests = mutableListOf<IQ>()

@@ -19,7 +19,6 @@ public class OsgiServiceBinder extends AbstractBinder
     protected void configure()
     {
         bind(new FocusManagerProvider(bundleContext)).to(FocusManagerProvider.class);
-        bind(new JibriStatsProvider(bundleContext)).to(JibriStatsProvider.class);
         bind(new OsgiVersionServiceSupplier(bundleContext)).to(VersionServiceSupplier.class);
         bind(new OsgiHealthCheckServiceSupplier(bundleContext)).to(HealthCheckServiceSupplier.class);
     }

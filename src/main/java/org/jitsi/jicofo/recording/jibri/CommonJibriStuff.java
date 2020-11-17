@@ -44,11 +44,6 @@ import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
 public abstract class CommonJibriStuff
 {
     /**
-     * OSGI bundle context.
-     */
-    protected final BundleContext bundleContext;
-
-    /**
      * The Jitsi Meet conference instance.
      */
     protected final JitsiMeetConferenceImpl conference;
@@ -103,7 +98,6 @@ public abstract class CommonJibriStuff
             ScheduledExecutorService scheduledExecutor,
             Logger logger)
     {
-        this.bundleContext = Objects.requireNonNull(bundleContext, "bundleContext");
         this.connection = Objects.requireNonNull(xmppConnection, "xmppConnection");
         this.conference = Objects.requireNonNull(conference, "conference");
         this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");

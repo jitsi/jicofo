@@ -157,7 +157,6 @@ public class JibriRecorder
             String sessionId = generateSessionId();
             jibriSession
                 = new JibriSession(
-                    bundleContext,
                     this,
                     conference.getRoomName(),
                     iq.getFrom(),
