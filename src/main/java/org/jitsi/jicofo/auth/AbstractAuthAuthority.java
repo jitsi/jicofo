@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.auth;
 
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -61,7 +62,7 @@ public abstract class AbstractAuthAuthority
      * If set to <tt>true</tt> authentication session will be destroyed
      * immediately after end of the conference for which it was created.
      */
-    private final boolean disableAutoLogin;
+    private final boolean enableAutoLogin;
 
     /**
      * <tt>EventAdmin</tt> instance used for firing events.
@@ -106,18 +107,17 @@ public abstract class AbstractAuthAuthority
     /**
      * Creates new instance of <tt>AbstractAuthAuthority</tt>.
      *
-     * @param disableAutoLogin disables auto login feature. Authentication
+     * @param enableAutoLogin disables auto login feature. Authentication
      * sessions are destroyed immediately when the conference ends.
      * @param authenticationLifetime specifies how long authentication sessions
      * will be stored in Jicofo's memory. Interval in milliseconds.
      */
-    public AbstractAuthAuthority(boolean disableAutoLogin,
-                                 long authenticationLifetime)
+    public AbstractAuthAuthority(boolean enableAutoLogin, Duration authenticationLifetime)
     {
-        this.disableAutoLogin = disableAutoLogin;
-        this.authenticationLifetime = authenticationLifetime;
+        this.enableAutoLogin = enableAutoLogin;
+        this.authenticationLifetime = authenticationLifetime.toMillis();
 
-        if (disableAutoLogin)
+        if (!enableAutoLogin)
         {
             logger.info("Auto login disabled");
         }
@@ -346,7 +346,7 @@ public abstract class AbstractAuthAuthority
     @Override
     public void onFocusDestroyed(EntityBareJid roomName)
     {
-        if (!disableAutoLogin)
+        if (enableAutoLogin)
         {
             return;
         }

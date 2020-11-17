@@ -19,11 +19,13 @@ package org.jitsi.jicofo.auth;
 
 import org.jxmpp.jid.*;
 
+import java.time.*;
+
 /**
  * Special case of <tt>XMPPDomainAuthAuthority</tt> where the user is
  * authenticated in Prosody with JWT token authentication method. The name of
  * XMPP domain should be passed to the constructor, which will happen when
- * {@link AuthBundleActivator#LOGIN_URL_PNAME} is set to
+ * {@link AuthConfig#getLoginUrl()} is set to
  * "EXT_JWT:auth.server.net", where 'auth.server.net' is the Prosody domain with
  * JWT token authentication enabled.
  * In order to obtain JWT, the user visits external "login" service from where
@@ -48,8 +50,8 @@ public class ExternalJWTAuthority
         // can be used for "on the fly" user role upgrade. That is the case when
         // the user starts from anonymous domain and then authenticates in
         // the popup window.
-        super(true /* disable auto login */,
-              60L * 1000L /* limit session duration to 1 minute */,
+        super(false /* enable auto login */,
+                Duration.ofMinutes(1) /* limit session duration to 1 minute */,
               domain);
     }
 
