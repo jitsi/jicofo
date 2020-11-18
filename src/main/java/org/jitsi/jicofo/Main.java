@@ -100,8 +100,9 @@ public class Main
         {
             logger.error(e, e);
         }
-        logger.info("Stopping services.");
 
+        logger.info("Stopping services.");
+        jicofoServices.stop();
         OSGi.stop(activator);
     }
 
