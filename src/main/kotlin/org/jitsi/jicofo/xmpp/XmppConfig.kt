@@ -113,8 +113,8 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     override val enabled: Boolean by config {
         // If the legacy host is set to anything, the connection is enabled.
         // The legacy name may be set as a system property in which case it the property is available via newConfig
-        legacyHostnamePropertyName.from(newConfig)
-        legacyHostnamePropertyName.from(legacyConfig)
+        legacyHostnamePropertyName.from(newConfig).convertFrom<String> { true }
+        legacyHostnamePropertyName.from(legacyConfig).convertFrom<String> { true }
         "jicofo.xmpp.client.enabled".from(newConfig)
     }
 
