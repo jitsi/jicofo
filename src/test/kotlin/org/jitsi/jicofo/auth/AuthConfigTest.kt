@@ -17,10 +17,7 @@ package org.jitsi.jicofo.auth
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.jicofo.ConfigTest
-import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
-import org.jitsi.utils.mins
 import java.time.Duration
 
 class AuthConfigTest : ConfigTest() {

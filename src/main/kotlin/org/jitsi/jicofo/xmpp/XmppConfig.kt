@@ -211,37 +211,20 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
  * The XMPP component connection is deprecated and will be removed. These properties are configured via command line
  * arguments and only supported temporarily.
  */
-class XmppComponentConfig {
-    // We read from new config, because they are set as System properties.
-    val hostname: String by config {
-        hostnamePropertyName.from(newConfig)
-        "default" { "" }
-    }
-    val domain: String by config {
-        domainPropertyName.from(newConfig)
-        "default" { "" }
-    }
-    val subdomain: String by config {
-        subdomainPropertyName.from(newConfig)
-        "default" { "" }
-    }
-    val port: Int by config {
-        portPropertyName.from(newConfig)
-        "default" { -1 }
-    }
-    val secret: String by config {
-        secretPropertyName.from(newConfig)
-        "default" { "" }
-    }
-
+data class XmppComponentConfig(
+    val hostname: String = "",
+    val domain: String = "",
+    val subdomain: String = "",
+    val port: Int = -1,
+    val secret: String = ""
+) {
     companion object {
-        const val hostnamePropertyName = "org.jitsi.jicofo.component.HOSTNAME"
-        const val domainPropertyName = "org.jitsi.jicofo.component.DOMAIN"
-        const val subdomainPropertyName = "org.jitsi.jicofo.component.SUBDOMAIN"
-        const val portPropertyName = "org.jitsi.jicofo.component.PORT"
-        const val secretPropertyName = "org.jitsi.jicofo.component.SECRET"
-
+        /**
+         * The configuration to use for the XMPP component connection. The default uses values chosen to allow tests to
+         * run (i.e. dummy values which allow [FocusComponent] to be instantiated and only throw if it attempts to
+         * connect).
+         */
         @JvmField
-        val config = XmppComponentConfig()
+        var config = XmppComponentConfig()
     }
 }
