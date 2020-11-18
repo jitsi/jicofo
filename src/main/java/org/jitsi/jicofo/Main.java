@@ -74,7 +74,7 @@ public class Main
         logger.info("Starting OSGi services.");
         BundleActivator activator = startOsgi(exitSyncRoot);
 
-        logger.warn("Waiting for OSGi services to start");
+        logger.debug("Waiting for OSGi services to start");
         try
         {
             WaitableBundleActivator.waitUntilStarted();
@@ -85,7 +85,7 @@ public class Main
             OSGi.stop(activator);
             return;
         }
-        logger.warn("OSGi services started.");
+        logger.info("OSGi services started.");
 
         JicofoServices jicofoServices = new JicofoServices(WaitableBundleActivator.getBundleContext());
 

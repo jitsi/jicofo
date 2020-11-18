@@ -21,14 +21,11 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.health.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.XmppConfig;
-import org.jitsi.osgi.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
