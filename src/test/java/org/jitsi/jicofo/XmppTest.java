@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import mock.*;
-
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.util.*;
@@ -63,16 +61,13 @@ public class XmppTest
         EntityBareJid roomName = JidCreate.entityBareFrom(
                 "testRoom@example.com");
 
-        FocusComponent focusComponent
-            = MockMainMethodActivator.getFocusComponent();
+        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent();
 
         ConferenceIq conferenceIq = new ConferenceIq();
 
         conferenceIq.setRoom(roomName);
 
-        IQ result
-            = focusComponent.handleIQSetImpl(
-                IQUtils.convert(conferenceIq));
+        IQ result = focusComponent.handleIQSetImpl(IQUtils.convert(conferenceIq));
 
         assertNotNull(result);
 

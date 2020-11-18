@@ -213,11 +213,26 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
  */
 class XmppComponentConfig {
     // We read from new config, because they are set as System properties.
-    val hostname: String by config { hostnamePropertyName.from(newConfig) }
-    val domain: String by config { domainPropertyName.from(newConfig) }
-    val subdomain: String by config { subdomainPropertyName.from(newConfig) }
-    val port: Int by config { portPropertyName.from(newConfig) }
-    val secret: String by config { secretPropertyName.from(newConfig) }
+    val hostname: String by config {
+        hostnamePropertyName.from(newConfig)
+        "default" { "" }
+    }
+    val domain: String by config {
+        domainPropertyName.from(newConfig)
+        "default" { "" }
+    }
+    val subdomain: String by config {
+        subdomainPropertyName.from(newConfig)
+        "default" { "" }
+    }
+    val port: Int by config {
+        portPropertyName.from(newConfig)
+        "default" { -1 }
+    }
+    val secret: String by config {
+        secretPropertyName.from(newConfig)
+        "default" { "" }
+    }
 
     companion object {
         const val hostnamePropertyName = "org.jitsi.jicofo.component.HOSTNAME"
@@ -225,5 +240,8 @@ class XmppComponentConfig {
         const val subdomainPropertyName = "org.jitsi.jicofo.component.SUBDOMAIN"
         const val portPropertyName = "org.jitsi.jicofo.component.PORT"
         const val secretPropertyName = "org.jitsi.jicofo.component.SECRET"
+
+        @JvmField
+        val config = XmppComponentConfig()
     }
 }

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.auth;
 
-import mock.*;
 import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
@@ -67,8 +66,7 @@ public class ShibbolethAuthenticationAuthorityTest
     public void testShibbolethAuthenticationModule()
         throws Exception
     {
-        FocusComponent focusComponent
-            = MockMainMethodActivator.getFocusComponent();
+        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent();
 
         ShibbolethAuthAuthority shibbolethAuth
             = (ShibbolethAuthAuthority) ServiceUtils2.getService(

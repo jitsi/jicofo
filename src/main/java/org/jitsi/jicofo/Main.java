@@ -20,12 +20,15 @@ package org.jitsi.jicofo;
 import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
-import org.jitsi.config.JitsiConfig;
+import org.jitsi.config.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
 import org.jitsi.metaconfig.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
+import org.osgi.framework.*;
+import org.xeustechnologies.jcl.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -39,53 +42,133 @@ public class Main
     private static final Logger logger = Logger.getLogger(Main.class);
 
     /**
-     * Stores {@link FocusComponent} instance for the health check purpose.
-     */
-    private static FocusComponent focusXmppComponent;
-
-    /**
-     * @return the Jicofo XMPP component.
-     */
-    public static FocusComponent getFocusXmppComponent()
-    {
-        return focusXmppComponent;
-    }
-
-    /**
      * Program entry point.
+     *
      * @param args command-line arguments.
      */
     public static void main(String[] args)
-        throws ParseException
+            throws ParseException
     {
         Thread.setDefaultUncaughtExceptionHandler((t, e) ->
-            logger.error("An uncaught exception occurred in thread=" + t, e));
+                logger.error("An uncaught exception occurred in thread=" + t, e));
 
         setupMetaconfigLogger();
         setSystemProperties(args);
         JitsiConfig.Companion.reloadNewConfig();
 
-        ComponentMain componentMain = new ComponentMain();
+        // Make sure that passwords are not printed by ConfigurationService
+        // on startup by setting password regExpr and cmd line args list
+        ConfigUtils.PASSWORD_SYS_PROPS = "pass";
+        ConfigUtils.PASSWORD_CMD_LINE_ARGS = "secret,user_password";
 
-        // Whether the XMPP user connection is authenticated or anonymous
-        boolean isAnonymous = isBlank(XmppConfig.client.getPassword());
-        // The JID of the XMPP user connection
-        String jicofoClientJid
-            = XmppConfig.client.getUsername().toString() + "@" + XmppConfig.client.getDomain().toString();
 
-        focusXmppComponent = new FocusComponent(new XmppComponentConfig(), isAnonymous, jicofoClientJid);
+        final Object exitSyncRoot = new Object();
+        // Register shutdown hook to perform cleanup before exit
+        Runtime.getRuntime().addShutdownHook(new Thread(() ->
+        {
+            synchronized (exitSyncRoot)
+            {
+                exitSyncRoot.notifyAll();
+            }
+        }));
+        logger.info("Starting OSGi services.");
+        BundleActivator activator = startOsgi(exitSyncRoot);
 
-        JicofoBundleConfig osgiBundles = new JicofoBundleConfig();
+        logger.debug("Waiting for OSGi services to start");
+        try
+        {
+            WaitableBundleActivator.waitUntilStarted();
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to start all OSGi bundles, exiting.");
+            OSGi.stop(activator);
+            return;
+        }
+        logger.info("OSGi services started.");
 
-        componentMain.runMainProgramLoop(focusXmppComponent, osgiBundles);
+        JicofoServices jicofoServices = new JicofoServices(WaitableBundleActivator.getBundleContext());
+
+        try
+        {
+            synchronized (exitSyncRoot)
+            {
+                exitSyncRoot.wait();
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error(e, e);
+        }
+
+        logger.info("Stopping services.");
+        jicofoServices.stop();
+        OSGi.stop(activator);
     }
 
+    private static BundleActivator startOsgi(Object exitSyncRoot)
+    {
+        JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
+        OSGi.setBundleConfig(bundleConfig);
+        bundleConfig.setSystemPropertyDefaults();
+
+        ClassLoader classLoader = loadBundlesJars(bundleConfig);
+        OSGi.setClassLoader(classLoader);
+
+        /*
+         * Start OSGi. It will invoke the application programming interfaces
+         * (APIs) of Jitsi Videobridge. Each of them will keep the application
+         * alive.
+         */
+        BundleActivator activator = new BundleActivator()
+        {
+            @Override
+            public void start(BundleContext bundleContext)
+            {
+                bundleContext.registerService(
+                        ShutdownService.class,
+                        new ShutdownService()
+                        {
+                            private boolean shutdownStarted = false;
+
+                            @Override
+                            public void beginShutdown()
+                            {
+                                if (shutdownStarted)
+                                    return;
+
+                                shutdownStarted = true;
+
+                                synchronized (exitSyncRoot)
+                                {
+                                    exitSyncRoot.notifyAll();
+                                }
+                            }
+                        }, null
+                );
+            }
+
+            @Override
+            public void stop(BundleContext bundleContext)
+                    throws Exception
+            {
+                // We're doing nothing
+            }
+        };
+
+
+        // Start OSGi
+        logger.warn("Starting Osgi");
+        OSGi.start(activator);
+
+        return activator;
+    }
     /**
      * Read the command line arguments and env variables, and set the corresponding system properties used for
      * configuration of the XMPP component and client connections.
      */
     private static void setSystemProperties(String[] args)
-        throws ParseException
+            throws ParseException
     {
         CmdLine cmdLine = new CmdLine();
 
@@ -168,7 +251,8 @@ public class Main
         }
     }
 
-    private static void setupMetaconfigLogger() {
+    private static void setupMetaconfigLogger()
+    {
         org.jitsi.utils.logging2.Logger configLogger = new org.jitsi.utils.logging2.LoggerImpl("org.jitsi.config");
         MetaconfigSettings.Companion.setLogger(new MetaconfigLogger()
         {
@@ -190,5 +274,24 @@ public class Main
                 configLogger.debug(function0::invoke);
             }
         });
+    }
+
+    /**
+     * Creates class loader that able to load classes from jars of selected by
+     * bundleConfig {@code OSGiBundleConfig#BUNDLES_JARS_PATH} parameter.
+     * @param bundleConfig - instance with path to extended bundles jar.
+     * @return OSGi class loader for bundles.
+     */
+    private static ClassLoader loadBundlesJars(OSGiBundleConfig bundleConfig)
+    {
+        String bundlesJarsPath = bundleConfig.getBundlesJarsPath();
+        if (bundlesJarsPath == null)
+        {
+            return ClassLoader.getSystemClassLoader();
+        }
+
+        JarClassLoader jcl = new JarClassLoader();
+        jcl.add(bundlesJarsPath + "/");
+        return new OSGiClassLoader(jcl, ClassLoader.getSystemClassLoader());
     }
 }

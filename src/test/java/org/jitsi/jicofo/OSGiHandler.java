@@ -17,18 +17,15 @@
  */
 package org.jitsi.jicofo;
 
-import mock.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.config.JitsiConfig;
 import org.jitsi.jicofo.osgi.*;
-import org.jitsi.jicofo.xmpp.XmppClientConnectionConfig;
-import org.jitsi.jicofo.xmpp.XmppComponentConfig;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
 import org.osgi.framework.*;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.
- *
- * FIXME there is similar class in JVB
  *
  * @author Pawel Domas
  */
@@ -37,13 +34,11 @@ public class OSGiHandler
     /**
      * OSGi bundle context instance.
      */
-    public BundleContext bc;
+    public FailureAwareBundleContext bc;
 
     private BundleActivator bundleActivator;
 
     private final Object syncRoot = new Object();
-
-    private MockMainMethodActivator mockMain;
 
     private static OSGiHandler instance = new OSGiHandler();
 
@@ -56,17 +51,18 @@ public class OSGiHandler
         return instance;
     }
 
+    public JicofoTestServices jicofoServices;
+
     public void setDeadlocked(boolean deadlocked)
     {
         this.deadlocked = deadlocked;
-        if (deadlocked)        {
-
-            ((FailureAwareBundleContext)bc)
-                .setFailureMessage("OSGi stack is blocked by a deadlock");
+        if (deadlocked)
+        {
+            bc.setFailureMessage("OSGi stack is blocked by a deadlock");
         }
         else
         {
-            ((FailureAwareBundleContext)bc).setFailureMessage(null);
+            bc.setFailureMessage(null);
         }
     }
 
@@ -78,13 +74,9 @@ public class OSGiHandler
 
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
-        System.setProperty(XmppComponentConfig.hostnamePropertyName, "test.domain.net");
-        System.setProperty(XmppComponentConfig.portPropertyName, "5347");
-        System.setProperty(XmppComponentConfig.domainPropertyName, "focusdomain");
-        System.setProperty(XmppComponentConfig.subdomainPropertyName, "focus");
-        System.setProperty(XmppComponentConfig.secretPropertyName, "secret");
         System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, "test.domain.net");
-        System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "focusdomain");
+        System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "test.domain.net");
+        System.setProperty(XmppClientConnectionConfig.legacyUsernamePropertyName, "focus");
         JitsiConfig.Companion.reloadNewConfig();
 
         this.bundleActivator = new BundleActivator()
@@ -119,10 +111,6 @@ public class OSGiHandler
 
         OSGi.start(bundleActivator);
 
-        mockMain = new MockMainMethodActivator();
-
-        OSGi.start(mockMain);
-
         if (bc == null)
         {
             synchronized (syncRoot)
@@ -132,11 +120,14 @@ public class OSGiHandler
         }
 
         if (bc == null)
+        {
             throw new RuntimeException("Failed to start OSGI");
+        }
 
-        // Activators are executed asynchronously,
-        // so a hack to wait for the last activator is used
-        MockMainMethodActivator.waitUntilStarted(5000);
+        // Activators are executed asynchronously, so a hack to wait for the last activator is used
+        WaitableBundleActivator.waitUntilStarted();
+
+        jicofoServices = new JicofoTestServices(bc);
     }
 
     public void shutdown()
@@ -147,11 +138,6 @@ public class OSGiHandler
 
         if (bc != null)
         {
-            if (mockMain != null)
-            {
-                OSGi.stop(mockMain);
-            }
-
             OSGi.stop(bundleActivator);
         }
 
@@ -169,3 +155,4 @@ public class OSGiHandler
         return deadlocked;
     }
 }
+

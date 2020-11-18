@@ -21,14 +21,11 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.health.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.XmppConfig;
-import org.jitsi.osgi.*;
 import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
@@ -135,6 +132,11 @@ public class FocusManager
      * A class that holds Jicofo-wide statistics
      */
     private final Statistics statistics = new Statistics();
+
+    /**
+     * TODO: refactor to avoid the reference.
+     */
+    private Health health;
 
     /**
      * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
@@ -683,18 +685,17 @@ public class FocusManager
             stats.put("xmpp", xmppProtocolProvider.getStats());
         }
 
-        HealthCheckService healthService
-            = ServiceUtils2.getService(
-                    FocusBundleActivator.bundleContext,
-                    HealthCheckService.class);
-        if (healthService instanceof Health)
+        if (health != null)
         {
-            Health health = (Health) healthService;
-
             stats.put("slow_health_check", health.getTotalSlowHealthChecks());
         }
 
         return stats;
+    }
+
+    public void setHealth(Health health)
+    {
+        this.health = health;
     }
 
     /**
