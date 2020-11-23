@@ -52,12 +52,6 @@ public class JitsiMeetConfig
     public static final String PNAME_AUDIO_PACKET_DELAY = "audioPacketDelay";
 
     /**
-     * The name of channel last N configuration property. Should be non-negative
-     * number. Pass <tt>-1</tt> to disable last N functionality.
-     */
-    public static final String PNAME_CHANNEL_LAST_N = "channelLastN";
-
-    /**
      * The name of the "disableRtx" property.
      */
     public static final String PNAME_DISABLE_RTX = "disableRtx";
@@ -109,12 +103,6 @@ public class JitsiMeetConfig
      * enable or 'false' to disable.
      */
     public static final String PNAME_OPEN_SCTP = "openSctp";
-
-    /**
-     * The name of the configuration property used to configure Jigasi(SIP
-     * gateway) instance.
-     */
-    //public static final String PNAME_SIP_GATEWAY = "call_control";
 
     /**
      * The name of the start muted property for audio.
@@ -207,24 +195,6 @@ public class JitsiMeetConfig
             logger.error("Invalid JID for enforced videobridge", e);
             return null;
         }
-    }
-
-    /**
-     * Returns pre-configured XMPP address of SIP gateway or <tt>null</tt> if
-     * no info was passed in the config.
-     */
-    /*public String getPreConfiguredSipGateway()
-    {
-        return properties.get(SIP_GATEWAY_PNAME);
-    }*/
-
-    /**
-     * Returns an integer value of channel last N property or <tt>null</tt>
-     * if it has not been specified.
-     */
-    public Integer getChannelLastN()
-    {
-        return getInt(PNAME_CHANNEL_LAST_N);
     }
 
     /**

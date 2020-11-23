@@ -367,12 +367,6 @@ public class JitsiMeetConferenceImpl
             executor = ServiceUtils2.getService(osgiCtx, ScheduledExecutorService.class);
             services = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
 
-            // Set pre-configured SIP gateway
-            //if (config.getPreConfiguredSipGateway() != null)
-            //{
-            //    services.setSipGateway(config.getPreConfiguredSipGateway());
-            //}
-
             if (protocolProviderHandler.isRegistered())
             {
                 joinTheRoom();
