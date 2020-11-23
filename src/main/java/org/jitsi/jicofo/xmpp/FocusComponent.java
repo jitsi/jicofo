@@ -349,8 +349,7 @@ public class FocusComponent
                         String.valueOf(authAuthority.isExternal())));
         }
 
-        if (focusManager.getJitsiMeetServices().getSipGateway() != null
-            || focusManager.getJitsiMeetServices().getJigasiDetector() != null)
+        if (focusManager.getJitsiMeetServices().getJigasiDetector() != null)
         {
             response.addProperty(new ConferenceIq.Property("sipGatewayEnabled", "true"));
         }

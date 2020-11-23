@@ -36,6 +36,9 @@ import java.util.concurrent.*;
  * SIP gateway or Jirecon and notifies {@link JitsiMeetServices} whenever new
  * instance becomes available or goes offline.
  *
+ * TODO: I *think* the only remaining purpose of this code is to detect the XMPP server version...which can be much
+ * simpler.
+ *
  * @author Pawel Domas
  */
 public class ComponentsDiscovery
@@ -194,7 +197,7 @@ public class ComponentsDiscovery
                         ? version.getNameVersionOsString() : "null";
                 logger.info("New component discovered: " + node + ", " + verStr);
 
-                meetServices.newNodeDiscovered(node, features, version);
+                meetServices.newNodeDiscovered(node, version);
             }
             else
             {
@@ -224,8 +227,6 @@ public class ComponentsDiscovery
             for (Jid offlineNode : offlineNodes)
             {
                 logger.info("Component went offline: " + offlineNode);
-
-                meetServices.nodeNoLongerAvailable(offlineNode);
             }
         }
     }
@@ -252,18 +253,6 @@ public class ComponentsDiscovery
         }
     }
 
-    private void setAllNodesOffline()
-    {
-        for (Jid node : itemMap.keySet())
-        {
-            logger.info("Connection lost - component offline: " + node);
-
-            meetServices.nodeNoLongerAvailable(node);
-        }
-
-        itemMap.clear();
-    }
-
     @Override
     public void registrationStateChanged(RegistrationStateChangeEvent evt)
     {
@@ -276,7 +265,7 @@ public class ComponentsDiscovery
         {
             cancelRediscovery();
 
-            setAllNodesOffline();
+            itemMap.clear();
         }
     }
 
@@ -288,8 +277,7 @@ public class ComponentsDiscovery
         {
             if (!protocolProviderHandler.isRegistered())
             {
-                logger.warn(
-                    "No XMPP connection - skipping service re-discovery.");
+                logger.warn("No XMPP connection - skipping service re-discovery.");
                 return;
             }
 
