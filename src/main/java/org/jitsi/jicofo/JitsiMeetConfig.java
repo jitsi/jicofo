@@ -105,12 +105,6 @@ public class JitsiMeetConfig
     public static final String PNAME_OPEN_SCTP = "openSctp";
 
     /**
-     * The name of the configuration property used to configure Jigasi(SIP
-     * gateway) instance.
-     */
-    //public static final String PNAME_SIP_GATEWAY = "call_control";
-
-    /**
      * The name of the start muted property for audio.
      */
     public static final String PNAME_START_AUDIO_MUTED = "startAudioMuted";
@@ -202,15 +196,6 @@ public class JitsiMeetConfig
             return null;
         }
     }
-
-    /**
-     * Returns pre-configured XMPP address of SIP gateway or <tt>null</tt> if
-     * no info was passed in the config.
-     */
-    /*public String getPreConfiguredSipGateway()
-    {
-        return properties.get(SIP_GATEWAY_PNAME);
-    }*/
 
     /**
      * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
