@@ -21,9 +21,6 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
-import org.jitsi.xmpp.util.*;
-
-import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -108,14 +105,6 @@ public class DiscoveryUtil
     public final static String FEATURE_AUDIO_MUTE = "http://jitsi.org/protocol/audio-mute";
 
     /**
-     * Array constant which can be used to check for Version IQ support.
-     */
-    public final static String[] VERSION_FEATURES = new String[]
-        {
-            Version.NAMESPACE
-        };
-
-    /**
      * Gets the list of features supported by participant. If we fail to
      * obtain it due to network failure default feature list is returned.
      * @param protocolProvider protocol provider service instance that will
@@ -125,12 +114,10 @@ public class DiscoveryUtil
     public static List<String> discoverParticipantFeatures
         (ProtocolProviderService protocolProvider, EntityFullJid address)
     {
-        OperationSetSimpleCaps disco
-            = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
+        OperationSetSimpleCaps disco = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
         if (disco == null)
         {
-            logger.error(
-                "Service discovery not supported by " + protocolProvider);
+            logger.error("Service discovery not supported by " + protocolProvider);
             return getDefaultParticipantFeatureSet();
         }
 
@@ -142,9 +129,7 @@ public class DiscoveryUtil
         List<String> participantFeatures = disco.getFeatures(address);
         if (participantFeatures == null)
         {
-            logger.warn(
-                "Failed to discover features for "+ address
-                        + " assuming default feature set.");
+            logger.warn("Failed to discover features for "+ address + " assuming default feature set.");
 
             return getDefaultParticipantFeatureSet();
         }
@@ -174,64 +159,13 @@ public class DiscoveryUtil
     }
 
     /**
-     * Discovers version of given <tt>jid</tt>.
-     *
-     * @param connection the connection which will be used to send the query.
-     * @param jid       the JID to which version query wil be sent.
-     * @param features  the list of <tt>jid</tt> feature which will be used to
-     *                  determine support for the version IQ.
-     *
-     * @return {@link Version} if given <tt>jid</tt> supports version IQ and if
-     *         we the query was successful or <tt>null</tt> otherwise.
-     */
-    static public Version discoverVersion(
-            XmppConnection                connection,
-            Jid                           jid,
-            List<String>                  features)
-    {
-        // If the bridge supports version IQ query it's version
-        if (DiscoveryUtil.checkFeatureSupport(VERSION_FEATURES, features))
-        {
-            Version versionIq = new Version();
-            versionIq.setType(IQ.Type.get);
-            versionIq.setTo(jid);
-
-            Stanza response;
-            try
-            {
-                response = connection.sendPacketAndGetReply(versionIq);
-            }
-            catch (OperationFailedException e)
-            {
-                logger.error(
-                    "Failed to discover component version - XMPP disconnected",
-                    e);
-                return null;
-            }
-
-            if (response instanceof Version)
-            {
-                return  (Version) response;
-            }
-            else
-            {
-                logger.error(
-                        "Failed to discover version, req: " + versionIq.toXML()
-                            + ", response: "
-                            + IQUtils.responseToXML(response));
-            }
-        }
-        return null;
-    }
-
-    /**
      * Returns default participant feature set(all features).
      */
     static public List<String> getDefaultParticipantFeatureSet()
     {
         if (defaultFeatures == null)
         {
-            defaultFeatures = new ArrayList<String>(7);
+            defaultFeatures = new ArrayList<>();
             defaultFeatures.add(FEATURE_AUDIO);
             defaultFeatures.add(FEATURE_VIDEO);
             defaultFeatures.add(FEATURE_ICE);
@@ -241,25 +175,6 @@ public class DiscoveryUtil
             defaultFeatures.add(FEATURE_RTP_BUNDLE);
         }
         return defaultFeatures;
-    }
-
-    /**
-     * Checks if all of the features given on <tt>reqFeatures</tt> array exist
-     * on declared list of <tt>capabilities</tt>.
-     * @param reqFeatures array of required features to check.
-     * @param capabilities the list of features supported by the client.
-     * @return <tt>true</tt> if all features from <tt>reqFeatures</tt> array
-     *         exist on <tt>capabilities</tt> list.
-     */
-    static public boolean checkFeatureSupport(String[] reqFeatures,
-                                              List<String> capabilities)
-    {
-        for (String toCheck : reqFeatures)
-        {
-            if (!capabilities.contains(toCheck))
-                return false;
-        }
-        return true;
     }
 
     /**
