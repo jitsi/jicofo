@@ -20,6 +20,7 @@ package mock.jvb;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.shutdown.*;
 import org.jitsi.utils.logging.*;
+import org.jitsi.utils.version.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -60,7 +61,10 @@ public class MockVideobridge
 
     public void start(BundleContext bc)
     {
-        bridge = new Videobridge(new org.jitsi.videobridge.xmpp.XmppConnection(), new ShutdownServiceImpl());
+        bridge = new Videobridge(
+                new org.jitsi.videobridge.xmpp.XmppConnection(),
+                new ShutdownServiceImpl(),
+                new VersionImpl("jvb", 2, 72));
         bridge.start();
 
         connection.registerIQRequestHandler(confIqGetHandler);
