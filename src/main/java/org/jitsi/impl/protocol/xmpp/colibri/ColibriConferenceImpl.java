@@ -212,7 +212,6 @@ public class ColibriConferenceImpl
     {
         synchronized (syncRoot)
         {
-            colibriBuilder.setChannelLastN(config.getChannelLastN());
             colibriBuilder.setAudioPacketDelay(config.getAudioPacketDelay());
         }
     }

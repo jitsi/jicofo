@@ -52,12 +52,6 @@ public class JitsiMeetConfig
     public static final String PNAME_AUDIO_PACKET_DELAY = "audioPacketDelay";
 
     /**
-     * The name of channel last N configuration property. Should be non-negative
-     * number. Pass <tt>-1</tt> to disable last N functionality.
-     */
-    public static final String PNAME_CHANNEL_LAST_N = "channelLastN";
-
-    /**
      * The name of the "disableRtx" property.
      */
     public static final String PNAME_DISABLE_RTX = "disableRtx";
@@ -217,15 +211,6 @@ public class JitsiMeetConfig
     {
         return properties.get(SIP_GATEWAY_PNAME);
     }*/
-
-    /**
-     * Returns an integer value of channel last N property or <tt>null</tt>
-     * if it has not been specified.
-     */
-    public Integer getChannelLastN()
-    {
-        return getInt(PNAME_CHANNEL_LAST_N);
-    }
 
     /**
      * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
