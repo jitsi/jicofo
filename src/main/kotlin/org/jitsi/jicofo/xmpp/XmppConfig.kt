@@ -27,12 +27,6 @@ import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 
 class XmppConfig {
-    val rediscoveryInterval: Duration by config {
-        "org.jitsi.jicofo.SERVICE_REDISCOVERY_INTERVAL".from(legacyConfig)
-        "jicofo.xmpp.rediscovery-interval".from(newConfig)
-    }
-    fun rediscoveryEnabled() = !rediscoveryInterval.isZero
-
     companion object {
         @JvmField
         val service = XmppServiceConnectionConfig()

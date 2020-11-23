@@ -117,12 +117,6 @@ public class FocusManager
     private ProtocolProviderHandler jvbProtocolProvider;
 
     /**
-     * Observes and discovers JVB instances and other conference components on
-     * our XMPP domain.
-     */
-    private ComponentsDiscovery componentsDiscovery;
-
-    /**
      * Handler that takes care of pre-processing various Jitsi Meet extensions
      * IQs sent from conference participants to the focus.
      */
@@ -198,9 +192,6 @@ public class FocusManager
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
-        componentsDiscovery = new ComponentsDiscovery(jitsiMeetServices);
-        componentsDiscovery.start(XmppConfig.client.getXmppDomain(), protocolProviderHandler);
-
         meetExtensionsHandler = new MeetExtensionsHandler(this);
 
         bundleContext.registerService(
@@ -223,12 +214,6 @@ public class FocusManager
             serviceRegistration = null;
         }
         expireThread.stop();
-
-        if (componentsDiscovery != null)
-        {
-            componentsDiscovery.stop();
-            componentsDiscovery = null;
-        }
 
         if (jitsiMeetServices != null)
         {

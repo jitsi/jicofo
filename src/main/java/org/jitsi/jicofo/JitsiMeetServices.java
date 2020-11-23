@@ -62,12 +62,6 @@ public class JitsiMeetServices
     private final ProtocolProviderHandler protocolProvider;
 
     /**
-     * <tt>Version</tt> IQ instance holding detected XMPP server's version
-     * (if any).
-     */
-    private Version XMPPServerVersion;
-
-    /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo XMPP connection.
      * @param jvbMucProtocolProvider {@link ProtocolProviderHandler} for JVB XMPP connection.
@@ -81,22 +75,6 @@ public class JitsiMeetServices
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
         this.bridgeSelector = new BridgeSelector();
-    }
-
-    /**
-     * Call when new component becomes available.
-     *
-     * @param node component XMPP address
-     * @param version the <tt>Version</tt> IQ which carries the info about
-     *                <tt>node</tt> version(if any).
-     */
-    void newNodeDiscovered(Jid node, Version version)
-    {
-        if (XmppConfig.client.getDomain().equals(node) && version != null)
-        {
-            this.XMPPServerVersion = version;
-            logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
-        }
     }
 
     /**
@@ -194,17 +172,6 @@ public class JitsiMeetServices
         breweryDetectors.forEach(BaseBrewery::dispose);
         breweryDetectors.clear();
         bridgeSelector.dispose();
-    }
-
-    /**
-     * The version of XMPP server to which Jicofo user is connecting to.
-     *
-     * @return {@link Version} instance which holds the version details. Can be
-     *         <tt>null</tt> if not discovered yet.
-     */
-    public Version getXMPPServerVersion()
-    {
-        return XMPPServerVersion;
     }
 
     @SuppressWarnings("unchecked")

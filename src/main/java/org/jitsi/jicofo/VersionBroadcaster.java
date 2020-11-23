@@ -23,7 +23,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.osgi.*;
 
@@ -150,18 +149,7 @@ public class VersionBroadcaster
             return;
         }
 
-        JitsiMeetServices meetServices = focusManager.getJitsiMeetServices();
-        ComponentVersionsExtension versionsExtension
-            = new ComponentVersionsExtension();
-
-        // XMPP
-        Version xmppServerVersion = meetServices.getXMPPServerVersion();
-        if (xmppServerVersion != null)
-        {
-            versionsExtension.addComponentVersion(
-                   ComponentVersionsExtension.COMPONENT_XMPP_SERVER,
-                    xmppServerVersion.getNameVersionOsString());
-        }
+        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
 
         // Conference focus
         org.jitsi.utils.version.Version jicofoVersion
