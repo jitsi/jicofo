@@ -45,21 +45,6 @@ public class EventFactory
     public static final String AUTH_SESSION_ID_KEY = "auth_session_id";
 
     /**
-     * The name of the key for videobridge JID.
-     */
-    public static final String BRIDGE_JID_KEY = "bridge_jid";
-
-    /**
-     * The name of the key for conference ID.
-     */
-    public static final String CONFERENCE_ID_KEY = "conference_id";
-
-    /**
-     * The name of the key for display name.
-     */
-    public static final String DISPLAY_NAME_KEY = "display_name";
-
-    /**
      * The name of the key for endpoint ID.
      */
     public static final String ENDPOINT_ID_KEY = "endpoint_id";
@@ -84,12 +69,6 @@ public class EventFactory
      * The name of the key for authenticated user identity.
      */
     public static final String USER_IDENTITY_KEY = "user_identity";
-
-    /**
-     * The name of the topic of a "conference room" event.
-     */
-    public static final String CONFERENCE_ROOM_TOPIC
-        = "org/jitsi/jicofo/CONFERENCE_ROOM_CREATED";
 
     /**
      * The name of the topic of an "authentication session created" event.
