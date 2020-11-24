@@ -151,15 +151,6 @@ public class VersionBroadcaster
 
         ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
 
-        // Conference focus
-        org.jitsi.utils.version.Version jicofoVersion
-            = versionService.getCurrentVersion();
-        versionsExtension.addComponentVersion(
-                ComponentVersionsExtension.COMPONENT_FOCUS,
-                jicofoVersion.getApplicationName()
-                    + "(" + jicofoVersion.toString() + ","
-                    + System.getProperty("os.name") + ")");
-
         String jvbVersions = conference.getBridges().keySet().stream()
             .map(b -> b.getVersion())
             .filter(Objects::nonNull)

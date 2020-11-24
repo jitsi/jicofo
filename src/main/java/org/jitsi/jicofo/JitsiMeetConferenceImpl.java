@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.version.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -549,6 +550,12 @@ public class JitsiMeetConferenceImpl
 
         // Advertise shared Etherpad document
         meetTools.sendPresenceExtension(chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
+
+        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
+        versionsExtension.addComponentVersion(
+                ComponentVersionsExtension.COMPONENT_FOCUS,
+                CurrentVersionImpl.VERSION.toString());
+        meetTools.sendPresenceExtension(chatRoom, versionsExtension);
 
         // Advertise the conference creation time in presence
         setConferenceProperty(
