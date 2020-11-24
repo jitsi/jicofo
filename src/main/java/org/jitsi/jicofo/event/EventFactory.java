@@ -122,32 +122,6 @@ public class EventFactory
         = "org/jitsi/jicofo/FOCUS_DESTROYED";
 
     /**
-     * Creates a new "room conference" <tt>Event</tt> which binds a COLIBRI
-     * conference ID to the JID of the associated MUC.
-     *
-     * @param conferenceId the ID of the COLIBRI conference.
-     * @param roomJid the JID of the MUC for which the focus was created.
-     *
-     * @param focus
-     * @return the <tt>Event</tt> which was created.
-     */
-    public static Event conferenceRoom(
-            String conferenceId,
-            EntityBareJid roomJid,
-            String focus,
-            Jid bridgeJid)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(4);
-
-        props.put(CONFERENCE_ID_KEY, conferenceId);
-        props.put(ROOM_JID_KEY, roomJid);
-        props.put(FOCUS_ID_KEY, focus);
-        props.put(BRIDGE_JID_KEY, bridgeJid);
-
-        return new Event(CONFERENCE_ROOM_TOPIC, props);
-    }
-
-    /**
      * Creates new "authentication session created" event.
      *
      * @param sessionId authentication session identifier.

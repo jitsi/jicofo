@@ -115,7 +115,6 @@ public class VersionBroadcaster
 
     /**
      * Handles
-     * {@link EventFactory#CONFERENCE_ROOM_TOPIC}.
      *
      * {@inheritDoc}
      */
@@ -123,7 +122,7 @@ public class VersionBroadcaster
     public void handleEvent(Event event)
     {
         String topic = event.getTopic();
-        if (!topic.equals(EventFactory.CONFERENCE_ROOM_TOPIC))
+        if (true)
         {
             logger.error("Unexpected event topic: " + topic);
             return;

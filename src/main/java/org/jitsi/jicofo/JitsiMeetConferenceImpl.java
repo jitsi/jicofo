@@ -2509,18 +2509,6 @@ public class JitsiMeetConferenceImpl
      */
     public void onColibriConferenceAllocated(ColibriConference colibriConference, Jid videobridgeJid)
     {
-        // TODO: do we need this event?
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.conferenceRoom(
-                            colibriConference.getConferenceId(),
-                            roomName,
-                            String.valueOf(getId()),
-                            videobridgeJid));
-        }
-
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
         ChatRoom chatRoom = this.chatRoom;
