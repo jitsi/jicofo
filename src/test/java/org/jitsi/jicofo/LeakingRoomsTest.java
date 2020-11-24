@@ -25,6 +25,9 @@ import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -126,5 +129,16 @@ public class LeakingRoomsTest
         {
             testConf.stop();
         }
+    }
+
+    /**
+     * check the default value of minParticipants in JitsiMeetConfig
+     */
+    @Test
+    public void testGetMinParticipants()
+    {
+        Map<String, String> properties = new HashMap<String, String>();
+        JitsiMeetConfig jitsiMeetConfig = new JitsiMeetConfig(properties);
+        Assert.assertEquals(2, jitsiMeetConfig.getMinParticipants());
     }
 }
