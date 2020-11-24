@@ -91,7 +91,7 @@ public class CurrentVersionImpl
     public static final String NIGHTLY_BUILD_ID
         = parsedBuildId != null ? parsedBuildId : "build.git";
 
-    static final Version VERSION
+    public static final Version VERSION
         = new VersionImpl(
                 "JiCoFo",
                 VERSION_MAJOR,

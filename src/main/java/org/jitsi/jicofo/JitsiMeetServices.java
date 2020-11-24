@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.bridge.*;
 
-import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.jigasi.*;
@@ -46,15 +45,6 @@ public class JitsiMeetServices
     private final static Logger logger = Logger.getLogger(JitsiMeetServices.class);
 
     /**
-     * Features advertised by SIP gateway component.
-     */
-    private static final String[] SIP_GW_FEATURES = new String[]
-        {
-            "http://jitsi.org/protocol/jigasi",
-            "urn:xmpp:rayo:0"
-        };
-
-    /**
      * Manages Jitsi Videobridge component XMPP addresses.
      */
     private final BridgeSelector bridgeSelector;
@@ -72,17 +62,6 @@ public class JitsiMeetServices
     private final ProtocolProviderHandler protocolProvider;
 
     /**
-     * SIP gateway component XMPP address.
-     */
-    private Jid sipGateway;
-
-    /**
-     * <tt>Version</tt> IQ instance holding detected XMPP server's version
-     * (if any).
-     */
-    private Version XMPPServerVersion;
-
-    /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo XMPP connection.
      * @param jvbMucProtocolProvider {@link ProtocolProviderHandler} for JVB XMPP connection.
@@ -96,62 +75,6 @@ public class JitsiMeetServices
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
         this.bridgeSelector = new BridgeSelector();
-    }
-
-    /**
-     * Call when new component becomes available.
-     *
-     * @param node component XMPP address
-     * @param features list of features supported by <tt>node</tt>
-     * @param version the <tt>Version</tt> IQ which carries the info about
-     *                <tt>node</tt> version(if any).
-     */
-    void newNodeDiscovered(Jid node,
-                           List<String> features,
-                           Version version)
-    {
-        if (sipGateway == null && DiscoveryUtil.checkFeatureSupport(SIP_GW_FEATURES, features))
-        {
-            logger.info("Discovered SIP gateway: " + node);
-            setSipGateway(node);
-        }
-        else if (XmppConfig.client.getDomain().equals(node) && version != null)
-        {
-            this.XMPPServerVersion = version;
-            logger.info("Detected XMPP server version: " + version.getNameVersionOsString());
-        }
-    }
-
-    /**
-     * Call when a component goes offline.
-     *
-     * @param node XMPP address of disconnected XMPP component.
-     */
-    void nodeNoLongerAvailable(Jid node)
-    {
-        if (node.equals(sipGateway))
-        {
-            logger.warn("SIP gateway went offline: " + node);
-            sipGateway = null;
-        }
-    }
-
-    /**
-     * Sets new XMPP address of the SIP gateway component.
-     * @param sipGateway the XMPP address to be set as SIP gateway component
-     *                   address.
-     */
-    void setSipGateway(Jid sipGateway)
-    {
-        this.sipGateway = sipGateway;
-    }
-
-    /**
-     * Returns XMPP address of SIP gateway component.
-     */
-    public Jid getSipGateway()
-    {
-        return sipGateway;
     }
 
     /**
@@ -249,17 +172,6 @@ public class JitsiMeetServices
         breweryDetectors.forEach(BaseBrewery::dispose);
         breweryDetectors.clear();
         bridgeSelector.dispose();
-    }
-
-    /**
-     * The version of XMPP server to which Jicofo user is connecting to.
-     *
-     * @return {@link Version} instance which holds the version details. Can be
-     *         <tt>null</tt> if not discovered yet.
-     */
-    public Version getXMPPServerVersion()
-    {
-        return XMPPServerVersion;
     }
 
     @SuppressWarnings("unchecked")

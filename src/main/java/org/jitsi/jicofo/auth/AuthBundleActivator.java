@@ -21,21 +21,17 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.glassfish.jersey.servlet.*;
 import org.jitsi.jicofo.rest.*;
-import org.jitsi.osgi.*;
 import org.jitsi.rest.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
+import java.time.*;
 import java.util.*;
-
-import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Implements <tt>BundleActivator</tt> for the OSGi bundle responsible for
- * authentication with external systems. Authentication URL pattern must be
- * configured in order to active the bundle {@link #LOGIN_URL_PNAME}.
+ * authentication with external systems.
  *
  * @author Pawel Domas
  */
@@ -43,59 +39,15 @@ public class AuthBundleActivator
     extends AbstractJettyBundleActivator
 {
     /**
-     * The prefix of the names of {@code ConfigurationService} and/or
-     * {@code System} properties defined by {@code AuthBundleActivator}.
-     */
-    private static final String AUTH_PNAME = "org.jitsi.jicofo.auth";
-
-    /**
-     * The name of the {@code ConfigurationService} property which specifies the
-     * pattern of authentication URL. See {@link ShibbolethAuthAuthority} for
-     * more information.
-     */
-    public static final String LOGIN_URL_PNAME = AUTH_PNAME + ".URL";
-
-    /**
-     * The name of the {@code ConfigurationService} property which specifies the
-     * pattern of logout URL. See {@link ShibbolethAuthAuthority} for more
-     * information.
-     */
-    public static final String LOGOUT_URL_PNAME = AUTH_PNAME + ".LOGOUT_URL";
-
-    /**
-     * The name of the {@code ConfigurationService} property which disables auto
-     * login feature. Authentication sessions are destroyed immediately when the
-     * conference ends.
-     */
-    public static final String DISABLE_AUTOLOGIN_PNAME
-        = AUTH_PNAME + ".DISABLE_AUTOLOGIN";
-
-    /**
-     * Name of configuration property that controls authentication session
-     * lifetime.
-     */
-    private final static String AUTHENTICATION_LIFETIME_PNAME
-        = "org.jitsi.jicofo.auth.AUTH_LIFETIME";
-
-    /**
-     * Default lifetime of authentication session(24H).
-     */
-    private final static long DEFAULT_AUTHENTICATION_LIFETIME
-        = 24 * 60 * 60 * 1000;
-
-    /**
      * The {@code Logger} used by the {@code AuthBundleActivator} class and its
      * instances to print debug information.
      */
-    private static final Logger logger
-        = Logger.getLogger(AuthBundleActivator.class);
+    private static final Logger logger = Logger.getLogger(AuthBundleActivator.class);
 
     /**
      * Reference to service registration of {@link AuthenticationAuthority}.
      */
-    private
-        ServiceRegistration<AuthenticationAuthority>
-            authAuthorityServiceRegistration;
+    private ServiceRegistration<AuthenticationAuthority> authAuthorityServiceRegistration;
 
     /**
      * The instance of {@link AuthenticationAuthority}.
@@ -111,7 +63,7 @@ public class AuthBundleActivator
     {
         // The server started here handles many endpoints (health checks, etc.), hence the generic
         // configuration key scope (jicofo.rest), but this class is responsible for starting it.
-        super(AUTH_PNAME, "jicofo.rest");
+        super("org.jitsi.jicofo.auth", "jicofo.rest");
     }
 
     /**
@@ -157,50 +109,38 @@ public class AuthBundleActivator
     {
         AuthBundleActivator.bundleContext = bundleContext;
 
-        ConfigurationService cfg
-            = ServiceUtils2.getService(
-                    bundleContext,
-                    ConfigurationService.class);
-        String loginUrl = cfg.getString(LOGIN_URL_PNAME);
-        long authenticationLifetime
-            = cfg.getLong(
-                    AUTHENTICATION_LIFETIME_PNAME,
-                    DEFAULT_AUTHENTICATION_LIFETIME);
-        boolean disableAutoLogin
-            = cfg.getBoolean(
-                    DISABLE_AUTOLOGIN_PNAME, false);
-
-        if (isNotBlank(loginUrl))
+        if (AuthConfig.config.getEnabled())
         {
-            logger.info("Starting authentication service... URL: " + loginUrl);
+            String loginUrl = AuthConfig.config.getLoginUrl();
+            AuthConfig.Type type = AuthConfig.config.getType();
+            Duration authenticationLifetime = AuthConfig.config.getAuthenticationLifetime();
+            boolean enableAutoLogin = AuthConfig.config.getEnableAutoLogin();
+            logger.info("Starting authentication service with type=" + type +" loginUrl=" + loginUrl + " lifetime="
+                + authenticationLifetime);
 
-            if (loginUrl.toUpperCase().startsWith("XMPP:"))
+            switch (type)
             {
+            case XMPP:
                 authAuthority
                     = new XMPPDomainAuthAuthority(
-                            disableAutoLogin,
+                            enableAutoLogin,
                             authenticationLifetime,
-                            JidCreate.domainBareFrom(loginUrl.substring(5)));
-            }
-            else if (loginUrl.toUpperCase().startsWith("EXT_JWT:"))
-            {
+                            JidCreate.domainBareFrom(loginUrl));
+                break;
+            case JWT:
                 authAuthority
                     = new ExternalJWTAuthority(
-                            JidCreate.domainBareFrom(loginUrl.substring(8)));
-            }
-            else
-            {
-                String logoutUrl = cfg.getString(LOGOUT_URL_PNAME);
-
+                            JidCreate.domainBareFrom(loginUrl));
+                break;
+            case SHIBBOLETH:
                 authAuthority
                     = new ShibbolethAuthAuthority(
-                            disableAutoLogin,
-                            authenticationLifetime, loginUrl, logoutUrl);
+                            enableAutoLogin,
+                            authenticationLifetime,
+                            loginUrl,
+                            AuthConfig.config.getLogoutUrl());
             }
-        }
 
-        if (authAuthority != null)
-        {
             logger.info("Auth authority: " + authAuthority);
 
             authAuthorityServiceRegistration
@@ -212,6 +152,7 @@ public class AuthBundleActivator
             authAuthority.start();
         }
 
+        // NB: this is what starts Jetty...
         super.start(bundleContext);
     }
 

@@ -282,8 +282,7 @@ public abstract class AbstractChannelAllocator implements Runnable
 
             if (bridgeSession.colibriConference.hasJustAllocated())
             {
-                meetConference.onColibriConferenceAllocated(
-                    bridgeSession.colibriConference, jvb);
+                meetConference.onColibriConferenceAllocated();
             }
             return colibriChannels;
         }

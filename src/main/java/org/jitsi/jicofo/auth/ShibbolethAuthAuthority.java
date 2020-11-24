@@ -21,6 +21,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
@@ -49,9 +50,9 @@ public class ShibbolethAuthAuthority
     implements AuthenticationAuthority
 {
     /**
-     * Value constant which should be passed as {@link
-     * AuthBundleActivator#LOGIN_URL_PNAME} and {@link
-     * AuthBundleActivator#LOGOUT_URL_PNAME} in order to use default
+     * Value constant which should be configured via {@link
+     * AuthConfig#getLoginUrl()} and {@link
+     * AuthConfig#getLogoutUrl()} in order to use default
      * Shibboleth URLs for login and logout. It can not be skipped, because
      * Shibboleth will not be enabled otherwise.
      */
@@ -87,36 +88,19 @@ public class ShibbolethAuthAuthority
     private String logoutUrlPattern = "../Shibboleth.sso/Logout";
 
     /**
-     * Creates new instance of <tt>ShibbolethAuthAuthority</tt> with default
-     * login and logout URL locations.
-     * @param disableAutoLogin disables auto login feature. Authentication
-     * sessions are destroyed immediately when the conference ends.
-     * @param authenticationLifetime specifies how long authentication sessions
-     * will be stored in Jicofo's memory. Interval in milliseconds.
-
-     */
-    public ShibbolethAuthAuthority(boolean    disableAutoLogin,
-                                   long       authenticationLifetime)
-    {
-        this(disableAutoLogin, authenticationLifetime,
-            DEFAULT_URL_CONST, DEFAULT_URL_CONST);
-    }
-
-    /**
      * Creates new instance of {@link ShibbolethAuthAuthority}.
      * @param loginUrlPattern the pattern used for constructing external
      *        authentication URLs. See {@link #loginUrlPattern} for more info.
      *
      */
-    public ShibbolethAuthAuthority(boolean    disableAutoLogin,
-                                   long       authenticationLifetime,
-                                   String     loginUrlPattern,
-                                   String     logoutUrlPattern)
+    public ShibbolethAuthAuthority(boolean enableAutoLogin,
+                                   Duration authenticationLifetime,
+                                   String loginUrlPattern,
+                                   String logoutUrlPattern)
     {
-        super(disableAutoLogin, authenticationLifetime);
+        super(enableAutoLogin, authenticationLifetime);
         // Override authenticate URL ?
-        if (isNotBlank(loginUrlPattern)
-                && !DEFAULT_URL_CONST.equals(loginUrlPattern))
+        if (isNotBlank(loginUrlPattern) && !DEFAULT_URL_CONST.equals(loginUrlPattern))
         {
             this.loginUrlPattern = loginUrlPattern;
         }

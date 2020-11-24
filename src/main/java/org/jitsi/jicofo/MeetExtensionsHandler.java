@@ -237,13 +237,8 @@ public class MeetExtensionsHandler
             .collect(Collectors.toSet());
 
         // Check if Jigasi is available
-        Jid jigasiJid;
         JigasiDetector detector = conference.getServices().getJigasiDetector();
-        if (detector == null
-            || (jigasiJid = detector.selectJigasi(exclude, bridgeRegions)) == null)
-        {
-            jigasiJid = conference.getServices().getSipGateway();
-        }
+        Jid jigasiJid = detector == null ? null : detector.selectJigasi(exclude, bridgeRegions);
 
         if (jigasiJid == null)
         {

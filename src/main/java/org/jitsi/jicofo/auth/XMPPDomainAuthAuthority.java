@@ -21,6 +21,8 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
+
 import static org.apache.commons.lang3.StringUtils.*;
 
 /**
@@ -42,18 +44,18 @@ public class XMPPDomainAuthAuthority
     /**
      * Creates new instance of <tt>XMPPDomainAuthAuthority</tt>.
      *
-     * @param disableAutoLogin disables auto login feature. Authentication
+     * @param enableAutoLogin disables auto login feature. Authentication
      * sessions are destroyed immediately when the conference ends.
      * @param authenticationLifetime specifies how long authentication sessions
      * will be stored in Jicofo's memory. Interval in milliseconds.
      * @param domain a string with XMPP domain name for which users will be
      *               considered authenticated.
      */
-    public XMPPDomainAuthAuthority(boolean       disableAutoLogin,
-                                   long          authenticationLifetime,
+    public XMPPDomainAuthAuthority(boolean enableAutoLogin,
+                                   Duration authenticationLifetime,
                                    DomainBareJid domain)
     {
-        super(disableAutoLogin, authenticationLifetime);
+        super(enableAutoLogin, authenticationLifetime);
 
         this.domain = domain;
     }
@@ -89,8 +91,7 @@ public class XMPPDomainAuthAuthority
                         "Missing mandatory attribute '"
                                 + ConferenceIq.MACHINE_UID_ATTR_NAME + "'");
             }
-            session = createNewSession(
-                machineUID, bareJid.toString(), query.getRoom(), null);
+            session = createNewSession(machineUID, bareJid.toString(), query.getRoom(), null);
         }
 
         // Authenticate JID with session(if it exists)
