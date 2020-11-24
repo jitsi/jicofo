@@ -174,8 +174,7 @@ public abstract class AbstractAuthAuthority
      * @return new <tt>AuthenticationSession</tt> for given parameters.
      */
     protected AuthenticationSession createNewSession(
-            String machineUID, String authIdentity, EntityBareJid roomName,
-            Map<String, String> properties)
+            String machineUID, String authIdentity, EntityBareJid roomName)
     {
         synchronized (syncRoot)
         {
@@ -188,19 +187,7 @@ public abstract class AbstractAuthAuthority
 
             authenticationSessions.put(session.getSessionId(), session);
 
-            logger.info(
-                "Authentication session created for "
-                        + authIdentity + " SID: " + session.getSessionId());
-
-            if (properties != null)
-            {
-                logEvent(
-                        EventFactory.authSessionCreated(
-                                session.getSessionId(),
-                                session.getUserIdentity(),
-                                session.getMachineUID(),
-                                properties));
-            }
+            logger.info("Authentication session created for " + authIdentity + " SID: " + session.getSessionId());
 
             return session;
         }

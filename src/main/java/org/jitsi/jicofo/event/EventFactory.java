@@ -21,8 +21,6 @@ import org.jitsi.eventadmin.*;
 
 import java.util.*;
 
-import static org.apache.commons.lang3.StringUtils.*;
-
 /**
  * A utility class with static methods which initialize <tt>Event</tt> instances
  * with pre-determined fields.
@@ -34,63 +32,15 @@ public class EventFactory
     extends AbstractEventFactory
 {
     /**
-     * The name of the key for additional authentication properties.
-     */
-    public static final String AUTH_PROPERTIES_KEY = "properties";
-
-    /**
      * The name of the key for authentication session ID.
      */
     public static final String AUTH_SESSION_ID_KEY = "auth_session_id";
-
-    /**
-     * The name of the key for machine unique identifier supplied during
-     * authentication.
-     */
-    public static final String MACHINE_UID_KEY = "machine_uid";
-
-    /**
-     * The name of the key for authenticated user identity.
-     */
-    public static final String USER_IDENTITY_KEY = "user_identity";
-
-    /**
-     * The name of the topic of an "authentication session created" event.
-     */
-    public static final String AUTH_SESSION_CREATED_TOPIC
-        = "org/jitsi/jicofo/AUTH_SESSION_CREATED";
 
     /**
      * The name of the topic of an "authentication session destroyed" event.
      */
     public static final String AUTH_SESSION_DESTROYED_TOPIC
         = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
-
-    /**
-     * Creates new "authentication session created" event.
-     *
-     * @param sessionId authentication session identifier.
-     * @param userIdentity authenticated user identity
-     * @param machineUid machine unique identifier used to distinguish session
-     *                   for the same user on different machines.
-     * @param properties the map of additional properties to be logged provided
-     *                   during authentication.
-     *
-     * @return "authentication session created" <tt>Event</tt>
-     */
-    public static Event authSessionCreated(
-            String sessionId,  String              userIdentity,
-            String machineUid, Map<String, String> properties )
-    {
-        Dictionary<String, Object> props = new Hashtable<>(4);
-
-        props.put(AUTH_SESSION_ID_KEY, sessionId);
-        props.put(USER_IDENTITY_KEY, userIdentity);
-        props.put(MACHINE_UID_KEY, machineUid);
-        props.put(AUTH_PROPERTIES_KEY, mergeProperties(properties));
-
-        return new Event(AUTH_SESSION_CREATED_TOPIC, props);
-    }
 
     /**
      * Creates new "authentication session destroyed" event.
@@ -106,53 +56,5 @@ public class EventFactory
         props.put(AUTH_SESSION_ID_KEY, sessionId);
 
         return new Event(AUTH_SESSION_DESTROYED_TOPIC, props);
-    }
-
-    /**
-     * Merges authentication properties into single String transmitted in the
-     * event event. After each key name there is colon appended and key/value
-     * pairs are separated with CRLF(\r\n).
-     *
-     * @param properties the map of authentication properties.
-     *
-     * @return authentication properties map merged into single <tt>String</tt>.
-     */
-    public static String mergeProperties(Map<String, String> properties)
-    {
-        StringBuilder out = new StringBuilder();
-        for (Map.Entry<String, String> entry : properties.entrySet())
-        {
-            out.append(entry.getKey())
-                .append(":")
-                .append(entry.getValue())
-                .append("\r\n");
-        }
-        return out.toString();
-    }
-
-    /**
-     * Splits merged authentication properties <tt>String</tt> into String
-     * key/value map.
-     *
-     * @param merged a <tt>String</tt> that contains merged authentication
-     *               properties(with {@link #mergeProperties(Map) method}).
-     *
-     * @return key/value map of authentication properties.
-     */
-    public static Map<String, String> splitProperties(String merged)
-    {
-        String[] entries = merged.split("\r\n");
-        Map<String, String> map = new Hashtable<>(entries.length);
-        for (String entry : entries)
-        {
-            if (isBlank(entry))
-                continue;
-
-            int colonIdx = entry.indexOf(":");
-            String key = entry.substring(0, colonIdx);
-            String value = entry.substring(colonIdx + 1);
-            map.put(key, value);
-        }
-        return map;
     }
 }

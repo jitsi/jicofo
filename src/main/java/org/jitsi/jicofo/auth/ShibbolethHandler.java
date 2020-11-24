@@ -127,29 +127,6 @@ class ShibbolethHandler
         }
     }
 
-    private Map<String, String> createPropertiesMap(HttpServletRequest request)
-    {
-        HashMap<String, String> propertiesMap = new HashMap<>();
-
-        Enumeration<String> headers = request.getHeaderNames();
-        while (headers.hasMoreElements())
-        {
-            String headerName = headers.nextElement();
-            propertiesMap.put(headerName, request.getHeader(headerName));
-        }
-
-        Enumeration<String> attributes = request.getAttributeNames();
-        while (attributes.hasMoreElements())
-        {
-            String attributeName = attributes.nextElement();
-            propertiesMap.put(
-                attributeName,
-                String.valueOf(request.getAttribute(attributeName)));
-        }
-
-        return propertiesMap;
-    }
-
     /**
      * Retrieves Shibboleth attribute value for given name. In case of
      * Apache+Shibboleth deployment attributes are retrieved with
@@ -217,9 +194,7 @@ class ShibbolethHandler
         }
 
         // User authenticated
-        String sessionId
-            = shibbolethAuthAuthority.authenticateUser(
-                    machineUID, email, roomName, createPropertiesMap(request));
+        String sessionId = shibbolethAuthAuthority.authenticateUser(machineUID, email, roomName);
 
         if (sessionId == null)
         {
