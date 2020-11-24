@@ -199,34 +199,29 @@ public class Main
             // For backward compat, the "--domain" command line argument controls the domain for the XMPP component
             // as well as XMPP client connection.
             System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, componentDomain);
-            System.setProperty(XmppComponentConfig.domainPropertyName, componentDomain);
         }
         if (host != null)
         {
             // For backward compat, the "--host" command line argument controls the hostname for the XMPP component
             // as well as XMPP client connection.
-            System.setProperty(XmppComponentConfig.hostnamePropertyName, host);
             System.setProperty(XmppClientConnectionConfig.legacyHostnamePropertyName, host);
         }
 
         String componentSubDomain = cmdLine.getOptionValue("--subdomain", "focus");
-        if (componentSubDomain != null)
-        {
-            System.setProperty(XmppComponentConfig.subdomainPropertyName, componentSubDomain);
-        }
-
         int port = cmdLine.getIntOptionValue("--port", 5347);
-        System.setProperty(XmppComponentConfig.portPropertyName, String.valueOf(port));
-
         String secret = cmdLine.getOptionValue("--secret");
         if (isBlank(secret))
         {
             secret = System.getenv("JICOFO_SECRET");
         }
-        if (secret != null)
-        {
-            System.setProperty(XmppComponentConfig.secretPropertyName, secret);
-        }
+
+        XmppComponentConfig.config = new XmppComponentConfig(
+                host == null ? "" : host,
+                componentDomain == null ? "" : componentDomain,
+                componentSubDomain == null ? "" : componentSubDomain,
+                port,
+                secret == null ? "" : secret
+        );
 
         // XMPP client connection
         String focusDomain = cmdLine.getOptionValue("--user_domain");

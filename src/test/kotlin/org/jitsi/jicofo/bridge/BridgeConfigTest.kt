@@ -20,7 +20,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.jicofo.ConfigTest
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 import org.jitsi.utils.mins
-import org.jitsi.utils.secs
 
 class BridgeConfigTest : ConfigTest() {
     init {

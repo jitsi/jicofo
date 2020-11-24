@@ -51,9 +51,7 @@ public class XMPPAuthenticationAuthorityTest
         throws Exception
     {
         // Enable XMPP authentication
-        System.setProperty(
-                AuthBundleActivator.LOGIN_URL_PNAME, "XMPP:" + authDomain);
-        System.err.println("Init osgi");
+        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, "XMPP:" + authDomain);
         osgi.init();
     }
 
@@ -62,7 +60,7 @@ public class XMPPAuthenticationAuthorityTest
         throws Exception
     {
         osgi.shutdown();
-        System.clearProperty(AuthBundleActivator.LOGIN_URL_PNAME);
+        System.clearProperty(AuthConfig.legacyLoginUrlPropertyName);
     }
 
     @Test
@@ -117,8 +115,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        authError = focusComponent.processExtensions(query, response, roomExists);
 
         // REPLY WITH: null - no errors, session-id set in response
         assertNull(authError);

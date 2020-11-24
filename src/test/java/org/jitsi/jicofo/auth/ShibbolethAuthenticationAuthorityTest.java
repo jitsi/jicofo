@@ -46,10 +46,9 @@ public class ShibbolethAuthenticationAuthorityTest
         throws Exception
     {
         // Enable shibboleth authentication
-        System.setProperty(
-                AuthBundleActivator.LOGIN_URL_PNAME, "shibboleth:default");
-        System.setProperty(
-                AuthBundleActivator.LOGOUT_URL_PNAME, "shibboleth:default");
+        // TODO port to withLegacyConfig
+        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST);
+        System.setProperty(AuthConfig.legacyLogoutUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST);
         osgi.init();
     }
 
@@ -58,8 +57,8 @@ public class ShibbolethAuthenticationAuthorityTest
         throws Exception
     {
         osgi.shutdown();
-        System.clearProperty(AuthBundleActivator.LOGIN_URL_PNAME);
-        System.clearProperty(AuthBundleActivator.LOGOUT_URL_PNAME);
+        System.clearProperty(AuthConfig.legacyLoginUrlPropertyName);
+        System.clearProperty(AuthConfig.legacyLogoutUrlPropertyName);
     }
 
     @Test
