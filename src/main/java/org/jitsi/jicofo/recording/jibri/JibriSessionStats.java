@@ -17,7 +17,7 @@ public class JibriSessionStats
      * @return how many active Jibri sessions of given type are in the list.
      */
     private static int countActive(List<JibriSession> sessions,
-                                   JibriSessionEvent.Type jibriType)
+                                   JibriSession.Type jibriType)
     {
         return countJibris(sessions, jibriType, JibriSession::isActive);
     }
@@ -33,7 +33,7 @@ public class JibriSessionStats
      */
     private static int countJibris(
             List<JibriSession> sessions,
-            JibriSessionEvent.Type jibriType,
+            JibriSession.Type jibriType,
             Function<JibriSession, Boolean> selector)
     {
         int count = 0;
@@ -58,7 +58,7 @@ public class JibriSessionStats
      * are there on the list.
      */
     private static int countPending(List<JibriSession> sessions,
-                                    JibriSessionEvent.Type jibriType)
+                                    JibriSession.Type jibriType)
     {
         return countJibris(sessions, jibriType, JibriSession::isPending);
     }
@@ -112,28 +112,28 @@ public class JibriSessionStats
         activeLiveStreamingSessions
             = countActive(
                 sessions,
-                JibriSessionEvent.Type.LIVE_STREAMING);
+                JibriSession.Type.LIVE_STREAMING);
         activeRecordingSessions
             = countActive(
                 sessions,
-                JibriSessionEvent.Type.RECORDING);
+                JibriSession.Type.RECORDING);
         activeSipCallSessions
             = countActive(
                 sessions,
-                JibriSessionEvent.Type.SIP_CALL);
+                JibriSession.Type.SIP_CALL);
 
         pendingLiveStreamingSessions
             = countPending(
                 sessions,
-                JibriSessionEvent.Type.LIVE_STREAMING);
+                JibriSession.Type.LIVE_STREAMING);
         pendingRecordingSessions
             = countPending(
                 sessions,
-                JibriSessionEvent.Type.RECORDING);
+                JibriSession.Type.RECORDING);
         pendingSipCallSessions
             = countPending(
                 sessions,
-                JibriSessionEvent.Type.SIP_CALL);
+                JibriSession.Type.SIP_CALL);
     }
 
     /**

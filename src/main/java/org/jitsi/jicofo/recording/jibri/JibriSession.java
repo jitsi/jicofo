@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import org.jitsi.jicofo.jibri.JibriConfig;
+import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
@@ -30,6 +30,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.osgi.framework.*;
 
@@ -53,13 +54,14 @@ public class JibriSession
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    static private final Logger classLogger
-        = Logger.getLogger(JibriSession.class);
+    static private final Logger classLogger = Logger.getLogger(JibriSession.class);
 
-    /**
-     * Provides the {@link EventAdmin} instance for emitting events.
-     */
-    private final EventAdminProvider eventAdminProvider;
+    private static JibriStats stats = new JibriStats();
+
+    public static JSONObject getGlobalStats()
+    {
+        return stats.toJson();
+    }
 
     /**
      * Returns <tt>true</tt> if given <tt>status</tt> indicates that Jibri is in
@@ -217,7 +219,6 @@ public class JibriSession
      * select logging level for this instance {@link #logger}.
      */
     JibriSession(
-            BundleContext bundleContext,
             JibriSession.Owner owner,
             EntityBareJid roomName,
             Jid initiator,
@@ -235,12 +236,10 @@ public class JibriSession
             String applicationData,
             Logger logLevelDelegate)
     {
-        this.eventAdminProvider = new EventAdminProvider(bundleContext);
         this.owner = owner;
         this.roomName = roomName;
         this.initiator = initiator;
-        this.scheduledExecutor
-            = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
+        this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.pendingTimeout = pendingTimeout;
         this.maxNumRetries = maxNumRetries;
         this.isSIP = isSIP;
@@ -262,45 +261,31 @@ public class JibriSession
      * @param failureReason the failure reason associated with the state
      * transition if any.
      */
-    private void dispatchSessionStateChanged(
-            Status newStatus, FailureReason failureReason)
+    private void dispatchSessionStateChanged(Status newStatus, FailureReason failureReason)
     {
         if (failureReason != null)
         {
-            emitSessionFailedEvent();
+            stats.sessionFailed(getJibriType());
         }
         owner.onSessionStateChanged(this, newStatus, failureReason);
     }
 
     /**
-     * Asynchronously emits {@link JibriSessionEvent#FAILED_TO_START} event over
-     * the {@link EventAdmin} bus.
+     * @return The {@link JibriSession.Type} of this session.
      */
-    private void emitSessionFailedEvent()
-    {
-        eventAdminProvider
-                .get()
-                .postEvent(
-                        JibriSessionEvent.newFailedToStartEvent(
-                                getJibriType()));
-    }
-
-    /**
-     * @return The {@link JibriSessionEvent.Type} of this session.
-     */
-    public JibriSessionEvent.Type getJibriType()
+    public Type getJibriType()
     {
         if (isSIP)
         {
-            return JibriSessionEvent.Type.SIP_CALL;
+            return Type.SIP_CALL;
         }
         else if (isBlank(streamID))
         {
-            return JibriSessionEvent.Type.RECORDING;
+            return Type.RECORDING;
         }
         else
         {
-            return JibriSessionEvent.Type.LIVE_STREAMING;
+            return Type.LIVE_STREAMING;
         }
     }
 
@@ -319,8 +304,7 @@ public class JibriSession
      */
     public boolean isPending()
     {
-        return Status.UNDEFINED.equals(jibriStatus)
-                || Status.PENDING.equals(jibriStatus);
+        return Status.UNDEFINED.equals(jibriStatus) || Status.PENDING.equals(jibriStatus);
     }
 
     /**
@@ -337,7 +321,7 @@ public class JibriSession
         }
         catch (Exception e)
         {
-            emitSessionFailedEvent();
+            stats.sessionFailed(getJibriType());
 
             throw e;
         }
@@ -921,5 +905,24 @@ public class JibriSession
         {
             return reason;
         }
+    }
+
+    /**
+     * A Jibri session type.
+     */
+    public enum Type
+    {
+        /**
+         * SIP Jibri call.
+         */
+        SIP_CALL,
+        /**
+         * Jibri live streaming session.
+         */
+        LIVE_STREAMING,
+        /**
+         * Jibri recording session.
+         */
+        RECORDING
     }
 }

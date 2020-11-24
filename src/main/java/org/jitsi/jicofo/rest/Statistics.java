@@ -33,9 +33,6 @@ public class Statistics
     @Inject
     protected FocusManagerProvider focusManagerProvider;
 
-    @Inject
-    protected JibriStatsProvider jibriStatsProvider;
-
     /**
      * Returns json string with statistics.
      * @return json string with statistics.
@@ -48,13 +45,11 @@ public class Statistics
         JSONObject stats = new JSONObject();
 
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
-        // so we merge the FocusManager and Jibri stats in the root object.
+        // so we merge the FocusManager and ColibriConference stats in the root object.
         stats.putAll(focusManagerProvider.get().getStats());
-        stats.putAll(jibriStatsProvider.get().getStats());
         stats.putAll(ColibriConferenceImpl.stats.toJson());
 
-        stats.put(
-            "threads", ManagementFactory.getThreadMXBean().getThreadCount());
+        stats.put("threads", ManagementFactory.getThreadMXBean().getThreadCount());
 
         return stats.toJSONString();
     }

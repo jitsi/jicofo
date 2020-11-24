@@ -99,7 +99,7 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/jicofo/recording/jibri/JibriStats",
+                "org/jitsi/jicofo/VersionBroadcaster"
             },
             {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.eventadmin.*;
@@ -623,6 +624,7 @@ public class FocusManager
         int numParticipants = 0;
         int largestConferenceSize = 0;
         int[] conferenceSizes = new int[22];
+        JibriSessionStats jibriSessionStats = new JibriSessionStats();
         for (JitsiMeetConference conference : getConferences())
         {
             if (!conference.includeInStatistics())
@@ -648,6 +650,8 @@ public class FocusManager
                     ? confSize
                     : conferenceSizes.length - 1;
             conferenceSizes[conferenceSizeIndex]++;
+
+            jibriSessionStats.merge(conference.getJibriSessionStats());
         }
 
         stats.put("largest_conference", largestConferenceSize);
@@ -660,13 +664,10 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         // XMPP traffic stats
-        ProtocolProviderService pps
-            = protocolProviderHandler.getProtocolProvider();
+        ProtocolProviderService pps = protocolProviderHandler.getProtocolProvider();
         if (pps instanceof XmppProtocolProvider)
         {
-            XmppProtocolProvider xmppProtocolProvider
-                    = (XmppProtocolProvider) pps;
-
+            XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) pps;
             stats.put("xmpp", xmppProtocolProvider.getStats());
         }
 
@@ -674,6 +675,24 @@ public class FocusManager
         {
             stats.put("slow_health_check", health.getTotalSlowHealthChecks());
         }
+
+        JSONObject jibriStats = JibriSession.getGlobalStats();
+        jibriSessionStats.toJSON(jibriStats);
+        // This intentionally duplicates stats.jibri_detector into stats.jibri.detector to keep backward compatibility
+        // for a while.
+        JibriDetector jibriDetector = jitsiMeetServices.getJibriDetector();
+        if (jibriDetector != null)
+        {
+            jibriStats.put("detector", jibriDetector.getStats());
+        }
+        // This intentionally duplicates stats.sip_jibri_detector into stats.jibri.sip_detector to keep backward
+        // compatibility for a while.
+        JibriDetector sipJibriDetector = jitsiMeetServices.getSipJibriDetector();
+        if (sipJibriDetector != null)
+        {
+            jibriStats.put("sip_detector", sipJibriDetector.getStats());
+        }
+        stats.put("jibri", jibriStats);
 
         return stats;
     }

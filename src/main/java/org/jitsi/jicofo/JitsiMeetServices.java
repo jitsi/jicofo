@@ -186,12 +186,16 @@ public class JitsiMeetServices
             json.put("jigasi_detector", jigasiDetector.getStats());
         }
 
+        // TODO: remove once we migrate to the new names (see FocusManager.getStats() which puts the same stats under
+        // the 'jibri' key.
         JibriDetector jibriDetector = getJibriDetector();
         if (jibriDetector != null)
         {
             json.put("jibri_detector", jibriDetector.getStats());
         }
 
+        // TODO: remove once we migrate to the new names (see FocusManager.getStats() which puts the same stats under
+        // the 'jibri' key.
         JibriDetector sipJibriDetector = getSipJibriDetector();
         if (sipJibriDetector != null)
         {
