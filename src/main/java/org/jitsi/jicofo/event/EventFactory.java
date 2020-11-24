@@ -45,11 +45,6 @@ public class EventFactory
     public static final String AUTH_SESSION_ID_KEY = "auth_session_id";
 
     /**
-     * The name of the key for endpoint ID.
-     */
-    public static final String ENDPOINT_ID_KEY = "endpoint_id";
-
-    /**
      * The name of the key for focus instance ID.
      */
     public static final String FOCUS_ID_KEY = "focus_id";
@@ -81,12 +76,6 @@ public class EventFactory
      */
     public static final String AUTH_SESSION_DESTROYED_TOPIC
         = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
-
-    /**
-     * The name of the topic of an "endpoint authenticated" event.
-     */
-    public static final String ENDPOINT_AUTHENTICATED_TOPIC
-        = "org/jitsi/jicofo/ENDPOINT_AUTHENTICATED";
 
     /**
      * The name of the topic of a "focus instance created" event.
@@ -140,28 +129,6 @@ public class EventFactory
         props.put(AUTH_SESSION_ID_KEY, sessionId);
 
         return new Event(AUTH_SESSION_DESTROYED_TOPIC, props);
-    }
-
-    /**
-     * Creates "endpoint authenticated" event.
-     *
-     * @param sessionId authentication session identifier.
-     * @param focusId focus instance id which was hosting the conference session
-     * @param endpointId the ID of authenticated Colibri endpoint(participant).
-     *
-     * @return created "endpoint authenticated" <tt>Event</tt>.
-     */
-    public static Event endpointAuthenticated(String sessionId,
-                                              String focusId,
-                                              String endpointId)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(3);
-
-        props.put(AUTH_SESSION_ID_KEY, sessionId);
-        props.put(FOCUS_ID_KEY, focusId);
-        props.put(ENDPOINT_ID_KEY, endpointId);
-
-        return new Event(ENDPOINT_AUTHENTICATED_TOPIC, props);
     }
 
     /**

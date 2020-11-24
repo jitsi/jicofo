@@ -352,21 +352,6 @@ public class ChatRoomRoleAndPresence
             if (authSessionId != null)
             {
                 grantOwner(jabberId);
-
-                // Notify that this member has been authenticated using
-                // given session
-                EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-
-                if (eventAdmin == null)
-                    return;
-
-                eventAdmin.postEvent(
-                    EventFactory.endpointAuthenticated(
-                            authSessionId,
-                            String.valueOf(conference.getId()),
-                            Participant.getEndpointId(xmppMember)
-                    )
-                );
             }
         }
     }
