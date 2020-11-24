@@ -78,12 +78,6 @@ public class EventFactory
         = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
 
     /**
-     * The name of the topic of a "focus instance created" event.
-     */
-    public static final String FOCUS_CREATED_TOPIC
-        = "org/jitsi/jicofo/FOCUS_CREATED";
-
-    /**
      * The name of the topic of a "focus instance destroyed" event.
      */
     public static final String FOCUS_DESTROYED_TOPIC
@@ -129,24 +123,6 @@ public class EventFactory
         props.put(AUTH_SESSION_ID_KEY, sessionId);
 
         return new Event(AUTH_SESSION_DESTROYED_TOPIC, props);
-    }
-
-    /**
-     * Creates new "focus created" event.
-     *
-     * @param focusId focus instance identifier.
-     * @param roomName MUC room JID for which the focus has been created.
-     *
-     * @return new "focus created" <tt>Event</tt>.
-     */
-    public static Event focusCreated(String focusId, EntityBareJid roomName)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(2);
-
-        props.put(FOCUS_ID_KEY, focusId);
-        props.put(ROOM_JID_KEY, roomName);
-
-        return new Event(FOCUS_CREATED_TOPIC, props);
     }
 
     /**

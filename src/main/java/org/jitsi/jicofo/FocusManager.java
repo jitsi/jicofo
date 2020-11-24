@@ -405,15 +405,6 @@ public class FocusManager
             logger.info(sb);
         }
 
-        // Send focus created event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                EventFactory.focusCreated(
-                    String.valueOf(conference.getId()), conference.getRoomName()));
-        }
-
         return conference;
     }
 
