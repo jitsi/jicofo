@@ -567,16 +567,6 @@ public class JitsiMeetConferenceImpl
         setConferenceProperty(
             ConferenceProperties.KEY_OCTO_ENABLED,
             Boolean.toString(config.isOctoEnabled()));
-
-        // Trigger focus joined room event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.focusJoinedRoom(
-                            roomName,
-                            String.valueOf(getId())));
-        }
     }
 
     /**

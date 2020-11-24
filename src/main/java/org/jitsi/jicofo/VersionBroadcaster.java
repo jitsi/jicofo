@@ -70,7 +70,6 @@ public class VersionBroadcaster
     public VersionBroadcaster()
     {
         super(new String[] {
-                EventFactory.FOCUS_JOINED_ROOM_TOPIC,
                 EventFactory.CONFERENCE_ROOM_TOPIC
         });
     }
@@ -115,7 +114,7 @@ public class VersionBroadcaster
     }
 
     /**
-     * Handles {@link EventFactory#FOCUS_JOINED_ROOM_TOPIC} and
+     * Handles
      * {@link EventFactory#CONFERENCE_ROOM_TOPIC}.
      *
      * {@inheritDoc}
@@ -124,8 +123,7 @@ public class VersionBroadcaster
     public void handleEvent(Event event)
     {
         String topic = event.getTopic();
-        if (!topic.equals(EventFactory.FOCUS_JOINED_ROOM_TOPIC)
-            && !topic.equals(EventFactory.CONFERENCE_ROOM_TOPIC))
+        if (!topic.equals(EventFactory.CONFERENCE_ROOM_TOPIC))
         {
             logger.error("Unexpected event topic: " + topic);
             return;
