@@ -25,9 +25,7 @@ import java.util.function.*;
 import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.utils.logging.*;
-import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jxmpp.jid.*;

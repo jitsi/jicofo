@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.jicofo.jibri.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -32,7 +31,6 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
