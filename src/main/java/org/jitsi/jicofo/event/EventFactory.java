@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.event;
 
 import org.jitsi.eventadmin.*;
-import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -45,20 +44,10 @@ public class EventFactory
     public static final String AUTH_SESSION_ID_KEY = "auth_session_id";
 
     /**
-     * The name of the key for focus instance ID.
-     */
-    public static final String FOCUS_ID_KEY = "focus_id";
-
-    /**
      * The name of the key for machine unique identifier supplied during
      * authentication.
      */
     public static final String MACHINE_UID_KEY = "machine_uid";
-
-    /**
-     * The name of the key for MUC room JID.
-     */
-    public static final String ROOM_JID_KEY = "room_jid";
 
     /**
      * The name of the key for authenticated user identity.
@@ -76,12 +65,6 @@ public class EventFactory
      */
     public static final String AUTH_SESSION_DESTROYED_TOPIC
         = "org/jitsi/jicofo/AUTH_SESSION_DESTROYED";
-
-    /**
-     * The name of the topic of a "focus instance destroyed" event.
-     */
-    public static final String FOCUS_DESTROYED_TOPIC
-        = "org/jitsi/jicofo/FOCUS_DESTROYED";
 
     /**
      * Creates new "authentication session created" event.
@@ -123,24 +106,6 @@ public class EventFactory
         props.put(AUTH_SESSION_ID_KEY, sessionId);
 
         return new Event(AUTH_SESSION_DESTROYED_TOPIC, props);
-    }
-
-    /**
-     * Creates new "focus destroyed" event.
-     *
-     * @param focusId focus instance identifier.
-     * @param roomName MUC room JID for which the focus has been destroyed.
-     *
-     * @return new "focus destroyed" <tt>Event</tt> instance.
-     */
-    public static Event focusDestroyed(String focusId, EntityBareJid roomName)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(2);
-
-        props.put(FOCUS_ID_KEY, focusId);
-        props.put(ROOM_JID_KEY, roomName);
-
-        return new Event(FOCUS_DESTROYED_TOPIC, props);
     }
 
     /**
