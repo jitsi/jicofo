@@ -2503,11 +2503,8 @@ public class JitsiMeetConferenceImpl
     /**
      * A method to be called by {@link AbstractChannelAllocator} just after it
      * has created a new Colibri conference on the JVB.
-     * @param colibriConference the {@link ColibriConference} instance which has
-     * just allocated a conference on the bridge.
-     * @param videobridgeJid the JID of the JVB where given
      */
-    public void onColibriConferenceAllocated(ColibriConference colibriConference, Jid videobridgeJid)
+    void onColibriConferenceAllocated()
     {
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
