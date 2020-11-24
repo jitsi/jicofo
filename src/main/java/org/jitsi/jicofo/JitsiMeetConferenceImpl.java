@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.version.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -550,6 +551,12 @@ public class JitsiMeetConferenceImpl
         // Advertise shared Etherpad document
         meetTools.sendPresenceExtension(chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
 
+        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
+        versionsExtension.addComponentVersion(
+                ComponentVersionsExtension.COMPONENT_FOCUS,
+                CurrentVersionImpl.VERSION.toString());
+        meetTools.sendPresenceExtension(chatRoom, versionsExtension);
+
         // Advertise the conference creation time in presence
         setConferenceProperty(
             ConferenceProperties.KEY_CREATED_MS,
@@ -560,16 +567,6 @@ public class JitsiMeetConferenceImpl
         setConferenceProperty(
             ConferenceProperties.KEY_OCTO_ENABLED,
             Boolean.toString(config.isOctoEnabled()));
-
-        // Trigger focus joined room event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.focusJoinedRoom(
-                            roomName,
-                            String.valueOf(getId())));
-        }
     }
 
     /**
@@ -2506,24 +2503,9 @@ public class JitsiMeetConferenceImpl
     /**
      * A method to be called by {@link AbstractChannelAllocator} just after it
      * has created a new Colibri conference on the JVB.
-     * @param colibriConference the {@link ColibriConference} instance which has
-     * just allocated a conference on the bridge.
-     * @param videobridgeJid the JID of the JVB where given
      */
-    public void onColibriConferenceAllocated(ColibriConference colibriConference, Jid videobridgeJid)
+    void onColibriConferenceAllocated()
     {
-        // TODO: do we need this event?
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.conferenceRoom(
-                            colibriConference.getConferenceId(),
-                            roomName,
-                            String.valueOf(getId()),
-                            videobridgeJid));
-        }
-
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
         ChatRoom chatRoom = this.chatRoom;

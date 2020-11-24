@@ -116,63 +116,10 @@ public class EventFactory
         = "org/jitsi/jicofo/FOCUS_CREATED";
 
     /**
-     * The name of the topic of a "focus joined MUC room" event which is fired
-     * just after Jicofo joins the MUC room.
-     */
-    public static final String FOCUS_JOINED_ROOM_TOPIC
-        = "org/jitsi/jicofo/FOCUS_JOINED_ROOM";
-
-    /**
      * The name of the topic of a "focus instance destroyed" event.
      */
     public static final String FOCUS_DESTROYED_TOPIC
         = "org/jitsi/jicofo/FOCUS_DESTROYED";
-
-    /**
-     * Creates new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
-     *
-     * @param roomJid the full address of MUC room.
-     * @param focusId focus instance identifier.
-     *
-     * @return new <tt>Event</tt> for {@link #FOCUS_JOINED_ROOM_TOPIC}.
-     */
-    public static Event focusJoinedRoom(
-            EntityBareJid roomJid,
-            String focusId)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(2);
-
-        props.put(ROOM_JID_KEY, roomJid);
-        props.put(FOCUS_ID_KEY, focusId);
-
-        return new Event(FOCUS_JOINED_ROOM_TOPIC, props);
-    }
-
-    /**
-     * Creates a new "room conference" <tt>Event</tt> which binds a COLIBRI
-     * conference ID to the JID of the associated MUC.
-     *
-     * @param conferenceId the ID of the COLIBRI conference.
-     * @param roomJid the JID of the MUC for which the focus was created.
-     *
-     * @param focus
-     * @return the <tt>Event</tt> which was created.
-     */
-    public static Event conferenceRoom(
-            String conferenceId,
-            EntityBareJid roomJid,
-            String focus,
-            Jid bridgeJid)
-    {
-        Dictionary<String, Object> props = new Hashtable<>(4);
-
-        props.put(CONFERENCE_ID_KEY, conferenceId);
-        props.put(ROOM_JID_KEY, roomJid);
-        props.put(FOCUS_ID_KEY, focus);
-        props.put(BRIDGE_JID_KEY, bridgeJid);
-
-        return new Event(CONFERENCE_ROOM_TOPIC, props);
-    }
 
     /**
      * Creates new "authentication session created" event.
