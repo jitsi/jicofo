@@ -49,12 +49,6 @@ public class BridgeSelector
     private final static Logger logger = Logger.getLogger(BridgeSelector.class);
 
     /**
-     * Stores reference to <tt>EventHandler</tt> registration, so that it can be
-     * unregistered on {@link #dispose()}.
-     */
-    private ServiceRegistration<EventHandler> handlerRegistration;
-
-    /**
      * The map of bridge JID to <tt>Bridge</tt>.
      */
     private final Map<Jid, Bridge> bridges = new HashMap<>();
@@ -298,11 +292,6 @@ public class BridgeSelector
     public void dispose()
     {
         jvbDoctor.stop();
-        if (handlerRegistration != null)
-        {
-            handlerRegistration.unregister();
-            handlerRegistration = null;
-        }
     }
 
     /**
