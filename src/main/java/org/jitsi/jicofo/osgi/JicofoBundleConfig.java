@@ -99,9 +99,6 @@ public class JicofoBundleConfig
                 "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
-                "org/jitsi/jicofo/VersionBroadcaster"
-            },
-            {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"
             }
         };
