@@ -48,6 +48,10 @@ class ConferenceConfig {
         "jicofo.conference.single-participant-timeout".from(newConfig)
     }
 
+    val minParticipants: Int by config {
+        "jicofo.conference.min-participants".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = ConferenceConfig()

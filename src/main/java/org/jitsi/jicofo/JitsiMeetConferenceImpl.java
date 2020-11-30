@@ -1101,16 +1101,13 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns {@code true} if there are at least two non-focus participants in
-     * the room.
-     *
-     * @return <tt>true</tt> if we have at least two non-focus participants.
+     * Returns {@code true} if there are enough participants in the room to start a conference.
      */
     private boolean checkMinParticipants()
     {
-        int minParticipants = config.getMinParticipants();
-        // minParticipants + 1 focus
-        if (chatRoom.getMembersCount() >= (minParticipants + 1))
+        int minParticipants = ConferenceConfig.config.getMinParticipants();
+        // Subtract one for jicofo's participant
+        if (chatRoom.getMembersCount() - 1 >= minParticipants)
         {
             return true;
         }
