@@ -80,12 +80,6 @@ public class JitsiMeetConfig
      */
     public static final String PNAME_MIN_BITRATE = "minBitrate";
 
-    /**
-     * The name of the property that determines the min partcipants to start
-     * the call.
-     */
-    public static final String PNAME_MIN_PARTICIPANTS = "minParticipants";
-
     /*
      * The name of the open sctp configuration property. Pass 'true' to
      * enable or 'false' to disable.
@@ -132,11 +126,6 @@ public class JitsiMeetConfig
      * Enable TCC by default.
      */
     private static final boolean DEFAULT_ENABLE_TCC = true;
-
-    /**
-     * The default value for the "minParticipants" property.
-     */
-    private static final int DEFAULT_MIN_PARTICIPANTS = 2;
 
     /**
      * The default value of the "startBitrate" property.
@@ -206,17 +195,6 @@ public class JitsiMeetConfig
     {
         Boolean enableOpusRed = getBoolean(PNAME_ENABLE_OPUS_RED);
         return enableOpusRed != null && enableOpusRed;
-    }
-
-    /**
-     * Gets the minimum number of participants that need to be present in the
-     * call before we start it.
-     */
-    public int getMinParticipants()
-    {
-        Integer minParticipants = getInt(PNAME_MIN_PARTICIPANTS);
-        return minParticipants != null
-            ? minParticipants : DEFAULT_MIN_PARTICIPANTS;
     }
 
     /**
