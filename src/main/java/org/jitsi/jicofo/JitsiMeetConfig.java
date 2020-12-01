@@ -18,9 +18,6 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.utils.logging.*;
-import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -77,15 +74,6 @@ public class JitsiMeetConfig
      * Whether RED should be enabled for opus.
      */
     public static final String PNAME_ENABLE_OPUS_RED = "enableOpusRed";
-
-    /**
-     * The name of the property that specifies JID of the bridge which should be
-     * used instead of any bridges elected by <tt>BridgeSelector</tt>.
-     * The property is meant to be used in a test that aims to run a conference
-     * on specific bridge instance.
-     * That property is per conference specific.
-     */
-    public static final String PNAME_ENFORCED_BRIDGE = "enforcedBridge";
 
     /**
      * The name of the "minBitrate" property.
@@ -173,32 +161,7 @@ public class JitsiMeetConfig
     }
 
     /**
-     * Returns pre-configured JVB address of the bridge that must be used in a
-     * conference instead of any other bridges that would come from
-     * <tt>BridgeSelector</tt>. <tt>null</tt> if not specified.
-     * That property is per conference specific.
-     */
-    public Jid getEnforcedVideobridge()
-    {
-        try
-        {
-            String enforcedBridge = properties.get(PNAME_ENFORCED_BRIDGE);
-            if (isBlank(enforcedBridge))
-            {
-                return null;
-            }
-
-            return JidCreate.from(enforcedBridge);
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Invalid JID for enforced videobridge", e);
-            return null;
-        }
-    }
-
-    /**
-     * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
+     * Return a <tt>Boolean</tt> value of the {@link #PNAME_ENABLE_LIPSYNC} property
      * (can be <tt>null</tt>).
      */
     public Boolean isLipSyncEnabled()
@@ -207,7 +170,7 @@ public class JitsiMeetConfig
     }
 
     /**
-     * Returns an <tt>Integer</tt> value of the {@link #AUDIO_PACKET_DELAY}
+     * Returns an <tt>Integer</tt> value of the {@link #PNAME_AUDIO_PACKET_DELAY}
      * config property(can be <tt>null</tt>).
      */
     public Integer getAudioPacketDelay()
@@ -373,7 +336,7 @@ public class JitsiMeetConfig
 
     /**
      * Return a <tt>boolean</tt> value of the
-     * {@link #USE_ROOM_AS_SHARED_DOC_NAME} property. Indicates if the room name
+     * {@link #PNAME_USE_ROOM_AS_SHARED_DOC_NAME} property. Indicates if the room name
      * should be used as a shared document name.
      */
     public boolean useRoomAsSharedDocName()

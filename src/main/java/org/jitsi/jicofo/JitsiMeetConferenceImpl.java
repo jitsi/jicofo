@@ -749,30 +749,12 @@ public class JitsiMeetConferenceImpl
         }
 
         // Select a Bridge for the new participant.
-        Bridge bridge = null;
-        Jid enforcedVideoBridge = config.getEnforcedVideobridge();
         BridgeSelector bridgeSelector = getServices().getBridgeSelector();
-
-
-        if (enforcedVideoBridge != null)
-        {
-            bridge = bridgeSelector.getBridge(enforcedVideoBridge);
-            if (bridge == null)
-            {
-                logger.warn("The enforced bridge is not registered with "
-                                + "BridgeSelector, will try to use a "
-                                + "different one.");
-            }
-        }
-
-        if (bridge == null)
-        {
-            bridge
-                = bridgeSelector.selectBridge(
+        Bridge bridge =
+                bridgeSelector.selectBridge(
                     this,
                     participant.getChatMember().getRegion(),
                     config.isOctoEnabled());
-        }
 
         if (bridge == null)
         {
