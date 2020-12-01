@@ -22,10 +22,8 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -58,14 +56,6 @@ public interface ColibriConference
      * this instance.
      */
     String getConferenceId();
-
-    /**
-     * Sets Jitsi Meet config that provides Colibri channels configurable
-     * properties.
-     * @param config <tt>JitsiMeetConfig</tt> to be used for allocating
-     * Colibri channels in this conference.
-     */
-    void setConfig(JitsiMeetConfig config);
 
     /**
      * Sets world readable name that identifies the conference.

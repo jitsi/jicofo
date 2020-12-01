@@ -52,8 +52,7 @@ public class ColibriConferenceImpl
 {
     public final static Stats stats = new Stats();
 
-    private final static Logger logger
-        = Logger.getLogger(ColibriConferenceImpl.class);
+    private final static Logger logger = Logger.getLogger(ColibriConferenceImpl.class);
 
     /**
      * The instance of XMPP connection.
@@ -202,18 +201,6 @@ public class ColibriConferenceImpl
     public String getConferenceId()
     {
         return conferenceState.getID();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setConfig(JitsiMeetConfig config)
-    {
-        synchronized (syncRoot)
-        {
-            colibriBuilder.setAudioPacketDelay(config.getAudioPacketDelay());
-        }
     }
 
     /**

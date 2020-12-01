@@ -43,15 +43,6 @@ public class JitsiMeetConfig
         = Logger.getLogger(JitsiMeetConfig.class);
 
     /**
-     * The name of the property which specifies the packet delay for the audio
-     * channels used in the conference.
-     *
-     * *NOTE* It is meant to be used for automated testing of
-     * the {@link LipSyncHack} only !
-     */
-    public static final String PNAME_AUDIO_PACKET_DELAY = "audioPacketDelay";
-
-    /**
      * The name of the "disableRtx" property.
      */
     public static final String PNAME_DISABLE_RTX = "disableRtx";
@@ -193,15 +184,6 @@ public class JitsiMeetConfig
     public Boolean isLipSyncEnabled()
     {
         return getBoolean(PNAME_ENABLE_LIPSYNC);
-    }
-
-    /**
-     * Returns an <tt>Integer</tt> value of the {@link #AUDIO_PACKET_DELAY}
-     * config property(can be <tt>null</tt>).
-     */
-    public Integer getAudioPacketDelay()
-    {
-        return getInt(PNAME_AUDIO_PACKET_DELAY);
     }
 
     /**

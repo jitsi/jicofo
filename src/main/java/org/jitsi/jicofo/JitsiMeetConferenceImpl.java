@@ -684,8 +684,6 @@ public class JitsiMeetConferenceImpl
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 
-        colibriConference.setConfig(config);
-
         colibriConference.setName(chatRoom.getRoomJid());
         colibriConference.setJitsiVideobridge(bridgeJid);
 
