@@ -205,7 +205,7 @@ public class JingleOfferFactory
             // a=rtpmap:XXX VP8/90000
             PayloadTypePacketExtension vp8 = addPayloadTypeExtension(rtpDesc, config.vp8.pt(), Constants.VP8, 90000);
 
-            addExtensionsToVideoPayloadType(vp8, options);
+            addExtensionsToVideoPayloadType(vp8, options, config.vp8);
         }
 
         if (config.h264.enabled())
@@ -216,7 +216,7 @@ public class JingleOfferFactory
                     // fail to enable h264, if the encoding name is in lower case.
                     rtpDesc, config.h264.pt(), "H264", 90000);
 
-            addExtensionsToVideoPayloadType(h264, options);
+            addExtensionsToVideoPayloadType(h264, options, config.h264);
             addParameterExtension(
                 h264,
                 "profile-level-id",
@@ -228,7 +228,7 @@ public class JingleOfferFactory
             // a=rtpmap:XXX VP9/90000
             PayloadTypePacketExtension vp9 = addPayloadTypeExtension(rtpDesc, config.vp9.pt(), Constants.VP9, 90000);
 
-            addExtensionsToVideoPayloadType(vp9, options);
+            addExtensionsToVideoPayloadType(vp9, options, config.vp9);
         }
 
 
@@ -317,7 +317,10 @@ public class JingleOfferFactory
         return parameterPacketExtension;
     }
 
-    private static void addExtensionsToVideoPayloadType(PayloadTypePacketExtension pt, OfferOptions options)
+    private static void addExtensionsToVideoPayloadType(
+            PayloadTypePacketExtension pt,
+            OfferOptions options,
+            CodecConfig codecConfig)
     {
         // a=rtcp-fb:XXX ccm fir
         pt.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
@@ -339,7 +342,7 @@ public class JingleOfferFactory
             addParameterExtension(pt, "x-google-start-bitrate", String.valueOf(options.getStartBitrate()));
         }
 
-        if (options.getRemb())
+        if (codecConfig.getEnableRemb())
         {
             // a=rtcp-fb:XXX goog-remb
             pt.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));

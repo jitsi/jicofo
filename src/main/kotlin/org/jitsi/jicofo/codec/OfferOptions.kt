@@ -33,7 +33,6 @@ data class OfferOptions(
     var stereo: Boolean = true,
     var tcc: Boolean = true,
     var rtx: Boolean = true,
-    var remb: Boolean = true,
     var opusRed: Boolean = true,
     var minBitrate: Int? = null,
     var startBitrate: Int? = null,
@@ -51,7 +50,6 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     sctp = sctp && jitsiMeetConfig.openSctp()
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
     tcc = tcc && jitsiMeetConfig.isTccEnabled
-    remb = remb && jitsiMeetConfig.isRembEnabled
     opusRed = opusRed && jitsiMeetConfig.isOpusRedEnabled
     if (jitsiMeetConfig.minBitrate > 0) {
         minBitrate = min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)

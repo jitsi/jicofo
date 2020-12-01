@@ -34,6 +34,8 @@ open class CodecConfig(protected val base: String, protected val name: String) {
 
     @Throws(IllegalStateException::class)
     fun pt(): Int = if (enabled()) pt else throw IllegalStateException("$name is not enabled.")
+
+    open val enableRemb = false
 }
 
 open class RtxCodecConfig(base: String, name: String) : CodecConfig(base, name) {
@@ -65,6 +67,10 @@ private class RtxCodecConfigWithLegacy(
     override val rtxPt: Int by config {
         "$legacyBase.${name}_RTX_PT".from(JitsiConfig.legacyConfig)
         "$newBase.rtx-pt".from(JitsiConfig.newConfig)
+    }
+
+    override val enableRemb: Boolean by config {
+        "$newBase.enable-remb".from(JitsiConfig.newConfig)
     }
 }
 

@@ -57,12 +57,6 @@ public class JitsiMeetConfig
     public static final String PNAME_ENABLE_LIPSYNC = "enableLipSync";
 
     /**
-     * The name of the property which enables the inclusion of the REMB RTCP
-     * in the offer.
-     */
-    public static final String PNAME_ENABLE_REMB = "enableRemb";
-
-    /**
      * The name of the property which enables the inclusion of the TCC RTP
      * header extension in the offer.
      */
@@ -130,11 +124,6 @@ public class JitsiMeetConfig
             = "useRoomAsSharedDocumentName";
 
     /**
-     * Disable REMBs by default.
-     */
-    private static final boolean DEFAULT_ENABLE_REMB = false;
-
-    /**
      * Enable TCC by default.
      */
     private static final boolean DEFAULT_ENABLE_TCC = true;
@@ -197,16 +186,6 @@ public class JitsiMeetConfig
     public Integer getAudioPacketDelay()
     {
         return getInt(PNAME_AUDIO_PACKET_DELAY);
-    }
-
-    /**
-     * Gets a boolean that indicates whether or not to enable the REMB RTP
-     * header extension in created offers.
-     */
-    public boolean isRembEnabled()
-    {
-        Boolean enableRemb = getBoolean(PNAME_ENABLE_REMB);
-        return enableRemb == null ? DEFAULT_ENABLE_REMB : enableRemb;
     }
 
     /**
