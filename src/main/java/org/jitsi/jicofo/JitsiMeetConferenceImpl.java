@@ -562,11 +562,6 @@ public class JitsiMeetConferenceImpl
             ConferenceProperties.KEY_CREATED_MS,
             Long.toString(System.currentTimeMillis()),
             false);
-
-        // Advertise whether octo is enabled/disabled in presence
-        setConferenceProperty(
-            ConferenceProperties.KEY_OCTO_ENABLED,
-            Boolean.toString(config.isOctoEnabled()));
     }
 
     /**
@@ -751,10 +746,7 @@ public class JitsiMeetConferenceImpl
         // Select a Bridge for the new participant.
         BridgeSelector bridgeSelector = getServices().getBridgeSelector();
         Bridge bridge =
-                bridgeSelector.selectBridge(
-                    this,
-                    participant.getChatMember().getRegion(),
-                    config.isOctoEnabled());
+                bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)
         {
@@ -939,7 +931,7 @@ public class JitsiMeetConferenceImpl
     {
 
         StringBuilder sb = new StringBuilder(
-                "Region info, conference=" + getId() + " octo_enabled= " + config.isOctoEnabled() + ": [");
+                "Region info, conference=" + getId() + ": [");
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)

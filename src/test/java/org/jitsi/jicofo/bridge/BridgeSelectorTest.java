@@ -97,8 +97,7 @@ public class BridgeSelectorTest
         workingBridges.remove(jvb1Jid);
         jvb1.setIsOperational(false);
 
-        assertTrue(workingBridges.contains(
-                selector.selectBridge(conference).getJid()));
+        assertTrue(workingBridges.contains(selector.selectBridge(conference).getJid()));
 
         // Bridge 2 is down !!!
         workingBridges.remove(jvb2Jid);
