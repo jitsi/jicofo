@@ -51,7 +51,6 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     sctp = sctp && jitsiMeetConfig.openSctp()
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
     tcc = tcc && jitsiMeetConfig.isTccEnabled
-    rtx = rtx && jitsiMeetConfig.isRtxEnabled
     remb = remb && jitsiMeetConfig.isRembEnabled
     opusRed = opusRed && jitsiMeetConfig.isOpusRedEnabled
     if (jitsiMeetConfig.minBitrate > 0) {

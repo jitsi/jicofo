@@ -52,11 +52,6 @@ public class JitsiMeetConfig
     public static final String PNAME_AUDIO_PACKET_DELAY = "audioPacketDelay";
 
     /**
-     * The name of the "disableRtx" property.
-     */
-    public static final String PNAME_DISABLE_RTX = "disableRtx";
-
-    /**
      * The name of the property that enables the {@link LipSyncHack}.
      */
     public static final String PNAME_ENABLE_LIPSYNC = "enableLipSync";
@@ -202,15 +197,6 @@ public class JitsiMeetConfig
     public Integer getAudioPacketDelay()
     {
         return getInt(PNAME_AUDIO_PACKET_DELAY);
-    }
-
-    /**
-     * @return {@code true} iff RTX is enabled in this {@link JitsiMeetConfig}.
-     */
-    public boolean isRtxEnabled()
-    {
-        String disableRtxStr = properties.get(PNAME_DISABLE_RTX);
-        return isBlank(disableRtxStr) || !Boolean.parseBoolean(disableRtxStr);
     }
 
     /**
