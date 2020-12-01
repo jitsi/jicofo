@@ -236,6 +236,14 @@ public class Participant
     }
 
     /**
+     * Returns {@code true} iff this participant supports TCC.
+     */
+    public boolean hasTccSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_TCC);
+    }
+
+    /**
      * Returns {@code true} iff this participant supports RTX.
      */
     public boolean hasRtxSupport()

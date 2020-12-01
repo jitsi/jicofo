@@ -57,12 +57,6 @@ public class JitsiMeetConfig
     public static final String PNAME_ENABLE_LIPSYNC = "enableLipSync";
 
     /**
-     * The name of the property which enables the inclusion of the TCC RTP
-     * header extension in the offer.
-     */
-    public static final String PNAME_ENABLE_TCC = "enableTcc";
-
-    /**
      * Whether RED should be enabled for opus.
      */
     public static final String PNAME_ENABLE_OPUS_RED = "enableOpusRed";
@@ -186,16 +180,6 @@ public class JitsiMeetConfig
     public Integer getAudioPacketDelay()
     {
         return getInt(PNAME_AUDIO_PACKET_DELAY);
-    }
-
-    /**
-     * Gets a boolean that indicates whether or not to enable the TCC RTP header
-     * extension in created offers.
-     */
-    public boolean isTccEnabled()
-    {
-        Boolean enableTcc = getBoolean(PNAME_ENABLE_TCC);
-        return enableTcc == null ? DEFAULT_ENABLE_TCC : enableTcc;
     }
 
     public boolean isOpusRedEnabled()

@@ -75,6 +75,11 @@ public class DiscoveryUtil
     public final static String FEATURE_REMB = "http://jitsi.org/remb";
 
     /**
+     * Support for transport-cc.
+     */
+    public final static String FEATURE_TCC = "http://jitsi.org/tcc";
+
+    /**
      * The Jingle DTLS feature name (XEP-0320).
      */
     public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
