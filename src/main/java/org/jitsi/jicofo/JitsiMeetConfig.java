@@ -124,11 +124,6 @@ public class JitsiMeetConfig
     public static final String PNAME_OPUS_MAX_AVG_BITRATE = "opusMaxAverageBitrate";
 
     /**
-     * The name of the "octo" property.
-     */
-    public static final String PNAME_OCTO = "octo";
-
-    /**
      * The name of the "useRoomAsSharedDocumentName" config property.
      */
     public static final String PNAME_USE_ROOM_AS_SHARED_DOC_NAME
@@ -340,13 +335,6 @@ public class JitsiMeetConfig
     {
         Integer maxAvgBitrate = getInt(PNAME_OPUS_MAX_AVG_BITRATE);
         return maxAvgBitrate == null ? -1 : maxAvgBitrate;
-    }
-
-    public boolean isOctoEnabled()
-    {
-        Boolean octo = getBoolean(PNAME_OCTO);
-        return octo != null && octo;
-
     }
 
     /**
