@@ -79,11 +79,6 @@ public class JingleOfferFactory
      * Creates a {@link ContentPacketExtension} for the data media type that
      * will be included in initial conference offer.
      *
-     * @param useIce pass <tt>false</tt> if RAW transport instead of ICE
-     * should be indicated in the offer.
-     * @param useDtls whether to add a DTLS element under the transport
-     * elements in the offer.
-     *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
      */
@@ -327,17 +322,6 @@ public class JingleOfferFactory
 
         // a=rtcp-fb:XXX nack pli
         pt.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
-
-
-        if (options.getMinBitrate() != null)
-        {
-            addParameterExtension(pt, "x-google-min-bitrate", String.valueOf(options.getMinBitrate()));
-        }
-
-        if (options.getStartBitrate() != null)
-        {
-            addParameterExtension(pt, "x-google-start-bitrate", String.valueOf(options.getStartBitrate()));
-        }
 
         if (options.getRemb())
         {

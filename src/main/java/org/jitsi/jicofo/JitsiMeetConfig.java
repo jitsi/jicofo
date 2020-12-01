@@ -87,11 +87,6 @@ public class JitsiMeetConfig
      */
     public static final String PNAME_ENFORCED_BRIDGE = "enforcedBridge";
 
-    /**
-     * The name of the "minBitrate" property.
-     */
-    public static final String PNAME_MIN_BITRATE = "minBitrate";
-
     /*
      * The name of the open sctp configuration property. Pass 'true' to
      * enable or 'false' to disable.
@@ -107,11 +102,6 @@ public class JitsiMeetConfig
      * The name of the start muted property for video.
      */
     public static final String PNAME_START_VIDEO_MUTED = "startVideoMuted";
-
-    /**
-     * The name of the "startBitrate" property.
-     */
-    public static final String PNAME_START_BITRATE = "startBitrate";
 
     /**
      * The name of the "stereo" property.
@@ -304,24 +294,6 @@ public class JitsiMeetConfig
     public Integer getStartVideoMuted()
     {
         return getInt(PNAME_START_VIDEO_MUTED);
-    }
-
-    /**
-     * @return the "min bitrate" which should be included in offers.
-     */
-    public int getMinBitrate()
-    {
-        Integer minBitrate = getInt(PNAME_MIN_BITRATE);
-        return minBitrate == null ? -1 : minBitrate;
-    }
-
-    /**
-     * @return the "start bitrate" which should be included in offers.
-     */
-    public int getStartBitrate()
-    {
-        Integer startBitrate = getInt(PNAME_START_BITRATE);
-        return startBitrate == null ? DEFAULT_START_BITRATE : startBitrate;
     }
 
     /**

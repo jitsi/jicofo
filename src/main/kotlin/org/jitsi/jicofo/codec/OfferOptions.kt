@@ -35,8 +35,6 @@ data class OfferOptions(
     var rtx: Boolean = true,
     var remb: Boolean = true,
     var opusRed: Boolean = true,
-    var minBitrate: Int? = null,
-    var startBitrate: Int? = null,
     var opusMaxAverageBitrate: Int? = null
 )
 
@@ -54,12 +52,6 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     rtx = rtx && jitsiMeetConfig.isRtxEnabled
     remb = remb && jitsiMeetConfig.isRembEnabled
     opusRed = opusRed && jitsiMeetConfig.isOpusRedEnabled
-    if (jitsiMeetConfig.minBitrate > 0) {
-        minBitrate = min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
-    }
-    if (jitsiMeetConfig.startBitrate > 0) {
-        startBitrate = min(jitsiMeetConfig.startBitrate, startBitrate ?: Int.MAX_VALUE)
-    }
     if (jitsiMeetConfig.opusMaxAverageBitrate > 0) {
         opusMaxAverageBitrate = min(jitsiMeetConfig.opusMaxAverageBitrate, opusMaxAverageBitrate ?: Int.MAX_VALUE)
     }
