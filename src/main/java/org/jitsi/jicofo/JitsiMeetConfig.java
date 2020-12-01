@@ -92,12 +92,6 @@ public class JitsiMeetConfig
      */
     public static final String PNAME_MIN_BITRATE = "minBitrate";
 
-    /*
-     * The name of the open sctp configuration property. Pass 'true' to
-     * enable or 'false' to disable.
-     */
-    public static final String PNAME_OPEN_SCTP = "openSctp";
-
     /**
      * The name of the start muted property for audio.
      */
@@ -237,16 +231,6 @@ public class JitsiMeetConfig
     {
         Boolean enableOpusRed = getBoolean(PNAME_ENABLE_OPUS_RED);
         return enableOpusRed != null && enableOpusRed;
-    }
-
-    /**
-     * Returns the value of the open sctp configuration property or
-     * <tt>null</tt> if it has not been specified.
-     */
-    public boolean openSctp()
-    {
-        Boolean openSctp = getBoolean(PNAME_OPEN_SCTP);
-        return openSctp == null || openSctp;
     }
 
     private Boolean getBoolean(String name)
