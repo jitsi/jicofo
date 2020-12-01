@@ -32,6 +32,7 @@ data class OfferOptions(
     var sctp: Boolean = true,
     var stereo: Boolean = true,
     var tcc: Boolean = true,
+    var remb: Boolean = false,
     var rtx: Boolean = true,
     var opusRed: Boolean = true,
     var minBitrate: Int? = null,
@@ -69,5 +70,6 @@ fun OfferOptions.applyConstraints(participant: Participant) {
     video = video && participant.hasVideoSupport()
     sctp = sctp && participant.hasSctpSupport()
     rtx = rtx && participant.hasRtxSupport()
+    remb = remb && participant.hasRembSupport()
     opusRed = opusRed && participant.hasOpusRedSupport()
 }

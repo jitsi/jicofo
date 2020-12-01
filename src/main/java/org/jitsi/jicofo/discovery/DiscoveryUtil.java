@@ -70,6 +70,11 @@ public class DiscoveryUtil
     public final static String FEATURE_RTX = "urn:ietf:rfc:4588";
 
     /**
+     * Support for RTCP REMB.
+     */
+    public final static String FEATURE_REMB = "http://jitsi.org/remb";
+
+    /**
      * The Jingle DTLS feature name (XEP-0320).
      */
     public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";

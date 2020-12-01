@@ -342,7 +342,7 @@ public class JingleOfferFactory
             addParameterExtension(pt, "x-google-start-bitrate", String.valueOf(options.getStartBitrate()));
         }
 
-        if (codecConfig.getEnableRemb())
+        if (codecConfig.getEnableRemb() && options.getRemb())
         {
             // a=rtcp-fb:XXX goog-remb
             pt.addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null));
