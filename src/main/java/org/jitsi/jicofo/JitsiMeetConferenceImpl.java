@@ -1792,7 +1792,7 @@ public class JitsiMeetConferenceImpl
 
         MediaSourceMap sourcesAdvertised = MediaSourceMap.getSourcesFromContent(contents);
         MediaSourceGroupMap sourceGroupsAdvertised = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.getInjectSsrcForRecvOnlyEndpoints())
+        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
@@ -2503,7 +2503,7 @@ public class JitsiMeetConferenceImpl
      */
     private String createSharedDocumentName()
     {
-        if (ConferenceConfig.config.getUseRandomSharedDocumentName())
+        if (ConferenceConfig.config.useRandomSharedDocumentName())
         {
             return UUID.randomUUID().toString().replaceAll("-", "");
         }
