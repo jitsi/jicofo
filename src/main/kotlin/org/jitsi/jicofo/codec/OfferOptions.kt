@@ -50,7 +50,6 @@ val OctoOptions = OfferOptions(
 fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     sctp = sctp && jitsiMeetConfig.openSctp()
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
-    opusRed = opusRed && jitsiMeetConfig.isOpusRedEnabled
     if (jitsiMeetConfig.minBitrate > 0) {
         minBitrate = min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
     }
