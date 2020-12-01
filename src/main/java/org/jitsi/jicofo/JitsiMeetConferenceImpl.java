@@ -762,7 +762,7 @@ public class JitsiMeetConferenceImpl
 
         if (bridge == null)
         {
-            bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion()
+            bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
         }
 
         if (bridge == null)
