@@ -52,6 +52,10 @@ class ConferenceConfig {
         "jicofo.conference.min-participants".from(newConfig)
     }
 
+    val enableLipSync: Boolean by config {
+        "jicofo.conference.enable-lip-sync".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = ConferenceConfig()

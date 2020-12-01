@@ -57,11 +57,6 @@ public class JitsiMeetConfig
     public static final String PNAME_DISABLE_RTX = "disableRtx";
 
     /**
-     * The name of the property that enables the {@link LipSyncHack}.
-     */
-    public static final String PNAME_ENABLE_LIPSYNC = "enableLipSync";
-
-    /**
      * The name of the property which enables the inclusion of the REMB RTCP
      * in the offer.
      */
@@ -184,15 +179,6 @@ public class JitsiMeetConfig
             logger.error("Invalid JID for enforced videobridge", e);
             return null;
         }
-    }
-
-    /**
-     * Return a <tt>Boolean</tt> value of the {@link #ENABLE_LIPSYNC} property
-     * (can be <tt>null</tt>).
-     */
-    public Boolean isLipSyncEnabled()
-    {
-        return getBoolean(PNAME_ENABLE_LIPSYNC);
     }
 
     /**
