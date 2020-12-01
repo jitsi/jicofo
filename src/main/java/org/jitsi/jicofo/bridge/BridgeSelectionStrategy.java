@@ -65,7 +65,7 @@ public abstract class BridgeSelectionStrategy
     /**
      * Maximum participants per bridge in one conference, or {@code -1} for no maximum.
      */
-    private int maxParticipantsPerBridge = config.maxBridgeParticipants();
+    private final int maxParticipantsPerBridge = config.maxBridgeParticipants();
 
     /**
      * Selects a bridge to be used for a new participant in a conference.
