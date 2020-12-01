@@ -2532,13 +2532,13 @@ public class JitsiMeetConferenceImpl
      */
     private String createSharedDocumentName()
     {
-        if (config.useRoomAsSharedDocName())
+        if (ConferenceConfig.config.getUseRandomSharedDocumentName())
         {
-            return roomName.getLocalpart().toString();
+            return UUID.randomUUID().toString().replaceAll("-", "");
         }
         else
         {
-            return UUID.randomUUID().toString().replaceAll("-", "");
+            return roomName.getLocalpart().toString();
         }
     }
 

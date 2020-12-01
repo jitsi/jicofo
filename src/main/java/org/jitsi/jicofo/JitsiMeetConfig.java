@@ -129,12 +129,6 @@ public class JitsiMeetConfig
     public static final String PNAME_OCTO = "octo";
 
     /**
-     * The name of the "useRoomAsSharedDocumentName" config property.
-     */
-    public static final String PNAME_USE_ROOM_AS_SHARED_DOC_NAME
-            = "useRoomAsSharedDocumentName";
-
-    /**
      * Disable REMBs by default.
      */
     private static final boolean DEFAULT_ENABLE_REMB = false;
@@ -347,16 +341,5 @@ public class JitsiMeetConfig
         Boolean octo = getBoolean(PNAME_OCTO);
         return octo != null && octo;
 
-    }
-
-    /**
-     * Return a <tt>boolean</tt> value of the
-     * {@link #USE_ROOM_AS_SHARED_DOC_NAME} property. Indicates if the room name
-     * should be used as a shared document name.
-     */
-    public boolean useRoomAsSharedDocName()
-    {
-        Boolean useRoom = getBoolean(PNAME_USE_ROOM_AS_SHARED_DOC_NAME);
-        return (useRoom != null) && useRoom;
     }
 }

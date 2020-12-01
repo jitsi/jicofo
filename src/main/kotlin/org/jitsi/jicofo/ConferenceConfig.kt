@@ -52,6 +52,10 @@ class ConferenceConfig {
         "jicofo.conference.min-participants".from(newConfig)
     }
 
+    val useRandomSharedDocumentName: Boolean by config {
+        "jicofo.conference.shared-document.use-random-name".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = ConferenceConfig()
