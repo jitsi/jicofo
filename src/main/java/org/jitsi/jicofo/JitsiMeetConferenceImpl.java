@@ -562,11 +562,6 @@ public class JitsiMeetConferenceImpl
             ConferenceProperties.KEY_CREATED_MS,
             Long.toString(System.currentTimeMillis()),
             false);
-
-        // Advertise whether octo is enabled/disabled in presence
-        setConferenceProperty(
-            ConferenceProperties.KEY_OCTO_ENABLED,
-            Boolean.toString(config.isOctoEnabled()));
     }
 
     /**
@@ -684,8 +679,6 @@ public class JitsiMeetConferenceImpl
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 
-        colibriConference.setConfig(config);
-
         colibriConference.setName(chatRoom.getRoomJid());
         colibriConference.setJitsiVideobridge(bridgeJid);
 
@@ -749,30 +742,8 @@ public class JitsiMeetConferenceImpl
         }
 
         // Select a Bridge for the new participant.
-        Bridge bridge = null;
-        Jid enforcedVideoBridge = config.getEnforcedVideobridge();
         BridgeSelector bridgeSelector = getServices().getBridgeSelector();
-
-
-        if (enforcedVideoBridge != null)
-        {
-            bridge = bridgeSelector.getBridge(enforcedVideoBridge);
-            if (bridge == null)
-            {
-                logger.warn("The enforced bridge is not registered with "
-                                + "BridgeSelector, will try to use a "
-                                + "different one.");
-            }
-        }
-
-        if (bridge == null)
-        {
-            bridge
-                = bridgeSelector.selectBridge(
-                    this,
-                    participant.getChatMember().getRegion(),
-                    config.isOctoEnabled());
-        }
+        Bridge bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)
         {
@@ -957,7 +928,7 @@ public class JitsiMeetConferenceImpl
     {
 
         StringBuilder sb = new StringBuilder(
-                "Region info, conference=" + getId() + " octo_enabled= " + config.isOctoEnabled() + ": [");
+                "Region info, conference=" + getId() + ": [");
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)

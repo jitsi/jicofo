@@ -155,9 +155,9 @@ public class FocusManager
         expireThread.start();
 
         int octoId = 0;
-        if (JicofoConfig.config.getOctoId() != null)
+        if (OctoConfig.config.getId() != null)
         {
-            octoId = JicofoConfig.config.getOctoId();
+            octoId = OctoConfig.config.getId();
         }
         if (octoId < 1 || octoId > 0xffff)
         {

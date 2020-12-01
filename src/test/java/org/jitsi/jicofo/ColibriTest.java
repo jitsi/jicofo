@@ -67,24 +67,16 @@ public class ColibriTest
     public void testChannelAllocation()
         throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testroom@conference.pawel.jitsi.net");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference
-            = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
-
-        MockProtocolProvider pps
-            = testConference.getFocusProtocolProvider();
-
-        OperationSetColibriConference colibriTool
-            = pps.getOperationSet(OperationSetColibriConference.class);
-
+        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
+        OperationSetColibriConference colibriTool = pps.getOperationSet(OperationSetColibriConference.class);
         ColibriConference colibriConf = colibriTool.createNewConference();
 
-        colibriConf.setConfig(config);
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 
         colibriConf.setJitsiVideobridge(mockBridge.getBridgeJid());
@@ -98,15 +90,11 @@ public class ColibriTest
         String peer1 = "endpoint1";
         String peer2 = "endpoint2";
 
-        ColibriConferenceIQ peer1Channels
-            = colibriConf.createColibriChannels(
-                peer1, null, true, contents);
+        ColibriConferenceIQ peer1Channels = colibriConf.createColibriChannels(peer1, null, true, contents);
 
         assertEquals(1, mockBridge.getEndpointCount());
 
-        ColibriConferenceIQ peer2Channels
-            = colibriConf.createColibriChannels(
-                peer2, null, true, contents);
+        ColibriConferenceIQ peer2Channels = colibriConf.createColibriChannels(peer2, null, true, contents);
 
         assertEquals(2, mockBridge.getEndpointCount());
 
