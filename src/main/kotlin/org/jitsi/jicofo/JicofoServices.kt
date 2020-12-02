@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
+import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
@@ -44,6 +45,7 @@ open class JicofoServices(
     init {
         val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
         val focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
+        val reservationSystem = ServiceUtils2.getService(bundleContext, ReservationSystem::class.java)
         val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
 
         val anonymous = StringUtils.isBlank(XmppConfig.client.password)
@@ -52,6 +54,7 @@ open class JicofoServices(
             loadConfig(configService, "org.jitsi.jicofo")
             this.setAuthAuthority(authAuthority)
             this.setFocusManager(focusManager)
+            this.setReservationSystem(reservationSystem)
         }
         startFocusComponent()
 
