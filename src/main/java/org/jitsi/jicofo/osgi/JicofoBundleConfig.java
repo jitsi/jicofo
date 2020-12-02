@@ -71,9 +71,6 @@ public class JicofoBundleConfig
                 "org/jitsi/service/libjitsi/LibJitsiActivator"
             },
             {
-                "org/jitsi/eventadmin/Activator",
-            },
-            {
                 "net/java/sip/communicator/impl/configuration/ConfigurationActivator"
             },
             {
