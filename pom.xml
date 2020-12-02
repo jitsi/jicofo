@@ -24,7 +24,7 @@
     <apache-http.version>4.4.1</apache-http.version>
     <jersey.version>2.32</jersey.version>
     <jicoco.version>1.1-68-gf620376</jicoco.version>
-    <jitsi.utils.version>1.0-60-g07c4a0b</jitsi.utils.version>
+    <jitsi.utils.version>1.0-68-g41ff78f</jitsi.utils.version>
   </properties>
 
   <dependencies>
