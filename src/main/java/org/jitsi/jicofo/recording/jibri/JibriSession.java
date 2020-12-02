@@ -22,9 +22,7 @@ import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;
@@ -54,7 +52,7 @@ public class JibriSession
      */
     static private final Logger classLogger = Logger.getLogger(JibriSession.class);
 
-    private static JibriStats stats = new JibriStats();
+    private static final JibriStats stats = new JibriStats();
 
     public static JSONObject getGlobalStats()
     {
@@ -95,10 +93,9 @@ public class JibriSession
     private final JibriDetector jibriDetector;
 
     /**
-     * Helper class that registers for {@link JibriEvent}s in the OSGi context
-     * obtained from the {@link FocusBundleActivator}.
+     * Helper class that registers for events from the {@link JibriDetector}.
      */
-    private final JibriEventHandler jibriEventHandler = new JibriEventHandler();
+    private final JibriDetectorEventHandler jibriEventHandler = new JibriDetectorEventHandler();
 
     /**
      * Current Jibri recording status.
@@ -192,7 +189,6 @@ public class JibriSession
 
     /**
      * Creates new {@link JibriSession} instance.
-     * @param bundleContext the OSGI context.
      * @param owner the session owner which will be notified about this session
      * state changes.
      * @param roomName the name if the XMPP MUC room (full address).
@@ -249,6 +245,7 @@ public class JibriSession
         this.sessionId = sessionId;
         this.applicationData = applicationData;
         this.xmpp = connection;
+        jibriDetector.addHandler(jibriEventHandler);
         logger = Logger.getLogger(classLogger, logLevelDelegate);
     }
 
@@ -347,7 +344,6 @@ public class JibriSession
 
         try
         {
-            jibriEventHandler.start(FocusBundleActivator.bundleContext);
             logger.info("Starting session with Jibri " + jibriJid);
 
             sendJibriStartIq(jibriJid);
@@ -426,14 +422,7 @@ public class JibriSession
         logger.info("Cleaning up current JibriSession");
         currentJibriJid = null;
         numRetries = 0;
-        try
-        {
-            jibriEventHandler.stop(FocusBundleActivator.bundleContext);
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to stop Jibri event handler: " + e, e);
-        }
+        jibriDetector.removeHandler(jibriEventHandler);
     }
 
     /**
@@ -443,8 +432,7 @@ public class JibriSession
      */
     public boolean accept(JibriIq packet)
     {
-        return currentJibriJid != null
-            && (packet.getFrom().equals(currentJibriJid));
+        return currentJibriJid != null && (packet.getFrom().equals(currentJibriJid));
     }
 
     /**
@@ -774,47 +762,6 @@ public class JibriSession
     }
 
     /**
-     * Helper class handles registration for the {@link JibriEvent}s.
-     */
-    private class JibriEventHandler
-        extends EventHandlerActivator
-    {
-
-        private JibriEventHandler()
-        {
-            super(new String[]{
-                JibriEvent.STATUS_CHANGED, JibriEvent.WENT_OFFLINE});
-        }
-
-        @Override
-        public void handleEvent(Event event)
-        {
-            if (!JibriEvent.isJibriEvent(event))
-            {
-                logger.error("Invalid event: " + event);
-                return;
-            }
-
-            final JibriEvent jibriEvent = (JibriEvent) event;
-            final String topic = jibriEvent.getTopic();
-            final Jid jibriJid = jibriEvent.getJibriJid();
-
-            synchronized (JibriSession.this)
-            {
-                if (JibriEvent.WENT_OFFLINE.equals(topic)
-                    && jibriJid.equals(currentJibriJid))
-                {
-                    logger.error(
-                        nickname() + " went offline: " + jibriJid
-                            + " for room: " + roomName);
-                    handleJibriStatusUpdate(
-                        jibriJid, Status.OFF, FailureReason.ERROR, true);
-                }
-            }
-        }
-    }
-
-    /**
      * Task scheduled after we have received RESULT response from Jibri and entered PENDING state. Will abort the
      * recording if we do not transit to ON state, after a timeout of {@link JibriConfig#getPendingTimeout()}.
      */
@@ -923,4 +870,20 @@ public class JibriSession
          */
         RECORDING
     }
+
+    private class JibriDetectorEventHandler implements JibriDetector.EventHandler
+    {
+        @Override
+        public void instanceOffline(Jid jid)
+        {
+            if (jid.equals(currentJibriJid))
+            {
+                logger.warn(nickname() + " went offline: " + jid
+                        + " for room: " + roomName);
+                handleJibriStatusUpdate(
+                        jid, Status.OFF, FailureReason.ERROR, true);
+            }
+        }
+    }
+
 }

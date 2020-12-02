@@ -17,21 +17,20 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import kotlin.*;
+import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.osgi.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
  * the current session. Does that by joining "brewery" room where Jibris connect
- * to and publish their's status in MUC presence. It emits {@link JibriEvent}s
- * to reflect current Jibri's status.
+ * to and publish their's status in MUC presence.
  *
  * @author Pawel Domas
  */
@@ -43,11 +42,7 @@ public class JibriDetector
      */
     private static final Logger logger = Logger.getLogger(JibriDetector.class);
 
-    /**
-     * The reference to the <tt>EventAdmin</tt> service which is used to send
-     * {@link JibriEvent}s.
-     */
-    private final OSGIServiceRef<EventAdmin> eventAdminRef;
+    private final EventEmitter<EventHandler> eventEmitter = new EventEmitter<>();
 
     /**
      * Indicates whether this instance detects SIP gateway Jibris or regular
@@ -73,7 +68,6 @@ public class JibriDetector
             JibriStatusPacketExt.ELEMENT_NAME,
             JibriStatusPacketExt.NAMESPACE);
 
-        this.eventAdminRef = new OSGIServiceRef<>(FocusBundleActivator.bundleContext, EventAdmin.class);
         this.isSip = isSip;
     }
 
@@ -113,19 +107,11 @@ public class JibriDetector
     {
         logger.info("Received Jibri " + jid + " status " + presenceExt.toXML());
 
-        if (presenceExt.isAvailable())
-        {
-            notifyJibriStatus(jid, true);
-        }
-        else
+        if (!presenceExt.isAvailable())
         {
             if (presenceExt.getBusyStatus() == null || presenceExt.getHealthStatus() == null)
             {
                 notifyInstanceOffline(jid);
-            }
-            else
-            {
-                notifyJibriStatus(jid, false);
             }
         }
     }
@@ -135,30 +121,21 @@ public class JibriDetector
     {
         logger.info(getLogName() + ": " + jid + " went offline");
 
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin != null)
+        eventEmitter.fireEvent(handler ->
         {
-            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid, this.isSip));
-        }
-        else
-        {
-            logger.warn("No EventAdmin!");
-        }
+            handler.instanceOffline(jid);
+            return Unit.INSTANCE;
+        });
     }
 
-    private void notifyJibriStatus(Jid jibriJid, boolean available)
+    void addHandler(EventHandler eventHandler)
     {
-        logger.info(getLogName() + ": " + jibriJid + " available: " + available);
+        eventEmitter.addHandler(eventHandler);
+    }
 
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(JibriEvent.newStatusChangedEvent(jibriJid, available, isSip));
-        }
-        else
-        {
-            logger.warn("No EventAdmin!");
-        }
+    void removeHandler(EventHandler eventHandler)
+    {
+        eventEmitter.removeHandler(eventHandler);
     }
 
     @SuppressWarnings("unchecked")
@@ -170,5 +147,10 @@ public class JibriDetector
             "available",
             getInstanceCount(brewInstance -> brewInstance.status != null && brewInstance.status.isAvailable()));
         return stats;
+    }
+
+    public interface EventHandler
+    {
+        default void instanceOffline(Jid jid) {}
     }
 }
