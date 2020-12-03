@@ -20,11 +20,11 @@ package org.jitsi.impl.reservation.rest;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.osgi.*;
-import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.Logger;
 import org.osgi.framework.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
+import static org.jitsi.impl.reservation.rest.ReservationConfig.config;
 /**
  * Plugin bundle activator for REST reservation system.
  *
@@ -53,23 +53,25 @@ public class Activator
     public void start(BundleContext context)
             throws Exception
     {
-        ConfigurationService config
-            = ServiceUtils2.getService(context, ConfigurationService.class);
-        String apiBaseUrl
-            = config.getString(RESTReservations.API_BASE_URL_PNAME);
+        if (!config.enabled())
+        {
+            return;
+        }
+        String apiBaseUrl = config.getBaseUrl();
 
         if (isBlank(apiBaseUrl))
+        {
+            logger.error("Reservation is enabled, but no base URL is specified. Can not start.");
             return;
+        }
 
         logger.info("REST reservation API will use base URL: " + apiBaseUrl);
 
         restReservations = new RESTReservations(apiBaseUrl);
 
-        serviceRegistration = context.registerService(
-            ReservationSystem.class, restReservations, null);
+        serviceRegistration = context.registerService(ReservationSystem.class, restReservations, null);
 
-        FocusManager focusManager
-            = ServiceUtils2.getService(context, FocusManager.class);
+        FocusManager focusManager = ServiceUtils2.getService(context, FocusManager.class);
 
         restReservations.start(focusManager);
     }

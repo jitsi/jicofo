@@ -44,12 +44,6 @@ public class RESTReservations
         = Logger.getLogger(RESTReservations.class);
 
     /**
-     * Configuration property name which specifies REST API base URL.
-     */
-    public static final String API_BASE_URL_PNAME
-        = "org.jitsi.impl.reservation.rest.BASE_URL";
-
-    /**
      * Focus manager instance.
      */
     private FocusManager focusManager;
