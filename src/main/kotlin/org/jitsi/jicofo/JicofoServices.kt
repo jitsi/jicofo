@@ -40,6 +40,7 @@ open class JicofoServices(
     val bundleContext: BundleContext
 ) {
     protected open var focusComponent: FocusComponent? = null
+    private val focusManager: FocusManager
 
     private val reservationSystem: RESTReservations?
 
@@ -47,9 +48,16 @@ open class JicofoServices(
 
     init {
         val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
-        val focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
-        reservationSystem = if (reservationConfig.enabled) RESTReservations(reservationConfig.baseUrl) else null
-        reservationSystem?.start(focusManager)
+        focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
+        reservationSystem = if (reservationConfig.enabled) {
+            RESTReservations(reservationConfig.baseUrl) { name, reason ->
+                focusManager.destroyConference(name, reason)
+            }.apply {
+                focusManager.addFocusAllocationListener(this)
+                start()
+            }
+        } else null
+
         val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
 
         val anonymous = StringUtils.isBlank(XmppConfig.client.password)
@@ -81,7 +89,10 @@ open class JicofoServices(
 
 
     fun stop() {
-        reservationSystem?.stop()
+        reservationSystem?.let {
+            focusManager.removeFocusAllocationListener { it }
+            stop()
+        }
         stopFocusComponent()
         health?.stop(bundleContext)
     }
