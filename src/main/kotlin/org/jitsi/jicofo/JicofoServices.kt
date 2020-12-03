@@ -18,10 +18,11 @@
 package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
+import org.jitsi.impl.reservation.rest.RESTReservations
+import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
-import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
@@ -40,12 +41,15 @@ open class JicofoServices(
 ) {
     protected open var focusComponent: FocusComponent? = null
 
-    private var health: Health? = null
+    private val reservationSystem: RESTReservations?
+
+        private var health: Health? = null
 
     init {
         val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
         val focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
-        val reservationSystem = ServiceUtils2.getService(bundleContext, ReservationSystem::class.java)
+        reservationSystem = if (reservationConfig.enabled) RESTReservations(reservationConfig.baseUrl) else null
+        reservationSystem?.start(focusManager)
         val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
 
         val anonymous = StringUtils.isBlank(XmppConfig.client.password)
@@ -77,6 +81,7 @@ open class JicofoServices(
 
 
     fun stop() {
+        reservationSystem?.stop()
         stopFocusComponent()
         health?.stop(bundleContext)
     }
