@@ -39,12 +39,13 @@ open class JicofoServices(
      */
     val bundleContext: BundleContext
 ) {
-    protected open var focusComponent: FocusComponent? = null
+    /**
+     * Expose for testing.
+     */
+    protected val focusComponent: FocusComponent
     private val focusManager: FocusManager
-
     private val reservationSystem: RESTReservations?
-
-        private var health: Health? = null
+    private val health: Health?
 
     init {
         val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
@@ -64,33 +65,39 @@ open class JicofoServices(
         val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
         focusComponent = FocusComponent(XmppComponentConfig.config, anonymous, focusJid).apply {
             loadConfig(configService, "org.jitsi.jicofo")
-            this.setAuthAuthority(authAuthority)
-            this.setFocusManager(focusManager)
-            this.setReservationSystem(reservationSystem)
+            authAuthority?.let { setAuthAuthority(authAuthority) }
+            setFocusManager(focusManager)
+            reservationSystem?.let { setReservationSystem(reservationSystem) }
         }
         startFocusComponent()
 
-        if (HealthConfig.config.enabled) {
-            health = Health(HealthConfig.config, focusManager, focusComponent).apply {
+        health = if (HealthConfig.config.enabled) {
+            Health(HealthConfig.config, focusManager, focusComponent).apply {
                 // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
                 start(bundleContext)
                 focusManager.setHealth(this)
             }
-        }
+        } else null
     }
 
+    /**
+     * Expose for testing.
+     */
     open fun startFocusComponent() {
-        focusComponent?.connect()
+        focusComponent.connect()
     }
 
+    /**
+     * Expose for testing.
+     */
     open fun stopFocusComponent() {
-        focusComponent?.disconnect()
+        focusComponent.disconnect()
     }
 
 
     fun stop() {
         reservationSystem?.let {
-            focusManager.removeFocusAllocationListener { it }
+            focusManager.removeFocusAllocationListener(it)
             stop()
         }
         stopFocusComponent()
