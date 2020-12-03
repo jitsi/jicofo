@@ -353,7 +353,7 @@ public class JitsiMeetConferenceImpl
 
             // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
             // be used for clients that signal support (see Participant.hasLipSyncSupport).
-            if (ConferenceConfig.config.getEnableLipSync())
+            if (ConferenceConfig.config.enableLipSync())
             {
                 jingle = new LipSyncHack(this, jingle);
             }
@@ -561,11 +561,6 @@ public class JitsiMeetConferenceImpl
             ConferenceProperties.KEY_CREATED_MS,
             Long.toString(System.currentTimeMillis()),
             false);
-
-        // Advertise whether octo is enabled/disabled in presence
-        setConferenceProperty(
-            ConferenceProperties.KEY_OCTO_ENABLED,
-            Boolean.toString(config.isOctoEnabled()));
     }
 
     /**
@@ -683,8 +678,6 @@ public class JitsiMeetConferenceImpl
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 
-        colibriConference.setConfig(config);
-
         colibriConference.setName(chatRoom.getRoomJid());
         colibriConference.setJitsiVideobridge(bridgeJid);
 
@@ -748,30 +741,8 @@ public class JitsiMeetConferenceImpl
         }
 
         // Select a Bridge for the new participant.
-        Bridge bridge = null;
-        Jid enforcedVideoBridge = config.getEnforcedVideobridge();
         BridgeSelector bridgeSelector = getServices().getBridgeSelector();
-
-
-        if (enforcedVideoBridge != null)
-        {
-            bridge = bridgeSelector.getBridge(enforcedVideoBridge);
-            if (bridge == null)
-            {
-                logger.warn("The enforced bridge is not registered with "
-                                + "BridgeSelector, will try to use a "
-                                + "different one.");
-            }
-        }
-
-        if (bridge == null)
-        {
-            bridge
-                = bridgeSelector.selectBridge(
-                    this,
-                    participant.getChatMember().getRegion(),
-                    config.isOctoEnabled());
-        }
+        Bridge bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)
         {
@@ -956,7 +927,7 @@ public class JitsiMeetConferenceImpl
     {
 
         StringBuilder sb = new StringBuilder(
-                "Region info, conference=" + getId() + " octo_enabled= " + config.isOctoEnabled() + ": [");
+                "Region info, conference=" + getId() + ": [");
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)
@@ -1820,7 +1791,7 @@ public class JitsiMeetConferenceImpl
 
         MediaSourceMap sourcesAdvertised = MediaSourceMap.getSourcesFromContent(contents);
         MediaSourceGroupMap sourceGroupsAdvertised = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.getInjectSsrcForRecvOnlyEndpoints())
+        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
@@ -2531,13 +2502,13 @@ public class JitsiMeetConferenceImpl
      */
     private String createSharedDocumentName()
     {
-        if (config.useRoomAsSharedDocName())
+        if (ConferenceConfig.config.useRandomSharedDocumentName())
         {
-            return roomName.getLocalpart().toString();
+            return UUID.randomUUID().toString().replaceAll("-", "");
         }
         else
         {
-            return UUID.randomUUID().toString().replaceAll("-", "");
+            return roomName.getLocalpart().toString();
         }
     }
 

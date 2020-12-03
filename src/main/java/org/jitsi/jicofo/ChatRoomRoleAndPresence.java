@@ -76,7 +76,7 @@ public class ChatRoomRoleAndPresence
      * join the room will become conference owner. When the owner leaves the
      * room next participant will be selected as new owner.
      */
-    private final boolean autoOwner = ConferenceConfig.config.getEnableAutoOwner();
+    private final boolean autoOwner = ConferenceConfig.config.enableAutoOwner();
 
     /**
      * The logger for this instance. Uses the logging level either of the

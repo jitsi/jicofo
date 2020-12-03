@@ -48,7 +48,6 @@ val OctoOptions = OfferOptions(
 )
 
 fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
-    sctp = sctp && jitsiMeetConfig.openSctp()
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
     tcc = tcc && jitsiMeetConfig.isTccEnabled
     rtx = rtx && jitsiMeetConfig.isRtxEnabled

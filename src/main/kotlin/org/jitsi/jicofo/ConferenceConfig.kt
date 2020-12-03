@@ -32,11 +32,13 @@ class ConferenceConfig {
         "org.jitsi.jicofo.DISABLE_AUTO_OWNER".from(legacyConfig).transformedBy { !it }
         "jicofo.conference.enable-auto-owner".from(newConfig)
     }
+    fun enableAutoOwner(): Boolean = enableAutoOwner
 
     val injectSsrcForRecvOnlyEndpoints: Boolean by config {
         "org.jitsi.jicofo.INJECT_SSRC_FOR_RECVONLY_ENDPOINTS".from(legacyConfig)
         "jicofo.conference.inject-ssrc-for-recv-only-endpoints".from(newConfig)
     }
+    fun injectSsrcForRecvOnlyEndpoints(): Boolean = injectSsrcForRecvOnlyEndpoints
 
     val maxSsrcsPerUser: Int by config {
         "org.jitsi.jicofo.MAX_SSRC_PER_USER".from(legacyConfig)
@@ -55,6 +57,12 @@ class ConferenceConfig {
     val enableLipSync: Boolean by config {
         "jicofo.conference.enable-lip-sync".from(newConfig)
     }
+    fun enableLipSync(): Boolean = enableLipSync
+
+    val useRandomSharedDocumentName: Boolean by config {
+        "jicofo.conference.shared-document.use-random-name".from(newConfig)
+    }
+    fun useRandomSharedDocumentName(): Boolean = useRandomSharedDocumentName
 
     companion object {
         @JvmField

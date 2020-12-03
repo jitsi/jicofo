@@ -212,8 +212,7 @@ public class BridgeSelector
      */
     synchronized public Bridge selectBridge(
             @NotNull JitsiMeetConference conference,
-            String participantRegion,
-            boolean allowMultiBridge)
+            String participantRegion)
     {
         List<Bridge> bridges
             = getPrioritizedBridgesList().stream()
@@ -223,7 +222,7 @@ public class BridgeSelector
             bridges,
             conference.getBridges(),
             participantRegion,
-            allowMultiBridge);
+            OctoConfig.config.getEnabled());
     }
 
     /**
@@ -232,10 +231,9 @@ public class BridgeSelector
      * @param conference the conference for which a bridge is to be selected.
      * @return the selected bridge, represented by its {@link Bridge}.
      */
-    public Bridge selectBridge(
-            @NotNull JitsiMeetConference conference)
+    public Bridge selectBridge(@NotNull JitsiMeetConference conference)
     {
-        return selectBridge(conference, null, false);
+        return selectBridge(conference, null);
     }
 
     /**

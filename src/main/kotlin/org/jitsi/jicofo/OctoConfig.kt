@@ -22,29 +22,18 @@ import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.metaconfig.config
 
-class JicofoConfig {
-    val localRegion: String? by optionalconfig {
-        "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(legacyConfig)
-        "$BASE.local-region".from(newConfig)
+class OctoConfig {
+    val id: Int? by optionalconfig {
+        "org.jitsi.jicofo.SHORT_ID".from(legacyConfig)
+        "jicofo.octo.id".from(newConfig)
     }
 
-    val enableSctp: Boolean by config {
-        "$BASE.sctp.enabled".from(newConfig)
+    val enabled: Boolean by config {
+        "jicofo.octo.enabled".from(newConfig)
     }
-
-    val sharedPoolMaxThreads: Int by config {
-        "org.jitsi.jicofo.SHARED_POOL_SIZE".from(legacyConfig)
-        "jicofo.task-pools.shared-pool-max-threads".from(newConfig)
-    }
-
-    fun enableSctp() = enableSctp
-
-    fun localRegion() = localRegion
 
     companion object {
-        const val BASE = "jicofo"
-
         @JvmField
-        val config = JicofoConfig()
+        val config = OctoConfig()
     }
 }
