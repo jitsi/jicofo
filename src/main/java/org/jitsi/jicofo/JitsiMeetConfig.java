@@ -45,11 +45,6 @@ public class JitsiMeetConfig
     public static final String PNAME_DISABLE_RTX = "disableRtx";
 
     /**
-     * The name of the property that enables the {@link LipSyncHack}.
-     */
-    public static final String PNAME_ENABLE_LIPSYNC = "enableLipSync";
-
-    /**
      * The name of the property which enables the inclusion of the REMB RTCP
      * in the offer.
      */
@@ -121,15 +116,6 @@ public class JitsiMeetConfig
     public JitsiMeetConfig(Map<String, String> properties)
     {
         this.properties = properties;
-    }
-
-    /**
-     * Return a <tt>Boolean</tt> value of the {@link #PNAME_ENABLE_LIPSYNC} property
-     * (can be <tt>null</tt>).
-     */
-    public Boolean isLipSyncEnabled()
-    {
-        return getBoolean(PNAME_ENABLE_LIPSYNC);
     }
 
     /**

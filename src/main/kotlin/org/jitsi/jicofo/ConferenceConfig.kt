@@ -54,6 +54,11 @@ class ConferenceConfig {
         "jicofo.conference.min-participants".from(newConfig)
     }
 
+    val enableLipSync: Boolean by config {
+        "jicofo.conference.enable-lip-sync".from(newConfig)
+    }
+    fun enableLipSync(): Boolean = enableLipSync
+
     val useRandomSharedDocumentName: Boolean by config {
         "jicofo.conference.shared-document.use-random-name".from(newConfig)
     }

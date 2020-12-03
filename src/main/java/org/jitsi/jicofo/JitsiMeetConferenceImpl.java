@@ -351,11 +351,10 @@ public class JitsiMeetConferenceImpl
             colibri = jvbXmppConnection.getOperationSet(OperationSetColibriConference.class);
             jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
 
-            // Wraps OperationSetJingle in order to introduce
-            // our nasty "lip-sync" hack
-            if (Boolean.TRUE.equals(getConfig().isLipSyncEnabled()))
+            // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
+            // be used for clients that signal support (see Participant.hasLipSyncSupport).
+            if (ConferenceConfig.config.enableLipSync())
             {
-                logger.info("Lip-sync enabled in " + getRoomName());
                 jingle = new LipSyncHack(this, jingle);
             }
 

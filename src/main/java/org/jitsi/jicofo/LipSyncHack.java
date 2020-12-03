@@ -133,24 +133,20 @@ public class LipSyncHack implements OperationSetJingle
     private boolean isOkToMergeParticipantAV(Jid participantJid,
                                              Jid ownerJid)
     {
-        Participant participant
-            = conference.findParticipantForRoomJid(participantJid);
+        Participant participant = conference.findParticipantForRoomJid(participantJid);
         if (participant == null)
         {
             logger.error("No target participant found for: " + participantJid);
             return false;
         }
 
-        Participant streamsOwner
-            = conference.findParticipantForRoomJid(ownerJid);
+        Participant streamsOwner = conference.findParticipantForRoomJid(ownerJid);
         if (streamsOwner == null)
         {
             // Do not log that error for the JVB
             if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
             {
-                logger.error(
-                    "Stream owner not a participant or not found for jid: "
-                        + ownerJid);
+                logger.error("Stream owner not a participant or not found for jid: " + ownerJid);
             }
             return false;
         }
@@ -175,6 +171,7 @@ public class LipSyncHack implements OperationSetJingle
         boolean merged = false;
         if (isOkToMergeParticipantAV(participant, owner))
         {
+            logger.info("Enabling lip-sync for " + participant.toString());
             merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
         }
 
