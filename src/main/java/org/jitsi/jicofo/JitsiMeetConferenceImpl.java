@@ -29,13 +29,11 @@ import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.eventadmin.*;
 
 import org.jitsi.utils.logging.Logger;
 import org.jivesoftware.smack.packet.*;
@@ -73,8 +71,7 @@ import java.util.stream.*;
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference,
                RegistrationStateChangeListener,
-               JingleRequestHandler,
-               EventHandler
+               JingleRequestHandler
 {
     /**
      * The classLogger instance used by this class.
@@ -243,11 +240,6 @@ public class JitsiMeetConferenceImpl
     private final String etherpadName;
 
     /**
-     * Bridge <tt>EventHandler</tt> registration.
-     */
-    private ServiceRegistration<EventHandler> eventHandlerRegistration;
-
-    /**
      * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
      * by this <tt>JitsiMeetConference</tt> instance.
      */
@@ -273,6 +265,8 @@ public class JitsiMeetConferenceImpl
      * See {@link JitsiMeetConference#includeInStatistics()}
      */
     private final boolean includeInStatistics;
+
+    private final BridgeSelectorEventHandler bridgeSelectorEventHandler = new BridgeSelectorEventHandler();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -367,23 +361,15 @@ public class JitsiMeetConferenceImpl
             executor = ServiceUtils2.getService(osgiCtx, ScheduledExecutorService.class);
             services = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
 
+            BridgeSelector bridgeSelector = services.getBridgeSelector();
+            bridgeSelector.addHandler(bridgeSelectorEventHandler);
+
             if (protocolProviderHandler.isRegistered())
             {
                 joinTheRoom();
             }
 
             protocolProviderHandler.addRegistrationListener(this);
-
-            // Register for bridge events
-            eventHandlerRegistration
-                = EventUtil.registerEventHandler(
-                        osgiCtx,
-                        new String[]
-                        {
-                            BridgeEvent.BRIDGE_UP,
-                            BridgeEvent.BRIDGE_DOWN
-                        },
-                        this);
 
             JibriDetector jibriDetector = services.getJibriDetector();
             if (jibriDetector != null && jibriOpSet != null)
@@ -469,12 +455,6 @@ public class JitsiMeetConferenceImpl
                 logger.error("jibriRecorder.dispose error", e);
             }
             jibriRecorder = null;
-        }
-
-        if (eventHandlerRegistration != null)
-        {
-            eventHandlerRegistration.unregister();
-            eventHandlerRegistration = null;
         }
 
         protocolProviderHandler.removeRegistrationListener(this);
@@ -2321,28 +2301,6 @@ public class JitsiMeetConferenceImpl
         return gid;
     }
 
-    @Override
-    public void handleEvent(Event event)
-    {
-        if (!(event instanceof BridgeEvent))
-        {
-            logger.error("Unexpected event type: " + event);
-            return;
-        }
-
-        BridgeEvent bridgeEvent = (BridgeEvent) event;
-        Jid bridgeJid = bridgeEvent.getBridgeJid();
-        switch (event.getTopic())
-        {
-        case BridgeEvent.BRIDGE_DOWN:
-            onBridgeDown(bridgeJid);
-            break;
-        case BridgeEvent.BRIDGE_UP:
-            onBridgeUp(bridgeJid);
-            break;
-        }
-    }
-
     private void onBridgeUp(Jid bridgeJid)
     {
         // Check if we're not shutting down
@@ -3083,6 +3041,21 @@ public class JitsiMeetConferenceImpl
                 }
                 singleParticipantTout = null;
             }
+        }
+    }
+
+    private class BridgeSelectorEventHandler implements BridgeSelector.EventHandler
+    {
+        @Override
+        public void bridgeRemoved(Bridge bridge)
+        {
+            onBridgeDown(bridge.getJid());
+        }
+
+        @Override
+        public void bridgeAdded(Bridge bridge)
+        {
+            onBridgeUp(bridge.getJid());
         }
     }
 }

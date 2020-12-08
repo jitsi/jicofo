@@ -91,7 +91,7 @@ public class XMPPDomainAuthAuthority
                         "Missing mandatory attribute '"
                                 + ConferenceIq.MACHINE_UID_ATTR_NAME + "'");
             }
-            session = createNewSession(machineUID, bareJid.toString(), query.getRoom(), null);
+            session = createNewSession(machineUID, bareJid.toString(), query.getRoom());
         }
 
         // Authenticate JID with session(if it exists)

@@ -22,12 +22,10 @@ import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.xmpp.XmppConfig;
-import org.jitsi.eventadmin.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
@@ -405,15 +403,6 @@ public class FocusManager
             logger.info(sb);
         }
 
-        // Send focus created event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                EventFactory.focusCreated(
-                    String.valueOf(conference.getId()), conference.getRoomName()));
-        }
-
         return conference;
     }
 
@@ -491,15 +480,8 @@ public class FocusManager
             }
 
             for (FocusAllocationListener listener : listeners)
-                listener.onFocusDestroyed(roomName);
-
-            // Send focus destroyed event
-            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-            if (eventAdmin != null)
             {
-                eventAdmin.postEvent(
-                    EventFactory.focusDestroyed(
-                        String.valueOf(conference.getId()), conference.getRoomName()));
+                listener.onFocusDestroyed(roomName);
             }
         }
     }

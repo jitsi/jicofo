@@ -25,9 +25,7 @@ import java.util.function.*;
 import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.utils.logging.*;
-import org.jitsi.eventadmin.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jxmpp.jid.*;
@@ -63,11 +61,6 @@ public abstract class AbstractAuthAuthority
      * immediately after end of the conference for which it was created.
      */
     private final boolean enableAutoLogin;
-
-    /**
-     * <tt>EventAdmin</tt> instance used for firing events.
-     */
-    private EventAdmin eventAdmin;
 
     /**
      * The timer used to check for the expiration of authentication sessions.
@@ -126,20 +119,6 @@ public abstract class AbstractAuthAuthority
     }
 
     /**
-     * Returns <tt>EventAdmin</tt> service instance(if any).
-     */
-    EventAdmin getEventAdmin()
-    {
-        if (eventAdmin == null)
-        {
-            eventAdmin = ServiceUtils2.getService(
-                    AuthBundleActivator.bundleContext,
-                    EventAdmin.class);
-        }
-        return eventAdmin;
-    }
-
-    /**
      * Finds an {@link AuthenticationSession} session.
      *
      * @param selector - Must return <tt>true</tt> when a match is found.
@@ -166,16 +145,10 @@ public abstract class AbstractAuthAuthority
      *                     used in new session.
      * @param roomName the name of the conference for which the session will be
      *                 created
-     * @param properties the list of authentication properties provided during
-     *                   authentication which will be sent in 'authentication
-     *                   session created' event. This is authentication provider
-     *                   depended and can be left empty.
-     *
      * @return new <tt>AuthenticationSession</tt> for given parameters.
      */
     protected AuthenticationSession createNewSession(
-            String machineUID, String authIdentity, EntityBareJid roomName,
-            Map<String, String> properties)
+            String machineUID, String authIdentity, EntityBareJid roomName)
     {
         synchronized (syncRoot)
         {
@@ -188,34 +161,9 @@ public abstract class AbstractAuthAuthority
 
             authenticationSessions.put(session.getSessionId(), session);
 
-            logger.info(
-                "Authentication session created for "
-                        + authIdentity + " SID: " + session.getSessionId());
-
-            if (properties != null)
-            {
-                logEvent(
-                        EventFactory.authSessionCreated(
-                                session.getSessionId(),
-                                session.getUserIdentity(),
-                                session.getMachineUID(),
-                                properties));
-            }
+            logger.info("Authentication session created for " + authIdentity + " SID: " + session.getSessionId());
 
             return session;
-        }
-    }
-
-    private void logEvent(Event event)
-    {
-        EventAdmin eventAdmin = getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(event);
-        }
-        else
-        {
-            logger.error("Unable to log events - no EventAdmin service found");
         }
     }
 
@@ -332,10 +280,6 @@ public abstract class AbstractAuthAuthority
             if (authenticationSessions.remove(sessionId) != null)
             {
                 logger.info("Authentication removed: " + session);
-
-                // Generate "authentication session destroyed" event
-                logEvent(EventFactory.authSessionDestroyed(sessionId));
-
             }
         }
     }

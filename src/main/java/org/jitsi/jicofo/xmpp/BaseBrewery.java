@@ -371,8 +371,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * @param jid the brewing instance muc address
      * @param status the updated status for that instance
      */
-    abstract protected void onInstanceStatusChanged(
-        Jid jid, T status);
+    abstract protected void onInstanceStatusChanged(Jid jid, T status);
 
     /**
      * Finds instance by muc address.

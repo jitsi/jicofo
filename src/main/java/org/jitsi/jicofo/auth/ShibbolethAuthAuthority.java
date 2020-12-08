@@ -160,18 +160,15 @@ public class ShibbolethAuthAuthority
      */
     String authenticateUser(String machineUID,
                             String authIdentity,
-                            EntityBareJid roomName,
-                            Map<String, String> properties)
+                            EntityBareJid roomName)
     {
         synchronized (syncRoot)
         {
-            AuthenticationSession session
-                = findSessionForIdentity(machineUID, authIdentity);
+            AuthenticationSession session = findSessionForIdentity(machineUID, authIdentity);
 
             if (session == null)
             {
-                session = createNewSession(
-                    machineUID, authIdentity, roomName, properties);
+                session = createNewSession(machineUID, authIdentity, roomName);
             }
 
             return session.getSessionId();

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.osgi.*;
 
 import org.jitsi.utils.concurrent.*;
@@ -54,11 +53,6 @@ public class FocusBundleActivator
         = Logger.getLogger(FocusBundleActivator.class);
 
     /**
-     * {@link EventAdmin} service reference.
-     */
-    private static OSGIServiceRef<EventAdmin> eventAdminRef;
-
-    /**
      * Shared thread pool available through OSGi for other components that do
      * not like to manage their own pool.
      */
@@ -91,8 +85,6 @@ public class FocusBundleActivator
             = Executors.newScheduledThreadPool(
                 SHARED_SCHEDULED_POOL_SIZE,
                 new CustomizableThreadFactory("Jicofo Scheduled", true));
-
-        eventAdminRef = new OSGIServiceRef<>(context, EventAdmin.class);
 
         logger.info("Shared pool max size: " + config.getSharedPoolMaxThreads());
         sharedPool
@@ -135,17 +127,6 @@ public class FocusBundleActivator
             sharedPool.shutdownNow();
             sharedPool = null;
         }
-
-        eventAdminRef = null;
-    }
-
-    /**
-     * Returns the <tt>EventAdmin</tt> instance, if any.
-     * @return the <tt>EventAdmin</tt> instance, if any.
-     */
-    public static EventAdmin getEventAdmin()
-    {
-        return eventAdminRef.get();
     }
 
     /**

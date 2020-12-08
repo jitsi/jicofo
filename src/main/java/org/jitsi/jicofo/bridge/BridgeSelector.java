@@ -17,18 +17,16 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.utils.event.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-
-import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.event.*;
 
 import org.jitsi.utils.logging.*;
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.stream.*;
@@ -49,21 +47,11 @@ public class BridgeSelector
     private final static Logger logger = Logger.getLogger(BridgeSelector.class);
 
     /**
-     * Stores reference to <tt>EventHandler</tt> registration, so that it can be
-     * unregistered on {@link #dispose()}.
-     */
-    private ServiceRegistration<EventHandler> handlerRegistration;
-
-    /**
      * The map of bridge JID to <tt>Bridge</tt>.
      */
     private final Map<Jid, Bridge> bridges = new HashMap<>();
 
-    /**
-     * The <tt>EventAdmin</tt> used by this instance to fire/send
-     * <tt>BridgeEvent</tt>s.
-     */
-    private EventAdmin eventAdmin;
+    private final EventEmitter<EventHandler> eventEmitter = new EventEmitter<>();
 
     /**
      * The bridge selection strategy.
@@ -267,14 +255,22 @@ public class BridgeSelector
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());
 
-        eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.getJid()));
+        eventEmitter.fireEvent(handler ->
+        {
+            handler.bridgeAdded(bridge);
+            return Unit.INSTANCE;
+        });
     }
 
     private void notifyBridgeDown(Bridge bridge)
     {
         logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
-        eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.getJid()));
+        eventEmitter.fireEvent(handler ->
+        {
+            handler.bridgeRemoved(bridge);
+            return Unit.INSTANCE;
+        });
     }
 
     /**
@@ -283,12 +279,6 @@ public class BridgeSelector
      */
     public void init()
     {
-        this.eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin == null)
-        {
-            throw new IllegalStateException("EventAdmin service not found");
-        }
-
         jvbDoctor.start(FocusBundleActivator.getSharedScheduledThreadPool(), getBridges());
     }
 
@@ -298,11 +288,6 @@ public class BridgeSelector
     public void dispose()
     {
         jvbDoctor.stop();
-        if (handlerRegistration != null)
-        {
-            handlerRegistration.unregister();
-            handlerRegistration = null;
-        }
     }
 
     /**
@@ -346,5 +331,20 @@ public class BridgeSelector
         stats.put("operational_bridge_count", getOperationalBridgeCount());
 
         return stats;
+    }
+
+    public void addHandler(EventHandler eventHandler)
+    {
+        eventEmitter.addHandler(eventHandler);
+    }
+    public void removeHandler(EventHandler eventHandler)
+    {
+        eventEmitter.removeHandler(eventHandler);
+    }
+
+    public interface EventHandler
+    {
+        void bridgeRemoved(Bridge bridge);
+        void bridgeAdded(Bridge bridge);
     }
 }
