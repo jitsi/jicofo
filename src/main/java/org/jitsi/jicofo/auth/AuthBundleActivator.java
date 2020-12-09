@@ -45,16 +45,9 @@ public class AuthBundleActivator
     private static final Logger logger = Logger.getLogger(AuthBundleActivator.class);
 
     /**
-     * Reference to service registration of {@link AuthenticationAuthority}.
-     */
-    private ServiceRegistration<AuthenticationAuthority> authAuthorityServiceRegistration;
-
-    /**
      * The instance of {@link AuthenticationAuthority}.
      */
-    private AuthenticationAuthority authAuthority;
-
-    static BundleContext bundleContext;
+    public static AuthenticationAuthority authAuthority;
 
     /**
      * Initializes a new {@code AuthBundleActivator} instance.
@@ -97,8 +90,6 @@ public class AuthBundleActivator
     public void start(BundleContext bundleContext)
         throws Exception
     {
-        AuthBundleActivator.bundleContext = bundleContext;
-
         if (AuthConfig.config.getEnabled())
         {
             String loginUrl = AuthConfig.config.getLoginUrl();
@@ -133,12 +124,6 @@ public class AuthBundleActivator
 
             logger.info("Auth authority: " + authAuthority);
 
-            authAuthorityServiceRegistration
-                = bundleContext.registerService(
-                        AuthenticationAuthority.class,
-                        authAuthority,
-                        null);
-
             authAuthority.start();
         }
 
@@ -153,11 +138,6 @@ public class AuthBundleActivator
     public void stop(BundleContext bundleContext)
         throws Exception
     {
-        if (authAuthorityServiceRegistration != null)
-        {
-            authAuthorityServiceRegistration.unregister();
-            authAuthorityServiceRegistration = null;
-        }
         if (authAuthority != null)
         {
             authAuthority.stop();
@@ -165,8 +145,6 @@ public class AuthBundleActivator
         }
 
         super.stop(bundleContext);
-
-        AuthBundleActivator.bundleContext = null;
     }
 
     /**

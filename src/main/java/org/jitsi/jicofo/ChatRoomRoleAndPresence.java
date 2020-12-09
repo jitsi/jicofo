@@ -102,9 +102,7 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
-        authAuthority = ServiceUtils2.getService(
-                FocusBundleActivator.bundleContext,
-                AuthenticationAuthority.class);
+        authAuthority = Main.getJicofoServices().getAuthenticationAuthority();
 
         if (authAuthority != null)
         {

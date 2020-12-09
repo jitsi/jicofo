@@ -19,6 +19,7 @@ package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.impl.reservation.rest.RESTReservations
+import org.jitsi.jicofo.auth.AuthBundleActivator
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.health.Health
@@ -43,13 +44,13 @@ open class JicofoServices(
      * Expose for testing.
      */
     protected val focusComponent: FocusComponent
-    private val focusManager: FocusManager
+    private val focusManager: FocusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
     private val reservationSystem: RESTReservations?
     private val health: Health?
+    // TODO: initialize the auth authority here
+    val authenticationAuthority: AuthenticationAuthority? = AuthBundleActivator.authAuthority
 
     init {
-        val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
-        focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
         reservationSystem = if (reservationConfig.enabled) {
             RESTReservations(reservationConfig.baseUrl) { name, reason ->
                 focusManager.destroyConference(name, reason)
@@ -65,7 +66,7 @@ open class JicofoServices(
         val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
         focusComponent = FocusComponent(XmppComponentConfig.config, anonymous, focusJid).apply {
             loadConfig(configService, "org.jitsi.jicofo")
-            authAuthority?.let { setAuthAuthority(authAuthority) }
+            authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
             setFocusManager(focusManager)
             reservationSystem?.let { setReservationSystem(reservationSystem) }
         }
