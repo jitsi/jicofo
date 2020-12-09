@@ -49,6 +49,7 @@ open class JicofoServices(
     val bundleContext: BundleContext
 ) {
     private val logger = createLogger()
+
     /**
      * Expose for testing.
      */
@@ -73,7 +74,7 @@ open class JicofoServices(
         val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
         if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
-            val restApp = Application(bundleContext)
+            val restApp = Application(bundleContext, authenticationAuthority)
             createServer(httpServerConfig).also {
                 it.servletContextHandler.addServlet(
                     ServletHolder(ServletContainer(restApp)),

@@ -19,7 +19,6 @@ import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.osgi.*;
 import org.osgi.framework.*;
 
 import java.time.*;
@@ -32,7 +31,7 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(BundleContext bundleContext)
+    public Application(BundleContext bundleContext, AuthenticationAuthority authenticationAuthority)
     {
         register(new OsgiServiceBinder(bundleContext));
         register(new AbstractBinder()
@@ -47,16 +46,9 @@ public class Application
         // Load any resources from Jicoco
         packages("org.jitsi.rest");
 
-
-        AuthenticationAuthority authenticationAuthority
-                = ServiceUtils2.getService(bundleContext, AuthenticationAuthority.class);
-        ShibbolethAuthAuthority shibbolethAuthAuthority
-                = (authenticationAuthority instanceof ShibbolethAuthAuthority)
-                ? (ShibbolethAuthAuthority) authenticationAuthority : null;
-
-        if (shibbolethAuthAuthority != null)
+        if (authenticationAuthority != null)
         {
-            register(new ShibbolethLogin(shibbolethAuthAuthority));
+            register(new ShibbolethLogin((ShibbolethAuthAuthority) authenticationAuthority));
         }
     }
 }
