@@ -499,7 +499,7 @@ public abstract class AbstractAuthAuthority
 
         focusManager
             = ServiceUtils2.getService(
-                    AuthBundleActivator.bundleContext, FocusManager.class);
+                    FocusBundleActivator.bundleContext, FocusManager.class);
 
         focusManager.addFocusAllocationListener(this);
     }

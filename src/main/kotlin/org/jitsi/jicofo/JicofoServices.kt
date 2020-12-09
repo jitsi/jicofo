@@ -18,17 +18,25 @@
 package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
+import org.eclipse.jetty.servlet.ServletHolder
+import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AuthBundleActivator
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
+import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.osgi.ServiceUtils2
+import org.jitsi.rest.JettyBundleActivatorConfig
+import org.jitsi.rest.createServer
+import org.jitsi.rest.isEnabled
+import org.jitsi.rest.servletContextHandler
 import org.jitsi.service.configuration.ConfigurationService
+import org.jitsi.utils.logging2.createLogger
 import org.osgi.framework.BundleContext
 
 /**
@@ -40,6 +48,7 @@ open class JicofoServices(
      */
     val bundleContext: BundleContext
 ) {
+    private val logger = createLogger()
     /**
      * Expose for testing.
      */
@@ -52,6 +61,7 @@ open class JicofoServices(
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
+            logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
             RESTReservations(reservationConfig.baseUrl) { name, reason ->
                 focusManager.destroyConference(name, reason)
             }.apply {
@@ -60,11 +70,23 @@ open class JicofoServices(
             }
         } else null
 
-        val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
+        val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
+        if (httpServerConfig.isEnabled()) {
+            logger.info("Starting HTTP server with config: $httpServerConfig.")
+            val restApp = Application(bundleContext)
+            createServer(httpServerConfig).also {
+                it.servletContextHandler.addServlet(
+                    ServletHolder(ServletContainer(restApp)),
+                    "/*"
+                )
+                it.start()
+            }
+        }
 
         val anonymous = StringUtils.isBlank(XmppConfig.client.password)
         val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
         focusComponent = FocusComponent(XmppComponentConfig.config, anonymous, focusJid).apply {
+            val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
             loadConfig(configService, "org.jitsi.jicofo")
             authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
             setFocusManager(focusManager)

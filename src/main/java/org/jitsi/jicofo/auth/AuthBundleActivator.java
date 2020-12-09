@@ -17,17 +17,11 @@
  */
 package org.jitsi.jicofo.auth;
 
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.*;
-import org.glassfish.jersey.servlet.*;
-import org.jitsi.jicofo.rest.*;
-import org.jitsi.rest.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import java.time.*;
-import java.util.*;
 
 /**
  * Implements <tt>BundleActivator</tt> for the OSGi bundle responsible for
@@ -36,7 +30,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class AuthBundleActivator
-    extends AbstractJettyBundleActivator
+    implements BundleActivator
 {
     /**
      * The {@code Logger} used by the {@code AuthBundleActivator} class and its
@@ -54,33 +48,6 @@ public class AuthBundleActivator
      */
     public AuthBundleActivator()
     {
-        // The server started here handles many endpoints (health checks, etc.), hence the generic
-        // configuration key scope (jicofo.rest), but this class is responsible for starting it.
-        super("org.jitsi.jicofo.auth", "jicofo.rest");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Handler initializeHandlerList(
-            BundleContext bundleContext,
-            Server server)
-        throws Exception
-    {
-        List<Handler> handlers = new ArrayList<>();
-
-        // FIXME While Shibboleth is optional, the health checks of Jicofo (over
-        // REST) are mandatory at the time of this writing. Make the latter
-        // optional as well (in a way similar to Videobridge, for example).
-        ServletContextHandler appHandler
-            = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        appHandler.setContextPath("/");
-        appHandler.addServlet(new ServletHolder(new ServletContainer(
-            new Application(bundleContext))), "/*");
-        handlers.add(appHandler);
-
-        return initializeHandlerList(handlers);
     }
 
     /**
@@ -126,9 +93,6 @@ public class AuthBundleActivator
 
             authAuthority.start();
         }
-
-        // NB: this is what starts Jetty...
-        super.start(bundleContext);
     }
 
     /**
@@ -143,32 +107,5 @@ public class AuthBundleActivator
             authAuthority.stop();
             authAuthority = null;
         }
-
-        super.stop(bundleContext);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean willStart(BundleContext bundleContext)
-        throws Exception
-    {
-        boolean b = super.willStart(bundleContext);
-
-        if (b)
-        {
-            // Shibboleth works the same as every other web-based Single Sign-on
-            // (SSO) system so it requires the Jetty HTTP server.
-            b = (authAuthority instanceof ShibbolethAuthAuthority);
-
-            // FIXME While Shibboleth is optional, the health checks of Jicofo
-            // (over REST) are mandatory at the time of this writing. Make the
-            // latter optional as well (in a way similar to Videobridge, for
-            // example).
-            if (!b)
-                b = true;
-        }
-        return b;
     }
 }
