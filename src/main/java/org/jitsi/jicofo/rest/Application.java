@@ -17,7 +17,9 @@ package org.jitsi.jicofo.rest;
 
 import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
+import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.osgi.*;
 import org.osgi.framework.*;
 
 import java.time.*;
@@ -44,5 +46,17 @@ public class Application
         packages("org.jitsi.jicofo.rest");
         // Load any resources from Jicoco
         packages("org.jitsi.rest");
+
+
+        AuthenticationAuthority authenticationAuthority
+                = ServiceUtils2.getService(bundleContext, AuthenticationAuthority.class);
+        ShibbolethAuthAuthority shibbolethAuthAuthority
+                = (authenticationAuthority instanceof ShibbolethAuthAuthority)
+                ? (ShibbolethAuthAuthority) authenticationAuthority : null;
+
+        if (shibbolethAuthAuthority != null)
+        {
+            register(new ShibbolethLogin(shibbolethAuthAuthority));
+        }
     }
 }

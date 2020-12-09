@@ -77,16 +77,6 @@ public class AuthBundleActivator
     {
         List<Handler> handlers = new ArrayList<>();
 
-        // Shibboleth
-        if (authAuthority instanceof ShibbolethAuthAuthority)
-        {
-            logger.info("Adding Shibboleth handler");
-            ShibbolethAuthAuthority shibbolethAuthAuthority
-                = (ShibbolethAuthAuthority) authAuthority;
-
-            handlers.add(new ShibbolethHandler(shibbolethAuthAuthority));
-        }
-
         // FIXME While Shibboleth is optional, the health checks of Jicofo (over
         // REST) are mandatory at the time of this writing. Make the latter
         // optional as well (in a way similar to Videobridge, for example).
