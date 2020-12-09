@@ -26,6 +26,7 @@ import org.jxmpp.jid.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.*;
 
 /**
  * Implements {@link ReservationSystem} in order to integrate with REST API of
@@ -40,19 +41,7 @@ public class RESTReservations
     /**
      * The logger.
      */
-    private final static Logger logger
-        = Logger.getLogger(RESTReservations.class);
-
-    /**
-     * Configuration property name which specifies REST API base URL.
-     */
-    public static final String API_BASE_URL_PNAME
-        = "org.jitsi.impl.reservation.rest.BASE_URL";
-
-    /**
-     * Focus manager instance.
-     */
-    private FocusManager focusManager;
+    private final static Logger logger = Logger.getLogger(RESTReservations.class);
 
     /**
      * How often do we verify conference duration ?
@@ -75,37 +64,30 @@ public class RESTReservations
     private final ApiHandler api;
 
     /**
+     * Callback to call when a conferenc needs to be destroyed due to the scheduled duration being exceeded.
+     */
+    private final BiConsumer<EntityBareJid, String> destroyConferenceCallback;
+
+    /**
      * Creates new instance of <tt>RESTReservations</tt> instance.
      * @param baseUrl base URL for RESP API endpoint.
      */
-    public RESTReservations(String baseUrl)
+    public RESTReservations(String baseUrl, BiConsumer<EntityBareJid, String> destroyConferenceCallback)
     {
         Assert.notNullNorEmpty(baseUrl, "baseUrl: " + baseUrl);
 
+        this.destroyConferenceCallback = destroyConferenceCallback;
         this.api = new ApiHandler(baseUrl);
     }
 
     /**
      * Initializes this instance and starts background tasks required by
      * <tt>RESTReservations</tt> to work properly.
-     *
-     * @param focusManager <tt>FocusManager</tt> instance that manages
-     *                     conference pool.
      */
-    public void start(FocusManager focusManager)
+    public void start()
     {
-        if (this.focusManager != null)
-        {
-            throw new IllegalStateException("already started");
-        }
-
-        this.focusManager = Objects.requireNonNull(focusManager, "focusManager");
-
-        focusManager.addFocusAllocationListener(this);
-
         confDurationGuard = new Timer("ConferenceDurationGuard");
-        confDurationGuard.scheduleAtFixedRate(
-            new ConferenceExpireTask(), EXPIRE_INTERVAL, EXPIRE_INTERVAL);
+        confDurationGuard.scheduleAtFixedRate(new ConferenceExpireTask(), EXPIRE_INTERVAL, EXPIRE_INTERVAL);
     }
 
     /**
@@ -113,11 +95,6 @@ public class RESTReservations
      */
     public void stop()
     {
-        if (focusManager != null)
-        {
-            focusManager.removeFocusAllocationListener(this);
-            focusManager = null;
-        }
         if (confDurationGuard != null)
         {
             confDurationGuard.cancel();
@@ -336,8 +313,7 @@ public class RESTReservations
         {
             synchronized (RESTReservations.this)
             {
-                Iterator<Conference> conferenceIterator
-                    = conferenceMap.values().iterator();
+                Iterator<Conference> conferenceIterator = conferenceMap.values().iterator();
 
                 while (conferenceIterator.hasNext())
                 {
@@ -345,9 +321,7 @@ public class RESTReservations
                     Date startTimeDate = conference.getStartTime();
                     if (startTimeDate == null)
                     {
-                        logger.error(
-                            "No 'start_time' for conference: "
-                                    + conference.getName());
+                        logger.error("No 'start_time' for conference: " + conference.getName());
                         continue;
                     }
                     long startTime = startTimeDate.getTime();
@@ -364,9 +338,7 @@ public class RESTReservations
 
                         conferenceIterator.remove();
 
-                        focusManager.destroyConference(
-                            mucRoomName,
-                            "Scheduled conference duration exceeded.");
+                        destroyConferenceCallback.accept(mucRoomName, "Scheduled conference duration exceeded.");
                     }
                 }
             }

@@ -18,10 +18,11 @@
 package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
+import org.jitsi.impl.reservation.rest.RESTReservations
+import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
-import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
@@ -38,45 +39,67 @@ open class JicofoServices(
      */
     val bundleContext: BundleContext
 ) {
-    protected open var focusComponent: FocusComponent? = null
-
-    private var health: Health? = null
+    /**
+     * Expose for testing.
+     */
+    protected val focusComponent: FocusComponent
+    private val focusManager: FocusManager
+    private val reservationSystem: RESTReservations?
+    private val health: Health?
 
     init {
         val authAuthority = ServiceUtils2.getService(bundleContext, AuthenticationAuthority::class.java)
-        val focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
-        val reservationSystem = ServiceUtils2.getService(bundleContext, ReservationSystem::class.java)
+        focusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
+        reservationSystem = if (reservationConfig.enabled) {
+            RESTReservations(reservationConfig.baseUrl) { name, reason ->
+                focusManager.destroyConference(name, reason)
+            }.apply {
+                focusManager.addFocusAllocationListener(this)
+                start()
+            }
+        } else null
+
         val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
 
         val anonymous = StringUtils.isBlank(XmppConfig.client.password)
         val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
         focusComponent = FocusComponent(XmppComponentConfig.config, anonymous, focusJid).apply {
             loadConfig(configService, "org.jitsi.jicofo")
-            this.setAuthAuthority(authAuthority)
-            this.setFocusManager(focusManager)
-            this.setReservationSystem(reservationSystem)
+            authAuthority?.let { setAuthAuthority(authAuthority) }
+            setFocusManager(focusManager)
+            reservationSystem?.let { setReservationSystem(reservationSystem) }
         }
         startFocusComponent()
 
-        if (HealthConfig.config.enabled) {
-            health = Health(HealthConfig.config, focusManager, focusComponent).apply {
+        health = if (HealthConfig.config.enabled) {
+            Health(HealthConfig.config, focusManager, focusComponent).apply {
                 // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
                 start(bundleContext)
                 focusManager.setHealth(this)
             }
-        }
+        } else null
     }
 
+    /**
+     * Expose for testing.
+     */
     open fun startFocusComponent() {
-        focusComponent?.connect()
+        focusComponent.connect()
     }
 
+    /**
+     * Expose for testing.
+     */
     open fun stopFocusComponent() {
-        focusComponent?.disconnect()
+        focusComponent.disconnect()
     }
 
 
     fun stop() {
+        reservationSystem?.let {
+            focusManager.removeFocusAllocationListener(it)
+            stop()
+        }
         stopFocusComponent()
         health?.stop(bundleContext)
     }

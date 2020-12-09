@@ -44,8 +44,10 @@ public class JicofoTestServices extends JicofoServices
     {
     }
 
-    @Override
-    public FocusComponent getFocusComponent()
+    /**
+     * Expose as `public` for testing (can not override with the same name because it is final).
+     */
+    public FocusComponent getFocusComponent_()
     {
         return super.getFocusComponent();
     }

@@ -19,15 +19,12 @@ package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.bridge.*;
 
-import org.jitsi.jicofo.discovery.Version;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging.*;
 
 import org.json.simple.*;
-import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -49,8 +46,6 @@ public class JitsiMeetServices
      */
     private final BridgeSelector bridgeSelector;
 
-    private final Set<BaseBrewery> breweryDetectors = new HashSet<>();
-
     /**
      * The {@link ProtocolProviderHandler} for JVB XMPP connection.
      */
@@ -60,6 +55,14 @@ public class JitsiMeetServices
      * The {@link ProtocolProviderHandler} for Jicofo XMPP connection.
      */
     private final ProtocolProviderHandler protocolProvider;
+
+    private JibriDetector jibriDetector;
+
+    private JigasiDetector jigasiDetector;
+
+    private JibriDetector sipJibriDetector;
+
+    private BridgeMucDetector bridgeMucDetector;
 
     /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
@@ -83,11 +86,7 @@ public class JitsiMeetServices
      */
     public JibriDetector getSipJibriDetector()
     {
-        return breweryDetectors.stream()
-            .filter(d -> d instanceof JibriDetector)
-            .map(d -> ((JibriDetector) d))
-            .filter(JibriDetector::isSip)
-            .findFirst().orElse(null);
+        return sipJibriDetector;
     }
 
     /**
@@ -97,11 +96,7 @@ public class JitsiMeetServices
      */
     public JibriDetector getJibriDetector()
     {
-        return breweryDetectors.stream()
-            .filter(d -> d instanceof JibriDetector)
-            .map(d -> ((JibriDetector) d))
-            .filter(d -> !d.isSip())
-            .findFirst().orElse(null);
+        return jibriDetector;
     }
 
     /**
@@ -111,10 +106,7 @@ public class JitsiMeetServices
      */
     public JigasiDetector getJigasiDetector()
     {
-        return breweryDetectors.stream()
-            .filter(d -> d instanceof JigasiDetector)
-            .map(d -> ((JigasiDetector) d))
-            .findFirst().orElse(null);
+        return jigasiDetector;
     }
 
     /**
@@ -132,45 +124,58 @@ public class JitsiMeetServices
 
         if (JibriConfig.config.breweryEnabled())
         {
-            JibriDetector jibriDetector
-                    = new JibriDetector(protocolProvider, JibriConfig.config.getBreweryJid(), false);
+            jibriDetector = new JibriDetector(protocolProvider, JibriConfig.config.getBreweryJid(), false);
             logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.getBreweryJid());
 
             jibriDetector.init();
-            breweryDetectors.add(jibriDetector);
         }
 
         if (JigasiConfig.config.breweryEnabled())
         {
-            JigasiDetector jigasiDetector = new JigasiDetector(protocolProvider, JigasiConfig.config.getBreweryJid());
+            jigasiDetector = new JigasiDetector(protocolProvider, JigasiConfig.config.getBreweryJid());
             logger.info("Using a Jigasi detector with MUC: " + JigasiConfig.config.getBreweryJid());
 
             jigasiDetector.init();
-            breweryDetectors.add(jigasiDetector);
         }
 
         if (JibriConfig.config.sipBreweryEnabled())
         {
-            JibriDetector sipJibriDetector
-                    = new JibriDetector(protocolProvider, JibriConfig.config.getSipBreweryJid(), true);
+            sipJibriDetector = new JibriDetector(protocolProvider, JibriConfig.config.getSipBreweryJid(), true);
             logger.info("Using a SIP Jibri detector with MUC: " + JibriConfig.config.getSipBreweryJid());
 
             sipJibriDetector.init();
-            breweryDetectors.add(sipJibriDetector);
         }
 
         if (BridgeConfig.config.breweryEnabled())
         {
-            BridgeMucDetector bridgeMucDetector = new BridgeMucDetector(jvbBreweryProtocolProvider, bridgeSelector);
+            bridgeMucDetector = new BridgeMucDetector(jvbBreweryProtocolProvider, bridgeSelector);
             bridgeMucDetector.init();
-            breweryDetectors.add(bridgeMucDetector);
         }
     }
 
     public void stop()
     {
-        breweryDetectors.forEach(BaseBrewery::dispose);
-        breweryDetectors.clear();
+        if (jibriDetector != null)
+        {
+            jibriDetector.dispose();
+            jibriDetector = null;
+        }
+        if (jigasiDetector != null)
+        {
+            jigasiDetector.dispose();
+            jigasiDetector = null;
+        }
+        if (sipJibriDetector != null)
+        {
+            sipJibriDetector.dispose();
+            sipJibriDetector = null;
+        }
+        if (bridgeMucDetector != null)
+        {
+            bridgeMucDetector.dispose();
+            bridgeMucDetector = null;
+        }
+
         bridgeSelector.dispose();
     }
 
