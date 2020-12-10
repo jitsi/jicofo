@@ -68,11 +68,6 @@ public abstract class AbstractAuthAuthority
     private Timer expireTimer;
 
     /**
-     * The instance of <tt>FocusManager</tt> service.
-     */
-    private FocusManager focusManager;
-
-    /**
      * Synchronization root.
      */
     protected final Object syncRoot = new Object();
@@ -94,7 +89,7 @@ public abstract class AbstractAuthAuthority
     /**
      * The list of registered {@link AuthenticationListener}s.
      */
-    private List<AuthenticationListener> authenticationListeners
+    private final List<AuthenticationListener> authenticationListeners
             = new CopyOnWriteArrayList<>();
 
     /**
@@ -494,14 +489,7 @@ public abstract class AbstractAuthAuthority
     public void start()
     {
         expireTimer = new Timer("AuthenticationExpireTimer", true);
-        expireTimer.scheduleAtFixedRate(
-            new ExpireTask(), EXPIRE_POLLING_INTERVAL, EXPIRE_POLLING_INTERVAL);
-
-        focusManager
-            = ServiceUtils2.getService(
-                    FocusBundleActivator.bundleContext, FocusManager.class);
-
-        focusManager.addFocusAllocationListener(this);
+        expireTimer.scheduleAtFixedRate(new ExpireTask(), EXPIRE_POLLING_INTERVAL, EXPIRE_POLLING_INTERVAL);
     }
 
     /**
@@ -509,12 +497,6 @@ public abstract class AbstractAuthAuthority
      */
     public void stop()
     {
-        if (focusManager != null)
-        {
-            focusManager.removeFocusAllocationListener(this);
-            focusManager = null;
-        }
-
         if (expireTimer != null)
         {
             expireTimer.cancel();

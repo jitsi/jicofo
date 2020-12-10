@@ -21,8 +21,8 @@ import org.apache.commons.lang3.StringUtils
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.reservation.rest.RESTReservations
+import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
-import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
 import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
@@ -63,7 +63,10 @@ open class JicofoServices(
     private val reservationSystem: RESTReservations?
     private val health: Health?
     // TODO: initialize the auth authority here
-    val authenticationAuthority: AuthenticationAuthority? = createAuthenticationAuthority()?.apply { start() }
+    val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
+        start()
+        focusManager.addFocusAllocationListener(this)
+    }
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -129,12 +132,15 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             it.stop()
         }
-        authenticationAuthority?.stop()
+        authenticationAuthority?.let {
+            focusManager.removeFocusAllocationListener(it)
+            it.stop()
+        }
         stopFocusComponent()
         health?.stop(bundleContext)
     }
 
-    private fun createAuthenticationAuthority(): AuthenticationAuthority? {
+    private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
         return if (AuthConfig.config.enabled) {
             logger.info("Starting authentication service with config=$authConfig.")
             val authAuthority = when (authConfig.type) {
