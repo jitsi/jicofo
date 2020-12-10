@@ -17,8 +17,9 @@
  */
 package org.jitsi.jicofo;
 
+import com.typesafe.config.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.config.JitsiConfig;
+import org.jitsi.config.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
@@ -78,6 +79,13 @@ public class OSGiHandler
         System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, "test.domain.net");
         System.setProperty(XmppClientConnectionConfig.legacyUsernamePropertyName, "focus");
         JitsiConfig.Companion.reloadNewConfig();
+
+        // Prevent jetty from starting.
+        String disableRestConfig = "jicofo.rest.port=-1\njicofo.rest.tls-port=-1";
+        JitsiConfig.Companion.useDebugNewConfig(
+                new TypesafeConfigSource(
+                        "test config",
+                        ConfigFactory.parseString(disableRestConfig).withFallback(ConfigFactory.load())));
 
         this.bundleActivator = new BundleActivator()
         {

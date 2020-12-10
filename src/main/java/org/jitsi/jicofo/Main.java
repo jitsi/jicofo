@@ -87,7 +87,7 @@ public class Main
         }
         logger.info("OSGi services started.");
 
-        JicofoServices jicofoServices = new JicofoServices(WaitableBundleActivator.getBundleContext());
+        JicofoServices.jicofoServicesSingleton = new JicofoServices(WaitableBundleActivator.getBundleContext());
 
         try
         {
@@ -102,7 +102,8 @@ public class Main
         }
 
         logger.info("Stopping services.");
-        jicofoServices.stop();
+        JicofoServices.jicofoServicesSingleton.stop();
+        JicofoServices.jicofoServicesSingleton = null;
         OSGi.stop(activator);
     }
 

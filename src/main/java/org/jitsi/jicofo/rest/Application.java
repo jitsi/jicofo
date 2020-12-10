@@ -17,6 +17,7 @@ package org.jitsi.jicofo.rest;
 
 import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
+import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.util.*;
 import org.osgi.framework.*;
 
@@ -30,7 +31,7 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(BundleContext bundleContext)
+    public Application(BundleContext bundleContext, AuthenticationAuthority authenticationAuthority)
     {
         register(new OsgiServiceBinder(bundleContext));
         register(new AbstractBinder()
@@ -44,5 +45,10 @@ public class Application
         packages("org.jitsi.jicofo.rest");
         // Load any resources from Jicoco
         packages("org.jitsi.rest");
+
+        if (authenticationAuthority != null)
+        {
+            register(new ShibbolethLogin((ShibbolethAuthAuthority) authenticationAuthority));
+        }
     }
 }

@@ -70,6 +70,11 @@ class AuthConfig {
         "jicofo.authentication.type".from(newConfig)
     }
 
+    override fun toString(): String {
+        return "AuthConfig[enabled=$enabled, type=$type, loginUrl=$loginUrl, logoutUrl=$logoutUrl, " +
+            "authenticationLifetime=$authenticationLifetime, enableAutoLogin=$enableAutoLogin]"
+    }
+
     companion object {
         @JvmField
         val config = AuthConfig()

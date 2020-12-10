@@ -93,7 +93,6 @@ public class JicofoBundleConfig
             useMockProtocols ? mockProtocols : protocols,
             {
                 "org/jitsi/jicofo/FocusBundleActivator",
-                "org/jitsi/jicofo/auth/AuthBundleActivator"
             },
             {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"
