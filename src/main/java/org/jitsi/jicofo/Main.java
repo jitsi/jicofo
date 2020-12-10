@@ -41,13 +41,6 @@ public class Main
 {
     private static final Logger logger = Logger.getLogger(Main.class);
 
-    private static JicofoServices jicofoServices;
-
-    public static JicofoServices getJicofoServices()
-    {
-        return jicofoServices;
-    }
-
     /**
      * Program entry point.
      *
@@ -94,7 +87,7 @@ public class Main
         }
         logger.info("OSGi services started.");
 
-        jicofoServices = new JicofoServices(WaitableBundleActivator.getBundleContext());
+        JicofoServices.jicofoServicesSingleton = new JicofoServices(WaitableBundleActivator.getBundleContext());
 
         try
         {
@@ -109,8 +102,8 @@ public class Main
         }
 
         logger.info("Stopping services.");
-        jicofoServices.stop();
-        jicofoServices = null;
+        JicofoServices.jicofoServicesSingleton.stop();
+        JicofoServices.jicofoServicesSingleton = null;
         OSGi.stop(activator);
     }
 

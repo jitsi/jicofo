@@ -166,4 +166,9 @@ open class JicofoServices(
             null
         }
     }
+
+    companion object {
+        @JvmField
+        var jicofoServicesSingleton: JicofoServices? = null
+    }
 }

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.auth;
 
-import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -68,10 +67,7 @@ public class XMPPAuthenticationAuthorityTest
         throws Exception
     {
         System.err.println("Start test");
-        XMPPDomainAuthAuthority xmppAuth
-            = (XMPPDomainAuthAuthority) ServiceUtils2.getService(
-                FocusBundleActivator.bundleContext,
-                AuthenticationAuthority.class);
+        XMPPDomainAuthAuthority xmppAuth = (XMPPDomainAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
 
         assertNotNull(xmppAuth);
 

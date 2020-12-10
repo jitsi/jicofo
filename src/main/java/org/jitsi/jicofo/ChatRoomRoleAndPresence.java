@@ -101,7 +101,8 @@ public class ChatRoomRoleAndPresence
      */
     public void init()
     {
-        authAuthority = Main.getJicofoServices().getAuthenticationAuthority();
+        authAuthority = JicofoServices.jicofoServicesSingleton == null
+                ? null : JicofoServices.jicofoServicesSingleton.getAuthenticationAuthority();
 
         if (authAuthority != null)
         {
