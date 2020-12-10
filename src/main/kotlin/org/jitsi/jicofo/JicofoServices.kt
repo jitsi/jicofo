@@ -21,9 +21,11 @@ import org.apache.commons.lang3.StringUtils
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.reservation.rest.RESTReservations
-import org.jitsi.jicofo.auth.AuthBundleActivator
-import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
+import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.AuthenticationAuthority
+import org.jitsi.jicofo.auth.ExternalJWTAuthority
+import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
+import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.rest.Application
@@ -37,7 +39,10 @@ import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.logging2.createLogger
+import org.jxmpp.jid.impl.JidCreate
 import org.osgi.framework.BundleContext
+import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
+import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
 /**
  * Start/stop jicofo-specific services outside OSGi.
@@ -58,7 +63,7 @@ open class JicofoServices(
     private val reservationSystem: RESTReservations?
     private val health: Health?
     // TODO: initialize the auth authority here
-    val authenticationAuthority: AuthenticationAuthority? = AuthBundleActivator.authAuthority
+    val authenticationAuthority: AuthenticationAuthority? = createAuthenticationAuthority()?.apply { start() }
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -124,7 +129,35 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             stop()
         }
+        authenticationAuthority?.stop()
         stopFocusComponent()
         health?.stop(bundleContext)
+    }
+
+    private fun createAuthenticationAuthority(): AuthenticationAuthority? {
+        return if (AuthConfig.config.enabled) {
+            logger.info("Starting authentication service with config=$authConfig.")
+            val authAuthority = when (authConfig.type) {
+                AuthConfig.Type.XMPP -> XMPPDomainAuthAuthority(
+                    authConfig.enableAutoLogin,
+                    authConfig.authenticationLifetime,
+                    JidCreate.domainBareFrom(authConfig.loginUrl)
+                )
+                AuthConfig.Type.JWT -> ExternalJWTAuthority(
+                    JidCreate.domainBareFrom(authConfig.loginUrl)
+                )
+                AuthConfig.Type.SHIBBOLETH -> ShibbolethAuthAuthority(
+                    authConfig.enableAutoLogin,
+                    authConfig.authenticationLifetime,
+                    authConfig.loginUrl,
+                    AuthConfig.config.logoutUrl
+                )
+            }
+            authAuthority
+        }
+        else {
+            logger.info("Authentication service disabled.")
+            null
+        }
     }
 }
