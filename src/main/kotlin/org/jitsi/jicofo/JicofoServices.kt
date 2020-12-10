@@ -127,7 +127,7 @@ open class JicofoServices(
     fun stop() {
         reservationSystem?.let {
             focusManager.removeFocusAllocationListener(it)
-            stop()
+            it.stop()
         }
         authenticationAuthority?.stop()
         stopFocusComponent()
