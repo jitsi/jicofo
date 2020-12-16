@@ -82,7 +82,7 @@ open class JicofoServices(
         val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
         if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
-            val restApp = Application(bundleContext, authenticationAuthority)
+            val restApp = Application(bundleContext, authenticationAuthority as? ShibbolethAuthAuthority)
             createServer(httpServerConfig).also {
                 it.servletContextHandler.addServlet(
                     ServletHolder(ServletContainer(restApp)),

@@ -31,7 +31,7 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(BundleContext bundleContext, AuthenticationAuthority authenticationAuthority)
+    public Application(BundleContext bundleContext, ShibbolethAuthAuthority shibbolethAuthAuthority)
     {
         register(new OsgiServiceBinder(bundleContext));
         register(new AbstractBinder()
@@ -46,9 +46,9 @@ public class Application
         // Load any resources from Jicoco
         packages("org.jitsi.rest");
 
-        if (authenticationAuthority != null)
+        if (shibbolethAuthAuthority != null)
         {
-            register(new ShibbolethLogin((ShibbolethAuthAuthority) authenticationAuthority));
+            register(new ShibbolethLogin(shibbolethAuthAuthority));
         }
     }
 }
