@@ -693,21 +693,6 @@ public class FocusManager
     }
 
     /**
-     * Interface used to listen for focus lifecycle events.
-     */
-    public interface FocusAllocationListener
-    {
-        /**
-         * Method fired when focus is destroyed.
-         * @param roomName the name of the conference room for which focus
-         *                 has been destroyed.
-         */
-        void onFocusDestroyed(EntityBareJid roomName);
-
-        // Add focus allocated method if needed
-    }
-
-    /**
      * Returns operation set instance for focus XMPP connection.
      *
      * @param opsetClass operation set class.
@@ -867,4 +852,20 @@ public class FocusManager
             }
         }
     }
+
+    /**
+     * Interface used to listen for focus lifecycle events.
+     */
+    public interface FocusAllocationListener
+    {
+        /**
+         * Method fired when focus is destroyed.
+         * @param roomName the name of the conference room for which focus
+         *                 has been destroyed.
+         */
+        void onFocusDestroyed(EntityBareJid roomName);
+
+        // Add focus allocated method if needed
+    }
+
 }
