@@ -59,7 +59,7 @@ open class JicofoServices(
     /**
      * Expose for testing.
      */
-    private val focusComponent: FocusComponent
+    private val focusComponent: FocusComponent?
     private val focusManager: FocusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
     private val reservationSystem: RESTReservations?
     private val health: Health?
@@ -94,20 +94,24 @@ open class JicofoServices(
             }
         }
 
-        val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
         conferenceRequestHandler = ConferenceRequestHandler(
             focusManager = focusManager,
-            focusAuthJid = focusJid,
+            focusAuthJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString(),
             isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
             authAuthority = authenticationAuthority,
             reservationSystem = reservationSystem
         )
-        focusComponent = FocusComponent(XmppComponentConfig.config, conferenceRequestHandler).apply {
-            val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
-            loadConfig(configService, "org.jitsi.jicofo")
-            authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
+
+        focusComponent = if (XmppComponentConfig.config.enabled) {
+            FocusComponent(XmppComponentConfig.config, conferenceRequestHandler).apply {
+                val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
+                loadConfig(configService, "org.jitsi.jicofo")
+                authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
+                connect()
+            }
+        } else {
+            null
         }
-        startFocusComponent()
 
         health = if (HealthConfig.config.enabled) {
             Health(HealthConfig.config, focusManager, focusComponent).apply {
@@ -118,21 +122,6 @@ open class JicofoServices(
         } else null
     }
 
-    /**
-     * Expose for testing.
-     */
-    open fun startFocusComponent() {
-        focusComponent.connect()
-    }
-
-    /**
-     * Expose for testing.
-     */
-    open fun stopFocusComponent() {
-        focusComponent.disconnect()
-    }
-
-
     fun stop() {
         reservationSystem?.let {
             focusManager.removeFocusAllocationListener(it)
@@ -142,7 +131,7 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             it.stop()
         }
-        stopFocusComponent()
+        focusComponent?.disconnect()
         health?.stop(bundleContext)
     }
 

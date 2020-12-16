@@ -212,6 +212,9 @@ data class XmppComponentConfig(
     val port: Int = -1,
     val secret: String = ""
 ) {
+    val enabled: Boolean
+        get() = hostname != ""
+
     companion object {
         /**
          * The configuration to use for the XMPP component connection. The default uses values chosen to allow tests to

@@ -19,15 +19,14 @@ package org.jitsi.jicofo;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.xmpp.util.*;
 
+import org.jivesoftware.smack.packet.IQ;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-import org.xmpp.packet.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -58,22 +57,16 @@ public class XmppTest
     public void testAllocateConference()
         throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testRoom@example.com");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testRoom@example.com");
 
-        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent();
+        ConferenceRequestHandler focusComponent = osgi.jicofoServices.getConferenceRequestHandler();
 
         ConferenceIq conferenceIq = new ConferenceIq();
 
         conferenceIq.setRoom(roomName);
 
-        IQ result = focusComponent.handleIQSetImpl(IQUtils.convert(conferenceIq));
-
+        IQ result = focusComponent.handleConferenceIq(conferenceIq);
         assertNotNull(result);
-
-        org.jivesoftware.smack.packet.IQ response =  IQUtils.convert(result);
-        assertTrue(response instanceof ConferenceIq);
-
-
+        assertTrue(result instanceof ConferenceIq);
     }
 }
