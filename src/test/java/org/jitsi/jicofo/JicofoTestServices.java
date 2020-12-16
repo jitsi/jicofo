@@ -43,12 +43,4 @@ public class JicofoTestServices extends JicofoServices
     public void stopFocusComponent()
     {
     }
-
-    /**
-     * Expose as `public` for testing (can not override with the same name because it is final).
-     */
-    public FocusComponent getFocusComponent_()
-    {
-        return super.getFocusComponent();
-    }
 }

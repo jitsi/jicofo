@@ -29,6 +29,7 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.xmpp.ConferenceRequestHandler
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
@@ -58,7 +59,7 @@ open class JicofoServices(
     /**
      * Expose for testing.
      */
-    protected val focusComponent: FocusComponent
+    private val focusComponent: FocusComponent
     private val focusManager: FocusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
     private val reservationSystem: RESTReservations?
     private val health: Health?
@@ -67,6 +68,7 @@ open class JicofoServices(
         start()
         focusManager.addFocusAllocationListener(this)
     }
+    val conferenceRequestHandler: ConferenceRequestHandler
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -92,14 +94,18 @@ open class JicofoServices(
             }
         }
 
-        val anonymous = StringUtils.isBlank(XmppConfig.client.password)
         val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
-        focusComponent = FocusComponent(XmppComponentConfig.config, anonymous, focusJid).apply {
+        conferenceRequestHandler = ConferenceRequestHandler(
+            focusManager = focusManager,
+            focusAuthJid = focusJid,
+            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
+            authAuthority = authenticationAuthority,
+            reservationSystem = reservationSystem
+        )
+        focusComponent = FocusComponent(XmppComponentConfig.config, conferenceRequestHandler).apply {
             val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
             loadConfig(configService, "org.jitsi.jicofo")
             authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
-            setFocusManager(focusManager)
-            reservationSystem?.let { setReservationSystem(reservationSystem) }
         }
         startFocusComponent()
 

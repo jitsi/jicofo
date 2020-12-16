@@ -56,61 +56,31 @@ public class FocusComponent
     private final static Logger logger = Logger.getLogger(FocusComponent.class);
 
     /**
-     * Indicates if the focus is anonymous user or authenticated system admin.
-     */
-    private final boolean isFocusAnonymous;
-
-    /**
-     * The JID of focus user that will enter the MUC room. Can be user to
-     * recognize real focus of the conference.
-     */
-    private final String focusAuthJid;
-
-    /**
-     * The manager object that creates and expires
-     * {@link org.jitsi.jicofo.JitsiMeetConference}s.
-     */
-    private FocusManager focusManager;
-
-    /**
      * (Optional)Authentication authority used to verify user requests.
      */
     private AuthenticationAuthority authAuthority;
 
-    /**
-     * (Optional)Reservation system that manages new rooms allocation.
-     * Requires authentication system in order to verify user's identity.
-     */
-    private ReservationSystem reservationSystem;
-
     private final Connector connector = new Connector();
+
+    @NotNull
+    private final ConferenceRequestHandler conferenceRequestHandler;
 
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
      */
-    public FocusComponent(XmppComponentConfig config, boolean isFocusAnonymous, String focusAuthJid)
+    public FocusComponent(
+            @NotNull XmppComponentConfig config,
+            @NotNull ConferenceRequestHandler conferenceRequestHandler)
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
-        this.isFocusAnonymous = isFocusAnonymous;
-        this.focusAuthJid = focusAuthJid;
-    }
-
-    public void setFocusManager(FocusManager focusManager)
-    {
-        this.focusManager = focusManager;
+        this.conferenceRequestHandler = conferenceRequestHandler;
     }
 
     public void setAuthAuthority(AuthenticationAuthority authAuthority)
     {
         this.authAuthority = authAuthority;
     }
-
-    public void setReservationSystem(ReservationSystem reservationSystem)
-    {
-        this.reservationSystem = reservationSystem;
-    }
-
 
     public void loadConfig(ConfigurationService config, String configPropertiesBase)
     {
@@ -133,8 +103,6 @@ public class FocusComponent
     public void disconnect()
     {
         authAuthority = null;
-        focusManager = null;
-        reservationSystem = null;
 
         connector.disconnect();
     }
@@ -210,7 +178,8 @@ public class FocusComponent
 
             if (smackIq instanceof ConferenceIq)
             {
-                org.jivesoftware.smack.packet.IQ response = handleConferenceIq((ConferenceIq) smackIq);
+                org.jivesoftware.smack.packet.IQ response
+                        = conferenceRequestHandler.handleConferenceIq((ConferenceIq) smackIq);
 
                 return IQUtils.convert(response);
             }
@@ -238,123 +207,6 @@ public class FocusComponent
             logger.error(e, e);
             throw e;
         }
-    }
-
-    /**
-     * Additional logic added for conference IQ processing like authentication and room reservation.
-     *
-     * @param query <tt>ConferenceIq</tt> query
-     * @param response <tt>ConferenceIq</tt> response which can be modified during this processing.
-     * @param roomExists <tt>true</tt> if room mentioned in the <tt>query</tt> already exists.
-     *
-     * @return <tt>null</tt> if everything went ok or an error/response IQ
-     *         which should be returned to the user
-     */
-    public org.jivesoftware.smack.packet.IQ processExtensions(
-            ConferenceIq query, ConferenceIq response, boolean roomExists)
-    {
-        Jid peerJid = query.getFrom();
-        String identity = null;
-
-        // Authentication
-        if (authAuthority != null)
-        {
-            org.jivesoftware.smack.packet.IQ authErrorOrResponse = authAuthority.processAuthentication(query, response);
-
-            // Checks if authentication module wants to cancel further
-            // processing and eventually returns it's response
-            if (authErrorOrResponse != null)
-            {
-                return authErrorOrResponse;
-            }
-            // Only authenticated users are allowed to create new rooms
-            if (!roomExists)
-            {
-                identity = authAuthority.getUserIdentity(peerJid);
-                if (identity == null)
-                {
-                    // Error not authorized
-                    return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain");
-                }
-            }
-        }
-
-        // Check room reservation?
-        if (!roomExists && reservationSystem != null)
-        {
-            EntityBareJid room = query.getRoom();
-
-            ReservationSystem.Result result = reservationSystem.createConference(identity, room);
-
-            logger.info("Create room result: " + result + " for " + room);
-
-            if (result.getCode() != ReservationSystem.RESULT_OK)
-            {
-                return ErrorFactory.createReservationError(query, result);
-            }
-        }
-
-        return null;
-    }
-
-    @NotNull
-    private org.jivesoftware.smack.packet.IQ handleConferenceIq(
-            ConferenceIq query)
-        throws Exception
-    {
-        ConferenceIq response = new ConferenceIq();
-        EntityBareJid room = query.getRoom();
-
-        logger.info("Focus request for room: " + room);
-
-        boolean roomExists = focusManager.getConference(room) != null;
-
-        // Authentication and reservations system logic
-        org.jivesoftware.smack.packet.IQ error = processExtensions(query, response, roomExists);
-        if (error != null)
-        {
-            return error;
-        }
-
-        boolean ready = focusManager.conferenceRequest(room, query.getPropertiesMap());
-
-        if (!isFocusAnonymous && authAuthority == null)
-        {
-            // Focus is authenticated system admin, so we let them in
-            // immediately. Focus will get OWNER anyway.
-            ready = true;
-        }
-
-        response.setType(org.jivesoftware.smack.packet.IQ.Type.result);
-        response.setStanzaId(query.getStanzaId());
-        response.setFrom(query.getTo());
-        response.setTo(query.getFrom());
-        response.setRoom(query.getRoom());
-        response.setReady(ready);
-
-        // Config
-        response.setFocusJid(focusAuthJid);
-
-        // Authentication module enabled?
-        response.addProperty(
-            new ConferenceIq.Property(
-                    "authentication",
-                    String.valueOf(authAuthority != null)));
-
-        if (authAuthority != null)
-        {
-            response.addProperty(
-                new ConferenceIq.Property(
-                        "externalAuth",
-                        String.valueOf(authAuthority.isExternal())));
-        }
-
-        if (focusManager.getJitsiMeetServices().getJigasiDetector() != null)
-        {
-            response.addProperty(new ConferenceIq.Property("sipGatewayEnabled", "true"));
-        }
-
-        return response;
     }
 
     private org.jivesoftware.smack.packet.IQ handleAuthUrlIq(
