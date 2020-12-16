@@ -21,9 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.retry.RetryStrategy;
 import org.jitsi.retry.SimpleRetryTask;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.reservation.*;
 import org.jitsi.service.configuration.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.component.*;
@@ -32,14 +29,11 @@ import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jivesoftware.whack.ExternalComponentManager;
-import org.jxmpp.jid.*;
 import org.xmpp.component.ComponentException;
 import org.xmpp.packet.IQ;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * XMPP component that listens for {@link ConferenceIq}
@@ -55,31 +49,25 @@ public class FocusComponent
      */
     private final static Logger logger = Logger.getLogger(FocusComponent.class);
 
-    /**
-     * (Optional)Authentication authority used to verify user requests.
-     */
-    private AuthenticationAuthority authAuthority;
-
     private final Connector connector = new Connector();
 
     @NotNull
     private final ConferenceRequestHandler conferenceRequestHandler;
 
+    @Nullable
+    private final AuthenticationIqHandler authenticationIqHandler;
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
      */
     public FocusComponent(
             @NotNull XmppComponentConfig config,
-            @NotNull ConferenceRequestHandler conferenceRequestHandler)
+            @NotNull ConferenceRequestHandler conferenceRequestHandler,
+            @Nullable AuthenticationIqHandler authenticationIqHandler)
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
         this.conferenceRequestHandler = conferenceRequestHandler;
-    }
-
-    public void setAuthAuthority(AuthenticationAuthority authAuthority)
-    {
-        this.authAuthority = authAuthority;
+        this.authenticationIqHandler = authenticationIqHandler;
     }
 
     public void loadConfig(ConfigurationService config, String configPropertiesBase)
@@ -102,8 +90,6 @@ public class FocusComponent
      */
     public void disconnect()
     {
-        authAuthority = null;
-
         connector.disconnect();
     }
 
@@ -141,8 +127,19 @@ public class FocusComponent
             org.jivesoftware.smack.packet.IQ smackIq = IQUtils.convert(iq);
             if (smackIq instanceof LoginUrlIq)
             {
-                org.jivesoftware.smack.packet.IQ result = handleAuthUrlIq((LoginUrlIq) smackIq);
-                return IQUtils.convert(result);
+                LoginUrlIq loginUrlIq = (LoginUrlIq) smackIq;
+                org.jivesoftware.smack.packet.IQ response;
+                if (authenticationIqHandler == null)
+                {
+                    XMPPError.Builder error = XMPPError.getBuilder(XMPPError.Condition.service_unavailable);
+                    response = org.jivesoftware.smack.packet.IQ.createErrorResponse(loginUrlIq, error);
+                }
+                else
+                {
+                    response = authenticationIqHandler.handleLoginUrlIq(loginUrlIq);
+                }
+
+                return IQUtils.convert(response);
             }
             else
             {
@@ -187,15 +184,13 @@ public class FocusComponent
             {
                 logger.info("Logout IQ received: " + iq.toXML());
 
-                if (authAuthority == null)
+                if (authenticationIqHandler == null)
                 {
                     // not-implemented
                     return null;
                 }
 
-                org.jivesoftware.smack.packet.IQ smackResult = authAuthority.processLogoutIq((LogoutIq) smackIq);
-
-                return smackResult != null ? IQUtils.convert(smackResult) : null;
+                return IQUtils.convert(authenticationIqHandler.handleLogoutUrlIq((LogoutIq) smackIq));
             }
             else
             {
@@ -207,49 +202,6 @@ public class FocusComponent
             logger.error(e, e);
             throw e;
         }
-    }
-
-    private org.jivesoftware.smack.packet.IQ handleAuthUrlIq(
-            LoginUrlIq authUrlIq)
-    {
-        if (authAuthority == null)
-        {
-            XMPPError.Builder error = XMPPError.getBuilder(XMPPError.Condition.service_unavailable);
-            return org.jivesoftware.smack.packet.IQ.createErrorResponse(authUrlIq, error);
-        }
-
-        EntityFullJid peerFullJid = authUrlIq.getFrom().asEntityFullJidIfPossible();
-        EntityBareJid roomName = authUrlIq.getRoom();
-        if (roomName == null)
-        {
-            XMPPError.Builder error = XMPPError.getBuilder(XMPPError.Condition.not_acceptable);
-            return org.jivesoftware.smack.packet.IQ.createErrorResponse(authUrlIq, error);
-        }
-
-        LoginUrlIq result = new LoginUrlIq();
-        result.setType(org.jivesoftware.smack.packet.IQ.Type.result);
-        result.setStanzaId(authUrlIq.getStanzaId());
-        result.setTo(authUrlIq.getFrom());
-
-        boolean popup = authUrlIq.getPopup() != null && authUrlIq.getPopup();
-
-        String machineUID = authUrlIq.getMachineUID();
-        if (isBlank(machineUID))
-        {
-            XMPPError.Builder error
-                = XMPPError.from(
-                    XMPPError.Condition.bad_request,
-                    "missing mandatory attribute 'machineUID'");
-            return org.jivesoftware.smack.packet.IQ.createErrorResponse(authUrlIq, error);
-        }
-
-        String authUrl = authAuthority.createLoginUrl(machineUID, peerFullJid, roomName, popup);
-
-        result.setUrl(authUrl);
-
-        logger.info("Sending url: " + result.toXML());
-
-        return result;
     }
 
     /**

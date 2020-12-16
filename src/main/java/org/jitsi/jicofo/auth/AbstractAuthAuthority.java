@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
@@ -447,6 +448,7 @@ public abstract class AbstractAuthAuthority
      * {@inheritDoc}
      */
     @Override
+    @NotNull
     public IQ processLogoutIq(LogoutIq iq)
     {
         //String peerJid = iq.getFrom();

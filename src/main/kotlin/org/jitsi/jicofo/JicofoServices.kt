@@ -29,6 +29,7 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
 import org.jitsi.jicofo.xmpp.ConferenceRequestHandler
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
@@ -102,11 +103,16 @@ open class JicofoServices(
             reservationSystem = reservationSystem
         )
 
+        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
+
         focusComponent = if (XmppComponentConfig.config.enabled) {
-            FocusComponent(XmppComponentConfig.config, conferenceRequestHandler).apply {
+            FocusComponent(
+                XmppComponentConfig.config,
+                conferenceRequestHandler,
+                authenticationIqHandler
+            ).apply {
                 val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
                 loadConfig(configService, "org.jitsi.jicofo")
-                authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
                 connect()
             }
         } else {
