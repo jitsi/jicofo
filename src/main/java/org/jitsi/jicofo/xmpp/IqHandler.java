@@ -56,8 +56,8 @@ public class IqHandler
     /** The currently used XMPP connection. */
     private XmppConnection connection;
 
-    private MuteIqHandler muteIqHandler;
-    private DialIqHandler dialIqHandler;
+    private final MuteIqHandler muteIqHandler = new MuteIqHandler();
+    private final DialIqHandler dialIqHandler = new DialIqHandler();
 
     /**
      * Creates new instance of {@link IqHandler}.
@@ -81,8 +81,7 @@ public class IqHandler
     {
         this.connection = connection;
 
-        muteIqHandler = new MuteIqHandler();
-        dialIqHandler = new DialIqHandler();
+        logger.info("Registering IQ handlers with XmppConnection.");
         connection.registerIQRequestHandler(muteIqHandler);
         connection.registerIQRequestHandler(dialIqHandler);
     }
@@ -128,7 +127,7 @@ public class IqHandler
     /**
      * Disposes this instance and stop listening for extensions packets.
      */
-    public void dispose()
+    public void stop()
     {
         if (connection != null)
         {

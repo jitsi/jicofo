@@ -32,6 +32,7 @@ import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
 import org.jitsi.jicofo.xmpp.ConferenceRequestHandler
 import org.jitsi.jicofo.xmpp.FocusComponent
+import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.osgi.ServiceUtils2
@@ -69,6 +70,7 @@ open class JicofoServices(
         start()
         focusManager.addFocusAllocationListener(this)
     }
+    val iqHandler: IqHandler
     val conferenceRequestHandler: ConferenceRequestHandler
 
     init {
@@ -105,6 +107,10 @@ open class JicofoServices(
 
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
 
+        iqHandler = IqHandler(focusManager).apply {
+            focusManager.addXmppConnectionListener { init(it) }
+        }
+
         focusComponent = if (XmppComponentConfig.config.enabled) {
             FocusComponent(
                 XmppComponentConfig.config,
@@ -137,6 +143,7 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             it.stop()
         }
+        iqHandler.stop()
         focusComponent?.disconnect()
         health?.stop(bundleContext)
     }
