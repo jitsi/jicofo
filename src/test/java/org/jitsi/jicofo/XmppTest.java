@@ -59,13 +59,13 @@ public class XmppTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testRoom@example.com");
 
-        ConferenceIqHandler iqHandler = osgi.jicofoServices.getConferenceIqHandler();
+        IqHandler iqHandler = osgi.jicofoServices.getIqHandler();
 
         ConferenceIq conferenceIq = new ConferenceIq();
 
         conferenceIq.setRoom(roomName);
 
-        IQ result = iqHandler.handleIQRequest(conferenceIq);
+        IQ result = iqHandler.handleIq(conferenceIq);
         assertNotNull(result);
         assertTrue(result instanceof ConferenceIq);
     }

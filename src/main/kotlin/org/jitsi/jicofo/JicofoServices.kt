@@ -71,7 +71,6 @@ open class JicofoServices(
         focusManager.addFocusAllocationListener(this)
     }
     val iqHandler: IqHandler
-    val conferenceIqHandler: ConferenceIqHandler
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -97,18 +96,7 @@ open class JicofoServices(
             }
         }
 
-        conferenceIqHandler = ConferenceIqHandler(
-            focusManager = focusManager,
-            focusAuthJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString(),
-            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
-            authAuthority = authenticationAuthority,
-            reservationSystem = reservationSystem
-        )
-
-        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
-        iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            focusManager.addXmppConnectionListener { init(it) }
-        }
+        iqHandler = createIqHandler()
 
         focusComponent = if (XmppComponentConfig.config.enabled) {
             FocusComponent(
@@ -170,6 +158,21 @@ open class JicofoServices(
         else {
             logger.info("Authentication service disabled.")
             null
+        }
+    }
+
+    private fun createIqHandler(): IqHandler {
+        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
+        val conferenceIqHandler = ConferenceIqHandler(
+            focusManager = focusManager,
+            focusAuthJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString(),
+            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
+            authAuthority = authenticationAuthority,
+            reservationSystem = reservationSystem
+        )
+
+        return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
+            focusManager.addXmppConnectionListener { init(it) }
         }
     }
 

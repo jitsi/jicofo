@@ -97,7 +97,7 @@ class ConferenceIqHandler(
      * @return <tt>null</tt> if everything went ok or an error/response IQ
      * which should be returned to the user
      */
-    fun processExtensions(query: ConferenceIq, response: ConferenceIq?, roomExists: Boolean): IQ? {
+    private fun processExtensions(query: ConferenceIq, response: ConferenceIq?, roomExists: Boolean): IQ? {
         val peerJid = query.from
         var identity: String? = null
 
