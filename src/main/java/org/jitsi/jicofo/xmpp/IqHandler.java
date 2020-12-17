@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.Bridge;
 import org.jitsi.xmpp.extensions.rayo.*;
@@ -58,16 +59,21 @@ public class IqHandler
 
     private final MuteIqHandler muteIqHandler = new MuteIqHandler();
     private final DialIqHandler dialIqHandler = new DialIqHandler();
+    @NotNull
+    private final ConferenceIqHandler conferenceIqHandler;
+    private final AuthenticationIqHandler authenticationIqHandler;
 
     /**
-     * Creates new instance of {@link IqHandler}.
-     * @param focusManager <tt>FocusManager</tt> that will be used by new
-     *                     instance to access active conferences and focus
-     *                     XMPP connection.
+     * @param focusManager The <tt>FocusManager</tt> to use to access active conferences.
      */
-    public IqHandler(FocusManager focusManager)
+    public IqHandler(
+            FocusManager focusManager,
+            @NotNull ConferenceIqHandler conferenceIqHandler,
+            AuthenticationIqHandler authenticationIqHandler)
     {
         this.focusManager = focusManager;
+        this.conferenceIqHandler = conferenceIqHandler;
+        this.authenticationIqHandler = authenticationIqHandler;
 
         MuteIqProvider.registerMuteIqProvider();
         new RayoIqProvider().registerRayoIQs();
@@ -84,6 +90,12 @@ public class IqHandler
         logger.info("Registering IQ handlers with XmppConnection.");
         connection.registerIQRequestHandler(muteIqHandler);
         connection.registerIQRequestHandler(dialIqHandler);
+        connection.registerIQRequestHandler(conferenceIqHandler);
+        if (authenticationIqHandler != null)
+        {
+            connection.registerIQRequestHandler(authenticationIqHandler.getLoginUrlIqHandler());
+            connection.registerIQRequestHandler(authenticationIqHandler.getLogoutIqHandler());
+        }
     }
 
     private class MuteIqHandler extends AbstractIqRequestHandler
@@ -291,5 +303,30 @@ public class IqHandler
                 XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
                     .setDescriptiveEnText("Failed to forward DialIq"));
         }
+    }
+
+    /**
+     * Expose a limited set of functionality for use via the XMPP component.
+     */
+    IQ handleIq(IQ iq)
+    {
+        if (iq instanceof ConferenceIq)
+        {
+            logger.info("Logout IQ received: " + iq.toXML());
+            conferenceIqHandler.handleIQRequest(iq);
+        }
+        else if (iq instanceof LoginUrlIq)
+        {
+            authenticationIqHandler.getLoginUrlIqHandler().handleIQRequest(iq);
+        }
+        else if (iq instanceof LogoutIq)
+        {
+            authenticationIqHandler.getLogoutIqHandler().handleIQRequest(iq);
+        }
+
+        return IQ.createErrorResponse(
+                    iq,
+                    XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
+                        .setDescriptiveEnText("Unsupported IQ: " + iq));
     }
 }

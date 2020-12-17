@@ -22,13 +22,17 @@ import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIq
 import org.jitsi.xmpp.extensions.jitsimeet.LogoutIq
+import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
+import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
 
 class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
     private val logger = createLogger()
+    val loginUrlIqHandler: AbstractIqRequestHandler = LoginUrlIqHandler()
+    val logoutIqHandler: AbstractIqRequestHandler = LogoutIqHandler()
 
-    fun handleLoginUrlIq(loginUrlIq: LoginUrlIq): IQ {
+    private fun handleLoginUrlIq(loginUrlIq: LoginUrlIq): IQ {
         val peerFullJid = loginUrlIq.from.asEntityFullJidIfPossible()
         val roomName = loginUrlIq.room
         if (roomName == null) {
@@ -54,6 +58,37 @@ class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
         return result
     }
 
-    fun handleLogoutUrlIq(logoutIq: LogoutIq): IQ = authAuthority.processLogoutIq(logoutIq)
-}
+    private fun handleLogoutIq(logoutIq: LogoutIq): IQ = authAuthority.processLogoutIq(logoutIq)
 
+    private inner class LoginUrlIqHandler : AbstractIqRequestHandler(
+        LoginUrlIq.ELEMENT_NAME,
+        LoginUrlIq.NAMESPACE,
+        IQ.Type.get,
+        IQRequestHandler.Mode.sync
+    ) {
+        override fun handleIQRequest(iqRequest: IQ?): IQ {
+            return if (iqRequest is LoginUrlIq) {
+                handleLoginUrlIq(iqRequest)
+            } else {
+                logger.error("Received an unexpected IQ type: $iqRequest")
+                IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+            }
+        }
+    }
+
+    private inner class LogoutIqHandler : AbstractIqRequestHandler(
+        LogoutIq.ELEMENT_NAME,
+        LogoutIq.NAMESPACE,
+        IQ.Type.set,
+        IQRequestHandler.Mode.sync
+    ) {
+        override fun handleIQRequest(iqRequest: IQ?): IQ {
+            return if (iqRequest is LogoutIq) {
+                handleLogoutIq(iqRequest)
+            } else {
+                logger.error("Received an unexpected IQ type: $iqRequest")
+                IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+            }
+        }
+    }
+}

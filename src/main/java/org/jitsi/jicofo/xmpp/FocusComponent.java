@@ -26,8 +26,6 @@ import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.component.*;
 import org.jitsi.xmpp.util.*;
 
-import org.jivesoftware.smack.packet.*;
-
 import org.jivesoftware.whack.ExternalComponentManager;
 import org.xmpp.component.ComponentException;
 import org.xmpp.packet.IQ;
@@ -51,23 +49,17 @@ public class FocusComponent
 
     private final Connector connector = new Connector();
 
-    @NotNull
-    private final ConferenceIqHandler conferenceIqHandler;
-
-    @Nullable
-    private final AuthenticationIqHandler authenticationIqHandler;
+    private final IqHandler iqHandler;
     /**
      * Creates new instance of <tt>FocusComponent</tt>.
      */
     public FocusComponent(
             @NotNull XmppComponentConfig config,
-            @NotNull ConferenceIqHandler conferenceIqHandler,
-            @Nullable AuthenticationIqHandler authenticationIqHandler)
+            @NotNull IqHandler iqHandler)
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
-        this.conferenceIqHandler = conferenceIqHandler;
-        this.authenticationIqHandler = authenticationIqHandler;
+        this.iqHandler = iqHandler;
     }
 
     public void loadConfig(ConfigurationService config, String configPropertiesBase)
@@ -127,19 +119,7 @@ public class FocusComponent
             org.jivesoftware.smack.packet.IQ smackIq = IQUtils.convert(iq);
             if (smackIq instanceof LoginUrlIq)
             {
-                LoginUrlIq loginUrlIq = (LoginUrlIq) smackIq;
-                org.jivesoftware.smack.packet.IQ response;
-                if (authenticationIqHandler == null)
-                {
-                    XMPPError.Builder error = XMPPError.getBuilder(XMPPError.Condition.service_unavailable);
-                    response = org.jivesoftware.smack.packet.IQ.createErrorResponse(loginUrlIq, error);
-                }
-                else
-                {
-                    response = authenticationIqHandler.handleLoginUrlIq(loginUrlIq);
-                }
-
-                return IQUtils.convert(response);
+                return IQUtils.convert(iqHandler.handleIq(smackIq));
             }
             else
             {
@@ -173,24 +153,9 @@ public class FocusComponent
         {
             org.jivesoftware.smack.packet.IQ smackIq = IQUtils.convert(iq);
 
-            if (smackIq instanceof ConferenceIq)
+            if (smackIq instanceof ConferenceIq || smackIq instanceof LogoutIq)
             {
-                org.jivesoftware.smack.packet.IQ response
-                        = conferenceIqHandler.handleConferenceIq((ConferenceIq) smackIq);
-
-                return IQUtils.convert(response);
-            }
-            else if (smackIq instanceof LogoutIq)
-            {
-                logger.info("Logout IQ received: " + iq.toXML());
-
-                if (authenticationIqHandler == null)
-                {
-                    // not-implemented
-                    return null;
-                }
-
-                return IQUtils.convert(authenticationIqHandler.handleLogoutUrlIq((LogoutIq) smackIq));
+                return IQUtils.convert(iqHandler.handleIq(smackIq));
             }
             else
             {

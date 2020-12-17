@@ -106,16 +106,14 @@ open class JicofoServices(
         )
 
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
-
-        iqHandler = IqHandler(focusManager).apply {
+        iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
             focusManager.addXmppConnectionListener { init(it) }
         }
 
         focusComponent = if (XmppComponentConfig.config.enabled) {
             FocusComponent(
                 XmppComponentConfig.config,
-                conferenceIqHandler,
-                authenticationIqHandler
+                iqHandler
             ).apply {
                 val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
                 loadConfig(configService, "org.jitsi.jicofo")

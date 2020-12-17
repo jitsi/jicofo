@@ -23,7 +23,10 @@ import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
+import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
+import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.XMPPError
 
 /**
  * Handles XMPP requests for a new conference ([ConferenceIq]).
@@ -34,11 +37,16 @@ class ConferenceIqHandler(
     val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
     val reservationSystem: ReservationSystem?
+) : AbstractIqRequestHandler(
+    ConferenceIq.ELEMENT_NAME,
+    ConferenceIq.NAMESPACE,
+    IQ.Type.set,
+    IQRequestHandler.Mode.sync
 ) {
 
     private val logger = createLogger()
 
-    fun handleConferenceIq(query: ConferenceIq): IQ {
+    private fun handleConferenceIq(query: ConferenceIq): IQ {
         val response = ConferenceIq()
         val room = query.room
         logger.info("Focus request for room: $room")
@@ -122,5 +130,14 @@ class ConferenceIqHandler(
             }
         }
         return null
+    }
+
+    override fun handleIQRequest(iqRequest: IQ?): IQ {
+        return if (iqRequest is ConferenceIq) {
+            handleConferenceIq(iqRequest)
+        } else {
+            logger.error("Received an unexpected IQ type: $iqRequest")
+            IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+        }
     }
 }
