@@ -30,7 +30,7 @@ import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
-import org.jitsi.jicofo.xmpp.ConferenceRequestHandler
+import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
@@ -71,7 +71,7 @@ open class JicofoServices(
         focusManager.addFocusAllocationListener(this)
     }
     val iqHandler: IqHandler
-    val conferenceRequestHandler: ConferenceRequestHandler
+    val conferenceIqHandler: ConferenceIqHandler
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -97,7 +97,7 @@ open class JicofoServices(
             }
         }
 
-        conferenceRequestHandler = ConferenceRequestHandler(
+        conferenceIqHandler = ConferenceIqHandler(
             focusManager = focusManager,
             focusAuthJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString(),
             isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
@@ -114,7 +114,7 @@ open class JicofoServices(
         focusComponent = if (XmppComponentConfig.config.enabled) {
             FocusComponent(
                 XmppComponentConfig.config,
-                conferenceRequestHandler,
+                conferenceIqHandler,
                 authenticationIqHandler
             ).apply {
                 val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)

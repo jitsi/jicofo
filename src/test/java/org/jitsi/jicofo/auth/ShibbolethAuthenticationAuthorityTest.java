@@ -64,7 +64,7 @@ public class ShibbolethAuthenticationAuthorityTest
     public void testShibbolethAuthenticationModule()
         throws Exception
     {
-        ConferenceRequestHandler conferenceRequestHandler = osgi.jicofoServices.getConferenceRequestHandler();
+        ConferenceIqHandler conferenceIqHandler = osgi.jicofoServices.getConferenceIqHandler();
 
         ShibbolethAuthAuthority shibbolethAuth
             = (ShibbolethAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
@@ -91,7 +91,7 @@ public class ShibbolethAuthenticationAuthorityTest
 
         // CASE 1: No session-id passed and room does not exist
         IQ authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY WITH: 'not-authorized'
         assertNotNull(authError);
@@ -108,7 +108,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setSessionId(user1Session);
 
         authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY WITH: null - no errors
         assertNull(authError);
@@ -120,7 +120,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setMachineUID(user2MachineUid);
 
         authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY with null - no errors
         assertNull(authError);
@@ -132,7 +132,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setMachineUID(user2MachineUid);
 
         authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY with session-invalid
         assertNotNull(authError);
@@ -150,7 +150,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setMachineUID(user2MachineUid);
 
         authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
         // REPLY with null - no error
         assertNull(authError);
 
@@ -160,7 +160,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
 
         authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -173,7 +173,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setSessionId(user1ShibbolethIdentity);
         query.setMachineUID(null);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -195,7 +195,7 @@ public class ShibbolethAuthenticationAuthorityTest
         roomExists = false;
 
         authError
-            = conferenceRequestHandler.processExtensions(query, response, roomExists);
+            = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         assertNull(authError);
     }

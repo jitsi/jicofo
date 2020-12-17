@@ -28,7 +28,7 @@ import org.jivesoftware.smack.packet.IQ
 /**
  * Handles XMPP requests for a new conference ([ConferenceIq]).
  */
-class ConferenceRequestHandler(
+class ConferenceIqHandler(
     val focusManager: FocusManager,
     val focusAuthJid: String,
     val isFocusAnonymous: Boolean,

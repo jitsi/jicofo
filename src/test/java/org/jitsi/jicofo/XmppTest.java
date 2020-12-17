@@ -59,7 +59,7 @@ public class XmppTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testRoom@example.com");
 
-        ConferenceRequestHandler focusComponent = osgi.jicofoServices.getConferenceRequestHandler();
+        ConferenceIqHandler focusComponent = osgi.jicofoServices.getConferenceIqHandler();
 
         ConferenceIq conferenceIq = new ConferenceIq();
 

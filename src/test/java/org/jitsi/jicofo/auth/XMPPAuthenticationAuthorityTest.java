@@ -92,8 +92,8 @@ public class XMPPAuthenticationAuthorityTest
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        ConferenceRequestHandler conferenceRequestHandler = osgi.jicofoServices.getConferenceRequestHandler();
-        IQ authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        ConferenceIqHandler conferenceIqHandler = osgi.jicofoServices.getConferenceIqHandler();
+        IQ authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY WITH: not-authorized
         assertNotNull(authError);
@@ -108,7 +108,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY WITH: null - no errors, session-id set in response
         assertNull(authError);
@@ -123,7 +123,7 @@ public class XMPPAuthenticationAuthorityTest
         roomExists = true;
         query.setMachineUID(user2MachineUid);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY with null - no errors, no session-id in response
         assertNull(authError);
@@ -136,7 +136,7 @@ public class XMPPAuthenticationAuthorityTest
         roomExists = false;
         query.setMachineUID(user1MachineUid);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY with null - no errors, session-id in response(repeated)
         assertNull(authError);
@@ -150,7 +150,7 @@ public class XMPPAuthenticationAuthorityTest
         roomExists = true;
         query.setMachineUID(user2MachineUid);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // REPLY with session-invalid
         assertNotNull(authError);
@@ -163,7 +163,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -176,7 +176,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -189,7 +189,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(user1SessionId);
         query.setMachineUID(null);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -203,7 +203,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setMachineUID(null);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         // not-acceptable
         assertNotNull(authError);
@@ -218,7 +218,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user3MachineUID);
         query.setSessionId(null);
 
-        authError = conferenceRequestHandler.processExtensions(query, response, roomExists);
+        authError = conferenceIqHandler.processExtensions(query, response, roomExists);
 
         assertNull(authError);
 

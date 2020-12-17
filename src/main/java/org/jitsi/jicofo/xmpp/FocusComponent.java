@@ -52,7 +52,7 @@ public class FocusComponent
     private final Connector connector = new Connector();
 
     @NotNull
-    private final ConferenceRequestHandler conferenceRequestHandler;
+    private final ConferenceIqHandler conferenceIqHandler;
 
     @Nullable
     private final AuthenticationIqHandler authenticationIqHandler;
@@ -61,12 +61,12 @@ public class FocusComponent
      */
     public FocusComponent(
             @NotNull XmppComponentConfig config,
-            @NotNull ConferenceRequestHandler conferenceRequestHandler,
+            @NotNull ConferenceIqHandler conferenceIqHandler,
             @Nullable AuthenticationIqHandler authenticationIqHandler)
     {
         super(config.getHostname(), config.getPort(), config.getDomain(), config.getSubdomain(), config.getSecret());
 
-        this.conferenceRequestHandler = conferenceRequestHandler;
+        this.conferenceIqHandler = conferenceIqHandler;
         this.authenticationIqHandler = authenticationIqHandler;
     }
 
@@ -176,7 +176,7 @@ public class FocusComponent
             if (smackIq instanceof ConferenceIq)
             {
                 org.jivesoftware.smack.packet.IQ response
-                        = conferenceRequestHandler.handleConferenceIq((ConferenceIq) smackIq);
+                        = conferenceIqHandler.handleConferenceIq((ConferenceIq) smackIq);
 
                 return IQUtils.convert(response);
             }
