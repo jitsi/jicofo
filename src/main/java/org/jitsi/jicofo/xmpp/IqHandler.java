@@ -308,25 +308,27 @@ public class IqHandler
     /**
      * Expose a limited set of functionality for use via the XMPP component.
      */
-    IQ handleIq(IQ iq)
+    public IQ handleIq(IQ iq)
     {
         if (iq instanceof ConferenceIq)
         {
             logger.info("Logout IQ received: " + iq.toXML());
-            conferenceIqHandler.handleIQRequest(iq);
+            return conferenceIqHandler.handleIQRequest(iq);
         }
         else if (iq instanceof LoginUrlIq)
         {
-            authenticationIqHandler.getLoginUrlIqHandler().handleIQRequest(iq);
+            return authenticationIqHandler.getLoginUrlIqHandler().handleIQRequest(iq);
         }
         else if (iq instanceof LogoutIq)
         {
-            authenticationIqHandler.getLogoutIqHandler().handleIQRequest(iq);
+            return authenticationIqHandler.getLogoutIqHandler().handleIQRequest(iq);
         }
-
-        return IQ.createErrorResponse(
+        else
+        {
+            return IQ.createErrorResponse(
                     iq,
                     XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
-                        .setDescriptiveEnText("Unsupported IQ: " + iq));
+                            .setDescriptiveEnText("Unsupported IQ: " + iq));
+        }
     }
 }
