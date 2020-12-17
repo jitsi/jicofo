@@ -25,7 +25,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.xmpp.XmppConfig;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
@@ -120,7 +120,7 @@ public class FocusManager
      * Handler that takes care of pre-processing various Jitsi Meet extensions
      * IQs sent from conference participants to the focus.
      */
-    private MeetExtensionsHandler meetExtensionsHandler;
+    private IqHandler iqHandler;
 
     /**
      * A class that holds Jicofo-wide statistics
@@ -192,7 +192,7 @@ public class FocusManager
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
-        meetExtensionsHandler = new MeetExtensionsHandler(this);
+        iqHandler = new IqHandler(this);
 
         bundleContext.registerService(
                 JitsiMeetServices.class,
@@ -227,7 +227,7 @@ public class FocusManager
             }
         }
 
-        meetExtensionsHandler.dispose();
+        iqHandler.dispose();
 
         protocolProviderHandler.stop();
     }
@@ -725,7 +725,7 @@ public class FocusManager
         {
             // Do initializations which require valid connection
             XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
-            meetExtensionsHandler.init(connection);
+            iqHandler.init(connection);
         }
     }
 

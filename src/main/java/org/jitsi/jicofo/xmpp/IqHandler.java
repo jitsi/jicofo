@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.xmpp;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.Bridge;
 import org.jitsi.xmpp.extensions.rayo.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -39,12 +40,12 @@ import java.util.stream.*;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-public class MeetExtensionsHandler
+public class IqHandler
 {
     /**
      * The logger
      */
-    private final static Logger logger = Logger.getLogger(MeetExtensionsHandler.class);
+    private final static Logger logger = Logger.getLogger(IqHandler.class);
 
     /**
      * <tt>FocusManager</tt> instance for accessing info about all active
@@ -59,12 +60,12 @@ public class MeetExtensionsHandler
     private DialIqHandler dialIqHandler;
 
     /**
-     * Creates new instance of {@link MeetExtensionsHandler}.
+     * Creates new instance of {@link IqHandler}.
      * @param focusManager <tt>FocusManager</tt> that will be used by new
      *                     instance to access active conferences and focus
      *                     XMPP connection.
      */
-    public MeetExtensionsHandler(FocusManager focusManager)
+    public IqHandler(FocusManager focusManager)
     {
         this.focusManager = focusManager;
 
