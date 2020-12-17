@@ -76,9 +76,9 @@ public class MeetExtensionsHandler
     /**
      * Initializes this instance and bind packet listeners.
      */
-    public void init()
+    public void init(XmppConnection connection)
     {
-        this.connection = focusManager.getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+        this.connection = connection;
 
         muteIqHandler = new MuteIqHandler();
         dialIqHandler = new DialIqHandler();

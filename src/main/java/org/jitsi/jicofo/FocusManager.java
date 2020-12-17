@@ -26,6 +26,7 @@ import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.xmpp.XmppConfig;
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
@@ -723,7 +724,8 @@ public class FocusManager
         if (RegistrationState.REGISTERED.equals(registrationState))
         {
             // Do initializations which require valid connection
-            meetExtensionsHandler.init();
+            XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+            meetExtensionsHandler.init(connection);
         }
     }
 
