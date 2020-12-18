@@ -36,6 +36,7 @@ import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.osgi.ServiceUtils2
+import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
@@ -105,11 +106,11 @@ open class JicofoServices(
             ).apply {
                 val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
                 loadConfig(configService, "org.jitsi.jicofo")
-                connect()
             }
         } else {
             null
         }
+        focusComponent?.connect()
 
         health = if (HealthConfig.config.enabled) {
             Health(HealthConfig.config, focusManager, focusComponent).apply {
@@ -165,14 +166,18 @@ open class JicofoServices(
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
         val conferenceIqHandler = ConferenceIqHandler(
             focusManager = focusManager,
-            focusAuthJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString(),
+            focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
             isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
             authAuthority = authenticationAuthority,
             reservationSystem = reservationSystem
         )
 
         return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            focusManager.addXmppConnectionListener { init(it) }
+            focusManager.addXmppConnectionListener(object : FocusManager.XmppConnectionListener {
+                    override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
+                        init(xmppConnection)
+                    }
+            })
         }
     }
 

@@ -212,8 +212,7 @@ data class XmppComponentConfig(
     val port: Int = -1,
     val secret: String = ""
 ) {
-    val enabled: Boolean
-        get() = hostname != ""
+    val enabled: Boolean = hostname.isNotBlank()
 
     companion object {
         /**

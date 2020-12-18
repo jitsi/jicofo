@@ -34,11 +34,7 @@ class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
 
     private fun handleLoginUrlIq(loginUrlIq: LoginUrlIq): IQ {
         val peerFullJid = loginUrlIq.from.asEntityFullJidIfPossible()
-        val roomName = loginUrlIq.room
-        if (roomName == null) {
-            val error = XMPPError.getBuilder(XMPPError.Condition.not_acceptable)
-            return IQ.createErrorResponse(loginUrlIq, error)
-        }
+        val roomName = loginUrlIq.room ?: return createNotAcceptableErrorResponse(loginUrlIq)
         val result = LoginUrlIq()
         result.type = IQ.Type.result
         result.stanzaId = loginUrlIq.stanzaId
@@ -46,11 +42,7 @@ class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
         val popup = loginUrlIq.popup != null && loginUrlIq.popup
         val machineUID = loginUrlIq.machineUID
         if (StringUtils.isBlank(machineUID)) {
-            val error = XMPPError.from(
-                XMPPError.Condition.bad_request,
-                "missing mandatory attribute 'machineUID'"
-            )
-            return IQ.createErrorResponse(loginUrlIq, error)
+            return createBadRequestErrorResponse(loginUrlIq, "missing mandatory attribute 'machineUID'")
         }
         val authUrl = authAuthority.createLoginUrl(machineUID, peerFullJid, roomName, popup)
         result.url = authUrl
@@ -66,12 +58,12 @@ class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
         IQ.Type.get,
         IQRequestHandler.Mode.sync
     ) {
-        override fun handleIQRequest(iqRequest: IQ?): IQ {
+        override fun handleIQRequest(iqRequest: IQ): IQ {
             return if (iqRequest is LoginUrlIq) {
                 handleLoginUrlIq(iqRequest)
             } else {
                 logger.error("Received an unexpected IQ type: $iqRequest")
-                IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+                createInternalServerErrorResponse(iqRequest)
             }
         }
     }
@@ -82,13 +74,22 @@ class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
         IQ.Type.set,
         IQRequestHandler.Mode.sync
     ) {
-        override fun handleIQRequest(iqRequest: IQ?): IQ {
+        override fun handleIQRequest(iqRequest: IQ): IQ {
             return if (iqRequest is LogoutIq) {
                 handleLogoutIq(iqRequest)
             } else {
                 logger.error("Received an unexpected IQ type: $iqRequest")
-                IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+                createInternalServerErrorResponse(iqRequest)
             }
         }
     }
+
+    private fun createErrorResponse(iq: IQ, condition: XMPPError.Condition): IQ =
+        IQ.createErrorResponse(iq, XMPPError.getBuilder(condition))
+    private fun createNotAcceptableErrorResponse(iq: IQ): IQ =
+        createErrorResponse(iq, XMPPError.Condition.not_acceptable)
+    private fun createBadRequestErrorResponse(iq: IQ, message: String): IQ =
+        IQ.createErrorResponse(iq, XMPPError.from(XMPPError.Condition.bad_request, message))
+    private fun createInternalServerErrorResponse(iq: IQ): IQ =
+        IQ.createErrorResponse(iq, XMPPError.Condition.internal_server_error)
 }
