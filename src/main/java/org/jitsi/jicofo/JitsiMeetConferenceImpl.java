@@ -2220,7 +2220,7 @@ public class JitsiMeetConferenceImpl
      * @param doMute the new audio mute status to set.
      * @return <tt>true</tt> if status has been set successfully.
      */
-    boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute)
+    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute)
     {
         Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)

@@ -15,8 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.xmpp;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.Bridge;
 import org.jitsi.xmpp.extensions.rayo.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -39,12 +41,12 @@ import java.util.stream.*;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-public class MeetExtensionsHandler
+public class IqHandler
 {
     /**
      * The logger
      */
-    private final static Logger logger = Logger.getLogger(MeetExtensionsHandler.class);
+    private final static Logger logger = Logger.getLogger(IqHandler.class);
 
     /**
      * <tt>FocusManager</tt> instance for accessing info about all active
@@ -55,18 +57,23 @@ public class MeetExtensionsHandler
     /** The currently used XMPP connection. */
     private XmppConnection connection;
 
-    private MuteIqHandler muteIqHandler;
-    private DialIqHandler dialIqHandler;
+    private final MuteIqHandler muteIqHandler = new MuteIqHandler();
+    private final DialIqHandler dialIqHandler = new DialIqHandler();
+    @NotNull
+    private final ConferenceIqHandler conferenceIqHandler;
+    private final AuthenticationIqHandler authenticationIqHandler;
 
     /**
-     * Creates new instance of {@link MeetExtensionsHandler}.
-     * @param focusManager <tt>FocusManager</tt> that will be used by new
-     *                     instance to access active conferences and focus
-     *                     XMPP connection.
+     * @param focusManager The <tt>FocusManager</tt> to use to access active conferences.
      */
-    public MeetExtensionsHandler(FocusManager focusManager)
+    public IqHandler(
+            FocusManager focusManager,
+            @NotNull ConferenceIqHandler conferenceIqHandler,
+            AuthenticationIqHandler authenticationIqHandler)
     {
         this.focusManager = focusManager;
+        this.conferenceIqHandler = conferenceIqHandler;
+        this.authenticationIqHandler = authenticationIqHandler;
 
         MuteIqProvider.registerMuteIqProvider();
         new RayoIqProvider().registerRayoIQs();
@@ -76,14 +83,19 @@ public class MeetExtensionsHandler
     /**
      * Initializes this instance and bind packet listeners.
      */
-    public void init()
+    public void init(XmppConnection connection)
     {
-        this.connection = focusManager.getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+        this.connection = connection;
 
-        muteIqHandler = new MuteIqHandler();
-        dialIqHandler = new DialIqHandler();
+        logger.info("Registering IQ handlers with XmppConnection.");
         connection.registerIQRequestHandler(muteIqHandler);
         connection.registerIQRequestHandler(dialIqHandler);
+        connection.registerIQRequestHandler(conferenceIqHandler);
+        if (authenticationIqHandler != null)
+        {
+            connection.registerIQRequestHandler(authenticationIqHandler.getLoginUrlIqHandler());
+            connection.registerIQRequestHandler(authenticationIqHandler.getLogoutIqHandler());
+        }
     }
 
     private class MuteIqHandler extends AbstractIqRequestHandler
@@ -127,7 +139,7 @@ public class MeetExtensionsHandler
     /**
      * Disposes this instance and stop listening for extensions packets.
      */
-    public void dispose()
+    public void stop()
     {
         if (connection != null)
         {
@@ -290,6 +302,33 @@ public class MeetExtensionsHandler
                 dialIq,
                 XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
                     .setDescriptiveEnText("Failed to forward DialIq"));
+        }
+    }
+
+    /**
+     * Expose a limited set of functionality for use via the XMPP component.
+     */
+    public IQ handleIq(IQ iq)
+    {
+        if (iq instanceof ConferenceIq)
+        {
+            logger.info("Logout IQ received: " + iq.toXML());
+            return conferenceIqHandler.handleIQRequest(iq);
+        }
+        else if (iq instanceof LoginUrlIq)
+        {
+            return authenticationIqHandler.getLoginUrlIqHandler().handleIQRequest(iq);
+        }
+        else if (iq instanceof LogoutIq)
+        {
+            return authenticationIqHandler.getLogoutIqHandler().handleIQRequest(iq);
+        }
+        else
+        {
+            return IQ.createErrorResponse(
+                    iq,
+                    XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
+                            .setDescriptiveEnText("Unsupported IQ: " + iq));
         }
     }
 }

@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import com.typesafe.config.*;
-import org.jetbrains.annotations.*;
 import org.jitsi.config.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -52,7 +51,7 @@ public class OSGiHandler
         return instance;
     }
 
-    public JicofoTestServices jicofoServices;
+    public JicofoServices jicofoServices;
 
     public void setDeadlocked(boolean deadlocked)
     {
@@ -135,7 +134,7 @@ public class OSGiHandler
         // Activators are executed asynchronously, so a hack to wait for the last activator is used
         WaitableBundleActivator.waitUntilStarted();
 
-        jicofoServices = new JicofoTestServices(bc);
+        jicofoServices = new JicofoServices(bc);
     }
 
     public void shutdown()

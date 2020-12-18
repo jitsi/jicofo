@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.auth;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -76,6 +77,7 @@ public interface AuthenticationAuthority
      * @return XMPP error that will be sent to the user if we do not accept
      *         the request.
      */
+    @NotNull
     IQ processLogoutIq(LogoutIq iq);
 
     /**

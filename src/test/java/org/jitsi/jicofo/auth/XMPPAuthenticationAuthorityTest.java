@@ -31,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for authentication modules.
@@ -79,88 +80,73 @@ public class XMPPAuthenticationAuthorityTest
         Jid user2AuthJid = JidCreate.from("user2@" + authDomain);
         String user2MachineUid="machine2uid";
 
-        boolean roomExists = false;
         EntityBareJid room1 = JidCreate.entityBareFrom("testroom1@example.com");
+        EntityBareJid room2 = JidCreate.entityBareFrom("newroom@example.com");
+        EntityBareJid room3 = JidCreate.entityBareFrom("newroom2@example.com");
 
         ConferenceIq query = new ConferenceIq();
-        ConferenceIq response = new ConferenceIq();
-
-
 
         // CASE 1: guest Domain, no session-id passed and room does not exist
         query.setFrom(user1GuestJid);
         query.setSessionId(null);
-        roomExists = false;
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-
-        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent_();
-        IQ authError = focusComponent.processExtensions(query, response, roomExists);
+        IqHandler iqHandler = osgi.jicofoServices.getIqHandler();
+        IQ response = iqHandler.handleIq(query);
 
         // REPLY WITH: not-authorized
-        assertNotNull(authError);
+        assertNotNull(response);
         assertEquals(
                 XMPPError.Condition.not_authorized,
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 2: Auth domain, no session-id and room does not exist
         query.setFrom(user1AuthJid);
         query.setSessionId(null);
-        roomExists = false;
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        authError = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // REPLY WITH: null - no errors, session-id set in response
-        assertNull(authError);
-        String user1SessionId = response.getSessionId();
+        assertTrue(response instanceof ConferenceIq);
+        String user1SessionId = ((ConferenceIq) response).getSessionId();
         assertNotNull(user1SessionId);
-
-        response = new ConferenceIq(); // reset
 
         // CASE 3: guest domain, no session-id, room exists
         query.setFrom(user2GuestJid);
         query.setSessionId(null);
-        roomExists = true;
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // REPLY with null - no errors, no session-id in response
-        assertNull(authError);
-        assertNull(response.getSessionId());
+        assertTrue(response instanceof ConferenceIq);
+        assertNull(((ConferenceIq) response).getSessionId());
 
 
         //CASE 4: guest domain, session-id, room does not exists
         query.setFrom(user1GuestJid);
         query.setSessionId(user1SessionId);
-        roomExists = false;
         query.setMachineUID(user1MachineUid);
+        query.setRoom(room2);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // REPLY with null - no errors, session-id in response(repeated)
-        assertNull(authError);
-        assertEquals(user1SessionId, response.getSessionId());
-
-        response = new ConferenceIq(); // reset
+        assertTrue(response instanceof ConferenceIq);
+        assertEquals(user1SessionId, ((ConferenceIq) response).getSessionId());
 
         // CASE 5: guest jid, invalid session-id, room exists
         query.setFrom(user2GuestJid);
         query.setSessionId("someinvalidsessionid");
-        roomExists = true;
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // REPLY with session-invalid
-        assertNotNull(authError);
-        assertNotNull(authError.getError().getExtension(
+        assertNotNull(response.getError().getExtension(
                 SessionInvalidPacketExtension.ELEMENT_NAME,
                 SessionInvalidPacketExtension.NAMESPACE));
 
@@ -169,71 +155,60 @@ public class XMPPAuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(authError);
         assertEquals(
                 XMPPError.Condition.not_acceptable,
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 7: auth jid, but stolen session id
         query.setSessionId(user1SessionId);
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(authError);
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 8: guest jid, session used without machine UID
         query.setFrom(user1GuestJid);
         query.setSessionId(user1SessionId);
         query.setMachineUID(null);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(authError);
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 9: auth jid, try to create session without machine UID
-        roomExists = false;
+        query.setRoom(room3);
         query.setFrom(user2AuthJid);
         query.setSessionId(null);
         query.setMachineUID(null);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(authError);
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 10: same user, different machine UID - assign separate session
         String user3MachineUID = "user3machineUID";
-        roomExists = true;
         query.setFrom(user1AuthJid);
         query.setMachineUID(user3MachineUID);
         query.setSessionId(null);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = iqHandler.handleIq(query);
 
-        assertNull(authError);
-
-        String user3SessionId = response.getSessionId();
+        assertTrue(response instanceof ConferenceIq);
+        String user3SessionId = ((ConferenceIq) response).getSessionId();
 
         assertNotNull(user3SessionId);
         assertNotEquals(user1SessionId, user3SessionId);

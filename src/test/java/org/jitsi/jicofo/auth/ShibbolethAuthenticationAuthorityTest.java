@@ -64,7 +64,7 @@ public class ShibbolethAuthenticationAuthorityTest
     public void testShibbolethAuthenticationModule()
         throws Exception
     {
-        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent_();
+        IqHandler conferenceIqHandler = osgi.jicofoServices.getIqHandler();
 
         ShibbolethAuthAuthority shibbolethAuth
             = (ShibbolethAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
@@ -78,26 +78,22 @@ public class ShibbolethAuthenticationAuthorityTest
         Jid user2Jid = JidCreate.from("user2@server.net");
         String user2MachineUid="machine2uid";
         String user2ShibbolethIdentity = "user2@shibboleth.idp.com";
-
-        boolean roomExists = false;
         EntityBareJid room1 = JidCreate.entityBareFrom("testroom1@example.com");
 
         ConferenceIq query = new ConferenceIq();
-        ConferenceIq response = new ConferenceIq();
 
         query.setFrom(user1Jid);
         query.setMachineUID(user1MachineUid);
         query.setRoom(room1);
 
         // CASE 1: No session-id passed and room does not exist
-        IQ authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        IQ response = conferenceIqHandler.handleIq(query);
 
         // REPLY WITH: 'not-authorized'
-        assertNotNull(authError);
+        assertNotNull(response);
         assertEquals(
                 XMPPError.Condition.not_authorized,
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 2: Valid session-id passed and room does not exist
 
@@ -107,79 +103,68 @@ public class ShibbolethAuthenticationAuthorityTest
 
         query.setSessionId(user1Session);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
-
-        // REPLY WITH: null - no errors
-        assertNull(authError);
+        response = conferenceIqHandler.handleIq(query);
+        assertTrue(response instanceof ConferenceIq);
 
         // CASE 3: no session-id, room exists
-        roomExists = true;
         query.setSessionId(null);
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = conferenceIqHandler.handleIq(query);
 
         // REPLY with null - no errors
-        assertNull(authError);
+        assertTrue(response instanceof ConferenceIq);
 
         // CASE 4: invalid session-id, room exists
-        roomExists = true;
         query.setSessionId("someinvalidsessionid");
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = conferenceIqHandler.handleIq(query);
 
         // REPLY with session-invalid
-        assertNotNull(authError);
-        assertNotNull(authError.getError().getExtension(
+        assertNotNull(response);
+        assertNotNull(response.getError().getExtension(
                 SessionInvalidPacketExtension.ELEMENT_NAME,
                 SessionInvalidPacketExtension.NAMESPACE));
 
         // CASE 5: valid session, room exists
-        roomExists = true;
-        String user2Session
-            = shibbolethAuth.authenticateUser(user2MachineUid, user2ShibbolethIdentity, room1);
+        String user2Session = shibbolethAuth.authenticateUser(user2MachineUid, user2ShibbolethIdentity, room1);
 
         query.setSessionId(user2Session);
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = conferenceIqHandler.handleIq(query);
         // REPLY with null - no error
-        assertNull(authError);
+        assertTrue(response instanceof ConferenceIq);
 
         // CASE 6: do not allow to use session-id from different machine
         query.setSessionId(user2Session);
         query.setFrom(user1Jid);
         query.setMachineUID(user1MachineUid);
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = conferenceIqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(authError);
+        assertNotNull(response);
         assertEquals(
                 XMPPError.Condition.not_acceptable,
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 8: session used without machine UID
         query.setFrom(user1Jid);
         query.setSessionId(user1ShibbolethIdentity);
         query.setMachineUID(null);
 
-        authError = focusComponent.processExtensions(query, response, roomExists);
+        response = conferenceIqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(authError);
+        assertNotNull(response);
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                authError.getError().getCondition());
+                response.getError().getCondition());
 
         // CASE 9: authenticate for the same user from different machine
         String user3machineUID = "machine3UID";
@@ -192,11 +177,9 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setFrom(user1Jid);
         query.setMachineUID(user3machineUID);
         query.setSessionId(user3Session);
-        roomExists = false;
 
-        authError
-            = focusComponent.processExtensions(query, response, roomExists);
+        response = conferenceIqHandler.handleIq(query);
 
-        assertNull(authError);
+        assertTrue(response instanceof ConferenceIq);
     }
 }

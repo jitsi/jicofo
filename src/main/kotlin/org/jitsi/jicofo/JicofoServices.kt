@@ -29,10 +29,14 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.health.Health
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
+import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.jicofo.xmpp.FocusComponent
+import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.osgi.ServiceUtils2
+import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
@@ -58,7 +62,7 @@ open class JicofoServices(
     /**
      * Expose for testing.
      */
-    protected val focusComponent: FocusComponent
+    private val focusComponent: FocusComponent?
     private val focusManager: FocusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
     private val reservationSystem: RESTReservations?
     private val health: Health?
@@ -67,6 +71,7 @@ open class JicofoServices(
         start()
         focusManager.addFocusAllocationListener(this)
     }
+    val iqHandler: IqHandler
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -92,16 +97,20 @@ open class JicofoServices(
             }
         }
 
-        val anonymous = StringUtils.isBlank(XmppConfig.client.password)
-        val focusJid = XmppConfig.client.username.toString() + "@" + XmppConfig.client.domain.toString()
-        focusComponent = FocusComponent(XmppComponentConfig.config, anonymous, focusJid).apply {
-            val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
-            loadConfig(configService, "org.jitsi.jicofo")
-            authenticationAuthority?.let { setAuthAuthority(authenticationAuthority) }
-            setFocusManager(focusManager)
-            reservationSystem?.let { setReservationSystem(reservationSystem) }
+        iqHandler = createIqHandler()
+
+        focusComponent = if (XmppComponentConfig.config.enabled) {
+            FocusComponent(
+                XmppComponentConfig.config,
+                iqHandler
+            ).apply {
+                val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
+                loadConfig(configService, "org.jitsi.jicofo")
+            }
+        } else {
+            null
         }
-        startFocusComponent()
+        focusComponent?.connect()
 
         health = if (HealthConfig.config.enabled) {
             Health(HealthConfig.config, focusManager, focusComponent).apply {
@@ -112,21 +121,6 @@ open class JicofoServices(
         } else null
     }
 
-    /**
-     * Expose for testing.
-     */
-    open fun startFocusComponent() {
-        focusComponent.connect()
-    }
-
-    /**
-     * Expose for testing.
-     */
-    open fun stopFocusComponent() {
-        focusComponent.disconnect()
-    }
-
-
     fun stop() {
         reservationSystem?.let {
             focusManager.removeFocusAllocationListener(it)
@@ -136,7 +130,8 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             it.stop()
         }
-        stopFocusComponent()
+        iqHandler.stop()
+        focusComponent?.disconnect()
         health?.stop(bundleContext)
     }
 
@@ -164,6 +159,25 @@ open class JicofoServices(
         else {
             logger.info("Authentication service disabled.")
             null
+        }
+    }
+
+    private fun createIqHandler(): IqHandler {
+        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
+        val conferenceIqHandler = ConferenceIqHandler(
+            focusManager = focusManager,
+            focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
+            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
+            authAuthority = authenticationAuthority,
+            reservationSystem = reservationSystem
+        )
+
+        return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
+            focusManager.addXmppConnectionListener(object : FocusManager.XmppConnectionListener {
+                    override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
+                        init(xmppConnection)
+                    }
+            })
         }
     }
 

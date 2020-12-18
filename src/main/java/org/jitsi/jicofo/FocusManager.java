@@ -25,7 +25,8 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.xmpp.XmppConfig;
+import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
@@ -47,8 +48,7 @@ import java.util.logging.*;
  * @author Boris Grozev
  */
 public class FocusManager
-    implements JitsiMeetConferenceImpl.ConferenceListener,
-               RegistrationStateChangeListener
+    implements JitsiMeetConferenceImpl.ConferenceListener
 {
     /**
      * The logger used by this instance.
@@ -99,6 +99,8 @@ public class FocusManager
      */
     private final List<FocusAllocationListener> focusAllocListeners = new ArrayList<>();
 
+    private final List<XmppConnectionListener> xmppConnectionListeners = new ArrayList<>();
+
     /**
      * XMPP protocol provider handler used by the focus.
      */
@@ -114,12 +116,6 @@ public class FocusManager
      * The XMPP connection provider that will be used to detect JVB's and allocate channels.
      */
     private ProtocolProviderHandler jvbProtocolProvider;
-
-    /**
-     * Handler that takes care of pre-processing various Jitsi Meet extensions
-     * IQs sent from conference participants to the focus.
-     */
-    private MeetExtensionsHandler meetExtensionsHandler;
 
     /**
      * A class that holds Jicofo-wide statistics
@@ -191,14 +187,12 @@ public class FocusManager
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start();
 
-        meetExtensionsHandler = new MeetExtensionsHandler(this);
-
         bundleContext.registerService(
                 JitsiMeetServices.class,
                 jitsiMeetServices,
                 null);
 
-        protocolProviderHandler.addRegistrationListener(this);
+        protocolProviderHandler.addRegistrationListener(new RegistrationStateChangeListenerImpl());
         protocolProviderHandler.register();
     }
 
@@ -225,8 +219,6 @@ public class FocusManager
                 logger.error("Error when trying to stop JitsiMeetServices", e);
             }
         }
-
-        meetExtensionsHandler.dispose();
 
         protocolProviderHandler.stop();
     }
@@ -693,21 +685,6 @@ public class FocusManager
     }
 
     /**
-     * Interface used to listen for focus lifecycle events.
-     */
-    public interface FocusAllocationListener
-    {
-        /**
-         * Method fired when focus is destroyed.
-         * @param roomName the name of the conference room for which focus
-         *                 has been destroyed.
-         */
-        void onFocusDestroyed(EntityBareJid roomName);
-
-        // Add focus allocated method if needed
-    }
-
-    /**
      * Returns operation set instance for focus XMPP connection.
      *
      * @param opsetClass operation set class.
@@ -730,18 +707,6 @@ public class FocusManager
         return protocolProviderHandler.getProtocolProvider();
     }
 
-    @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
-    {
-        RegistrationState registrationState = evt.getNewState();
-        logger.info("XMPP provider reg state: " + registrationState);
-        if (RegistrationState.REGISTERED.equals(registrationState))
-        {
-            // Do initializations which require valid connection
-            meetExtensionsHandler.init();
-        }
-    }
-
     public @NotNull Statistics getStatistics()
     {
         return statistics;
@@ -750,6 +715,17 @@ public class FocusManager
     boolean isJicofoIdConfigured()
     {
         return octoId != 0;
+    }
+
+    public void addXmppConnectionListener(XmppConnectionListener listener)
+    {
+        xmppConnectionListeners.add(listener);
+
+        XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+        if (connection != null)
+        {
+            listener.xmppConnectionInitialized(connection);
+        }
     }
 
     /**
@@ -867,4 +843,51 @@ public class FocusManager
             }
         }
     }
+
+    /**
+     * Interface used to listen for focus lifecycle events.
+     */
+    public interface FocusAllocationListener
+    {
+        /**
+         * Method fired when focus is destroyed.
+         * @param roomName the name of the conference room for which focus
+         *                 has been destroyed.
+         */
+        void onFocusDestroyed(EntityBareJid roomName);
+
+        // Add focus allocated method if needed
+    }
+
+    /**
+     * Interface to use to notify about the XmppConnection being initialized. This is just meant as a temporary solution
+     * until the flow to setup XMPP is cleaned up.
+     */
+    public interface XmppConnectionListener
+    {
+        void xmppConnectionInitialized(XmppConnection xmppConnection);
+    }
+
+    private class RegistrationStateChangeListenerImpl implements RegistrationStateChangeListener
+    {
+        public void registrationStateChanged(RegistrationStateChangeEvent evt)
+        {
+            RegistrationState registrationState = evt.getNewState();
+            logger.info("XMPP provider reg state: " + registrationState);
+            if (RegistrationState.REGISTERED.equals(registrationState))
+            {
+                // Do initializations which require valid connection
+                XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+                if (connection != null)
+                {
+                    xmppConnectionListeners.forEach(listener -> listener.xmppConnectionInitialized(connection));
+                }
+                else
+                {
+                    logger.error("XMPP provider registered, but no XmppConnection available.");
+                }
+            }
+        }
+    }
+
 }
