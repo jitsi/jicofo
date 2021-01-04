@@ -527,20 +527,32 @@ public class JitsiMeetConferenceImpl
 
         chatRoom.join();
 
+        Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
+
         // Advertise shared Etherpad document
-        meetTools.sendPresenceExtension(chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
+        presenceExtensions.add(EtherpadPacketExt.forDocumentName(etherpadName));
 
         ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
         versionsExtension.addComponentVersion(
                 ComponentVersionsExtension.COMPONENT_FOCUS,
                 CurrentVersionImpl.VERSION.toString());
-        meetTools.sendPresenceExtension(chatRoom, versionsExtension);
+        presenceExtensions.add(versionsExtension);
+
+        setConferenceProperty(
+            ConferenceProperties.KEY_SUPPORTS_SESSION_RESTART,
+            Boolean.TRUE.toString(),
+            false);
 
         // Advertise the conference creation time in presence
         setConferenceProperty(
             ConferenceProperties.KEY_CREATED_MS,
             Long.toString(System.currentTimeMillis()),
             false);
+
+        presenceExtensions.add(ConferenceProperties.clone(conferenceProperties));
+
+        // updates presence with presenceExtensions and sends it
+        chatRoom.modifyPresence(null, presenceExtensions);
     }
 
     /**
