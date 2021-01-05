@@ -152,6 +152,7 @@ public class XmppProtocolProvider
      * Initializes Jicofo's feature list.
      */
     private void initializeFeaturesList() {
+        // This can be removed once all clients are updated reading this from the presence conference property
         ServiceDiscoveryManager serviceDiscoveryManager = ServiceDiscoveryManager.getInstanceFor(connection);
         serviceDiscoveryManager.addFeature("https://jitsi.org/meet/jicofo/terminate-restart");
     }

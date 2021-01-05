@@ -105,7 +105,7 @@ public class MockMultiUserChat
         Collection<ExtensionElement> toRemove,
         Collection<ExtensionElement> toAdd)
     {
-        throw new RuntimeException("not implemented");
+        //FIXME: to be tested
     }
 
     @Override
