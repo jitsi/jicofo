@@ -25,6 +25,7 @@ import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
 import org.jitsi.metaconfig.*;
+import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
@@ -62,17 +63,11 @@ public class Main
         ConfigUtils.PASSWORD_CMD_LINE_ARGS = "secret,user_password";
 
 
-        final Object exitSyncRoot = new Object();
+        ShutdownServiceImpl shutdownService = new ShutdownServiceImpl();
         // Register shutdown hook to perform cleanup before exit
-        Runtime.getRuntime().addShutdownHook(new Thread(() ->
-        {
-            synchronized (exitSyncRoot)
-            {
-                exitSyncRoot.notifyAll();
-            }
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
         logger.info("Starting OSGi services.");
-        BundleActivator activator = startOsgi(exitSyncRoot);
+        BundleActivator activator = startOsgi();
 
         logger.debug("Waiting for OSGi services to start");
         try
@@ -91,10 +86,7 @@ public class Main
 
         try
         {
-            synchronized (exitSyncRoot)
-            {
-                exitSyncRoot.wait();
-            }
+            shutdownService.waitForShutdown();
         }
         catch (Exception e)
         {
@@ -107,7 +99,7 @@ public class Main
         OSGi.stop(activator);
     }
 
-    private static BundleActivator startOsgi(Object exitSyncRoot)
+    private static BundleActivator startOsgi()
     {
         JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
         OSGi.setBundleConfig(bundleConfig);
@@ -116,37 +108,12 @@ public class Main
         ClassLoader classLoader = loadBundlesJars(bundleConfig);
         OSGi.setClassLoader(classLoader);
 
-        /*
-         * Start OSGi. It will invoke the application programming interfaces
-         * (APIs) of Jitsi Videobridge. Each of them will keep the application
-         * alive.
-         */
+        // Do we actually need this dummy activator?
         BundleActivator activator = new BundleActivator()
         {
             @Override
             public void start(BundleContext bundleContext)
             {
-                bundleContext.registerService(
-                        ShutdownService.class,
-                        new ShutdownService()
-                        {
-                            private boolean shutdownStarted = false;
-
-                            @Override
-                            public void beginShutdown()
-                            {
-                                if (shutdownStarted)
-                                    return;
-
-                                shutdownStarted = true;
-
-                                synchronized (exitSyncRoot)
-                                {
-                                    exitSyncRoot.notifyAll();
-                                }
-                            }
-                        }, null
-                );
             }
 
             @Override
