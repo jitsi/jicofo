@@ -21,6 +21,7 @@ import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
 import org.jitsi.config.*;
+import org.jitsi.impl.osgi.framework.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
@@ -67,7 +68,8 @@ public class Main
         // Register shutdown hook to perform cleanup before exit
         Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
         logger.info("Starting OSGi services.");
-        BundleActivator activator = startOsgi();
+        BundleActivator activator = new DummyActivator();
+        OSGiLauncher launcher = startOsgi(activator);
 
         logger.debug("Waiting for OSGi services to start");
         try
@@ -77,7 +79,7 @@ public class Main
         catch (Exception e)
         {
             logger.error("Failed to start all OSGi bundles, exiting.");
-            OSGi.stop(activator);
+            launcher.stop(activator);
             return;
         }
         logger.info("OSGi services started.");
@@ -96,40 +98,25 @@ public class Main
         logger.info("Stopping services.");
         JicofoServices.jicofoServicesSingleton.stop();
         JicofoServices.jicofoServicesSingleton = null;
-        OSGi.stop(activator);
+        launcher.stop(activator);
     }
 
-    private static BundleActivator startOsgi()
+    private static OSGiLauncher startOsgi(BundleActivator activator)
     {
         JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
-        OSGi.setBundleConfig(bundleConfig);
         bundleConfig.setSystemPropertyDefaults();
-
         ClassLoader classLoader = loadBundlesJars(bundleConfig);
-        OSGi.setClassLoader(classLoader);
-
-        // Do we actually need this dummy activator?
-        BundleActivator activator = new BundleActivator()
+        if (classLoader == null)
         {
-            @Override
-            public void start(BundleContext bundleContext)
-            {
-            }
-
-            @Override
-            public void stop(BundleContext bundleContext)
-                    throws Exception
-            {
-                // We're doing nothing
-            }
-        };
-
+            throw new IllegalStateException("Class Loader not initialized");
+        }
 
         // Start OSGi
         logger.warn("Starting Osgi");
-        OSGi.start(activator);
+        OSGiLauncher launcher = new OSGiLauncher(bundleConfig.getBundles(), classLoader);
+        launcher.start(activator);
 
-        return activator;
+        return launcher;
     }
     /**
      * Read the command line arguments and env variables, and set the corresponding system properties used for
@@ -256,5 +243,20 @@ public class Main
         JarClassLoader jcl = new JarClassLoader();
         jcl.add(bundlesJarsPath + "/");
         return new OSGiClassLoader(jcl, ClassLoader.getSystemClassLoader());
+    }
+
+    private static class DummyActivator implements BundleActivator
+    {
+        @Override
+        public void start(BundleContext bundleContext) throws Exception
+        {
+
+        }
+
+        @Override
+        public void stop(BundleContext bundleContext) throws Exception
+        {
+
+        }
     }
 }
