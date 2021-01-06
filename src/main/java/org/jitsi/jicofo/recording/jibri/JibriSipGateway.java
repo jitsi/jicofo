@@ -169,19 +169,19 @@ public class JibriSipGateway
             }
             catch (StartException exc)
             {
-                String reason = exc.getReason();
+                String reason = exc.getMessage();
                 logger.info(
                     "Failed to start a Jibri session: "  +  reason, exc);
                 sipSessions.remove(sipAddress);
                 ErrorIQ errorIq;
-                if (StartException.ALL_BUSY.equals(reason))
+                if (exc instanceof StartException.AllBusy)
                 {
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.resource_constraint,
                             "all Jibris are busy");
                 }
-                else if(StartException.NOT_AVAILABLE.equals(reason))
+                else if(exc instanceof StartException.NotAvailable)
                 {
                     errorIq = ErrorResponse.create(
                             iq,
