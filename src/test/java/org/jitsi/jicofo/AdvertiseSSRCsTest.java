@@ -21,7 +21,6 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.protocol.xmpp.util.*;

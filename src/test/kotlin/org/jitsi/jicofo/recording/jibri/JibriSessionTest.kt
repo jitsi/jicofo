@@ -24,11 +24,9 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.verify
 import org.jitsi.jicofo.FocusBundleActivator
-import org.jitsi.osgi.ServiceUtils2
 import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.test.concurrent.FakeScheduledExecutorService
 import org.jitsi.utils.logging.Logger
@@ -40,7 +38,6 @@ import org.jxmpp.jid.impl.JidCreate
 class JibriSessionTest : ShouldSpec({
     isolationMode = IsolationMode.InstancePerLeaf
 
-    mockkStatic(ServiceUtils2::class)
     val owner: JibriSession.Owner = mockk(relaxed = true)
     val roomName = JidCreate.entityBareFrom("room@bar.com/baz")
     val initiator = JidCreate.bareFrom("foo@bar.com/baz")

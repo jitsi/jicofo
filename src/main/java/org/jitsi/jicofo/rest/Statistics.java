@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.rest;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.util.*;
 import org.json.simple.*;
 
@@ -31,7 +32,7 @@ import javax.ws.rs.core.*;
 public class Statistics
 {
     @Inject
-    protected FocusManagerProvider focusManagerProvider;
+    protected FocusManager focusManager;
 
     /**
      * Returns json string with statistics.
@@ -46,7 +47,7 @@ public class Statistics
 
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
-        stats.putAll(focusManagerProvider.get().getStats());
+        stats.putAll(focusManager.getStats());
         stats.putAll(ColibriConferenceImpl.stats.toJson());
 
         stats.put("threads", ManagementFactory.getThreadMXBean().getThreadCount());

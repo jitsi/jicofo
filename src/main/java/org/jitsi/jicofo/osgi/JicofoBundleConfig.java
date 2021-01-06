@@ -84,9 +84,6 @@ public class JicofoBundleConfig
                 "net/java/sip/communicator/service/protocol/media/ProtocolMediaActivator"
             },
             {
-                "org/jitsi/jicofo/version/VersionActivator"
-            },
-            {
                 "net/java/sip/communicator/service/protocol/ProtocolProviderActivator"
             },
             // Shall we use mock protocol providers?

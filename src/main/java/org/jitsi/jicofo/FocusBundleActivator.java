@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.osgi.*;
-
 import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
@@ -26,6 +24,7 @@ import org.osgi.framework.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.JicofoConfig.config;
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Activator of the Jitsi Meet Focus bundle.
@@ -135,7 +134,7 @@ public class FocusBundleActivator
      */
     public static ScheduledExecutorService getSharedScheduledThreadPool()
     {
-        return ServiceUtils2.getService(bundleContext, ScheduledExecutorService.class);
+        return getService(bundleContext, ScheduledExecutorService.class);
     }
 
     /**

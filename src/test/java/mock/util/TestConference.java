@@ -23,12 +23,13 @@ import mock.jvb.*;
 
 import mock.xmpp.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.osgi.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.osgi.framework.*;
 
 import java.util.*;
+
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  *
@@ -61,12 +62,12 @@ public class TestConference
 
     private JitsiMeetServices getJitsiMeetServices()
     {
-        return ServiceUtils2.getService(bc, JitsiMeetServices.class);
+        return getService(bc, JitsiMeetServices.class);
     }
 
     private FocusManager getFocusManager()
     {
-        return ServiceUtils2.getService(bc, FocusManager.class);
+        return getService(bc, FocusManager.class);
     }
 
     public TestConference(BundleContext osgi)

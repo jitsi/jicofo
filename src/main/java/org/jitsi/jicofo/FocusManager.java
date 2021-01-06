@@ -125,7 +125,7 @@ public class FocusManager
     /**
      * TODO: refactor to avoid the reference.
      */
-    private Health health;
+    private JicofoHealthChecker healthChecker;
 
     /**
      * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
@@ -645,9 +645,9 @@ public class FocusManager
             stats.put("xmpp", xmppProtocolProvider.getStats());
         }
 
-        if (health != null)
+        if (healthChecker != null)
         {
-            stats.put("slow_health_check", health.getTotalSlowHealthChecks());
+            stats.put("slow_health_check", healthChecker.getTotalSlowHealthChecks());
         }
 
         JSONObject jibriStats = JibriSession.getGlobalStats();
@@ -671,9 +671,9 @@ public class FocusManager
         return stats;
     }
 
-    public void setHealth(Health health)
+    public void setHealth(JicofoHealthChecker jicofoHealthChecker)
     {
-        this.health = health;
+        this.healthChecker = jicofoHealthChecker;
     }
 
     /**

@@ -19,9 +19,9 @@ package org.jitsi.jicofo;
 
 import com.typesafe.config.*;
 import org.jitsi.config.*;
+import org.jitsi.impl.osgi.framework.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.meet.*;
 import org.osgi.framework.*;
 
 /**
@@ -36,6 +36,7 @@ public class OSGiHandler
      */
     public FailureAwareBundleContext bc;
 
+    private static OSGiLauncher launcher;
     private BundleActivator bundleActivator;
 
     private final Object syncRoot = new Object();
@@ -111,12 +112,10 @@ public class OSGiHandler
             }
         };
 
-        JicofoBundleConfig jicofoBundles = new JicofoBundleConfig();
-        jicofoBundles.setUseMockProtocols(true);
-        OSGi.setBundleConfig(jicofoBundles);
-        OSGi.setClassLoader(ClassLoader.getSystemClassLoader());
-
-        OSGi.start(bundleActivator);
+        JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
+        bundleConfig.setUseMockProtocols(true);
+        launcher = new OSGiLauncher(bundleConfig.getBundles(), ClassLoader.getSystemClassLoader());
+        launcher.start(bundleActivator);
 
         if (bc == null)
         {
@@ -145,7 +144,7 @@ public class OSGiHandler
 
         if (bc != null)
         {
-            OSGi.stop(bundleActivator);
+            launcher.stop(bundleActivator);
         }
 
         if (bc != null)

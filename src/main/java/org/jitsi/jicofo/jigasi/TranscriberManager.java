@@ -18,7 +18,6 @@
 
 package org.jitsi.jicofo.jigasi;
 
-import org.jitsi.osgi.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
@@ -34,6 +33,8 @@ import org.jxmpp.stringprep.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
+
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * The {@link TranscriberManager} class is responsible for listening to
@@ -187,21 +188,16 @@ public class TranscriberManager
      */
     private Collection<String> getBridgeRegions()
     {
-        FocusManager focusManager =
-            ServiceUtils2.getService(
-                FocusBundleActivator.bundleContext,
-                FocusManager.class);
+        FocusManager focusManager = getService(FocusBundleActivator.bundleContext, FocusManager.class);
 
         try
         {
             JitsiMeetConferenceImpl conference =
-                focusManager.getConference(
-                    JidCreate.entityBareFrom(chatRoom.getIdentifier()));
+                focusManager.getConference(JidCreate.entityBareFrom(chatRoom.getIdentifier()));
 
             if (conference == null)
             {
-                logger.debug("Cannot find conference for "
-                    + chatRoom.getIdentifier());
+                logger.debug("Cannot find conference for " + chatRoom.getIdentifier());
             }
             else
             {

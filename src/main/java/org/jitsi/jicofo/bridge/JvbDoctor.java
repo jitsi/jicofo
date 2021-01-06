@@ -22,7 +22,6 @@ import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.jicofo.osgi.*;
-import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger;
 import org.jitsi.xmpp.util.*;
@@ -35,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * The class is responsible for doing health checks of currently known
@@ -88,15 +88,11 @@ public class JvbDoctor
     }
 
     private XmppConnection getConnection() {
-        FocusManager focusManager
-                = ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
-        ProtocolProviderService protocolProvider
-                = focusManager.getJvbProtocolProvider();
-        OperationSetDirectSmackXmpp xmppOpSet
-                = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
+        FocusManager focusManager = getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        ProtocolProviderService protocolProvider = focusManager.getJvbProtocolProvider();
+        OperationSetDirectSmackXmpp xmppOpSet = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
 
-        return protocolProvider.isRegistered()
-                ? xmppOpSet.getXmppConnection() : null;
+        return protocolProvider.isRegistered() ? xmppOpSet.getXmppConnection() : null;
     }
 
     synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
