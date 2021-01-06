@@ -351,7 +351,10 @@ public class JibriSession
         catch (Exception e)
         {
             logger.error("Failed to send start Jibri IQ: " + e, e);
-            jibriDetector.memberHadTransientError(jibriJid);
+            if (!(e instanceof StartException.OneBusy))
+            {
+                jibriDetector.memberHadTransientError(jibriJid);
+            }
             if (!maxRetriesExceeded())
             {
                 retryRequestWithAnotherJibri();
@@ -562,7 +565,12 @@ public class JibriSession
         }
 
         JibriIq jibriIq = (JibriIq) reply;
-        if (!Status.PENDING.equals(jibriIq.getStatus()))
+        if (isBusyResponse(jibriIq))
+        {
+            logger.info("Jibri " + jibriIq.getFrom() + " was busy");
+            throw new StartException.OneBusy();
+        }
+        if (!isPendingResponse(jibriIq))
         {
             logger.error(
                 "Unexpected status received in response to the start IQ: "
@@ -862,6 +870,13 @@ public class JibriSession
                 super("Unexpected response");
             }
         }
+        static public class OneBusy extends StartException
+        {
+            public OneBusy()
+            {
+                super("This Jibri instance was busy");
+            }
+        }
     }
 
     /**
@@ -896,6 +911,23 @@ public class JibriSession
                         jid, Status.OFF, FailureReason.ERROR, true);
             }
         }
+    }
+
+    /**
+     * Returns true if the given IQ represens a busy response from Jibri
+     * @param iq
+     * @return
+     */
+    private boolean isBusyResponse(JibriIq iq)
+    {
+        return Status.OFF.equals(iq.getStatus()) &&
+            iq.isFailure() &&
+            FailureReason.BUSY.equals(iq.getFailureReason());
+    }
+
+    private boolean isPendingResponse(JibriIq iq)
+    {
+        return Status.PENDING.equals(iq.getStatus());
     }
 
 }
