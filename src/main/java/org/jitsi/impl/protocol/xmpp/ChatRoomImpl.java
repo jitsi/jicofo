@@ -983,6 +983,8 @@ public class ChatRoomImpl
         XmppProtocolProvider xmppProtocolProvider
             = (XmppProtocolProvider) getParentProvider();
 
+        boolean presenceUpdated = false;
+
         // Remove old
         ExtensionElement old
             = lastPresenceSent.getExtension(
@@ -990,25 +992,29 @@ public class ChatRoomImpl
         if (old != null)
         {
             lastPresenceSent.removeExtension(old);
+            presenceUpdated = true;
         }
 
         if (!remove)
         {
             // Add new
             lastPresenceSent.addExtension(extension);
+            presenceUpdated = true;
         }
 
-        XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
-        if (connection == null)
+        if (presenceUpdated)
         {
-            logger.error("Failed to send presence extension - no connection");
-            return;
+            XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
+            if (connection == null) {
+                logger.error("Failed to send presence extension - no connection");
+                return;
+            }
+
+            // Reset the stanza ID before sending
+            lastPresenceSent.setStanzaId(null);
+
+            connection.sendStanza(lastPresenceSent);
         }
-
-        // Reset the stanza ID before sending
-        lastPresenceSent.setStanzaId(null);
-
-        connection.sendStanza(lastPresenceSent);
     }
 
     /**
