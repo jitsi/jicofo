@@ -18,6 +18,7 @@
 package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
+import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.reservation.rest.RESTReservations
@@ -100,6 +101,7 @@ open class JicofoServices(
         focusManager.addFocusAllocationListener(this)
     }
     val iqHandler: IqHandler
+    val jettyServer: Server?
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -141,7 +143,7 @@ open class JicofoServices(
         } else null
 
         val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
-        if (httpServerConfig.isEnabled()) {
+        jettyServer = if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
             val restApp = Application(
                 focusManager,
@@ -156,7 +158,7 @@ open class JicofoServices(
                 )
                 it.start()
             }
-        }
+        } else null
     }
 
     fun stop() {
@@ -173,6 +175,7 @@ open class JicofoServices(
         healthChecker?.stop()
         channelAllocationExecutor.shutdownNow()
         scheduledPool.shutdownNow()
+        jettyServer?.stop()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
