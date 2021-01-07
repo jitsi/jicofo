@@ -23,7 +23,6 @@ import org.osgi.framework.*;
 
 import java.util.concurrent.*;
 
-import static org.jitsi.jicofo.JicofoConfig.config;
 import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
@@ -46,12 +45,6 @@ public class FocusBundleActivator
     public static BundleContext bundleContext;
 
     /**
-     * The logger.
-     */
-    private static final Logger logger
-        = Logger.getLogger(FocusBundleActivator.class);
-
-    /**
      * Shared thread pool available through OSGi for other components that do
      * not like to manage their own pool.
      */
@@ -61,12 +54,6 @@ public class FocusBundleActivator
      * {@link ServiceRegistration} for {@link #scheduledPool}.
      */
     private ServiceRegistration<ScheduledExecutorService> scheduledPoolRegistration;
-
-    /**
-     * A cached pool registered as {@link ExecutorService} to be shared by
-     * different Jicofo components.
-     */
-    private static ExecutorService sharedPool;
 
     /**
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
@@ -84,14 +71,6 @@ public class FocusBundleActivator
             = Executors.newScheduledThreadPool(
                 SHARED_SCHEDULED_POOL_SIZE,
                 new CustomizableThreadFactory("Jicofo Scheduled", true));
-
-        logger.info("Shared pool max size: " + config.getSharedPoolMaxThreads());
-        sharedPool
-            = new ThreadPoolExecutor(
-                0, config.getSharedPoolMaxThreads(),
-                60L, TimeUnit.SECONDS,
-                new SynchronousQueue<>(),
-                new CustomizableThreadFactory("Jicofo Cached", true));
 
         this.scheduledPoolRegistration = context.registerService(ScheduledExecutorService.class, scheduledPool, null);
 
@@ -120,12 +99,6 @@ public class FocusBundleActivator
             scheduledPool.shutdownNow();
             scheduledPool = null;
         }
-
-        if (sharedPool != null)
-        {
-            sharedPool.shutdownNow();
-            sharedPool = null;
-        }
     }
 
     /**
@@ -135,13 +108,5 @@ public class FocusBundleActivator
     public static ScheduledExecutorService getSharedScheduledThreadPool()
     {
         return getService(bundleContext, ScheduledExecutorService.class);
-    }
-
-    /**
-     * Returns a cached {@link ExecutorService} shared by Jicofo components.
-     */
-    public static ExecutorService getSharedThreadPool()
-    {
-        return sharedPool;
     }
 }

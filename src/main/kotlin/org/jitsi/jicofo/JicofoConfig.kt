@@ -32,11 +32,6 @@ class JicofoConfig {
         "$BASE.sctp.enabled".from(newConfig)
     }
 
-    val sharedPoolMaxThreads: Int by config {
-        "org.jitsi.jicofo.SHARED_POOL_SIZE".from(legacyConfig)
-        "jicofo.task-pools.shared-pool-max-threads".from(newConfig)
-    }
-
     fun enableSctp() = enableSctp
 
     fun localRegion() = localRegion

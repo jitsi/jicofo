@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.concurrent.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -865,7 +866,7 @@ public class JitsiMeetConferenceImpl
                         reInvite);
 
             participant.setChannelAllocator(channelAllocator);
-            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+            JicofoServices.jicofoServicesSingleton.getChannelAllocationExecutor().submit(channelAllocator);
 
             if (reInvite)
             {
@@ -3004,7 +3005,7 @@ public class JitsiMeetConferenceImpl
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant);
             octoParticipant.setChannelAllocator(channelAllocator);
 
-            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+            JicofoServices.jicofoServicesSingleton.getChannelAllocationExecutor().submit(channelAllocator);
 
             return octoParticipant;
         }
