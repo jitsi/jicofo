@@ -178,9 +178,9 @@ public class JibriRecorder
             catch (JibriSession.StartException exc)
             {
                 ErrorIQ errorIq;
-                String reason = exc.getReason();
+                String reason = exc.getMessage();
 
-                if (StartException.ALL_BUSY.equals(reason))
+                if (exc instanceof StartException.AllBusy)
                 {
                     logger.info("Failed to start a Jibri session, " +
                                         "all Jibris were busy");
@@ -189,7 +189,7 @@ public class JibriRecorder
                             XMPPError.Condition.resource_constraint,
                             "all Jibris are busy");
                 }
-                else if (StartException.NOT_AVAILABLE.equals(reason))
+                else if (exc instanceof StartException.NotAvailable)
                 {
                     logger.info("Failed to start a Jibri session, " +
                                         "no Jibris available");
