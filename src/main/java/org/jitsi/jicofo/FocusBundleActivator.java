@@ -17,13 +17,7 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.utils.concurrent.*;
-import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
-
-import java.util.concurrent.*;
-
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Activator of the Jitsi Meet Focus bundle.
@@ -34,26 +28,9 @@ public class FocusBundleActivator
     implements BundleActivator
 {
     /**
-     * The number of threads available in the scheduled executor pool shared
-     * through OSGi.
-     */
-    private static final int SHARED_SCHEDULED_POOL_SIZE = 200;
-
-    /**
      * OSGi bundle context held by this activator.
      */
     public static BundleContext bundleContext;
-
-    /**
-     * Shared thread pool available through OSGi for other components that do
-     * not like to manage their own pool.
-     */
-    private ScheduledExecutorService scheduledPool;
-
-    /**
-     * {@link ServiceRegistration} for {@link #scheduledPool}.
-     */
-    private ServiceRegistration<ScheduledExecutorService> scheduledPoolRegistration;
 
     /**
      * {@link org.jitsi.jicofo.FocusManager} instance created by this activator.
@@ -65,14 +42,6 @@ public class FocusBundleActivator
         throws Exception
     {
         bundleContext = context;
-
-        // Make threads daemon, so that they won't prevent from doing shutdown
-        scheduledPool
-            = Executors.newScheduledThreadPool(
-                SHARED_SCHEDULED_POOL_SIZE,
-                new CustomizableThreadFactory("Jicofo Scheduled", true));
-
-        this.scheduledPoolRegistration = context.registerService(ScheduledExecutorService.class, scheduledPool, null);
 
         focusManager = new FocusManager();
         focusManager.start();
@@ -87,26 +56,5 @@ public class FocusBundleActivator
             focusManager.stop();
             focusManager = null;
         }
-
-        if (scheduledPoolRegistration != null)
-        {
-            scheduledPoolRegistration.unregister();
-            scheduledPoolRegistration = null;
-        }
-
-        if (scheduledPool != null)
-        {
-            scheduledPool.shutdownNow();
-            scheduledPool = null;
-        }
-    }
-
-    /**
-     * Returns a {@link ScheduledExecutorService} shared by all components
-     * through OSGi.
-     */
-    public static ScheduledExecutorService getSharedScheduledThreadPool()
-    {
-        return getService(bundleContext, ScheduledExecutorService.class);
     }
 }

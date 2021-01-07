@@ -279,7 +279,7 @@ public class BridgeSelector
      */
     public void init()
     {
-        jvbDoctor.start(FocusBundleActivator.getSharedScheduledThreadPool(), getBridges());
+        jvbDoctor.start(JicofoServices.jicofoServicesSingleton.getScheduledPool(), getBridges());
     }
 
     /**

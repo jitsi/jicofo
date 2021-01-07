@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.jabber.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
@@ -211,8 +212,7 @@ public class XmppProtocolProvider
 
         this.initializeFeaturesList();
 
-        ScheduledExecutorService executorService
-            = getService(XmppProtocolActivator.bundleContext, ScheduledExecutorService.class);
+        ScheduledExecutorService executorService = JicofoServices.jicofoServicesSingleton.getScheduledPool();
 
         connectRetry = new RetryStrategy(executorService);
 

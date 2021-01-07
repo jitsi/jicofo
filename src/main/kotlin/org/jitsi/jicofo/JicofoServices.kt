@@ -48,6 +48,8 @@ import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.impl.JidCreate
 import org.osgi.framework.BundleContext
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -66,6 +68,23 @@ open class JicofoServices(
     private val logger = createLogger()
 
     /**
+     * Pool of cached threads used for colibri channel allocation.
+     *
+     * The overall thread model of jicofo is not obvious, and should be improved, at which point this should probably
+     * be moved or at least renamed. For the time being, use a specific name to document how it's used.
+     */
+    var channelAllocationExecutor: ExecutorService = ThreadPoolExecutor(
+        0, 1500,
+        60L, TimeUnit.SECONDS,
+        SynchronousQueue(),
+        CustomizableThreadFactory("ColibriChannelAllocationPool", true)
+    )
+
+    val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
+        200, CustomizableThreadFactory("Jicofo Scheduled", true)
+    )
+
+    /**
      * Expose for testing.
      */
     private val focusComponent: FocusComponent?
@@ -78,18 +97,6 @@ open class JicofoServices(
     }
     val iqHandler: IqHandler
 
-    /**
-     * Pool of cached threads used for colibri channel allocation.
-     *
-     * The overall thread model of jicofo is not obvious, and should be improved, at which point this should probably
-     * be moved or at least renamed. For the time being, use a specific name to document how it's used.
-     */
-    var channelAllocationExecutor: ExecutorService = ThreadPoolExecutor(
-        0, 1500,
-        60L, TimeUnit.SECONDS,
-        SynchronousQueue(),
-        CustomizableThreadFactory("ColibriChannelAllocationPool", true)
-    )
     init {
         reservationSystem = if (reservationConfig.enabled) {
             logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
@@ -161,6 +168,7 @@ open class JicofoServices(
         focusComponent?.disconnect()
         healthChecker?.stop()
         channelAllocationExecutor.shutdownNow()
+        scheduledPool.shutdownNow()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {

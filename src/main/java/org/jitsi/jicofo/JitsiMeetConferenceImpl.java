@@ -360,7 +360,7 @@ public class JitsiMeetConferenceImpl
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
-            executor = getService(osgiCtx, ScheduledExecutorService.class);
+            executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
             services = getService(osgiCtx, JitsiMeetServices.class);
 
             BridgeSelector bridgeSelector = services.getBridgeSelector();
@@ -394,7 +394,7 @@ public class JitsiMeetConferenceImpl
                             osgiCtx,
                             this,
                             getXmppConnection(),
-                            FocusBundleActivator.getSharedScheduledThreadPool());
+                            executor);
 
                 jibriOpSet.addJibri(jibriSipGateway);
             }
