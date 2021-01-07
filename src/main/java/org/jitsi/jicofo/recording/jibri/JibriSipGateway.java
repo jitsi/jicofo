@@ -24,7 +24,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -59,19 +58,16 @@ public class JibriSipGateway
 
     /**
      * Creates new instance of {@link JibriSipGateway}.
-     * @param bundleContext OSGi context.
      * @param conference parent conference for which the new instance will be managing Jibri SIP sessions.
      * @param xmppConnection the connection which will be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriSipGateway(
-           BundleContext bundleContext,
            JitsiMeetConferenceImpl conference,
            XmppConnection xmppConnection,
            ScheduledExecutorService scheduledExecutor)
     {
         super(
-            bundleContext,
             true /* handles SIP Jibri events */,
             conference,
             xmppConnection,

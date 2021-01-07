@@ -25,7 +25,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -61,19 +60,16 @@ public class JibriRecorder
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
-     * @param bundleContext OSGi {@link BundleContext}.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
      * @param connection the XMPP connection which will be used for communication.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriRecorder(
-            BundleContext bundleContext,
             JitsiMeetConferenceImpl conference,
             XmppConnection connection,
             ScheduledExecutorService scheduledExecutor)
     {
         super(
-            bundleContext,
             false /* deals with non SIP Jibri events */,
             conference,
             connection,

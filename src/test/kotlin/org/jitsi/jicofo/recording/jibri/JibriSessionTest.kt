@@ -27,7 +27,6 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
-import org.jitsi.jicofo.FocusBundleActivator
 import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.test.concurrent.FakeScheduledExecutorService
 import org.jitsi.utils.logging.Logger
@@ -82,8 +81,6 @@ class JibriSessionTest : ShouldSpec({
         "applicationData",
         logger
     )
-
-    FocusBundleActivator.bundleContext = mockk(relaxed = true)
 
     context("When sending a request to a Jibri to start a session throws an error") {
         val iqRequests = mutableListOf<IQ>()

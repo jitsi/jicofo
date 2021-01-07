@@ -25,7 +25,6 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -84,14 +83,12 @@ public abstract class CommonJibriStuff
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
-     * @param bundleContext OSGi {@link BundleContext}.
      * @param isSIP indicates whether this stuff is for SIP Jibri or for regular Jibris.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
      * @param xmppConnection XMPP operation set which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     CommonJibriStuff(
-            BundleContext bundleContext,
             boolean isSIP,
             JitsiMeetConferenceImpl conference,
             XmppConnection xmppConnection,

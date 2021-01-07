@@ -358,10 +358,8 @@ public class JitsiMeetConferenceImpl
             meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
             jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
 
-            BundleContext osgiCtx = FocusBundleActivator.bundleContext;
-
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
-            services = getService(osgiCtx, JitsiMeetServices.class);
+            services = getFocusManager().getJitsiMeetServices();
 
             BridgeSelector bridgeSelector = services.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
@@ -378,7 +376,6 @@ public class JitsiMeetConferenceImpl
             {
                 jibriRecorder
                     = new JibriRecorder(
-                            osgiCtx,
                             this,
                             getXmppConnection(),
                             executor);
@@ -391,7 +388,6 @@ public class JitsiMeetConferenceImpl
             {
                 jibriSipGateway
                     = new JibriSipGateway(
-                            osgiCtx,
                             this,
                             getXmppConnection(),
                             executor);
@@ -2609,9 +2605,9 @@ public class JitsiMeetConferenceImpl
         return includeInStatistics;
     }
 
-    protected FocusManager getFocusManager()
+    private FocusManager getFocusManager()
     {
-        return getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        return JicofoServices.jicofoServicesSingleton.getFocusManager();
     }
 
     /**

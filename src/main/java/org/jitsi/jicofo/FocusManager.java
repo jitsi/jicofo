@@ -136,11 +136,8 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start()
-        throws Exception
+    public void start(BundleContext bundleContext, ScheduledExecutorService scheduledExecutorService)
     {
-        BundleContext bundleContext = FocusBundleActivator.bundleContext;
-
         // Register early, because some of the dependencies e.g.
         // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
         // will be cleaned up at a later stage.
@@ -168,13 +165,13 @@ public class FocusManager
         }
 
         protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
-        protocolProviderHandler.start();
+        protocolProviderHandler.start(bundleContext);
 
         if (XmppConfig.service.getEnabled())
         {
             logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
             jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
-            jvbProtocolProvider.start();
+            jvbProtocolProvider.start(bundleContext);
             jvbProtocolProvider.register();
         }
         else
@@ -185,7 +182,7 @@ public class FocusManager
         }
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
-        jitsiMeetServices.start();
+        jitsiMeetServices.start(scheduledExecutorService);
 
         bundleContext.registerService(
                 JitsiMeetServices.class,

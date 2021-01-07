@@ -84,11 +84,15 @@ open class JicofoServices(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
     )
 
+    val focusManager: FocusManager = FocusManager().also {
+        logger.info("Starting FocusManager.")
+        it.start(bundleContext, scheduledPool)
+    }
+
     /**
      * Expose for testing.
      */
     private val focusComponent: FocusComponent?
-    private val focusManager: FocusManager = getService(bundleContext, FocusManager::class.java)!!
     private val reservationSystem: RESTReservations?
     private val healthChecker: JicofoHealthChecker?
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {

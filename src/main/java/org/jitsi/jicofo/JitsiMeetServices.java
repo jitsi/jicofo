@@ -27,6 +27,7 @@ import org.jitsi.utils.logging.*;
 import org.json.simple.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -118,9 +119,9 @@ public class JitsiMeetServices
         return bridgeSelector;
     }
 
-    public void start()
+    public void start(ScheduledExecutorService scheduledExecutorService)
     {
-        bridgeSelector.init();
+        bridgeSelector.init(scheduledExecutorService);
 
         if (JibriConfig.config.breweryEnabled())
         {

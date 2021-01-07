@@ -188,7 +188,7 @@ public class TranscriberManager
      */
     private Collection<String> getBridgeRegions()
     {
-        FocusManager focusManager = getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
 
         try
         {

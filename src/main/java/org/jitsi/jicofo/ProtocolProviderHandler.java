@@ -71,12 +71,10 @@ public class ProtocolProviderHandler
         this.config = config;
     }
 
-    public void start()
+    public void start(BundleContext bundleContext)
     {
         xmppProviderFactory
-            = ProtocolProviderFactory.getProtocolProviderFactory(
-                    FocusBundleActivator.bundleContext,
-                    ProtocolNames.JABBER);
+            = ProtocolProviderFactory.getProtocolProviderFactory(bundleContext, ProtocolNames.JABBER);
 
         if (config.getPassword() != null)
         {
@@ -107,7 +105,7 @@ public class ProtocolProviderHandler
 
         ServiceReference<ProtocolProviderService> protoRef = xmppProviderFactory.getProviderForAccount(xmppAccount);
 
-        protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
+        protocolService = bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
         if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
         {

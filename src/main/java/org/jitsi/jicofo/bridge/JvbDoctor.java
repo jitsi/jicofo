@@ -88,7 +88,7 @@ public class JvbDoctor
     }
 
     private XmppConnection getConnection() {
-        FocusManager focusManager = getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
         ProtocolProviderService protocolProvider = focusManager.getJvbProtocolProvider();
         OperationSetDirectSmackXmpp xmppOpSet = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
 
