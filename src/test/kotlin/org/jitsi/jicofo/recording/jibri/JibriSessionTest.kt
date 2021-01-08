@@ -24,6 +24,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
 import org.jitsi.jicofo.FocusBundleActivator
@@ -51,7 +52,7 @@ class JibriSessionTest : ShouldSpec({
         JidCreate.bareFrom("jibri3@bar.com")
     )
     val detector: JibriDetector = mockk {
-        every { selectJibri() } returnsMany(jibriList)
+        every { selectJibri() } returnsMany (jibriList)
         every { isAnyInstanceConnected } returns true
         every { memberHadTransientError(any()) } answers {
             // Simulate the real JibriDetector logic and put the Jibri at the back of the list
@@ -115,9 +116,38 @@ class JibriSessionTest : ShouldSpec({
                     shouldThrow<JibriSession.StartException> {
                         jibriSession.start()
                     }
-                    verify(exactly = maxNumRetries + 1) { xmppConnection.sendPacketAndGetReply(any())}
+                    verify(exactly = maxNumRetries + 1) { xmppConnection.sendPacketAndGetReply(any()) }
                 }
             }
+        }
+    }
+    context("Trying to start a session with a Jibri that is busy") {
+        val iq = slot<IQ>()
+        // First return busy, then pending
+        every { xmppConnection.sendPacketAndGetReply(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                to = iq.captured.from
+                shouldRetry = true
+                status = JibriIq.Status.OFF
+                failureReason = JibriIq.FailureReason.BUSY
+            }
+        } andThen {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                to = iq.captured.from
+                shouldRetry = true
+                status = JibriIq.Status.PENDING
+            }
+        }
+        jibriSession.start()
+        should("not count as a transient error") {
+            verify(exactly = 0) { detector.memberHadTransientError(any()) }
+        }
+        should("retry with another jibri") {
+            verify(exactly = 2) { xmppConnection.sendPacketAndGetReply(any()) }
         }
     }
 })

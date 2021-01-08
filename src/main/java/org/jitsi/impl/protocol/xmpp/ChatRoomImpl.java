@@ -30,6 +30,7 @@ import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.packet.id.*;
 import org.jivesoftware.smackx.muc.*;
 import org.jivesoftware.smackx.muc.MultiUserChatException.*;
 import org.jivesoftware.smackx.muc.packet.*;
@@ -965,9 +966,9 @@ public class ChatRoomImpl
         if (packet != null)
         {
             // Get the MUC User extension
-            return (MUCUser) packet.getExtension(
-                "x", "http://jabber.org/protocol/muc#user");
+            return packet.getExtension(MUCInitialPresence.ELEMENT, MUCInitialPresence.NAMESPACE);
         }
+
         return null;
     }
 
@@ -980,8 +981,7 @@ public class ChatRoomImpl
             return;
         }
 
-        XmppProtocolProvider xmppProtocolProvider
-            = (XmppProtocolProvider) getParentProvider();
+        boolean presenceUpdated = false;
 
         // Remove old
         ExtensionElement old
@@ -990,25 +990,20 @@ public class ChatRoomImpl
         if (old != null)
         {
             lastPresenceSent.removeExtension(old);
+            presenceUpdated = true;
         }
 
         if (!remove)
         {
             // Add new
             lastPresenceSent.addExtension(extension);
+            presenceUpdated = true;
         }
 
-        XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
-        if (connection == null)
+        if (presenceUpdated)
         {
-            logger.error("Failed to send presence extension - no connection");
-            return;
+            sendLastPresence();
         }
-
-        // Reset the stanza ID before sending
-        lastPresenceSent.setStanzaId(null);
-
-        connection.sendStanza(lastPresenceSent);
     }
 
     /**
@@ -1033,9 +1028,6 @@ public class ChatRoomImpl
             return;
         }
 
-        XmppProtocolProvider xmppProtocolProvider
-            = (XmppProtocolProvider) getParentProvider();
-
         // Remove old
         if (toRemove != null)
         {
@@ -1048,6 +1040,17 @@ public class ChatRoomImpl
             toAdd.forEach(newExt -> lastPresenceSent.addExtension(newExt));
         }
 
+        sendLastPresence();
+    }
+
+    /**
+     * Prepares and sends the last seen presence.
+     * Removes the initial <x> extension and sets new id.
+     */
+    private void sendLastPresence()
+    {
+        XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getParentProvider();
+
         XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
         if (connection == null)
         {
@@ -1055,8 +1058,14 @@ public class ChatRoomImpl
             return;
         }
 
-        // Reset the stanza ID before sending
-        lastPresenceSent.setStanzaId(null);
+        // The initial presence sent by smack contains an empty "x"
+        // extension. If this extension is included in a subsequent stanza,
+        // it indicates that the client lost its synchronization and causes
+        // the MUC service to re-send the presence of each occupant in the
+        // room.
+        lastPresenceSent.removeExtension(MUCInitialPresence.ELEMENT, MUCInitialPresence.NAMESPACE);
+
+        lastPresenceSent.setStanzaId(StanzaIdUtil.newStanzaId());
 
         connection.sendStanza(lastPresenceSent);
     }
