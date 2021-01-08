@@ -23,13 +23,10 @@ import net.java.sip.communicator.service.protocol.jabber.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
-import org.jitsi.service.configuration.*;
 
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.*;
@@ -50,6 +47,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 import static org.jivesoftware.smack.SmackException.*;
 
 /**
@@ -214,9 +212,7 @@ public class XmppProtocolProvider
         this.initializeFeaturesList();
 
         ScheduledExecutorService executorService
-            = ServiceUtils2.getService(
-                    XmppProtocolActivator.bundleContext,
-                    ScheduledExecutorService.class);
+            = getService(XmppProtocolActivator.bundleContext, ScheduledExecutorService.class);
 
         connectRetry = new RetryStrategy(executorService);
 

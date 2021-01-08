@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
-import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -47,6 +46,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 import java.util.stream.*;
+
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
@@ -358,8 +359,8 @@ public class JitsiMeetConferenceImpl
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
-            executor = ServiceUtils2.getService(osgiCtx, ScheduledExecutorService.class);
-            services = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
+            executor = getService(osgiCtx, ScheduledExecutorService.class);
+            services = getService(osgiCtx, JitsiMeetServices.class);
 
             BridgeSelector bridgeSelector = services.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
@@ -2609,7 +2610,7 @@ public class JitsiMeetConferenceImpl
 
     protected FocusManager getFocusManager()
     {
-        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        return getService(FocusBundleActivator.bundleContext, FocusManager.class);
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.junit.*;
@@ -31,6 +30,7 @@ import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.junit.Assert.*;
+import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Tests for bridge selection logic.
@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    private OSGiHandler osgi = OSGiHandler.getInstance();
+    private final OSGiHandler osgi = OSGiHandler.getInstance();
 
     private Jid jvb1Jid;
     private Jid jvb2Jid;
@@ -60,8 +60,7 @@ public class BridgeSelectorTest
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
         osgi.init();
 
-        this.meetServices
-            = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
+        this.meetServices = getService(osgi.bc, JitsiMeetServices.class);
 
         BridgeSelector bridgeSelector = meetServices.getBridgeSelector();
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
@@ -182,8 +181,7 @@ public class BridgeSelectorTest
     public void notOperationalThresholdTest()
             throws InterruptedException
     {
-        JitsiMeetServices meetServices
-                = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
+        JitsiMeetServices meetServices = getService(osgi.bc, JitsiMeetServices.class);
 
         BridgeSelector selector = meetServices.getBridgeSelector();
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
@@ -208,10 +206,10 @@ public class BridgeSelectorTest
                     bridges[testedIdx].getJid(),
                     selector.selectBridge(new MockJitsiMeetConference()).getJid());
 
-            for (int idx=0; idx < bridges.length; idx++)
+            for (Bridge bridge : bridges)
             {
                 // try to mark as operational before the blackout period passed
-                bridges[idx].setIsOperational(true);
+                bridge.setIsOperational(true);
             }
 
             // Should still not be selected
@@ -259,7 +257,7 @@ public class BridgeSelectorTest
     public void testRegionBasedSelection()
             throws Exception
     {
-        JitsiMeetServices meetServices = ServiceUtils2.getService(osgi.bc, JitsiMeetServices.class);
+        JitsiMeetServices meetServices = getService(osgi.bc, JitsiMeetServices.class);
         BridgeSelector selector = meetServices.getBridgeSelector();
 
         String region1 = "region1";

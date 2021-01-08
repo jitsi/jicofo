@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.health;
 
+import kotlin.*;
 import org.jitsi.health.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
@@ -24,8 +25,8 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
-import org.osgi.framework.*;
 
+import java.time.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -37,14 +38,13 @@ import static org.jitsi.jicofo.health.HealthConfig.config;
  * @author Lyubomir Marinov
  * @author Pawel Domas
  */
-public class Health
-    extends AbstractHealthCheckService
+public class JicofoHealthChecker implements HealthCheckService
 {
     /**
      * The {@code Logger} utilized by the {@code Health} class to print
      * debug-related information.
      */
-    private static final Logger logger = Logger.getLogger(Health.class);
+    private static final Logger logger = Logger.getLogger(JicofoHealthChecker.class);
 
     /**
      * The {@code JitsiMeetConfig} properties to be utilized for the purposes of
@@ -66,27 +66,43 @@ public class Health
     private FocusManager focusManager;
     private FocusComponent focusComponent;
 
-    public Health(HealthConfig config, FocusManager focusManager, FocusComponent focusComponent)
-    {
-        super(config.getInterval(), config.getTimeout(), config.getMaxCheckDuration());
+    private final HealthChecker healthChecker;
 
+    public JicofoHealthChecker(HealthConfig config, FocusManager focusManager, FocusComponent focusComponent)
+    {
         this.focusManager = focusManager;
         this.focusComponent = focusComponent;
+        this.healthChecker = new HealthChecker(
+                config.getInterval(),
+                config.getTimeout(),
+                config.getMaxCheckDuration(),
+                false,
+                Duration.ofMinutes(5),
+                this::performCheck,
+                Clock.systemUTC());
+
     }
 
-    @Override
-    public void stop(BundleContext bundleContext)
-        throws Exception
+    public void start()
+    {
+        healthChecker.start();
+    }
+
+    public void stop()
     {
         focusManager = null;
+        try
+        {
+            healthChecker.stop();
+        }
+        catch (Exception e)
+        {
+            logger.warn("Failed to stop.", e);
+        }
         focusComponent = null;
-
-        super.stop(bundleContext);
     }
 
-    @Override
-    public void performCheck()
-        throws Exception
+    public Unit performCheck()
     {
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
@@ -110,6 +126,8 @@ public class Health
             logger.error("Health check took too long: " + duration + "ms");
             totalSlowHealthChecks++;
         }
+
+        return Unit.INSTANCE;
     }
 
     /**
@@ -122,7 +140,6 @@ public class Health
      * is not healthy
      */
     private static void check(FocusManager focusManager)
-        throws Exception
     {
         // Get the MUC service to perform the check on.
         JitsiMeetServices services = focusManager.getJitsiMeetServices();
@@ -158,14 +175,20 @@ public class Health
         while (focusManager.getConference(roomName) != null);
 
         // Create a conference with the generated room name.
-        if (!focusManager.conferenceRequest(
-                roomName,
-                JITSI_MEET_CONFIG,
-                Level.WARNING /* conference logging level */,
-                false /* don't include in statistics */))
+        try
         {
-            throw new RuntimeException(
-                "Failed to create conference with room name " + roomName);
+            if (!focusManager.conferenceRequest(
+                    roomName,
+                    JITSI_MEET_CONFIG,
+                    Level.WARNING /* conference logging level */,
+                    false /* don't include in statistics */))
+            {
+                throw new RuntimeException("Failed to create conference with room name " + roomName);
+            }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Failed to create conference with room name " + roomName + ":" + e.getMessage());
         }
     }
 
@@ -196,5 +219,11 @@ public class Health
     public long getTotalSlowHealthChecks()
     {
         return totalSlowHealthChecks;
+    }
+
+    @Override
+    public Exception getResult()
+    {
+        return healthChecker.getResult();
     }
 }

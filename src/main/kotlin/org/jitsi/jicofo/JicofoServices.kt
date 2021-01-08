@@ -26,7 +26,7 @@ import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
 import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
-import org.jitsi.jicofo.health.Health
+import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
@@ -35,7 +35,6 @@ import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppComponentConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
-import org.jitsi.osgi.ServiceUtils2
 import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
@@ -47,6 +46,8 @@ import org.jxmpp.jid.impl.JidCreate
 import org.osgi.framework.BundleContext
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
+import org.jitsi.jicofo.util.getService
+import org.jitsi.jicofo.version.CurrentVersionImpl
 
 /**
  * Start/stop jicofo-specific services outside OSGi.
@@ -63,10 +64,9 @@ open class JicofoServices(
      * Expose for testing.
      */
     private val focusComponent: FocusComponent?
-    private val focusManager: FocusManager = ServiceUtils2.getService(bundleContext, FocusManager::class.java)
+    private val focusManager: FocusManager = getService(bundleContext, FocusManager::class.java)!!
     private val reservationSystem: RESTReservations?
-    private val health: Health?
-    // TODO: initialize the auth authority here
+    private val healthChecker: JicofoHealthChecker?
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
         focusManager.addFocusAllocationListener(this)
@@ -84,18 +84,6 @@ open class JicofoServices(
             }
         } else null
 
-        val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
-        if (httpServerConfig.isEnabled()) {
-            logger.info("Starting HTTP server with config: $httpServerConfig.")
-            val restApp = Application(bundleContext, authenticationAuthority as? ShibbolethAuthAuthority)
-            createServer(httpServerConfig).also {
-                it.servletContextHandler.addServlet(
-                    ServletHolder(ServletContainer(restApp)),
-                    "/*"
-                )
-                it.start()
-            }
-        }
 
         iqHandler = createIqHandler()
 
@@ -104,7 +92,7 @@ open class JicofoServices(
                 XmppComponentConfig.config,
                 iqHandler
             ).apply {
-                val configService = ServiceUtils2.getService(bundleContext, ConfigurationService::class.java)
+                val configService = getService(bundleContext, ConfigurationService::class.java)
                 loadConfig(configService, "org.jitsi.jicofo")
             }
         } else {
@@ -112,13 +100,34 @@ open class JicofoServices(
         }
         focusComponent?.connect()
 
-        health = if (HealthConfig.config.enabled) {
-            Health(HealthConfig.config, focusManager, focusComponent).apply {
+        healthChecker = if (HealthConfig.config.enabled) {
+            JicofoHealthChecker(
+                HealthConfig.config,
+                focusManager,
+                focusComponent
+            ).apply {
                 // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
-                start(bundleContext)
+                start()
                 focusManager.setHealth(this)
             }
         } else null
+
+        val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
+        if (httpServerConfig.isEnabled()) {
+            logger.info("Starting HTTP server with config: $httpServerConfig.")
+            val restApp = Application(
+                focusManager,
+                authenticationAuthority as? ShibbolethAuthAuthority,
+                CurrentVersionImpl.VERSION,
+                healthChecker)
+            createServer(httpServerConfig).also {
+                it.servletContextHandler.addServlet(
+                    ServletHolder(ServletContainer(restApp)),
+                    "/*"
+                )
+                it.start()
+            }
+        }
     }
 
     fun stop() {
@@ -132,7 +141,7 @@ open class JicofoServices(
         }
         iqHandler.stop()
         focusComponent?.disconnect()
-        health?.stop(bundleContext)
+        healthChecker?.stop()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {

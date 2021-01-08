@@ -23,7 +23,6 @@ import java.util.concurrent.*;
 import java.util.function.*;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging.*;

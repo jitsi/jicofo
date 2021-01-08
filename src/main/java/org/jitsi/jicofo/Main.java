@@ -21,10 +21,12 @@ import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
 import org.jitsi.config.*;
+import org.jitsi.impl.osgi.framework.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.meet.*;
 import org.jitsi.metaconfig.*;
+import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
 import org.osgi.framework.*;
@@ -62,17 +64,12 @@ public class Main
         ConfigUtils.PASSWORD_CMD_LINE_ARGS = "secret,user_password";
 
 
-        final Object exitSyncRoot = new Object();
+        ShutdownServiceImpl shutdownService = new ShutdownServiceImpl();
         // Register shutdown hook to perform cleanup before exit
-        Runtime.getRuntime().addShutdownHook(new Thread(() ->
-        {
-            synchronized (exitSyncRoot)
-            {
-                exitSyncRoot.notifyAll();
-            }
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
         logger.info("Starting OSGi services.");
-        BundleActivator activator = startOsgi(exitSyncRoot);
+        BundleActivator activator = new DummyActivator();
+        OSGiLauncher launcher = startOsgi(activator);
 
         logger.debug("Waiting for OSGi services to start");
         try
@@ -82,7 +79,7 @@ public class Main
         catch (Exception e)
         {
             logger.error("Failed to start all OSGi bundles, exiting.");
-            OSGi.stop(activator);
+            launcher.stop(activator);
             return;
         }
         logger.info("OSGi services started.");
@@ -91,10 +88,7 @@ public class Main
 
         try
         {
-            synchronized (exitSyncRoot)
-            {
-                exitSyncRoot.wait();
-            }
+            shutdownService.waitForShutdown();
         }
         catch (Exception e)
         {
@@ -104,65 +98,25 @@ public class Main
         logger.info("Stopping services.");
         JicofoServices.jicofoServicesSingleton.stop();
         JicofoServices.jicofoServicesSingleton = null;
-        OSGi.stop(activator);
+        launcher.stop(activator);
     }
 
-    private static BundleActivator startOsgi(Object exitSyncRoot)
+    private static OSGiLauncher startOsgi(BundleActivator activator)
     {
         JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
-        OSGi.setBundleConfig(bundleConfig);
         bundleConfig.setSystemPropertyDefaults();
-
         ClassLoader classLoader = loadBundlesJars(bundleConfig);
-        OSGi.setClassLoader(classLoader);
-
-        /*
-         * Start OSGi. It will invoke the application programming interfaces
-         * (APIs) of Jitsi Videobridge. Each of them will keep the application
-         * alive.
-         */
-        BundleActivator activator = new BundleActivator()
+        if (classLoader == null)
         {
-            @Override
-            public void start(BundleContext bundleContext)
-            {
-                bundleContext.registerService(
-                        ShutdownService.class,
-                        new ShutdownService()
-                        {
-                            private boolean shutdownStarted = false;
-
-                            @Override
-                            public void beginShutdown()
-                            {
-                                if (shutdownStarted)
-                                    return;
-
-                                shutdownStarted = true;
-
-                                synchronized (exitSyncRoot)
-                                {
-                                    exitSyncRoot.notifyAll();
-                                }
-                            }
-                        }, null
-                );
-            }
-
-            @Override
-            public void stop(BundleContext bundleContext)
-                    throws Exception
-            {
-                // We're doing nothing
-            }
-        };
-
+            throw new IllegalStateException("Class Loader not initialized");
+        }
 
         // Start OSGi
         logger.warn("Starting Osgi");
-        OSGi.start(activator);
+        OSGiLauncher launcher = new OSGiLauncher(bundleConfig.getBundles(), classLoader);
+        launcher.start(activator);
 
-        return activator;
+        return launcher;
     }
     /**
      * Read the command line arguments and env variables, and set the corresponding system properties used for
@@ -289,5 +243,20 @@ public class Main
         JarClassLoader jcl = new JarClassLoader();
         jcl.add(bundlesJarsPath + "/");
         return new OSGiClassLoader(jcl, ClassLoader.getSystemClassLoader());
+    }
+
+    private static class DummyActivator implements BundleActivator
+    {
+        @Override
+        public void start(BundleContext bundleContext) throws Exception
+        {
+
+        }
+
+        @Override
+        public void stop(BundleContext bundleContext) throws Exception
+        {
+
+        }
     }
 }
