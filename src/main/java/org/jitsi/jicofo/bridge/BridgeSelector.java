@@ -65,9 +65,10 @@ public class BridgeSelector
      * Creates new instance of {@link BridgeSelector}.
      *
      */
-    public BridgeSelector()
+    public BridgeSelector(ScheduledExecutorService executor)
     {
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+        jvbDoctor.start(executor, getBridges());
     }
 
     /**
@@ -274,19 +275,7 @@ public class BridgeSelector
         });
     }
 
-    /**
-     * Initializes this instance by loading the config and obtaining required
-     * service references.
-     */
-    public void init(ScheduledExecutorService scheduledExecutorService)
-    {
-        jvbDoctor.start(scheduledExecutorService, getBridges());
-    }
-
-    /**
-     * Unregisters any event listeners.
-     */
-    public void dispose()
+    public void stop()
     {
         jvbDoctor.stop();
     }

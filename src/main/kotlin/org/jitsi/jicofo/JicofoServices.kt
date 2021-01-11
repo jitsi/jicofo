@@ -27,6 +27,7 @@ import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
 import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
+import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.rest.Application
@@ -82,9 +83,11 @@ open class JicofoServices(
 
     private val xmppServices = XmppServices(bundleContext, scheduledPool)
 
+    val bridgeSelector = BridgeSelector(scheduledPool)
+
     val focusManager: FocusManager = FocusManager().also {
         logger.info("Starting FocusManager.")
-        it.start(bundleContext, scheduledPool, xmppServices.clientConnection, xmppServices.serviceConnection)
+        it.start(xmppServices.clientConnection, xmppServices.serviceConnection, bridgeSelector)
     }
 
     private val reservationSystem: RESTReservations?
@@ -155,6 +158,8 @@ open class JicofoServices(
         channelAllocationExecutor.shutdownNow()
         scheduledPool.shutdownNow()
         jettyServer?.stop()
+        xmppServices.stop()
+        bridgeSelector.stop()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -188,8 +193,9 @@ open class JicofoServices(
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
+        put("bridge_selector", bridgeSelector.stats)
         putAll(ColibriConferenceImpl.stats.toJson())
-        put("threads", ManagementFactory.getThreadMXBean().threadCount);
+        put("threads", ManagementFactory.getThreadMXBean().threadCount)
     }
 
     companion object {

@@ -142,18 +142,13 @@ public class JicofoHealthChecker implements HealthCheckService
     private static void check(FocusManager focusManager)
     {
         // Get the MUC service to perform the check on.
-        JitsiMeetServices services = focusManager.getJitsiMeetServices();
-        if (services == null)
+        JicofoServices jicofoServices = JicofoServices.jicofoServicesSingleton;
+        if (jicofoServices == null)
         {
-            throw new RuntimeException("No JitsiMeetServices available");
+            throw new RuntimeException("No JicoofoServices available");
         }
 
-        BridgeSelector bridgeSelector = services.getBridgeSelector();
-        if (bridgeSelector == null)
-        {
-            throw new RuntimeException("No BridgeSelector available");
-        }
-
+        BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         if (bridgeSelector.getOperationalBridgeCount() <= 0)
         {
             throw new RuntimeException(

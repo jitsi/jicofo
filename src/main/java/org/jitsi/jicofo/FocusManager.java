@@ -21,6 +21,7 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
@@ -29,7 +30,6 @@ import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -126,8 +126,10 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start(BundleContext bundleContext, ScheduledExecutorService scheduledExecutorService,
-                      ProtocolProviderHandler protocolProviderHandler, ProtocolProviderHandler jvbProtocolProvider)
+    public void start(
+            ProtocolProviderHandler protocolProviderHandler,
+            ProtocolProviderHandler jvbProtocolProvider,
+            BridgeSelector bridgeSelector)
     {
         expireThread.start();
 
@@ -154,7 +156,7 @@ public class FocusManager
         this.jvbProtocolProvider = jvbProtocolProvider;
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
-        jitsiMeetServices.start(scheduledExecutorService);
+        jitsiMeetServices.start(bridgeSelector);
     }
 
     /**

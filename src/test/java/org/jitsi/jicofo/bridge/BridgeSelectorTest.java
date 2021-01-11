@@ -47,7 +47,7 @@ public class BridgeSelectorTest
     private Bridge jvb1;
     private Bridge jvb2;
     private Bridge jvb3;
-    private JitsiMeetServices meetServices;
+    private BridgeSelector bridgeSelector;
 
     @Before
     public void setUp()
@@ -59,9 +59,7 @@ public class BridgeSelectorTest
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
         osgi.init();
 
-        this.meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
-
-        BridgeSelector bridgeSelector = meetServices.getBridgeSelector();
+        bridgeSelector = osgi.jicofoServices.getBridgeSelector();
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
         jvb2 = bridgeSelector.addJvbAddress(jvb2Jid);
         jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
@@ -77,7 +75,6 @@ public class BridgeSelectorTest
     @Test
     public void selectorTest()
     {
-        BridgeSelector selector = meetServices.getBridgeSelector();
         JitsiMeetConference conference = new MockJitsiMeetConference();
 
         // Test bridge operational status
@@ -88,20 +85,20 @@ public class BridgeSelectorTest
 
         // This part of the test doesn't care about reset threshold
         Bridge.setFailureResetThreshold(0);
-        Bridge bridgeState = selector.selectBridge(conference);
+        Bridge bridgeState = bridgeSelector.selectBridge(conference);
         assertTrue(workingBridges.contains(bridgeState.getJid()));
 
         // Bridge 1 is down !!!
         workingBridges.remove(jvb1Jid);
         jvb1.setIsOperational(false);
 
-        assertTrue(workingBridges.contains(selector.selectBridge(conference).getJid()));
+        assertTrue(workingBridges.contains(bridgeSelector.selectBridge(conference).getJid()));
 
         // Bridge 2 is down !!!
         workingBridges.remove(jvb2Jid);
         jvb2.setIsOperational(false);
 
-        assertEquals(jvb3Jid, selector.selectBridge(conference).getJid());
+        assertEquals(jvb3Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // Bridge 1 is up again, but 3 is down instead
         workingBridges.add(jvb1Jid);
@@ -110,7 +107,7 @@ public class BridgeSelectorTest
         workingBridges.remove(jvb3Jid);
         jvb3.setIsOperational(false);
 
-        assertEquals(jvb1Jid, selector.selectBridge(conference).getJid());
+        assertEquals(jvb1Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // Reset all bridges - now we'll select based on conference count
         workingBridges.clear();
@@ -126,22 +123,22 @@ public class BridgeSelectorTest
         jvb2.setStats(createJvbStats(.23));
         jvb3.setStats(createJvbStats(0));
 
-        assertEquals(jvb3Jid, selector.selectBridge(conference).getJid());
+        assertEquals(jvb3Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // Now Jvb 3 gets occupied the most
         jvb3.setStats(createJvbStats(.3));
 
-        assertEquals(jvb1Jid, selector.selectBridge(conference).getJid());
+        assertEquals(jvb1Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // Jvb 1 is gone
         jvb1.setIsOperational(false);
 
-        assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
+        assertEquals(jvb2Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // TEST all bridges down
         jvb2.setIsOperational(false);
         jvb3.setIsOperational(false);
-        assertNull(selector.selectBridge(conference));
+        assertNull(bridgeSelector.selectBridge(conference));
 
         // Now bridges are up and select based on conference count
         // with pre-configured bridge
@@ -154,20 +151,20 @@ public class BridgeSelectorTest
         jvb3.setStats(createJvbStats(0));
 
         // JVB 1 should not be in front
-        assertNotEquals(jvb1Jid, selector.selectBridge(conference).getJid());
+        assertNotEquals(jvb1Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // JVB 2 least occupied
         jvb1.setStats(createJvbStats(.01));
         jvb2.setStats(createJvbStats(0));
         jvb3.setStats(createJvbStats(.01));
 
-        assertEquals(jvb2Jid, selector.selectBridge(conference).getJid());
+        assertEquals(jvb2Jid, bridgeSelector.selectBridge(conference).getJid());
 
         // Test drain bridges queue
-        int maxCount = selector.getKnownBridgesCount();
-        while (selector.selectBridge(conference) != null)
+        int maxCount = bridgeSelector.getKnownBridgesCount();
+        while (bridgeSelector.selectBridge(conference) != null)
         {
-            Bridge bridge = selector.selectBridge(conference);
+            Bridge bridge = bridgeSelector.selectBridge(conference);
             bridge.setIsOperational(false);
             if (--maxCount < 0)
             {
@@ -182,7 +179,6 @@ public class BridgeSelectorTest
     {
         JitsiMeetServices meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
 
-        BridgeSelector selector = meetServices.getBridgeSelector();
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
 
         // Will restore failure status after 100 ms
@@ -203,7 +199,7 @@ public class BridgeSelectorTest
             // Should not be selected now
             assertNotEquals(
                     bridges[testedIdx].getJid(),
-                    selector.selectBridge(new MockJitsiMeetConference()).getJid());
+                    bridgeSelector.selectBridge(new MockJitsiMeetConference()).getJid());
 
             for (Bridge bridge : bridges)
             {
@@ -214,14 +210,14 @@ public class BridgeSelectorTest
             // Should still not be selected
             assertNotEquals(
                     bridges[testedIdx].getJid(),
-                    selector.selectBridge(new MockJitsiMeetConference()).getJid());
+                    bridgeSelector.selectBridge(new MockJitsiMeetConference()).getJid());
 
             // Wait for faulty status reset
             Thread.sleep(150);
             // Test node should recover
             assertEquals(
                 bridges[testedIdx].getJid(),
-                selector.selectBridge(new MockJitsiMeetConference()).getJid()
+                bridgeSelector.selectBridge(new MockJitsiMeetConference()).getJid()
             );
         }
 
@@ -257,18 +253,17 @@ public class BridgeSelectorTest
             throws Exception
     {
         JitsiMeetServices meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
-        BridgeSelector selector = meetServices.getBridgeSelector();
 
         String region1 = "region1";
-        Bridge bridge1 = selector.addJvbAddress(JidCreate.from("bridge1"));
+        Bridge bridge1 = bridgeSelector.addJvbAddress(JidCreate.from("bridge1"));
         bridge1.setStats(createJvbStats(0, region1));
 
         String region2 = "region2";
-        Bridge bridge2 = selector.addJvbAddress(JidCreate.from("bridge2"));
+        Bridge bridge2 = bridgeSelector.addJvbAddress(JidCreate.from("bridge2"));
         bridge2.setStats(createJvbStats(0, region2));
 
         String region3 = "region3";
-        Bridge bridge3 = selector.addJvbAddress(JidCreate.from("bridge3"));
+        Bridge bridge3 = bridgeSelector.addJvbAddress(JidCreate.from("bridge3"));
         bridge3.setStats(createJvbStats(0, region3));
 
         Bridge localBridge = bridge1;

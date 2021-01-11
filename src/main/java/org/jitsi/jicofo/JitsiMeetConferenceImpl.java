@@ -357,7 +357,7 @@ public class JitsiMeetConferenceImpl
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
             services = getFocusManager().getJitsiMeetServices();
 
-            BridgeSelector bridgeSelector = services.getBridgeSelector();
+            BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
             if (protocolProviderHandler.isRegistered())
@@ -727,7 +727,7 @@ public class JitsiMeetConferenceImpl
         }
 
         // Select a Bridge for the new participant.
-        BridgeSelector bridgeSelector = getServices().getBridgeSelector();
+        BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
         Bridge bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)

@@ -27,7 +27,6 @@ import org.jitsi.utils.logging.*;
 import org.json.simple.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Class manages discovery of Jitsi Meet application services like
@@ -41,11 +40,6 @@ public class JitsiMeetServices
      * The logger
      */
     private final static Logger logger = Logger.getLogger(JitsiMeetServices.class);
-
-    /**
-     * Manages Jitsi Videobridge component XMPP addresses.
-     */
-    private final BridgeSelector bridgeSelector;
 
     /**
      * The {@link ProtocolProviderHandler} for JVB XMPP connection.
@@ -78,7 +72,6 @@ public class JitsiMeetServices
 
         this.protocolProvider = protocolProviderHandler;
         this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
-        this.bridgeSelector = new BridgeSelector();
     }
 
     /**
@@ -110,19 +103,8 @@ public class JitsiMeetServices
         return jigasiDetector;
     }
 
-    /**
-     * Returns {@link BridgeSelector} bound to this instance that can be used to
-     * select the videobridge on the xmppDomain handled by this instance.
-     */
-    public BridgeSelector getBridgeSelector()
+    public void start(BridgeSelector bridgeSelector)
     {
-        return bridgeSelector;
-    }
-
-    public void start(ScheduledExecutorService scheduledExecutorService)
-    {
-        bridgeSelector.init(scheduledExecutorService);
-
         if (JibriConfig.config.breweryEnabled())
         {
             jibriDetector = new JibriDetector(protocolProvider, JibriConfig.config.getBreweryJid(), false);
@@ -176,8 +158,6 @@ public class JitsiMeetServices
             bridgeMucDetector.dispose();
             bridgeMucDetector = null;
         }
-
-        bridgeSelector.dispose();
     }
 
     @SuppressWarnings("unchecked")
@@ -185,7 +165,6 @@ public class JitsiMeetServices
     {
         JSONObject json = new JSONObject();
 
-        json.put("bridge_selector", bridgeSelector.getStats());
         JigasiDetector jigasiDetector = getJigasiDetector();
         if (jigasiDetector != null)
         {
