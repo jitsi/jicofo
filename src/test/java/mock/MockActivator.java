@@ -18,9 +18,7 @@
 package mock;
 
 import mock.muc.*;
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.jabber.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.osgi.framework.*;
 
@@ -36,10 +34,6 @@ public class MockActivator
 {
     private ServiceRegistration<?> xmppRegistration;
 
-    private ServiceRegistration<?> sipRegistration;
-
-    private MockProtocolProviderFactory sipFactory;
-
     private MockProtocolProviderFactory xmppFactory;
 
     @Override
@@ -48,15 +42,9 @@ public class MockActivator
     {
         XmppProtocolActivator.registerXmppExtensions();
 
-        sipFactory
-            = new MockProtocolProviderFactory(
-                    bundleContext, ProtocolNames.SIP);
+        xmppFactory = new MockProtocolProviderFactory(bundleContext, ProtocolNames.JABBER);
 
-        xmppFactory
-            = new MockProtocolProviderFactory(
-                    bundleContext, ProtocolNames.JABBER);
-
-        Hashtable<String, String> hashtable = new Hashtable<String, String>();
+        Hashtable<String, String> hashtable = new Hashtable<>();
 
         // Register XMPP
         hashtable.put(ProtocolProviderFactory.PROTOCOL, ProtocolNames.JABBER);
@@ -64,14 +52,6 @@ public class MockActivator
         xmppRegistration = bundleContext.registerService(
             ProtocolProviderFactory.class.getName(),
             xmppFactory,
-            hashtable);
-
-        // Register SIP
-        hashtable.put(ProtocolProviderFactory.PROTOCOL, ProtocolNames.SIP);
-
-        sipRegistration = bundleContext.registerService(
-            ProtocolProviderFactory.class.getName(),
-            sipFactory,
             hashtable);
     }
 
@@ -81,13 +61,8 @@ public class MockActivator
     {
         xmppFactory.stop();
 
-        sipFactory.stop();
-
         if (xmppRegistration != null)
             xmppRegistration.unregister();
-
-        if (sipRegistration != null)
-            sipRegistration.unregister();
 
         MockMultiUserChatOpSet.cleanMucSharing();
     }
