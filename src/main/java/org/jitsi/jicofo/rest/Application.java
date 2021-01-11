@@ -18,7 +18,6 @@ package org.jitsi.jicofo.rest;
 import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.utils.version.*;
@@ -33,8 +32,7 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(FocusManager focusManager,
-                       ShibbolethAuthAuthority shibbolethAuthAuthority,
+    public Application(ShibbolethAuthAuthority shibbolethAuthAuthority,
                        @NotNull Version version,
                        JicofoHealthChecker healthChecker)
     {
@@ -44,7 +42,6 @@ public class Application
             protected void configure()
             {
                bind(clock).to(Clock.class);
-               bind(focusManager).to(FocusManager.class);
             }
         });
         packages("org.jitsi.jicofo.rest");

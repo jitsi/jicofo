@@ -20,6 +20,7 @@ package org.jitsi.jicofo
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
+import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
@@ -38,8 +39,10 @@ import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
+import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import org.osgi.framework.BundleContext
+import java.lang.management.ManagementFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -125,7 +128,6 @@ open class JicofoServices(
         jettyServer = if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
             val restApp = Application(
-                focusManager,
                 authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
                 healthChecker
@@ -180,6 +182,14 @@ open class JicofoServices(
             logger.info("Authentication service disabled.")
             null
         }
+    }
+
+    fun getStats(): JSONObject = JSONObject().apply {
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we merge the FocusManager and ColibriConference stats in the root object.
+        putAll(focusManager.stats)
+        putAll(ColibriConferenceImpl.stats.toJson())
+        put("threads", ManagementFactory.getThreadMXBean().threadCount);
     }
 
     companion object {
