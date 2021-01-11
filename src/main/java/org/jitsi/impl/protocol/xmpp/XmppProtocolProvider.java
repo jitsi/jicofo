@@ -162,9 +162,9 @@ public class XmppProtocolProvider
     public synchronized void register(SecurityAuthority securityAuthority)
         throws OperationFailedException
     {
-        // In practice this is never used.
-        register(
-            Executors.newScheduledThreadPool(1, new CustomizableThreadFactory("XmppProtocolProvider-register", true)));
+        throw new OperationFailedException(
+                "Not implemented, use register(executorService)",
+                OperationFailedException.GENERAL_ERROR);
     }
 
     public synchronized void register(ScheduledExecutorService executorService)
