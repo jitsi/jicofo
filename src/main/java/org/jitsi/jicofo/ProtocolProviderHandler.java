@@ -211,17 +211,22 @@ public class ProtocolProviderHandler
      */
     public void register()
     {
-        // FIXME: not pooled thread created
-        if (protocolService instanceof XmppProtocolProvider)
+        try
         {
-            try
+            if (protocolService instanceof XmppProtocolProvider)
             {
-                ((XmppProtocolProvider) protocolService).register(scheduledExecutorService);
+                {
+                    ((XmppProtocolProvider) protocolService).register(scheduledExecutorService);
+                }
             }
-            catch (OperationFailedException ofe)
+            else
             {
-                logger.error("Failed to register", ofe);
+                protocolService.register(new ServerSecurityAuthority());
             }
+        }
+        catch (OperationFailedException ofe)
+        {
+            logger.error("Failed to register", ofe);
         }
     }
 
