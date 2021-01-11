@@ -17,37 +17,39 @@
  */
 package org.jitsi.jicofo
 
-import org.apache.commons.lang3.StringUtils
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
+import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
 import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
+import org.jitsi.jicofo.bridge.BridgeConfig
+import org.jitsi.jicofo.bridge.BridgeMucDetector
+import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
+import org.jitsi.jicofo.jibri.JibriConfig
+import org.jitsi.jicofo.jigasi.JigasiConfig
+import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.recording.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
-import org.jitsi.jicofo.util.getService
 import org.jitsi.jicofo.version.CurrentVersionImpl
-import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
-import org.jitsi.jicofo.xmpp.ConferenceIqHandler
-import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.IqHandler
-import org.jitsi.jicofo.xmpp.XmppComponentConfig
-import org.jitsi.jicofo.xmpp.XmppConfig
-import org.jitsi.protocol.xmpp.XmppConnection
+import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
-import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
+import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import org.osgi.framework.BundleContext
+import java.lang.management.ManagementFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -85,23 +87,41 @@ open class JicofoServices(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
     )
 
+    private val xmppServices = XmppServices(bundleContext, scheduledPool)
+
+    val bridgeSelector = BridgeSelector(scheduledPool)
+    private val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
+        BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector).apply { init() }
+        else null
+    val jibriDetector = if (JibriConfig.config.breweryEnabled()) {
+        logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.breweryJid)
+        JibriDetector(xmppServices.clientConnection, JibriConfig.config.breweryJid, false).apply{ init() }
+    } else null
+    val sipJibriDetector = if (JibriConfig.config.sipBreweryEnabled()) {
+        logger.info("Using a SIP Jibri detector with MUC: " + JibriConfig.config.sipBreweryJid)
+        JibriDetector(xmppServices.clientConnection, JibriConfig.config.sipBreweryJid, true).apply { init() }
+    } else null
+    val jigasiDetector = if (JigasiConfig.config.breweryEnabled()) {
+        logger.info("Using a Jigasi detector with MUC: " + JigasiConfig.config.breweryJid)
+        JigasiDetector(xmppServices.clientConnection, JigasiConfig.config.breweryJid).apply { init() }
+    } else null
+
     val focusManager: FocusManager = FocusManager().also {
         logger.info("Starting FocusManager.")
-        it.start(bundleContext, scheduledPool)
+        it.start(xmppServices.clientConnection, xmppServices.serviceConnection)
     }
 
-    /**
-     * Expose for testing.
-     */
-    private val focusComponent: FocusComponent?
     private val reservationSystem: RESTReservations?
     private val healthChecker: JicofoHealthChecker?
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
         focusManager.addFocusAllocationListener(this)
     }
+    private val jettyServer: Server?
+
     val iqHandler: IqHandler
-    val jettyServer: Server?
+        // This is always non-null after init()
+        get() = xmppServices.iqHandler!!
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -114,27 +134,13 @@ open class JicofoServices(
             }
         } else null
 
-
-        iqHandler = createIqHandler()
-
-        focusComponent = if (XmppComponentConfig.config.enabled) {
-            FocusComponent(
-                XmppComponentConfig.config,
-                iqHandler
-            ).apply {
-                val configService = getService(bundleContext, ConfigurationService::class.java)
-                loadConfig(configService, "org.jitsi.jicofo")
-            }
-        } else {
-            null
-        }
-        focusComponent?.connect()
+        xmppServices.init(authenticationAuthority, focusManager, reservationSystem, jigasiDetector != null)
 
         healthChecker = if (HealthConfig.config.enabled) {
             JicofoHealthChecker(
                 HealthConfig.config,
                 focusManager,
-                focusComponent
+                xmppServices.focusComponent
             ).apply {
                 // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
                 start()
@@ -146,7 +152,6 @@ open class JicofoServices(
         jettyServer = if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
             val restApp = Application(
-                focusManager,
                 authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
                 healthChecker
@@ -170,12 +175,16 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             it.stop()
         }
-        iqHandler.stop()
-        focusComponent?.disconnect()
         healthChecker?.stop()
         channelAllocationExecutor.shutdownNow()
         scheduledPool.shutdownNow()
         jettyServer?.stop()
+        xmppServices.stop()
+        bridgeSelector.stop()
+        bridgeDetector?.dispose()
+        jibriDetector?.dispose()
+        sipJibriDetector?.dispose()
+        jigasiDetector?.dispose()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -205,23 +214,16 @@ open class JicofoServices(
         }
     }
 
-    private fun createIqHandler(): IqHandler {
-        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
-        val conferenceIqHandler = ConferenceIqHandler(
-            focusManager = focusManager,
-            focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
-            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
-            authAuthority = authenticationAuthority,
-            reservationSystem = reservationSystem
-        )
-
-        return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            focusManager.addXmppConnectionListener(object : FocusManager.XmppConnectionListener {
-                override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
-                    init(xmppConnection)
-                }
-            })
-        }
+    fun getStats(): JSONObject = JSONObject().apply {
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we merge the FocusManager and ColibriConference stats in the root object.
+        putAll(focusManager.stats)
+        put("bridge_selector", bridgeSelector.stats)
+        jibriDetector?.let { put("jibri_detector", it.stats) }
+        sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
+        jigasiDetector?.let { put("jigasi_detector", it.stats) }
+        putAll(ColibriConferenceImpl.stats.toJson())
+        put("threads", ManagementFactory.getThreadMXBean().threadCount)
     }
 
     companion object {

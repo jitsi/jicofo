@@ -191,12 +191,6 @@ public class JitsiMeetConferenceImpl
     private TranscriberManager transcriberManager;
 
     /**
-     * Information about Jitsi Meet conference services like videobridge,
-     * SIP gateway, Jirecon.
-     */
-    private JitsiMeetServices services;
-
-    /**
      * Chat room roles and presence handler.
      */
     private ChatRoomRoleAndPresence rolesAndPresence;
@@ -355,9 +349,8 @@ public class JitsiMeetConferenceImpl
             jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
-            services = getFocusManager().getJitsiMeetServices();
 
-            BridgeSelector bridgeSelector = services.getBridgeSelector();
+            BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
             if (protocolProviderHandler.isRegistered())
@@ -367,26 +360,28 @@ public class JitsiMeetConferenceImpl
 
             protocolProviderHandler.addRegistrationListener(this);
 
-            JibriDetector jibriDetector = services.getJibriDetector();
+            JibriDetector jibriDetector = JicofoServices.jicofoServicesSingleton.getJibriDetector();
             if (jibriDetector != null && jibriOpSet != null)
             {
                 jibriRecorder
                     = new JibriRecorder(
                             this,
                             getXmppConnection(),
-                            executor);
+                            executor,
+                            jibriDetector);
 
                 jibriOpSet.addJibri(jibriRecorder);
             }
 
-            JibriDetector sipJibriDetector = services.getSipJibriDetector();
+            JibriDetector sipJibriDetector = JicofoServices.jicofoServicesSingleton.getSipJibriDetector();
             if (sipJibriDetector != null && jibriOpSet != null)
             {
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
                             getXmppConnection(),
-                            executor);
+                            executor,
+                            sipJibriDetector);
 
                 jibriOpSet.addJibri(jibriSipGateway);
             }
@@ -516,7 +511,7 @@ public class JitsiMeetConferenceImpl
         transcriberManager = new TranscriberManager(
             protocolProviderHandler,
             chatOpSet.findRoom(roomName.toString()),
-            services.getJigasiDetector());
+            JicofoServices.jicofoServicesSingleton.getJigasiDetector());
         transcriberManager.init();
 
         chatRoom.join();
@@ -727,7 +722,7 @@ public class JitsiMeetConferenceImpl
         }
 
         // Select a Bridge for the new participant.
-        BridgeSelector bridgeSelector = getServices().getBridgeSelector();
+        BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
         Bridge bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)
@@ -2209,14 +2204,6 @@ public class JitsiMeetConferenceImpl
     public OperationSetJingle getJingle()
     {
         return jingle;
-    }
-
-    /**
-     * Returns {@link JitsiMeetServices} instance used in this conference.
-     */
-    public JitsiMeetServices getServices()
-    {
-        return services;
     }
 
     /**
