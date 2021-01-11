@@ -29,8 +29,6 @@ import org.osgi.framework.*;
 
 import java.util.*;
 
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
-
 /**
  *
  */
@@ -49,8 +47,7 @@ public class TestConference
     private MockVideobridge mockBridge;
 
 
-    static public TestConference allocate(
-        BundleContext ctx, String serverName, EntityBareJid roomName)
+    static public TestConference allocate(BundleContext ctx, String serverName, EntityBareJid roomName)
         throws Exception
     {
         TestConference newConf = new TestConference(ctx);
@@ -62,7 +59,7 @@ public class TestConference
 
     private JitsiMeetServices getJitsiMeetServices()
     {
-        return getService(bc, JitsiMeetServices.class);
+        return getFocusManager().getJitsiMeetServices();
     }
 
     private FocusManager getFocusManager()

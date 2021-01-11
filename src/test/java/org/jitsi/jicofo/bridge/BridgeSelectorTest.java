@@ -30,7 +30,6 @@ import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.junit.Assert.*;
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Tests for bridge selection logic.
@@ -60,7 +59,7 @@ public class BridgeSelectorTest
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
         osgi.init();
 
-        this.meetServices = getService(osgi.bc, JitsiMeetServices.class);
+        this.meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
 
         BridgeSelector bridgeSelector = meetServices.getBridgeSelector();
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
@@ -181,7 +180,7 @@ public class BridgeSelectorTest
     public void notOperationalThresholdTest()
             throws InterruptedException
     {
-        JitsiMeetServices meetServices = getService(osgi.bc, JitsiMeetServices.class);
+        JitsiMeetServices meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
 
         BridgeSelector selector = meetServices.getBridgeSelector();
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
@@ -257,7 +256,7 @@ public class BridgeSelectorTest
     public void testRegionBasedSelection()
             throws Exception
     {
-        JitsiMeetServices meetServices = getService(osgi.bc, JitsiMeetServices.class);
+        JitsiMeetServices meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
         BridgeSelector selector = meetServices.getBridgeSelector();
 
         String region1 = "region1";

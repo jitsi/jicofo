@@ -155,7 +155,6 @@ public class FocusManager
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start(scheduledExecutorService);
-        bundleContext.registerService(JitsiMeetServices.class, jitsiMeetServices, null);
     }
 
     /**
