@@ -43,8 +43,7 @@ public class MockProtocolProviderFactory
     }
 
     @Override
-    public AccountID installAccount(String userID,
-                                    Map<String, String> accountProperties)
+    public AccountID installAccount(String userID, Map<String, String> accountProperties)
         throws IllegalArgumentException, IllegalStateException,
                NullPointerException
     {
@@ -52,16 +51,14 @@ public class MockProtocolProviderFactory
     }
 
     @Override
-    public void modifyAccount(ProtocolProviderService protocolProvider,
-                              Map<String, String> accountProperties)
+    public void modifyAccount(ProtocolProviderService protocolProvider, Map<String, String> accountProperties)
         throws NullPointerException
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected AccountID createAccountID(String userID,
-                                        Map<String, String> accountProperties)
+    protected AccountID createAccountID(String userID, Map<String, String> accountProperties)
     {
         return new MockAccountID(userID, accountProperties, getProtocolName());
     }
@@ -70,8 +67,7 @@ public class MockProtocolProviderFactory
     protected ProtocolProviderService createService(String userID,
                                                     AccountID accountID)
     {
-        MockProtocolProvider protocolProvider
-            = new MockProtocolProvider((MockAccountID) accountID);
+        MockProtocolProvider protocolProvider = new MockProtocolProvider((MockAccountID) accountID);
 
         protocolProvider.includeBasicTeleOpSet();
 

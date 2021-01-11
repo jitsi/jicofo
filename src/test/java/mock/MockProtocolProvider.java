@@ -39,13 +39,11 @@ public class MockProtocolProvider
     /**
      * The logger.
      */
-    private final static Logger logger
-        = Logger.getLogger(MockProtocolProvider.class);
+    private final static Logger logger = Logger.getLogger(MockProtocolProvider.class);
 
     private final MockAccountID accountId;
 
-    private RegistrationState registrationState
-        = RegistrationState.UNREGISTERED;
+    private RegistrationState registrationState = RegistrationState.UNREGISTERED;
 
     private MockXmppConnection connection;
 
@@ -71,9 +69,7 @@ public class MockProtocolProvider
             null);
     }
 
-    private void setRegistrationState(RegistrationState newState,
-                                      int reasonCode,
-                                      String reason)
+    private void setRegistrationState(RegistrationState newState, int reasonCode, String reason)
     {
         RegistrationState oldState = getRegistrationState();
 
