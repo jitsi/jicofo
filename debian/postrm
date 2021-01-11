@@ -32,6 +32,7 @@ case "$1" in
         rm -f /etc/jitsi/jicofo/config
         rm -f /etc/jitsi/jicofo/sip-communicator.properties
         rm -f /etc/jitsi/jicofo/logging.properties
+        rm -f /etc/jitsi/jicofo/jicofo.conf
     ;;
 
     remove)
