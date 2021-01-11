@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
@@ -26,7 +25,6 @@ import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger; // disambiguation
 
 import org.json.simple.*;
@@ -93,8 +91,6 @@ public class FocusManager
      */
     private final List<FocusAllocationListener> focusAllocListeners = new ArrayList<>();
 
-    private final List<XmppConnectionListener> xmppConnectionListeners = new ArrayList<>();
-
     /**
      * XMPP protocol provider handler used by the focus.
      */
@@ -130,7 +126,8 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start(BundleContext bundleContext, ScheduledExecutorService scheduledExecutorService)
+    public void start(BundleContext bundleContext, ScheduledExecutorService scheduledExecutorService,
+                      ProtocolProviderHandler protocolProviderHandler, ProtocolProviderHandler jvbProtocolProvider)
     {
         expireThread.start();
 
@@ -153,33 +150,12 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client, scheduledExecutorService);
-        protocolProviderHandler.start(bundleContext);
-
-        if (XmppConfig.service.getEnabled())
-        {
-            logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
-            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service, scheduledExecutorService);
-            jvbProtocolProvider.start(bundleContext);
-            jvbProtocolProvider.register();
-        }
-        else
-        {
-            logger.warn("No dedicated Service XMPP connection configured." +
-                        " Falling back to the client XMPP connection for JVB MUC");
-            jvbProtocolProvider = protocolProviderHandler;
-        }
+        this.protocolProviderHandler = protocolProviderHandler;
+        this.jvbProtocolProvider = jvbProtocolProvider;
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
         jitsiMeetServices.start(scheduledExecutorService);
-
-        bundleContext.registerService(
-                JitsiMeetServices.class,
-                jitsiMeetServices,
-                null);
-
-        protocolProviderHandler.addRegistrationListener(new RegistrationStateChangeListenerImpl());
-        protocolProviderHandler.register();
+        bundleContext.registerService(JitsiMeetServices.class, jitsiMeetServices, null);
     }
 
     /**
@@ -200,8 +176,6 @@ public class FocusManager
                 logger.error("Error when trying to stop JitsiMeetServices", e);
             }
         }
-
-        protocolProviderHandler.stop();
     }
 
     /**
@@ -679,7 +653,7 @@ public class FocusManager
     }
 
     /**
-     * Gets the {@code ProtocolProviderSerivce} for focus XMPP connection.
+     * Gets the {@code ProtocolProviderService} for focus XMPP connection.
      *
      * @return  the {@code ProtocolProviderService} for focus XMPP connection
      */
@@ -696,17 +670,6 @@ public class FocusManager
     boolean isJicofoIdConfigured()
     {
         return octoId != 0;
-    }
-
-    public void addXmppConnectionListener(XmppConnectionListener listener)
-    {
-        xmppConnectionListeners.add(listener);
-
-        XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
-        if (connection != null)
-        {
-            listener.xmppConnectionInitialized(connection);
-        }
     }
 
     /**
@@ -839,36 +802,4 @@ public class FocusManager
 
         // Add focus allocated method if needed
     }
-
-    /**
-     * Interface to use to notify about the XmppConnection being initialized. This is just meant as a temporary solution
-     * until the flow to setup XMPP is cleaned up.
-     */
-    public interface XmppConnectionListener
-    {
-        void xmppConnectionInitialized(XmppConnection xmppConnection);
-    }
-
-    private class RegistrationStateChangeListenerImpl implements RegistrationStateChangeListener
-    {
-        public void registrationStateChanged(RegistrationStateChangeEvent evt)
-        {
-            RegistrationState registrationState = evt.getNewState();
-            logger.info("XMPP provider reg state: " + registrationState);
-            if (RegistrationState.REGISTERED.equals(registrationState))
-            {
-                // Do initializations which require valid connection
-                XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
-                if (connection != null)
-                {
-                    xmppConnectionListeners.forEach(listener -> listener.xmppConnectionInitialized(connection));
-                }
-                else
-                {
-                    logger.error("XMPP provider registered, but no XmppConnection available.");
-                }
-            }
-        }
-    }
-
 }

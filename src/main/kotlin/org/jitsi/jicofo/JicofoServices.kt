@@ -85,9 +85,28 @@ open class JicofoServices(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
     )
 
+    private val clientXmppConnection: ProtocolProviderHandler = ProtocolProviderHandler(
+        XmppConfig.client,
+        scheduledPool
+    ).apply {
+        start(bundleContext)
+        register()
+    }
+
+    private val serviceXmppConnection: ProtocolProviderHandler = if (XmppConfig.service.enabled) {
+        logger.info("Using dedicated Service XMPP connection for JVB MUC.")
+        ProtocolProviderHandler(XmppConfig.service, scheduledPool).apply {
+            start(bundleContext)
+            register()
+        }
+    } else {
+        logger.info("No dedicated Service XMPP connection configured, re-using the client XMPP connection.")
+        clientXmppConnection
+    }
+
     val focusManager: FocusManager = FocusManager().also {
         logger.info("Starting FocusManager.")
-        it.start(bundleContext, scheduledPool)
+        it.start(bundleContext, scheduledPool, clientXmppConnection, serviceXmppConnection)
     }
 
     /**
@@ -176,6 +195,10 @@ open class JicofoServices(
         channelAllocationExecutor.shutdownNow()
         scheduledPool.shutdownNow()
         jettyServer?.stop()
+        clientXmppConnection.stop()
+        if (serviceXmppConnection != clientXmppConnection) {
+            serviceXmppConnection.stop()
+        }
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -216,7 +239,7 @@ open class JicofoServices(
         )
 
         return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            focusManager.addXmppConnectionListener(object : FocusManager.XmppConnectionListener {
+            clientXmppConnection.addXmppConnectionListener(object : ProtocolProviderHandler.XmppConnectionListener {
                 override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
                     init(xmppConnection)
                 }

@@ -64,6 +64,8 @@ public class ProtocolProviderHandler
      */
     private final List<RegistrationStateChangeListener> regListeners = new CopyOnWriteArrayList<>();
 
+    private final List<XmppConnectionListener> xmppConnectionListeners = new ArrayList<>();
+
     private final XmppConnectionConfig config;
 
     /**
@@ -146,7 +148,9 @@ public class ProtocolProviderHandler
                 = protocolService.getOperationSet(OperationSetDirectSmackXmpp.class);
             if (operationSetDirectSmackXmpp != null)
             {
-                operationSetDirectSmackXmpp.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+                XmppConnection xmppConnection = operationSetDirectSmackXmpp.getXmppConnection();
+                xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
+                xmppConnectionListeners.forEach(it -> it.xmppConnectionInitialized(xmppConnection));
                 logger.info("Set replyTimeout=" + config.getReplyTimeout());
             }
             else
@@ -260,4 +264,25 @@ public class ProtocolProviderHandler
     {
         return protocolService != null ? protocolService.toString() : super.toString();
     }
+
+    public void addXmppConnectionListener(XmppConnectionListener listener)
+    {
+        xmppConnectionListeners.add(listener);
+
+        XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+        if (connection != null)
+        {
+            listener.xmppConnectionInitialized(connection);
+        }
+    }
+
+    /**
+     * Interface to use to notify about the XmppConnection being initialized. This is just meant as a temporary solution
+     * until the flow to setup XMPP is cleaned up.
+     */
+    public interface XmppConnectionListener
+    {
+        void xmppConnectionInitialized(XmppConnection xmppConnection);
+    }
+
 }
