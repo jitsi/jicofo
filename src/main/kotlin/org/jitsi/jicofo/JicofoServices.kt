@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo
 
-import org.apache.commons.lang3.StringUtils
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
@@ -30,20 +29,13 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.rest.Application
-import org.jitsi.jicofo.util.getService
 import org.jitsi.jicofo.version.CurrentVersionImpl
-import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
-import org.jitsi.jicofo.xmpp.ConferenceIqHandler
-import org.jitsi.jicofo.xmpp.FocusComponent
 import org.jitsi.jicofo.xmpp.IqHandler
-import org.jitsi.jicofo.xmpp.XmppComponentConfig
-import org.jitsi.jicofo.xmpp.XmppConfig
-import org.jitsi.protocol.xmpp.XmppConnection
+import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
-import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.impl.JidCreate
@@ -85,42 +77,24 @@ open class JicofoServices(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
     )
 
-    private val clientXmppConnection: ProtocolProviderHandler = ProtocolProviderHandler(
-        XmppConfig.client,
-        scheduledPool
-    ).apply {
-        start(bundleContext)
-        register()
-    }
-
-    private val serviceXmppConnection: ProtocolProviderHandler = if (XmppConfig.service.enabled) {
-        logger.info("Using dedicated Service XMPP connection for JVB MUC.")
-        ProtocolProviderHandler(XmppConfig.service, scheduledPool).apply {
-            start(bundleContext)
-            register()
-        }
-    } else {
-        logger.info("No dedicated Service XMPP connection configured, re-using the client XMPP connection.")
-        clientXmppConnection
-    }
+    private val xmppServices = XmppServices(bundleContext, scheduledPool)
 
     val focusManager: FocusManager = FocusManager().also {
         logger.info("Starting FocusManager.")
-        it.start(bundleContext, scheduledPool, clientXmppConnection, serviceXmppConnection)
+        it.start(bundleContext, scheduledPool, xmppServices.clientConnection, xmppServices.serviceConnection)
     }
 
-    /**
-     * Expose for testing.
-     */
-    private val focusComponent: FocusComponent?
     private val reservationSystem: RESTReservations?
     private val healthChecker: JicofoHealthChecker?
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
         focusManager.addFocusAllocationListener(this)
     }
+    private val jettyServer: Server?
+
     val iqHandler: IqHandler
-    val jettyServer: Server?
+        // This is always non-null after init()
+        get() = xmppServices.iqHandler!!
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -133,27 +107,13 @@ open class JicofoServices(
             }
         } else null
 
-
-        iqHandler = createIqHandler()
-
-        focusComponent = if (XmppComponentConfig.config.enabled) {
-            FocusComponent(
-                XmppComponentConfig.config,
-                iqHandler
-            ).apply {
-                val configService = getService(bundleContext, ConfigurationService::class.java)
-                loadConfig(configService, "org.jitsi.jicofo")
-            }
-        } else {
-            null
-        }
-        focusComponent?.connect()
+        xmppServices.init(authenticationAuthority, focusManager, reservationSystem)
 
         healthChecker = if (HealthConfig.config.enabled) {
             JicofoHealthChecker(
                 HealthConfig.config,
                 focusManager,
-                focusComponent
+                xmppServices.focusComponent
             ).apply {
                 // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
                 start()
@@ -189,16 +149,10 @@ open class JicofoServices(
             focusManager.removeFocusAllocationListener(it)
             it.stop()
         }
-        iqHandler.stop()
-        focusComponent?.disconnect()
         healthChecker?.stop()
         channelAllocationExecutor.shutdownNow()
         scheduledPool.shutdownNow()
         jettyServer?.stop()
-        clientXmppConnection.stop()
-        if (serviceXmppConnection != clientXmppConnection) {
-            serviceXmppConnection.stop()
-        }
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -225,25 +179,6 @@ open class JicofoServices(
         else {
             logger.info("Authentication service disabled.")
             null
-        }
-    }
-
-    private fun createIqHandler(): IqHandler {
-        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
-        val conferenceIqHandler = ConferenceIqHandler(
-            focusManager = focusManager,
-            focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
-            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
-            authAuthority = authenticationAuthority,
-            reservationSystem = reservationSystem
-        )
-
-        return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            clientXmppConnection.addXmppConnectionListener(object : ProtocolProviderHandler.XmppConnectionListener {
-                override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
-                    init(xmppConnection)
-                }
-            })
         }
     }
 
