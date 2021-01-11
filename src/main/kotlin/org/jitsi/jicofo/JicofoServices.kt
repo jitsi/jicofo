@@ -32,6 +32,10 @@ import org.jitsi.jicofo.bridge.BridgeMucDetector
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
+import org.jitsi.jicofo.jibri.JibriConfig
+import org.jitsi.jicofo.jigasi.JigasiConfig
+import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.recording.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler
@@ -86,9 +90,21 @@ open class JicofoServices(
     private val xmppServices = XmppServices(bundleContext, scheduledPool)
 
     val bridgeSelector = BridgeSelector(scheduledPool)
-    val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
+    private val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
         BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector).apply { init() }
         else null
+    val jibriDetector = if (JibriConfig.config.breweryEnabled()) {
+        logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.breweryJid)
+        JibriDetector(xmppServices.clientConnection, JibriConfig.config.breweryJid, false).apply{ init() }
+    } else null
+    val sipJibriDetector = if (JibriConfig.config.sipBreweryEnabled()) {
+        logger.info("Using a SIP Jibri detector with MUC: " + JibriConfig.config.sipBreweryJid)
+        JibriDetector(xmppServices.clientConnection, JibriConfig.config.sipBreweryJid, true).apply { init() }
+    } else null
+    val jigasiDetector = if (JigasiConfig.config.breweryEnabled()) {
+        logger.info("Using a Jigasi detector with MUC: " + JigasiConfig.config.breweryJid)
+        JigasiDetector(xmppServices.clientConnection, JigasiConfig.config.breweryJid).apply { init() }
+    } else null
 
     val focusManager: FocusManager = FocusManager().also {
         logger.info("Starting FocusManager.")
@@ -118,7 +134,7 @@ open class JicofoServices(
             }
         } else null
 
-        xmppServices.init(authenticationAuthority, focusManager, reservationSystem)
+        xmppServices.init(authenticationAuthority, focusManager, reservationSystem, jigasiDetector != null)
 
         healthChecker = if (HealthConfig.config.enabled) {
             JicofoHealthChecker(
@@ -166,6 +182,9 @@ open class JicofoServices(
         xmppServices.stop()
         bridgeSelector.stop()
         bridgeDetector?.dispose()
+        jibriDetector?.dispose()
+        sipJibriDetector?.dispose()
+        jigasiDetector?.dispose()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -200,6 +219,9 @@ open class JicofoServices(
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
         put("bridge_selector", bridgeSelector.stats)
+        jibriDetector?.let { put("jibri_detector", it.stats) }
+        sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
+        jigasiDetector?.let { put("jigasi_detector", it.stats) }
         putAll(ColibriConferenceImpl.stats.toJson())
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
     }

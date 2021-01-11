@@ -36,7 +36,8 @@ class ConferenceIqHandler(
     val focusAuthJid: String,
     val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
-    val reservationSystem: ReservationSystem?
+    val reservationSystem: ReservationSystem?,
+    val jigasiEnabled: Boolean
 ) : AbstractIqRequestHandler(
     ConferenceIq.ELEMENT_NAME,
     ConferenceIq.NAMESPACE,
@@ -81,7 +82,7 @@ class ConferenceIqHandler(
             response.addProperty(ConferenceIq.Property("authentication", "false"))
         }
 
-        if (focusManager.jitsiMeetServices.jigasiDetector != null) {
+        if (jigasiEnabled) {
             response.addProperty(ConferenceIq.Property("sipGatewayEnabled", "true"))
         }
         return response

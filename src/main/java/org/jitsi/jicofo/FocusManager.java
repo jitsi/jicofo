@@ -21,7 +21,6 @@ import net.java.sip.communicator.service.protocol.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
@@ -97,12 +96,6 @@ public class FocusManager
     private ProtocolProviderHandler protocolProviderHandler;
 
     /**
-     * <tt>JitsiMeetServices</tt> instance that recognizes currently available
-     * conferencing services like Jitsi videobridge or SIP gateway.
-     */
-    private JitsiMeetServices jitsiMeetServices;
-
-    /**
      * The XMPP connection provider that will be used to detect JVB's and allocate channels.
      */
     private ProtocolProviderHandler jvbProtocolProvider;
@@ -153,9 +146,6 @@ public class FocusManager
 
         this.protocolProviderHandler = protocolProviderHandler;
         this.jvbProtocolProvider = jvbProtocolProvider;
-
-        jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler);
-        jitsiMeetServices.start();
     }
 
     /**
@@ -164,18 +154,6 @@ public class FocusManager
     public void stop()
     {
         expireThread.stop();
-
-        if (jitsiMeetServices != null)
-        {
-            try
-            {
-                jitsiMeetServices.stop();
-            }
-            catch (Exception e)
-            {
-                logger.error("Error when trying to stop JitsiMeetServices", e);
-            }
-        }
     }
 
     /**
@@ -521,20 +499,12 @@ public class FocusManager
         }
     }
 
-    /**
-     * Returns instance of <tt>JitsiMeetServices</tt> used in conferences.
-     */
-    public JitsiMeetServices getJitsiMeetServices()
-    {
-        return jitsiMeetServices;
-    }
-
     @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we'll merge stats from different "child" objects here.
-        JSONObject stats = jitsiMeetServices.getStats();
+        JSONObject stats = new JSONObject();
         stats.put("total_participants", statistics.totalParticipants.get());
         stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
         stats.put("conferences", getNonHealthCheckConferenceCount());
@@ -607,20 +577,6 @@ public class FocusManager
 
         JSONObject jibriStats = JibriSession.getGlobalStats();
         jibriSessionStats.toJSON(jibriStats);
-        // This intentionally duplicates stats.jibri_detector into stats.jibri.detector to keep backward compatibility
-        // for a while.
-        JibriDetector jibriDetector = jitsiMeetServices.getJibriDetector();
-        if (jibriDetector != null)
-        {
-            jibriStats.put("detector", jibriDetector.getStats());
-        }
-        // This intentionally duplicates stats.sip_jibri_detector into stats.jibri.sip_detector to keep backward
-        // compatibility for a while.
-        JibriDetector sipJibriDetector = jitsiMeetServices.getSipJibriDetector();
-        if (sipJibriDetector != null)
-        {
-            jibriStats.put("sip_detector", sipJibriDetector.getStats());
-        }
         stats.put("jibri", jibriStats);
 
         return stats;

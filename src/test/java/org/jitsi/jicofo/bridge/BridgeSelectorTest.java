@@ -177,8 +177,6 @@ public class BridgeSelectorTest
     public void notOperationalThresholdTest()
             throws InterruptedException
     {
-        JitsiMeetServices meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
-
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
 
         // Will restore failure status after 100 ms
@@ -252,8 +250,6 @@ public class BridgeSelectorTest
     public void testRegionBasedSelection()
             throws Exception
     {
-        JitsiMeetServices meetServices = osgi.jicofoServices.getFocusManager().getJitsiMeetServices();
-
         String region1 = "region1";
         Bridge bridge1 = bridgeSelector.addJvbAddress(JidCreate.from("bridge1"));
         bridge1.setStats(createJvbStats(0, region1));

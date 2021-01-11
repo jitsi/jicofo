@@ -83,25 +83,21 @@ public abstract class CommonJibriStuff
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
-     * @param isSIP indicates whether this stuff is for SIP Jibri or for regular Jibris.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
      * @param xmppConnection XMPP operation set which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     CommonJibriStuff(
-            boolean isSIP,
             JitsiMeetConferenceImpl conference,
             XmppConnection xmppConnection,
             ScheduledExecutorService scheduledExecutor,
-            Logger logger)
+            Logger logger,
+            JibriDetector jibriDetector)
     {
         this.connection = Objects.requireNonNull(xmppConnection, "xmppConnection");
         this.conference = Objects.requireNonNull(conference, "conference");
         this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
-        this.jibriDetector
-            = isSIP
-                ? conference.getServices().getSipJibriDetector()
-                : conference.getServices().getJibriDetector();
+        this.jibriDetector = jibriDetector;
 
         ProtocolProviderService protocolService = conference.getXmppProvider();
 

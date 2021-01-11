@@ -57,11 +57,6 @@ public class TestConference
         return newConf;
     }
 
-    private JitsiMeetServices getJitsiMeetServices()
-    {
-        return getFocusManager().getJitsiMeetServices();
-    }
-
     private FocusManager getFocusManager()
     {
         return OSGiHandler.getInstance().jicofoServices.getFocusManager();
@@ -81,7 +76,7 @@ public class TestConference
 
         mockBridge.start(bc);
 
-        getJitsiMeetServices().getBridgeSelector().addJvbAddress(mockBridgeJid);
+        OSGiHandler.getInstance().jicofoServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
 
         createConferenceRoom(roomName, mockBridge);
     }

@@ -69,7 +69,8 @@ class XmppServices(
     fun init(
         authenticationAuthority: AbstractAuthAuthority?,
         focusManager: FocusManager,
-        reservationSystem: ReservationSystem?
+        reservationSystem: ReservationSystem?,
+        jigasiEnabled: Boolean
     ) {
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
         val conferenceIqHandler = ConferenceIqHandler(
@@ -77,7 +78,8 @@ class XmppServices(
             focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
             isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
             authAuthority = authenticationAuthority,
-            reservationSystem = reservationSystem
+            reservationSystem = reservationSystem,
+            jigasiEnabled = jigasiEnabled
         )
 
         val iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {

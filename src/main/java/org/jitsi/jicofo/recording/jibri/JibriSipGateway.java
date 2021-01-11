@@ -65,14 +65,15 @@ public class JibriSipGateway
     public JibriSipGateway(
            JitsiMeetConferenceImpl conference,
            XmppConnection xmppConnection,
-           ScheduledExecutorService scheduledExecutor)
+           ScheduledExecutorService scheduledExecutor,
+           JibriDetector jibriDetector)
     {
         super(
-            true /* handles SIP Jibri events */,
             conference,
             xmppConnection,
             scheduledExecutor,
-            Logger.getLogger(classLogger, conference.getLogger()));
+            Logger.getLogger(classLogger, conference.getLogger()),
+            jibriDetector);
 
     }
 

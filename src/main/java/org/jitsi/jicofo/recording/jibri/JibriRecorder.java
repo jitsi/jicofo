@@ -67,14 +67,15 @@ public class JibriRecorder
     public JibriRecorder(
             JitsiMeetConferenceImpl conference,
             XmppConnection connection,
-            ScheduledExecutorService scheduledExecutor)
+            ScheduledExecutorService scheduledExecutor,
+            JibriDetector jibriDetector)
     {
         super(
-            false /* deals with non SIP Jibri events */,
             conference,
             connection,
             scheduledExecutor,
-            Logger.getLogger(classLogger, conference.getLogger()));
+            Logger.getLogger(classLogger, conference.getLogger()),
+            jibriDetector);
     }
 
     /**
