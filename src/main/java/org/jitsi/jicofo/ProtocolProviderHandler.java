@@ -66,17 +66,21 @@ public class ProtocolProviderHandler
 
     private final XmppConnectionConfig config;
 
-    public ProtocolProviderHandler(XmppConnectionConfig config)
+    /**
+     * Executor to use to run `register`.
+     */
+    private final ScheduledExecutorService scheduledExecutorService;
+
+    public ProtocolProviderHandler(XmppConnectionConfig config, ScheduledExecutorService scheduledExecutorService)
     {
         this.config = config;
+        this.scheduledExecutorService = scheduledExecutorService;
     }
 
-    public void start()
+    public void start(BundleContext bundleContext)
     {
         xmppProviderFactory
-            = ProtocolProviderFactory.getProtocolProviderFactory(
-                    FocusBundleActivator.bundleContext,
-                    ProtocolNames.JABBER);
+            = ProtocolProviderFactory.getProtocolProviderFactory(bundleContext, ProtocolNames.JABBER);
 
         if (config.getPassword() != null)
         {
@@ -107,7 +111,7 @@ public class ProtocolProviderHandler
 
         ServiceReference<ProtocolProviderService> protoRef = xmppProviderFactory.getProviderForAccount(xmppAccount);
 
-        protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
+        protocolService = bundleContext.getService(protoRef);
         protocolService.addRegistrationStateChangeListener(this);
         if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
         {
@@ -207,8 +211,23 @@ public class ProtocolProviderHandler
      */
     public void register()
     {
-        // FIXME: not pooled thread created
-        new RegisterThread(protocolService).start();
+        try
+        {
+            if (protocolService instanceof XmppProtocolProvider)
+            {
+                {
+                    ((XmppProtocolProvider) protocolService).register(scheduledExecutorService);
+                }
+            }
+            else
+            {
+                protocolService.register(new ServerSecurityAuthority());
+            }
+        }
+        catch (OperationFailedException ofe)
+        {
+            logger.error("Failed to register", ofe);
+        }
     }
 
     /**

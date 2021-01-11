@@ -134,6 +134,7 @@ public class OSGiHandler
         WaitableBundleActivator.waitUntilStarted();
 
         jicofoServices = new JicofoServices(bc);
+        JicofoServices.jicofoServicesSingleton = jicofoServices;
     }
 
     public void shutdown()

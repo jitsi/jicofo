@@ -97,11 +97,9 @@ public class ColibriThreadingTest
     public void testColibriMultiThreading()
         throws Exception
     {
-        ProviderListener providerListener
-            = new ProviderListener(FocusBundleActivator.bundleContext);
+        ProviderListener providerListener = new ProviderListener(osgi.bc);
 
-        MockProtocolProvider mockProvider
-            = (MockProtocolProvider) providerListener.obtainProvider(1000);
+        MockProtocolProvider mockProvider = (MockProtocolProvider) providerListener.obtainProvider(1000);
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
@@ -114,8 +112,7 @@ public class ColibriThreadingTest
 
         mockBridge.start(osgi.bc);
 
-        AllocThreadingTestColibriConference colibriConf
-            = colibriOpSet.createAllocThreadingConf();
+        AllocThreadingTestColibriConference colibriConf = colibriOpSet.createAllocThreadingConf();
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
@@ -176,8 +173,7 @@ public class ColibriThreadingTest
             String endpoint = colibriConf.nextResponseReceived(5);
             if (endpoint == null)
             {
-                fail("Endpoints that have failed to " +
-                    "send their request: " + requestsToBeSent);
+                fail("Endpoints that have failed to send their request: " + requestsToBeSent);
             }
             else
             {
@@ -207,8 +203,7 @@ public class ColibriThreadingTest
     public void testCreateFailure()
         throws Exception
     {
-        ProviderListener providerListener
-            = new ProviderListener(FocusBundleActivator.bundleContext);
+        ProviderListener providerListener = new ProviderListener(osgi.bc);
 
         MockProtocolProvider mockProvider
             = (MockProtocolProvider) providerListener.obtainProvider(1000);

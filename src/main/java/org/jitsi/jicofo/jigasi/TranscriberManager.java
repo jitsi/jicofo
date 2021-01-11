@@ -34,8 +34,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
 
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
-
 /**
  * The {@link TranscriberManager} class is responsible for listening to
  * {@link ChatRoomMemberPropertyChangeEvent}s to see whether a
@@ -188,7 +186,7 @@ public class TranscriberManager
      */
     private Collection<String> getBridgeRegions()
     {
-        FocusManager focusManager = getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
 
         try
         {

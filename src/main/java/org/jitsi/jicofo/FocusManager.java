@@ -39,7 +39,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 
-
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
  * and expiring conference focus instances. Manages focus XMPP connection.
@@ -64,11 +63,6 @@ public class FocusManager
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private final FocusExpireThread expireThread = new FocusExpireThread();
-
-    /**
-     * <tt>FocusManager</tt> service registration.
-     */
-    private ServiceRegistration<FocusManager> serviceRegistration;
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
@@ -136,16 +130,8 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start()
-        throws Exception
+    public void start(BundleContext bundleContext, ScheduledExecutorService scheduledExecutorService)
     {
-        BundleContext bundleContext = FocusBundleActivator.bundleContext;
-
-        // Register early, because some of the dependencies e.g.
-        // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
-        // will be cleaned up at a later stage.
-        serviceRegistration = bundleContext.registerService(FocusManager.class, this, null);
-
         expireThread.start();
 
         int octoId = 0;
@@ -167,14 +153,14 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
-        protocolProviderHandler.start();
+        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client, scheduledExecutorService);
+        protocolProviderHandler.start(bundleContext);
 
         if (XmppConfig.service.getEnabled())
         {
             logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
-            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
-            jvbProtocolProvider.start();
+            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service, scheduledExecutorService);
+            jvbProtocolProvider.start(bundleContext);
             jvbProtocolProvider.register();
         }
         else
@@ -185,7 +171,7 @@ public class FocusManager
         }
 
         jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
-        jitsiMeetServices.start();
+        jitsiMeetServices.start(scheduledExecutorService);
 
         bundleContext.registerService(
                 JitsiMeetServices.class,
@@ -201,11 +187,6 @@ public class FocusManager
      */
     public void stop()
     {
-        if (serviceRegistration != null)
-        {
-            serviceRegistration.unregister();
-            serviceRegistration = null;
-        }
         expireThread.stop();
 
         if (jitsiMeetServices != null)

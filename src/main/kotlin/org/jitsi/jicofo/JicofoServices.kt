@@ -18,6 +18,7 @@
 package org.jitsi.jicofo
 
 import org.apache.commons.lang3.StringUtils
+import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.reservation.rest.RESTReservations
@@ -26,9 +27,11 @@ import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
 import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
-import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.health.HealthConfig
+import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.util.getService
+import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.AuthenticationIqHandler
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.jicofo.xmpp.FocusComponent
@@ -41,13 +44,18 @@ import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.service.configuration.ConfigurationService
+import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.impl.JidCreate
 import org.osgi.framework.BundleContext
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
-import org.jitsi.jicofo.util.getService
-import org.jitsi.jicofo.version.CurrentVersionImpl
 
 /**
  * Start/stop jicofo-specific services outside OSGi.
@@ -61,10 +69,31 @@ open class JicofoServices(
     private val logger = createLogger()
 
     /**
+     * Pool of cached threads used for colibri channel allocation.
+     *
+     * The overall thread model of jicofo is not obvious, and should be improved, at which point this should probably
+     * be moved or at least renamed. For the time being, use a specific name to document how it's used.
+     */
+    var channelAllocationExecutor: ExecutorService = ThreadPoolExecutor(
+        0, 1500,
+        60L, TimeUnit.SECONDS,
+        SynchronousQueue(),
+        CustomizableThreadFactory("ColibriChannelAllocationPool", true)
+    )
+
+    val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
+        200, CustomizableThreadFactory("Jicofo Scheduled", true)
+    )
+
+    val focusManager: FocusManager = FocusManager().also {
+        logger.info("Starting FocusManager.")
+        it.start(bundleContext, scheduledPool)
+    }
+
+    /**
      * Expose for testing.
      */
     private val focusComponent: FocusComponent?
-    private val focusManager: FocusManager = getService(bundleContext, FocusManager::class.java)!!
     private val reservationSystem: RESTReservations?
     private val healthChecker: JicofoHealthChecker?
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
@@ -72,6 +101,7 @@ open class JicofoServices(
         focusManager.addFocusAllocationListener(this)
     }
     val iqHandler: IqHandler
+    val jettyServer: Server?
 
     init {
         reservationSystem = if (reservationConfig.enabled) {
@@ -113,13 +143,14 @@ open class JicofoServices(
         } else null
 
         val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
-        if (httpServerConfig.isEnabled()) {
+        jettyServer = if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
             val restApp = Application(
                 focusManager,
                 authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
-                healthChecker)
+                healthChecker
+            )
             createServer(httpServerConfig).also {
                 it.servletContextHandler.addServlet(
                     ServletHolder(ServletContainer(restApp)),
@@ -127,7 +158,7 @@ open class JicofoServices(
                 )
                 it.start()
             }
-        }
+        } else null
     }
 
     fun stop() {
@@ -142,6 +173,9 @@ open class JicofoServices(
         iqHandler.stop()
         focusComponent?.disconnect()
         healthChecker?.stop()
+        channelAllocationExecutor.shutdownNow()
+        scheduledPool.shutdownNow()
+        jettyServer?.stop()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -183,9 +217,9 @@ open class JicofoServices(
 
         return IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
             focusManager.addXmppConnectionListener(object : FocusManager.XmppConnectionListener {
-                    override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
-                        init(xmppConnection)
-                    }
+                override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
+                    init(xmppConnection)
+                }
             })
         }
     }

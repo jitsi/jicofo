@@ -29,6 +29,7 @@ import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.*;
 
 /**
@@ -277,9 +278,9 @@ public class BridgeSelector
      * Initializes this instance by loading the config and obtaining required
      * service references.
      */
-    public void init()
+    public void init(ScheduledExecutorService scheduledExecutorService)
     {
-        jvbDoctor.start(FocusBundleActivator.getSharedScheduledThreadPool(), getBridges());
+        jvbDoctor.start(scheduledExecutorService, getBridges());
     }
 
     /**

@@ -27,6 +27,7 @@ import org.jxmpp.jid.impl.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 
@@ -41,7 +42,7 @@ public class JigasiSelectorTest
         throws Exception
     {
         brewery = new MockBrewery<>(
-            new ProtocolProviderHandler(null),
+            new ProtocolProviderHandler(null, new ScheduledThreadPoolExecutor(1)),
             "roomName@muc-servicename.jabserver.com"
         );
     }

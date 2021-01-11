@@ -67,7 +67,7 @@ public class TestConference
 
     private FocusManager getFocusManager()
     {
-        return getService(bc, FocusManager.class);
+        return OSGiHandler.getInstance().jicofoServices.getFocusManager();
     }
 
     public TestConference(BundleContext osgi)

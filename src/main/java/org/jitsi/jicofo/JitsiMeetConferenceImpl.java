@@ -39,15 +39,12 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.osgi.framework.*;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 import java.util.stream.*;
-
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
@@ -357,10 +354,8 @@ public class JitsiMeetConferenceImpl
             meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
             jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
 
-            BundleContext osgiCtx = FocusBundleActivator.bundleContext;
-
-            executor = getService(osgiCtx, ScheduledExecutorService.class);
-            services = getService(osgiCtx, JitsiMeetServices.class);
+            executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
+            services = getFocusManager().getJitsiMeetServices();
 
             BridgeSelector bridgeSelector = services.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
@@ -377,7 +372,6 @@ public class JitsiMeetConferenceImpl
             {
                 jibriRecorder
                     = new JibriRecorder(
-                            osgiCtx,
                             this,
                             getXmppConnection(),
                             executor);
@@ -390,10 +384,9 @@ public class JitsiMeetConferenceImpl
             {
                 jibriSipGateway
                     = new JibriSipGateway(
-                            osgiCtx,
                             this,
                             getXmppConnection(),
-                            FocusBundleActivator.getSharedScheduledThreadPool());
+                            executor);
 
                 jibriOpSet.addJibri(jibriSipGateway);
             }
@@ -581,7 +574,7 @@ public class JitsiMeetConferenceImpl
         String key, String value, boolean updatePresence)
     {
         conferenceProperties.put(key, value);
-        if (updatePresence)
+        if (updatePresence && chatRoom != null)
         {
             meetTools.sendPresenceExtension(chatRoom, ConferenceProperties.clone(conferenceProperties));
         }
@@ -865,7 +858,7 @@ public class JitsiMeetConferenceImpl
                         reInvite);
 
             participant.setChannelAllocator(channelAllocator);
-            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+            JicofoServices.jicofoServicesSingleton.getChannelAllocationExecutor().submit(channelAllocator);
 
             if (reInvite)
             {
@@ -2608,9 +2601,9 @@ public class JitsiMeetConferenceImpl
         return includeInStatistics;
     }
 
-    protected FocusManager getFocusManager()
+    private FocusManager getFocusManager()
     {
-        return getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        return JicofoServices.jicofoServicesSingleton.getFocusManager();
     }
 
     /**
@@ -3004,7 +2997,7 @@ public class JitsiMeetConferenceImpl
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant);
             octoParticipant.setChannelAllocator(channelAllocator);
 
-            FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+            JicofoServices.jicofoServicesSingleton.getChannelAllocationExecutor().submit(channelAllocator);
 
             return octoParticipant;
         }

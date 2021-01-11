@@ -89,9 +89,6 @@ public class JicofoBundleConfig
             // Shall we use mock protocol providers?
             useMockProtocols ? mockProtocols : protocols,
             {
-                "org/jitsi/jicofo/FocusBundleActivator",
-            },
-            {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"
             }
         };

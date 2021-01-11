@@ -28,6 +28,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
 
+import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
@@ -47,7 +48,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 import static org.jivesoftware.smack.SmackException.*;
 
 /**
@@ -162,6 +162,14 @@ public class XmppProtocolProvider
     public synchronized void register(SecurityAuthority securityAuthority)
         throws OperationFailedException
     {
+        throw new OperationFailedException(
+                "Not implemented, use register(executorService)",
+                OperationFailedException.GENERAL_ERROR);
+    }
+
+    public synchronized void register(ScheduledExecutorService executorService)
+            throws OperationFailedException
+    {
         DomainBareJid serviceName;
         try
         {
@@ -210,9 +218,6 @@ public class XmppProtocolProvider
         connection = new XMPPTCPConnection(connConfig.build());
 
         this.initializeFeaturesList();
-
-        ScheduledExecutorService executorService
-            = getService(XmppProtocolActivator.bundleContext, ScheduledExecutorService.class);
 
         connectRetry = new RetryStrategy(executorService);
 

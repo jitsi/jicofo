@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * The class is responsible for doing health checks of currently known
@@ -88,7 +87,7 @@ public class JvbDoctor
     }
 
     private XmppConnection getConnection() {
-        FocusManager focusManager = getService(FocusBundleActivator.bundleContext, FocusManager.class);
+        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
         ProtocolProviderService protocolProvider = focusManager.getJvbProtocolProvider();
         OperationSetDirectSmackXmpp xmppOpSet = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
 
