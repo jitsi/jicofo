@@ -39,7 +39,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 
-
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
  * and expiring conference focus instances. Manages focus XMPP connection.
@@ -64,11 +63,6 @@ public class FocusManager
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private final FocusExpireThread expireThread = new FocusExpireThread();
-
-    /**
-     * <tt>FocusManager</tt> service registration.
-     */
-    private ServiceRegistration<FocusManager> serviceRegistration;
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
@@ -138,11 +132,6 @@ public class FocusManager
      */
     public void start(BundleContext bundleContext, ScheduledExecutorService scheduledExecutorService)
     {
-        // Register early, because some of the dependencies e.g.
-        // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
-        // will be cleaned up at a later stage.
-        serviceRegistration = bundleContext.registerService(FocusManager.class, this, null);
-
         expireThread.start();
 
         int octoId = 0;
@@ -198,11 +187,6 @@ public class FocusManager
      */
     public void stop()
     {
-        if (serviceRegistration != null)
-        {
-            serviceRegistration.unregister();
-            serviceRegistration = null;
-        }
         expireThread.stop();
 
         if (jitsiMeetServices != null)

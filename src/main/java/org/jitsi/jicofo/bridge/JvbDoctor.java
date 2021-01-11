@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * The class is responsible for doing health checks of currently known

@@ -34,8 +34,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
 
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
-
 /**
  * The {@link TranscriberManager} class is responsible for listening to
  * {@link ChatRoomMemberPropertyChangeEvent}s to see whether a

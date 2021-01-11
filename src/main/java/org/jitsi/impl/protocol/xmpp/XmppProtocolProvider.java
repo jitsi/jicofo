@@ -48,7 +48,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 import static org.jivesoftware.smack.SmackException.*;
 
 /**
