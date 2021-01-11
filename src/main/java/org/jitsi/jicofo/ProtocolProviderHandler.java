@@ -66,9 +66,15 @@ public class ProtocolProviderHandler
 
     private final XmppConnectionConfig config;
 
-    public ProtocolProviderHandler(XmppConnectionConfig config)
+    /**
+     * Executor to use to run `register`.
+     */
+    private final ScheduledExecutorService scheduledExecutorService;
+
+    public ProtocolProviderHandler(XmppConnectionConfig config, ScheduledExecutorService scheduledExecutorService)
     {
         this.config = config;
+        this.scheduledExecutorService = scheduledExecutorService;
     }
 
     public void start(BundleContext bundleContext)
@@ -206,7 +212,17 @@ public class ProtocolProviderHandler
     public void register()
     {
         // FIXME: not pooled thread created
-        new RegisterThread(protocolService).start();
+        if (protocolService instanceof XmppProtocolProvider)
+        {
+            try
+            {
+                ((XmppProtocolProvider) protocolService).register(scheduledExecutorService);
+            }
+            catch (OperationFailedException ofe)
+            {
+                logger.error("Failed to register", ofe);
+            }
+        }
     }
 
     /**

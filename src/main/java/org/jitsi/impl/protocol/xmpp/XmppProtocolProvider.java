@@ -23,12 +23,12 @@ import net.java.sip.communicator.service.protocol.jabber.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
 
+import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
@@ -162,6 +162,14 @@ public class XmppProtocolProvider
     public synchronized void register(SecurityAuthority securityAuthority)
         throws OperationFailedException
     {
+        // In practice this is never used.
+        register(
+            Executors.newScheduledThreadPool(1, new CustomizableThreadFactory("XmppProtocolProvider-register", true)));
+    }
+
+    public synchronized void register(ScheduledExecutorService executorService)
+            throws OperationFailedException
+    {
         DomainBareJid serviceName;
         try
         {
@@ -210,8 +218,6 @@ public class XmppProtocolProvider
         connection = new XMPPTCPConnection(connConfig.build());
 
         this.initializeFeaturesList();
-
-        ScheduledExecutorService executorService = JicofoServices.jicofoServicesSingleton.getScheduledPool();
 
         connectRetry = new RetryStrategy(executorService);
 

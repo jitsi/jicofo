@@ -153,13 +153,13 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
+        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client, scheduledExecutorService);
         protocolProviderHandler.start(bundleContext);
 
         if (XmppConfig.service.getEnabled())
         {
             logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
-            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
+            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service, scheduledExecutorService);
             jvbProtocolProvider.start(bundleContext);
             jvbProtocolProvider.register();
         }

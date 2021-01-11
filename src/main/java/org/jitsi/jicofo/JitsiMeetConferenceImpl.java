@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.concurrent.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -40,15 +39,12 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.osgi.framework.*;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
 import java.util.stream.*;
-
-import static org.jitsi.jicofo.util.ServiceUtilsKt.getService;
 
 /**
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
@@ -578,7 +574,7 @@ public class JitsiMeetConferenceImpl
         String key, String value, boolean updatePresence)
     {
         conferenceProperties.put(key, value);
-        if (updatePresence)
+        if (updatePresence && chatRoom != null)
         {
             meetTools.sendPresenceExtension(chatRoom, ConferenceProperties.clone(conferenceProperties));
         }
