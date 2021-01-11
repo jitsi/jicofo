@@ -27,6 +27,8 @@ import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
 import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
+import org.jitsi.jicofo.bridge.BridgeConfig
+import org.jitsi.jicofo.bridge.BridgeMucDetector
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
@@ -84,10 +86,13 @@ open class JicofoServices(
     private val xmppServices = XmppServices(bundleContext, scheduledPool)
 
     val bridgeSelector = BridgeSelector(scheduledPool)
+    val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
+        BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector).apply { init() }
+        else null
 
     val focusManager: FocusManager = FocusManager().also {
         logger.info("Starting FocusManager.")
-        it.start(xmppServices.clientConnection, xmppServices.serviceConnection, bridgeSelector)
+        it.start(xmppServices.clientConnection, xmppServices.serviceConnection)
     }
 
     private val reservationSystem: RESTReservations?
@@ -160,6 +165,7 @@ open class JicofoServices(
         jettyServer?.stop()
         xmppServices.stop()
         bridgeSelector.stop()
+        bridgeDetector?.dispose()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {

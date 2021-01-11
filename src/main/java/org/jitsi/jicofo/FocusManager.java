@@ -128,8 +128,7 @@ public class FocusManager
      */
     public void start(
             ProtocolProviderHandler protocolProviderHandler,
-            ProtocolProviderHandler jvbProtocolProvider,
-            BridgeSelector bridgeSelector)
+            ProtocolProviderHandler jvbProtocolProvider)
     {
         expireThread.start();
 
@@ -155,8 +154,8 @@ public class FocusManager
         this.protocolProviderHandler = protocolProviderHandler;
         this.jvbProtocolProvider = jvbProtocolProvider;
 
-        jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
-        jitsiMeetServices.start(bridgeSelector);
+        jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler);
+        jitsiMeetServices.start();
     }
 
     /**

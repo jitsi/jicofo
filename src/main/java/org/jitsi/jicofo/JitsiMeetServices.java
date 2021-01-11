@@ -42,11 +42,6 @@ public class JitsiMeetServices
     private final static Logger logger = Logger.getLogger(JitsiMeetServices.class);
 
     /**
-     * The {@link ProtocolProviderHandler} for JVB XMPP connection.
-     */
-    private final ProtocolProviderHandler jvbBreweryProtocolProvider;
-
-    /**
      * The {@link ProtocolProviderHandler} for Jicofo XMPP connection.
      */
     private final ProtocolProviderHandler protocolProvider;
@@ -57,21 +52,15 @@ public class JitsiMeetServices
 
     private JibriDetector sipJibriDetector;
 
-    private BridgeMucDetector bridgeMucDetector;
-
     /**
      * Creates new instance of <tt>JitsiMeetServices</tt>
      *  @param protocolProviderHandler {@link ProtocolProviderHandler} for Jicofo XMPP connection.
-     * @param jvbMucProtocolProvider {@link ProtocolProviderHandler} for JVB XMPP connection.
      */
-    public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler,
-                             ProtocolProviderHandler jvbMucProtocolProvider)
+    public JitsiMeetServices(ProtocolProviderHandler protocolProviderHandler)
     {
         Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
-        Objects.requireNonNull(jvbMucProtocolProvider, "jvbMucProtocolProvider");
 
         this.protocolProvider = protocolProviderHandler;
-        this.jvbBreweryProtocolProvider = jvbMucProtocolProvider;
     }
 
     /**
@@ -103,7 +92,7 @@ public class JitsiMeetServices
         return jigasiDetector;
     }
 
-    public void start(BridgeSelector bridgeSelector)
+    public void start()
     {
         if (JibriConfig.config.breweryEnabled())
         {
@@ -128,12 +117,6 @@ public class JitsiMeetServices
 
             sipJibriDetector.init();
         }
-
-        if (BridgeConfig.config.breweryEnabled())
-        {
-            bridgeMucDetector = new BridgeMucDetector(jvbBreweryProtocolProvider, bridgeSelector);
-            bridgeMucDetector.init();
-        }
     }
 
     public void stop()
@@ -152,11 +135,6 @@ public class JitsiMeetServices
         {
             sipJibriDetector.dispose();
             sipJibriDetector = null;
-        }
-        if (bridgeMucDetector != null)
-        {
-            bridgeMucDetector.dispose();
-            bridgeMucDetector = null;
         }
     }
 
