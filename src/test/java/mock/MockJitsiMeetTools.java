@@ -32,20 +32,7 @@ public class MockJitsiMeetTools
     }
 
     @Override
-    public void addSupportedFeature(String s)
-    {
-        //FIXME: not used in tests yet
-    }
-
-    @Override
-    public void removeSupportedFeature(String s)
-    {
-        //FIXME: not used in tests yet
-    }
-
-    @Override
-    public void sendPresenceExtension(ChatRoom chatRoom,
-                                      ExtensionElement extension)
+    public void sendPresenceExtension(ChatRoom chatRoom, ExtensionElement extension)
     {
         //FIXME: to be tested
     }
@@ -55,23 +42,5 @@ public class MockJitsiMeetTools
         ChatRoom chatRoom, ExtensionElement packetExtension)
     {
         //FIXME: to be tested
-    }
-
-    @Override
-    public void setPresenceStatus(ChatRoom chatRoom, String statusName)
-    {
-        //FIXME: to be tested
-    }
-
-    @Override
-    public void addRequestListener(
-            JitsiMeetRequestListener jitsiMeetRequestListener)
-    {
-    }
-
-    @Override
-    public void removeRequestListener(
-            JitsiMeetRequestListener jitsiMeetRequestListener)
-    {
     }
 }

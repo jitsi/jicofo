@@ -29,18 +29,6 @@ public class OperationSetMeetToolsImpl
     implements OperationSetJitsiMeetTools
 {
     @Override
-    public void addSupportedFeature(String featureName)
-    {
-
-    }
-
-    @Override
-    public void removeSupportedFeature(String s)
-    {
-
-    }
-
-    @Override
     public void sendPresenceExtension(ChatRoom chatRoom,
                                       ExtensionElement extension)
     {
@@ -52,25 +40,5 @@ public class OperationSetMeetToolsImpl
                                         ExtensionElement extension)
     {
         ((ChatRoomImpl)chatRoom).setPresenceExtension(extension, true);
-    }
-
-    @Override
-    public void setPresenceStatus(ChatRoom chatRoom, String statusMessage)
-    {
-
-    }
-
-    @Override
-    public void addRequestListener(
-        JitsiMeetRequestListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeRequestListener(
-        JitsiMeetRequestListener listener)
-    {
-
     }
 }
