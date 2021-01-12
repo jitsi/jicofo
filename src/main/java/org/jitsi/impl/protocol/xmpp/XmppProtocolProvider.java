@@ -170,28 +170,13 @@ public class XmppProtocolProvider
     public synchronized void register(ScheduledExecutorService executorService)
             throws OperationFailedException
     {
-        DomainBareJid serviceName;
-        try
-        {
-            serviceName = JidCreate.domainBareFrom(getAccountID().getUserID());
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new OperationFailedException(
-                    "Invalid UserID",
-                    OperationFailedException.ILLEGAL_ARGUMENT,
-                    e);
-        }
-
-        String serverAddressUserSetting = config.getDomain().toString();
-
         int serverPort = config.getPort();
 
         XMPPTCPConnectionConfiguration.Builder connConfig
             = XMPPTCPConnectionConfiguration.builder()
-                .setHost(serverAddressUserSetting)
+                .setHost(config.getHostname())
                 .setPort(serverPort)
-                .setXmppDomain(serviceName);
+                .setXmppDomain(config.getDomain());
 
         // Required for PacketDebugger and XMPP stats to work
         connConfig.setDebuggerEnabled(true);
