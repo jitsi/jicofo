@@ -49,7 +49,7 @@ public class MockProtocolProvider
         this.connection = new MockXmppConnection(getOurJID());
         includeMultiUserChatOpSet();
         includeJitsiMeetTools();
-        includeJingleOpSet();
+        this.jingleOpSet = new MockOperationSetJingle(this);
     }
 
     @Override
@@ -91,13 +91,6 @@ public class MockProtocolProvider
         addOperationSet(OperationSetMultiUserChat.class, new MockMultiUserChatOpSet(this));
     }
 
-    public void includeJingleOpSet()
-    {
-        this.jingleOpSet = new MockOperationSetJingle(this);
-
-        addOperationSet(OperationSetJingle.class, jingleOpSet);
-    }
-
     public void includeJitsiMeetTools()
     {
         addOperationSet(OperationSetJitsiMeetTools.class, new MockJitsiMeetTools(this));
@@ -113,6 +106,12 @@ public class MockProtocolProvider
     public XMPPConnection getXmppConnectionRaw()
     {
         return null;
+    }
+
+    @Override
+    public OperationSetJingle getJingleApi()
+    {
+        return jingleOpSet;
     }
 
     public EntityFullJid getOurJID()

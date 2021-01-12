@@ -329,7 +329,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
+            jingle = protocolProviderHandler.getProtocolProvider().getJingleApi();
 
             // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
             // be used for clients that signal support (see Participant.hasLipSyncSupport).

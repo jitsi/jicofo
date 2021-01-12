@@ -80,5 +80,6 @@ public interface XmppProvider
 
     XmppConnection getXmppConnection();
     XMPPConnection getXmppConnectionRaw();
+    OperationSetJingle getJingleApi();
 }
 
