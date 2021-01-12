@@ -97,11 +97,6 @@ public class ColibriThreadingTest
     public void testColibriMultiThreading()
         throws Exception
     {
-        MockProtocolProvider mockProvider =
-            (MockProtocolProvider) osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider();
-
-        MockColibriOpSet colibriOpSet = mockProvider.getColibriApi();
-
         Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 
         MockVideobridge mockBridge
@@ -111,7 +106,10 @@ public class ColibriThreadingTest
 
         mockBridge.start(osgi.bc);
 
-        AllocThreadingTestColibriConference colibriConf = colibriOpSet.createAllocThreadingConf();
+        AllocThreadingTestColibriConference colibriConf =
+                new AllocThreadingTestColibriConference(
+                        osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider()
+                                .getXmppConnection());
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
@@ -202,11 +200,6 @@ public class ColibriThreadingTest
     public void testCreateFailure()
         throws Exception
     {
-        MockProtocolProvider mockProvider
-            = (MockProtocolProvider) osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider();
-
-        MockColibriOpSet colibriOpSet = mockProvider.getColibriApi();
-
         Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 
         MockVideobridge mockBridge
@@ -216,8 +209,10 @@ public class ColibriThreadingTest
 
         mockBridge.start(osgi.bc);
 
-        AllocThreadingTestColibriConference colibriConf
-            = colibriOpSet.createAllocThreadingConf();
+        AllocThreadingTestColibriConference colibriConf =
+                new AllocThreadingTestColibriConference(
+                        osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider()
+                                .getXmppConnection());
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
 

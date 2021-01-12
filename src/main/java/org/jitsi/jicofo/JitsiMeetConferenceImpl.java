@@ -25,7 +25,6 @@ import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -146,11 +145,6 @@ public class JitsiMeetConferenceImpl
      * participants.
      */
     private OperationSetJingle jingle;
-
-    /**
-     * Colibri operation set used to manage videobridge channels allocations.
-     */
-    private OperationSetColibriConference colibri;
 
     /**
      * Jitsi Meet tool used for specific operations like adding presence
@@ -335,7 +329,6 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            colibri = jvbXmppConnection.getProtocolProvider().getColibriApi();
             jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
 
             // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
@@ -656,7 +649,8 @@ public class JitsiMeetConferenceImpl
      */
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        ColibriConferenceImpl colibriConference = (ColibriConferenceImpl) colibri.createNewConference();
+        ColibriConferenceImpl colibriConference
+                = new ColibriConferenceImpl(jvbXmppConnection.getProtocolProvider().getXmppConnection());
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 

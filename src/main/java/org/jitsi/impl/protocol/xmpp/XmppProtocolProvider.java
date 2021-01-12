@@ -19,12 +19,10 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
 
 import org.jitsi.utils.logging.*;
@@ -94,11 +92,6 @@ public class XmppProtocolProvider
     private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
 
     /**
-     * Colibri operation set.
-     */
-    private final OperationSetColibriConferenceImpl colibriTools = new OperationSetColibriConferenceImpl();
-
-    /**
      * Smack connection adapter to {@link XmppConnection} used by this instance.
      */
     private XmppConnectionAdapter connectionAdapter;
@@ -126,12 +119,6 @@ public class XmppProtocolProvider
         addOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
         addOperationSet(OperationSetSimpleCaps.class, new OpSetSimpleCapsImpl(this));
         addOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
-    }
-
-    @Override
-    public OperationSetColibriConference getColibriApi()
-    {
-        return colibriTools;
     }
 
     /**
@@ -225,8 +212,6 @@ public class XmppProtocolProvider
                 Resourcepart resource = config.getUsername();
                 connection.login(login, pass, resource);
             }
-
-            colibriTools.initialize(getXmppConnection());
 
             connection.registerIQRequestHandler(jingleOpSet);
 

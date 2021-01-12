@@ -19,12 +19,10 @@ package mock;
 
 import mock.muc.*;
 import mock.xmpp.*;
-import mock.xmpp.colibri.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.colibri.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -44,12 +42,10 @@ public class MockProtocolProvider
 
     public XmppConnectionConfig config;
 
-    private MockColibriOpSet colibriApi;
-
     public MockProtocolProvider(XmppConnectionConfig config)
     {
         this.config = config;
-        colibriApi = new MockColibriOpSet(this);
+        this.connection = new MockXmppConnection(getOurJID());
         includeMultiUserChatOpSet();
         includeJitsiMeetTools();
         includeJingleOpSet();
@@ -115,17 +111,7 @@ public class MockProtocolProvider
     @Override
     public XmppConnection getXmppConnection()
     {
-        if (this.connection == null)
-        {
-            this.connection = new MockXmppConnection(getOurJID());
-        }
         return connection;
-    }
-
-    @Override
-    public MockColibriOpSet getColibriApi()
-    {
-        return colibriApi;
     }
 
     public EntityFullJid getOurJID()

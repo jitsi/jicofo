@@ -79,7 +79,5 @@ public interface XmppProvider
     XmppConnectionConfig getConfig();
 
     XmppConnection getXmppConnection();
-
-    OperationSetColibriConference getColibriApi();
 }
 
