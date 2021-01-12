@@ -21,7 +21,6 @@ import mock.muc.*;
 import mock.xmpp.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.OperationSetJitsiMeetTools;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
@@ -41,7 +40,6 @@ public class MockProtocolProvider
     private MockXmppConnection connection;
 
     private AbstractOperationSetJingle jingleOpSet;
-    private OperationSetJitsiMeetTools meetToolsApi;
 
     public XmppConnectionConfig config;
 
@@ -50,7 +48,6 @@ public class MockProtocolProvider
         this.config = config;
         connection = new MockXmppConnection(getOurJID());
         includeMultiUserChatOpSet();
-        meetToolsApi = new MockJitsiMeetTools();
         this.jingleOpSet = new MockOperationSetJingle(this);
     }
 
@@ -109,12 +106,6 @@ public class MockProtocolProvider
     public OperationSetJingle getJingleApi()
     {
         return jingleOpSet;
-    }
-
-    @Override
-    public OperationSetJitsiMeetTools getMeetToolsApi()
-    {
-        return meetToolsApi;
     }
 
     public EntityFullJid getOurJID()

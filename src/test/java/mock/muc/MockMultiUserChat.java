@@ -124,6 +124,11 @@ public class MockMultiUserChat
     }
 
     @Override
+    public void setPresenceExtension(ExtensionElement extension, boolean remove)
+    {
+    }
+
+    @Override
     public String getName()
     {
         return roomName.toString();

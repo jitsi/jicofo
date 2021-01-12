@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.OperationSetJitsiMeetTools;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -61,12 +59,6 @@ public abstract class CommonJibriStuff
     protected final Logger logger;
 
     /**
-     * Meet tools instance used to inject packet extensions to Jicofo's MUC
-     * presence.
-     */
-    final OperationSetJitsiMeetTools meetTools;
-
-    /**
      * Jibri detector which notifies about Jibri availability status changes.
      */
     final JibriDetector jibriDetector;
@@ -100,9 +92,6 @@ public abstract class CommonJibriStuff
         this.conference = Objects.requireNonNull(conference, "conference");
         this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.jibriDetector = jibriDetector;
-
-        XmppProvider protocolService = conference.getXmppProvider();
-        this.meetTools = protocolService.getMeetToolsApi();
 
         this.logger = logger;
     }

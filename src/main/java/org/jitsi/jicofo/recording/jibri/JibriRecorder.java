@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
@@ -301,7 +302,7 @@ public class JibriRecorder
 
         if (chatRoom2 != null)
         {
-            meetTools.sendPresenceExtension(chatRoom2, recordingStatus);
+            chatRoom2.setPresenceExtension(recordingStatus, false);
         }
     }
 }

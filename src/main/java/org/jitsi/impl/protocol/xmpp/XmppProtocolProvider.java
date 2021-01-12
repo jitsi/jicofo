@@ -70,7 +70,6 @@ public class XmppProtocolProvider
      */
     private final OperationSetJingleImpl jingleOpSet;
     private final OperationSetJibri jibriApi;
-    private final OperationSetJitsiMeetTools meetToolsApi;
 
     /**
      * The XMPP connection used by this instance.
@@ -116,7 +115,6 @@ public class XmppProtocolProvider
 
         jingleOpSet = new OperationSetJingleImpl(this);
         addOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
-        meetToolsApi = new OperationSetMeetToolsImpl();
         jibriApi = new OperationSetJibri(this);
     }
 
@@ -299,12 +297,6 @@ public class XmppProtocolProvider
     public OperationSetJibri getJibriApi()
     {
         return jibriApi;
-    }
-
-    @Override
-    public OperationSetJitsiMeetTools getMeetToolsApi()
-    {
-        return meetToolsApi;
     }
 
     /**

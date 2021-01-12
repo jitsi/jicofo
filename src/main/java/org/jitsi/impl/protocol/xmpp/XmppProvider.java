@@ -86,6 +86,5 @@ public interface XmppProvider
     {
         return null;
     }
-    OperationSetJitsiMeetTools getMeetToolsApi();
 }
 

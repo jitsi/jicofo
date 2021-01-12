@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.OperationSetJitsiMeetTools;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
@@ -146,12 +145,6 @@ public class JitsiMeetConferenceImpl
      * participants.
      */
     private OperationSetJingle jingle;
-
-    /**
-     * Jitsi Meet tool used for specific operations like adding presence
-     * extensions.
-     */
-    private OperationSetJitsiMeetTools meetTools;
 
     /**
      * The list of all conference participants.
@@ -340,7 +333,6 @@ public class JitsiMeetConferenceImpl
             }
 
             chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
-            meetTools = protocolProviderHandler.getProtocolProvider().getMeetToolsApi();
             jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
@@ -566,7 +558,7 @@ public class JitsiMeetConferenceImpl
         conferenceProperties.put(key, value);
         if (updatePresence && chatRoom != null)
         {
-            meetTools.sendPresenceExtension(chatRoom, ConferenceProperties.clone(conferenceProperties));
+            chatRoom.setPresenceExtension(ConferenceProperties.clone(conferenceProperties), false);
         }
     }
 
@@ -731,7 +723,7 @@ public class JitsiMeetConferenceImpl
                 BridgeNotAvailablePacketExt.ELEMENT_NAME,
                 BridgeNotAvailablePacketExt.NAMESPACE))
             {
-                meetTools.sendPresenceExtension(chatRoom, new BridgeNotAvailablePacketExt());
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
             }
             return null;
 
@@ -2421,10 +2413,10 @@ public class JitsiMeetConferenceImpl
     {
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
-        ChatRoom chatRoom = this.chatRoom;
-        if (meetTools != null && chatRoom != null)
+        ChatRoom2 chatRoom = this.chatRoom;
+        if (chatRoom != null)
         {
-            meetTools.removePresenceExtension(chatRoom, new BridgeNotAvailablePacketExt());
+            chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
         }
     }
 

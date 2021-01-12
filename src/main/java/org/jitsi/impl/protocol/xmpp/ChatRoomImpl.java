@@ -976,8 +976,8 @@ public class ChatRoomImpl
         return null;
     }
 
-    public void setPresenceExtension(ExtensionElement extension,
-                                     boolean          remove)
+    @Override
+    public void setPresenceExtension(ExtensionElement extension, boolean remove)
     {
         if (lastPresenceSent == null)
         {
