@@ -157,14 +157,6 @@ public class MockProtocolProvider
         return null;
     }
 
-
-    public void includeBasicTeleOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetBasicTelephony.class,
-            new MockBasicTeleOpSet(this));
-    }
-
     public void includeMultiUserChatOpSet()
     {
         addSupportedOperationSet(
