@@ -72,8 +72,6 @@ public class MockMultiUserChat
     private final Vector<ChatRoomMemberRoleListener> memberRoleListeners
         = new Vector<>();
 
-    private JitsiMeetConference conference;
-
     public MockMultiUserChat(EntityBareJid roomName,
                              ProtocolProviderService protocolProviderService)
     {
@@ -111,7 +109,6 @@ public class MockMultiUserChat
     @Override
     public void setConference(JitsiMeetConference conference)
     {
-        this.conference = conference;
     }
 
     @Override
@@ -165,7 +162,7 @@ public class MockMultiUserChat
         throws OperationFailedException
     {
         if (isJoined)
-            throw new OperationFailedException("Alread joined the room", 0);
+            throw new OperationFailedException("Already joined the room", 0);
 
         isJoined = true;
 
@@ -203,23 +200,6 @@ public class MockMultiUserChat
 
         fireLocalUserRoleEvent(
             me, oldRole, true);
-    }
-
-    public MockRoomMember mockOwnerJoin(EntityFullJid name)
-    {
-        MockRoomMember member = new MockRoomMember(name, this);
-
-        member.setRole(ChatRoomMemberRole.OWNER);
-
-        mockJoin(member);
-
-        return member;
-    }
-
-    public MockRoomMember mockJoin(String nickname)
-            throws XmppStringprepException
-    {
-        return mockJoin(createMockRoomMember(nickname));
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
