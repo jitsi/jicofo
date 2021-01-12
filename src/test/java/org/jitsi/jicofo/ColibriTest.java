@@ -74,7 +74,7 @@ public class ColibriTest
         TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
         MockProtocolProvider pps = testConference.getFocusProtocolProvider();
-        OperationSetColibriConference colibriTool = pps.getOperationSet(OperationSetColibriConference.class);
+        OperationSetColibriConference colibriTool = pps.getColibriApi();
         ColibriConference colibriConf = colibriTool.createNewConference();
 
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));

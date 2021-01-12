@@ -335,7 +335,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            colibri = jvbXmppConnection.getOperationSet(OperationSetColibriConference.class);
+            colibri = jvbXmppConnection.getProtocolProvider().getColibriApi();
             jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
 
             // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only

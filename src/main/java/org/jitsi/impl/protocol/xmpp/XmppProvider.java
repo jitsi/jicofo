@@ -22,6 +22,7 @@ import java.util.concurrent.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.colibri.*;
 
 /**
  * Based on Jitsi's {@code ProtocolProviderService}, simplified for the needs of jicofo.
@@ -78,5 +79,7 @@ public interface XmppProvider
     XmppConnectionConfig getConfig();
 
     XmppConnection getXmppConnection();
+
+    OperationSetColibriConference getColibriApi();
 }
 

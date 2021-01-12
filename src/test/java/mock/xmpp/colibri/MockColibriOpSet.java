@@ -31,21 +31,18 @@ public class MockColibriOpSet
 {
     private final MockProtocolProvider protocolProvider;
 
-    private final OperationSetColibriConferenceImpl colibriImpl;
+    private final OperationSetColibriConferenceImpl colibriImpl = new OperationSetColibriConferenceImpl();
 
     public MockColibriOpSet(MockProtocolProvider protocolProvider)
     {
         this.protocolProvider = protocolProvider;
-
-        colibriImpl = new OperationSetColibriConferenceImpl();
 
         colibriImpl.initialize(protocolProvider.getXmppConnection());
     }
 
     public AllocThreadingTestColibriConference createAllocThreadingConf()
     {
-        return new AllocThreadingTestColibriConference(
-            protocolProvider.getXmppConnection());
+        return new AllocThreadingTestColibriConference(protocolProvider.getXmppConnection());
     }
 
     @Override

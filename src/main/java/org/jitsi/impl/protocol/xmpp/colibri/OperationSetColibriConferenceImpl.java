@@ -36,8 +36,7 @@ import org.jivesoftware.smack.provider.*;
 public class OperationSetColibriConferenceImpl
     implements OperationSetColibriConference
 {
-    private final static Logger logger
-            = Logger.getLogger(OperationSetColibriConferenceImpl.class);
+    private final static Logger logger = Logger.getLogger(OperationSetColibriConferenceImpl.class);
 
     private XmppConnection connection;
 
@@ -70,8 +69,7 @@ public class OperationSetColibriConferenceImpl
     @Override
     public ColibriConference createNewConference()
     {
-        ColibriConference conf
-            = new ColibriConferenceImpl(connection);
+        ColibriConference conf = new ColibriConferenceImpl(connection);
         logger.info("Conference created: " + conf);
         return conf;
     }

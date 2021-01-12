@@ -100,7 +100,7 @@ public class ColibriThreadingTest
         MockProtocolProvider mockProvider =
             (MockProtocolProvider) osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider();
 
-        MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
+        MockColibriOpSet colibriOpSet = mockProvider.getColibriApi();
 
         Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 
@@ -205,7 +205,7 @@ public class ColibriThreadingTest
         MockProtocolProvider mockProvider
             = (MockProtocolProvider) osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider();
 
-        MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
+        MockColibriOpSet colibriOpSet = mockProvider.getColibriApi();
 
         Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 

@@ -44,12 +44,14 @@ public class MockProtocolProvider
 
     public XmppConnectionConfig config;
 
+    private MockColibriOpSet colibriApi;
+
     public MockProtocolProvider(XmppConnectionConfig config)
     {
         this.config = config;
+        colibriApi = new MockColibriOpSet(this);
         includeMultiUserChatOpSet();
         includeJitsiMeetTools();
-        includeColibriOpSet();
         includeJingleOpSet();
         includeSimpleCapsOpSet();
     }
@@ -93,11 +95,6 @@ public class MockProtocolProvider
         addOperationSet(OperationSetMultiUserChat.class, new MockMultiUserChatOpSet(this));
     }
 
-    public void includeColibriOpSet()
-    {
-        addOperationSet(OperationSetColibriConference.class, new MockColibriOpSet(this));
-    }
-
     public void includeJingleOpSet()
     {
         this.jingleOpSet = new MockOperationSetJingle(this);
@@ -125,6 +122,12 @@ public class MockProtocolProvider
         return connection;
     }
 
+    @Override
+    public MockColibriOpSet getColibriApi()
+    {
+        return colibriApi;
+    }
+
     public EntityFullJid getOurJID()
     {
         try
@@ -146,10 +149,5 @@ public class MockProtocolProvider
     public MockSetSimpleCapsOpSet getMockCapsOpSet()
     {
         return (MockSetSimpleCapsOpSet) getOperationSet(OperationSetSimpleCaps.class);
-    }
-
-    public MockColibriOpSet getMockColibriOpSet()
-    {
-        return (MockColibriOpSet) getOperationSet(OperationSetColibriConference.class);
     }
 }
