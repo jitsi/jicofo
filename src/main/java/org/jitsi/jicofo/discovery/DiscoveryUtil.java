@@ -19,6 +19,7 @@ package org.jitsi.jicofo.discovery;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
@@ -111,8 +112,7 @@ public class DiscoveryUtil
      *        be used for discovery.
      * @param address XMPP address of the participant.
      */
-    public static List<String> discoverParticipantFeatures
-        (ProtocolProviderService protocolProvider, EntityFullJid address)
+    public static List<String> discoverParticipantFeatures(XmppProvider protocolProvider, EntityFullJid address)
     {
         OperationSetSimpleCaps disco = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
         if (disco == null)

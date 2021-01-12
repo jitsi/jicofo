@@ -15,10 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.xmpp
+package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.XmppProvider
-
-interface XmppProviderFactory {
-    fun createXmppProvider(config: XmppConnectionConfig): XmppProvider
+public interface RegistrationListener
+{
+    void registrationChanged(boolean registered);
 }

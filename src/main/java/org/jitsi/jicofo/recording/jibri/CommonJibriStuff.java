@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -99,7 +100,7 @@ public abstract class CommonJibriStuff
         this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.jibriDetector = jibriDetector;
 
-        ProtocolProviderService protocolService = conference.getXmppProvider();
+        XmppProvider protocolService = conference.getXmppProvider();
 
         this.meetTools = protocolService.getOperationSet(OperationSetJitsiMeetTools.class);
 

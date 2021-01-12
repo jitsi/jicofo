@@ -18,7 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
@@ -39,9 +38,7 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.jxmpp.stringprep.*;
 
 import java.io.*;
 import java.util.*;
@@ -56,7 +53,7 @@ import static org.jivesoftware.smack.SmackException.*;
  * @author Pawel Domas
  */
 public class XmppProtocolProvider
-    extends AbstractProtocolProviderService
+    extends AbstractXmppProvider
 {
     static
     {
@@ -74,11 +71,6 @@ public class XmppProtocolProvider
      * Jingle operation set.
      */
     private final OperationSetJingleImpl jingleOpSet;
-
-    /**
-     * Current registration state.
-     */
-    private RegistrationState registrationState = RegistrationState.UNREGISTERED;
 
     /**
      * The XMPP connection used by this instance.
@@ -127,16 +119,16 @@ public class XmppProtocolProvider
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
-        addSupportedOperationSet(OperationSetColibriConference.class, colibriTools);
+        addOperationSet(OperationSetColibriConference.class, colibriTools);
 
         this.jingleOpSet = new OperationSetJingleImpl(this);
-        addSupportedOperationSet(OperationSetJingle.class, jingleOpSet);
+        addOperationSet(OperationSetJingle.class, jingleOpSet);
 
-        addSupportedOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
-        addSupportedOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
-        addSupportedOperationSet(OperationSetSimpleCaps.class, new OpSetSimpleCapsImpl(this));
-        addSupportedOperationSet(OperationSetDirectSmackXmpp.class, new OpSetDirectSmackXmppImpl(this));
-        addSupportedOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
+        addOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
+        addOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
+        addOperationSet(OperationSetSimpleCaps.class, new OpSetSimpleCapsImpl(this));
+        addOperationSet(OperationSetDirectSmackXmpp.class, new OpSetDirectSmackXmppImpl(this));
+        addOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
     }
 
     /**
@@ -155,27 +147,13 @@ public class XmppProtocolProvider
         return "XmppProtocolProvider " + config;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public synchronized void register(SecurityAuthority securityAuthority)
-        throws OperationFailedException
-    {
-        throw new OperationFailedException(
-                "Not implemented, use register(executorService)",
-                OperationFailedException.GENERAL_ERROR);
-    }
-
     public synchronized void register(ScheduledExecutorService executorService)
-            throws OperationFailedException
     {
-        int serverPort = config.getPort();
-
         XMPPTCPConnectionConfiguration.Builder connConfig
             = XMPPTCPConnectionConfiguration.builder()
                 .setHost(config.getHostname())
-                .setPort(serverPort)
+                .setPort(config.getPort())
                 .setXmppDomain(config.getDomain());
 
         // Required for PacketDebugger and XMPP stats to work
@@ -278,42 +256,11 @@ public class XmppProtocolProvider
         }
     }
 
-    private void notifyConnected()
-    {
-        if (!RegistrationState.REGISTERED.equals(registrationState))
-        {
-            RegistrationState oldState = registrationState;
-            registrationState = RegistrationState.REGISTERED;
-
-            fireRegistrationStateChanged(
-                oldState,
-                RegistrationState.REGISTERED,
-                RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-                null);
-        }
-    }
-
-    private void notifyDisconnected()
-    {
-        if (!RegistrationState.UNREGISTERED.equals(registrationState))
-        {
-            RegistrationState oldState = registrationState;
-            registrationState = RegistrationState.UNREGISTERED;
-
-            fireRegistrationStateChanged(
-                oldState,
-                RegistrationState.UNREGISTERED,
-                RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-                null);
-        }
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
     public synchronized void unregister()
-        throws OperationFailedException
     {
         if (connection == null)
         {
@@ -335,80 +282,13 @@ public class XmppProtocolProvider
 
         logger.info(this + " Disconnected ");
 
-        notifyDisconnected();
+        setRegistered(false);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public RegistrationState getRegistrationState()
+    public XmppConnectionConfig getConfig()
     {
-        return registrationState;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getProtocolName()
-    {
-        return ProtocolNames.JABBER;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ProtocolIcon getProtocolIcon()
-    {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void shutdown()
-    {
-        if (connection != null)
-        {
-            try
-            {
-                unregister();
-            }
-            catch (OperationFailedException e)
-            {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AccountID getAccountID()
-    {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isSignalingTransportSecure()
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TransportProtocol getTransportProtocol()
-    {
-        return TransportProtocol.UNKNOWN;
+        return config;
     }
 
     /**
@@ -478,11 +358,6 @@ public class XmppProtocolProvider
         this.disableCertificateVerification = disableCertificateVerification;
     }
 
-    public XmppConnectionConfig getConfig()
-    {
-        return config;
-    }
-
     class XmppConnectionListener
         implements ConnectionListener
     {
@@ -494,7 +369,7 @@ public class XmppProtocolProvider
         @Override
         public void authenticated(XMPPConnection connection, boolean resumed)
         {
-            notifyConnected();
+            setRegistered(true);
         }
 
         @Override
@@ -506,7 +381,7 @@ public class XmppProtocolProvider
 
             //notifyConnFailed(null);
 
-            notifyDisconnected();
+            setRegistered(false);
         }
 
         @Override
@@ -518,7 +393,7 @@ public class XmppProtocolProvider
 
             //notifyConnFailed(e);
 
-            notifyDisconnected();
+            setRegistered(false);
         }
 
         /**

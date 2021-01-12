@@ -21,6 +21,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.Message;
 import net.java.sip.communicator.service.protocol.event.*;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 
@@ -51,7 +52,7 @@ public class MockMultiUserChat
 
     private final EntityBareJid roomName;
 
-    private final ProtocolProviderService protocolProvider;
+    private final XmppProvider protocolProvider;
 
     private volatile boolean isJoined;
 
@@ -76,7 +77,7 @@ public class MockMultiUserChat
     private final String myNickname;
 
     public MockMultiUserChat(EntityBareJid roomName,
-                             ProtocolProviderService protocolProviderService,
+                             XmppProvider protocolProviderService,
                              String myNickname)
     {
         this.roomName = roomName;
@@ -114,6 +115,12 @@ public class MockMultiUserChat
     @Override
     public void setConference(JitsiMeetConference conference)
     {
+    }
+
+    @Override
+    public XmppProvider getXmppProvider()
+    {
+        return protocolProvider;
     }
 
     @Override
@@ -463,7 +470,7 @@ public class MockMultiUserChat
     @Override
     public ProtocolProviderService getParentProvider()
     {
-        return protocolProvider;
+        return null;
     }
 
     @Override

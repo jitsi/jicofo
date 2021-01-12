@@ -680,6 +680,12 @@ public class ChatRoomImpl
     @Override
     public ProtocolProviderService getParentProvider()
     {
+        return null;
+    }
+
+    @Override
+    public XmppProvider getXmppProvider()
+    {
         return opSet.getProtocolProvider();
     }
 
@@ -793,14 +799,12 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        XmppProtocolProvider provider
-                = (XmppProtocolProvider) getParentProvider();
-        XmppConnection connection
-                = provider.getConnectionAdapter();
+        XmppProtocolProvider provider = (XmppProtocolProvider) getXmppProvider();
+        XmppConnection connection = provider.getConnectionAdapter();
 
         try
         {
-            IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
+            IQ reply = connection.sendPacketAndGetReply(admin);
             if (reply == null || reply.getType() != IQ.Type.result)
             {
                 // FIXME: we should have checked exceptions for all operations
@@ -1050,7 +1054,7 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getParentProvider();
+        XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getXmppProvider();
 
         XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
         if (connection == null)

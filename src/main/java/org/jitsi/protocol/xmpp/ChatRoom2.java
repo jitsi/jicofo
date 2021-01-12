@@ -19,6 +19,7 @@ package org.jitsi.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -81,4 +82,6 @@ public interface ChatRoom2
                         Collection<ExtensionElement> toAdd);
 
     void setConference(JitsiMeetConference conference);
+
+    XmppProvider getXmppProvider();
 }

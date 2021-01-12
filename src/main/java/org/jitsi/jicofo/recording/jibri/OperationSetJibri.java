@@ -34,10 +34,9 @@ import java.util.*;
  */
 public class OperationSetJibri
     extends AbstractIqRequestHandler
-    implements OperationSet, RegistrationStateChangeListener
+    implements OperationSet, RegistrationListener
 {
-    private final List<CommonJibriStuff> jibris = Collections.synchronizedList(
-        new LinkedList<CommonJibriStuff>());
+    private final List<CommonJibriStuff> jibris = Collections.synchronizedList(new LinkedList<>());
 
     private final XmppProtocolProvider protocolProvider;
 
@@ -50,7 +49,7 @@ public class OperationSetJibri
     {
         super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, Mode.async);
         this.protocolProvider = protocolProvider;
-        protocolProvider.addRegistrationStateChangeListener(this);
+        protocolProvider.addRegistrationListener(this);
     }
 
     /**
@@ -103,10 +102,10 @@ public class OperationSetJibri
     }
 
     @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    public void registrationChanged(boolean registered)
     {
         // Do initializations which require valid connection
-        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        if (registered)
         {
             protocolProvider.getConnection().registerIQRequestHandler(this);
         }

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
@@ -68,7 +69,7 @@ import java.util.stream.*;
  */
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference,
-               RegistrationStateChangeListener,
+               RegistrationListener,
                JingleRequestHandler
 {
     /**
@@ -1287,13 +1288,12 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    public void registrationChanged(boolean registered)
     {
-        logger.info("Reg state changed: " + evt);
+        logger.info("Reg state changed: " + registered);
 
-        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        if (registered)
         {
-
             if (chatRoom == null)
             {
                 try
@@ -1308,7 +1308,7 @@ public class JitsiMeetConferenceImpl
                 }
             }
         }
-        else if (RegistrationState.UNREGISTERED.equals(evt.getNewState()))
+        else
         {
             stop();
         }
@@ -2166,7 +2166,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Returns XMPP protocol provider of the focus account.
      */
-    public ProtocolProviderService getXmppProvider()
+    public XmppProvider getXmppProvider()
     {
         return protocolProviderHandler.getProtocolProvider();
     }

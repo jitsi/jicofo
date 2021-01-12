@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.health.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -88,7 +89,7 @@ public class JvbDoctor
 
     private XmppConnection getConnection() {
         FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
-        ProtocolProviderService protocolProvider = focusManager.getJvbProtocolProvider();
+        XmppProvider protocolProvider = focusManager.getJvbProtocolProvider();
         OperationSetDirectSmackXmpp xmppOpSet = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
 
         return protocolProvider.isRegistered() ? xmppOpSet.getXmppConnection() : null;

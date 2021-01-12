@@ -21,30 +21,23 @@ import mock.muc.*;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
+
+import java.util.concurrent.*;
 
 /**
  *
  * @author Pawel Domas
  */
 public class MockProtocolProvider
-    extends AbstractProtocolProviderService
+    extends AbstractXmppProvider
 {
-    /**
-     * The logger.
-     */
-    private final static Logger logger = Logger.getLogger(MockProtocolProvider.class);
-
-
-    private RegistrationState registrationState = RegistrationState.UNREGISTERED;
-
     private MockXmppConnection connection;
 
     private AbstractOperationSetJingle jingleOpSet;
@@ -69,124 +62,56 @@ public class MockProtocolProvider
     }
 
     @Override
-    public void register(SecurityAuthority authority)
-        throws OperationFailedException
+    public void register(ScheduledExecutorService executorService)
     {
         if (jingleOpSet != null)
         {
             connection.registerIQRequestHandler(jingleOpSet);
         }
 
-        setRegistrationState(
-            RegistrationState.REGISTERED,
-            RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-            null);
-    }
-
-    private void setRegistrationState(RegistrationState newState, int reasonCode, String reason)
-    {
-        RegistrationState oldState = getRegistrationState();
-
-        this.registrationState = newState;
-
-        fireRegistrationStateChanged(
-            oldState, newState, reasonCode, reason);
+        setRegistered(true);
     }
 
     @Override
     public void unregister()
-        throws OperationFailedException
     {
         if (jingleOpSet != null)
         {
             connection.unregisterIQRequestHandler(jingleOpSet);
         }
 
-        setRegistrationState(
-            RegistrationState.UNREGISTERED,
-            RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-            null);
+        setRegistered(false);
     }
 
     @Override
-    public RegistrationState getRegistrationState()
+    public XmppConnectionConfig getConfig()
     {
-        return registrationState;
-    }
-
-    @Override
-    public String getProtocolName()
-    {
-        return "Jabber";
-    }
-
-    @Override
-    public ProtocolIcon getProtocolIcon()
-    {
-        return null;
-    }
-
-    @Override
-    public void shutdown()
-    {
-        try
-        {
-            unregister();
-        }
-        catch (OperationFailedException e)
-        {
-            logger.error(e, e);
-        }
-    }
-
-    @Override
-    public AccountID getAccountID()
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isSignalingTransportSecure()
-    {
-        return false;
-    }
-
-    @Override
-    public TransportProtocol getTransportProtocol()
-    {
-        return null;
+        return config;
     }
 
     public void includeMultiUserChatOpSet()
     {
-        addSupportedOperationSet(
-            OperationSetMultiUserChat.class,
-            new MockMultiUserChatOpSet(this));
+        addOperationSet(OperationSetMultiUserChat.class, new MockMultiUserChatOpSet(this));
     }
 
     public void includeColibriOpSet()
     {
-        addSupportedOperationSet(
-            OperationSetColibriConference.class,
-            new MockColibriOpSet(this));
+        addOperationSet(OperationSetColibriConference.class, new MockColibriOpSet(this));
     }
 
     public void includeJingleOpSet()
     {
         this.jingleOpSet = new MockOperationSetJingle(this);
 
-        addSupportedOperationSet(
-            OperationSetJingle.class,
-            jingleOpSet);
+        addOperationSet(OperationSetJingle.class, jingleOpSet);
     }
 
     public void includeSimpleCapsOpSet()
     {
         try
         {
-            addSupportedOperationSet(
-                OperationSetSimpleCaps.class,
-                new MockSetSimpleCapsOpSet(JidCreate.from(config.getDomain())));
+            addOperationSet(
+                    OperationSetSimpleCaps.class, new MockSetSimpleCapsOpSet(JidCreate.from(config.getDomain())));
         }
         catch (XmppStringprepException e)
         {
@@ -196,14 +121,14 @@ public class MockProtocolProvider
 
     public void includeDirectXmppOpSet()
     {
-        addSupportedOperationSet(
+        addOperationSet(
             OperationSetDirectSmackXmpp.class,
             new MockSmackXmppOpSet(this));
     }
 
     public void includeJitsiMeetTools()
     {
-        addSupportedOperationSet(
+        addOperationSet(
             OperationSetJitsiMeetTools.class,
             new MockJitsiMeetTools(this));
     }

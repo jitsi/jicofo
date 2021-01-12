@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider
+import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -81,7 +82,7 @@ open class JicofoServices(
         // Init smack shit
         initializeSmack()
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig): ProtocolProviderService {
+            override fun createXmppProvider(config: XmppConnectionConfig): XmppProvider {
                 return XmppProtocolProvider(config)
             }
         }

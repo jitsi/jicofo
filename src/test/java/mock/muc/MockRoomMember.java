@@ -54,8 +54,7 @@ public class MockRoomMember
     public void setupFeatures()
     {
         OperationSetSimpleCaps caps
-                = room.getParentProvider()
-                .getOperationSet(OperationSetSimpleCaps.class);
+                = room.getXmppProvider().getOperationSet(OperationSetSimpleCaps.class);
 
         MockSetSimpleCapsOpSet mockCaps = (MockSetSimpleCapsOpSet) caps;
 
