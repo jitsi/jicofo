@@ -31,27 +31,6 @@ public interface OperationSetSimpleCaps
     extends OperationSet
 {
     /**
-     * Returns the list of sub-nodes of given <tt>node</tt>.
-     *
-     * @param node the node for which child nodes will be discovered.
-     *
-     * @return the list of sub-nodes of given <tt>node</tt>.
-     */
-    Set<Jid> getItems(Jid node);
-
-    /**
-     * Check if given node supports specified feature set.
-     *
-     * @param node the node to be checked.
-     * @param features the array of feature names to be checked.
-     *
-     * @return <tt>true</tt> if given node support all features specified in
-     *         <tt>features</tt> array or <tt>false</tt> if at least on of
-     *         the features is not supported.
-     */
-    boolean hasFeatureSupport(Jid node, String[] features);
-
-    /**
      * Returns the list of features supported by given <tt>node</tt>. 
      * @param node XMPP address of the entity for which features wil be 
      *        discovered.
@@ -60,6 +39,4 @@ public interface OperationSetSimpleCaps
      *         errors.
      */
     List<String> getFeatures(Jid node);
-
-    //boolean hasFeatureSupport(String node, String subnode, String[] features);
 }

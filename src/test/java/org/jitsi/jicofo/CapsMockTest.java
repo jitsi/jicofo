@@ -57,13 +57,5 @@ public class CapsMockTest
             new MockCapsNode(
                     JidCreate.from("node3"),
                 new String[]{ "featureC"}));
-
-        assertTrue(
-            mockCaps.hasFeatureSupport(
-                    JidCreate.from("node1"),
-                new String[]{ "featureA", "featureB"}));
-
-        Set<Jid> nodes = mockCaps.getItems(JidCreate.domainBareFrom("root"));
-        assertEquals(3, nodes.size());
     }
 }

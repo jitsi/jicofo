@@ -19,8 +19,6 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smackx.disco.*;
 import org.jivesoftware.smackx.disco.packet.*;
 import org.jxmpp.jid.*;
@@ -37,8 +35,7 @@ public class OpSetSimpleCapsImpl
     /**
      * The logger.
      */
-    private final static Logger logger
-            = Logger.getLogger(OpSetSimpleCapsImpl.class);
+    private final static Logger logger = Logger.getLogger(OpSetSimpleCapsImpl.class);
 
     private ServiceDiscoveryManager discoveryManager;
 
@@ -52,72 +49,10 @@ public class OpSetSimpleCapsImpl
     private ServiceDiscoveryManager getDiscoveryManager() {
         if (this.discoveryManager == null)
         {
-            this.discoveryManager
-                = ServiceDiscoveryManager.getInstanceFor(
-                    xmppProvider.getConnection());
+            this.discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppProvider.getConnection());
         }
 
         return discoveryManager;
-    }
-
-    public Set<Jid> getItems(Jid node)
-    {
-        if (getDiscoveryManager() == null)
-        {
-            return null;
-        }
-
-        try
-        {
-            DiscoverItems itemsDisco = discoveryManager.discoverItems(node);
-
-            if (logger.isDebugEnabled())
-                logger.debug("HAVE Discovered items for: " + node);
-
-            Set<Jid> result = new HashSet<>();
-
-            for (DiscoverItems.Item item : itemsDisco.getItems())
-            {
-                if (logger.isDebugEnabled())
-                    logger.debug(item.toXML());
-
-                result.add(item.getEntityID());
-            }
-
-            return result;
-        }
-        catch (XMPPException
-                | InterruptedException
-                | NoResponseException
-                | NotConnectedException e)
-        {
-            logger.error(
-                "Error while discovering the services of " + node
-                        + " , error msg: " + e.getMessage());
-
-            return null;
-        }
-    }
-
-    @Override
-    public boolean hasFeatureSupport(Jid node, String[] features)
-    {
-        if (getDiscoveryManager() == null)
-        {
-            return false;
-        }
-
-        try
-        {
-            return discoveryManager.supportsFeatures(node, features);
-        }
-        catch (NoResponseException
-                | XMPPException.XMPPErrorException
-                | NotConnectedException
-                | InterruptedException e)
-        {
-            return false;
-        }
     }
 
     public List<String> getFeatures(Jid node)
