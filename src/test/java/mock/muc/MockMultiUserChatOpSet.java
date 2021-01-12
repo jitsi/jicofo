@@ -17,6 +17,7 @@
  */
 package mock.muc;
 
+import mock.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -33,7 +34,7 @@ public class MockMultiUserChatOpSet
     private static final Map<String, MockMucShare> mucDomainSharing
         = new HashMap<>();
 
-    private final ProtocolProviderService protocolProviderService;
+    private final MockProtocolProvider protocolProviderService;
 
     private final Map<EntityBareJid, MockMultiUserChat> chatRooms
         = new HashMap<>();
@@ -50,8 +51,7 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    public MockMultiUserChatOpSet(
-        ProtocolProviderService protocolProviderService)
+    public MockMultiUserChatOpSet(MockProtocolProvider protocolProviderService)
     {
         this.protocolProviderService = protocolProviderService;
     }
@@ -103,7 +103,10 @@ public class MockMultiUserChatOpSet
             }
 
             MockMultiUserChat chatRoom
-                = new MockMultiUserChat(roomNameJid, protocolProviderService);
+                = new MockMultiUserChat(
+                    roomNameJid,
+                    protocolProviderService,
+                    protocolProviderService.config.getUsername().toString());
 
             chatRooms.put(roomNameJid, chatRoom);
 

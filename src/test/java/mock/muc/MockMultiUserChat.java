@@ -72,13 +72,16 @@ public class MockMultiUserChat
     private final Vector<ChatRoomMemberRoleListener> memberRoleListeners
         = new Vector<>();
 
-    private JitsiMeetConference conference;
+    // The nickname to join with
+    private final String myNickname;
 
     public MockMultiUserChat(EntityBareJid roomName,
-                             ProtocolProviderService protocolProviderService)
+                             ProtocolProviderService protocolProviderService,
+                             String myNickname)
     {
         this.roomName = roomName;
         this.protocolProvider = protocolProviderService;
+        this.myNickname = myNickname;
     }
 
     @Override
@@ -111,7 +114,6 @@ public class MockMultiUserChat
     @Override
     public void setConference(JitsiMeetConference conference)
     {
-        this.conference = conference;
     }
 
     @Override
@@ -136,8 +138,7 @@ public class MockMultiUserChat
     public void join()
         throws OperationFailedException
     {
-        joinAs(getParentProvider().getAccountID()
-            .getAccountPropertyString(ProtocolProviderFactory.DISPLAY_NAME));
+        joinAs(myNickname);
     }
 
     @Override
@@ -165,7 +166,7 @@ public class MockMultiUserChat
         throws OperationFailedException
     {
         if (isJoined)
-            throw new OperationFailedException("Alread joined the room", 0);
+            throw new OperationFailedException("Already joined the room", 0);
 
         isJoined = true;
 
@@ -203,23 +204,6 @@ public class MockMultiUserChat
 
         fireLocalUserRoleEvent(
             me, oldRole, true);
-    }
-
-    public MockRoomMember mockOwnerJoin(EntityFullJid name)
-    {
-        MockRoomMember member = new MockRoomMember(name, this);
-
-        member.setRole(ChatRoomMemberRole.OWNER);
-
-        mockJoin(member);
-
-        return member;
-    }
-
-    public MockRoomMember mockJoin(String nickname)
-            throws XmppStringprepException
-    {
-        return mockJoin(createMockRoomMember(nickname));
     }
 
     public MockRoomMember createMockRoomMember(String nickname)

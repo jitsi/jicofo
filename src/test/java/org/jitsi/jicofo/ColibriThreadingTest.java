@@ -97,9 +97,8 @@ public class ColibriThreadingTest
     public void testColibriMultiThreading()
         throws Exception
     {
-        ProviderListener providerListener = new ProviderListener(osgi.bc);
-
-        MockProtocolProvider mockProvider = (MockProtocolProvider) providerListener.obtainProvider(1000);
+        MockProtocolProvider mockProvider =
+            (MockProtocolProvider) osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider();
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 
@@ -203,10 +202,8 @@ public class ColibriThreadingTest
     public void testCreateFailure()
         throws Exception
     {
-        ProviderListener providerListener = new ProviderListener(osgi.bc);
-
         MockProtocolProvider mockProvider
-            = (MockProtocolProvider) providerListener.obtainProvider(1000);
+            = (MockProtocolProvider) osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider();
 
         MockColibriOpSet colibriOpSet = mockProvider.getMockColibriOpSet();
 

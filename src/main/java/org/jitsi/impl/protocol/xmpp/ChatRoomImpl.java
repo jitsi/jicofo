@@ -207,8 +207,9 @@ public class ChatRoomImpl
     public void join()
         throws OperationFailedException
     {
-        joinAs(getParentProvider().getAccountID()
-            .getAccountPropertyString(ProtocolProviderFactory.DISPLAY_NAME));
+        // This is very temporary (and already used elsewhere in the class).
+        XmppProtocolProvider xmppProvider = (XmppProtocolProvider) getParentProvider();
+        joinAs(xmppProvider.getConfig().getUsername().toString());
     }
 
     @Override

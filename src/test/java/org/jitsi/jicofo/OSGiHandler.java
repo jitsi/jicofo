@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import com.typesafe.config.*;
+import mock.muc.*;
 import org.jitsi.config.*;
 import org.jitsi.impl.osgi.framework.*;
 import org.jitsi.jicofo.osgi.*;
@@ -113,7 +114,6 @@ public class OSGiHandler
         };
 
         JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
-        bundleConfig.setUseMockProtocols(true);
         launcher = new OSGiLauncher(bundleConfig.getBundles(), ClassLoader.getSystemClassLoader());
         launcher.start(bundleActivator);
 
@@ -133,7 +133,8 @@ public class OSGiHandler
         // Activators are executed asynchronously, so a hack to wait for the last activator is used
         WaitableBundleActivator.waitUntilStarted();
 
-        jicofoServices = new JicofoServices(bc);
+        SmackKt.initializeSmack();
+        jicofoServices = new JicofoTestServices(bc);
         JicofoServices.jicofoServicesSingleton = jicofoServices;
     }
 
@@ -150,6 +151,8 @@ public class OSGiHandler
 
         if (bc != null)
             throw new RuntimeException("Failed to stop OSGI");
+
+        MockMultiUserChatOpSet.cleanMucSharing();
     }
 
     public BundleContext bc()

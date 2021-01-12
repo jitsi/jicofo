@@ -19,16 +19,15 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.service.protocol.jabber.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
 
-import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
@@ -70,11 +69,6 @@ public class XmppProtocolProvider
      * The logger used by this class.
      */
     private final static Logger logger = Logger.getLogger(XmppProtocolProvider.class);
-
-    /**
-     * Active account.
-     */
-    private final JabberAccountID jabberAccountID;
 
     /**
      * Jingle operation set.
@@ -122,15 +116,14 @@ public class XmppProtocolProvider
      */
     private boolean disableCertificateVerification = false;
 
+    private final XmppConnectionConfig config;
+
     /**
-     * Creates new instance of {@link XmppProtocolProvider} for given AccountID.
-     *
-     * @param accountID the <tt>JabberAccountID</tt> that will be used by new
-     *                  instance.
+     * Creates new instance of {@link XmppProtocolProvider} with the given configuration.
      */
-    public XmppProtocolProvider(AccountID accountID)
+    public XmppProtocolProvider(XmppConnectionConfig config)
     {
-        this.jabberAccountID = (JabberAccountID) accountID;
+        this.config = config;
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
@@ -155,6 +148,13 @@ public class XmppProtocolProvider
         serviceDiscoveryManager.addFeature("https://jitsi.org/meet/jicofo/terminate-restart");
     }
 
+    @Override
+    public String toString()
+    {
+        // Avoid calling super.toString() as it uses the account ID.
+        return "XmppProtocolProvider " + config;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -170,28 +170,13 @@ public class XmppProtocolProvider
     public synchronized void register(ScheduledExecutorService executorService)
             throws OperationFailedException
     {
-        DomainBareJid serviceName;
-        try
-        {
-            serviceName = JidCreate.domainBareFrom(getAccountID().getUserID());
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new OperationFailedException(
-                    "Invalid UserID",
-                    OperationFailedException.ILLEGAL_ARGUMENT,
-                    e);
-        }
-
-        String serverAddressUserSetting = jabberAccountID.getServerAddress();
-
-        int serverPort = getAccountID().getAccountPropertyInt(ProtocolProviderFactory.SERVER_PORT, 5222);
+        int serverPort = config.getPort();
 
         XMPPTCPConnectionConfiguration.Builder connConfig
             = XMPPTCPConnectionConfiguration.builder()
-                .setHost(serverAddressUserSetting)
+                .setHost(config.getHostname())
                 .setPort(serverPort)
-                .setXmppDomain(serviceName);
+                .setXmppDomain(config.getDomain());
 
         // Required for PacketDebugger and XMPP stats to work
         connConfig.setDebuggerEnabled(true);
@@ -203,7 +188,7 @@ public class XmppProtocolProvider
         // Disable GSSAPI.
         SASLAuthentication.unregisterSASLMechanism(SASLGSSAPIMechanism.class.getName());
 
-        if (jabberAccountID.isAnonymousAuthUsed())
+        if (config.getPassword() == null)
         {
             connConfig.performSaslAnonymousAuthentication();
         }
@@ -252,11 +237,11 @@ public class XmppProtocolProvider
 
             ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
 
-            if (!jabberAccountID.isAnonymousAuthUsed())
+            if (config.getPassword() != null)
             {
-                String login = jabberAccountID.getAuthorizationName();
-                String pass = jabberAccountID.getPassword();
-                Resourcepart resource = Resourcepart.from(jabberAccountID.getResource());
+                String login = config.getUsername().toString();
+                String pass = config.getPassword();
+                Resourcepart resource = config.getUsername();
                 connection.login(login, pass, resource);
             }
 
@@ -264,7 +249,7 @@ public class XmppProtocolProvider
 
             connection.registerIQRequestHandler(jingleOpSet);
 
-            logger.info("XMPP provider " + jabberAccountID + " connected (JID: " + connection.getUser() + ")");
+            logger.info("XMPP provider connected (JID: " + connection.getUser() + ")");
 
             return false;
         }
@@ -348,7 +333,7 @@ public class XmppProtocolProvider
 
         connection = null;
 
-        logger.info("XMPP provider " + jabberAccountID + " disconnected");
+        logger.info(this + " Disconnected ");
 
         notifyDisconnected();
     }
@@ -405,7 +390,7 @@ public class XmppProtocolProvider
     @Override
     public AccountID getAccountID()
     {
-        return jabberAccountID;
+        return null;
     }
 
     /**
@@ -493,6 +478,10 @@ public class XmppProtocolProvider
         this.disableCertificateVerification = disableCertificateVerification;
     }
 
+    public XmppConnectionConfig getConfig()
+    {
+        return config;
+    }
 
     class XmppConnectionListener
         implements ConnectionListener

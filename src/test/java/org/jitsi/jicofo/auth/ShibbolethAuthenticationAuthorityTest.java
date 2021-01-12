@@ -78,7 +78,7 @@ public class ShibbolethAuthenticationAuthorityTest
         Jid user2Jid = JidCreate.from("user2@server.net");
         String user2MachineUid="machine2uid";
         String user2ShibbolethIdentity = "user2@shibboleth.idp.com";
-        EntityBareJid room1 = JidCreate.entityBareFrom("testroom1@example.com");
+        EntityBareJid room1 = JidCreate.entityBareFrom("testroom1-shibboeth@example.com");
 
         ConferenceIq query = new ConferenceIq();
 
