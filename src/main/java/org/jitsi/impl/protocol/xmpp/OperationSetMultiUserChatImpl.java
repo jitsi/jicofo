@@ -60,7 +60,7 @@ public class OperationSetMultiUserChatImpl
      * {@inheritDoc}
      */
     @Override
-    public ChatRoom2 createChatRoom(String roomName, Map<String, Object> roomProperties)
+    public ChatRoom2 createChatRoom(String roomName)
         throws OperationFailedException
     {
         EntityBareJid roomJid;
@@ -108,7 +108,7 @@ public class OperationSetMultiUserChatImpl
 
             if (room == null)
             {
-                room = createChatRoom(roomName, null);
+                room = createChatRoom(roomName);
             }
             return room;
         }

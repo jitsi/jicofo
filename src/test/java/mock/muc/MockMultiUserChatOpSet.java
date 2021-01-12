@@ -58,7 +58,7 @@ public class MockMultiUserChatOpSet
     }
 
     @Override
-    public ChatRoom2 createChatRoom(String roomName, Map<String, Object> roomProperties)
+    public ChatRoom2 createChatRoom(String roomName)
         throws OperationFailedException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
@@ -105,7 +105,7 @@ public class MockMultiUserChatOpSet
         {
             if (!chatRooms.containsKey(roomNameJid))
             {
-                ChatRoom room = createChatRoom(roomName, null);
+                ChatRoom room = createChatRoom(roomName);
                 chatRooms.put(roomNameJid, (MockMultiUserChat) room);
             }
             return chatRooms.get(roomNameJid);

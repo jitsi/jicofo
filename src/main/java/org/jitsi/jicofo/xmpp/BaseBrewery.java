@@ -173,14 +173,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
             Objects.requireNonNull(muc, "OperationSetMultiUserChat");
 
-            chatRoom = muc.createChatRoom(breweryJid, null);
+            chatRoom = muc.createChatRoom(breweryJid);
             chatRoom.addMemberPresenceListener(this);
             chatRoom.addMemberPropertyChangeListener(this);
             chatRoom.join();
 
             logger.info("Joined brewery room: " + breweryJid);
         }
-        catch (OperationFailedException | OperationNotSupportedException e)
+        catch (OperationFailedException e)
         {
             logger.error("Failed to create room: " + breweryJid, e);
 

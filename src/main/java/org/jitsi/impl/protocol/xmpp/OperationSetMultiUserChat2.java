@@ -40,10 +40,6 @@ public interface OperationSetMultiUserChat2
      *
      * @param roomName
      *            the name of the <tt>ChatRoom</tt> to create.
-     * @param roomProperties
-     *            properties specifying how the room should be created;
-     *            <tt>null</tt> for no properties just like an empty
-     *            <code>Map</code>
      * @throws OperationFailedException
      *             if the room couldn't be created for some reason (e.g. room
      *             already exists; user already joined to an existent room or
@@ -53,9 +49,8 @@ public interface OperationSetMultiUserChat2
      *
      * @return the newly created <tt>ChatRoom</tt> named <tt>roomName</tt>.
      */
-    ChatRoom2 createChatRoom(String roomName, Map<String, Object> roomProperties)
-        throws OperationFailedException,
-               OperationNotSupportedException;
+    ChatRoom2 createChatRoom(String roomName)
+        throws OperationFailedException;
 
     /**
      * Returns a reference to a chatRoom named <tt>roomName</tt> or null
@@ -71,5 +66,5 @@ public interface OperationSetMultiUserChat2
      * multi-user chat
      */
     ChatRoom2 findRoom(String roomName)
-        throws OperationFailedException, OperationNotSupportedException;
+        throws OperationFailedException;
 }

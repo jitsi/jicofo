@@ -497,7 +497,7 @@ public class JitsiMeetConferenceImpl
 
         transcriberManager = new TranscriberManager(
             protocolProviderHandler,
-            chatOpSet.findRoom(roomName.toString()),
+            chatRoom,
             JicofoServices.jicofoServicesSingleton.getJigasiDetector());
         transcriberManager.init();
 
