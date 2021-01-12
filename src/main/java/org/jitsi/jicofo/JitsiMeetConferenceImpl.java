@@ -340,7 +340,7 @@ public class JitsiMeetConferenceImpl
 
             chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
             meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
-            jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
+            jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
 

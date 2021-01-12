@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import java.util.concurrent.*;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
@@ -81,5 +82,9 @@ public interface XmppProvider
     XmppConnection getXmppConnection();
     XMPPConnection getXmppConnectionRaw();
     OperationSetJingle getJingleApi();
+    default OperationSetJibri getJibriApi()
+    {
+        return null;
+    }
 }
 

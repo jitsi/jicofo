@@ -69,6 +69,7 @@ public class XmppProtocolProvider
      * Jingle operation set.
      */
     private final OperationSetJingleImpl jingleOpSet;
+    private final OperationSetJibri jibriApi;
 
     /**
      * The XMPP connection used by this instance.
@@ -112,10 +113,10 @@ public class XmppProtocolProvider
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
-        this.jingleOpSet = new OperationSetJingleImpl(this);
+        jingleOpSet = new OperationSetJingleImpl(this);
         addOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
         addOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
-        addOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
+        jibriApi = new OperationSetJibri(this);
     }
 
     /**
@@ -291,6 +292,12 @@ public class XmppProtocolProvider
     public OperationSetJingle getJingleApi()
     {
         return jingleOpSet;
+    }
+
+    @Override
+    public OperationSetJibri getJibriApi()
+    {
+        return jibriApi;
     }
 
     /**

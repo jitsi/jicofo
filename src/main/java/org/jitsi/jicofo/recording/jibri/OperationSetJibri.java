@@ -19,7 +19,6 @@ package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -33,7 +32,7 @@ import java.util.*;
  */
 public class OperationSetJibri
     extends AbstractIqRequestHandler
-    implements OperationSet, RegistrationListener
+    implements RegistrationListener
 {
     private final List<CommonJibriStuff> jibris = Collections.synchronizedList(new LinkedList<>());
 
