@@ -37,7 +37,7 @@ public class XmppProviderFactory
      * @param bundleContext the bundle context reference of the service
      * @param protocolName  the name of the protocol
      */
-    protected XmppProviderFactory(
+    public XmppProviderFactory(
             BundleContext bundleContext,
             String protocolName)
     {

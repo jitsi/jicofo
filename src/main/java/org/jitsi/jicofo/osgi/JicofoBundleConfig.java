@@ -30,24 +30,6 @@ public class JicofoBundleConfig
     extends OSGiBundleConfig
 {
     /**
-     * Indicates whether 'mock' protocol providers should be used instead of
-     * original Jitsi protocol providers. For the purpose of unit testing.
-     */
-    private boolean useMockProtocols = false;
-
-    /**
-     * Make OSGi use mock protocol providers instead of original Jitsi protocols
-     * implementation.
-     *
-     * @param useMockProtocols <tt>true</tt> if Jitsi protocol providers should
-     *                         be replaced with mock version.
-     */
-    public void setUseMockProtocols(boolean useMockProtocols)
-    {
-        this.useMockProtocols = useMockProtocols;
-    }
-
-    /**
      * The locations of the OSGi bundles (or rather of the class files of their
      * <tt>BundleActivator</tt> implementations) comprising Jitsi Meet Focus.
      * An element of the <tt>BUNDLES</tt> array is an array of <tt>String</tt>s
@@ -55,17 +37,6 @@ public class JicofoBundleConfig
      */
     protected String[][] getBundlesImpl()
     {
-
-        String[] protocols =
-            {
-                "org/jitsi/impl/protocol/xmpp/XmppProtocolActivator"
-            };
-
-        String[] mockProtocols =
-            {
-                "mock/MockActivator"
-            };
-
         String[][] bundles = {
             {
                 "org/jitsi/service/libjitsi/LibJitsiActivator"
@@ -86,8 +57,6 @@ public class JicofoBundleConfig
             {
                 "net/java/sip/communicator/service/protocol/ProtocolProviderActivator"
             },
-            // Shall we use mock protocol providers?
-            useMockProtocols ? mockProtocols : protocols,
             {
                 "org/jitsi/jicofo/osgi/WaitableBundleActivator"
             }

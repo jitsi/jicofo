@@ -20,7 +20,7 @@ package org.jitsi.jicofo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
-import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig;
 import org.jitsi.protocol.xmpp.*;
@@ -79,10 +79,9 @@ public class ProtocolProviderHandler
         this.scheduledExecutorService = scheduledExecutorService;
     }
 
-    public void start(BundleContext bundleContext)
+    public void start(BundleContext bundleContext, ProtocolProviderFactory xmppProviderFactory)
     {
-        xmppProviderFactory
-            = ProtocolProviderFactory.getProtocolProviderFactory(bundleContext, ProtocolNames.JABBER);
+        this.xmppProviderFactory = xmppProviderFactory;
 
         if (config.getPassword() != null)
         {

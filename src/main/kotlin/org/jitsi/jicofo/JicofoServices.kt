@@ -17,9 +17,11 @@
  */
 package org.jitsi.jicofo
 
+import net.java.sip.communicator.service.protocol.ProtocolProviderFactory
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
+import org.jitsi.impl.protocol.xmpp.XmppProviderFactory
 import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -40,6 +42,7 @@ import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppServices
+import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
@@ -70,6 +73,13 @@ open class JicofoServices(
 ) {
     private val logger = createLogger()
 
+    open fun createXmppProviderFactory(): ProtocolProviderFactory {
+        // Init smack shit
+        initializeSmack()
+        return XmppProviderFactory(bundleContext, "Jabber")
+    }
+    private val xmppProviderFactory: ProtocolProviderFactory = createXmppProviderFactory()
+
     /**
      * Pool of cached threads used for colibri channel allocation.
      *
@@ -87,7 +97,7 @@ open class JicofoServices(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
     )
 
-    private val xmppServices = XmppServices(bundleContext, scheduledPool)
+    private val xmppServices = XmppServices(bundleContext, scheduledPool, xmppProviderFactory)
 
     val bridgeSelector = BridgeSelector(scheduledPool)
     private val bridgeDetector = if (BridgeConfig.config.breweryEnabled())

@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import net.java.sip.communicator.service.protocol.ProtocolProviderFactory
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.ProtocolProviderHandler
@@ -31,7 +32,8 @@ import java.util.concurrent.ScheduledExecutorService
 
 class XmppServices(
     private val bundleContext: BundleContext,
-    scheduledExecutorService: ScheduledExecutorService
+    scheduledExecutorService: ScheduledExecutorService,
+    xmppProviderFactory: ProtocolProviderFactory
 ) {
     private val logger = createLogger()
 
@@ -39,14 +41,14 @@ class XmppServices(
         XmppConfig.client,
         scheduledExecutorService
     ).apply {
-        start(bundleContext)
+        start(bundleContext, xmppProviderFactory)
         register()
     }
 
     val serviceConnection: ProtocolProviderHandler = if (XmppConfig.service.enabled) {
         logger.info("Using dedicated Service XMPP connection for JVB MUC.")
         ProtocolProviderHandler(XmppConfig.service, scheduledExecutorService).apply {
-            start(bundleContext)
+            start(bundleContext, xmppProviderFactory)
             register()
         }
     } else {
