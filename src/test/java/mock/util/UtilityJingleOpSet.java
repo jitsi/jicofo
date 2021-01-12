@@ -34,13 +34,11 @@ public class UtilityJingleOpSet
     /**
      * The logger instance used by this class.
      */
-    private final static Logger logger
-        = Logger.getLogger(UtilityJingleOpSet.class);
+    private final static Logger logger = Logger.getLogger(UtilityJingleOpSet.class);
 
     private final XmppConnection connection;
 
-    private final BlockingQueue<JingleIQ> sessionInvites
-            = new LinkedBlockingQueue<>();
+    private final BlockingQueue<JingleIQ> sessionInvites = new LinkedBlockingQueue<>();
     public MockParticipant mockParticipant;
 
     public UtilityJingleOpSet(XmppConnection connection)
