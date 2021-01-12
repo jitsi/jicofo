@@ -43,7 +43,7 @@ import org.jitsi.jicofo.util.getService
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
-import org.jitsi.jicofo.xmpp.XmppProviderFactory2
+import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.rest.JettyBundleActivatorConfig
@@ -77,16 +77,16 @@ open class JicofoServices(
 ) {
     private val logger = createLogger()
 
-    open fun createXmppProviderFactory(): XmppProviderFactory2 {
+    open fun createXmppProviderFactory(): XmppProviderFactory {
         // Init smack shit
         initializeSmack()
-        return object : XmppProviderFactory2 {
+        return object : XmppProviderFactory {
             override fun createXmppProvider(config: XmppConnectionConfig): ProtocolProviderService {
                 return XmppProtocolProvider(config)
             }
         }
     }
-    private val xmppProviderFactory: XmppProviderFactory2 = createXmppProviderFactory()
+    private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
     /**
      * Pool of cached threads used for colibri channel allocation.

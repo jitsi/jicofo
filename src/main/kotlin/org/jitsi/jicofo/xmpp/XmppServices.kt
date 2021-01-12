@@ -29,7 +29,7 @@ import java.util.concurrent.ScheduledExecutorService
 
 class XmppServices(
     scheduledExecutorService: ScheduledExecutorService,
-    xmppProviderFactory: XmppProviderFactory2
+    xmppProviderFactory: XmppProviderFactory
 ) {
     private val logger = createLogger()
 

@@ -67,7 +67,7 @@ public class ProtocolProviderHandler
         this.scheduledExecutorService = scheduledExecutorService;
     }
 
-    public void start(XmppProviderFactory2 xmppProviderFactory)
+    public void start(XmppProviderFactory xmppProviderFactory)
     {
         protocolService = xmppProviderFactory.createXmppProvider(config);
         protocolService.addRegistrationStateChangeListener(this);

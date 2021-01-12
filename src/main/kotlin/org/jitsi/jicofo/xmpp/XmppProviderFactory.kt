@@ -19,6 +19,6 @@ package org.jitsi.jicofo.xmpp
 
 import net.java.sip.communicator.service.protocol.ProtocolProviderService
 
-interface XmppProviderFactory2 {
+interface XmppProviderFactory {
     fun createXmppProvider(config: XmppConnectionConfig): ProtocolProviderService
 }
