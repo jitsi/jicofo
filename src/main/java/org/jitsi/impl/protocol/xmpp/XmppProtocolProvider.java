@@ -478,6 +478,10 @@ public class XmppProtocolProvider
         this.disableCertificateVerification = disableCertificateVerification;
     }
 
+    public XmppConnectionConfig getConfig()
+    {
+        return config;
+    }
 
     class XmppConnectionListener
         implements ConnectionListener
