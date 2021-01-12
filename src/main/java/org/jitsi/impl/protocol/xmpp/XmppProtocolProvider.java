@@ -127,7 +127,6 @@ public class XmppProtocolProvider
         addOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
         addOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
         addOperationSet(OperationSetSimpleCaps.class, new OpSetSimpleCapsImpl(this));
-        addOperationSet(OperationSetDirectSmackXmpp.class, new OpSetDirectSmackXmppImpl(this));
         addOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
     }
 
@@ -223,7 +222,7 @@ public class XmppProtocolProvider
                 connection.login(login, pass, resource);
             }
 
-            colibriTools.initialize(getConnectionAdapter());
+            colibriTools.initialize(getXmppConnection());
 
             connection.registerIQRequestHandler(jingleOpSet);
 
@@ -311,12 +310,8 @@ public class XmppProtocolProvider
         return connection != null ? connection.getUser() : null;
     }
 
-    /**
-     * Lazy initializer for {@link #connectionAdapter}.
-     *
-     * @return {@link XmppConnection} provided by this instance.
-     */
-    XmppConnection getConnectionAdapter()
+    @Override
+    public XmppConnection getXmppConnection()
     {
         if (connectionAdapter == null && connection != null)
         {

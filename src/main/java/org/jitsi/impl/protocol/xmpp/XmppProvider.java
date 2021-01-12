@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.protocol.xmpp.*;
 
 /**
  * Based on Jitsi's {@code ProtocolProviderService}, simplified for the needs of jicofo.
@@ -32,19 +33,19 @@ public interface XmppProvider
      * registration server, user name/number are provided through the
      * configuration service through implementation specific properties.
      */
-    public void register(ScheduledExecutorService executorService);
+    void register(ScheduledExecutorService executorService);
 
     /**
      * Ends the registration of this protocol provider with the current
      * registration service.
      */
-    public void unregister();
+    void unregister();
 
     /**
      * Indicates whether or not this provider is registered
      * @return true if the provider is currently registered and false otherwise.
      */
-    public boolean isRegistered();
+    boolean isRegistered();
 
     /**
      * Registers the specified listener with this provider so that it would
@@ -52,13 +53,13 @@ public interface XmppProvider
      * as its local address and display name.
      * @param listener the listener to register.
      */
-    public void addRegistrationListener(RegistrationListener listener);
+    void addRegistrationListener(RegistrationListener listener);
 
     /**
      * Removes the specified listener.
      * @param listener the listener to remove.
      */
-    public void removeRegistrationListener(RegistrationListener listener);
+    void removeRegistrationListener(RegistrationListener listener);
 
     /**
      * Returns the operation set corresponding to the specified class or
@@ -72,8 +73,10 @@ public interface XmppProvider
      * @return returns an OperationSet of the specified <tt>Class</tt> if the
      * underlying implementation supports it or null otherwise.
      */
-    public <T extends OperationSet> T getOperationSet(Class<T> opsetClass);
+    <T extends OperationSet> T getOperationSet(Class<T> opsetClass);
 
-    public XmppConnectionConfig getConfig();
+    XmppConnectionConfig getConfig();
+
+    XmppConnection getXmppConnection();
 }
 

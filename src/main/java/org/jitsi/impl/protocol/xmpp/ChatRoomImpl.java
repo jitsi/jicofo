@@ -800,7 +800,7 @@ public class ChatRoomImpl
         admin.addItem(item);
 
         XmppProtocolProvider provider = (XmppProtocolProvider) getXmppProvider();
-        XmppConnection connection = provider.getConnectionAdapter();
+        XmppConnection connection = provider.getXmppConnection();
 
         try
         {
@@ -1056,7 +1056,7 @@ public class ChatRoomImpl
     {
         XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getXmppProvider();
 
-        XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
+        XmppConnection connection = xmppProtocolProvider.getXmppConnection();
         if (connection == null)
         {
             logger.error("Failed to send presence extension - no connection");

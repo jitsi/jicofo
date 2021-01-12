@@ -97,18 +97,16 @@ public class ProtocolProviderHandler
 
         if (registered)
         {
-            OperationSetDirectSmackXmpp operationSetDirectSmackXmpp
-                = protocolService.getOperationSet(OperationSetDirectSmackXmpp.class);
-            if (operationSetDirectSmackXmpp != null)
+            XmppConnection xmppConnection = protocolService.getXmppConnection();
+            if (xmppConnection != null)
             {
-                XmppConnection xmppConnection = operationSetDirectSmackXmpp.getXmppConnection();
                 xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
                 xmppConnectionListeners.forEach(it -> it.xmppConnectionInitialized(xmppConnection));
                 logger.info("Set replyTimeout=" + config.getReplyTimeout());
             }
             else
             {
-                logger.error("Unable to set Smack replyTimeout, no OperationSet.");
+                logger.error("Unable to set Smack replyTimeout, no XmppConnection.");
             }
         }
 
@@ -182,18 +180,6 @@ public class ProtocolProviderHandler
     }
 
     /**
-     * Obtains XMPP connection for the underlying XMPP protocol provider
-     * service.
-     * @return {@link XmppConnection} or null if the underlying protocol provider is not registered yet.
-     */
-    public XmppConnection getXmppConnection()
-    {
-        return Objects.requireNonNull(
-                getOperationSet(OperationSetDirectSmackXmpp.class), "OperationSetDirectSmackXmpp")
-                    .getXmppConnection();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -206,8 +192,7 @@ public class ProtocolProviderHandler
     {
         xmppConnectionListeners.add(listener);
 
-        OperationSetDirectSmackXmpp o = getOperationSet(OperationSetDirectSmackXmpp.class);
-        XmppConnection connection = o.getXmppConnection();
+        XmppConnection connection = protocolService.getXmppConnection();
         if (connection != null)
         {
             listener.xmppConnectionInitialized(connection);

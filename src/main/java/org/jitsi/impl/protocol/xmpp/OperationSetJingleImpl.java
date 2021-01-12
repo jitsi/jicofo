@@ -59,6 +59,6 @@ public class OperationSetJingleImpl
      */
     protected XmppConnection getConnection()
     {
-        return xmppProvider.getConnectionAdapter();
+        return xmppProvider.getXmppConnection();
     }
 }

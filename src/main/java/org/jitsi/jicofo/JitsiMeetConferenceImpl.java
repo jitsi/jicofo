@@ -2160,7 +2160,7 @@ public class JitsiMeetConferenceImpl
      */
     XmppConnection getXmppConnection()
     {
-        return protocolProviderHandler.getXmppConnection();
+        return protocolProviderHandler.getProtocolProvider().getXmppConnection();
     }
 
     /**

@@ -87,12 +87,13 @@ public class JvbDoctor
         this.listener = listener;
     }
 
-    private XmppConnection getConnection() {
-        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
-        XmppProvider protocolProvider = focusManager.getJvbProtocolProvider();
-        OperationSetDirectSmackXmpp xmppOpSet = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
+    private XmppConnection getConnection()
+    {
+        XmppProvider xmppProvider =
+                JicofoServices.jicofoServicesSingleton
+                        .getXmppServices().getClientConnection().getProtocolProvider();
 
-        return protocolProvider.isRegistered() ? xmppOpSet.getXmppConnection() : null;
+        return xmppProvider.isRegistered() ? xmppProvider.getXmppConnection() : null;
     }
 
     synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)

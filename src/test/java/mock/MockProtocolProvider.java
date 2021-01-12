@@ -52,7 +52,6 @@ public class MockProtocolProvider
         includeColibriOpSet();
         includeJingleOpSet();
         includeSimpleCapsOpSet();
-        includeDirectXmppOpSet();
     }
 
     @Override
@@ -108,31 +107,15 @@ public class MockProtocolProvider
 
     public void includeSimpleCapsOpSet()
     {
-        try
-        {
-            addOperationSet(
-                    OperationSetSimpleCaps.class, new MockSetSimpleCapsOpSet(JidCreate.from(config.getDomain())));
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void includeDirectXmppOpSet()
-    {
-        addOperationSet(
-            OperationSetDirectSmackXmpp.class,
-            new MockSmackXmppOpSet(this));
+        addOperationSet(OperationSetSimpleCaps.class, new MockSetSimpleCapsOpSet(config.getDomain()));
     }
 
     public void includeJitsiMeetTools()
     {
-        addOperationSet(
-            OperationSetJitsiMeetTools.class,
-            new MockJitsiMeetTools(this));
+        addOperationSet(OperationSetJitsiMeetTools.class, new MockJitsiMeetTools(this));
     }
 
+    @Override
     public XmppConnection getXmppConnection()
     {
         if (this.connection == null)
@@ -157,19 +140,16 @@ public class MockProtocolProvider
 
     public MockMultiUserChatOpSet getMockChatOpSet()
     {
-        return (MockMultiUserChatOpSet)
-            getOperationSet(OperationSetMultiUserChat.class);
+        return (MockMultiUserChatOpSet) getOperationSet(OperationSetMultiUserChat.class);
     }
 
     public MockSetSimpleCapsOpSet getMockCapsOpSet()
     {
-        return (MockSetSimpleCapsOpSet)
-            getOperationSet(OperationSetSimpleCaps.class);
+        return (MockSetSimpleCapsOpSet) getOperationSet(OperationSetSimpleCaps.class);
     }
 
     public MockColibriOpSet getMockColibriOpSet()
     {
-        return (MockColibriOpSet)
-            getOperationSet(OperationSetColibriConference.class);
+        return (MockColibriOpSet) getOperationSet(OperationSetColibriConference.class);
     }
 }
