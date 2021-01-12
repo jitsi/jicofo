@@ -33,7 +33,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class OperationSetMultiUserChatImpl
-    extends AbstractOperationSetMultiUserChat2
+    implements OperationSetMultiUserChat2
 {
     /**
      * Parent protocol provider.
@@ -53,39 +53,6 @@ public class OperationSetMultiUserChatImpl
     OperationSetMultiUserChatImpl(XmppProtocolProvider protocolProvider)
     {
         this.protocolProvider = protocolProvider;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<String> getExistingChatRooms()
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        synchronized (rooms)
-        {
-            return new ArrayList<>(rooms.keySet());
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<ChatRoom> getCurrentlyJoinedChatRooms()
-    {
-        throw new RuntimeException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<String> getCurrentlyJoinedChatRooms(
-        ChatRoomMember chatRoomMember)
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        throw new RuntimeException("Not implemented");
     }
 
     /**
@@ -145,34 +112,6 @@ public class OperationSetMultiUserChatImpl
             }
             return room;
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void rejectInvitation(ChatRoomInvitation invitation,
-                                 String rejectReason)
-    {
-        throw new RuntimeException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isMultiChatSupportedByContact(Contact contact)
-    {
-        throw new RuntimeException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isPrivateMessagingContact(String contactAddress)
-    {
-        throw new RuntimeException("Not implemented");
     }
 
     /**

@@ -30,10 +30,9 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockMultiUserChatOpSet
-    extends AbstractOperationSetMultiUserChat2
+    implements OperationSetMultiUserChat2
 {
-    private static final Map<String, MockMucShare> mucDomainSharing
-        = new HashMap<>();
+    private static final Map<String, MockMucShare> mucDomainSharing = new HashMap<>();
 
     private final MockProtocolProvider protocolProviderService;
 
@@ -58,39 +57,9 @@ public class MockMultiUserChatOpSet
     }
 
     @Override
-    public List<String> getExistingChatRooms()
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        synchronized (chatRooms)
-        {
-            ArrayList<String> result = new ArrayList<>();
-            for (EntityBareJid n : chatRooms.keySet())
-            {
-                result.add(n.toString());
-            }
-
-            return result;
-        }
-    }
-
-    @Override
-    public List<ChatRoom> getCurrentlyJoinedChatRooms()
-    {
-        return null;
-    }
-
-    @Override
-    public List<String> getCurrentlyJoinedChatRooms(
-        ChatRoomMember chatRoomMember)
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        return null;
-    }
-
-    @Override
     public ChatRoom createChatRoom(String roomName,
                                    Map<String, Object> roomProperties)
-        throws OperationFailedException, OperationNotSupportedException
+        throws OperationFailedException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
 
@@ -141,25 +110,6 @@ public class MockMultiUserChatOpSet
             }
             return chatRooms.get(roomNameJid);
         }
-    }
-
-    @Override
-    public void rejectInvitation(ChatRoomInvitation invitation,
-                                 String rejectReason)
-    {
-
-    }
-
-    @Override
-    public boolean isMultiChatSupportedByContact(Contact contact)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isPrivateMessagingContact(String contactAddress)
-    {
-        return false;
     }
 
     static public void cleanMucSharing()
