@@ -50,17 +50,6 @@ public class OperationSetColibriConferenceImpl
     {
         this.connection = connection;
 
-        // Register Colibri
-        ProviderManager.addIQProvider(
-            ColibriConferenceIQ.ELEMENT_NAME,
-            ColibriConferenceIQ.NAMESPACE,
-            new ColibriIQProvider());
-
-        // register Jingle
-        ProviderManager.addIQProvider(
-            JingleIQ.ELEMENT_NAME,
-            JingleIQ.NAMESPACE,
-            new JingleIQProvider());
     }
 
     /**

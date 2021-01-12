@@ -20,6 +20,7 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.jicofo.discovery.Version
 import org.jitsi.jicofo.discovery.VersionIqProvider
 import org.jitsi.xmpp.extensions.DefaultPacketExtensionProvider
+import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
 import org.jitsi.xmpp.extensions.colibri.ColibriIQProvider
 import org.jitsi.xmpp.extensions.health.HealthCheckIQProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
@@ -27,6 +28,8 @@ import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIqProvider
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
+import org.jitsi.xmpp.extensions.jingle.JingleIQ
+import org.jitsi.xmpp.extensions.jingle.JingleIQProvider
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
@@ -118,5 +121,17 @@ fun registerXmppExtensions() {
         Version.ELEMENT,
         Version.NAMESPACE,
         VersionIqProvider()
+    )
+    // Register Colibri
+    ProviderManager.addIQProvider(
+        ColibriConferenceIQ.ELEMENT_NAME,
+        ColibriConferenceIQ.NAMESPACE,
+        ColibriIQProvider()
+    )
+    // register Jingle
+    ProviderManager.addIQProvider(
+        JingleIQ.ELEMENT_NAME,
+        JingleIQ.NAMESPACE,
+        JingleIQProvider()
     )
 }
