@@ -72,11 +72,16 @@ public class MockMultiUserChat
     private final Vector<ChatRoomMemberRoleListener> memberRoleListeners
         = new Vector<>();
 
+    // The nickname to join with
+    private final String myNickname;
+
     public MockMultiUserChat(EntityBareJid roomName,
-                             ProtocolProviderService protocolProviderService)
+                             ProtocolProviderService protocolProviderService,
+                             String myNickname)
     {
         this.roomName = roomName;
         this.protocolProvider = protocolProviderService;
+        this.myNickname = myNickname;
     }
 
     @Override
@@ -133,8 +138,7 @@ public class MockMultiUserChat
     public void join()
         throws OperationFailedException
     {
-        joinAs(getParentProvider().getAccountID()
-            .getAccountPropertyString(ProtocolProviderFactory.DISPLAY_NAME));
+        joinAs(myNickname);
     }
 
     @Override

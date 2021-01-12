@@ -22,6 +22,7 @@ import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.utils.logging.*;
@@ -41,7 +42,6 @@ public class MockProtocolProvider
      */
     private final static Logger logger = Logger.getLogger(MockProtocolProvider.class);
 
-    private final MockAccountID accountId;
 
     private RegistrationState registrationState = RegistrationState.UNREGISTERED;
 
@@ -49,9 +49,23 @@ public class MockProtocolProvider
 
     private AbstractOperationSetJingle jingleOpSet;
 
-    public MockProtocolProvider(MockAccountID accountId)
+    public XmppConnectionConfig config;
+
+    public MockProtocolProvider(XmppConnectionConfig config)
     {
-        this.accountId = accountId;
+        this.config = config;
+        includeMultiUserChatOpSet();
+        includeJitsiMeetTools();
+        includeColibriOpSet();
+        includeJingleOpSet();
+        includeSimpleCapsOpSet();
+        includeDirectXmppOpSet();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MockProtocolProvider " + config;
     }
 
     @Override
@@ -103,7 +117,7 @@ public class MockProtocolProvider
     @Override
     public String getProtocolName()
     {
-        return accountId.getProtocolName();
+        return "Jabber";
     }
 
     @Override
@@ -128,7 +142,7 @@ public class MockProtocolProvider
     @Override
     public AccountID getAccountID()
     {
-        return accountId;
+        return null;
     }
 
     @Override
@@ -180,8 +194,7 @@ public class MockProtocolProvider
         {
             addSupportedOperationSet(
                 OperationSetSimpleCaps.class,
-                new MockSetSimpleCapsOpSet(
-                        JidCreate.from(accountId.getServerAddress())));
+                new MockSetSimpleCapsOpSet(JidCreate.from(config.getDomain())));
         }
         catch (XmppStringprepException e)
         {
@@ -203,11 +216,6 @@ public class MockProtocolProvider
             new MockJitsiMeetTools(this));
     }
 
-    public OperationSetBasicTelephony getTelephony()
-    {
-        return getOperationSet(OperationSetBasicTelephony.class);
-    }
-
     public XmppConnection getXmppConnection()
     {
         if (this.connection == null)
@@ -222,7 +230,7 @@ public class MockProtocolProvider
         try
         {
             return JidCreate.entityFullFrom(
-                    "mock-" + accountId.getAccountAddress());
+                    "mock-" + config.getUsername() + "@" + config.getDomain() + "/" + config.getUsername());
         }
         catch (XmppStringprepException e)
         {

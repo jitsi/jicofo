@@ -22,11 +22,10 @@ import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.XmppConnectionConfig;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.utils.logging.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,17 +40,6 @@ public class ProtocolProviderHandler
     implements RegistrationStateChangeListener
 {
     private final static Logger logger = Logger.getLogger(ProtocolProviderHandler.class);
-
-    /**
-     * XMPP provider factory used to create and destroy XMPP account used by
-     * the focus.
-     */
-    private ProtocolProviderFactory xmppProviderFactory;
-
-    /**
-     * XMPP account used by the focus.
-     */
-    private AccountID xmppAccount;
 
     /**
      * XMPP protocol provider service used by the focus.
@@ -79,40 +67,9 @@ public class ProtocolProviderHandler
         this.scheduledExecutorService = scheduledExecutorService;
     }
 
-    public void start(BundleContext bundleContext, ProtocolProviderFactory xmppProviderFactory)
+    public void start(XmppProviderFactory2 xmppProviderFactory)
     {
-        this.xmppProviderFactory = xmppProviderFactory;
-
-        if (config.getPassword() != null)
-        {
-            xmppAccount
-                = xmppProviderFactory.createAccount(
-                FocusAccountFactory.createFocusAccountProperties(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    config.getDomain(),
-                    config.getUsername(),
-                    config.getPassword()));
-        }
-        else
-        {
-            xmppAccount
-                = xmppProviderFactory.createAccount(
-                FocusAccountFactory.createFocusAccountProperties(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    config.getDomain(),
-                    config.getUsername()));
-        }
-
-        if (!xmppProviderFactory.loadAccount(xmppAccount))
-        {
-            throw new RuntimeException("Failed to load account: " + xmppAccount);
-        }
-
-        ServiceReference<ProtocolProviderService> protoRef = xmppProviderFactory.getProviderForAccount(xmppAccount);
-
-        protocolService = bundleContext.getService(protoRef);
+        protocolService = xmppProviderFactory.createXmppProvider(config);
         protocolService.addRegistrationStateChangeListener(this);
         if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
         {
@@ -126,8 +83,6 @@ public class ProtocolProviderHandler
     public void stop()
     {
         protocolService.removeRegistrationStateChangeListener(this);
-
-        xmppProviderFactory.uninstallAccount(xmppAccount);
     }
 
     /**
@@ -261,14 +216,15 @@ public class ProtocolProviderHandler
     @Override
     public String toString()
     {
-        return protocolService != null ? protocolService.toString() : super.toString();
+        return "ProtocolProviderHandler " + config;
     }
 
     public void addXmppConnectionListener(XmppConnectionListener listener)
     {
         xmppConnectionListeners.add(listener);
 
-        XmppConnection connection = getOperationSet(OperationSetDirectSmackXmpp.class).getXmppConnection();
+        OperationSetDirectSmackXmpp o = getOperationSet(OperationSetDirectSmackXmpp.class);
+        XmppConnection connection = o.getXmppConnection();
         if (connection != null)
         {
             listener.xmppConnectionInitialized(connection);

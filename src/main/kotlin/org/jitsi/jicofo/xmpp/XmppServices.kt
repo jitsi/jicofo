@@ -17,23 +17,19 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import net.java.sip.communicator.service.protocol.ProtocolProviderFactory
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.ProtocolProviderHandler
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.reservation.ReservationSystem
-import org.jitsi.jicofo.util.getService
 import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.logging2.createLogger
-import org.osgi.framework.BundleContext
 import java.util.concurrent.ScheduledExecutorService
 
 class XmppServices(
-    private val bundleContext: BundleContext,
     scheduledExecutorService: ScheduledExecutorService,
-    xmppProviderFactory: ProtocolProviderFactory
+    xmppProviderFactory: XmppProviderFactory2
 ) {
     private val logger = createLogger()
 
@@ -41,14 +37,14 @@ class XmppServices(
         XmppConfig.client,
         scheduledExecutorService
     ).apply {
-        start(bundleContext, xmppProviderFactory)
+        start(xmppProviderFactory)
         register()
     }
 
     val serviceConnection: ProtocolProviderHandler = if (XmppConfig.service.enabled) {
         logger.info("Using dedicated Service XMPP connection for JVB MUC.")
         ProtocolProviderHandler(XmppConfig.service, scheduledExecutorService).apply {
-            start(bundleContext, xmppProviderFactory)
+            start(xmppProviderFactory)
             register()
         }
     } else {
@@ -72,7 +68,8 @@ class XmppServices(
         authenticationAuthority: AbstractAuthAuthority?,
         focusManager: FocusManager,
         reservationSystem: ReservationSystem?,
-        jigasiEnabled: Boolean
+        jigasiEnabled: Boolean,
+        configService: ConfigurationService?
     ) {
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
         val conferenceIqHandler = ConferenceIqHandler(
@@ -96,7 +93,6 @@ class XmppServices(
 
         focusComponent = if (XmppComponentConfig.config.enabled) {
             FocusComponent(XmppComponentConfig.config, iqHandler).apply {
-                val configService = getService(bundleContext, ConfigurationService::class.java)
                 loadConfig(configService, "org.jitsi.jicofo")
             }
         } else {

@@ -101,6 +101,8 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.service.disable-certificate-verification".from(newConfig)
     }
+
+    override fun toString(): String = "XmppServiceConnectionConfig[hostname=$hostname, port=$port, username=$username]"
 }
 
 class XmppClientConnectionConfig : XmppConnectionConfig {
@@ -191,6 +193,8 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.client.disable-certificate-verification".from(newConfig)
     }
+
+    override fun toString(): String = "XmppClientConnectionConfig[hostname=$hostname, port=$port, username=$username]"
 
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"

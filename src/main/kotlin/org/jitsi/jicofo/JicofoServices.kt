@@ -17,11 +17,11 @@
  */
 package org.jitsi.jicofo
 
-import net.java.sip.communicator.service.protocol.ProtocolProviderFactory
+import net.java.sip.communicator.service.protocol.ProtocolProviderService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
-import org.jitsi.impl.protocol.xmpp.XmppProviderFactory
+import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider
 import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -39,14 +39,18 @@ import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.recording.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.util.getService
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler
+import org.jitsi.jicofo.xmpp.XmppConnectionConfig
+import org.jitsi.jicofo.xmpp.XmppProviderFactory2
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
+import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
@@ -73,12 +77,16 @@ open class JicofoServices(
 ) {
     private val logger = createLogger()
 
-    open fun createXmppProviderFactory(): ProtocolProviderFactory {
+    open fun createXmppProviderFactory(): XmppProviderFactory2 {
         // Init smack shit
         initializeSmack()
-        return XmppProviderFactory(bundleContext, "Jabber")
+        return object : XmppProviderFactory2 {
+            override fun createXmppProvider(config: XmppConnectionConfig): ProtocolProviderService {
+                return XmppProtocolProvider(config)
+            }
+        }
     }
-    private val xmppProviderFactory: ProtocolProviderFactory = createXmppProviderFactory()
+    private val xmppProviderFactory: XmppProviderFactory2 = createXmppProviderFactory()
 
     /**
      * Pool of cached threads used for colibri channel allocation.
@@ -97,7 +105,7 @@ open class JicofoServices(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
     )
 
-    private val xmppServices = XmppServices(bundleContext, scheduledPool, xmppProviderFactory)
+    val xmppServices = XmppServices(scheduledPool, xmppProviderFactory)
 
     val bridgeSelector = BridgeSelector(scheduledPool)
     private val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
@@ -144,7 +152,13 @@ open class JicofoServices(
             }
         } else null
 
-        xmppServices.init(authenticationAuthority, focusManager, reservationSystem, jigasiDetector != null)
+        xmppServices.init(
+            authenticationAuthority = authenticationAuthority,
+            focusManager = focusManager,
+            reservationSystem = reservationSystem,
+            jigasiEnabled = jigasiDetector != null,
+            configService = getService(bundleContext, ConfigurationService::class.java)
+        )
 
         healthChecker = if (HealthConfig.config.enabled) {
             JicofoHealthChecker(

@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import com.typesafe.config.*;
 import org.jitsi.config.*;
 import org.jitsi.impl.osgi.framework.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.osgi.framework.*;
