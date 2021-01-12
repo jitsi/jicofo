@@ -19,7 +19,6 @@ package mock;
 
 import mock.muc.*;
 import mock.xmpp.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -41,13 +40,15 @@ public class MockProtocolProvider
 
     private AbstractOperationSetJingle jingleOpSet;
 
+    private MockMultiUserChatOpSet mucApi;
+
     public XmppConnectionConfig config;
 
     public MockProtocolProvider(XmppConnectionConfig config)
     {
         this.config = config;
         connection = new MockXmppConnection(getOurJID());
-        includeMultiUserChatOpSet();
+        mucApi = new MockMultiUserChatOpSet(this);
         this.jingleOpSet = new MockOperationSetJingle(this);
     }
 
@@ -85,10 +86,6 @@ public class MockProtocolProvider
         return config;
     }
 
-    public void includeMultiUserChatOpSet()
-    {
-        addOperationSet(OperationSetMultiUserChat.class, new MockMultiUserChatOpSet(this));
-    }
 
     @Override
     public XmppConnection getXmppConnection()
@@ -108,6 +105,12 @@ public class MockProtocolProvider
         return jingleOpSet;
     }
 
+    @Override
+    public MockMultiUserChatOpSet getMucApi()
+    {
+        return mucApi;
+    }
+
     public EntityFullJid getOurJID()
     {
         try
@@ -119,10 +122,5 @@ public class MockProtocolProvider
         {
             throw new RuntimeException(e);
         }
-    }
-
-    public MockMultiUserChatOpSet getMockChatOpSet()
-    {
-        return (MockMultiUserChatOpSet) getOperationSet(OperationSetMultiUserChat.class);
     }
 }

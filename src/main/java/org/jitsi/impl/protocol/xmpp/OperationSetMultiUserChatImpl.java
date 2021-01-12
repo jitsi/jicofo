@@ -33,7 +33,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class OperationSetMultiUserChatImpl
-    extends AbstractOperationSetMultiUserChat
+    extends AbstractOperationSetMultiUserChat2
 {
     /**
      * Parent protocol provider.

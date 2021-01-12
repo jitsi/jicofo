@@ -61,7 +61,7 @@ public class LeakingRoomsTest
         MockProtocolProvider pps
                 = testConf.getFocusProtocolProvider();
 
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
+        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
 
         MockMultiUserChat chat
                 = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());

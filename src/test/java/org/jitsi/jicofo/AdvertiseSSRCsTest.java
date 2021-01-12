@@ -67,7 +67,7 @@ public class AdvertiseSSRCsTest
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
 
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
+        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
 
         MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
@@ -147,7 +147,7 @@ public class AdvertiseSSRCsTest
         String serverName = "test-server";
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
+        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
         MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
@@ -200,7 +200,7 @@ public class AdvertiseSSRCsTest
         String serverName = "test-server";
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
+        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
         MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users
@@ -261,7 +261,7 @@ public class AdvertiseSSRCsTest
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
+        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
         MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
 
         // Join with all users

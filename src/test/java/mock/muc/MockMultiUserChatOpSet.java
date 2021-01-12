@@ -19,6 +19,7 @@ package mock.muc;
 
 import mock.*;
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -29,7 +30,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockMultiUserChatOpSet
-    extends AbstractOperationSetMultiUserChat
+    extends AbstractOperationSetMultiUserChat2
 {
     private static final Map<String, MockMucShare> mucDomainSharing
         = new HashMap<>();

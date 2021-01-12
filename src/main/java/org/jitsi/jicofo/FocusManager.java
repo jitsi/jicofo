@@ -596,19 +596,6 @@ public class FocusManager
     }
 
     /**
-     * Returns operation set instance for focus XMPP connection.
-     *
-     * @param opsetClass operation set class.
-     * @param <T> the class of Operation Set to be returned
-     * @return operation set instance of given class or <tt>null</tt> if
-     * given operation set is not implemented by focus XMPP provider.
-     */
-    public <T extends OperationSet> T getOperationSet(Class<T> opsetClass)
-    {
-        return protocolProviderHandler.getOperationSet(opsetClass);
-    }
-
-    /**
      * Gets the {@code ProtocolProviderService} for focus XMPP connection.
      *
      * @return  the {@code ProtocolProviderService} for focus XMPP connection

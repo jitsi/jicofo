@@ -169,9 +169,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         try
         {
-            OperationSetMultiUserChat muc
-                = protocolProvider.getOperationSet(
-                    OperationSetMultiUserChat.class);
+            OperationSetMultiUserChat2 muc = protocolProvider.getProtocolProvider().getMucApi();
 
             Objects.requireNonNull(muc, "OperationSetMultiUserChat");
 

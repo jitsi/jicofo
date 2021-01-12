@@ -17,9 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -141,15 +138,6 @@ public class ProtocolProviderHandler
     {
         boolean ok = regListeners.remove(l);
         logger.debug("Listener removed ? " + ok + ", " + l);
-    }
-
-    /**
-     * Utility method for obtaining operation sets from underlying protocol
-     * provider service.
-     */
-    public <T extends OperationSet> T getOperationSet(Class<T> opSetClass)
-    {
-        return protocolService.getOperationSet(opSetClass);
     }
 
     /**

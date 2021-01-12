@@ -19,7 +19,6 @@ package org.jitsi.impl.protocol.xmpp;
 
 import java.util.*;
 
-import net.java.sip.communicator.service.protocol.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging.*;
 
@@ -40,11 +39,6 @@ public abstract class AbstractXmppProvider
      * <tt>RegistrationStateChangeEvent</tt>s.
      */
     private final List<RegistrationListener> registrationListeners = new ArrayList<>();
-
-    /**
-     * The hashtable with the operation sets that we support locally.
-     */
-    private final Map<String, OperationSet> supportedOperationSets = new Hashtable<>();
 
     private boolean registered = false;
 
@@ -82,24 +76,6 @@ public abstract class AbstractXmppProvider
         }
     }
 
-    /**
-     * Adds a specific <tt>OperationSet</tt> implementation to the set of
-     * supported <tt>OperationSet</tt>s of this instance. Serves as a type-safe
-     * wrapper around {@link #supportedOperationSets} which works with class
-     * names instead of <tt>Class</tt> and also shortens the code which performs
-     * such additions.
-     *
-     * @param <T> the exact type of the <tt>OperationSet</tt> implementation to
-     * be added
-     * @param opsetClass the <tt>Class</tt> of <tt>OperationSet</tt> under the
-     * name of which the specified implementation is to be added
-     * @param opset the <tt>OperationSet</tt> implementation to be added
-     */
-    protected <T extends OperationSet> void addOperationSet(Class<T> opsetClass, T opset)
-    {
-        supportedOperationSets.put(opsetClass.getName(), opset);
-    }
-
     public void fireRegistrationStateChanged(boolean registered)
     {
         RegistrationListener[] listeners;
@@ -124,23 +100,6 @@ public abstract class AbstractXmppProvider
                         + listener,
                     throwable);
             }
-    }
-
-    /**
-     * Returns the operation set corresponding to the specified class or null if
-     * this operation set is not supported by the provider implementation.
-     *
-     * @param <T> the exact type of the <tt>OperationSet</tt> that we're looking
-     * for
-     * @param opsetClass the <tt>Class</tt> of the operation set that we're
-     * looking for.
-     * @return returns an <tt>OperationSet</tt> of the specified <tt>Class</tt>
-     * if the underlying implementation supports it; <tt>null</tt>, otherwise.
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends OperationSet> T getOperationSet(Class<T> opsetClass)
-    {
-        return (T) supportedOperationSets.get(opsetClass.getName());
     }
 
     /**

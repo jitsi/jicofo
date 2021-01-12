@@ -19,7 +19,6 @@ package org.jitsi.impl.protocol.xmpp;
 
 import java.util.concurrent.*;
 
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -63,20 +62,6 @@ public interface XmppProvider
      */
     void removeRegistrationListener(RegistrationListener listener);
 
-    /**
-     * Returns the operation set corresponding to the specified class or
-     * <tt>null</tt> if this operation set is not supported by the provider
-     * implementation.
-     *
-     * @param <T> the type which extends <tt>OperationSet</tt> and which is to
-     * be retrieved
-     * @param opsetClass the <tt>Class</tt>  of the operation set that we're
-     * looking for.
-     * @return returns an OperationSet of the specified <tt>Class</tt> if the
-     * underlying implementation supports it or null otherwise.
-     */
-    <T extends OperationSet> T getOperationSet(Class<T> opsetClass);
-
     XmppConnectionConfig getConfig();
 
     XmppConnection getXmppConnection();
@@ -86,5 +71,6 @@ public interface XmppProvider
     {
         return null;
     }
+    OperationSetMultiUserChat2 getMucApi();
 }
 
