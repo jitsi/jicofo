@@ -18,6 +18,7 @@
 package mock;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.OperationSetJitsiMeetTools;
 import org.jivesoftware.smack.packet.*;
 
 /**
@@ -26,11 +27,8 @@ import org.jivesoftware.smack.packet.*;
 public class MockJitsiMeetTools
     implements OperationSetJitsiMeetTools
 {
-    private final MockProtocolProvider parentProvider;
-
-    public MockJitsiMeetTools(MockProtocolProvider pps)
+    public MockJitsiMeetTools()
     {
-        this.parentProvider = pps;
     }
 
     @Override

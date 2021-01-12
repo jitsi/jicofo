@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.OperationSetJitsiMeetTools;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
@@ -339,7 +340,7 @@ public class JitsiMeetConferenceImpl
             }
 
             chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
-            meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
+            meetTools = protocolProviderHandler.getProtocolProvider().getMeetToolsApi();
             jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
