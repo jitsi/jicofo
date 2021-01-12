@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import com.typesafe.config.*;
+import mock.muc.*;
 import org.jitsi.config.*;
 import org.jitsi.impl.osgi.framework.*;
 import org.jitsi.jicofo.osgi.*;
@@ -150,6 +151,8 @@ public class OSGiHandler
 
         if (bc != null)
             throw new RuntimeException("Failed to stop OSGI");
+
+        MockMultiUserChatOpSet.cleanMucSharing();
     }
 
     public BundleContext bc()
