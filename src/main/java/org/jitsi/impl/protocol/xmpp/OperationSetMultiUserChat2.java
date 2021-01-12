@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import java.util.*;
 
 import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.protocol.xmpp.*;
 
 /**
  * Allows creating, configuring, joining and administering of individual
@@ -52,7 +53,7 @@ public interface OperationSetMultiUserChat2
      *
      * @return the newly created <tt>ChatRoom</tt> named <tt>roomName</tt>.
      */
-    ChatRoom createChatRoom(String roomName, Map<String, Object> roomProperties)
+    ChatRoom2 createChatRoom(String roomName, Map<String, Object> roomProperties)
         throws OperationFailedException,
                OperationNotSupportedException;
 
@@ -69,6 +70,6 @@ public interface OperationSetMultiUserChat2
      * @throws OperationNotSupportedException if the server does not support
      * multi-user chat
      */
-    ChatRoom findRoom(String roomName)
+    ChatRoom2 findRoom(String roomName)
         throws OperationFailedException, OperationNotSupportedException;
 }

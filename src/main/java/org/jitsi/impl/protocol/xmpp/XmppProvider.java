@@ -72,5 +72,6 @@ public interface XmppProvider
         return null;
     }
     OperationSetMultiUserChat2 getMucApi();
+
 }
 

@@ -489,7 +489,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining the room: " + roomName);
 
-        chatRoom = (ChatRoom2) chatOpSet.findRoom(roomName.toString());
+        chatRoom = chatOpSet.findRoom(roomName.toString());
         chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
@@ -1074,23 +1074,6 @@ public class JitsiMeetConferenceImpl
     boolean isFocusMember(XmppChatMember member)
     {
         return member.getName().equals(focusUserName.toString());
-    }
-
-    /**
-     * Checks if given MUC jid belongs to the focus user.
-     *
-     * @param mucJid the full MUC address to check.
-     *
-     * @return <tt>true</tt> if given <tt>jid</tt> belongs to the focus
-     *         participant or <tt>false</tt> otherwise.
-     */
-    @Override
-    public boolean isFocusMember(Jid mucJid)
-    {
-        ChatRoom2 chatRoom = this.chatRoom;
-        return mucJid != null
-                && chatRoom != null
-                && mucJid.equals(chatRoom.getLocalOccupantJid());
     }
 
     /**

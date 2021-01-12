@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -59,9 +60,8 @@ public class OperationSetMultiUserChatImpl
      * {@inheritDoc}
      */
     @Override
-    public ChatRoom createChatRoom(String roomName,
-                                   Map<String, Object> roomProperties)
-        throws OperationFailedException, OperationNotSupportedException
+    public ChatRoom2 createChatRoom(String roomName, Map<String, Object> roomProperties)
+        throws OperationFailedException
     {
         EntityBareJid roomJid;
         try
@@ -97,14 +97,14 @@ public class OperationSetMultiUserChatImpl
      * {@inheritDoc}
      */
     @Override
-    public ChatRoom findRoom(String roomName)
-        throws OperationFailedException, OperationNotSupportedException
+    public ChatRoom2 findRoom(String roomName)
+        throws OperationFailedException
     {
         roomName = roomName.toLowerCase();
 
         synchronized (rooms)
         {
-            ChatRoom room = rooms.get(roomName);
+            ChatRoom2 room = rooms.get(roomName);
 
             if (room == null)
             {

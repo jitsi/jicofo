@@ -20,6 +20,7 @@ package mock.muc;
 import mock.*;
 import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.protocol.xmpp.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -57,8 +58,7 @@ public class MockMultiUserChatOpSet
     }
 
     @Override
-    public ChatRoom createChatRoom(String roomName,
-                                   Map<String, Object> roomProperties)
+    public ChatRoom2 createChatRoom(String roomName, Map<String, Object> roomProperties)
         throws OperationFailedException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
@@ -95,8 +95,8 @@ public class MockMultiUserChatOpSet
     }
 
     @Override
-    public ChatRoom findRoom(String roomName)
-        throws OperationFailedException, OperationNotSupportedException
+    public ChatRoom2 findRoom(String roomName)
+        throws OperationFailedException
     {
         // MUC room names are case insensitive
         EntityBareJid roomNameJid = fixRoomName(roomName);
