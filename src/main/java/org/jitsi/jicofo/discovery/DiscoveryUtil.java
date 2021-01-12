@@ -17,14 +17,15 @@
  */
 package org.jitsi.jicofo.discovery;
 
-import net.java.sip.communicator.service.protocol.*;
-
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smackx.disco.*;
+import org.jivesoftware.smackx.disco.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * Utility class for feature discovery.
@@ -114,8 +115,14 @@ public class DiscoveryUtil
      */
     public static List<String> discoverParticipantFeatures(XmppProvider protocolProvider, EntityFullJid address)
     {
-        OperationSetSimpleCaps disco = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
-        if (disco == null)
+        XMPPConnection xmppConnection = protocolProvider.getXmppConnectionRaw();
+        if (xmppConnection == null)
+        {
+            logger.error("No xmpp connection " + protocolProvider);
+            return getDefaultParticipantFeatureSet();
+        }
+        ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection);
+        if (discoveryManager == null)
         {
             logger.error("Service discovery not supported by " + protocolProvider);
             return getDefaultParticipantFeatureSet();
@@ -125,8 +132,23 @@ public class DiscoveryUtil
 
         logger.info("Doing feature discovery for " + address);
 
-        // Discover participant feature set
-        List<String> participantFeatures = disco.getFeatures(address);
+        List<String> participantFeatures = null;
+        try
+        {
+            DiscoverInfo info = discoveryManager.discoverInfo(address);
+            if (info != null)
+            {
+                participantFeatures = info.getFeatures()
+                        .stream()
+                        .map(DiscoverInfo.Feature::getVar)
+                        .collect(Collectors.toList());
+            }
+        }
+        catch (Exception e)
+        {
+            logger.warn(String.format( "Failed to discover features for %s: %s", address, e.getMessage()));
+        }
+
         if (participantFeatures == null)
         {
             logger.warn("Failed to discover features for "+ address + " assuming default feature set.");

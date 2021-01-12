@@ -20,7 +20,6 @@ package org.jitsi.jicofo.recording.jibri;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -107,7 +106,7 @@ public class OperationSetJibri
         // Do initializations which require valid connection
         if (registered)
         {
-            protocolProvider.getConnection().registerIQRequestHandler(this);
+            protocolProvider.getXmppConnectionRaw().registerIQRequestHandler(this);
         }
     }
 }

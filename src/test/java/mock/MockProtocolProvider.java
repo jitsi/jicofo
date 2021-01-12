@@ -23,6 +23,7 @@ import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -49,7 +50,6 @@ public class MockProtocolProvider
         includeMultiUserChatOpSet();
         includeJitsiMeetTools();
         includeJingleOpSet();
-        includeSimpleCapsOpSet();
     }
 
     @Override
@@ -98,11 +98,6 @@ public class MockProtocolProvider
         addOperationSet(OperationSetJingle.class, jingleOpSet);
     }
 
-    public void includeSimpleCapsOpSet()
-    {
-        addOperationSet(OperationSetSimpleCaps.class, new MockSetSimpleCapsOpSet(config.getDomain()));
-    }
-
     public void includeJitsiMeetTools()
     {
         addOperationSet(OperationSetJitsiMeetTools.class, new MockJitsiMeetTools(this));
@@ -112,6 +107,12 @@ public class MockProtocolProvider
     public XmppConnection getXmppConnection()
     {
         return connection;
+    }
+
+    @Override
+    public XMPPConnection getXmppConnectionRaw()
+    {
+        return null;
     }
 
     public EntityFullJid getOurJID()
@@ -130,10 +131,5 @@ public class MockProtocolProvider
     public MockMultiUserChatOpSet getMockChatOpSet()
     {
         return (MockMultiUserChatOpSet) getOperationSet(OperationSetMultiUserChat.class);
-    }
-
-    public MockSetSimpleCapsOpSet getMockCapsOpSet()
-    {
-        return (MockSetSimpleCapsOpSet) getOperationSet(OperationSetSimpleCaps.class);
     }
 }

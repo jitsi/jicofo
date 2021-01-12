@@ -139,9 +139,6 @@ public class MockParticipant
             throw new RuntimeException(e);
         }
 
-        user.setupFeatures();
-
-
         try
         {
             myJid = JidCreate.entityFullFrom(chat.getName() + "/" + user.getName());

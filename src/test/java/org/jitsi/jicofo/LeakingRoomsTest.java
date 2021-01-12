@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import mock.*;
 import mock.muc.*;
 import mock.util.*;
-import mock.xmpp.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -66,10 +65,6 @@ public class LeakingRoomsTest
 
         MockMultiUserChat chat
                 = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
-
-        // Add discovery delay
-        MockSetSimpleCapsOpSet discoOpSet = pps.getMockCapsOpSet();
-        discoOpSet.addDiscoveryDelay(30);
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");

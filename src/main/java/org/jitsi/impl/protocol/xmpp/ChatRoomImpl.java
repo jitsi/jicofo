@@ -152,8 +152,7 @@ public class ChatRoomImpl
         this.opSet = parentChatOperationSet;
         this.roomJid = roomJid;
 
-        MultiUserChatManager manager = MultiUserChatManager
-                .getInstanceFor(parentChatOperationSet.getConnection());
+        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(parentChatOperationSet.getConnection());
         muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);

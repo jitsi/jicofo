@@ -117,7 +117,6 @@ public class XmppProtocolProvider
 
         addOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
         addOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
-        addOperationSet(OperationSetSimpleCaps.class, new OpSetSimpleCapsImpl(this));
         addOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
     }
 
@@ -284,7 +283,8 @@ public class XmppProtocolProvider
      *
      * @return implementation of {@link org.jitsi.protocol.xmpp.XmppConnection}
      */
-    public XMPPConnection getConnection()
+    @Override
+    public XMPPConnection getXmppConnectionRaw()
     {
         return connection;
     }
@@ -438,6 +438,11 @@ public class XmppProtocolProvider
         XmppConnectionAdapter(XMPPConnection connection)
         {
             this.connection = Objects.requireNonNull(connection, "connection");
+        }
+
+        public XMPPConnection getConnection()
+        {
+            return connection;
         }
 
         @Override

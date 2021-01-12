@@ -180,7 +180,7 @@ public class OperationSetMultiUserChatImpl
      */
     public XMPPConnection getConnection()
     {
-        return protocolProvider.getConnection();
+        return protocolProvider.getXmppConnectionRaw();
     }
 
     /**
