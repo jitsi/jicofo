@@ -79,6 +79,7 @@ public class ProtocolProviderHandler
     public void stop()
     {
         protocolService.removeRegistrationListener(this);
+        protocolService.unregister();
     }
 
     /**
