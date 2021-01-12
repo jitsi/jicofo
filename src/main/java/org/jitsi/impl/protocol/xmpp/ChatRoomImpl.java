@@ -42,6 +42,7 @@ import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.*;
 
 /**
  * Stripped implementation of <tt>ChatRoom</tt> using Smack library.
@@ -67,7 +68,7 @@ public class ChatRoomImpl
     /**
      * Parent MUC operation set.
      */
-    private final OperationSetMultiUserChatImpl opSet;
+    private final XmppProvider xmppProvider;
 
     /**
      * The room JID (e.g. "room@service").
@@ -100,16 +101,19 @@ public class ChatRoomImpl
     private EntityFullJid myOccupantJid;
 
     /**
+     * Callback to call when the room is left.
+     */
+    private final Consumer<ChatRoomImpl> leaveCallback;
+
+    /**
      * Member presence listeners.
      */
-    private CopyOnWriteArrayList<ChatRoomMemberPresenceListener> listeners
-        = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<ChatRoomMemberPresenceListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * Local user role listeners.
      */
-    private CopyOnWriteArrayList<ChatRoomLocalUserRoleListener>
-        localUserRoleListeners = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<ChatRoomLocalUserRoleListener> localUserRoleListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Nickname to member impl class map.
@@ -119,8 +123,7 @@ public class ChatRoomImpl
     /**
      * The list of <tt>ChatRoomMemberPropertyChangeListener</tt>.
      */
-    private CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener>
-        propListeners = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener> propListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Local user role.
@@ -143,16 +146,15 @@ public class ChatRoomImpl
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
-     * @param parentChatOperationSet parent multi user chat operation set.
      * @param roomJid the room JID (e.g. "room@service").
      */
-    public ChatRoomImpl(OperationSetMultiUserChatImpl parentChatOperationSet,
-                        EntityBareJid roomJid)
+    public ChatRoomImpl(XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
     {
-        this.opSet = parentChatOperationSet;
+        this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
+        this.leaveCallback = leaveCallback;
 
-        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(parentChatOperationSet.getConnection());
+        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnectionRaw());
         muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);
@@ -325,7 +327,7 @@ public class ChatRoomImpl
     @Override
     public void leave()
     {
-        XMPPConnection connection = opSet.getConnection();
+        XMPPConnection connection = xmppProvider.getXmppConnectionRaw();
         if (connection != null)
         {
             try
@@ -360,7 +362,10 @@ public class ChatRoomImpl
 
                 muc.removeParticipantListener(this);
 
-                opSet.removeRoom(this);
+                if (leaveCallback != null)
+                {
+                    leaveCallback.accept(this);
+                }
             }
         }
 
@@ -685,7 +690,7 @@ public class ChatRoomImpl
     @Override
     public XmppProvider getXmppProvider()
     {
-        return opSet.getProtocolProvider();
+        return xmppProvider;
     }
 
     @Override

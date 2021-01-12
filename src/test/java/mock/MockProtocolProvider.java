@@ -19,6 +19,7 @@ package mock;
 
 import mock.muc.*;
 import mock.xmpp.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -42,9 +43,9 @@ public class MockProtocolProvider
 
     private MockMultiUserChatOpSet mucApi;
 
-    public XmppConnectionConfig config;
+    @NotNull public XmppConnectionConfig config;
 
-    public MockProtocolProvider(XmppConnectionConfig config)
+    public MockProtocolProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
         connection = new MockXmppConnection(getOurJID());
@@ -105,12 +106,6 @@ public class MockProtocolProvider
         return jingleOpSet;
     }
 
-    @Override
-    public MockMultiUserChatOpSet getMucApi()
-    {
-        return mucApi;
-    }
-
     public EntityFullJid getOurJID()
     {
         try
@@ -122,5 +117,19 @@ public class MockProtocolProvider
         {
             throw new RuntimeException(e);
         }
+    }
+
+    @NotNull
+    @Override
+    public ChatRoom2 createRoom(@NotNull String name) throws RoomExistsException
+    {
+        return mucApi.createChatRoom(name);
+    }
+
+    @NotNull
+    @Override
+    public ChatRoom2 findOrCreateRoom(@NotNull String name) throws RoomExistsException
+    {
+        return mucApi.findRoom(name);
     }
 }

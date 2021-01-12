@@ -67,9 +67,7 @@ public class AdvertiseSSRCsTest
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
 
-        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
-
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -147,8 +145,7 @@ public class AdvertiseSSRCsTest
         String serverName = "test-server";
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -200,8 +197,7 @@ public class AdvertiseSSRCsTest
         String serverName = "test-server";
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -261,8 +257,7 @@ public class AdvertiseSSRCsTest
         TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");

@@ -31,7 +31,6 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockMultiUserChatOpSet
-    implements OperationSetMultiUserChat2
 {
     private static final Map<String, MockMucShare> mucDomainSharing = new HashMap<>();
 
@@ -57,9 +56,8 @@ public class MockMultiUserChatOpSet
         this.protocolProviderService = protocolProviderService;
     }
 
-    @Override
     public ChatRoom2 createChatRoom(String roomName)
-        throws OperationFailedException
+        throws XmppProvider.RoomExistsException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
 
@@ -67,9 +65,7 @@ public class MockMultiUserChatOpSet
         {
             if (chatRooms.containsKey(roomNameJid))
             {
-                throw new OperationFailedException(
-                    "Room " + roomName + " already exists.",
-                    OperationFailedException.GENERAL_ERROR);
+                throw new XmppProvider.RoomExistsException("Room " + roomName + " already exists.");
             }
 
             MockMultiUserChat chatRoom
@@ -94,9 +90,8 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    @Override
     public ChatRoom2 findRoom(String roomName)
-        throws OperationFailedException
+        throws XmppProvider.RoomExistsException
     {
         // MUC room names are case insensitive
         EntityBareJid roomNameJid = fixRoomName(roomName);

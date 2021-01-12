@@ -63,20 +63,14 @@ public class BundleTest
     public void testBundle()
         throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testroom@conference.pawel.jitsi.net");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConference
-            = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
 
-        MockProtocolProvider pps
-            = testConference.getFocusProtocolProvider();
+        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
 
-        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
-
-        MockMultiUserChat chat
-            = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         MockParticipant user1 = new MockParticipant("user1");
 

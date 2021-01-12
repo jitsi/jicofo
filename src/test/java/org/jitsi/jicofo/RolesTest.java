@@ -62,8 +62,7 @@ public class RolesTest
         String serverName = "test-server";
         TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
         MockProtocolProvider pps = testConference.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMucApi();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant[] users = new MockParticipant[4];

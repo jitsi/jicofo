@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import java.util.*;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.utils.logging.*;
 
 /**
@@ -121,5 +122,11 @@ public abstract class AbstractXmppProvider
             this.registered = registered;
             fireRegistrationStateChanged(registered);
         }
+    }
+
+    @Override
+    public OperationSetJibri getJibriApi()
+    {
+        return null;
     }
 }

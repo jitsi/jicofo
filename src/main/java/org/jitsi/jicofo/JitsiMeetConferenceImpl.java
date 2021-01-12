@@ -127,11 +127,6 @@ public class JitsiMeetConferenceImpl
      */
     private final Resourcepart focusUserName;
 
-    /**
-     * Chat room operation set used to handle MUC stuff.
-     */
-    private OperationSetMultiUserChat2 chatOpSet;
-
     /** Jibri operation set to (un)register recorders. */
     private OperationSetJibri jibriOpSet;
 
@@ -332,7 +327,6 @@ public class JitsiMeetConferenceImpl
                 jingle = new LipSyncHack(this, jingle);
             }
 
-            chatOpSet = protocolProviderHandler.getProtocolProvider().getMucApi();
             jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
@@ -489,7 +483,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining the room: " + roomName);
 
-        chatRoom = chatOpSet.findRoom(roomName.toString());
+        chatRoom = protocolProviderHandler.getProtocolProvider().findOrCreateRoom(roomName.toString());
         chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
