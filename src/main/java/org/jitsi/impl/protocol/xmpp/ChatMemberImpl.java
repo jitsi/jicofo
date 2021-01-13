@@ -106,12 +106,6 @@ public class ChatMemberImpl
         this.joinOrderNumber = joinOrderNumber;
     }
 
-    @Override
-    public ChatRoom getChatRoom()
-    {
-        return chatRoom;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -140,12 +134,6 @@ public class ChatMemberImpl
     public String getName()
     {
         return resourcepart.toString();
-    }
-
-    @Override
-    public byte[] getAvatar()
-    {
-        return new byte[0];
     }
 
     @Override
@@ -180,12 +168,6 @@ public class ChatMemberImpl
     public void setRole(ChatRoomMemberRole role)
     {
         throw new RuntimeException("Not implemented yet.");
-    }
-
-    @Override
-    public String getDisplayName()
-    {
-        return null;
     }
 
     @Override
@@ -287,8 +269,7 @@ public class ChatMemberImpl
 
         if (ext != null)
         {
-            boolean[] startMuted
-                = { ext.getAudioMuted(), ext.getVideoMuted() };
+            boolean[] startMuted = { ext.getAudioMuted(), ext.getVideoMuted() };
 
             if (getRole().compareTo(ChatRoomMemberRole.MODERATOR) < 0)
             {
@@ -296,10 +277,7 @@ public class ChatMemberImpl
             }
         }
 
-        StatsId statsIdPacketExt
-            = presence.getExtension(
-                    StatsId.ELEMENT_NAME,
-                    StatsId.NAMESPACE);
+        StatsId statsIdPacketExt = presence.getExtension(StatsId.ELEMENT_NAME, StatsId.NAMESPACE);
         if (statsIdPacketExt != null)
         {
             statsId = statsIdPacketExt.getStatsId();
@@ -330,7 +308,6 @@ public class ChatMemberImpl
     @Override
     public String toString()
     {
-        return String.format(
-            "ChatMember[%s, jid: %s]@%s", occupantJid, jid, hashCode());
+        return String.format("ChatMember[%s, jid: %s]@%s", occupantJid, jid, hashCode());
     }
 }

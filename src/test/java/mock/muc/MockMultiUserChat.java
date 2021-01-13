@@ -212,8 +212,7 @@ public class MockMultiUserChat
             me.setRole(ChatRoomMemberRole.OWNER);
         }
 
-        fireLocalUserRoleEvent(
-            me, oldRole, true);
+        fireLocalUserRoleEvent(me, oldRole, true);
     }
 
     public MockRoomMember createMockRoomMember(String nickname)

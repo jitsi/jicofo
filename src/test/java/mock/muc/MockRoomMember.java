@@ -45,12 +45,6 @@ public class MockRoomMember
     }
 
     @Override
-    public ChatRoom getChatRoom()
-    {
-        return room;
-    }
-
-    @Override
     public String getContactAddress()
     {
         return address.toString();
@@ -69,12 +63,6 @@ public class MockRoomMember
     }
 
     @Override
-    public byte[] getAvatar()
-    {
-        return new byte[0];
-    }
-
-    @Override
     public ChatRoomMemberRole getRole()
     {
         return role;
@@ -89,12 +77,6 @@ public class MockRoomMember
     public void setRole(ChatRoomMemberRole role)
     {
         this.role = role;
-    }
-
-    @Override
-    public String getDisplayName()
-    {
-        return null;
     }
 
     @Override

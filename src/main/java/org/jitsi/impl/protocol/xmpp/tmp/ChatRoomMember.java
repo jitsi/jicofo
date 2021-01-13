@@ -29,13 +29,6 @@ package org.jitsi.impl.protocol.xmpp.tmp;
 public interface ChatRoomMember
 {
     /**
-     * Returns the chat room that this member is participating in.
-     *
-     * @return the <tt>ChatRoom</tt> instance that this member belongs to.
-     */
-    public ChatRoom getChatRoom();
-
-    /**
      * Returns the contact identifier representing this contact. In protocols
      * like IRC this method would return the same as getName() but in others
      * like Jabber, this method would return a full contact id uri.
@@ -44,7 +37,7 @@ public interface ChatRoomMember
      * over the service the service being used by the associated protocol
      * provider instance/
      */
-    public String getContactAddress();
+    String getContactAddress();
 
     /**
      * Returns the name of this member as it is known in its containing
@@ -55,15 +48,7 @@ public interface ChatRoomMember
      * @return the name of this member as it is known in the containing chat
      * room (aka a nickname).
      */
-    public String getName();
-
-    /**
-     * Returns the avatar of this member, that can be used when including it in
-     * user interface.
-     *
-     * @return an avatar (e.g. user photo) of this member.
-     */
-    public byte[] getAvatar();
+    String getName();
 
     /**
      * Returns the role of this chat room member in its containing room.
@@ -79,10 +64,5 @@ public interface ChatRoomMember
      * @param role <tt>ChatRoomMemberRole</tt> instance indicating the role
      * to set for this member in its containing chat room.
      */
-    public void setRole(ChatRoomMemberRole role);
-
-    /**
-     * @return the display name of the chat room member.
-     */
-    public String getDisplayName();
+    void setRole(ChatRoomMemberRole role);
 }
