@@ -17,18 +17,13 @@
  */
 package mock.muc;
 
-import mock.xmpp.*;
-
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
 
-import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
-
-import java.util.*;
 
 /**
  * @author Pawel Domas
@@ -49,23 +44,6 @@ public class MockRoomMember
         this.address = address;
         this.name = address.getResourceOrThrow();
         this.room = chatRoom;
-    }
-
-    public void setupFeatures()
-    {
-        OperationSetSimpleCaps caps
-                = room.getParentProvider()
-                .getOperationSet(OperationSetSimpleCaps.class);
-
-        MockSetSimpleCapsOpSet mockCaps = (MockSetSimpleCapsOpSet) caps;
-
-        List<String> features = DiscoveryUtil.getDefaultParticipantFeatureSet();
-
-        MockCapsNode myNode
-            = new MockCapsNode(
-                address, features.toArray(new String[features.size()]));
-
-        mockCaps.addChildNode(myNode);
     }
 
     @Override

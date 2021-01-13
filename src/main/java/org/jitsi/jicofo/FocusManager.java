@@ -563,7 +563,7 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         // XMPP traffic stats
-        ProtocolProviderService pps = protocolProviderHandler.getProtocolProvider();
+        XmppProvider pps = protocolProviderHandler.getProtocolProvider();
         if (pps instanceof XmppProtocolProvider)
         {
             XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) pps;
@@ -590,7 +590,7 @@ public class FocusManager
     /**
      * Returns {@link ProtocolProviderService} for the JVB XMPP connection.
      */
-    public ProtocolProviderService getJvbProtocolProvider()
+    public XmppProvider getJvbProtocolProvider()
     {
         return jvbProtocolProvider.getProtocolProvider();
     }
@@ -613,7 +613,7 @@ public class FocusManager
      *
      * @return  the {@code ProtocolProviderService} for focus XMPP connection
      */
-    public ProtocolProviderService getProtocolProvider()
+    public XmppProvider getProtocolProvider()
     {
         return protocolProviderHandler.getProtocolProvider();
     }

@@ -20,6 +20,7 @@ package org.jitsi.jicofo.xmpp;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import org.jitsi.assertions.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
@@ -43,7 +44,7 @@ import java.util.function.*;
 public abstract class BaseBrewery<T extends ExtensionElement>
     implements ChatRoomMemberPresenceListener,
                ChatRoomMemberPropertyChangeListener,
-               RegistrationStateChangeListener
+                RegistrationListener
 {
     /**
      * The logger
@@ -149,16 +150,13 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * {@inheritDoc}
      */
     @Override
-    synchronized public void registrationStateChanged(
-        RegistrationStateChangeEvent registrationStateChangeEvent)
+    synchronized public void registrationChanged(boolean registered)
     {
-        RegistrationState newState = registrationStateChangeEvent.getNewState();
-
-        if (RegistrationState.REGISTERED.equals(newState))
+        if (registered)
         {
             maybeStart();
         }
-        else if (RegistrationState.UNREGISTERED.equals(newState))
+        else
         {
             stop();
         }

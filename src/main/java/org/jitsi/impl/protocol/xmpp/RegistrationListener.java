@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2020 - present 8x8, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp;
+package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.service.protocol.*;
-
-/**
- * The operation set that allows to deal with {@link XmppConnection} directly.
- *
- * @author Pawel Domas
- */
-public interface OperationSetDirectSmackXmpp
-    extends OperationSet
+public interface RegistrationListener
 {
-    /**
-     * Returns <tt>XmppConnection</tt> object for the XMPP connection of the
-     * <tt>ProtocolProviderService</tt>.
-     */
-    XmppConnection getXmppConnection();
+    void registrationChanged(boolean registered);
 }

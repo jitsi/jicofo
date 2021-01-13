@@ -22,7 +22,6 @@ import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.iqrequest.*;
@@ -136,8 +135,7 @@ public abstract class AbstractOperationSetJingle
         throws OperationFailedException
     {
         String sid = inviteIQ.getSID();
-        JingleSession session
-            = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
+        JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
 
         sessions.put(sid, session);
 
@@ -158,71 +156,12 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Creates Jingle 'session-initiate' IQ for given parameters.
-     *
-     * @param sessionId Jingle session ID
-     * @param useBundle <tt>true</tt> if bundled transport is being used or
-     * <tt>false</tt> otherwise
-     * @param address the XMPP address where the IQ will be sent to
-     * @param contents the list of Jingle contents which describes the actual
-     * offer
-     * @param startMuted an array where the first value stands for "start with
-     * audio muted" and the seconds one for "start video muted"
-     *
-     * @return New instance of <tt>JingleIQ</tt> filled up with the details
-     * provided as parameters.
-     */
-    private JingleIQ createInviteIQ(JingleAction                    action,
-                                    String                          sessionId,
-                                    boolean                         useBundle,
-                                    Jid                             address,
-                                    List<ContentPacketExtension>    contents,
-                                    boolean[]                       startMuted)
-    {
-        JingleIQ inviteIQ = new JingleIQ(action, sessionId);
-
-        inviteIQ.setTo(address);
-        inviteIQ.setFrom(getOurJID());
-        inviteIQ.setInitiator(getOurJID());
-        inviteIQ.setType(IQ.Type.set);
-
-        for(ContentPacketExtension content : contents)
-        {
-            inviteIQ.addContent(content);
-        }
-
-        if (useBundle)
-        {
-            GroupPacketExtension group
-                = GroupPacketExtension.createBundleGroup(contents);
-
-            inviteIQ.addExtension(group);
-        }
-
-        // FIXME Move this to a place where offer's contents are created or
-        // convert the array to a list of extra PacketExtensions
-        if(startMuted[0] || startMuted[1])
-        {
-            StartMutedPacketExtension startMutedExt
-                = new StartMutedPacketExtension();
-            startMutedExt.setAudioMute(startMuted[0]);
-            startMutedExt.setVideoMute(startMuted[1]);
-            inviteIQ.addExtension(startMutedExt);
-        }
-
-        return inviteIQ;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
-    public JingleIQ createTransportReplace(
-        JingleSession session, List<ContentPacketExtension> contents)
+    public JingleIQ createTransportReplace(JingleSession session, List<ContentPacketExtension> contents)
     {
-        JingleIQ jingleIQ
-            = new JingleIQ(
-                JingleAction.TRANSPORT_REPLACE, session.getSessionID());
+        JingleIQ jingleIQ = new JingleIQ(JingleAction.TRANSPORT_REPLACE, session.getSessionID());
         jingleIQ.setTo(session.getAddress());
         jingleIQ.setFrom(getOurJID());
         jingleIQ.setInitiator(getOurJID());

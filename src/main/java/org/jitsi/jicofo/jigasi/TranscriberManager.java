@@ -91,9 +91,7 @@ public class TranscriberManager
                               ChatRoom chatRoom,
                               JigasiDetector jigasiDetector)
     {
-        this.connection
-            = protocolProviderHandler.getOperationSet(
-            OperationSetDirectSmackXmpp.class).getXmppConnection();
+        this.connection = protocolProviderHandler.getProtocolProvider().getXmppConnection();
 
         this.chatRoom = chatRoom;
         this.jigasiDetector = jigasiDetector;

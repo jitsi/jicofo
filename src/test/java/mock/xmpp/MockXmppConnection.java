@@ -36,12 +36,9 @@ public class MockXmppConnection
     extends AbstractXMPPConnection
     implements XmppConnection
 {
-    private final static Logger logger
-            = Logger.getLogger(MockXmppConnection.class);
+    private final static Logger logger = Logger.getLogger(MockXmppConnection.class);
 
-    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue
-            = Collections.synchronizedMap(
-                    new HashMap<Jid, MockXmppConnection>());
+    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
 
     private static class MockXmppConnectionConfiguration
             extends ConnectionConfiguration

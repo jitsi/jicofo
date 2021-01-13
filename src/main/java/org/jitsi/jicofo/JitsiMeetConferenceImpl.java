@@ -18,13 +18,13 @@
 package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -68,7 +68,7 @@ import java.util.stream.*;
  */
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference,
-               RegistrationStateChangeListener,
+               RegistrationListener,
                JingleRequestHandler
 {
     /**
@@ -145,11 +145,6 @@ public class JitsiMeetConferenceImpl
      * participants.
      */
     private OperationSetJingle jingle;
-
-    /**
-     * Colibri operation set used to manage videobridge channels allocations.
-     */
-    private OperationSetColibriConference colibri;
 
     /**
      * Jitsi Meet tool used for specific operations like adding presence
@@ -334,8 +329,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            colibri = jvbXmppConnection.getOperationSet(OperationSetColibriConference.class);
-            jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
+            jingle = protocolProviderHandler.getProtocolProvider().getJingleApi();
 
             // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
             // be used for clients that signal support (see Participant.hasLipSyncSupport).
@@ -346,7 +340,7 @@ public class JitsiMeetConferenceImpl
 
             chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
             meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
-            jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
+            jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
 
@@ -655,7 +649,8 @@ public class JitsiMeetConferenceImpl
      */
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        ColibriConferenceImpl colibriConference = (ColibriConferenceImpl) colibri.createNewConference();
+        ColibriConferenceImpl colibriConference
+                = new ColibriConferenceImpl(jvbXmppConnection.getProtocolProvider().getXmppConnection());
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 
@@ -1287,13 +1282,12 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    public void registrationChanged(boolean registered)
     {
-        logger.info("Reg state changed: " + evt);
+        logger.info("Reg state changed: " + registered);
 
-        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        if (registered)
         {
-
             if (chatRoom == null)
             {
                 try
@@ -1308,7 +1302,7 @@ public class JitsiMeetConferenceImpl
                 }
             }
         }
-        else if (RegistrationState.UNREGISTERED.equals(evt.getNewState()))
+        else
         {
             stop();
         }
@@ -2160,13 +2154,13 @@ public class JitsiMeetConferenceImpl
      */
     XmppConnection getXmppConnection()
     {
-        return protocolProviderHandler.getXmppConnection();
+        return protocolProviderHandler.getProtocolProvider().getXmppConnection();
     }
 
     /**
      * Returns XMPP protocol provider of the focus account.
      */
-    public ProtocolProviderService getXmppProvider()
+    public XmppProvider getXmppProvider()
     {
         return protocolProviderHandler.getProtocolProvider();
     }

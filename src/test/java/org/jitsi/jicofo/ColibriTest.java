@@ -21,6 +21,7 @@ import mock.*;
 import mock.jvb.*;
 import mock.util.*;
 
+import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -74,8 +75,7 @@ public class ColibriTest
         TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
         MockProtocolProvider pps = testConference.getFocusProtocolProvider();
-        OperationSetColibriConference colibriTool = pps.getOperationSet(OperationSetColibriConference.class);
-        ColibriConference colibriConf = colibriTool.createNewConference();
+        ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());
 
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 

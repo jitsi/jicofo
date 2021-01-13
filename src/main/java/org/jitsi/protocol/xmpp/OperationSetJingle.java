@@ -33,7 +33,6 @@ import java.util.*;
  * @author Pawel Domas
  */
 public interface OperationSetJingle
-    extends OperationSet
 {
     /**
      * Initiates a Jingle session by sending the provided

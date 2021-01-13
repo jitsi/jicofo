@@ -152,8 +152,7 @@ public class ChatRoomImpl
         this.opSet = parentChatOperationSet;
         this.roomJid = roomJid;
 
-        MultiUserChatManager manager = MultiUserChatManager
-                .getInstanceFor(parentChatOperationSet.getConnection());
+        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(parentChatOperationSet.getConnection());
         muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);
@@ -208,7 +207,7 @@ public class ChatRoomImpl
         throws OperationFailedException
     {
         // This is very temporary (and already used elsewhere in the class).
-        XmppProtocolProvider xmppProvider = (XmppProtocolProvider) getParentProvider();
+        XmppProtocolProvider xmppProvider = (XmppProtocolProvider) getXmppProvider();
         joinAs(xmppProvider.getConfig().getUsername().toString());
     }
 
@@ -680,6 +679,12 @@ public class ChatRoomImpl
     @Override
     public ProtocolProviderService getParentProvider()
     {
+        return null;
+    }
+
+    @Override
+    public XmppProvider getXmppProvider()
+    {
         return opSet.getProtocolProvider();
     }
 
@@ -793,14 +798,12 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        XmppProtocolProvider provider
-                = (XmppProtocolProvider) getParentProvider();
-        XmppConnection connection
-                = provider.getConnectionAdapter();
+        XmppProtocolProvider provider = (XmppProtocolProvider) getXmppProvider();
+        XmppConnection connection = provider.getXmppConnection();
 
         try
         {
-            IQ reply = (IQ) connection.sendPacketAndGetReply(admin);
+            IQ reply = connection.sendPacketAndGetReply(admin);
             if (reply == null || reply.getType() != IQ.Type.result)
             {
                 // FIXME: we should have checked exceptions for all operations
@@ -1050,9 +1053,9 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getParentProvider();
+        XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getXmppProvider();
 
-        XmppConnection connection = xmppProtocolProvider.getConnectionAdapter();
+        XmppConnection connection = xmppProtocolProvider.getXmppConnection();
         if (connection == null)
         {
             logger.error("Failed to send presence extension - no connection");

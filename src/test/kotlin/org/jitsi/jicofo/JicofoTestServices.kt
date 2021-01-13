@@ -19,6 +19,7 @@ package org.jitsi.jicofo
 
 import mock.MockProtocolProvider
 import net.java.sip.communicator.service.protocol.ProtocolProviderService
+import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.osgi.framework.BundleContext
@@ -26,7 +27,7 @@ import org.osgi.framework.BundleContext
 class JicofoTestServices(bundleContext: BundleContext) : JicofoServices(bundleContext) {
     override fun createXmppProviderFactory(): XmppProviderFactory {
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig): ProtocolProviderService {
+            override fun createXmppProvider(config: XmppConnectionConfig): XmppProvider {
                 return MockProtocolProvider(config)
 
             }

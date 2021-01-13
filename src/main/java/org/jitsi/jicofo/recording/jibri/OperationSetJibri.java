@@ -19,8 +19,6 @@ package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -34,10 +32,9 @@ import java.util.*;
  */
 public class OperationSetJibri
     extends AbstractIqRequestHandler
-    implements OperationSet, RegistrationStateChangeListener
+    implements RegistrationListener
 {
-    private final List<CommonJibriStuff> jibris = Collections.synchronizedList(
-        new LinkedList<CommonJibriStuff>());
+    private final List<CommonJibriStuff> jibris = Collections.synchronizedList(new LinkedList<>());
 
     private final XmppProtocolProvider protocolProvider;
 
@@ -50,7 +47,7 @@ public class OperationSetJibri
     {
         super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, Mode.async);
         this.protocolProvider = protocolProvider;
-        protocolProvider.addRegistrationStateChangeListener(this);
+        protocolProvider.addRegistrationListener(this);
     }
 
     /**
@@ -103,12 +100,12 @@ public class OperationSetJibri
     }
 
     @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    public void registrationChanged(boolean registered)
     {
         // Do initializations which require valid connection
-        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        if (registered)
         {
-            protocolProvider.getConnection().registerIQRequestHandler(this);
+            protocolProvider.getXmppConnectionRaw().registerIQRequestHandler(this);
         }
     }
 }
