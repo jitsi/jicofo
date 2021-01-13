@@ -17,11 +17,13 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.Message;
-import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
+import net.java.sip.communicator.service.protocol.Contact;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.Message;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 

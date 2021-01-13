@@ -17,9 +17,7 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger;

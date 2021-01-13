@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 

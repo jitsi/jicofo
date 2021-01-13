@@ -21,8 +21,7 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import net.java.sip.communicator.service.protocol.*;
-
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;

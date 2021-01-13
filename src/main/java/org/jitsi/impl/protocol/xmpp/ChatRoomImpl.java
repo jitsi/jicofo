@@ -17,11 +17,17 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.Message;
-import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.service.protocol.Contact;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
 
+import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.AbstractChatRoom;
+import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMember;
+import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMemberRole;
+import org.jitsi.impl.protocol.xmpp.tmp.ConferenceDescription;
+import org.jitsi.impl.protocol.xmpp.tmp.Message;
+import org.jitsi.impl.protocol.xmpp.tmp.OperationFailedException;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
@@ -53,6 +59,30 @@ public class ChatRoomImpl
     extends AbstractChatRoom
     implements ChatRoom2, PresenceListener
 {
+    static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
+        if (affiliation != null) {
+            if (affiliation == MUCAffiliation.admin) {
+                return ChatRoomMemberRole.ADMINISTRATOR;
+            }
+
+            if (affiliation == MUCAffiliation.owner) {
+                return ChatRoomMemberRole.OWNER;
+            }
+        }
+
+        if (smackRole != null) {
+            if (smackRole == MUCRole.moderator) {
+                return ChatRoomMemberRole.MODERATOR;
+            }
+
+            if (smackRole == MUCRole.participant) {
+                return ChatRoomMemberRole.MEMBER;
+            }
+        }
+
+        return ChatRoomMemberRole.GUEST;
+    }
+
     /**
      * The logger used by this class.
      */
@@ -426,10 +456,7 @@ public class ChatRoomImpl
             }
             else
             {
-                this.role
-                    = ChatRoomJabberImpl.smackRoleToScRole(
-                        o.getRole(),
-                        o.getAffiliation());
+                this.role = smackRoleToScRole(o.getRole(), o.getAffiliation());
             }
         }
 
@@ -1145,8 +1172,7 @@ public class ChatRoomImpl
             // this is the presence for our member initial role and
             // affiliation, as smack do not fire any initial
             // events lets check it and fire events
-            ChatRoomMemberRole jitsiRole
-                = ChatRoomJabberImpl.smackRoleToScRole(role, affiliation);
+            ChatRoomMemberRole jitsiRole = smackRoleToScRole(role, affiliation);
 
             if (!presence.isAvailable()
                 && MUCAffiliation.none == affiliation

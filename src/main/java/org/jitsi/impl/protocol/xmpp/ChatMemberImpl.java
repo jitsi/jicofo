@@ -17,11 +17,14 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.globalstatus.*;
+
+import net.java.sip.communicator.service.protocol.Contact;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.service.protocol.PresenceStatus;
+import net.java.sip.communicator.service.protocol.globalstatus.GlobalStatusEnum;
 
 import org.jitsi.protocol.xmpp.*;
 
@@ -175,9 +178,7 @@ public class ChatMemberImpl
             }
             else
             {
-                this.role
-                    = ChatRoomJabberImpl.smackRoleToScRole(
-                        o.getRole(), o.getAffiliation());
+                this.role = ChatRoomImpl.smackRoleToScRole(o.getRole(), o.getAffiliation());
             }
         }
         return this.role;

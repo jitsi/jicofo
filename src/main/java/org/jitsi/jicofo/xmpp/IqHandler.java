@@ -18,10 +18,10 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.Bridge;
 import org.jitsi.xmpp.extensions.rayo.*;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;

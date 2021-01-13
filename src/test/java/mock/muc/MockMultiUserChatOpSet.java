@@ -18,8 +18,8 @@
 package mock.muc;
 
 import mock.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;

@@ -17,9 +17,12 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.globalstatus.*;
+import net.java.sip.communicator.service.protocol.globalstatus.GlobalStatusEnum;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.service.protocol.Contact;
+import net.java.sip.communicator.service.protocol.PresenceStatus;
 
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;

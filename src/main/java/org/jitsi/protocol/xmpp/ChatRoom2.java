@@ -17,9 +17,8 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import net.java.sip.communicator.service.protocol.*;
-
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
