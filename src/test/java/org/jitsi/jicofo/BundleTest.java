@@ -51,7 +51,6 @@ public class BundleTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -66,7 +65,7 @@ public class BundleTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConference = TestConference.allocate(serverName, roomName);
 
         MockProtocolProvider pps = testConference.getFocusProtocolProvider();
 

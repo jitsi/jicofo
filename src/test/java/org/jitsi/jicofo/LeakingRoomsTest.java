@@ -42,7 +42,6 @@ public class LeakingRoomsTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -54,7 +53,7 @@ public class LeakingRoomsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 

@@ -59,7 +59,6 @@ public class ColibriTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -72,7 +71,7 @@ public class ColibriTest
         String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConference = TestConference.allocate(serverName, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
         MockProtocolProvider pps = testConference.getFocusProtocolProvider();
         ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());

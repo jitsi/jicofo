@@ -21,16 +21,11 @@ import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
 import org.jitsi.config.*;
-import org.jitsi.impl.osgi.framework.*;
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.meet.*;
 import org.jitsi.metaconfig.*;
 import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging.*;
-import org.osgi.framework.*;
-import org.xeustechnologies.jcl.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -67,24 +62,8 @@ public class Main
         ShutdownServiceImpl shutdownService = new ShutdownServiceImpl();
         // Register shutdown hook to perform cleanup before exit
         Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
-        logger.info("Starting OSGi services.");
-        BundleActivator activator = new DummyActivator();
-        OSGiLauncher launcher = startOsgi(activator);
 
-        logger.debug("Waiting for OSGi services to start");
-        try
-        {
-            WaitableBundleActivator.waitUntilStarted();
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to start all OSGi bundles, exiting.");
-            launcher.stop(activator);
-            return;
-        }
-        logger.info("OSGi services started.");
-
-        JicofoServices.jicofoServicesSingleton = new JicofoServices(WaitableBundleActivator.getBundleContext());
+        JicofoServices.jicofoServicesSingleton = new JicofoServices();
 
         try
         {
@@ -98,26 +77,8 @@ public class Main
         logger.info("Stopping services.");
         JicofoServices.jicofoServicesSingleton.stop();
         JicofoServices.jicofoServicesSingleton = null;
-        launcher.stop(activator);
     }
 
-    private static OSGiLauncher startOsgi(BundleActivator activator)
-    {
-        JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
-        bundleConfig.setSystemPropertyDefaults();
-        ClassLoader classLoader = loadBundlesJars(bundleConfig);
-        if (classLoader == null)
-        {
-            throw new IllegalStateException("Class Loader not initialized");
-        }
-
-        // Start OSGi
-        logger.warn("Starting Osgi");
-        OSGiLauncher launcher = new OSGiLauncher(bundleConfig.getBundles(), classLoader);
-        launcher.start(activator);
-
-        return launcher;
-    }
     /**
      * Read the command line arguments and env variables, and set the corresponding system properties used for
      * configuration of the XMPP component and client connections.
@@ -201,39 +162,5 @@ public class Main
                 configLogger.debug(function0::invoke);
             }
         });
-    }
-
-    /**
-     * Creates class loader that able to load classes from jars of selected by
-     * bundleConfig {@code OSGiBundleConfig#BUNDLES_JARS_PATH} parameter.
-     * @param bundleConfig - instance with path to extended bundles jar.
-     * @return OSGi class loader for bundles.
-     */
-    private static ClassLoader loadBundlesJars(OSGiBundleConfig bundleConfig)
-    {
-        String bundlesJarsPath = bundleConfig.getBundlesJarsPath();
-        if (bundlesJarsPath == null)
-        {
-            return ClassLoader.getSystemClassLoader();
-        }
-
-        JarClassLoader jcl = new JarClassLoader();
-        jcl.add(bundlesJarsPath + "/");
-        return new OSGiClassLoader(jcl, ClassLoader.getSystemClassLoader());
-    }
-
-    private static class DummyActivator implements BundleActivator
-    {
-        @Override
-        public void start(BundleContext bundleContext) throws Exception
-        {
-
-        }
-
-        @Override
-        public void stop(BundleContext bundleContext) throws Exception
-        {
-
-        }
     }
 }

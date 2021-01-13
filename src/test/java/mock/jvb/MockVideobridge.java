@@ -26,17 +26,12 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
-
-import java.util.*;
-import java.util.stream.*;
 
 /**
  *
  * @author Pawel Domas
  */
 public class MockVideobridge
-    implements BundleActivator
 {
     /**
      * The logger
@@ -59,7 +54,7 @@ public class MockVideobridge
         this.bridgeJid = bridgeJid;
     }
 
-    public void start(BundleContext bc)
+    public void start()
     {
         bridge = new Videobridge(
                 new org.jitsi.videobridge.xmpp.XmppConnection(),
@@ -71,8 +66,7 @@ public class MockVideobridge
         connection.registerIQRequestHandler(confIqSetHandler);
     }
 
-    @Override
-    public void stop(BundleContext bundleContext)
+    public void stop()
     {
         connection.unregisterIQRequestHandler(confIqGetHandler);
         connection.unregisterIQRequestHandler(confIqSetHandler);

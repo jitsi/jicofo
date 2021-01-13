@@ -49,7 +49,6 @@ public class AdvertiseSSRCsTest
 
     @After
     public void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -63,7 +62,7 @@ public class AdvertiseSSRCsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
 
@@ -143,7 +142,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
@@ -195,7 +194,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
@@ -254,7 +253,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());

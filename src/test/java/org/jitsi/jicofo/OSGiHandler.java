@@ -20,10 +20,7 @@ package org.jitsi.jicofo;
 import com.typesafe.config.*;
 import mock.muc.*;
 import org.jitsi.config.*;
-import org.jitsi.impl.osgi.framework.*;
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.osgi.framework.*;
 
 /**
  * Helper class takes encapsulates OSGi specifics operations.
@@ -32,16 +29,6 @@ import org.osgi.framework.*;
  */
 public class OSGiHandler
 {
-    /**
-     * OSGi bundle context instance.
-     */
-    public FailureAwareBundleContext bc;
-
-    private static OSGiLauncher launcher;
-    private BundleActivator bundleActivator;
-
-    private final Object syncRoot = new Object();
-
     private static OSGiHandler instance = new OSGiHandler();
 
     private boolean deadlocked;
@@ -58,14 +45,6 @@ public class OSGiHandler
     public void setDeadlocked(boolean deadlocked)
     {
         this.deadlocked = deadlocked;
-        if (deadlocked)
-        {
-            bc.setFailureMessage("OSGi stack is blocked by a deadlock");
-        }
-        else
-        {
-            bc.setFailureMessage(null);
-        }
     }
 
     public void init()
@@ -88,76 +67,17 @@ public class OSGiHandler
                         "test config",
                         ConfigFactory.parseString(disableRestConfig).withFallback(ConfigFactory.load())));
 
-        this.bundleActivator = new BundleActivator()
-        {
-            @Override
-            public void start(BundleContext bundleContext)
-                throws Exception
-            {
-                bc = new FailureAwareBundleContext(bundleContext);
-                synchronized (syncRoot)
-                {
-                    syncRoot.notifyAll();
-                }
-            }
-
-            @Override
-            public void stop(BundleContext bundleContext)
-                throws Exception
-            {
-                bc = null;
-                synchronized (syncRoot)
-                {
-                    syncRoot.notifyAll();
-                }
-            }
-        };
-
-        JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
-        launcher = new OSGiLauncher(bundleConfig.getBundles(), ClassLoader.getSystemClassLoader());
-        launcher.start(bundleActivator);
-
-        if (bc == null)
-        {
-            synchronized (syncRoot)
-            {
-                syncRoot.wait(5000);
-            }
-        }
-
-        if (bc == null)
-        {
-            throw new RuntimeException("Failed to start OSGI");
-        }
-
-        // Activators are executed asynchronously, so a hack to wait for the last activator is used
-        WaitableBundleActivator.waitUntilStarted();
-
         SmackKt.initializeSmack();
-        jicofoServices = new JicofoTestServices(bc);
+        jicofoServices = new JicofoTestServices();
         JicofoServices.jicofoServicesSingleton = jicofoServices;
     }
 
     public void shutdown()
-        throws Exception
     {
         if (deadlocked)
             return;
 
-        if (bc != null)
-        {
-            launcher.stop(bundleActivator);
-        }
-
-        if (bc != null)
-            throw new RuntimeException("Failed to stop OSGI");
-
         MockMultiUserChatOpSet.cleanMucSharing();
-    }
-
-    public BundleContext bc()
-    {
-        return bc;
     }
 
     public boolean isDeadlocked()
