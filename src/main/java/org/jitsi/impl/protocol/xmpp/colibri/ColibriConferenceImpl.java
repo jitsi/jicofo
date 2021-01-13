@@ -22,7 +22,6 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.service.neomedia.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -656,8 +655,7 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
-                                   boolean mute)
+    public boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute)
     {
         if (checkIfDisposed("muteParticipant"))
         {
@@ -668,8 +666,7 @@ public class ColibriConferenceImpl
         request.setID(conferenceState.getID());
         request.setName(conferenceState.getName());
 
-        ColibriConferenceIQ.Content audioContent
-            = channelsInfo.getContent("audio");
+        ColibriConferenceIQ.Content audioContent = channelsInfo.getContent("audio");
 
         if (audioContent == null || isBlank(request.getID()))
         {
@@ -678,20 +675,12 @@ public class ColibriConferenceImpl
             return false;
         }
 
-        ColibriConferenceIQ.Content requestContent
-            = new ColibriConferenceIQ.Content(audioContent.getName());
-
+        ColibriConferenceIQ.Content requestContent = new ColibriConferenceIQ.Content(audioContent.getName());
         for (ColibriConferenceIQ.Channel channel : audioContent.getChannels())
         {
-            ColibriConferenceIQ.Channel requestChannel
-                = new ColibriConferenceIQ.Channel();
-
+            ColibriConferenceIQ.Channel requestChannel = new ColibriConferenceIQ.Channel();
             requestChannel.setID(channel.getID());
-
-            requestChannel.setDirection(
-                    mute ? MediaDirection.SENDONLY.toString()
-                        : MediaDirection.SENDRECV.toString());
-
+            requestChannel.setDirection(mute ? "sendonly" : "sendrecv");
             requestContent.addChannel(requestChannel);
         }
 
