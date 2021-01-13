@@ -17,13 +17,8 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.impl.protocol.jabber.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.globalstatus.*;
-
-import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
@@ -36,7 +31,7 @@ import org.jxmpp.jid.parts.*;
  * @author Pawel Domas
  */
 public class ChatMemberImpl
-    implements XmppChatMember
+    implements ChatRoomMember
 {
     /**
      * The logger
@@ -108,12 +103,6 @@ public class ChatMemberImpl
         this.joinOrderNumber = joinOrderNumber;
     }
 
-    @Override
-    public ChatRoom getChatRoom()
-    {
-        return chatRoom;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -121,18 +110,6 @@ public class ChatMemberImpl
     public Presence getPresence()
     {
         return presence;
-    }
-
-    @Override
-    public ProtocolProviderService getProtocolProvider()
-    {
-        return chatRoom.getParentProvider();
-    }
-
-    @Override
-    public String getContactAddress()
-    {
-        return occupantJid.toString();
     }
 
     public EntityFullJid getOccupantJid()
@@ -151,18 +128,6 @@ public class ChatMemberImpl
     }
 
     @Override
-    public byte[] getAvatar()
-    {
-        return new byte[0];
-    }
-
-    @Override
-    public Contact getContact()
-    {
-        return null;
-    }
-
-    @Override
     public ChatRoomMemberRole getRole()
     {
         if (this.role == null)
@@ -175,9 +140,7 @@ public class ChatMemberImpl
             }
             else
             {
-                this.role
-                    = ChatRoomJabberImpl.smackRoleToScRole(
-                        o.getRole(), o.getAffiliation());
+                this.role = ChatRoomImpl.smackRoleToScRole(o.getRole(), o.getAffiliation());
             }
         }
         return this.role;
@@ -196,18 +159,6 @@ public class ChatMemberImpl
     public void setRole(ChatRoomMemberRole role)
     {
         throw new RuntimeException("Not implemented yet.");
-    }
-
-    @Override
-    public PresenceStatus getPresenceStatus()
-    {
-        return GlobalStatusEnum.ONLINE;
-    }
-
-    @Override
-    public String getDisplayName()
-    {
-        return null;
     }
 
     @Override
@@ -271,46 +222,38 @@ public class ChatMemberImpl
             Boolean newStatus = videoMutedExt.isVideoMuted();
             if (newStatus != videoMuted)
             {
-                logger.debug(
-                    getContactAddress() + " video muted: " + newStatus);
+                logger.debug(getName() + " video muted: " + newStatus);
 
                 videoMuted = newStatus;
             }
         }
 
         UserInfoPacketExt userInfoPacketExt
-            = presence.getExtension(
-                    UserInfoPacketExt.ELEMENT_NAME,
-                    UserInfoPacketExt.NAMESPACE);
+            = presence.getExtension(UserInfoPacketExt.ELEMENT_NAME, UserInfoPacketExt.NAMESPACE);
         if (userInfoPacketExt != null)
         {
             Boolean newStatus = userInfoPacketExt.isRobot();
             if (newStatus != null && this.robot != newStatus)
             {
-                logger.debug(getContactAddress() +" robot: " + robot);
+                logger.debug(getName() +" robot: " + robot);
 
                 this.robot = newStatus;
             }
         }
 
         RegionPacketExtension regionPE
-            = presence.getExtension(
-                    RegionPacketExtension.ELEMENT_NAME,
-                    RegionPacketExtension.NAMESPACE);
+            = presence.getExtension(RegionPacketExtension.ELEMENT_NAME, RegionPacketExtension.NAMESPACE);
         if (regionPE != null)
         {
             region = regionPE.getRegionId();
         }
 
         StartMutedPacketExtension ext
-            = presence.getExtension(
-            StartMutedPacketExtension.ELEMENT_NAME,
-            StartMutedPacketExtension.NAMESPACE);
+            = presence.getExtension(StartMutedPacketExtension.ELEMENT_NAME, StartMutedPacketExtension.NAMESPACE);
 
         if (ext != null)
         {
-            boolean[] startMuted
-                = { ext.getAudioMuted(), ext.getVideoMuted() };
+            boolean[] startMuted = { ext.getAudioMuted(), ext.getVideoMuted() };
 
             if (getRole().compareTo(ChatRoomMemberRole.MODERATOR) < 0)
             {
@@ -318,10 +261,7 @@ public class ChatMemberImpl
             }
         }
 
-        StatsId statsIdPacketExt
-            = presence.getExtension(
-                    StatsId.ELEMENT_NAME,
-                    StatsId.NAMESPACE);
+        StatsId statsIdPacketExt = presence.getExtension(StatsId.ELEMENT_NAME, StatsId.NAMESPACE);
         if (statsIdPacketExt != null)
         {
             statsId = statsIdPacketExt.getStatsId();
@@ -352,7 +292,6 @@ public class ChatMemberImpl
     @Override
     public String toString()
     {
-        return String.format(
-            "ChatMember[%s, jid: %s]@%s", occupantJid, jid, hashCode());
+        return String.format("ChatMember[%s, jid: %s]@%s", occupantJid, jid, hashCode());
     }
 }

@@ -17,10 +17,9 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
@@ -78,7 +77,7 @@ public interface JitsiMeetConference
      * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
      * currently in or <tt>null</tt> if it isn't in any.
      */
-    ChatRoom2 getChatRoom();
+    ChatRoom getChatRoom();
 
     /**
      * Sets the value of the <tt>startMuted</tt> property of this instance.

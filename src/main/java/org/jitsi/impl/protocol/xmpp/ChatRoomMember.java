@@ -1,5 +1,5 @@
 /*
- * Jicofo, the Jitsi Conference Focus.
+ * Jitsi, the OpenSource Java VoIP and Instant Messaging client.
  *
  * Copyright @ 2015 Atlassian Pty Ltd
  *
@@ -15,21 +15,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp;
-
-import net.java.sip.communicator.service.protocol.*;
+package org.jitsi.impl.protocol.xmpp;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 /**
- * XMPP extended interface of {@link ChatRoomMember}.
+ * This interface represents chat room participants. Instances are retrieved
+ * through implementations of the <tt>ChatRoom</tt> interface and offer methods
+ * that allow querying member properties, such as, moderation permissions,
+ * associated chat room and other.
  *
- * @author Pawel Domas
+ * @author Emil Ivov
+ * @author Boris Grozev
  */
-public interface XmppChatMember
-    extends ChatRoomMember
+public interface ChatRoomMember
 {
+    /**
+     * Returns the name of this member as it is known in its containing
+     * chatroom (aka a nickname). The name returned by this method, may
+     * sometimes match the string returned by getContactID() which is actually
+     * the address of  a contact in the realm of the corresponding protocol.
+     *
+     * @return the name of this member as it is known in the containing chat
+     * room (aka a nickname).
+     */
+    String getName();
+
+    /**
+     * Returns the role of this chat room member in its containing room.
+     *
+     * @return a <tt>ChatRoomMemberRole</tt> instance indicating the role
+     * the this member in its containing chat room.
+     */
+    ChatRoomMemberRole getRole();
+
+    /**
+     * Sets the role of this chat room member in its containing room.
+     *
+     * @param role <tt>ChatRoomMemberRole</tt> instance indicating the role
+     * to set for this member in its containing chat room.
+     */
+    void setRole(ChatRoomMemberRole role);
+
     /**
      * Returns the JID of the user (outside the MUC), i.e. the "real" JID.
      */
@@ -43,6 +71,7 @@ public interface XmppChatMember
     /**
      * Returns number based on the order of joining of the members in the room.
      * @return number based on the order of joining of the members in the room.
+     * TODO: only needed because of startMuted, remove once startMuted is client side.
      */
     int getJoinOrderNumber();
 
@@ -70,7 +99,7 @@ public interface XmppChatMember
     boolean isRobot();
 
     /**
-     * Gets the region (e.g. "us-east") of this {@link XmppChatMember}.
+     * Gets the region (e.g. "us-east") of this {@link ChatRoomMember}.
      */
     String getRegion();
 

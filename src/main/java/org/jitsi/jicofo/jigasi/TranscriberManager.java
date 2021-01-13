@@ -18,17 +18,14 @@
 
 package org.jitsi.jicofo.jigasi;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -55,6 +52,7 @@ public class TranscriberManager
      * The {@link ChatRoom} of the conference this class is managing
      */
     private ChatRoom chatRoom;
+    private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link JigasiDetector} responsible for determining which Jigasi
@@ -83,17 +81,17 @@ public class TranscriberManager
      * a transcriber when this is desired.
      *
      * @param protocolProviderHandler the handler giving access a XmppConnection
-     * @param chatRoom the room of the conference being managed
      * @param jigasiDetector detector for Jigasi instances which can be dialed
      * to invite a transcriber
      */
     public TranscriberManager(ProtocolProviderHandler protocolProviderHandler,
-                              ChatRoom chatRoom,
+                              JitsiMeetConferenceImpl conference,
                               JigasiDetector jigasiDetector)
     {
         this.connection = protocolProviderHandler.getProtocolProvider().getXmppConnection();
 
-        this.chatRoom = chatRoom;
+        this.conference = conference;
+        this.chatRoom = conference.getChatRoom();
         this.jigasiDetector = jigasiDetector;
     }
 
@@ -144,9 +142,8 @@ public class TranscriberManager
     }
 
     /**
-     * Check whether a {@link ChatRoomPropertyChangeEvent} is due to a new
-     * {@link Presence}, and when it is, deal with the information is has
-     * provided.
+     * Check whether a {@link ChatRoomMemberPropertyChangeEvent} is due to a new {@link Presence}, and when it is, deal
+     * with the information is has provided.
      *
      * @param event the event to check the {@link Presence} off
      */
@@ -159,11 +156,9 @@ public class TranscriberManager
             return;
         }
 
-        TranscriptionStatusExtension transcriptionStatusExtension
-            = getTranscriptionStatus(presence);
+        TranscriptionStatusExtension transcriptionStatusExtension = getTranscriptionStatus(presence);
         if(transcriptionStatusExtension != null
-            && TranscriptionStatusExtension.Status.OFF.equals(
-                    transcriptionStatusExtension.getStatus()))
+            && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
         {
             // puts the stopping in the single threaded executor
             // so we can order the events and avoid indicating active = false
@@ -172,8 +167,7 @@ public class TranscriberManager
         }
         if(isRequestingTranscriber(presence) && !active)
         {
-            executorService.submit(
-                () -> this.startTranscribing(getBridgeRegions()));
+            executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
         }
     }
 
@@ -184,31 +178,10 @@ public class TranscriberManager
      */
     private Collection<String> getBridgeRegions()
     {
-        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
-
-        try
-        {
-            JitsiMeetConferenceImpl conference =
-                focusManager.getConference(JidCreate.entityBareFrom(chatRoom.getIdentifier()));
-
-            if (conference == null)
-            {
-                logger.debug("Cannot find conference for " + chatRoom.getIdentifier());
-            }
-            else
-            {
-                return conference.getBridges().keySet().stream()
+        return conference.getBridges().keySet().stream()
                     .map(b -> b.getRegion())
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
-            }
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Error finding room for " + chatRoom.getIdentifier());
-        }
-
-        return new ArrayList<>();
     }
 
     /**
@@ -248,18 +221,15 @@ public class TranscriberManager
      * we already tried sending in attempt to retry.
      * @param preferredRegions a list of preferred regions.
      */
-    private void selectTranscriber(
-        int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
+    private void selectTranscriber(int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
     {
         logger.info("Attempting to invite transcriber");
 
-        Jid jigasiJid
-            = jigasiDetector.selectTranscriber(exclude, preferredRegions);
+        Jid jigasiJid = jigasiDetector.selectTranscriber(exclude, preferredRegions);
 
         if(jigasiJid == null)
         {
-            logger.warn("Unable to invite transcriber due to no " +
-                "Jigasi instances being available");
+            logger.warn("Unable to invite transcriber due to no Jigasi instances being available");
             return;
         }
 
@@ -349,9 +319,9 @@ public class TranscriberManager
     }
 
     /**
-     * Extract the presence from the {@link ChatRoomPropertyChangeEvent}.
+     * Extract the presence from the {@link ChatRoomMemberPropertyChangeEvent}.
      *
-     * @param event the {@link ChatRoomPropertyChangeEvent} to extract from
+     * @param event the {@link ChatRoomMemberPropertyChangeEvent} to extract from
      * @return the {@link Presence}, or null when not available.
      */
     private Presence getPresenceOrNull(ChatRoomMemberPropertyChangeEvent event)

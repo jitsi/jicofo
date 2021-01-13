@@ -17,8 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import net.java.sip.communicator.service.protocol.*;
-import org.jitsi.jicofo.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
@@ -32,7 +31,6 @@ import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.parts.*;
 
 import java.time.*;
 import java.util.*;

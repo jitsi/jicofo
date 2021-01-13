@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
@@ -172,7 +172,7 @@ public abstract class CommonJibriStuff
             return false;
         }
 
-        XmppChatMember chatMember = conference.findMember(from);
+        ChatRoomMember chatMember = conference.findMember(from);
         if (chatMember == null)
         {
             logger.warn("Chat member not found for: " + from);

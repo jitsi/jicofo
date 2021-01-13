@@ -20,7 +20,6 @@ package org.jitsi.protocol.xmpp.colibri;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.util.*;
 import org.jxmpp.jid.*;
@@ -89,8 +88,6 @@ public interface ColibriConference
      * of ICE session.
      * @param contents content list that describes peer media.
      * @return <tt>ColibriConferenceIQ</tt> that describes allocated channels.
-     *
-     * @throws OperationFailedException if channel allocation fails.
      */
     default ColibriConferenceIQ createColibriChannels(
         String endpointId,

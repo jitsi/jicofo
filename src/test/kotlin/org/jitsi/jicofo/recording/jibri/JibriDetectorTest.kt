@@ -4,8 +4,8 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import net.java.sip.communicator.service.protocol.event.ChatRoomMemberPresenceChangeEvent
-import org.jitsi.protocol.xmpp.XmppChatMember
+import org.jitsi.impl.protocol.xmpp.ChatRoomMember
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
@@ -24,12 +24,14 @@ class JibriDetectorTest : ShouldSpec({
     jibriJids
         .map { createJibriMember(it) }
         .forEach {
-            detector.memberPresenceChanged(ChatRoomMemberPresenceChangeEvent(
-                mockk(),
-                it,
-                ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED,
-                "reason"
-            ))
+            detector.memberPresenceChanged(
+                ChatRoomMemberPresenceChangeEvent(
+                    mockk(),
+                    it,
+                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED,
+                    "reason"
+                )
+            )
         }
 
     context("When selecting a Jibri, JibriDetector") {
@@ -53,7 +55,7 @@ class JibriDetectorTest : ShouldSpec({
 
 })
 
-private fun createJibriMember(jid: EntityFullJid): XmppChatMember {
+private fun createJibriMember(jid: EntityFullJid): ChatRoomMember {
     return mockk {
         every { occupantJid } returns jid
         every { presence } returns mockk<Presence> {

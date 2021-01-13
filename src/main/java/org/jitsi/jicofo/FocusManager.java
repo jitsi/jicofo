@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
-
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
@@ -587,9 +585,6 @@ public class FocusManager
         this.healthChecker = jicofoHealthChecker;
     }
 
-    /**
-     * Returns {@link ProtocolProviderService} for the JVB XMPP connection.
-     */
     public XmppProvider getJvbProtocolProvider()
     {
         return jvbProtocolProvider.getProtocolProvider();

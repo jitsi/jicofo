@@ -17,13 +17,8 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.Message;
-import net.java.sip.communicator.service.protocol.event.*;
-
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
@@ -41,14 +36,12 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class MockMultiUserChat
-    extends AbstractChatRoom
-    implements ChatRoom2
+    implements ChatRoom
 {
     /**
      * The logger
      */
-    private static final Logger logger
-        = Logger.getLogger(MockMultiUserChat.class);
+    private static final Logger logger = Logger.getLogger(MockMultiUserChat.class);
 
     private final EntityBareJid roomName;
 
@@ -58,20 +51,15 @@ public class MockMultiUserChat
 
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
-    private XmppChatMember me;
+    private ChatRoomMember me;
 
     /**
      * Listeners that will be notified of changes in member status in the
      * room such as member joined, left or being kicked or dropped.
      */
-    private final Vector<ChatRoomMemberPresenceListener> memberListeners
-        = new Vector<>();
+    private final Vector<ChatRoomMemberPresenceListener> memberListeners = new Vector<>();
 
-    private final Vector<ChatRoomLocalUserRoleListener> localUserRoleListeners
-        = new Vector<>();
-
-    private final Vector<ChatRoomMemberRoleListener> memberRoleListeners
-        = new Vector<>();
+    private final Vector<ChatRoomLocalUserRoleListener> localUserRoleListeners = new Vector<>();
 
     // The nickname to join with
     private final String myNickname;
@@ -83,12 +71,6 @@ public class MockMultiUserChat
         this.roomName = roomName;
         this.protocolProvider = protocolProviderService;
         this.myNickname = myNickname;
-    }
-
-    @Override
-    public EntityFullJid getLocalOccupantJid()
-    {
-        return me != null ? me.getOccupantJid() : null;
     }
 
     @Override
@@ -118,12 +100,6 @@ public class MockMultiUserChat
     }
 
     @Override
-    public XmppProvider getXmppProvider()
-    {
-        return protocolProvider;
-    }
-
-    @Override
     public void setPresenceExtension(ExtensionElement extension, boolean remove)
     {
     }
@@ -141,30 +117,10 @@ public class MockMultiUserChat
     }
 
     @Override
-    public String getIdentifier()
-    {
-        return null;
-    }
-
-    @Override
     public void join()
         throws OperationFailedException
     {
         joinAs(myNickname);
-    }
-
-    @Override
-    public void join(byte[] password)
-        throws OperationFailedException
-    {
-        join();
-    }
-
-    @Override
-    public void joinAs(String nickname)
-        throws OperationFailedException
-    {
-        joinAs(nickname, null);
     }
 
     private EntityFullJid createAddressForName(String nickname)
@@ -173,8 +129,7 @@ public class MockMultiUserChat
         return JidCreate.entityFullFrom(roomName, Resourcepart.from(nickname));
     }
 
-    @Override
-    public void joinAs(String nickname, byte[] password)
+    private void joinAs(String nickname)
         throws OperationFailedException
     {
         if (isJoined)
@@ -201,21 +156,16 @@ public class MockMultiUserChat
         synchronized (members)
         {
             members.add(member);
-
             me = member;
-
-            fireMemberPresenceEvent(
-                me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            fireMemberPresenceEvent(me,ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
         }
 
-        ChatRoomMemberRole oldRole = me.getRole();
         if (isOwner)
         {
             me.setRole(ChatRoomMemberRole.OWNER);
         }
 
-        fireLocalUserRoleEvent(
-            me, oldRole, true);
+        fireLocalUserRoleEvent(me, true);
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
@@ -248,11 +198,7 @@ public class MockMultiUserChat
             }
 
             members.add(member);
-
-            fireMemberPresenceEvent(
-                    member, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
-
+            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
             return member;
         }
     }
@@ -279,9 +225,7 @@ public class MockMultiUserChat
                         "Member is not in the room " + member);
             }
 
-            fireMemberPresenceEvent(
-                    member, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
         }
     }
 
@@ -303,30 +247,10 @@ public class MockMultiUserChat
         {
             members.remove(me);
 
-            fireMemberPresenceEvent(
-                me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
         }
 
         me = null;
-    }
-
-    @Override
-    public String getSubject()
-    {
-        return null;
-    }
-
-    @Override
-    public void setSubject(String subject)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public String getUserNickname()
-    {
-        return null;
     }
 
     @Override
@@ -336,22 +260,7 @@ public class MockMultiUserChat
     }
 
     @Override
-    public void setLocalUserRole(ChatRoomMemberRole role)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public void setUserNickname(String nickname)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public void addMemberPresenceListener(
-        ChatRoomMemberPresenceListener listener)
+    public void addMemberPresenceListener(ChatRoomMemberPresenceListener listener)
     {
         synchronized (memberListeners)
         {
@@ -360,8 +269,7 @@ public class MockMultiUserChat
     }
 
     @Override
-    public void removeMemberPresenceListener(
-        ChatRoomMemberPresenceListener listener)
+    public void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener)
     {
         synchronized (memberListeners)
         {
@@ -376,57 +284,16 @@ public class MockMultiUserChat
     }
 
     @Override
-    public void removelocalUserRoleListener(
-        ChatRoomLocalUserRoleListener listener)
+    public void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
     {
         localUserRoleListeners.remove(listener);
     }
 
     @Override
-    public void addMemberRoleListener(ChatRoomMemberRoleListener listener)
-    {
-        memberRoleListeners.add(listener);
-    }
+    public void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener) { }
 
     @Override
-    public void removeMemberRoleListener(ChatRoomMemberRoleListener listener)
-    {
-        memberRoleListeners.remove(listener);
-    }
-
-    @Override
-    public void addPropertyChangeListener(
-        ChatRoomPropertyChangeListener listener)
-    {
-
-    }
-
-    @Override
-    public void removePropertyChangeListener(
-        ChatRoomPropertyChangeListener listener)
-    {
-
-    }
-
-    @Override
-    public void addMemberPropertyChangeListener(
-        ChatRoomMemberPropertyChangeListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeMemberPropertyChangeListener(
-        ChatRoomMemberPropertyChangeListener listener)
-    {
-
-    }
-
-    @Override
-    public void invite(String userAddress, String reason)
-    {
-
-    }
+    public void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener) { }
 
     @Override
     public List<ChatRoomMember> getMembers()
@@ -438,117 +305,6 @@ public class MockMultiUserChat
     public int getMembersCount()
     {
         return members.size();
-    }
-
-    @Override
-    public void addMessageListener(ChatRoomMessageListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeMessageListener(ChatRoomMessageListener listener)
-    {
-
-    }
-
-    @Override
-    public Message createMessage(byte[] content, String contentType,
-                                 String contentEncoding, String subject)
-    {
-        return null;
-    }
-
-    @Override
-    public Message createMessage(String messageText)
-    {
-        return null;
-    }
-
-    @Override
-    public void sendMessage(Message message)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public ProtocolProviderService getParentProvider()
-    {
-        return null;
-    }
-
-    @Override
-    public Iterator<ChatRoomMember> getBanList()
-        throws OperationFailedException
-    {
-        return null;
-    }
-
-    @Override
-    public void banParticipant(ChatRoomMember chatRoomMember, String reason)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public void kickParticipant(ChatRoomMember chatRoomMember, String reason)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public ChatRoomConfigurationForm getConfigurationForm()
-        throws OperationFailedException
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isSystem()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isPersistent()
-    {
-        return false;
-    }
-
-    @Override
-    public Contact getPrivateContactByNickname(String name)
-    {
-        return null;
-    }
-
-    @Override
-    public void grantAdmin(String address)
-    {
-
-    }
-
-    @Override
-    public void grantMembership(String address)
-    {
-
-    }
-
-    @Override
-    public void grantModerator(String address)
-    {
-        try
-        {
-            grantRole(
-                    JidCreate.entityFullFrom(address),
-                    ChatRoomMemberRole.MODERATOR);
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Invalid address to grant moderator", e);
-        }
     }
 
     private void grantRole(EntityFullJid address, ChatRoomMemberRole newRole)
@@ -563,8 +319,6 @@ public class MockMultiUserChat
         ChatRoomMemberRole oldRole = member.getRole();
 
         member.setRole(newRole);
-
-        fireMemberRoleEvent(member, oldRole);
     }
 
     private MockRoomMember findMember(Resourcepart nickname)
@@ -598,76 +352,9 @@ public class MockMultiUserChat
     }
 
     @Override
-    public void grantVoice(String nickname)
-    {
-
-    }
-
-    @Override
-    public void revokeAdmin(String address)
-    {
-
-    }
-
-    @Override
-    public void revokeMembership(String address)
-    {
-
-    }
-
-    @Override
-    public void revokeModerator(String nickname)
-    {
-
-    }
-
-    @Override
-    public void revokeOwnership(String address)
-    {
-
-    }
-
-    @Override
-    public void revokeVoice(String nickname)
-    {
-
-    }
-
-    @Override
-    public ConferenceDescription publishConference(ConferenceDescription cd,
-                                                   String name)
-    {
-        return null;
-    }
-
-    @Override
-    public void updatePrivateContactPresenceStatus(String nickname)
-    {
-
-    }
-
-    @Override
-    public void updatePrivateContactPresenceStatus(Contact contact)
-    {
-
-    }
-
-    @Override
     public boolean destroy(String reason, String alternateAddress)
     {
         return false;
-    }
-
-    @Override
-    public List<String> getMembersWhiteList()
-    {
-        return null;
-    }
-
-    @Override
-    public void setMembersWhiteList(List<String> members)
-    {
-
     }
 
     /**
@@ -677,18 +364,13 @@ public class MockMultiUserChat
      *
      * @param member the <tt>ChatRoomMember</tt> that changed its presence
      * status
-     * @param actor the <tt>ChatRoomMember</tt> that participated as an actor
-     * in this event
      * @param eventID the identifier of the event
      * @param eventReason the reason of this event
      */
-    private void fireMemberPresenceEvent(ChatRoomMember member,
-                                         ChatRoomMember actor,
-                                         String eventID, String eventReason)
+    private void fireMemberPresenceEvent(ChatRoomMember member, String eventID, String eventReason)
     {
         ChatRoomMemberPresenceChangeEvent evt
-            = new ChatRoomMemberPresenceChangeEvent(
-                    this, member, actor, eventID, eventReason);
+            = new ChatRoomMemberPresenceChangeEvent(this, member, eventID, eventReason);
 
         Iterable<ChatRoomMemberPresenceListener> listeners;
         synchronized (memberListeners)
@@ -701,12 +383,9 @@ public class MockMultiUserChat
     }
 
     private void fireLocalUserRoleEvent(ChatRoomMember member,
-                                        ChatRoomMemberRole oldRole,
                                         boolean isInitial)
     {
-        ChatRoomLocalUserRoleChangeEvent evt
-            = new ChatRoomLocalUserRoleChangeEvent(
-                    this, oldRole, member.getRole(), isInitial);
+        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(member.getRole(), isInitial);
 
         Iterable<ChatRoomLocalUserRoleListener> listeners;
         synchronized (localUserRoleListeners)
@@ -718,33 +397,14 @@ public class MockMultiUserChat
             listener.localUserRoleChanged(evt);
     }
 
-    private void fireMemberRoleEvent(ChatRoomMember member,
-                                     ChatRoomMemberRole oldRole)
-    {
-        ChatRoomMemberRoleChangeEvent evt
-            = new ChatRoomMemberRoleChangeEvent(
-                    this, member, oldRole, member.getRole());
-
-        Iterable<ChatRoomMemberRoleListener> listeners;
-        synchronized (memberRoleListeners)
-        {
-            listeners = new ArrayList<>(memberRoleListeners);
-        }
-
-        for (ChatRoomMemberRoleListener listener : listeners)
-            listener.memberRoleChanged(evt);
-    }
-
     @Override
     public String toString()
     {
-        return "MockMUC@" + hashCode()
-            + "["+ this.roomName + ", "
-            + protocolProvider + "]";
+        return "MockMUC@" + hashCode() + "["+ this.roomName + ", " + protocolProvider + "]";
     }
 
     @Override
-    public XmppChatMember findChatMember(Jid mucJid)
+    public ChatRoomMember findChatMember(Jid mucJid)
     {
         return findMember(mucJid.getResourceOrNull());
     }

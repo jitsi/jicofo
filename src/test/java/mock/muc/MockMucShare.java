@@ -17,18 +17,15 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
- * The purpose of this class is to simulate mock room joined by all
- * <tt>net.java.sip.communicator.service.protocol.mock.MockProtocolProvider</tt>s
- * only if they share the same room name.
+ * The purpose of this class is to simulate mock room joined by all <tt>MockProtocolProvider</tt>s only if they share
+ * the same room name.
  *
  * @author Pawel Domas
  */
@@ -73,9 +70,7 @@ public class MockMucShare
             || ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType) )
         {
-            broadcastMemberLeft(
-                    evt.getChatRoom(),
-                    (XmppChatMember)evt.getChatRoomMember());
+            broadcastMemberLeft(evt.getChatRoom(), evt.getChatRoomMember());
         }
         else
         {
@@ -99,8 +94,7 @@ public class MockMucShare
         }
     }
 
-    private void broadcastMemberLeft(ChatRoom chatRoom,
-                                     XmppChatMember chatRoomMember)
+    private void broadcastMemberLeft(ChatRoom chatRoom, ChatRoomMember chatRoomMember)
     {
         for (MockMultiUserChat chatToNotify : groupedChats)
         {

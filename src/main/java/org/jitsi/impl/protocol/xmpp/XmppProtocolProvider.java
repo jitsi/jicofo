@@ -17,8 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.service.protocol.*;
-
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.recording.jibri.*;
@@ -357,13 +355,13 @@ public class XmppProtocolProvider
     }
 
     @Override
-    public ChatRoom2 createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
+    public ChatRoom createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
     {
         return muc.createChatRoom(name);
     }
 
     @Override
-    public ChatRoom2 findOrCreateRoom(@NotNull String name) throws XmppStringprepException
+    public ChatRoom findOrCreateRoom(@NotNull String name) throws XmppStringprepException
     {
         return muc.findOrCreateRoom(name);
     }
@@ -577,7 +575,7 @@ public class XmppProtocolProvider
          */
         private final Map<String, ChatRoomImpl> rooms = new HashMap<>();
 
-        private ChatRoom2 createChatRoom(String roomName)
+        private ChatRoom createChatRoom(String roomName)
                 throws XmppStringprepException, RoomExistsException
         {
             EntityBareJid roomJid = JidCreate.entityBareFrom(roomName);
@@ -597,14 +595,14 @@ public class XmppProtocolProvider
             }
         }
 
-        private ChatRoom2 findOrCreateRoom(String roomName)
+        private ChatRoom findOrCreateRoom(String roomName)
                 throws XmppStringprepException
         {
             roomName = roomName.toLowerCase();
 
             synchronized (rooms)
             {
-                ChatRoom2 room = rooms.get(roomName);
+                ChatRoom room = rooms.get(roomName);
 
                 if (room == null)
                 {

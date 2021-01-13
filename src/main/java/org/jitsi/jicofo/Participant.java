@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -55,7 +56,7 @@ public class Participant
      * @param chatRoomMember XMPP MUC chat room member which represents a
      *                       <tt>Participant</tt>.
      */
-    public static String getEndpointId(XmppChatMember chatRoomMember)
+    public static String getEndpointId(ChatRoomMember chatRoomMember)
     {
         return chatRoomMember.getName(); // XMPP MUC Nickname
     }
@@ -82,7 +83,7 @@ public class Participant
     /**
      * MUC chat member of this participant.
      */
-    private final XmppChatMember roomMember;
+    private final ChatRoomMember roomMember;
 
     /**
      * Jingle session (if any) established with this peer.
@@ -119,14 +120,14 @@ public class Participant
     /**
      * Creates new {@link Participant} for given chat room member.
      *
-     * @param roomMember the {@link XmppChatMember} that represent this
+     * @param roomMember the {@link ChatRoomMember} that represent this
      *                   participant in MUC conference room.
      *
      * @param maxSourceCount how many unique sources per media this participant
      *                     instance will be allowed to advertise.
      */
-    public Participant(JitsiMeetConference    conference,
-                       XmppChatMember         roomMember,
+    public Participant(JitsiMeetConference conference,
+                       ChatRoomMember roomMember,
                        int maxSourceCount)
     {
         super(conference.getLogger());
@@ -184,10 +185,10 @@ public class Participant
     }
 
     /**
-     * Returns {@link XmppChatMember} that represents this participant in
+     * Returns {@link ChatRoomMember} that represents this participant in
      * conference multi-user chat room.
      */
-    public XmppChatMember getChatMember()
+    public ChatRoomMember getChatMember()
     {
         return roomMember;
     }
@@ -412,9 +413,7 @@ public class Participant
         }
         if (transport == null)
         {
-            logger.error(
-                "No valid transport supplied in transport-update from "
-                    + getChatMember().getContactAddress());
+            logger.error( "No valid transport supplied in transport-update from " + getChatMember().getName());
             return;
         }
 

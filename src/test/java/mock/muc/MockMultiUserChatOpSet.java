@@ -18,9 +18,7 @@
 package mock.muc;
 
 import mock.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -56,7 +54,7 @@ public class MockMultiUserChatOpSet
         this.protocolProviderService = protocolProviderService;
     }
 
-    public ChatRoom2 createChatRoom(String roomName)
+    public ChatRoom createChatRoom(String roomName)
         throws XmppProvider.RoomExistsException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
@@ -90,7 +88,7 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    public ChatRoom2 findRoom(String roomName)
+    public ChatRoom findRoom(String roomName)
         throws XmppProvider.RoomExistsException
     {
         // MUC room names are case insensitive

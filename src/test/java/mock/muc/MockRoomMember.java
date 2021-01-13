@@ -17,10 +17,7 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.globalstatus.*;
-
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
@@ -29,7 +26,7 @@ import org.jxmpp.jid.parts.*;
  * @author Pawel Domas
  */
 public class MockRoomMember
-    implements XmppChatMember
+    implements ChatRoomMember
 {
     private final Resourcepart name;
 
@@ -47,24 +44,6 @@ public class MockRoomMember
     }
 
     @Override
-    public ChatRoom getChatRoom()
-    {
-        return room;
-    }
-
-    @Override
-    public ProtocolProviderService getProtocolProvider()
-    {
-        return room.getParentProvider();
-    }
-
-    @Override
-    public String getContactAddress()
-    {
-        return address.toString();
-    }
-
-    @Override
     public EntityFullJid getOccupantJid()
     {
         return address;
@@ -74,18 +53,6 @@ public class MockRoomMember
     public String getName()
     {
         return name.toString();
-    }
-
-    @Override
-    public byte[] getAvatar()
-    {
-        return new byte[0];
-    }
-
-    @Override
-    public Contact getContact()
-    {
-        return null;
     }
 
     @Override
@@ -103,18 +70,6 @@ public class MockRoomMember
     public void setRole(ChatRoomMemberRole role)
     {
         this.role = role;
-    }
-
-    @Override
-    public PresenceStatus getPresenceStatus()
-    {
-        return GlobalStatusEnum.ONLINE;
-    }
-
-    @Override
-    public String getDisplayName()
-    {
-        return null;
     }
 
     @Override

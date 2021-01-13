@@ -17,11 +17,8 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
 
@@ -37,7 +34,6 @@ import java.util.*;
  */
 public class ChatRoomRoleAndPresence
     implements ChatRoomMemberPresenceListener,
-               ChatRoomMemberRoleListener,
                ChatRoomLocalUserRoleListener,
                AuthenticationListener
 {
@@ -111,7 +107,6 @@ public class ChatRoomRoleAndPresence
 
         chatRoom.addLocalUserRoleListener(this);
         chatRoom.addMemberPresenceListener(this);
-        chatRoom.addMemberRoleListener(this);
     }
 
     /**
@@ -120,9 +115,8 @@ public class ChatRoomRoleAndPresence
      */
     public void dispose()
     {
-        chatRoom.removelocalUserRoleListener(this);
+        chatRoom.removeLocalUserRoleListener(this);
         chatRoom.removeMemberPresenceListener(this);
-        chatRoom.removeMemberRoleListener(this);
 
         if (authAuthority != null)
         {
@@ -142,7 +136,7 @@ public class ChatRoomRoleAndPresence
     {
         logger.info("Chat room event " + evt);
 
-        XmppChatMember sourceMember = (XmppChatMember)evt.getChatRoomMember();
+        ChatRoomMember sourceMember = evt.getChatRoomMember();
 
         String eventType = evt.getEventType();
         if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
@@ -222,8 +216,8 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (conference.isFocusMember((XmppChatMember) member)
-                || ((XmppChatMember) member).isRobot()
+            if (conference.isFocusMember(member)
+                || member.isRobot()
                 // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
             {
@@ -239,31 +233,15 @@ public class ChatRoomRoleAndPresence
             else
             {
                 // Elect new owner
-                if (grantOwner(((XmppChatMember)member).getJid()))
+                if (grantOwner(member.getJid()))
                 {
-                    logger.info("Granted owner to " + member.getContactAddress());
+                    logger.info("Granted owner to " + member.getName());
 
                     owner = member;
                 }
                 break;
             }
         }
-    }
-
-    @Override
-    public void memberRoleChanged(ChatRoomMemberRoleChangeEvent evt)
-    {
-        logger.info("Role update event " + evt);
-        // FIXME: focus or owner might loose it's privileges
-        // very unlikely(no such use case in client or anywhere in the app)
-        // but lets throw an exception or log fatal error at least to spare
-        // the time spent on debugging in future.
-
-        //ChatRoomMember member = evt.getSourceMember();
-        //if (JitsiMeetConference.isFocusMember(member))
-        //{
-
-        //}
     }
 
     private boolean verifyFocusRole()
@@ -286,9 +264,7 @@ public class ChatRoomRoleAndPresence
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug(
-                    "Focus role: " + evt.getNewRole()
-                        + " init: " + evt.isInitial()
+            logger.debug("Local role: " + evt.getNewRole() + " init: " + evt.isInitial()
                         + " room: " + conference.getRoomName());
         }
 
@@ -335,8 +311,7 @@ public class ChatRoomRoleAndPresence
 
     private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
-        XmppChatMember xmppMember = (XmppChatMember) member;
-        Jid jabberId = xmppMember.getJid();
+        Jid jabberId = member.getJid();
         if (jabberId == null)
         {
             return;
@@ -358,8 +333,7 @@ public class ChatRoomRoleAndPresence
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            XmppChatMember xmppMember = (XmppChatMember) member;
-            if (realJid.equals(xmppMember.getJid()))
+            if (realJid.equals(member.getJid()))
             {
                 checkGrantOwnerToAuthUser(member);
             }

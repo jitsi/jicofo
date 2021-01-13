@@ -24,7 +24,6 @@ import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -133,7 +132,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Conference room chat instance.
      */
-    private volatile ChatRoom2 chatRoom;
+    private volatile ChatRoom chatRoom;
 
     /**
      * Operation set used to handle Jingle sessions with conference
@@ -491,7 +490,7 @@ public class JitsiMeetConferenceImpl
 
         transcriberManager = new TranscriberManager(
             protocolProviderHandler,
-            chatRoom,
+            this,
             JicofoServices.jicofoServicesSingleton.getJigasiDetector());
         transcriberManager.init();
 
@@ -593,11 +592,11 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the new member that has just joined the room.
      */
-    protected void onMemberJoined(final XmppChatMember chatRoomMember)
+    protected void onMemberJoined(final ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
-            logger.info("Member " + chatRoomMember.getContactAddress() + " joined.");
+            logger.info("Member " + chatRoomMember.getName() + " joined.");
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
 
             if (!isFocusMember(chatRoomMember))
@@ -619,7 +618,7 @@ public class JitsiMeetConferenceImpl
             {
                 for (final ChatRoomMember member : chatRoom.getMembers())
                 {
-                    inviteChatMember((XmppChatMember) member, member == chatRoomMember);
+                    inviteChatMember(member, member == chatRoomMember);
                 }
             }
             // Only the one who has just joined
@@ -648,8 +647,8 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Adds a {@link XmppChatMember} to the conference. Creates the
-     * {@link Participant} instance corresponding to the {@link XmppChatMember}.
+     * Adds a {@link ChatRoomMember} to the conference. Creates the
+     * {@link Participant} instance corresponding to the {@link ChatRoomMember}.
      * established and videobridge channels being allocated.
      *
      * @param chatRoomMember the chat member to be invited into the conference.
@@ -657,7 +656,7 @@ public class JitsiMeetConferenceImpl
      * result of just having joined (as opposed to e.g. another participant
      * joining triggering the invite).
      */
-    private void inviteChatMember(XmppChatMember chatRoomMember, boolean justJoined)
+    private void inviteChatMember(ChatRoomMember chatRoomMember, boolean justJoined)
     {
         synchronized (participantLock)
         {
@@ -1048,7 +1047,7 @@ public class JitsiMeetConferenceImpl
         int realCount = 0;
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (!isFocusMember((XmppChatMember)member))
+            if (!isFocusMember(member))
             {
                 realCount++;
             }
@@ -1065,7 +1064,7 @@ public class JitsiMeetConferenceImpl
      * @return <tt>true</tt> if given {@link ChatRoomMember} is a focus
      *         participant.
      */
-    boolean isFocusMember(XmppChatMember member)
+    boolean isFocusMember(ChatRoomMember member)
     {
         return member.getName().equals(focusUserName.toString());
     }
@@ -1143,7 +1142,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            logger.info("Member " + chatRoomMember.getContactAddress() + " kicked !!!");
+            logger.info("Member " + chatRoomMember.getName() + " kicked !!!");
 
             onMemberLeft(chatRoomMember);
         }
@@ -1159,10 +1158,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            String contactAddress = chatRoomMember.getContactAddress();
-
-            logger.info("Member " + contactAddress + " is leaving");
-
+            logger.info("Member " + chatRoomMember.getName() + " is leaving");
             Participant leftParticipant = findParticipantForChatMember(chatRoomMember);
             if (leftParticipant != null)
             {
@@ -1174,7 +1170,8 @@ public class JitsiMeetConferenceImpl
             }
             else
             {
-                logger.warn("Participant not found for " + contactAddress + " terminated already or never started ?");
+                logger.warn("Participant not found for " + chatRoomMember.getName()
+                        + " terminated already or never started ?");
             }
 
             if (participants.size() == 1)
@@ -1325,7 +1322,7 @@ public class JitsiMeetConferenceImpl
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (member.getContactAddress().equals(mucJid.toString()))
+            if (member.getOccupantJid().equals(mucJid))
             {
                 return member.getRole();
             }
@@ -2135,7 +2132,7 @@ public class JitsiMeetConferenceImpl
         return protocolProviderHandler.getProtocolProvider();
     }
 
-    public XmppChatMember findMember(Jid from)
+    public ChatRoomMember findMember(Jid from)
     {
         return chatRoom == null ? null : chatRoom.findChatMember(from);
     }
@@ -2360,7 +2357,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public ChatRoom2 getChatRoom()
+    public ChatRoom getChatRoom()
     {
         return chatRoom;
     }
@@ -2390,7 +2387,7 @@ public class JitsiMeetConferenceImpl
     {
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
-        ChatRoom2 chatRoom = this.chatRoom;
+        ChatRoom chatRoom = this.chatRoom;
         if (chatRoom != null)
         {
             chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
