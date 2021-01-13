@@ -53,7 +53,7 @@ public class TranscriberManager
     /**
      * The {@link ChatRoom} of the conference this class is managing
      */
-    private ChatRoom2 chatRoom;
+    private ChatRoom chatRoom;
     private final JitsiMeetConferenceImpl conference;
 
     /**

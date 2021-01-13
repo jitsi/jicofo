@@ -21,6 +21,7 @@ import mock.muc.*;
 import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
@@ -121,14 +122,14 @@ public class MockProtocolProvider
 
     @NotNull
     @Override
-    public ChatRoom2 createRoom(@NotNull String name) throws RoomExistsException
+    public ChatRoom createRoom(@NotNull String name) throws RoomExistsException
     {
         return mucApi.createChatRoom(name);
     }
 
     @NotNull
     @Override
-    public ChatRoom2 findOrCreateRoom(@NotNull String name) throws RoomExistsException
+    public ChatRoom findOrCreateRoom(@NotNull String name) throws RoomExistsException
     {
         return mucApi.findRoom(name);
     }

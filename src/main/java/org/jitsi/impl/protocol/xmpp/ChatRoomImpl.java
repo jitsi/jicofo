@@ -17,11 +17,10 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMember;
 import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMemberRole;
-import org.jitsi.impl.protocol.xmpp.tmp.ConferenceDescription;
-import org.jitsi.impl.protocol.xmpp.tmp.Message;
 import org.jitsi.impl.protocol.xmpp.tmp.OperationFailedException;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
@@ -51,7 +50,7 @@ import java.util.function.*;
  * @author Pawel Domas
  */
 public class ChatRoomImpl
-    implements ChatRoom2, PresenceListener
+    implements ChatRoom, PresenceListener
 {
     static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
         if (affiliation != null) {
@@ -92,7 +91,7 @@ public class ChatRoomImpl
     /**
      * Parent MUC operation set.
      */
-    private final XmppProvider xmppProvider;
+    @NotNull private final XmppProvider xmppProvider;
 
     /**
      * The room JID (e.g. "room@service").
@@ -174,7 +173,7 @@ public class ChatRoomImpl
      *
      * @param roomJid the room JID (e.g. "room@service").
      */
-    public ChatRoomImpl(XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
+    public ChatRoomImpl(@NotNull XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
     {
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
@@ -229,7 +228,7 @@ public class ChatRoomImpl
         throws OperationFailedException
     {
         // TODO: clean-up the way we figure out what nickname to use.
-        joinAs(getXmppProvider().getConfig().getUsername().toString());
+        joinAs(xmppProvider.getConfig().getUsername().toString());
     }
 
     private void joinAs(String nickname) throws OperationFailedException
@@ -534,7 +533,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public XmppChatMember findChatMember(Jid occupantJid)
+    public ChatRoomMember findChatMember(Jid occupantJid)
     {
         if (occupantJid == null)
         {
@@ -556,12 +555,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public EntityFullJid getLocalOccupantJid()
-    {
-        return myOccupantJid;
-    }
-
-    @Override
     public int getMembersCount()
     {
         return muc.getOccupantsCount();
@@ -571,17 +564,9 @@ public class ChatRoomImpl
      * {@inheritDoc}
      */
     @Override
-    public boolean containsPresenceExtension(String elementName,
-                                             String namespace)
+    public boolean containsPresenceExtension(String elementName, String namespace)
     {
-        return lastPresenceSent != null
-            && lastPresenceSent.getExtension(elementName, namespace) != null;
-    }
-
-    @Override
-    public XmppProvider getXmppProvider()
-    {
-        return xmppProvider;
+        return lastPresenceSent != null && lastPresenceSent.getExtension(elementName, namespace) != null;
     }
 
     @Override
@@ -609,8 +594,7 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        XmppProtocolProvider provider = (XmppProtocolProvider) getXmppProvider();
-        XmppConnection connection = provider.getXmppConnection();
+        XmppConnection connection = xmppProvider.getXmppConnection();
 
         try
         {
@@ -620,16 +604,14 @@ public class ChatRoomImpl
                 // FIXME: we should have checked exceptions for all operations
                 // in ChatRoom interface which are expected to fail.
                 // OperationFailedException maybe ?
-                throw new RuntimeException(
-                    "Failed to grant owner: " + IQUtils.responseToXML(reply));
+                throw new RuntimeException("Failed to grant owner: " + IQUtils.responseToXML(reply));
             }
         }
         catch (OperationFailedException e)
         {
             // XXX FIXME unable to throw OperationFailedException, because of
             // the ChatRoom interface
-            throw new RuntimeException(
-                "Failed to grant owner - XMPP disconnected", e);
+            throw new RuntimeException("Failed to grant owner - XMPP disconnected", e);
         }
     }
 
@@ -732,9 +714,7 @@ public class ChatRoomImpl
         boolean presenceUpdated = false;
 
         // Remove old
-        ExtensionElement old
-            = lastPresenceSent.getExtension(
-                    extension.getElementName(), extension.getNamespace());
+        ExtensionElement old = lastPresenceSent.getExtension(extension.getElementName(), extension.getNamespace());
         if (old != null)
         {
             lastPresenceSent.removeExtension(old);
@@ -797,9 +777,7 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) getXmppProvider();
-
-        XmppConnection connection = xmppProtocolProvider.getXmppConnection();
+        XmppConnection connection = xmppProvider.getXmppConnection();
         if (connection == null)
         {
             logger.error("Failed to send presence extension - no connection");

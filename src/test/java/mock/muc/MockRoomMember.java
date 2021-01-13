@@ -18,7 +18,6 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.tmp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
@@ -27,7 +26,7 @@ import org.jxmpp.jid.parts.*;
  * @author Pawel Domas
  */
 public class MockRoomMember
-    implements XmppChatMember
+    implements ChatRoomMember
 {
     private final Resourcepart name;
 
@@ -42,12 +41,6 @@ public class MockRoomMember
         this.address = address;
         this.name = address.getResourceOrThrow();
         this.room = chatRoom;
-    }
-
-    @Override
-    public String getContactAddress()
-    {
-        return address.toString();
     }
 
     @Override

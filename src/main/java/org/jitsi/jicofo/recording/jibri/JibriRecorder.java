@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
@@ -298,11 +299,11 @@ public class JibriRecorder
                     + recordingStatus.toXML()
                     + " in: " + conference.getRoomName());
 
-        ChatRoom2 chatRoom2 = conference.getChatRoom();
+        ChatRoom chatRoom = conference.getChatRoom();
 
-        if (chatRoom2 != null)
+        if (chatRoom != null)
         {
-            chatRoom2.setPresenceExtension(recordingStatus, false);
+            chatRoom.setPresenceExtension(recordingStatus, false);
         }
     }
 }

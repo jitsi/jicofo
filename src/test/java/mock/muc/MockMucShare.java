@@ -72,9 +72,7 @@ public class MockMucShare
             || ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
             || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType) )
         {
-            broadcastMemberLeft(
-                    evt.getChatRoom(),
-                    (XmppChatMember)evt.getChatRoomMember());
+            broadcastMemberLeft(evt.getChatRoom(), evt.getChatRoomMember());
         }
         else
         {
@@ -98,8 +96,7 @@ public class MockMucShare
         }
     }
 
-    private void broadcastMemberLeft(ChatRoom chatRoom,
-                                     XmppChatMember chatRoomMember)
+    private void broadcastMemberLeft(ChatRoom chatRoom, ChatRoomMember chatRoomMember)
     {
         for (MockMultiUserChat chatToNotify : groupedChats)
         {

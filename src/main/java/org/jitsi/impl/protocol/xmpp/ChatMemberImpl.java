@@ -34,7 +34,7 @@ import org.jxmpp.jid.parts.*;
  * @author Pawel Domas
  */
 public class ChatMemberImpl
-    implements XmppChatMember
+    implements ChatRoomMember
 {
     /**
      * The logger
@@ -113,12 +113,6 @@ public class ChatMemberImpl
     public Presence getPresence()
     {
         return presence;
-    }
-
-    @Override
-    public String getContactAddress()
-    {
-        return occupantJid.toString();
     }
 
     public EntityFullJid getOccupantJid()
@@ -231,41 +225,34 @@ public class ChatMemberImpl
             Boolean newStatus = videoMutedExt.isVideoMuted();
             if (newStatus != videoMuted)
             {
-                logger.debug(
-                    getContactAddress() + " video muted: " + newStatus);
+                logger.debug(getName() + " video muted: " + newStatus);
 
                 videoMuted = newStatus;
             }
         }
 
         UserInfoPacketExt userInfoPacketExt
-            = presence.getExtension(
-                    UserInfoPacketExt.ELEMENT_NAME,
-                    UserInfoPacketExt.NAMESPACE);
+            = presence.getExtension(UserInfoPacketExt.ELEMENT_NAME, UserInfoPacketExt.NAMESPACE);
         if (userInfoPacketExt != null)
         {
             Boolean newStatus = userInfoPacketExt.isRobot();
             if (newStatus != null && this.robot != newStatus)
             {
-                logger.debug(getContactAddress() +" robot: " + robot);
+                logger.debug(getName() +" robot: " + robot);
 
                 this.robot = newStatus;
             }
         }
 
         RegionPacketExtension regionPE
-            = presence.getExtension(
-                    RegionPacketExtension.ELEMENT_NAME,
-                    RegionPacketExtension.NAMESPACE);
+            = presence.getExtension(RegionPacketExtension.ELEMENT_NAME, RegionPacketExtension.NAMESPACE);
         if (regionPE != null)
         {
             region = regionPE.getRegionId();
         }
 
         StartMutedPacketExtension ext
-            = presence.getExtension(
-            StartMutedPacketExtension.ELEMENT_NAME,
-            StartMutedPacketExtension.NAMESPACE);
+            = presence.getExtension(StartMutedPacketExtension.ELEMENT_NAME, StartMutedPacketExtension.NAMESPACE);
 
         if (ext != null)
         {

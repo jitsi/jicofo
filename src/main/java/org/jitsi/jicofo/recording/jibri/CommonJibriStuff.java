@@ -172,7 +172,7 @@ public abstract class CommonJibriStuff
             return false;
         }
 
-        XmppChatMember chatMember = conference.findMember(from);
+        ChatRoomMember chatMember = conference.findMember(from);
         if (chatMember == null)
         {
             logger.warn("Chat member not found for: " + from);

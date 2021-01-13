@@ -56,7 +56,7 @@ public class MockMultiUserChatOpSet
         this.protocolProviderService = protocolProviderService;
     }
 
-    public ChatRoom2 createChatRoom(String roomName)
+    public ChatRoom createChatRoom(String roomName)
         throws XmppProvider.RoomExistsException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
@@ -90,7 +90,7 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    public ChatRoom2 findRoom(String roomName)
+    public ChatRoom findRoom(String roomName)
         throws XmppProvider.RoomExistsException
     {
         // MUC room names are case insensitive

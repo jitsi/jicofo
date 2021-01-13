@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
@@ -246,18 +247,17 @@ public class JibriSipGateway
             "Publishing new jibri-sip-call-state: " + session.getSipAddress()
                 + sipCallState.toXML() + " in: " + conference.getRoomName());
 
-        ChatRoom2 chatRoom2 = conference.getChatRoom();
+        ChatRoom chatRoom = conference.getChatRoom();
 
         // Publish that in the presence
-        if (chatRoom2 != null)
+        if (chatRoom != null)
         {
             LinkedList<ExtensionElement> toRemove = new LinkedList<>();
-            for (ExtensionElement ext : chatRoom2.getPresenceExtensions())
+            for (ExtensionElement ext : chatRoom.getPresenceExtensions())
             {
                 // Exclude all that do not match
-                if (ext instanceof  SipCallState
-                        && session.getSipAddress().equals(
-                                ((SipCallState)ext).getSipAddress()))
+                if (ext instanceof SipCallState
+                        && session.getSipAddress().equals(((SipCallState)ext).getSipAddress()))
                 {
                     toRemove.add(ext);
                 }
@@ -265,7 +265,7 @@ public class JibriSipGateway
             ArrayList<ExtensionElement> newExt = new ArrayList<>();
             newExt.add(sipCallState);
 
-            chatRoom2.modifyPresence(toRemove, newExt);
+            chatRoom.modifyPresence(toRemove, newExt);
         }
     }
 }

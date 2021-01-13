@@ -71,7 +71,7 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public ChatRoom2 getChatRoom()
+    public ChatRoom getChatRoom()
     {
         return null;
     }

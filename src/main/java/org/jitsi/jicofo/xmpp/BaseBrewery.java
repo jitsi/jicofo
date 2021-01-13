@@ -220,8 +220,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     synchronized public void memberPresenceChanged(
         ChatRoomMemberPresenceChangeEvent presenceEvent)
     {
-        XmppChatMember chatMember
-            = (XmppChatMember) presenceEvent.getChatRoomMember();
+        ChatRoomMember chatMember = presenceEvent.getChatRoomMember();
         String eventType = presenceEvent.getEventType();
         if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
         {
@@ -246,13 +245,9 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * {@inheritDoc}
      */
     @Override
-    synchronized public void chatRoomPropertyChanged(
-        ChatRoomMemberPropertyChangeEvent memberPropertyEvent)
+    synchronized public void chatRoomPropertyChanged(ChatRoomMemberPropertyChangeEvent memberPropertyEvent)
     {
-        XmppChatMember member
-            = (XmppChatMember) memberPropertyEvent.getSourceChatRoomMember();
-
-        processMemberPresence(member);
+        processMemberPresence(memberPropertyEvent.getSourceChatRoomMember());
     }
 
     /**
@@ -279,7 +274,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * presence extension and use it to process it further.
      * @param member the chat member to process
      */
-    private void processMemberPresence(XmppChatMember member)
+    private void processMemberPresence(ChatRoomMember member)
     {
         Presence presence = member.getPresence();
 
@@ -301,14 +296,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     }
 
     /**
-     * Gets the JID from an {@link XmppChatMember}, which is to be used for
+     * Gets the JID from an {@link ChatRoomMember}, which is to be used for
      * a {@link BrewInstance}. Which JID to use (real vs occupant) depends on
      * this instance's configuration.
      *
      * @param member the member for which to get the JID.
      * @return the JID of {@code member} to use for {@link BrewInstance}s.
      */
-    private Jid getJid(XmppChatMember member)
+    private Jid getJid(ChatRoomMember member)
     {
         if (member == null)
         {

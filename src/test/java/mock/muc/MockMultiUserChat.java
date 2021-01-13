@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class MockMultiUserChat
-    implements ChatRoom2
+    implements ChatRoom
 {
     /**
      * The logger
@@ -55,7 +55,7 @@ public class MockMultiUserChat
 
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
-    private XmppChatMember me;
+    private ChatRoomMember me;
 
     /**
      * Listeners that will be notified of changes in member status in the
@@ -75,12 +75,6 @@ public class MockMultiUserChat
         this.roomName = roomName;
         this.protocolProvider = protocolProviderService;
         this.myNickname = myNickname;
-    }
-
-    @Override
-    public EntityFullJid getLocalOccupantJid()
-    {
-        return me != null ? me.getOccupantJid() : null;
     }
 
     @Override
@@ -107,12 +101,6 @@ public class MockMultiUserChat
     @Override
     public void setConference(JitsiMeetConference conference)
     {
-    }
-
-    @Override
-    public XmppProvider getXmppProvider()
-    {
-        return protocolProvider;
     }
 
     @Override
@@ -435,13 +423,11 @@ public class MockMultiUserChat
     @Override
     public String toString()
     {
-        return "MockMUC@" + hashCode()
-            + "["+ this.roomName + ", "
-            + protocolProvider + "]";
+        return "MockMUC@" + hashCode() + "["+ this.roomName + ", " + protocolProvider + "]";
     }
 
     @Override
-    public XmppChatMember findChatMember(Jid mucJid)
+    public ChatRoomMember findChatMember(Jid mucJid)
     {
         return findMember(mucJid.getResourceOrNull());
     }

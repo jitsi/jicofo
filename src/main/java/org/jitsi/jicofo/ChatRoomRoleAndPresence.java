@@ -137,7 +137,7 @@ public class ChatRoomRoleAndPresence
     {
         logger.info("Chat room event " + evt);
 
-        XmppChatMember sourceMember = (XmppChatMember)evt.getChatRoomMember();
+        ChatRoomMember sourceMember = evt.getChatRoomMember();
 
         String eventType = evt.getEventType();
         if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
@@ -217,8 +217,8 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (conference.isFocusMember((XmppChatMember) member)
-                || ((XmppChatMember) member).isRobot()
+            if (conference.isFocusMember(member)
+                || member.isRobot()
                 // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
             {
@@ -234,9 +234,9 @@ public class ChatRoomRoleAndPresence
             else
             {
                 // Elect new owner
-                if (grantOwner(((XmppChatMember)member).getJid()))
+                if (grantOwner(member.getJid()))
                 {
-                    logger.info("Granted owner to " + member.getContactAddress());
+                    logger.info("Granted owner to " + member.getName());
 
                     owner = member;
                 }
@@ -314,8 +314,7 @@ public class ChatRoomRoleAndPresence
 
     private void checkGrantOwnerToAuthUser(ChatRoomMember member)
     {
-        XmppChatMember xmppMember = (XmppChatMember) member;
-        Jid jabberId = xmppMember.getJid();
+        Jid jabberId = member.getJid();
         if (jabberId == null)
         {
             return;
@@ -337,8 +336,7 @@ public class ChatRoomRoleAndPresence
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            XmppChatMember xmppMember = (XmppChatMember) member;
-            if (realJid.equals(xmppMember.getJid()))
+            if (realJid.equals(member.getJid()))
             {
                 checkGrantOwnerToAuthUser(member);
             }

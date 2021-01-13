@@ -17,6 +17,10 @@
  */
 package org.jitsi.impl.protocol.xmpp.tmp;
 
+import org.jitsi.jicofo.*;
+import org.jivesoftware.smack.packet.*;
+import org.jxmpp.jid.*;
+
 import java.util.*;
 
 /**
@@ -156,4 +160,51 @@ public interface ChatRoom
      * @return <tt>true</tt> if the room is destroyed.
      */
     boolean destroy(String reason, String alternateAddress);
+
+    /**
+     * Gets the name of this chat room as a JID.
+     * @return the name of this chat room as a JID.
+     */
+    EntityBareJid getRoomJid();
+
+    /**
+     * Finds chat member for given MUC jid.
+     *
+     * @param mucJid full MUC jid of the user for whom we want to find chat
+     *               member instance. Ex. chatroom1@muc.server.com/nick1234
+     *
+     * @return an instance of <tt>XmppChatMember</tt> for given MUC jid or
+     *         <tt>null</tt> if not found.
+     */
+    ChatRoomMember findChatMember(Jid mucJid);
+
+    /**
+     * @return the list of all our presence {@link ExtensionElement}s.
+     */
+    Collection<ExtensionElement> getPresenceExtensions();
+
+    /**
+     * Checks if a packet extension is already in the presence.
+     *
+     * @param elementName the name of XML element of the presence extension.
+     * @param namespace the namespace of XML element of the presence extension.
+     *
+     * @return <tt>boolean</tt>
+     */
+    boolean containsPresenceExtension(String elementName, String namespace);
+
+    /**
+     * Modifies our current MUC presence by adding and/or removing specified
+     * extensions. The extension are compared by instance equality.
+     * @param toRemove the list of extensions to be removed.
+     * @param toAdd the list of extension to be added.
+     */
+    void modifyPresence(Collection<ExtensionElement> toRemove, Collection<ExtensionElement> toAdd);
+
+    /**
+     * TODO: only needed for startMuted. Remove once startMuted is removed.
+     */
+    void setConference(JitsiMeetConference conference);
+
+    void setPresenceExtension(ExtensionElement extension, boolean remove);
 }
