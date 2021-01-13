@@ -84,4 +84,5 @@ public interface ChatRoom2
     void setConference(JitsiMeetConference conference);
 
     XmppProvider getXmppProvider();
+    void setPresenceExtension(ExtensionElement extension, boolean remove);
 }

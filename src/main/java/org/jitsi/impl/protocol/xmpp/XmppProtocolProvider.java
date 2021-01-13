@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import net.java.sip.communicator.service.protocol.*;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -36,7 +37,9 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
+import org.jxmpp.stringprep.*;
 
 import java.io.*;
 import java.util.*;
@@ -71,6 +74,8 @@ public class XmppProtocolProvider
     private final OperationSetJingleImpl jingleOpSet;
     private final OperationSetJibri jibriApi;
 
+    private final Muc muc = new Muc();
+
     /**
      * The XMPP connection used by this instance.
      */
@@ -102,20 +107,18 @@ public class XmppProtocolProvider
      */
     private boolean disableCertificateVerification = false;
 
-    private final XmppConnectionConfig config;
+    @NotNull private final XmppConnectionConfig config;
 
     /**
      * Creates new instance of {@link XmppProtocolProvider} with the given configuration.
      */
-    public XmppProtocolProvider(XmppConnectionConfig config)
+    public XmppProtocolProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
         jingleOpSet = new OperationSetJingleImpl(this);
-        addOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
-        addOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
         jibriApi = new OperationSetJibri(this);
     }
 
@@ -353,6 +356,18 @@ public class XmppProtocolProvider
         this.disableCertificateVerification = disableCertificateVerification;
     }
 
+    @Override
+    public ChatRoom2 createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
+    {
+        return muc.createChatRoom(name);
+    }
+
+    @Override
+    public ChatRoom2 findOrCreateRoom(@NotNull String name) throws XmppStringprepException
+    {
+        return muc.findOrCreateRoom(name);
+    }
+
     class XmppConnectionListener
         implements ConnectionListener
     {
@@ -552,6 +567,66 @@ public class XmppProtocolProvider
         public void setReplyTimeout(long replyTimeoutMs)
         {
             connection.setReplyTimeout(replyTimeoutMs);
+        }
+    }
+
+    private class Muc
+    {
+        /**
+         * The map of active chat rooms mapped by their names.
+         */
+        private final Map<String, ChatRoomImpl> rooms = new HashMap<>();
+
+        private ChatRoom2 createChatRoom(String roomName)
+                throws XmppStringprepException, RoomExistsException
+        {
+            EntityBareJid roomJid = JidCreate.entityBareFrom(roomName);
+
+            synchronized (rooms)
+            {
+                if (rooms.containsKey(roomName))
+                {
+                    throw new RoomExistsException("Room '" + roomName + "' exists");
+                }
+
+                ChatRoomImpl newRoom = new ChatRoomImpl(XmppProtocolProvider.this, roomJid, this::removeRoom);
+
+                rooms.put(newRoom.getName(), newRoom);
+
+                return newRoom;
+            }
+        }
+
+        private ChatRoom2 findOrCreateRoom(String roomName)
+                throws XmppStringprepException
+        {
+            roomName = roomName.toLowerCase();
+
+            synchronized (rooms)
+            {
+                ChatRoom2 room = rooms.get(roomName);
+
+                if (room == null)
+                {
+                    try
+                    {
+                        room = createChatRoom(roomName);
+                    }
+                    catch (RoomExistsException e)
+                    {
+                        throw new RuntimeException("Unexpected RoomExistsException.");
+                    }
+                }
+                return room;
+            }
+        }
+
+        public void removeRoom(ChatRoomImpl chatRoom)
+        {
+            synchronized (rooms)
+            {
+                rooms.remove(chatRoom.getName());
+            }
         }
     }
 }

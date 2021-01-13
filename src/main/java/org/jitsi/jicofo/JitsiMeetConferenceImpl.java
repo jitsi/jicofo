@@ -127,11 +127,6 @@ public class JitsiMeetConferenceImpl
      */
     private final Resourcepart focusUserName;
 
-    /**
-     * Chat room operation set used to handle MUC stuff.
-     */
-    private OperationSetMultiUserChat chatOpSet;
-
     /** Jibri operation set to (un)register recorders. */
     private OperationSetJibri jibriOpSet;
 
@@ -145,12 +140,6 @@ public class JitsiMeetConferenceImpl
      * participants.
      */
     private OperationSetJingle jingle;
-
-    /**
-     * Jitsi Meet tool used for specific operations like adding presence
-     * extensions.
-     */
-    private OperationSetJitsiMeetTools meetTools;
 
     /**
      * The list of all conference participants.
@@ -338,8 +327,6 @@ public class JitsiMeetConferenceImpl
                 jingle = new LipSyncHack(this, jingle);
             }
 
-            chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
-            meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
             jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
             executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
@@ -496,7 +483,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining the room: " + roomName);
 
-        chatRoom = (ChatRoom2) chatOpSet.findRoom(roomName.toString());
+        chatRoom = protocolProviderHandler.getProtocolProvider().findOrCreateRoom(roomName.toString());
         chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
@@ -504,7 +491,7 @@ public class JitsiMeetConferenceImpl
 
         transcriberManager = new TranscriberManager(
             protocolProviderHandler,
-            chatOpSet.findRoom(roomName.toString()),
+            chatRoom,
             JicofoServices.jicofoServicesSingleton.getJigasiDetector());
         transcriberManager.init();
 
@@ -565,7 +552,7 @@ public class JitsiMeetConferenceImpl
         conferenceProperties.put(key, value);
         if (updatePresence && chatRoom != null)
         {
-            meetTools.sendPresenceExtension(chatRoom, ConferenceProperties.clone(conferenceProperties));
+            chatRoom.setPresenceExtension(ConferenceProperties.clone(conferenceProperties), false);
         }
     }
 
@@ -730,7 +717,7 @@ public class JitsiMeetConferenceImpl
                 BridgeNotAvailablePacketExt.ELEMENT_NAME,
                 BridgeNotAvailablePacketExt.NAMESPACE))
             {
-                meetTools.sendPresenceExtension(chatRoom, new BridgeNotAvailablePacketExt());
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
             }
             return null;
 
@@ -1081,23 +1068,6 @@ public class JitsiMeetConferenceImpl
     boolean isFocusMember(XmppChatMember member)
     {
         return member.getName().equals(focusUserName.toString());
-    }
-
-    /**
-     * Checks if given MUC jid belongs to the focus user.
-     *
-     * @param mucJid the full MUC address to check.
-     *
-     * @return <tt>true</tt> if given <tt>jid</tt> belongs to the focus
-     *         participant or <tt>false</tt> otherwise.
-     */
-    @Override
-    public boolean isFocusMember(Jid mucJid)
-    {
-        ChatRoom2 chatRoom = this.chatRoom;
-        return mucJid != null
-                && chatRoom != null
-                && mucJid.equals(chatRoom.getLocalOccupantJid());
     }
 
     /**
@@ -2420,10 +2390,10 @@ public class JitsiMeetConferenceImpl
     {
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
-        ChatRoom chatRoom = this.chatRoom;
-        if (meetTools != null && chatRoom != null)
+        ChatRoom2 chatRoom = this.chatRoom;
+        if (chatRoom != null)
         {
-            meetTools.removePresenceExtension(chatRoom, new BridgeNotAvailablePacketExt());
+            chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
         }
     }
 

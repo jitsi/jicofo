@@ -19,7 +19,7 @@ package mock;
 
 import mock.muc.*;
 import mock.xmpp.*;
-import net.java.sip.communicator.service.protocol.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -41,14 +41,15 @@ public class MockProtocolProvider
 
     private AbstractOperationSetJingle jingleOpSet;
 
-    public XmppConnectionConfig config;
+    private MockMultiUserChatOpSet mucApi;
 
-    public MockProtocolProvider(XmppConnectionConfig config)
+    @NotNull public XmppConnectionConfig config;
+
+    public MockProtocolProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
-        this.connection = new MockXmppConnection(getOurJID());
-        includeMultiUserChatOpSet();
-        includeJitsiMeetTools();
+        connection = new MockXmppConnection(getOurJID());
+        mucApi = new MockMultiUserChatOpSet(this);
         this.jingleOpSet = new MockOperationSetJingle(this);
     }
 
@@ -86,15 +87,6 @@ public class MockProtocolProvider
         return config;
     }
 
-    public void includeMultiUserChatOpSet()
-    {
-        addOperationSet(OperationSetMultiUserChat.class, new MockMultiUserChatOpSet(this));
-    }
-
-    public void includeJitsiMeetTools()
-    {
-        addOperationSet(OperationSetJitsiMeetTools.class, new MockJitsiMeetTools(this));
-    }
 
     @Override
     public XmppConnection getXmppConnection()
@@ -127,8 +119,17 @@ public class MockProtocolProvider
         }
     }
 
-    public MockMultiUserChatOpSet getMockChatOpSet()
+    @NotNull
+    @Override
+    public ChatRoom2 createRoom(@NotNull String name) throws RoomExistsException
     {
-        return (MockMultiUserChatOpSet) getOperationSet(OperationSetMultiUserChat.class);
+        return mucApi.createChatRoom(name);
+    }
+
+    @NotNull
+    @Override
+    public ChatRoom2 findOrCreateRoom(@NotNull String name) throws RoomExistsException
+    {
+        return mucApi.findRoom(name);
     }
 }

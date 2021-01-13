@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo
 
-import net.java.sip.communicator.service.protocol.ProtocolProviderService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer

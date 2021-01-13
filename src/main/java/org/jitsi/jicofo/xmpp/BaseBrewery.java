@@ -26,6 +26,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -169,20 +170,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         try
         {
-            OperationSetMultiUserChat muc
-                = protocolProvider.getOperationSet(
-                    OperationSetMultiUserChat.class);
-
-            Objects.requireNonNull(muc, "OperationSetMultiUserChat");
-
-            chatRoom = muc.createChatRoom(breweryJid, null);
+            chatRoom = protocolProvider.getProtocolProvider().createRoom(breweryJid);
             chatRoom.addMemberPresenceListener(this);
             chatRoom.addMemberPropertyChangeListener(this);
             chatRoom.join();
 
             logger.info("Joined brewery room: " + breweryJid);
         }
-        catch (OperationFailedException | OperationNotSupportedException e)
+        catch (OperationFailedException | XmppStringprepException | XmppProvider.RoomExistsException e)
         {
             logger.error("Failed to create room: " + breweryJid, e);
 

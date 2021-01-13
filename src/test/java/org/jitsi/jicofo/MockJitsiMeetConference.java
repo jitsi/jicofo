@@ -93,12 +93,6 @@ public class MockJitsiMeetConference
         return null;
     }
 
-    @Override
-    public boolean isFocusMember(Jid jid)
-    {
-        return false;
-    }
-
     /**
      * {@inheritDoc}
      */

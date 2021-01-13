@@ -51,20 +51,12 @@ public class LeakingRoomsTest
     public void testOneToOneConference()
             throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testLeaks@conference.pawel.jitsi.net");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf
-            = TestConference.allocate(osgi.bc, serverName, roomName);
-
-        MockProtocolProvider pps
-                = testConf.getFocusProtocolProvider();
-
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-
-        MockMultiUserChat chat
-                = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
