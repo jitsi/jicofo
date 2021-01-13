@@ -113,7 +113,8 @@ public class ChatRoomImpl
     /**
      * Local user role listeners.
      */
-    private final CopyOnWriteArrayList<ChatRoomLocalUserRoleListener> localUserRoleListeners = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<ChatRoomLocalUserRoleListener> localUserRoleListeners
+            = new CopyOnWriteArrayList<>();
 
     /**
      * Nickname to member impl class map.
@@ -123,7 +124,8 @@ public class ChatRoomImpl
     /**
      * The list of <tt>ChatRoomMemberPropertyChangeListener</tt>.
      */
-    private final CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener> propListeners = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener> propListeners
+            = new CopyOnWriteArrayList<>();
 
     /**
      * Local user role.
