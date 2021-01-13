@@ -17,11 +17,8 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-
-import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp.tmp;
+package org.jitsi.impl.protocol.xmpp;
 
 /**
  * Dispatched to notify interested parties that a change in our role in the

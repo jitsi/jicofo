@@ -19,7 +19,6 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
-import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;

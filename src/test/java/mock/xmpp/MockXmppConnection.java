@@ -17,7 +17,7 @@
  */
 package mock.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.*;

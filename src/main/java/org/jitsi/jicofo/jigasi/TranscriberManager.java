@@ -18,7 +18,7 @@
 
 package org.jitsi.jicofo.jigasi;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
@@ -26,8 +26,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;

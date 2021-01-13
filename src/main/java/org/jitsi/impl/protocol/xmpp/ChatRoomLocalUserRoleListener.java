@@ -15,27 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp.tmp;
+package org.jitsi.impl.protocol.xmpp;
+
+import org.jitsi.impl.protocol.xmpp.*;
 
 import java.util.*;
 
 /**
- * A listener that will be notified of changes in the presence of a member in a
- * particular chat room. Changes may include member being kicked, join, left.
+ * A listener that will be notified of changes in the role of the local
+ * user participant in a particular chat room. Changes could be us being granted
+ * any of the roles defined in <tt>ChatRoomMemberRole</tt>.
  *
- * @author Emil Ivov
+ * @author Stephane Remy
  */
-public interface ChatRoomMemberPresenceListener
+public interface ChatRoomLocalUserRoleListener
     extends EventListener
 {
     /**
-     * Called to notify interested parties that a change in the presence of a
-     * member in a particular chat room has occurred. Changes may include member
-     * being kicked, join, left.
-     *
-     * @param evt the <tt>ChatRoomMemberPresenceChangeEvent</tt> instance
-     * containing the source chat room and type, and reason of the presence
-     * change
+     * Called to notify interested parties that a change in the role of the
+     * local user participant in a particular chat room has occurred.
+     * @param evt the <tt>ChatRoomLocalUserRoleChangeEvent</tt> instance
+     * containing the source chat room and role old and new state.
      */
-    void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt);
+    void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt);
 }

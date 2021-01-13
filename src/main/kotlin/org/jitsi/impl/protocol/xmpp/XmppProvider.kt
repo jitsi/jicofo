@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp
 
-import org.jitsi.impl.protocol.xmpp.tmp.ChatRoom
 import org.jitsi.jicofo.recording.jibri.OperationSetJibri
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle

@@ -21,7 +21,6 @@ import mock.muc.*;
 import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;

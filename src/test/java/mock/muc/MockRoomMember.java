@@ -17,7 +17,7 @@
  */
 package mock.muc;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;

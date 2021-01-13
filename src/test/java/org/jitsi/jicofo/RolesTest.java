@@ -21,7 +21,7 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;

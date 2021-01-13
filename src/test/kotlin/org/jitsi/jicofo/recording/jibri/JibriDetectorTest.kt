@@ -4,8 +4,8 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMember
-import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMemberPresenceChangeEvent
+import org.jitsi.impl.protocol.xmpp.ChatRoomMember
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
@@ -26,11 +26,11 @@ class JibriDetectorTest : ShouldSpec({
         .forEach {
             detector.memberPresenceChanged(
                 ChatRoomMemberPresenceChangeEvent(
-                mockk(),
-                it,
-                ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED,
-                "reason"
-            )
+                    mockk(),
+                    it,
+                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED,
+                    "reason"
+                )
             )
         }
 

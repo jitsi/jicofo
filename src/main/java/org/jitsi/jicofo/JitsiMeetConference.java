@@ -17,10 +17,9 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 

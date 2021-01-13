@@ -17,9 +17,8 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.impl.protocol.xmpp.tmp.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger;
 import org.jxmpp.jid.*;
 

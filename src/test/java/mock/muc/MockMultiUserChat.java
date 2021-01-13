@@ -18,7 +18,6 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.*;
 
 import org.jitsi.utils.logging.*;

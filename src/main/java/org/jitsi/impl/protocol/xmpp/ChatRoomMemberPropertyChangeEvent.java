@@ -15,7 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp.tmp;
+package org.jitsi.impl.protocol.xmpp;
+
+import org.jitsi.impl.protocol.xmpp.*;
 
 /**
  * A <tt>ChatRoomMemberPropertyChangeEvent</tt> is issued whenever a chat room

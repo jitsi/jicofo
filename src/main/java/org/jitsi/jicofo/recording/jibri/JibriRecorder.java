@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;

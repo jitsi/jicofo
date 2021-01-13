@@ -18,10 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.tmp.*;
-import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMember;
-import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMemberRole;
-import org.jitsi.impl.protocol.xmpp.tmp.OperationFailedException;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
