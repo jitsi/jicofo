@@ -53,7 +53,8 @@ public class TranscriberManager
     /**
      * The {@link ChatRoom} of the conference this class is managing
      */
-    private ChatRoom chatRoom;
+    private ChatRoom2 chatRoom;
+    private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link JigasiDetector} responsible for determining which Jigasi
@@ -82,17 +83,17 @@ public class TranscriberManager
      * a transcriber when this is desired.
      *
      * @param protocolProviderHandler the handler giving access a XmppConnection
-     * @param chatRoom the room of the conference being managed
      * @param jigasiDetector detector for Jigasi instances which can be dialed
      * to invite a transcriber
      */
     public TranscriberManager(ProtocolProviderHandler protocolProviderHandler,
-                              ChatRoom chatRoom,
+                              JitsiMeetConferenceImpl conference,
                               JigasiDetector jigasiDetector)
     {
         this.connection = protocolProviderHandler.getProtocolProvider().getXmppConnection();
 
-        this.chatRoom = chatRoom;
+        this.conference = conference;
+        this.chatRoom = conference.getChatRoom();
         this.jigasiDetector = jigasiDetector;
     }
 
@@ -183,31 +184,10 @@ public class TranscriberManager
      */
     private Collection<String> getBridgeRegions()
     {
-        FocusManager focusManager = JicofoServices.jicofoServicesSingleton.getFocusManager();
-
-        try
-        {
-            JitsiMeetConferenceImpl conference =
-                focusManager.getConference(JidCreate.entityBareFrom(chatRoom.getIdentifier()));
-
-            if (conference == null)
-            {
-                logger.debug("Cannot find conference for " + chatRoom.getIdentifier());
-            }
-            else
-            {
-                return conference.getBridges().keySet().stream()
+        return conference.getBridges().keySet().stream()
                     .map(b -> b.getRegion())
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
-            }
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Error finding room for " + chatRoom.getIdentifier());
-        }
-
-        return new ArrayList<>();
     }
 
     /**
@@ -247,18 +227,15 @@ public class TranscriberManager
      * we already tried sending in attempt to retry.
      * @param preferredRegions a list of preferred regions.
      */
-    private void selectTranscriber(
-        int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
+    private void selectTranscriber(int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
     {
         logger.info("Attempting to invite transcriber");
 
-        Jid jigasiJid
-            = jigasiDetector.selectTranscriber(exclude, preferredRegions);
+        Jid jigasiJid = jigasiDetector.selectTranscriber(exclude, preferredRegions);
 
         if(jigasiJid == null)
         {
-            logger.warn("Unable to invite transcriber due to no " +
-                "Jigasi instances being available");
+            logger.warn("Unable to invite transcriber due to no Jigasi instances being available");
             return;
         }
 

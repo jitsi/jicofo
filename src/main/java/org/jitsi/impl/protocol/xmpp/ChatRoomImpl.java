@@ -18,7 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.tmp.*;
-import org.jitsi.impl.protocol.xmpp.tmp.AbstractChatRoom;
 import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMember;
 import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMemberRole;
 import org.jitsi.impl.protocol.xmpp.tmp.ConferenceDescription;
@@ -52,7 +51,6 @@ import java.util.function.*;
  * @author Pawel Domas
  */
 public class ChatRoomImpl
-    extends AbstractChatRoom
     implements ChatRoom2, PresenceListener
 {
     static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
@@ -227,30 +225,14 @@ public class ChatRoomImpl
     }
 
     @Override
-    public String getIdentifier()
-    {
-        return null;
-    }
-
-    @Override
     public void join()
         throws OperationFailedException
     {
-        // This is very temporary (and already used elsewhere in the class).
-        XmppProtocolProvider xmppProvider = (XmppProtocolProvider) getXmppProvider();
-        joinAs(xmppProvider.getConfig().getUsername().toString());
+        // TODO: clean-up the way we figure out what nickname to use.
+        joinAs(getXmppProvider().getConfig().getUsername().toString());
     }
 
-    @Override
-    public void join(byte[] password)
-        throws OperationFailedException
-    {
-        join();
-    }
-
-    @Override
-    public void joinAs(String nickname)
-        throws OperationFailedException
+    private void joinAs(String nickname) throws OperationFailedException
     {
         try
         {
@@ -330,13 +312,6 @@ public class ChatRoomImpl
                 "Failed to join the room",
                 OperationFailedException.GENERAL_ERROR, e);
         }
-    }
-
-    @Override
-    public void joinAs(String nickname, byte[] password)
-        throws OperationFailedException
-    {
-        joinAs(nickname);
     }
 
     @Override
@@ -421,25 +396,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public String getSubject()
-    {
-        return muc.getSubject();
-    }
-
-    @Override
-    public void setSubject(String subject)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public String getUserNickname()
-    {
-        return myResourcepart.toString();
-    }
-
-    @Override
     public ChatRoomMemberRole getUserRole()
     {
         if (this.role == null)
@@ -494,14 +450,6 @@ public class ChatRoomImpl
         }
     }
 
-    @Override
-    public void setLocalUserRole(ChatRoomMemberRole role)
-        throws OperationFailedException
-    {
-        // Method not used but log error just in case to spare debugging
-        logger.error("setLocalUserRole not implemented");
-    }
-
     /**
      * Creates the corresponding ChatRoomLocalUserRoleChangeEvent and notifies
      * all <tt>ChatRoomLocalUserRoleListener</tt>s that local user's role has
@@ -541,22 +489,13 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void setUserNickname(String nickname)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public void addMemberPresenceListener(
-        ChatRoomMemberPresenceListener listener)
+    public void addMemberPresenceListener(ChatRoomMemberPresenceListener listener)
     {
         listeners.add(listener);
     }
 
     @Override
-    public void removeMemberPresenceListener(
-        ChatRoomMemberPresenceListener listener)
+    public void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener)
     {
         listeners.remove(listener);
     }
@@ -568,56 +507,21 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void removelocalUserRoleListener(
-        ChatRoomLocalUserRoleListener listener)
+    public void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
     {
         localUserRoleListeners.remove(listener);
     }
 
     @Override
-    public void addMemberRoleListener(ChatRoomMemberRoleListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeMemberRoleListener(ChatRoomMemberRoleListener listener)
-    {
-
-    }
-
-    @Override
-    public void addPropertyChangeListener(
-        ChatRoomPropertyChangeListener listener)
-    {
-
-    }
-
-    @Override
-    public void removePropertyChangeListener(
-        ChatRoomPropertyChangeListener listener)
-    {
-
-    }
-
-    @Override
-    public void addMemberPropertyChangeListener(
-        ChatRoomMemberPropertyChangeListener listener)
+    public void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener)
     {
         propListeners.add(listener);
     }
 
     @Override
-    public void removeMemberPropertyChangeListener(
-        ChatRoomMemberPropertyChangeListener listener)
+    public void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener)
     {
         propListeners.remove(listener);
-    }
-
-    @Override
-    public void invite(String userAddress, String reason)
-    {
-
     }
 
     @Override
@@ -663,18 +567,6 @@ public class ChatRoomImpl
         return muc.getOccupantsCount();
     }
 
-    @Override
-    public void addMessageListener(ChatRoomMessageListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeMessageListener(ChatRoomMessageListener listener)
-    {
-
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -687,101 +579,9 @@ public class ChatRoomImpl
     }
 
     @Override
-    public Message createMessage(byte[] content, String contentType,
-                                 String contentEncoding, String subject)
-    {
-        return null;
-    }
-
-    @Override
-    public Message createMessage(String messageText)
-    {
-        return null;
-    }
-
-    @Override
-    public void sendMessage(Message message)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
     public XmppProvider getXmppProvider()
     {
         return xmppProvider;
-    }
-
-    @Override
-    public Iterator<ChatRoomMember> getBanList()
-        throws OperationFailedException
-    {
-        return null;
-    }
-
-    @Override
-    public void banParticipant(ChatRoomMember chatRoomMember, String reason)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public void kickParticipant(ChatRoomMember chatRoomMember, String reason)
-        throws OperationFailedException
-    {
-
-    }
-
-    @Override
-    public boolean isSystem()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isPersistent()
-    {
-        return false;
-    }
-
-    @Override
-    public void grantAdmin(String address)
-    {
-        try
-        {
-            muc.grantAdmin(JidCreate.from(address));
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void grantMembership(String address)
-    {
-        try
-        {
-            muc.grantMembership(JidCreate.from(address));
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void grantModerator(String nickname)
-    {
-        try
-        {
-            muc.grantModerator(Resourcepart.from(nickname));
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -834,55 +634,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void grantVoice(String nickname)
-    {
-
-    }
-
-    @Override
-    public void revokeAdmin(String address)
-    {
-
-    }
-
-    @Override
-    public void revokeMembership(String address)
-    {
-
-    }
-
-    @Override
-    public void revokeModerator(String nickname)
-    {
-
-    }
-
-    @Override
-    public void revokeOwnership(String address)
-    {
-
-    }
-
-    @Override
-    public void revokeVoice(String nickname)
-    {
-
-    }
-
-    @Override
-    public ConferenceDescription publishConference(ConferenceDescription cd,
-                                                   String name)
-    {
-        return null;
-    }
-
-    @Override
-    public void updatePrivateContactPresenceStatus(String nickname)
-    {
-
-    }
-
-    @Override
     public boolean destroy(String reason, String alternateAddress)
     {
         try
@@ -903,18 +654,6 @@ public class ChatRoomImpl
             throw new RuntimeException(e);
         }
         return false;
-    }
-
-    @Override
-    public List<String> getMembersWhiteList()
-    {
-        return null;
-    }
-
-    @Override
-    public void setMembersWhiteList(List<String> members)
-    {
-
     }
 
     private void notifyMemberJoined(ChatMemberImpl member)

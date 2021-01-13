@@ -35,7 +35,6 @@ import java.util.*;
  */
 public class ChatRoomRoleAndPresence
     implements ChatRoomMemberPresenceListener,
-               ChatRoomMemberRoleListener,
                ChatRoomLocalUserRoleListener,
                AuthenticationListener
 {
@@ -109,7 +108,6 @@ public class ChatRoomRoleAndPresence
 
         chatRoom.addLocalUserRoleListener(this);
         chatRoom.addMemberPresenceListener(this);
-        chatRoom.addMemberRoleListener(this);
     }
 
     /**
@@ -118,9 +116,8 @@ public class ChatRoomRoleAndPresence
      */
     public void dispose()
     {
-        chatRoom.removelocalUserRoleListener(this);
+        chatRoom.removeLocalUserRoleListener(this);
         chatRoom.removeMemberPresenceListener(this);
-        chatRoom.removeMemberRoleListener(this);
 
         if (authAuthority != null)
         {
@@ -246,22 +243,6 @@ public class ChatRoomRoleAndPresence
                 break;
             }
         }
-    }
-
-    @Override
-    public void memberRoleChanged(ChatRoomMemberRoleChangeEvent evt)
-    {
-        logger.info("Role update event " + evt);
-        // FIXME: focus or owner might loose it's privileges
-        // very unlikely(no such use case in client or anywhere in the app)
-        // but lets throw an exception or log fatal error at least to spare
-        // the time spent on debugging in future.
-
-        //ChatRoomMember member = evt.getSourceMember();
-        //if (JitsiMeetConference.isFocusMember(member))
-        //{
-
-        //}
     }
 
     private boolean verifyFocusRole()
