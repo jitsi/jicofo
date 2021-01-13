@@ -17,8 +17,12 @@
  */
 package org.jitsi.impl.protocol.xmpp.tmp;
 
+import org.jivesoftware.smackx.muc.*;
+
 /**
  * Indicates roles that a chat room member detains in its containing chat room.
+ *
+ * TODO: get rid of this and use the smack roles directly.
  *
  * @author Emil Ivov
  * @author Valentin Martinet
@@ -63,6 +67,30 @@ public enum ChatRoomMemberRole
      */
     OUTCAST("Outcast", "service.gui.chat.role.OUTCAST", 10);
 
+    public static ChatRoomMemberRole fromSmackRole(MUCRole smackRole, MUCAffiliation affiliation) {
+        if (affiliation != null) {
+            if (affiliation == MUCAffiliation.admin) {
+                return ChatRoomMemberRole.ADMINISTRATOR;
+            }
+
+            if (affiliation == MUCAffiliation.owner) {
+                return ChatRoomMemberRole.OWNER;
+            }
+        }
+
+        if (smackRole != null) {
+            if (smackRole == MUCRole.moderator) {
+                return ChatRoomMemberRole.MODERATOR;
+            }
+
+            if (smackRole == MUCRole.participant) {
+                return ChatRoomMemberRole.MEMBER;
+            }
+        }
+
+        return ChatRoomMemberRole.GUEST;
+    }
+
     /**
      * the name of this role.
      */
@@ -94,7 +122,7 @@ public enum ChatRoomMemberRole
      *
      * @throws java.lang.NullPointerException if roleName is null.
      */
-    private ChatRoomMemberRole(String roleName, String resource, int roleIndex)
+    ChatRoomMemberRole(String roleName, String resource, int roleIndex)
         throws NullPointerException
     {
         if(roleName == null)
@@ -113,29 +141,5 @@ public enum ChatRoomMemberRole
     public String getRoleName()
     {
         return this.roleName;
-    }
-
-    /**
-     * Returns a localized (i18n) name role name.
-     *
-     * @return a i18n version of this role name.
-     */
-    public String getLocalizedRoleName()
-    {
-        return this.resourceName;
-    }
-
-    /**
-     * Returns a role index that can be used to allow ordering of roles by
-     * other modules (like the UI) that would not necessarily "know" all
-     * possible roles.  Higher values of the role index indicate roles with
-     * more permissions and lower values pertain to more restrictive roles.
-     *
-     * @return an <tt>int</tt> that when compared to role indexes of other
-     * roles can provide an ordering for the different role instances.
-     */
-    public int getRoleIndex()
-    {
-        return roleIndex;
     }
 }

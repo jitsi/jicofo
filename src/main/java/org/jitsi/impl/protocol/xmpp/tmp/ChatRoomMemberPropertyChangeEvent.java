@@ -35,19 +35,9 @@ public class ChatRoomMemberPropertyChangeEvent
     private static final long serialVersionUID = 0L;
 
     /**
-     * The nick name of the <tt>ChatRoomMember</tt> property.
-     */
-    public static final String MEMBER_NICKNAME = "MemberNickname";
-
-    /**
      * The presence status of the <tt>ChatRoomMember</tt> property.
      */
     public static final String MEMBER_PRESENCE = "MemberPresence";
-
-    /**
-     * The <tt>ChatRoom</tt>, to which the corresponding member belongs.
-     */
-    private ChatRoom memberChatRoom;
 
     /**
      * Creates a <tt>ChatRoomMemberPropertyChangeEvent</tt> indicating that a
@@ -56,23 +46,21 @@ public class ChatRoomMemberPropertyChangeEvent
      * <tt>oldValue</tt> to <tt>newValue</tt>.
      * <p>
      * @param source the <tt>ChatRoomMember</tt> whose property has changed.
-     * @param memberChatRoom the <tt>ChatRoom</tt> of the member
      * @param propertyName the name of the property that has changed.
      * @param oldValue the value of the property before the change occurred.
      * @param newValue the value of the property after the change.
      */
-    public ChatRoomMemberPropertyChangeEvent(   ChatRoomMember source,
-                                                ChatRoom memberChatRoom,
-                                                String propertyName,
-                                                Object oldValue,
-                                                Object newValue)
+    public ChatRoomMemberPropertyChangeEvent(
+            ChatRoomMember source,
+            String propertyName,
+            Object oldValue,
+            Object newValue)
     {
-        super(  source,
+        super(source,
                 propertyName,
                 oldValue,
                 newValue);
 
-        this.memberChatRoom = memberChatRoom;
     }
 
     /**
@@ -83,16 +71,6 @@ public class ChatRoomMemberPropertyChangeEvent
     public ChatRoomMember getSourceChatRoomMember()
     {
         return (ChatRoomMember) getSource();
-    }
-
-    /**
-     * Returns the chat room, to which the corresponding member belongs.
-     *
-     * @return the chat room, to which the corresponding member belongs
-     */
-    public ChatRoom getMemberChatRoom()
-    {
-        return memberChatRoom;
     }
 
     /**

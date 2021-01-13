@@ -19,9 +19,7 @@ package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.impl.protocol.xmpp.tmp.*;
-import org.jitsi.impl.protocol.xmpp.tmp.Message;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 
 import org.jitsi.utils.logging.*;
 import org.jivesoftware.smack.packet.*;
@@ -44,8 +42,7 @@ public class MockMultiUserChat
     /**
      * The logger
      */
-    private static final Logger logger
-        = Logger.getLogger(MockMultiUserChat.class);
+    private static final Logger logger = Logger.getLogger(MockMultiUserChat.class);
 
     private final EntityBareJid roomName;
 
@@ -160,20 +157,16 @@ public class MockMultiUserChat
         synchronized (members)
         {
             members.add(member);
-
             me = member;
-
-            fireMemberPresenceEvent(
-                me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            fireMemberPresenceEvent(me,ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
         }
 
-        ChatRoomMemberRole oldRole = me.getRole();
         if (isOwner)
         {
             me.setRole(ChatRoomMemberRole.OWNER);
         }
 
-        fireLocalUserRoleEvent(me, oldRole, true);
+        fireLocalUserRoleEvent(me, true);
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
@@ -206,11 +199,7 @@ public class MockMultiUserChat
             }
 
             members.add(member);
-
-            fireMemberPresenceEvent(
-                    member, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
-
+            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
             return member;
         }
     }
@@ -237,9 +226,7 @@ public class MockMultiUserChat
                         "Member is not in the room " + member);
             }
 
-            fireMemberPresenceEvent(
-                    member, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
         }
     }
 
@@ -261,8 +248,7 @@ public class MockMultiUserChat
         {
             members.remove(me);
 
-            fireMemberPresenceEvent(
-                me, me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
         }
 
         me = null;
@@ -379,18 +365,13 @@ public class MockMultiUserChat
      *
      * @param member the <tt>ChatRoomMember</tt> that changed its presence
      * status
-     * @param actor the <tt>ChatRoomMember</tt> that participated as an actor
-     * in this event
      * @param eventID the identifier of the event
      * @param eventReason the reason of this event
      */
-    private void fireMemberPresenceEvent(ChatRoomMember member,
-                                         ChatRoomMember actor,
-                                         String eventID, String eventReason)
+    private void fireMemberPresenceEvent(ChatRoomMember member, String eventID, String eventReason)
     {
         ChatRoomMemberPresenceChangeEvent evt
-            = new ChatRoomMemberPresenceChangeEvent(
-                    this, member, actor, eventID, eventReason);
+            = new ChatRoomMemberPresenceChangeEvent(this, member, eventID, eventReason);
 
         Iterable<ChatRoomMemberPresenceListener> listeners;
         synchronized (memberListeners)
@@ -403,12 +384,9 @@ public class MockMultiUserChat
     }
 
     private void fireLocalUserRoleEvent(ChatRoomMember member,
-                                        ChatRoomMemberRole oldRole,
                                         boolean isInitial)
     {
-        ChatRoomLocalUserRoleChangeEvent evt
-            = new ChatRoomLocalUserRoleChangeEvent(
-                    this, oldRole, member.getRole(), isInitial);
+        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(member.getRole(), isInitial);
 
         Iterable<ChatRoomLocalUserRoleListener> listeners;
         synchronized (localUserRoleListeners)

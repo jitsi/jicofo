@@ -458,21 +458,16 @@ public class ChatRoomImpl
      * @param newRole the new role the local user gets
      * @param isInitial if <tt>true</tt> this is initial role set.
      */
-    private void fireLocalUserRoleEvent(ChatRoomMemberRole previousRole,
-                                        ChatRoomMemberRole newRole,
-                                        boolean isInitial)
+    private void fireLocalUserRoleEvent(ChatRoomMemberRole newRole, boolean isInitial)
     {
-        ChatRoomLocalUserRoleChangeEvent evt
-            = new ChatRoomLocalUserRoleChangeEvent(
-                this, previousRole, newRole, isInitial);
+        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(newRole, isInitial);
 
         if (logger.isTraceEnabled())
         {
             logger.trace("Will dispatch the following ChatRoom event: " + evt);
         }
 
-        localUserRoleListeners
-            .forEach(listener -> listener.localUserRoleChanged(evt));
+        localUserRoleListeners.forEach(listener -> listener.localUserRoleChanged(evt));
     }
 
     /**
@@ -483,7 +478,7 @@ public class ChatRoomImpl
      */
     public void setLocalUserRole(ChatRoomMemberRole role, boolean isInitial)
     {
-        fireLocalUserRoleEvent(getUserRole(), role, isInitial);
+        fireLocalUserRoleEvent(role, isInitial);
         this.role = role;
     }
 
@@ -672,7 +667,7 @@ public class ChatRoomImpl
     {
         ChatRoomMemberPropertyChangeEvent event
             = new ChatRoomMemberPropertyChangeEvent(
-                    member, this,
+                    member,
                     ChatRoomMemberPropertyChangeEvent.MEMBER_PRESENCE,
                     null, member.getPresence());
 

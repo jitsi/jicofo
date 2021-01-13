@@ -265,9 +265,7 @@ public class ChatRoomRoleAndPresence
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug(
-                    "Focus role: " + evt.getNewRole()
-                        + " init: " + evt.isInitial()
+            logger.debug("Local role: " + evt.getNewRole() + " init: " + evt.isInitial()
                         + " room: " + conference.getRoomName());
         }
 

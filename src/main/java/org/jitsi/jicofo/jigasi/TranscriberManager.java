@@ -144,9 +144,8 @@ public class TranscriberManager
     }
 
     /**
-     * Check whether a {@link ChatRoomPropertyChangeEvent} is due to a new
-     * {@link Presence}, and when it is, deal with the information is has
-     * provided.
+     * Check whether a {@link ChatRoomMemberPropertyChangeEvent} is due to a new {@link Presence}, and when it is, deal
+     * with the information is has provided.
      *
      * @param event the event to check the {@link Presence} off
      */
@@ -159,11 +158,9 @@ public class TranscriberManager
             return;
         }
 
-        TranscriptionStatusExtension transcriptionStatusExtension
-            = getTranscriptionStatus(presence);
+        TranscriptionStatusExtension transcriptionStatusExtension = getTranscriptionStatus(presence);
         if(transcriptionStatusExtension != null
-            && TranscriptionStatusExtension.Status.OFF.equals(
-                    transcriptionStatusExtension.getStatus()))
+            && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
         {
             // puts the stopping in the single threaded executor
             // so we can order the events and avoid indicating active = false
@@ -172,8 +169,7 @@ public class TranscriberManager
         }
         if(isRequestingTranscriber(presence) && !active)
         {
-            executorService.submit(
-                () -> this.startTranscribing(getBridgeRegions()));
+            executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
         }
     }
 
@@ -325,9 +321,9 @@ public class TranscriberManager
     }
 
     /**
-     * Extract the presence from the {@link ChatRoomPropertyChangeEvent}.
+     * Extract the presence from the {@link ChatRoomMemberPropertyChangeEvent}.
      *
-     * @param event the {@link ChatRoomPropertyChangeEvent} to extract from
+     * @param event the {@link ChatRoomMemberPropertyChangeEvent} to extract from
      * @return the {@link Presence}, or null when not available.
      */
     private Presence getPresenceOrNull(ChatRoomMemberPropertyChangeEvent event)

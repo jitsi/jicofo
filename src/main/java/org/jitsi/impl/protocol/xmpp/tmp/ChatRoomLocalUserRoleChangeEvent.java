@@ -17,8 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp.tmp;
 
-import java.util.*;
-
 /**
  * Dispatched to notify interested parties that a change in our role in the
  * source chat room has occurred. Changes may include us being granted admin
@@ -30,45 +28,26 @@ import java.util.*;
  * @author Stephane Remy
  */
 public class ChatRoomLocalUserRoleChangeEvent
-    extends EventObject
 {
-    /**
-     * Serial version UID.
-     */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * The previous role that local participant had.
-     */
-    private ChatRoomMemberRole previousRole = null;
-
     /**
      * The new role that local participant get.
      */
-    private ChatRoomMemberRole newRole = null;
+    private final ChatRoomMemberRole newRole;
     
     /**
      * If <tt>true</tt> this is initial role set.
      */
-    private boolean isInitial = false;
+    private final boolean isInitial;
 
     /**
-     * Creates a <tt>ChatRoomLocalUserRoleChangeEvent</tt> representing that
-     * a change in local participant role in the source chat room has
-     * occured.
+     * Creates a <tt>ChatRoomLocalUserRoleChangeEvent</tt> representing that a change in local participant role in the
+     * source chat room has occurred.
      *
-     * @param sourceRoom the <tt>ChatRoom</tt> that produced the event
-     * @param previousRole the previous role that local participant had
      * @param newRole the new role that local participant get
      * @param isInitial if <tt>true</tt> this is initial role set.
      */
-    public ChatRoomLocalUserRoleChangeEvent(ChatRoom sourceRoom,
-                                        ChatRoomMemberRole previousRole,
-                                        ChatRoomMemberRole newRole, 
-                                        boolean isInitial)
+    public ChatRoomLocalUserRoleChangeEvent(ChatRoomMemberRole newRole, boolean isInitial)
     {
-        super(sourceRoom);
-        this.previousRole = previousRole;
         this.newRole = newRole;
         this.isInitial = isInitial;
     }
@@ -81,26 +60,6 @@ public class ChatRoomLocalUserRoleChangeEvent
     public ChatRoomMemberRole getNewRole()
     {
         return newRole;
-    }
-
-    /**
-     * Returns the previous role that local participant had.
-     *
-     * @return previousRole the previous role that local participant had
-     */
-    public ChatRoomMemberRole getPreviousRole()
-    {
-        return previousRole;
-    }
-
-    /**
-     * Returns the <tt>ChatRoom</tt>, where this event occured.
-     *
-     * @return the <tt>ChatRoom</tt>, where this event occured
-     */
-    public ChatRoom getSourceChatRoom()
-    {
-        return (ChatRoom)getSource();
     }
 
     /**

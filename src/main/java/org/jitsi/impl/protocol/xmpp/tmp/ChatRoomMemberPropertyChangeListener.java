@@ -37,5 +37,5 @@ public interface ChatRoomMemberPropertyChangeListener
      * the name of the property that has just changed, as well as its old and
      * new values.
      */
-    public void chatRoomPropertyChanged(ChatRoomMemberPropertyChangeEvent event);
+    void chatRoomPropertyChanged(ChatRoomMemberPropertyChangeEvent event);
 }

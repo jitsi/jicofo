@@ -24,8 +24,6 @@ import java.util.*;
  * user participant in a particular chat room. Changes could be us being granted
  * any of the roles defined in <tt>ChatRoomMemberRole</tt>.
  *
- * @see net.java.sip.communicator.service.protocol.ChatRoomMemberRole
- *
  * @author Stephane Remy
  */
 public interface ChatRoomLocalUserRoleListener
@@ -37,5 +35,5 @@ public interface ChatRoomLocalUserRoleListener
      * @param evt the <tt>ChatRoomLocalUserRoleChangeEvent</tt> instance
      * containing the source chat room and role old and new state.
      */
-    public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt);
+    void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt);
 }

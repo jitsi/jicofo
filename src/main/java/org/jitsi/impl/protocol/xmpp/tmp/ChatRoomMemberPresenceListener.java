@@ -37,6 +37,5 @@ public interface ChatRoomMemberPresenceListener
      * containing the source chat room and type, and reason of the presence
      * change
      */
-    public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt );
-
+    void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt);
 }

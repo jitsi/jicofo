@@ -60,19 +60,6 @@ public class ChatRoomMemberPresenceChangeEvent
     public static final String MEMBER_QUIT = "MemberQuit";
 
     /**
-     * Indicated that this event was triggered as a result of new information
-     * about the participant becoming available due to a presence
-     */
-    public static final String MEMBER_UPDATED = "MemberUpdated";
-
-    /**
-     * The well-known reason for a
-     * <code>ChatRoomMemberPresenceChangeEvent</code> to occur as part of an
-     * operation which lists all users in a <code>ChatRoom</code>.
-     */
-    public static final String REASON_USER_LIST = "ReasonUserList";
-
-    /**
      * The chat room member that the event relates to.
      */
     private final ChatRoomMember sourceMember;
@@ -94,41 +81,18 @@ public class ChatRoomMemberPresenceChangeEvent
      * Changes may include the participant being kicked, join, left, etc.
      *
      * @param sourceRoom the <tt>ChatRoom</tt> that produced this event
-     * @param sourceMember the <tt>ChatRoomMember</tt> that this event is about
-     * @param eventType the event type; one of the MEMBER_XXX constants
-     * @param reason the reason explaining why this event might have occurred
-     */
-    public ChatRoomMemberPresenceChangeEvent(   ChatRoom       sourceRoom,
-                                                ChatRoomMember sourceMember,
-                                                String         eventType,
-                                                String         reason )
-    {
-        this(sourceRoom, sourceMember, null, eventType, reason);
-    }
-
-    /**
-     * Creates a <tt>ChatRoomMemberPresenceChangeEvent</tt> representing that
-     * a change in the presence of a <tt>ChatRoomMember</tt> has occurred.
-     * Changes may include the participant being kicked, join, left, etc.
-     *
-     * @param sourceRoom the <tt>ChatRoom</tt> that produced this event
      * @param sourceMember the <tt>ChatRoomMember</tt> who this event is about
-     * @param actorMember the <tt>ChatRoomMember</tt> who participated as an
-     * actor in the new event. For example, in the case of a
-     * <tt>MEMBER_KICKED</tt> event the <tt>actorMember</tt> is the moderator
-     * who kicked the <tt>sourceMember</tt>.
      * @param eventType the event type; one of the MEMBER_XXX constants
      * @param reason the reason explaining why this event might have occurred
      */
-    public ChatRoomMemberPresenceChangeEvent(   ChatRoom       sourceRoom,
-                                                ChatRoomMember sourceMember,
-                                                ChatRoomMember actorMember,
-                                                String         eventType,
-                                                String         reason )
+    public ChatRoomMemberPresenceChangeEvent(
+            ChatRoom sourceRoom,
+            ChatRoomMember sourceMember,
+            String eventType,
+            String reason )
     {
         super(sourceRoom);
         this.sourceMember = sourceMember;
-        // this.actorMember = actorMember;
         this.eventType = eventType;
         this.reason = reason;
     }
@@ -162,20 +126,6 @@ public class ChatRoomMemberPresenceChangeEvent
     public String getReason()
     {
         return reason;
-    }
-
-    /**
-     * Gets the indicator which determines whether this event has occurred with
-     * the well-known reason of listing all users in a <code>ChatRoom</code>.
-     *
-     * @return <tt>true</tt> if this event has occurred with the well-known
-     * reason of listing all users in a <code>ChatRoom</code> i.e.
-     * {@link #getReason()} returns a value of {@link #REASON_USER_LIST};
-     * otherwise, <tt>false</tt>
-     */
-    public boolean isReasonUserList()
-    {
-        return REASON_USER_LIST.equals(getReason());
     }
 
     /**
