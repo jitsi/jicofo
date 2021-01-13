@@ -207,7 +207,7 @@ public class ChatRoomImpl
         throws OperationFailedException
     {
         // This is very temporary (and already used elsewhere in the class).
-        XmppProtocolProvider xmppProvider = (XmppProtocolProvider) getParentProvider();
+        XmppProtocolProvider xmppProvider = (XmppProtocolProvider) getXmppProvider();
         joinAs(xmppProvider.getConfig().getUsername().toString());
     }
 

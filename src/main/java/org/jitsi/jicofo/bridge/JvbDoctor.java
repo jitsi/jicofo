@@ -91,7 +91,7 @@ public class JvbDoctor
     {
         XmppProvider xmppProvider =
                 JicofoServices.jicofoServicesSingleton
-                        .getXmppServices().getClientConnection().getProtocolProvider();
+                        .getXmppServices().getServiceConnection().getProtocolProvider();
 
         return xmppProvider.isRegistered() ? xmppProvider.getXmppConnection() : null;
     }
