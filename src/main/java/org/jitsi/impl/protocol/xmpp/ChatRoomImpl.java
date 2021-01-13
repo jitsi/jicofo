@@ -17,10 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.service.protocol.Contact;
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
-
 import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.impl.protocol.xmpp.tmp.AbstractChatRoom;
 import org.jitsi.impl.protocol.xmpp.tmp.ChatRoomMember;
@@ -711,12 +707,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ProtocolProviderService getParentProvider()
-    {
-        return null;
-    }
-
-    @Override
     public XmppProvider getXmppProvider()
     {
         return xmppProvider;
@@ -744,13 +734,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatRoomConfigurationForm getConfigurationForm()
-        throws OperationFailedException
-    {
-        return null;
-    }
-
-    @Override
     public boolean isSystem()
     {
         return false;
@@ -760,12 +743,6 @@ public class ChatRoomImpl
     public boolean isPersistent()
     {
         return false;
-    }
-
-    @Override
-    public Contact getPrivateContactByNickname(String name)
-    {
-        return null;
     }
 
     @Override
@@ -901,12 +878,6 @@ public class ChatRoomImpl
 
     @Override
     public void updatePrivateContactPresenceStatus(String nickname)
-    {
-
-    }
-
-    @Override
-    public void updatePrivateContactPresenceStatus(Contact contact)
     {
 
     }

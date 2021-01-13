@@ -17,10 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp.tmp;
 
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
-import net.java.sip.communicator.service.protocol.Contact;
-
 import java.util.*;
 
 /**
@@ -351,14 +347,6 @@ public interface ChatRoom
         throws OperationFailedException;
 
     /**
-     * Returns a reference to the provider that created this room.
-     *
-     * @return a reference to the <tt>ProtocolProviderService</tt> instance
-     * that created this room.
-     */
-    public ProtocolProviderService getParentProvider();
-
-    /**
      * Returns an Iterator over a set of ban masks for this chat room. The ban
      * mask defines a group of users that will be banned. The ban list is a list
      * of all such ban masks defined for this chat room.
@@ -405,20 +393,6 @@ public interface ChatRoom
         throws OperationFailedException;
 
     /**
-     * Returns the <tt>ChatRoomConfigurationForm</tt> containing all
-     * configuration properties for this chat room. If the user doesn't have
-     * permissions to see and change chat room configuration an
-     * <tt>OperationFailedException</tt> is thrown.
-     *
-     * @return the <tt>ChatRoomConfigurationForm</tt> containing all
-     * configuration properties for this chat room
-     * @throws OperationFailedException if the user doesn't have
-     * permissions to see and change chat room configuration
-     */
-    public ChatRoomConfigurationForm getConfigurationForm()
-        throws OperationFailedException;
-
-    /**
      * Returns <code>true</code> if this chat room is a system room and
      * <code>false</code> otherwise.
      *
@@ -436,15 +410,6 @@ public interface ChatRoom
      * @return true if this chat room is persistent, false otherwise
      */
     public boolean isPersistent();
-
-    /**
-     * Finds private messaging contact by nickname. If the contact doesn't 
-     * exists a new volatile contact is created.
-     * 
-     * @param name the nickname of the contact.
-     * @return the contact instance.
-     */
-    public Contact getPrivateContactByNickname(String name);
 
     /**
     * Grants administrator privileges to another user. Room owners may grant
@@ -572,13 +537,6 @@ public interface ChatRoom
      * @param nickname the nickname of the contact.
      */
     public void updatePrivateContactPresenceStatus(String nickname);
-
-    /**
-     * Updates the presence status of private messaging contact.
-     *
-     * @param contact the contact.
-     */
-    public void updatePrivateContactPresenceStatus(Contact contact);
 
     /**
      * Adds a listener that will be notified when a member of this chat room

@@ -17,11 +17,6 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.globalstatus.GlobalStatusEnum;
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.service.protocol.Contact;
-import net.java.sip.communicator.service.protocol.PresenceStatus;
-
 import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
@@ -56,12 +51,6 @@ public class MockRoomMember
     }
 
     @Override
-    public ProtocolProviderService getProtocolProvider()
-    {
-        return room.getParentProvider();
-    }
-
-    @Override
     public String getContactAddress()
     {
         return address.toString();
@@ -86,12 +75,6 @@ public class MockRoomMember
     }
 
     @Override
-    public Contact getContact()
-    {
-        return null;
-    }
-
-    @Override
     public ChatRoomMemberRole getRole()
     {
         return role;
@@ -106,12 +89,6 @@ public class MockRoomMember
     public void setRole(ChatRoomMemberRole role)
     {
         this.role = role;
-    }
-
-    @Override
-    public PresenceStatus getPresenceStatus()
-    {
-        return GlobalStatusEnum.ONLINE;
     }
 
     @Override

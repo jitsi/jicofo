@@ -17,10 +17,6 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
-import net.java.sip.communicator.service.protocol.Contact;
-
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.impl.protocol.xmpp.tmp.Message;
@@ -475,12 +471,6 @@ public class MockMultiUserChat
     }
 
     @Override
-    public ProtocolProviderService getParentProvider()
-    {
-        return null;
-    }
-
-    @Override
     public Iterator<ChatRoomMember> getBanList()
         throws OperationFailedException
     {
@@ -502,13 +492,6 @@ public class MockMultiUserChat
     }
 
     @Override
-    public ChatRoomConfigurationForm getConfigurationForm()
-        throws OperationFailedException
-    {
-        return null;
-    }
-
-    @Override
     public boolean isSystem()
     {
         return false;
@@ -518,12 +501,6 @@ public class MockMultiUserChat
     public boolean isPersistent()
     {
         return false;
-    }
-
-    @Override
-    public Contact getPrivateContactByNickname(String name)
-    {
-        return null;
     }
 
     @Override
@@ -644,12 +621,6 @@ public class MockMultiUserChat
 
     @Override
     public void updatePrivateContactPresenceStatus(String nickname)
-    {
-
-    }
-
-    @Override
-    public void updatePrivateContactPresenceStatus(Contact contact)
     {
 
     }

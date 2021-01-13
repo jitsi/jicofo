@@ -21,11 +21,6 @@ import org.jitsi.impl.protocol.xmpp.tmp.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
-import net.java.sip.communicator.service.protocol.Contact;
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.service.protocol.PresenceStatus;
-import net.java.sip.communicator.service.protocol.globalstatus.GlobalStatusEnum;
-
 import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -127,12 +122,6 @@ public class ChatMemberImpl
     }
 
     @Override
-    public ProtocolProviderService getProtocolProvider()
-    {
-        return chatRoom.getParentProvider();
-    }
-
-    @Override
     public String getContactAddress()
     {
         return occupantJid.toString();
@@ -157,12 +146,6 @@ public class ChatMemberImpl
     public byte[] getAvatar()
     {
         return new byte[0];
-    }
-
-    @Override
-    public Contact getContact()
-    {
-        return null;
     }
 
     @Override
@@ -197,12 +180,6 @@ public class ChatMemberImpl
     public void setRole(ChatRoomMemberRole role)
     {
         throw new RuntimeException("Not implemented yet.");
-    }
-
-    @Override
-    public PresenceStatus getPresenceStatus()
-    {
-        return GlobalStatusEnum.ONLINE;
     }
 
     @Override
