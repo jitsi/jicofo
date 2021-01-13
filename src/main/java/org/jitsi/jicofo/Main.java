@@ -162,22 +162,6 @@ public class Main
             System.setProperty(XmppClientConnectionConfig.legacyHostnamePropertyName, host);
         }
 
-        String componentSubDomain = cmdLine.getOptionValue("--subdomain", "focus");
-        int port = cmdLine.getIntOptionValue("--port", 5347);
-        String secret = cmdLine.getOptionValue("--secret");
-        if (isBlank(secret))
-        {
-            secret = System.getenv("JICOFO_SECRET");
-        }
-
-        XmppComponentConfig.config = new XmppComponentConfig(
-                host == null ? "" : host,
-                componentDomain == null ? "" : componentDomain,
-                componentSubDomain == null ? "" : componentSubDomain,
-                port,
-                secret == null ? "" : secret
-        );
-
         // XMPP client connection
         String focusDomain = cmdLine.getOptionValue("--user_domain");
         String focusUserName = cmdLine.getOptionValue("--user_name");

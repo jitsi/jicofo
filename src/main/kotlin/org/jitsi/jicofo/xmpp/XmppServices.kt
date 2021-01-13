@@ -23,7 +23,6 @@ import org.jitsi.jicofo.ProtocolProviderHandler
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.protocol.xmpp.XmppConnection
-import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.logging2.createLogger
 import java.util.concurrent.ScheduledExecutorService
 
@@ -53,23 +52,19 @@ class XmppServices(
     }
 
     var iqHandler: IqHandler? = null
-    var focusComponent: FocusComponent? = null
-
     fun stop() {
         iqHandler?.stop()
         clientConnection.stop()
         if (serviceConnection != clientConnection) {
             serviceConnection.stop()
         }
-        focusComponent?.disconnect()
     }
 
     fun init(
         authenticationAuthority: AbstractAuthAuthority?,
         focusManager: FocusManager,
         reservationSystem: ReservationSystem?,
-        jigasiEnabled: Boolean,
-        configService: ConfigurationService?
+        jigasiEnabled: Boolean
     ) {
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
         val conferenceIqHandler = ConferenceIqHandler(
@@ -90,15 +85,5 @@ class XmppServices(
                 })
         }
         this.iqHandler = iqHandler
-
-        focusComponent = if (XmppComponentConfig.config.enabled) {
-            FocusComponent(XmppComponentConfig.config, iqHandler).apply {
-                loadConfig(configService, "org.jitsi.jicofo")
-            }
-        } else {
-            null
-        }
-        focusComponent?.connect()
     }
-
 }
