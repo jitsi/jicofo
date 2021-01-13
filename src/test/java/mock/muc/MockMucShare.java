@@ -18,16 +18,14 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.tmp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
- * The purpose of this class is to simulate mock room joined by all
- * <tt>net.java.sip.communicator.service.protocol.mock.MockProtocolProvider</tt>s
- * only if they share the same room name.
+ * The purpose of this class is to simulate mock room joined by all <tt>MockProtocolProvider</tt>s only if they share
+ * the same room name.
  *
  * @author Pawel Domas
  */
