@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.*;
-import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
@@ -450,7 +449,6 @@ public class ChatRoomImpl
      * all <tt>ChatRoomLocalUserRoleListener</tt>s that local user's role has
      * been changed in this <tt>ChatRoom</tt>.
      *
-     * @param previousRole the previous role that local user had
      * @param newRole the new role the local user gets
      * @param isInitial if <tt>true</tt> this is initial role set.
      */
@@ -595,7 +593,7 @@ public class ChatRoomImpl
                 // FIXME: we should have checked exceptions for all operations
                 // in ChatRoom interface which are expected to fail.
                 // OperationFailedException maybe ?
-                throw new RuntimeException("Failed to grant owner: " + IQUtils.responseToXML(reply));
+                throw new RuntimeException("Failed to grant owner: " + (reply == null ? "" : reply.toXML()));
             }
         }
         catch (OperationFailedException e)
