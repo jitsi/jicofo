@@ -459,6 +459,9 @@ public class JitsiMeetConferenceImpl
 
         protocolProviderHandler.removeRegistrationListener(this);
 
+        BridgeSelector bridgeSelector = services.getBridgeSelector();
+        bridgeSelector.removeHandler(bridgeSelectorEventHandler);
+
         try
         {
             disposeConference();
@@ -576,8 +579,7 @@ public class JitsiMeetConferenceImpl
      * and {@code false} to only add the property locally. This is useful to
      * allow updating multiple properties but sending a single presence update.
      */
-    private void setConferenceProperty(
-        String key, String value, boolean updatePresence)
+    private void setConferenceProperty(String key, String value, boolean updatePresence)
     {
         conferenceProperties.put(key, value);
         if (updatePresence)
