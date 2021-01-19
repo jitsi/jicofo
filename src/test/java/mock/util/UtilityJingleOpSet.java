@@ -18,7 +18,7 @@
 package mock.util;
 
 import mock.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.*;
@@ -34,7 +34,7 @@ public class UtilityJingleOpSet
     /**
      * The logger instance used by this class.
      */
-    private final static Logger logger = Logger.getLogger(UtilityJingleOpSet.class);
+    private final static Logger logger = new LoggerImpl(UtilityJingleOpSet.class.getName());
 
     private final XmppConnection connection;
 
@@ -59,8 +59,7 @@ public class UtilityJingleOpSet
                     String sid = jingleIQ.getSID();
                     if (sessions.containsKey(sid))
                     {
-                        logger.error("Received session-initiate "
-                                + "for existing session: " + sid);
+                        logger.error("Received session-initiate for existing session: " + sid);
                         return null;
                     }
                     sessionInvites.put(jingleIQ);
@@ -116,8 +115,7 @@ public class UtilityJingleOpSet
         }
 
         String sid = invite.getSID();
-        JingleSession session
-            = new JingleSession(sid, invite.getFrom(), requestHandler);
+        JingleSession session = new JingleSession(sid, invite.getFrom(), requestHandler);
 
         sessions.put(sid, session);
         return invite;

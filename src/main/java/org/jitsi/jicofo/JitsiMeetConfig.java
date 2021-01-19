@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -36,8 +36,7 @@ public class JitsiMeetConfig
     /**
      * The logger.
      */
-    private final static Logger logger
-        = Logger.getLogger(JitsiMeetConfig.class);
+    private final static Logger logger = new LoggerImpl(JitsiMeetConfig.class.getName());
 
     /**
      * The name of the "disableRtx" property.

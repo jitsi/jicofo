@@ -19,7 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -37,12 +37,6 @@ public class ChatRoomRoleAndPresence
                ChatRoomLocalUserRoleListener,
                AuthenticationListener
 {
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private static final Logger classLogger = Logger.getLogger(ChatRoomRoleAndPresence.class);
-
     /**
      * The {@link JitsiMeetConferenceImpl} for which this instance is handling
      * MUC related stuff.
@@ -71,11 +65,6 @@ public class ChatRoomRoleAndPresence
      */
     private final boolean autoOwner = ConferenceConfig.config.enableAutoOwner();
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -89,7 +78,7 @@ public class ChatRoomRoleAndPresence
         this.conference = Objects.requireNonNull(conference, "conference");
         this.chatRoom = Objects.requireNonNull(chatRoom, "chatRoom");
 
-        this.logger = Logger.getLogger(classLogger, conference.getLogger());
+        this.logger = new LoggerImpl(getClass().getName(), conference.getLogger().getLevel());
     }
 
     /**

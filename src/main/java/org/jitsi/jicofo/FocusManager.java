@@ -23,8 +23,8 @@ import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.utils.logging.Logger; // disambiguation
-
+import org.jitsi.utils.logging2.*;
+import org.jitsi.utils.logging2.Logger;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
@@ -47,7 +47,7 @@ public class FocusManager
     /**
      * The logger used by this instance.
      */
-    private final static Logger logger = Logger.getLogger(FocusManager.class);
+    private final static Logger logger = new LoggerImpl(FocusManager.class.getName());
 
     /**
      * The pseudo-random generator which is to be used when generating IDs.
@@ -165,16 +165,10 @@ public class FocusManager
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
-    public boolean conferenceRequest(
-            EntityBareJid          room,
-            Map<String, String>    properties)
+    public boolean conferenceRequest(EntityBareJid room, Map<String, String> properties)
         throws Exception
     {
-        return conferenceRequest(
-                room,
-                properties,
-                null /* logging level - not specified which means that the one
-                        from the logging configuration will be used */);
+        return conferenceRequest(room, properties, Level.ALL);
     }
 
     /**
@@ -246,7 +240,7 @@ public class FocusManager
         }
         catch (Exception e)
         {
-            logger.info("Exception while trying to start the conference", e);
+            logger.warn("Exception while trying to start the conference", e);
 
             // stop() method is called by the conference automatically in order
             // to not release the lock on JitsiMeetConference instance and avoid

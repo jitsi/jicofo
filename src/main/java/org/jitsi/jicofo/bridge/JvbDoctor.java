@@ -19,10 +19,10 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.Logger;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -44,7 +44,7 @@ public class JvbDoctor
     /**
      * The logger.
      */
-    private static final Logger logger = Logger.getLogger(JvbDoctor.class);
+    private static final Logger logger = new LoggerImpl(JvbDoctor.class.getName());
 
     /**
      * Tells how often we send health checks to the bridge in ms.

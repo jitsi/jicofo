@@ -23,7 +23,7 @@ import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -48,8 +48,7 @@ public class JibriSipGateway
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    static private final Logger classLogger
-        = Logger.getLogger(JibriSipGateway.class);
+    static private final Logger classLogger = new LoggerImpl(JibriSipGateway.class.getName());
 
     /**
      * Map of SIP {@link JibriSession}s mapped per SIP address which
@@ -73,7 +72,7 @@ public class JibriSipGateway
             conference,
             xmppConnection,
             scheduledExecutor,
-            Logger.getLogger(classLogger, conference.getLogger()),
+            new LoggerImpl(JibriSipGateway.class.getName(), conference.getLogger().getLevel()),
             jibriDetector);
 
     }
@@ -168,8 +167,7 @@ public class JibriSipGateway
             catch (StartException exc)
             {
                 String reason = exc.getMessage();
-                logger.info(
-                    "Failed to start a Jibri session: "  +  reason, exc);
+                logger.warn("Failed to start a Jibri session: "  +  reason, exc);
                 sipSessions.remove(sipAddress);
                 ErrorIQ errorIq;
                 if (exc instanceof StartException.AllBusy)

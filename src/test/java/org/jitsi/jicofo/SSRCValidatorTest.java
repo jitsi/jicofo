@@ -21,7 +21,7 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import org.junit.*;
 import org.junit.runner.*;
@@ -43,8 +43,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class SSRCValidatorTest
 {
-    static private Logger logger
-        = Logger.getLogger(SSRCValidatorTest.class.getName());
+    static private Logger logger = new LoggerImpl(SSRCValidatorTest.class.getName());
 
     static OSGiHandler osgi = OSGiHandler.getInstance();
 

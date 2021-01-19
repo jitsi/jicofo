@@ -20,7 +20,6 @@ package mock.xmpp;
 import mock.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -34,12 +33,6 @@ import java.util.*;
 public class MockOperationSetJingle
     extends AbstractOperationSetJingle
 {
-    /**
-     * The logger used by this class.
-     */
-    private final static Logger logger
-            = Logger.getLogger(MockOperationSetJingle.class);
-
     /**
      * Parent {@link XmppProtocolProvider}.
      */

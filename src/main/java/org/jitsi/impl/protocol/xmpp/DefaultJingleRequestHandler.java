@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
@@ -36,8 +36,7 @@ public class DefaultJingleRequestHandler
     /**
      * The logger used by this instance.
      */
-    private final static Logger logger
-        = Logger.getLogger(DefaultJingleRequestHandler.class);
+    private final static Logger logger = new LoggerImpl(DefaultJingleRequestHandler.class.getName());
 
     @Override
     public XMPPError onAddSource(JingleSession jingleSession,

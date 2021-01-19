@@ -21,7 +21,7 @@ import org.jitsi.jicofo.codec.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -36,16 +36,7 @@ import java.util.*;
 public class OctoChannelAllocator extends AbstractChannelAllocator
 {
     /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private final static Logger classLogger
-        = Logger.getLogger(OctoChannelAllocator.class);
-
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
+     * The logger for this instance.
      */
     private final Logger logger;
 
@@ -67,7 +58,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
     {
         super(conference, bridgeSession, participant, null, false);
         this.participant = participant;
-        this.logger = Logger.getLogger(classLogger, conference.getLogger());
+        this.logger = new LoggerImpl(OctoChannelAllocator.class.getName(), conference.getLogger().getLevel());
     }
 
     /**
@@ -121,19 +112,14 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
             // of relays for the audio and video channels, so just check video.
             ColibriConferenceIQ.Channel channel
                 = result.getContent("video").getChannel(0);
-            if (channel == null
-                || !(channel instanceof ColibriConferenceIQ.OctoChannel))
+            if (!(channel instanceof ColibriConferenceIQ.OctoChannel))
             {
-                logger.error(
-                    "Expected to find an OctoChannel in the response, found"
-                        + channel + " instead.");
+                logger.error("Expected to find an OctoChannel in the response, found" + channel + " instead.");
             }
             else
             {
-                List<String> responseRelays
-                    = ((ColibriConferenceIQ.OctoChannel) channel).getRelays();
-                if (!new HashSet<>(responseRelays)
-                        .equals(new HashSet<>(participant.getRelays())))
+                List<String> responseRelays = ((ColibriConferenceIQ.OctoChannel) channel).getRelays();
+                if (!new HashSet<>(responseRelays).equals(new HashSet<>(participant.getRelays())))
                 {
                     update = true;
 

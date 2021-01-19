@@ -19,7 +19,8 @@
 package org.jitsi.jicofo.jigasi;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.jicofo.bridge.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
 import org.jitsi.jicofo.*;
@@ -45,25 +46,24 @@ public class TranscriberManager
     /**
      * The logger of this class.
      */
-    private final static Logger logger
-        = Logger.getLogger(TranscriberManager.class);
+    private final static Logger logger = new LoggerImpl(TranscriberManager.class.getName());
 
     /**
      * The {@link ChatRoom} of the conference this class is managing
      */
-    private ChatRoom chatRoom;
+    private final ChatRoom chatRoom;
     private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link JigasiDetector} responsible for determining which Jigasi
      * to dial to when inviting the transcriber.
      */
-    private JigasiDetector jigasiDetector;
+    private final JigasiDetector jigasiDetector;
 
     /**
      * The {@link XmppConnection} used to Dial Jigasi.
      */
-    private XmppConnection connection;
+    private final XmppConnection connection;
 
     /**
      * The transcription status; either active or inactive based on this boolean
@@ -179,7 +179,7 @@ public class TranscriberManager
     private Collection<String> getBridgeRegions()
     {
         return conference.getBridges().keySet().stream()
-                    .map(b -> b.getRegion())
+                    .map(Bridge::getRegion)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
     }
@@ -315,7 +315,7 @@ public class TranscriberManager
             return false;
         }
 
-        return Boolean.valueOf(ext.getText());
+        return Boolean.parseBoolean(ext.getText());
     }
 
     /**

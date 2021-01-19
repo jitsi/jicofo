@@ -29,7 +29,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.test.concurrent.FakeScheduledExecutorService
-import org.jitsi.utils.logging.Logger
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError

@@ -24,7 +24,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.retry.*;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -64,7 +64,7 @@ public class XmppProtocolProvider
     /**
      * The logger used by this class.
      */
-    private final static Logger logger = Logger.getLogger(XmppProtocolProvider.class);
+    private final static Logger logger = new LoggerImpl(XmppProtocolProvider.class.getName());
 
     /**
      * Jingle operation set.
@@ -273,7 +273,7 @@ public class XmppProtocolProvider
     }
 
     @Override
-    public XmppConnectionConfig getConfig()
+    public @NotNull XmppConnectionConfig getConfig()
     {
         return config;
     }
@@ -290,7 +290,7 @@ public class XmppProtocolProvider
     }
 
     @Override
-    public OperationSetJingle getJingleApi()
+    public @NotNull OperationSetJingle getJingleApi()
     {
         return jingleOpSet;
     }
@@ -355,13 +355,13 @@ public class XmppProtocolProvider
     }
 
     @Override
-    public ChatRoom createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
+    public @NotNull ChatRoom createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
     {
         return muc.createChatRoom(name);
     }
 
     @Override
-    public ChatRoom findOrCreateRoom(@NotNull String name) throws XmppStringprepException
+    public @NotNull ChatRoom findOrCreateRoom(@NotNull String name) throws XmppStringprepException
     {
         return muc.findOrCreateRoom(name);
     }

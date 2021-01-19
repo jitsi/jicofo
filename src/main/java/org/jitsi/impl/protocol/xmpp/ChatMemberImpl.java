@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jivesoftware.smack.packet.*;
@@ -36,7 +36,7 @@ public class ChatMemberImpl
     /**
      * The logger
      */
-    static final private Logger logger = Logger.getLogger(ChatMemberImpl.class);
+    static final private Logger logger = new LoggerImpl(ChatMemberImpl.class.getName());
 
     /**
      * The resource part of this {@link ChatMemberImpl}'s JID in the MUC.

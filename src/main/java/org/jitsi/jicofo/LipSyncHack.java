@@ -24,7 +24,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -65,13 +65,6 @@ import java.util.*;
 public class LipSyncHack implements OperationSetJingle
 {
     /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    static private final Logger classLogger
-        = Logger.getLogger(LipSyncHack.class);
-
-    /**
      * Parent conference for which this instance is doing stream merging.
      */
     private final JitsiMeetConference conference;
@@ -81,11 +74,6 @@ public class LipSyncHack implements OperationSetJingle
      */
     private final OperationSetJingle jingleImpl;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -102,7 +90,7 @@ public class LipSyncHack implements OperationSetJingle
         this.conference = Objects.requireNonNull(conference, "conference");
         this.jingleImpl = Objects.requireNonNull(jingleImpl, "jingleImpl");
 
-        this.logger = Logger.getLogger(classLogger, conference.getLogger());
+        this.logger = new LoggerImpl(LipSyncHack.class.getName(), conference.getLogger().getLevel());
     }
 
     private MediaSourceMap getParticipantSSRCMap(Jid mucJid)

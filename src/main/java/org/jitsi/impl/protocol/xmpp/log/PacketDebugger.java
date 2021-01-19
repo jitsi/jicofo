@@ -15,7 +15,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.log;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 
@@ -33,14 +33,12 @@ public class PacketDebugger
      * for convenient access(XMPP connection doesn't have a getter for
      * the debugger field).
      */
-    private static final WeakHashMap<XMPPConnection, PacketDebugger> debuggerMap
-        = new WeakHashMap<>();
+    private static final WeakHashMap<XMPPConnection, PacketDebugger> debuggerMap = new WeakHashMap<>();
 
     /**
      * The logger used by this class.
      */
-    private final static Logger logger
-        = Logger.getLogger(PacketDebugger.class);
+    private final static Logger logger = new LoggerImpl(PacketDebugger.class.getName());
 
     /**
      * Finds {@link PacketDebugger} for given connection.

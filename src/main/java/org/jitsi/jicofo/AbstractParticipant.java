@@ -21,7 +21,7 @@ import java.util.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 /**
  * Represents an entity in a {@link JitsiMeetConferenceImpl} which has
@@ -35,13 +35,6 @@ import org.jitsi.utils.logging.*;
  */
 public abstract class AbstractParticipant
 {
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private final static Logger classLogger
-        = Logger.getLogger(AbstractParticipant.class);
-
     /**
      * Information about Colibri channels allocated for this peer (if any).
      */
@@ -116,16 +109,11 @@ public abstract class AbstractParticipant
      */
     private AbstractChannelAllocator channelAllocator = null;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     protected AbstractParticipant(Logger conferenceLogger)
     {
-        this.logger = Logger.getLogger(classLogger, conferenceLogger);
+        this.logger = new LoggerImpl(getClass().getName(), conferenceLogger.getLevel());
     }
 
     /**

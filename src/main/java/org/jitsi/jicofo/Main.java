@@ -25,7 +25,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.metaconfig.*;
 import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -36,7 +36,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class Main
 {
-    private static final Logger logger = Logger.getLogger(Main.class);
+    private static final Logger logger = new LoggerImpl(Main.class.getName());
 
     /**
      * Program entry point.

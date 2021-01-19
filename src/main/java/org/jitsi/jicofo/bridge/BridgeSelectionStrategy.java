@@ -1,6 +1,6 @@
 package org.jitsi.jicofo.bridge;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.json.simple.*;
 
 import java.util.*;
@@ -18,7 +18,7 @@ public abstract class BridgeSelectionStrategy
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(BridgeSelectionStrategy.class);
+    private final static Logger logger = new LoggerImpl(BridgeSelectionStrategy.class.getName());
 
     /**
      * Total number of times selection succeeded because there was a bridge

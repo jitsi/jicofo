@@ -19,7 +19,7 @@ package mock.jvb;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.shutdown.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.version.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -36,7 +36,7 @@ public class MockVideobridge
     /**
      * The logger
      */
-    private static final Logger logger = Logger.getLogger(MockVideobridge.class);
+    private static final Logger logger = new LoggerImpl(MockVideobridge.class.getName());
 
     private final XmppConnection connection;
 
