@@ -64,14 +64,11 @@ public class JicofoHealthChecker implements HealthCheckService
     private long totalSlowHealthChecks = 0;
 
     private FocusManager focusManager;
-    private FocusComponent focusComponent;
-
     private final HealthChecker healthChecker;
 
-    public JicofoHealthChecker(HealthConfig config, FocusManager focusManager, FocusComponent focusComponent)
+    public JicofoHealthChecker(HealthConfig config, FocusManager focusManager)
     {
         this.focusManager = focusManager;
-        this.focusComponent = focusComponent;
         this.healthChecker = new HealthChecker(
                 config.getInterval(),
                 config.getTimeout(),
@@ -99,7 +96,6 @@ public class JicofoHealthChecker implements HealthCheckService
         {
             logger.warn("Failed to stop.", e);
         }
-        focusComponent = null;
     }
 
     public Unit performCheck()
@@ -107,15 +103,6 @@ public class JicofoHealthChecker implements HealthCheckService
         Objects.requireNonNull(focusManager, "FocusManager is not set.");
 
         long start = System.currentTimeMillis();
-
-        if (focusComponent == null)
-        {
-            throw new RuntimeException("No Jicofo XMPP component");
-        }
-        if (!focusComponent.isConnectionAlive())
-        {
-            throw new RuntimeException("Jicofo XMPP component not connected");
-        }
 
         check(focusManager);
 

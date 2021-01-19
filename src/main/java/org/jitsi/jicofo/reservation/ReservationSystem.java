@@ -18,14 +18,13 @@
 package org.jitsi.jicofo.reservation;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jxmpp.jid.*;
 
 /**
  * FIXME: work in progress
  *
  * Interface for reservation system implementation. If room does not exist
- * {@link FocusComponent} will call {@link #createConference(String, EntityBareJid)}
+ * will call {@link #createConference(String, EntityBareJid)}
  * method in order to verify that given user is allowed to create the room.
  * <tt>ReservationSystem</tt> itself is responsible for destroying conference
  * when it should expire by calling the method
@@ -38,23 +37,23 @@ public interface ReservationSystem
     /**
      * Room created successfully.
      */
-    public static final int RESULT_OK = 1;
+    int RESULT_OK = 1;
 
     /**
      * User is not allowed to create the room.
      */
-    public static final int RESULT_NOT_ALLOWED = 2;
+    int RESULT_NOT_ALLOWED = 2;
 
     /**
      * FIXME: not used, remove ?
      */
-    public static final int RESULT_CONFLICT = 3;
+    int RESULT_CONFLICT = 3;
 
     /**
      * Internal error has occurred during request processing. Room can not be
      * created.
      */
-    public static final int RESULT_INTERNAL_ERROR = 100;
+    int RESULT_INTERNAL_ERROR = 100;
 
     /**
      * Tries to create new conference room with the reservation system.
@@ -67,7 +66,7 @@ public interface ReservationSystem
      * went wrong. Error details will be returned in XMPP error IQ containing
      * {@link org.jitsi.xmpp.extensions.jitsimeet.ReservationErrorPacketExt}.
      */
-    public Result createConference(String owner, EntityBareJid name);
+    Result createConference(String owner, EntityBareJid name);
 
     /**
      * Structure for returning result details.

@@ -27,7 +27,6 @@ import org.jitsi.utils.logging.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -254,12 +253,12 @@ public class ColibriConferenceImpl
                 logger.debug(Thread.currentThread() + " sending alloc request");
             }
 
-            logRequest("Channel allocate request", allocateRequest);
+            logStanza("Channel allocate request", allocateRequest);
 
             // FIXME retry allocation on timeout ?
             Stanza response = sendAllocRequest(endpointId, allocateRequest);
 
-            logResponse("Channel allocate response", response);
+            logStanza("Channel allocate response", response);
 
             // Verify the response and throw OperationFailedException
             // if it's not a success
@@ -459,27 +458,17 @@ public class ColibriConferenceImpl
         }
     }
 
-    private void logResponse(String message, Stanza response)
+    private void logStanza(String message, Stanza stanza)
     {
         if (!logger.isDebugEnabled())
         {
             return;
         }
 
-        String responseXml = IQUtils.responseToXML(response);
+        String stanzaStr = stanza == null ? "null" : stanza.toXML().toString();
+        stanzaStr = stanzaStr.replace(">",">\n");
 
-        responseXml = responseXml.replace(">",">\n");
-
-        logger.debug(message + "\n" + responseXml);
-    }
-
-    private void logRequest(String message, IQ iq)
-    {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug(message + "\n" + iq.toXML().toString()
-                    .replace(">",">\n"));
-        }
+        logger.debug(message + "\n" + stanzaStr);
     }
 
     /**
@@ -509,7 +498,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Expire peer channels", request);
+            logStanza("Expire peer channels", request);
 
             // Send and forget
             connection.sendStanza(request);
@@ -567,7 +556,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Sending source update: ", request);
+            logStanza("Sending source update: ", request);
 
             connection.sendStanza(request);
         }
@@ -602,7 +591,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Sending bundle transport info update: ", request);
+            logStanza("Sending bundle transport info update: ", request);
 
             connection.sendStanza(request);
         }
@@ -640,7 +629,7 @@ public class ColibriConferenceImpl
 
                 if (request != null)
                 {
-                    logRequest("Expire conference: ", request);
+                    logStanza("Expire conference: ", request);
 
                     connection.sendStanza(request);
                 }
@@ -818,7 +807,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Sending channel info update: ", request);
+            logStanza("Sending channel info update: ", request);
 
             connection.sendStanza(request);
         }

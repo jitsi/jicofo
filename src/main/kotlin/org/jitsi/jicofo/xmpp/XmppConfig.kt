@@ -35,9 +35,6 @@ class XmppConfig {
         val client = XmppClientConnectionConfig()
 
         @JvmField
-        val component = XmppComponentConfig()
-
-        @JvmField
         val config = XmppConfig()
     }
 }
@@ -202,29 +199,5 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
         const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
         const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
         const val legacyXmppDomainPropertyName = "org.jitsi.jicofo.XMPP_DOMAIN"
-    }
-}
-
-/**
- * The XMPP component connection is deprecated and will be removed. These properties are configured via command line
- * arguments and only supported temporarily.
- */
-data class XmppComponentConfig(
-    val hostname: String = "",
-    val domain: String = "",
-    val subdomain: String = "",
-    val port: Int = -1,
-    val secret: String = ""
-) {
-    val enabled: Boolean = hostname.isNotBlank()
-
-    companion object {
-        /**
-         * The configuration to use for the XMPP component connection. The default uses values chosen to allow tests to
-         * run (i.e. dummy values which allow [FocusComponent] to be instantiated and only throw if it attempts to
-         * connect).
-         */
-        @JvmField
-        var config = XmppComponentConfig()
     }
 }

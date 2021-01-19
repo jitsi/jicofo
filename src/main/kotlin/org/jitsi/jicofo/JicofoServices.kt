@@ -39,7 +39,6 @@ import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.recording.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
-import org.jitsi.jicofo.util.getService
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
@@ -50,7 +49,6 @@ import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
-import org.jitsi.service.configuration.ConfigurationService
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
@@ -156,16 +154,11 @@ open class JicofoServices(
             authenticationAuthority = authenticationAuthority,
             focusManager = focusManager,
             reservationSystem = reservationSystem,
-            jigasiEnabled = jigasiDetector != null,
-            configService = getService(bundleContext, ConfigurationService::class.java)
+            jigasiEnabled = jigasiDetector != null
         )
 
         healthChecker = if (HealthConfig.config.enabled) {
-            JicofoHealthChecker(
-                HealthConfig.config,
-                focusManager,
-                xmppServices.focusComponent
-            ).apply {
+            JicofoHealthChecker(HealthConfig.config, focusManager).apply {
                 // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
                 start()
                 focusManager.setHealth(this)

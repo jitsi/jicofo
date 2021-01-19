@@ -24,7 +24,6 @@ import org.jitsi.xmpp.extensions.health.*;
 import org.jitsi.jicofo.osgi.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging.Logger;
-import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -278,8 +277,6 @@ public class JvbDoctor
                 if (taskInvalid())
                     return;
 
-                logger.debug("Health check response from: " + bridgeJid + ": " + IQUtils.responseToXML(response));
-
                 if (response == null)
                 {
                     logger.warn("Health check timed out for: " + bridgeJid);
@@ -304,10 +301,8 @@ public class JvbDoctor
                     XMPPError error = response.getError();
                     XMPPError.Condition condition = error.getCondition();
 
-                    if (XMPPError.Condition.internal_server_error
-                            .equals(condition)
-                        || XMPPError.Condition.service_unavailable
-                            .equals(condition))
+                    if (XMPPError.Condition.internal_server_error.equals(condition)
+                        || XMPPError.Condition.service_unavailable.equals(condition))
                     {
                         // Health check failure
                         logger.warn("Health check failed for: " + bridgeJid + ": " + error.toXML().toString());
