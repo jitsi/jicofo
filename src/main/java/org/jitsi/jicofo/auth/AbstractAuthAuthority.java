@@ -43,8 +43,7 @@ public abstract class AbstractAuthAuthority
     /**
      * The logger.
      */
-    private final static Logger logger
-        = Logger.getLogger(AbstractAuthAuthority.class);
+    private final static Logger logger = Logger.getLogger(AbstractAuthAuthority.class);
 
     /**
      * Interval at which we check for authentication sessions expiration.
@@ -429,11 +428,9 @@ public abstract class AbstractAuthAuthority
     {
         session.setUserJabberId(peerJid);
 
-        logger.info(
-            "Authenticated jid: " + peerJid + " with session: " + session);
+        logger.info("Authenticated jid: " + peerJid + " with session: " + session);
 
-        notifyUserAuthenticated(
-            peerJid, session.getUserIdentity(), session.getSessionId());
+        notifyUserAuthenticated(peerJid, session.getUserIdentity(), session.getSessionId());
 
         // Re-new session activity timestamp
         session.touch();

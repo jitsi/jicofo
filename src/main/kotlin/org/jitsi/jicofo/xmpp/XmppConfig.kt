@@ -191,6 +191,12 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
         "jicofo.xmpp.client.disable-certificate-verification".from(newConfig)
     }
 
+    val clientProxy: DomainBareJid? by optionalconfig {
+        "jicofo.xmpp.client.client-proxy".from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+    }
+
     override fun toString(): String = "XmppClientConnectionConfig[hostname=$hostname, port=$port, username=$username]"
 
     companion object {
