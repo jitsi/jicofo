@@ -352,36 +352,11 @@ public abstract class AbstractChannelAllocator implements Runnable
     }
 
     /**
-     * @return the {@link JitsiMeetConferenceImpl.BridgeSession}
-     * instance of this {@link AbstractChannelAllocator}.
-     */
-    public JitsiMeetConferenceImpl.BridgeSession getBridgeSession()
-    {
-        return bridgeSession;
-    }
-
-    /**
      * @return the {@link Participant} of this {@link AbstractChannelAllocator}.
      */
     public AbstractParticipant getParticipant()
     {
         return participant;
-    }
-
-    /**
-     * @return the "startMuted" array of this {@link AbstractChannelAllocator}.
-     */
-    public boolean[] getStartMuted()
-    {
-        return startMuted;
-    }
-
-    /**
-     * @return the {@code reInvite} flag of this {@link AbstractChannelAllocator}.
-     */
-    public boolean isReInvite()
-    {
-        return reInvite;
     }
 
     @Override
