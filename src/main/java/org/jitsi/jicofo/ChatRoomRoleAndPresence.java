@@ -23,6 +23,7 @@ import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
  * Class handled MUC roles and presence for the focus in particular:
@@ -127,8 +128,7 @@ public class ChatRoomRoleAndPresence
 
         ChatRoomMember sourceMember = evt.getChatRoomMember();
 
-        String eventType = evt.getEventType();
-        if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
+        if (evt instanceof Joined)
         {
             if (owner == null)
             {
@@ -140,9 +140,7 @@ public class ChatRoomRoleAndPresence
             }
             conference.onMemberJoined(sourceMember);
         }
-        else if (ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
+        else if (evt instanceof Left || evt instanceof Kicked || evt instanceof Quit)
         {
             if (owner == sourceMember)
             {
@@ -150,7 +148,7 @@ public class ChatRoomRoleAndPresence
                 owner = null;
                 electNewOwner();
             }
-            if (ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType))
+            if (evt instanceof ChatRoomMemberPresenceChangeEvent.Kicked)
             {
                 conference.onMemberKicked(sourceMember);
             }
@@ -158,10 +156,6 @@ public class ChatRoomRoleAndPresence
             {
                 conference.onMemberLeft(sourceMember);
             }
-        }
-        else
-        {
-            logger.warn("Unhandled event: " + evt.getEventType());
         }
     }
 

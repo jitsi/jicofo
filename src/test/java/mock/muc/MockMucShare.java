@@ -18,10 +18,10 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.utils.logging2.*;
-import org.jxmpp.jid.*;
 
 import java.util.*;
+
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
  * The purpose of this class is to simulate mock room joined by all <tt>MockProtocolProvider</tt>s only if they share
@@ -30,59 +30,35 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockMucShare
-    implements ChatRoomMemberPresenceListener
 {
-    private final static Logger logger = new LoggerImpl(MockMucShare.class.getName());
-
     private final List<MockMultiUserChat> groupedChats = new ArrayList<>();
 
     public void nextRoomCreated(MockMultiUserChat chatRoom)
     {
         groupedChats.add(chatRoom);
 
-        chatRoom.addMemberPresenceListener(this);
+        Listener listener = new Listener(chatRoom);
+        chatRoom.addMemberPresenceListener(listener);
 
         // Copy existing members if any
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            broadcastMemberJoined(chatRoom, member);
+            broadcastMemberJoined(chatRoom, listener, member);
         }
     }
 
-    @Override
-    public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
-    {
-        String eventType = evt.getEventType();
-
-        if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
-        {
-            broadcastMemberJoined(evt.getChatRoom(), evt.getChatRoomMember());
-        }
-        else if(
-            ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType) )
-        {
-            broadcastMemberLeft(evt.getChatRoom(), evt.getChatRoomMember());
-        }
-        else
-        {
-            logger.warn("Unsupported event type: " + eventType);
-        }
-    }
-
-    private void broadcastMemberJoined(ChatRoom chatRoom,
-                                       ChatRoomMember chatRoomMember)
+    private void broadcastMemberJoined(ChatRoom chatRoom, Listener listener, ChatRoomMember chatRoomMember)
     {
         for (MockMultiUserChat chatToNotify : groupedChats)
         {
             if (chatToNotify != chatRoom)
             {
-                chatToNotify.removeMemberPresenceListener(this);
+                // ???
+                chatToNotify.removeMemberPresenceListener(listener);
 
                 chatToNotify.mockJoin((MockRoomMember) chatRoomMember);
 
-                chatToNotify.addMemberPresenceListener(this);
+                chatToNotify.addMemberPresenceListener(listener);
             }
         }
     }
@@ -103,4 +79,29 @@ public class MockMucShare
             }
         }
     }
+
+    private class Listener
+            implements ChatRoomMemberPresenceListener
+    {
+        private final ChatRoom chatRoom;
+        private Listener(ChatRoom chatRoom)
+        {
+            this.chatRoom = chatRoom;
+        }
+
+        @Override
+        public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
+        {
+
+            if (evt instanceof Joined)
+            {
+                broadcastMemberJoined(chatRoom, this, evt.getChatRoomMember());
+            }
+            else if(evt instanceof Kicked || evt instanceof Left || evt instanceof Quit)
+            {
+                broadcastMemberLeft(chatRoom, evt.getChatRoomMember());
+            }
+        }
+    }
+
 }

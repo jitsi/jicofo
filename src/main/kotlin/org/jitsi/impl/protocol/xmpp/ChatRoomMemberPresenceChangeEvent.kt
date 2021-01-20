@@ -15,21 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp;
+package org.jitsi.impl.protocol.xmpp
 
-import org.jitsi.impl.protocol.xmpp.*;
+sealed class ChatRoomMemberPresenceChangeEvent constructor(
+    /**
+     * The chat room member that the event relates to.
+     */
+    val chatRoomMember: ChatRoomMember
+) {
+    override fun toString(): String {
+        return javaClass.simpleName + " member=" + chatRoomMember
+    }
 
-import java.util.*;
+    class Joined(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
+    class Left(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
+    class Kicked(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
+    class Quit(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
+}
 
 /**
- * A listener that will be notified of changes in the presence of a member in a
- * particular chat room. Changes may include member being kicked, join, left.
+ * A listener that will be notified of changes in the presence of a member in a particular chat room. Changes may
+ * include member being kicked, join, left.
  *
  * @author Emil Ivov
  */
-public interface ChatRoomMemberPresenceListener
-    extends EventListener
-{
+interface ChatRoomMemberPresenceListener {
     /**
      * Called to notify interested parties that a change in the presence of a
      * member in a particular chat room has occurred. Changes may include member
@@ -39,5 +49,5 @@ public interface ChatRoomMemberPresenceListener
      * containing the source chat room and type, and reason of the presence
      * change
      */
-    void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt);
+    fun memberPresenceChanged(evt: ChatRoomMemberPresenceChangeEvent?)
 }
