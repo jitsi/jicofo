@@ -9,6 +9,6 @@ Homepage: https://jitsi.org/meet
 
 Package: jicofo
 Architecture: all
-Depends: ${misc:Depends}, java8-runtime-headless | java8-runtime | java11-runtime-headless | java11-runtime
+Depends: ${misc:Depends}, java8-runtime-headless | java8-runtime | java11-runtime-headless | java11-runtime, ruby-hocon
 Description: JItsi Meet COnference FOcus
  Jicofo is a conference focus for Jitsi Meet application.

@@ -312,7 +312,6 @@ public class IqHandler
     {
         if (iq instanceof ConferenceIq)
         {
-            logger.info("Logout IQ received: " + iq.toXML());
             return conferenceIqHandler.handleIQRequest(iq);
         }
         else if (iq instanceof LoginUrlIq)

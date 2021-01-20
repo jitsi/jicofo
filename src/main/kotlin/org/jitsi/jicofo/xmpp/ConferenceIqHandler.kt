@@ -135,7 +135,12 @@ class ConferenceIqHandler(
 
     override fun handleIQRequest(iqRequest: IQ?): IQ {
         return if (iqRequest is ConferenceIq) {
-            handleConferenceIq(iqRequest)
+            // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
+            val originalFrom = iqRequest.from
+            iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
+            handleConferenceIq(iqRequest).also {
+                it.to = originalFrom
+            }
         } else {
             logger.error("Received an unexpected IQ type: $iqRequest")
             IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))

@@ -63,6 +63,7 @@ public class XmppTest
 
         ConferenceIq conferenceIq = new ConferenceIq();
 
+        conferenceIq.setFrom("from@example.com");
         conferenceIq.setRoom(roomName);
 
         IQ result = iqHandler.handleIq(conferenceIq);
