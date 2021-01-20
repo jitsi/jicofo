@@ -292,12 +292,6 @@ public class MockMultiUserChat
     }
 
     @Override
-    public void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener) { }
-
-    @Override
-    public void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener) { }
-
-    @Override
     public List<ChatRoomMember> getMembers()
     {
         return members;

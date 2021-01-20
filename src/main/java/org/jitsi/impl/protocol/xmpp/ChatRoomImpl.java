@@ -142,12 +142,6 @@ public class ChatRoomImpl
     private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
 
     /**
-     * The list of <tt>ChatRoomMemberPropertyChangeListener</tt>.
-     */
-    private final CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener> propListeners
-            = new CopyOnWriteArrayList<>();
-
-    /**
      * Local user role.
      */
     private ChatRoomMemberRole role;
@@ -503,18 +497,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener)
-    {
-        propListeners.add(listener);
-    }
-
-    @Override
-    public void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener)
-    {
-        propListeners.remove(listener);
-    }
-
-    @Override
     public List<ChatRoomMember> getMembers()
     {
         synchronized (members)
@@ -632,17 +614,6 @@ public class ChatRoomImpl
     private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent event)
     {
         listeners.forEach(l -> l.memberPresenceChanged(event));
-    }
-
-    private void notifyMemberPropertyChanged(ChatMemberImpl member)
-    {
-        ChatRoomMemberPropertyChangeEvent event
-            = new ChatRoomMemberPropertyChangeEvent(
-                    member,
-                    ChatRoomMemberPropertyChangeEvent.MEMBER_PRESENCE,
-                    null, member.getPresence());
-
-        propListeners.forEach(l -> l.chatRoomPropertyChanged(event));
     }
 
     Occupant getOccupant(ChatMemberImpl chatMember)
@@ -920,7 +891,7 @@ public class ChatRoomImpl
 
             if (!memberLeft)
             {
-                notifyMemberPropertyChanged(chatMember);
+                fireMemberPresenceEvent(new PresenceUpdated(chatMember));
             }
         }
     }

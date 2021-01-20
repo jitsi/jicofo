@@ -43,7 +43,6 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  */
 public abstract class BaseBrewery<T extends ExtensionElement>
     implements ChatRoomMemberPresenceListener,
-               ChatRoomMemberPropertyChangeListener,
                 RegistrationListener
 {
     /**
@@ -171,7 +170,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         {
             chatRoom = protocolProvider.getProtocolProvider().createRoom(breweryJid);
             chatRoom.addMemberPresenceListener(this);
-            chatRoom.addMemberPropertyChangeListener(this);
             chatRoom.join();
 
             logger.info("Joined brewery room: " + breweryJid);
@@ -184,7 +182,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             if (chatRoom != null)
             {
                 chatRoom.removeMemberPresenceListener(this);
-                chatRoom.removeMemberPropertyChangeListener(this);
                 chatRoom = null;
             }
         }
@@ -200,7 +197,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             if(chatRoom != null)
             {
                 chatRoom.removeMemberPresenceListener(this);
-                chatRoom.removeMemberPropertyChangeListener(this);
                 chatRoom.leave();
 
                 logger.info("Left brewery room: " + breweryJid);
@@ -220,7 +216,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     synchronized public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent presenceEvent)
     {
         ChatRoomMember chatMember = presenceEvent.getChatRoomMember();
-        if (presenceEvent instanceof Joined)
+        if (presenceEvent instanceof Joined || presenceEvent instanceof PresenceUpdated)
         {
             // Process idle or busy
             processMemberPresence(chatMember);
@@ -237,15 +233,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
                 removeInstance(instance);
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void chatRoomPropertyChanged(ChatRoomMemberPropertyChangeEvent memberPropertyEvent)
-    {
-        processMemberPresence(memberPropertyEvent.getSourceChatRoomMember());
     }
 
     /**
@@ -280,8 +267,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return;
         }
 
-        T ext
-            = presence.getExtension(extensionElementName, extensionNamespace);
+        T ext = presence.getExtension(extensionElementName, extensionNamespace);
 
         // if the extension is missing skip processing
         if (ext == null)
