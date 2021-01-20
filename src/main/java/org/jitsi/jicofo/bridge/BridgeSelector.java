@@ -108,25 +108,30 @@ public class BridgeSelector
      * @param stats the last reported statistics
      * @return the {@link Bridge} instance for thee given JID.
      */
-    synchronized public Bridge addJvbAddress(Jid bridgeJid, ColibriStatsExtension stats)
+    public Bridge addJvbAddress(Jid bridgeJid, ColibriStatsExtension stats)
     {
-        Bridge bridge = bridges.get(bridgeJid);
-        if (bridge != null)
+        Bridge newBridge;
+        synchronized(this)
         {
-            bridge.setStats(stats);
-            return bridge;
-        }
+            Bridge bridge = bridges.get(bridgeJid);
+            if (bridge != null)
+            {
+                bridge.setStats(stats);
+                return bridge;
+            }
 
-        Bridge newBridge = new Bridge(bridgeJid);
-        if (stats != null)
-        {
-            newBridge.setStats(stats);
+            newBridge = new Bridge(bridgeJid);
+            if (stats != null)
+            {
+                newBridge.setStats(stats);
+            }
+            logger.info("Added new videobridge: " + newBridge);
+            bridges.put(bridgeJid, newBridge);
         }
-        logger.info("Added new videobridge: " + newBridge);
-        bridges.put(bridgeJid, newBridge);
 
         notifyBridgeUp(newBridge);
         jvbDoctor.addBridge(newBridge.getJid());
+
         return newBridge;
     }
 
@@ -137,11 +142,15 @@ public class BridgeSelector
      * @param bridgeJid the JID of videobridge to be removed from this selector's
      *                  set of videobridges.
      */
-    synchronized public void removeJvbAddress(Jid bridgeJid)
+    public void removeJvbAddress(Jid bridgeJid)
     {
-        logger.info("Removing JVB: " + bridgeJid);
+        Bridge bridge;
+        synchronized(this)
+        {
+            logger.info("Removing JVB: " + bridgeJid);
 
-        Bridge bridge = bridges.remove(bridgeJid);
+            bridge = bridges.remove(bridgeJid);
+        }
 
         if (bridge != null)
         {
@@ -299,18 +308,6 @@ public class BridgeSelector
     public void shutdown()
     {
         jvbDoctor.shutdown();
-    }
-
-    /**
-     * @return the {@link Bridge} for the bridge with a particular XMPP JID.
-     * @param jid the JID of the bridge.
-     */
-    public Bridge getBridge(Jid jid)
-    {
-        synchronized (bridges)
-        {
-            return bridges.get(jid);
-        }
     }
 
     public int getBridgeCount()
