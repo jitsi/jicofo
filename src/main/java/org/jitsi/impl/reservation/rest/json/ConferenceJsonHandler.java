@@ -82,8 +82,9 @@ public class ConferenceJsonHandler
     /**
      * Date format used to parse/serialize dates.
      */
-    public static final SimpleDateFormat DATE_FORMAT
-            = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+    public static final String DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
+
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_STRING);
 
     /**
      * {@inheritDoc}
@@ -111,18 +112,14 @@ public class ConferenceJsonHandler
         {
             assertString(primitive);
 
-            if (checkImmutableString(
-                    editedInstance.getName().toString(),
-                    (String) primitive, CONF_NAME_KEY))
+            if (checkImmutableString(editedInstance.getName().toString(), (String) primitive, CONF_NAME_KEY))
             {
                 editedInstance.setName(Localpart.from((String)primitive));
             }
         }
         else if (CONF_OWNER_KEY.equals(currentKey))
         {
-            if (checkImmutableString(
-                    editedInstance.getOwner(),
-                    (String) primitive, CONF_OWNER_KEY))
+            if (checkImmutableString(editedInstance.getOwner(), (String) primitive, CONF_OWNER_KEY))
             {
                 editedInstance.setOwner((String) primitive);
             }
@@ -145,15 +142,13 @@ public class ConferenceJsonHandler
 
             try
             {
-                editedInstance.setStartTime(
-                        DATE_FORMAT.parse((String) primitive));
+                editedInstance.setStartTime(dateFormat.parse((String) primitive));
             }
             catch (java.text.ParseException e)
             {
                 logger.error(e, e);
 
-                throw new ParseException(
-                        ParseException.ERROR_UNEXPECTED_TOKEN, primitive);
+                throw new ParseException(ParseException.ERROR_UNEXPECTED_TOKEN, primitive);
             }
         }
         else if (CONF_DURATION_KEY.equals(currentKey))
@@ -170,8 +165,7 @@ public class ConferenceJsonHandler
             }
             else
             {
-                throw new ParseException(
-                    ParseException.ERROR_UNEXPECTED_TOKEN, primitive);
+                throw new ParseException(ParseException.ERROR_UNEXPECTED_TOKEN, primitive);
             }
         }
         return true;

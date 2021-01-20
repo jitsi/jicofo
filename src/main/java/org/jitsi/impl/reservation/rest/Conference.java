@@ -17,10 +17,12 @@
  */
 package org.jitsi.impl.reservation.rest;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.impl.reservation.rest.json.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 
+import java.text.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
@@ -30,6 +32,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  *
  * @author Pawel Domas
  */
+@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
 public class Conference
 {
     /**
@@ -79,6 +82,8 @@ public class Conference
      * Sip gateway instance identifier.
      */
     private Number sipId;
+
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat(ConferenceJsonHandler.DATE_FORMAT_STRING);
 
     /**
      * Creates new empty instance of <tt>Conference</tt>.
@@ -284,24 +289,6 @@ public class Conference
     }
 
     /**
-     * Converts given time in millis into string representation in format
-     * HH:MM. Value will be stored only if it's greater or equal to zero.
-     *
-     * @param map destination object map
-     * @param key key name under which output string will be stored.
-     * @param time time in millis to be converted into string
-     */
-    private void putTime(Map<String, Object> map, String key, long time)
-    {
-        if (time >= 0)
-        {
-            long hours = time / 3600000L;
-            long minutes = (time % 3600000L) / 60000L;
-            map.put(key, String.format("%1$02d:%2$02d", hours, minutes));
-        }
-    }
-
-    /**
      * Formats given <tt>Date</tt> using {@link ConferenceJsonHandler
      * #DATE_FORMAT} and stores it in output JSON object map fi given value
      * is not null.
@@ -314,7 +301,7 @@ public class Conference
     {
         if (date != null)
         {
-            map.put(key, ConferenceJsonHandler.DATE_FORMAT.format(date));
+            map.put(key, dateFormat.format(date));
         }
     }
 

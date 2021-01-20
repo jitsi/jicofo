@@ -78,6 +78,9 @@ public class UtilityJingleOpSet
                     mockParticipant.processStanza(iqRequest);
                 }
                 break;
+            default:
+                logger.warn("Unhandled Jingle action: " + jingleIQ.getAction());
+                break;
         }
 
         return null;

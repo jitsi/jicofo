@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
@@ -62,10 +63,12 @@ import java.util.stream.*;
  * This seems safe, but it is hard to maintain this way, and we should
  * re-factor to simplify.
  *
+ * TODO: fix inconsistent synchronization.
  *
  * @author Pawel Domas
  * @author Boris Grozev
  */
+@SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference,
                RegistrationListener,
@@ -93,21 +96,19 @@ public class JitsiMeetConferenceImpl
      */
     private final JitsiMeetConferenceImpl.ConferenceListener listener;
 
-    /**
-     * The logger for this instance. Uses the logging level either the one of
-     * {@link #classLogger} or the one passed to the constructor, whichever
-     * is higher.
-     */
+    @NotNull
     private final Logger logger;
 
     /**
      * The instance of conference configuration.
      */
+    @NotNull
     private final JitsiMeetConfig config;
 
     /**
      * XMPP protocol provider handler used by the focus.
      */
+    @NotNull
     private final ProtocolProviderHandler protocolProviderHandler;
 
     /**
@@ -115,6 +116,7 @@ public class JitsiMeetConferenceImpl
      * with properties defined in {@link BridgeMucDetector} it wil be the same
      * as {@link #protocolProviderHandler}
      */
+    @NotNull
     private final ProtocolProviderHandler jvbXmppConnection;
 
     /**
@@ -214,7 +216,7 @@ public class JitsiMeetConferenceImpl
      * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
      * by this <tt>JitsiMeetConference</tt> instance.
      */
-    private ScheduledExecutorService executor;
+    private final ScheduledExecutorService executor;
 
     /**
      * The list of {@link BridgeSession} currently in use by this conference.
@@ -239,6 +241,8 @@ public class JitsiMeetConferenceImpl
 
     private final BridgeSelectorEventHandler bridgeSelectorEventHandler = new BridgeSelectorEventHandler();
 
+    @NotNull private final JicofoServices jicofoServices;
+
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
@@ -253,18 +257,18 @@ public class JitsiMeetConferenceImpl
     public JitsiMeetConferenceImpl(
             EntityBareJid roomName,
             Resourcepart focusUserName,
-            ProtocolProviderHandler protocolProviderHandler,
-            ProtocolProviderHandler jvbXmppConnection,
+            @NotNull ProtocolProviderHandler protocolProviderHandler,
+            @NotNull ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
-            JitsiMeetConfig config,
+            @NotNull JitsiMeetConfig config,
             Level logLevel,
             long gid,
             boolean includeInStatistics)
     {
         this.logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
-        this.protocolProviderHandler = Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
-        this.jvbXmppConnection = Objects.requireNonNull(jvbXmppConnection, "jvbXmppConnection");
-        this.config = Objects.requireNonNull(config, "config");
+        this.protocolProviderHandler = protocolProviderHandler;
+        this.jvbXmppConnection = jvbXmppConnection;
+        this.config = config;
 
         this.gid = gid;
         this.roomName = roomName;
@@ -272,15 +276,19 @@ public class JitsiMeetConferenceImpl
         this.listener = listener;
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
+
+        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
+        this.jicofoServices = jicofoServices;
+        executor = jicofoServices.getScheduledPool();
     }
 
     public JitsiMeetConferenceImpl(
             EntityBareJid roomName,
             Resourcepart focusUserName,
-            ProtocolProviderHandler protocolProviderHandler,
-            ProtocolProviderHandler jvbXmppConnection,
+            @NotNull ProtocolProviderHandler protocolProviderHandler,
+            @NotNull ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
-            JitsiMeetConfig config,
+            @NotNull JitsiMeetConfig config,
             Level logLevel,
             long gid)
     {
@@ -320,9 +328,7 @@ public class JitsiMeetConferenceImpl
 
             jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
 
-            executor = JicofoServices.jicofoServicesSingleton.getScheduledPool();
-
-            BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
+            BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
             if (protocolProviderHandler.isRegistered())
@@ -332,7 +338,7 @@ public class JitsiMeetConferenceImpl
 
             protocolProviderHandler.addRegistrationListener(this);
 
-            JibriDetector jibriDetector = JicofoServices.jicofoServicesSingleton.getJibriDetector();
+            JibriDetector jibriDetector = jicofoServices.getJibriDetector();
             if (jibriDetector != null && jibriOpSet != null)
             {
                 jibriRecorder
@@ -345,7 +351,7 @@ public class JitsiMeetConferenceImpl
                 jibriOpSet.addJibri(jibriRecorder);
             }
 
-            JibriDetector sipJibriDetector = JicofoServices.jicofoServicesSingleton.getSipJibriDetector();
+            JibriDetector sipJibriDetector = jicofoServices.getSipJibriDetector();
             if (sipJibriDetector != null && jibriOpSet != null)
             {
                 jibriSipGateway
@@ -420,7 +426,7 @@ public class JitsiMeetConferenceImpl
 
         protocolProviderHandler.removeRegistrationListener(this);
 
-        BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
+        BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         bridgeSelector.removeHandler(bridgeSelectorEventHandler);
 
         try
@@ -486,7 +492,7 @@ public class JitsiMeetConferenceImpl
         transcriberManager = new TranscriberManager(
             protocolProviderHandler,
             this,
-            JicofoServices.jicofoServicesSingleton.getJigasiDetector());
+            jicofoServices.getJigasiDetector());
         transcriberManager.init();
 
         chatRoom.join();
@@ -627,10 +633,16 @@ public class JitsiMeetConferenceImpl
      * Creates a new {@link ColibriConference} instance for use by this
      * {@link JitsiMeetConferenceImpl}.
      */
+    // False positive
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        ColibriConferenceImpl colibriConference
-                = new ColibriConferenceImpl(jvbXmppConnection.getProtocolProvider().getXmppConnection());
+        XmppProvider jvbXmppProvider = jvbXmppConnection.getProtocolProvider();
+        Objects.requireNonNull(jvbXmppProvider);
+        XmppConnection xmppConnection = jvbXmppProvider.getXmppConnection();
+        Objects.requireNonNull(xmppConnection);
+
+        ColibriConferenceImpl colibriConference = new ColibriConferenceImpl(xmppConnection);
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 
@@ -665,17 +677,10 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            final Participant participant
-                = new Participant(
-                        this,
-                        chatRoomMember,
-                        ConferenceConfig.config.getMaxSsrcsPerUser());
+            final Participant participant = new Participant(this, chatRoomMember);
 
             participants.add(participant);
-            inviteParticipant(
-                    participant,
-                    false,
-                    hasToStartMuted(participant, justJoined));
+            inviteParticipant(participant, false, hasToStartMuted(participant, justJoined));
         }
     }
 
@@ -697,7 +702,7 @@ public class JitsiMeetConferenceImpl
         }
 
         // Select a Bridge for the new participant.
-        BridgeSelector bridgeSelector = JicofoServices.jicofoServicesSingleton.getBridgeSelector();
+        BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         Bridge bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)
@@ -828,7 +833,7 @@ public class JitsiMeetConferenceImpl
                         reInvite);
 
             participant.setChannelAllocator(channelAllocator);
-            JicofoServices.jicofoServicesSingleton.getChannelAllocationExecutor().submit(channelAllocator);
+            jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
 
             if (reInvite)
             {
@@ -2393,8 +2398,10 @@ public class JitsiMeetConferenceImpl
      *
      * @param startMuted the new value to set on this instance. The specified
      * array is copied.
+     * TODO: this shit will go away when "start muted" is moved to the client
      */
     @Override
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public void setStartMuted(boolean[] startMuted)
     {
         this.startMuted = startMuted;
@@ -2545,7 +2552,7 @@ public class JitsiMeetConferenceImpl
 
     private FocusManager getFocusManager()
     {
-        return JicofoServices.jicofoServicesSingleton.getFocusManager();
+        return jicofoServices.getFocusManager();
     }
 
     /**
@@ -2939,7 +2946,7 @@ public class JitsiMeetConferenceImpl
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant);
             octoParticipant.setChannelAllocator(channelAllocator);
 
-            JicofoServices.jicofoServicesSingleton.getChannelAllocationExecutor().submit(channelAllocator);
+            jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
 
             return octoParticipant;
         }

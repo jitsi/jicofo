@@ -19,6 +19,7 @@ import org.jitsi.jicofo.*;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.util.*;
 
 /**
  * Adds statistics REST endpoint exposes some internal Jicofo stats.
@@ -35,6 +36,8 @@ public class Statistics
     @SuppressWarnings("unchecked")
     public String getStats()
     {
-        return JicofoServices.jicofoServicesSingleton.getStats().toJSONString();
+        JicofoServices jicofoServices
+                = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton, "jicofoServices");
+        return jicofoServices.getStats().toJSONString();
     }
 }

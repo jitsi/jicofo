@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import edu.umd.cs.findbugs.annotations.*;
+import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.*;
@@ -64,7 +66,9 @@ public class JibriSession
     /**
      * The JID of the Jibri currently being used by this session or
      * <tt>null</tt> otherwise.
+     * TODO: Fix the inconsistent synchronization
      */
+    @SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
     private Jid currentJibriJid;
 
     /**
@@ -455,17 +459,13 @@ public class JibriSession
         JibriIq.Status status = iq.getStatus();
         if (!JibriIq.Status.UNDEFINED.equals(status))
         {
-            logger.info(
-                "Updating status from JIBRI: "
-                    + iq.toXML() + " for " + roomName);
+            logger.info("Updating status from JIBRI: " + iq.toXML() + " for " + roomName);
 
-            handleJibriStatusUpdate(
-                iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
+            handleJibriStatusUpdate(iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
         }
         else
         {
-            logger.error(
-                "Received UNDEFINED status from jibri: " + iq.toString());
+            logger.error("Received UNDEFINED status from jibri: " + iq.toString());
         }
     }
 

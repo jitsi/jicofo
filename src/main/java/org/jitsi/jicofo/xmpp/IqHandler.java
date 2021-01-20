@@ -249,7 +249,8 @@ public class IqHandler
             .collect(Collectors.toSet());
 
         // Check if Jigasi is available
-        JigasiDetector detector = JicofoServices.jicofoServicesSingleton.getJigasiDetector();
+        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
+        JigasiDetector detector = jicofoServices.getJigasiDetector();
         Jid jigasiJid = detector == null ? null : detector.selectJigasi(exclude, bridgeRegions);
 
         if (jigasiJid == null)

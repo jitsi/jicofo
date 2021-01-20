@@ -31,7 +31,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for authentication modules.
@@ -93,13 +92,13 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
 
         IqHandler iqHandler = osgi.jicofoServices.getIqHandler();
-        IQ response = iqHandler.handleIq(query);
+        IQ errorResponse = iqHandler.handleIq(query);
 
         // REPLY WITH: not-authorized
-        assertNotNull(response);
+        assertNotNull(errorResponse);
         assertEquals(
                 XMPPError.Condition.not_authorized,
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 2: Auth domain, no session-id and room does not exist
         query.setFrom(user1AuthJid);
@@ -107,11 +106,10 @@ public class XMPPAuthenticationAuthorityTest
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        response = iqHandler.handleIq(query);
+        ConferenceIq conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
 
         // REPLY WITH: null - no errors, session-id set in response
-        assertTrue(response instanceof ConferenceIq);
-        String user1SessionId = ((ConferenceIq) response).getSessionId();
+        String user1SessionId = conferenceIqResponse.getSessionId();
         assertNotNull(user1SessionId);
 
         // CASE 3: guest domain, no session-id, room exists
@@ -119,11 +117,10 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setMachineUID(user2MachineUid);
 
-        response = iqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
 
         // REPLY with null - no errors, no session-id in response
-        assertTrue(response instanceof ConferenceIq);
-        assertNull(((ConferenceIq) response).getSessionId());
+        assertNull(conferenceIqResponse.getSessionId());
 
 
         //CASE 4: guest domain, session-id, room does not exists
@@ -132,21 +129,20 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
         query.setRoom(room2);
 
-        response = iqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
 
         // REPLY with null - no errors, session-id in response(repeated)
-        assertTrue(response instanceof ConferenceIq);
-        assertEquals(user1SessionId, ((ConferenceIq) response).getSessionId());
+        assertEquals(user1SessionId, conferenceIqResponse.getSessionId());
 
         // CASE 5: guest jid, invalid session-id, room exists
         query.setFrom(user2GuestJid);
         query.setSessionId("someinvalidsessionid");
         query.setMachineUID(user2MachineUid);
 
-        response = iqHandler.handleIq(query);
+        errorResponse = iqHandler.handleIq(query);
 
         // REPLY with session-invalid
-        assertNotNull(response.getError().getExtension(
+        assertNotNull(errorResponse.getError().getExtension(
                 SessionInvalidPacketExtension.ELEMENT_NAME,
                 SessionInvalidPacketExtension.NAMESPACE));
 
@@ -155,36 +151,36 @@ public class XMPPAuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        response = iqHandler.handleIq(query);
+        errorResponse = iqHandler.handleIq(query);
 
         // not-acceptable
         assertEquals(
                 XMPPError.Condition.not_acceptable,
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 7: auth jid, but stolen session id
         query.setSessionId(user1SessionId);
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        response = iqHandler.handleIq(query);
+        errorResponse = iqHandler.handleIq(query);
 
         // not-acceptable
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 8: guest jid, session used without machine UID
         query.setFrom(user1GuestJid);
         query.setSessionId(user1SessionId);
         query.setMachineUID(null);
 
-        response = iqHandler.handleIq(query);
+        errorResponse = iqHandler.handleIq(query);
 
         // not-acceptable
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 9: auth jid, try to create session without machine UID
         query.setRoom(room3);
@@ -192,12 +188,12 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setMachineUID(null);
 
-        response = iqHandler.handleIq(query);
+        errorResponse = iqHandler.handleIq(query);
 
         // not-acceptable
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 10: same user, different machine UID - assign separate session
         String user3MachineUID = "user3machineUID";
@@ -205,10 +201,8 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user3MachineUID);
         query.setSessionId(null);
 
-        response = iqHandler.handleIq(query);
-
-        assertTrue(response instanceof ConferenceIq);
-        String user3SessionId = ((ConferenceIq) response).getSessionId();
+        conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
+        String user3SessionId = conferenceIqResponse.getSessionId();
 
         assertNotNull(user3SessionId);
         assertNotEquals(user1SessionId, user3SessionId);

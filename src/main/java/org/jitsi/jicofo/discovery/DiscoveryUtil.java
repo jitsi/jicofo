@@ -40,21 +40,14 @@ public class DiscoveryUtil
     private final static Logger logger = new LoggerImpl(DiscoveryUtil.class.getName());
 
     /**
-     * List contains default feature set.
-     */
-    private static ArrayList<String> defaultFeatures;
-
-    /**
      * Audio RTP feature name.
      */
-    public final static String FEATURE_AUDIO
-            = "urn:xmpp:jingle:apps:rtp:audio";
+    public final static String FEATURE_AUDIO = "urn:xmpp:jingle:apps:rtp:audio";
 
     /**
      * Video RTP feature name.
      */
-    public final static String FEATURE_VIDEO
-            = "urn:xmpp:jingle:apps:rtp:video";
+    public final static String FEATURE_VIDEO = "urn:xmpp:jingle:apps:rtp:video";
 
     /**
      * ICE feature name.
@@ -105,6 +98,23 @@ public class DiscoveryUtil
      * muted.
      */
     public final static String FEATURE_AUDIO_MUTE = "http://jitsi.org/protocol/audio-mute";
+
+    private static final List<String> defaultFeatures = Arrays.asList(
+            FEATURE_AUDIO,
+            FEATURE_VIDEO,
+            FEATURE_ICE,
+            FEATURE_SCTP,
+            FEATURE_DTLS,
+            FEATURE_RTCP_MUX,
+            FEATURE_RTP_BUNDLE);
+
+    /**
+     * Returns default participant feature set(all features).
+     */
+    static public List<String> getDefaultParticipantFeatureSet()
+    {
+        return defaultFeatures;
+    }
 
     /**
      * Gets the list of features supported by participant. If we fail to
@@ -170,32 +180,9 @@ public class DiscoveryUtil
         }
         else
         {
-            logger.info(
-                String.format(
-                    "Successfully discovered features for %s in %d",
-                    address,
-                    tookMillis));
+            logger.info(String.format("Successfully discovered features for %s in %d", address, tookMillis));
         }
 
         return participantFeatures;
-    }
-
-    /**
-     * Returns default participant feature set(all features).
-     */
-    static public List<String> getDefaultParticipantFeatureSet()
-    {
-        if (defaultFeatures == null)
-        {
-            defaultFeatures = new ArrayList<>();
-            defaultFeatures.add(FEATURE_AUDIO);
-            defaultFeatures.add(FEATURE_VIDEO);
-            defaultFeatures.add(FEATURE_ICE);
-            defaultFeatures.add(FEATURE_SCTP);
-            defaultFeatures.add(FEATURE_DTLS);
-            defaultFeatures.add(FEATURE_RTCP_MUX);
-            defaultFeatures.add(FEATURE_RTP_BUNDLE);
-        }
-        return defaultFeatures;
     }
 }

@@ -124,9 +124,10 @@ public class FocusManager
         expireThread.start();
 
         int octoId = 0;
-        if (OctoConfig.config.getId() != null)
+        Integer configuredId = OctoConfig.config.getId();
+        if (configuredId != null)
         {
-            octoId = OctoConfig.config.getId();
+            octoId = configuredId;
         }
         if (octoId < 1 || octoId > 0xffff)
         {

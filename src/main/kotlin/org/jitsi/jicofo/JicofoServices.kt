@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
@@ -66,6 +67,7 @@ import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 /**
  * Start/stop jicofo-specific services.
  */
+@SuppressFBWarnings("MS_CANNOT_BE_FINAL")
 open class JicofoServices {
     private val logger = createLogger()
 

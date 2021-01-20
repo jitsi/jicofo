@@ -37,6 +37,7 @@ import org.jxmpp.jid.impl.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * FIXME: include into test suite(problems between OSGi restarts)

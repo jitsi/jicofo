@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -106,19 +107,12 @@ public class Participant
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
      *                   participant in MUC conference room.
-     *
-     * @param maxSourceCount how many unique sources per media this participant
-     *                     instance will be allowed to advertise.
      */
-    public Participant(JitsiMeetConference conference,
-                       ChatRoomMember roomMember,
-                       int maxSourceCount)
+    public Participant(@NotNull JitsiMeetConference conference, @NotNull ChatRoomMember roomMember)
     {
         super(conference.getLogger());
-        Objects.requireNonNull(conference, "conference");
 
-        this.roomMember = Objects.requireNonNull(roomMember, "roomMember");
-        this.maxSourceCount = maxSourceCount;
+        this.roomMember = roomMember;
         this.logger = new LoggerImpl(getClass().getName(), conference.getLogger().getLevel());
     }
 

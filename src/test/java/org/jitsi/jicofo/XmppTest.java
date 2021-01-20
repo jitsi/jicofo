@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.impl.reservation.rest.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.xmpp.*;
 
@@ -48,7 +49,6 @@ public class XmppTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -66,8 +66,7 @@ public class XmppTest
         conferenceIq.setFrom("from@example.com");
         conferenceIq.setRoom(roomName);
 
-        IQ result = iqHandler.handleIq(conferenceIq);
+        ConferenceIq result = (ConferenceIq) iqHandler.handleIq(conferenceIq);
         assertNotNull(result);
-        assertTrue(result instanceof ConferenceIq);
     }
 }

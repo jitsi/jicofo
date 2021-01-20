@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.recording.jibri.*;
@@ -40,6 +41,8 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.io.*;
+import java.lang.*;
+import java.lang.SuppressWarnings;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -49,8 +52,11 @@ import static org.jivesoftware.smack.SmackException.*;
  * XMPP protocol provider service used by Jitsi Meet focus to create anonymous
  * accounts. Implemented with Smack.
  *
+ * TODO: fix inconsistent synchronization.
+ *
  * @author Pawel Domas
  */
+@SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
 public class XmppProtocolProvider
     extends AbstractXmppProvider
 {

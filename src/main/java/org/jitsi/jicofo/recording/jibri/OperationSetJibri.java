@@ -20,6 +20,7 @@ package org.jitsi.jicofo.recording.jibri;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -105,7 +106,12 @@ public class OperationSetJibri
         // Do initializations which require valid connection
         if (registered)
         {
-            protocolProvider.getXmppConnectionRaw().registerIQRequestHandler(this);
+            XMPPConnection xmppConnection = protocolProvider.getXmppConnectionRaw();
+            if (xmppConnection == null)
+            {
+                throw new IllegalStateException("XMPPConnection is null while registered.");
+            }
+            xmppConnection.registerIQRequestHandler(this);
         }
     }
 }
