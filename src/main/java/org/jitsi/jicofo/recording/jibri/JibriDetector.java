@@ -18,11 +18,11 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import kotlin.*;
-import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
