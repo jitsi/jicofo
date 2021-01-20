@@ -198,19 +198,4 @@ public class DiscoveryUtil
         }
         return defaultFeatures;
     }
-
-    /**
-     * Returns <tt>true</tt> if <tt>list1</tt> and <tt>list2</tt> contain the
-     * same elements where items order is not relevant.
-     * @param list1 the first list of <tt>String</tt> to be compared against
-     *              the second list.
-     * @param list2 the second list of <tt>String</tt> to be compared against
-     *              the first list.
-     */
-    static public boolean areTheSame(List<String> list1, List<String> list2)
-    {
-        return list1.size() == list2.size()
-            && list2.containsAll(list1)
-            && list1.containsAll(list2);
-    }
 }

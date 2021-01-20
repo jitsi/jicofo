@@ -34,8 +34,7 @@ import java.util.concurrent.*;
 import java.util.stream.*;
 
 /**
- * The {@link TranscriberManager} class is responsible for listening to
- * {@link ChatRoomMemberPropertyChangeEvent}s to see whether a
+ * The {@link TranscriberManager} class is responsible for listening to presence updates to see whether a
  * {@link ChatRoomMember} is requesting a transcriber by adding a
  * {@link TranscriptionLanguageExtension} to their {@link Presence}.
  *
@@ -96,10 +95,6 @@ public class TranscriberManager
         this.jigasiDetector = jigasiDetector;
     }
 
-    /**
-     * Initialise the manager by starting to listen for
-     * {@link ChatRoomMemberPropertyChangeEvent}s.
-     */
     public void init()
     {
         if(executorService != null)
@@ -114,10 +109,6 @@ public class TranscriberManager
         logger.debug("initialised transcriber manager");
     }
 
-    /**
-     * Stop the manager by stopping to listen for
-     * {@link ChatRoomMemberPropertyChangeEvent}s.
-     */
     public void dispose()
     {
         executorService.shutdown();
