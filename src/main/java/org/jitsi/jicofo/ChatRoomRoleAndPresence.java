@@ -140,7 +140,7 @@ public class ChatRoomRoleAndPresence
             }
             conference.onMemberJoined(sourceMember);
         }
-        else if (evt instanceof Left || evt instanceof Kicked || evt instanceof Quit)
+        else if (evt instanceof Left || evt instanceof Kicked)
         {
             if (owner == sourceMember)
             {

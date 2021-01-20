@@ -30,7 +30,6 @@ sealed class ChatRoomMemberPresenceChangeEvent constructor(
     class Joined(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
     class Left(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
     class Kicked(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
-    class Quit(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
     // The state didn't changed, but the presence extension itself was updated.
     class PresenceUpdated(chatRoomMember: ChatRoomMember) : ChatRoomMemberPresenceChangeEvent(chatRoomMember)
 }

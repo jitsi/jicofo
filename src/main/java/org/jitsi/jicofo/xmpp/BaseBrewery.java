@@ -221,9 +221,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             // Process idle or busy
             processMemberPresence(chatMember);
         }
-        else if (presenceEvent instanceof Left
-            || presenceEvent instanceof Kicked
-            || presenceEvent instanceof Quit)
+        else if (presenceEvent instanceof Left || presenceEvent instanceof Kicked)
         {
             // Process offline status
             BrewInstance instance = find(getJid(chatMember));

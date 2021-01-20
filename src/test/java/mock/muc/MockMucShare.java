@@ -97,7 +97,7 @@ public class MockMucShare
             {
                 broadcastMemberJoined(chatRoom, this, evt.getChatRoomMember());
             }
-            else if(evt instanceof Kicked || evt instanceof Left || evt instanceof Quit)
+            else if(evt instanceof Kicked || evt instanceof Left)
             {
                 broadcastMemberLeft(chatRoom, evt.getChatRoomMember());
             }

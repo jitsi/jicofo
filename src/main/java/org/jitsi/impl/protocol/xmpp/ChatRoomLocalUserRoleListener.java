@@ -17,10 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
-
-import java.util.*;
-
 /**
  * A listener that will be notified of changes in the role of the local
  * user participant in a particular chat room. Changes could be us being granted
@@ -29,7 +25,6 @@ import java.util.*;
  * @author Stephane Remy
  */
 public interface ChatRoomLocalUserRoleListener
-    extends EventListener
 {
     /**
      * Called to notify interested parties that a change in the role of the
