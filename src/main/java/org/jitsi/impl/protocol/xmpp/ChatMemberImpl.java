@@ -85,11 +85,6 @@ public class ChatMemberImpl
     private ChatRoomMemberRole role;
 
     /**
-     * Stores video muted status if any.
-     */
-    private Boolean videoMuted;
-
-    /**
      * Stores statistics ID for the member.
      */
     private String statsId;
@@ -177,12 +172,6 @@ public class ChatMemberImpl
         return joinOrderNumber;
     }
 
-    @Override
-    public Boolean hasVideoMuted()
-    {
-        return videoMuted;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -211,22 +200,6 @@ public class ChatMemberImpl
         }
 
         this.presence = presence;
-
-        VideoMutedExtension videoMutedExt
-            = presence.getExtension(
-                VideoMutedExtension.ELEMENT_NAME,
-                VideoMutedExtension.NAMESPACE);
-
-        if (videoMutedExt != null)
-        {
-            Boolean newStatus = videoMutedExt.isVideoMuted();
-            if (newStatus != videoMuted)
-            {
-                logger.debug(getName() + " video muted: " + newStatus);
-
-                videoMuted = newStatus;
-            }
-        }
 
         UserInfoPacketExt userInfoPacketExt
             = presence.getExtension(UserInfoPacketExt.ELEMENT_NAME, UserInfoPacketExt.NAMESPACE);

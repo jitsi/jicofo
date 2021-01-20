@@ -92,13 +92,6 @@ public class MockRoomMember
     }
 
     @Override
-    public Boolean hasVideoMuted()
-    {
-        // FIXME: not implemented
-        return null;
-    }
-
-    @Override
     public boolean isRobot()
     {
         return false;

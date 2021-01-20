@@ -361,16 +361,6 @@ public class Participant
     }
 
     /**
-     * Return a <tt>Boolean</tt> which informs about this participant's video
-     * muted status. The <tt>null</tt> value stands for 'unknown'/not signalled,
-     * <tt>true</tt> for muted and <tt>false</tt> means unmuted.
-     */
-    public Boolean isVideoMuted()
-    {
-        return roomMember.hasVideoMuted();
-    }
-
-    /**
      * Extracts and stores transport information from given map of Jingle
      * content.  If we already have the transport information it will be
      * merged into the currently stored one with
