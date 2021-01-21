@@ -12,7 +12,7 @@ case "$1" in
         OLDCONFIG="false"
         if [ -f $CONFIG ]; then
             . $CONFIG
-            if [ -n "$JICOFO_HOSTNAME" ] && [ -n "$JICOFO_PORT" ] && [ -n "$JICOFO_SECRET" ] \
+            if [ -n "$JICOFO_HOSTNAME" ] \
                 && [ -n "$JICOFO_AUTH_DOMAIN" ] && [ -n "$JICOFO_AUTH_USER" ] && [ -n "$JICOFO_AUTH_PASSWORD" ]; then
                 OLDCONFIG="true"
             fi
@@ -36,16 +36,6 @@ case "$1" in
 
             JICOFO_HOSTNAME="$JVB_HOSTNAME"
 
-            # generate secret only for new installs
-            if [ "$OLDCONFIG" = "false" ]; then
-                db_get jicofo/jicofosecret
-                if [ -z "$RET" ] ; then
-                    # 8-chars random secret, alternative to pwgen 8
-                    RET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
-                fi
-                JICOFO_SECRET="$RET"
-            fi
-            JICOFO_PORT=5347
             JICOFO_AUTH_DOMAIN="auth.$JICOFO_HOSTNAME"
             JICOFO_AUTH_USER="focus"
             db_get jicofo/jicofo-authpassword
@@ -54,19 +44,13 @@ case "$1" in
             fi
             JICOFO_AUTH_PASSWORD="$RET"
 
-            # storing default
+            # storing default. TODO: move this to jicofo.conf
             echo '# Jitsi Conference Focus settings' > $CONFIG
             echo '# sets the host name of the XMPP server' >> $CONFIG
             echo "JICOFO_HOST=localhost" >> $CONFIG
             echo >> $CONFIG
             echo '# sets the XMPP domain (default: none)' >> $CONFIG
             echo "JICOFO_HOSTNAME=$JICOFO_HOSTNAME" >> $CONFIG
-            echo >> $CONFIG
-            echo '# sets the secret used to authenticate as an XMPP component' >> $CONFIG
-            echo "JICOFO_SECRET=$JICOFO_SECRET" >> $CONFIG
-            echo >> $CONFIG
-            echo '# sets the port to use for the XMPP component connection' >> $CONFIG
-            echo "JICOFO_PORT=$JICOFO_PORT" >> $CONFIG
             echo >> $CONFIG
             echo '# sets the XMPP domain name to use for XMPP user logins' >> $CONFIG
             echo "JICOFO_AUTH_DOMAIN=$JICOFO_AUTH_DOMAIN" >> $CONFIG
@@ -93,7 +77,6 @@ case "$1" in
         # from old packages, otherwise we can do it only on new configuraiton or reconfiguration
         db_set jicofo/jicofo-authuser "$JICOFO_AUTH_USER"
         db_set jicofo/jicofo-authpassword "$JICOFO_AUTH_PASSWORD"
-        db_set jicofo/jicofosecret "$JICOFO_SECRET"
 
         # and we're done with debconf
         db_stop
