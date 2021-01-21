@@ -5,14 +5,13 @@ if [[ "$1" == "--help"  || $# -lt 1 ]]; then
     echo -e "$0 [OPTIONS], where options can be:"
     echo -e "\t--host=HOST\t sets the hostname of the XMPP server (default: domain, if domain is set, localhost otherwise)"
     echo -e "\t--domain=DOMAIN\t sets the XMPP domain"
-    echo -e "\t--port=PORT\t sets the port of the XMPP server (default: 5347)"
-    echo -e "\t--subdomain=SUBDOMAIN\t sets the sub-domain used to bind focus XMPP component (default: focus)"
-    echo -e "\t--secret=SECRET\t sets the shared secret used to authenticate focus component to the XMPP server"
     echo -e "\t--user_domain=DOMAIN\t specifies the name of XMPP domain used by the focus user to login."
     echo -e "\t--user_name=USERNAME\t specifies the username used by the focus XMPP user to login. (default: focus@user_domain)"
     echo -e "\t--user_password=PASSWORD\t specifies the password used by focus XMPP user to login. If not provided then focus user will use anonymous authentication method."
     echo
-    echo -e "\tSECRET and PASSWORD can alternatively be set via the environment variables JICOFO_SECRET and JICOFO_AUTH_PASSWORD respectively."
+    echo -e "\tPASSWORD can alternatively be set via the environment variable JICOFO_AUTH_PASSWORD."
+    echo
+    echo -e "\tAll of the options can also be specified in the config file (which is the preferred way)."
     echo
     exit 1
 fi

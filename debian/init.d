@@ -32,7 +32,7 @@ USER=jicofo
 PIDFILE=/var/run/jicofo.pid
 LOGFILE=/var/log/jitsi/jicofo.log
 DESC=jicofo
-DAEMON_OPTS=" --host=$JICOFO_HOST --domain=$JICOFO_HOSTNAME --port=$JICOFO_PORT --user_name=$JICOFO_AUTH_USER --user_domain=$JICOFO_AUTH_DOMAIN $JICOFO_OPTS"
+DAEMON_OPTS=" --host=$JICOFO_HOST --domain=$JICOFO_HOSTNAME --user_name=$JICOFO_AUTH_USER --user_domain=$JICOFO_AUTH_DOMAIN $JICOFO_OPTS"
 
 
 if [ ! -x $DAEMON ] ;then

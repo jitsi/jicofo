@@ -61,7 +61,7 @@ public class Main
         // Make sure that passwords are not printed by ConfigurationService
         // on startup by setting password regExpr and cmd line args list
         ConfigUtils.PASSWORD_SYS_PROPS = "pass";
-        ConfigUtils.PASSWORD_CMD_LINE_ARGS = "secret,user_password";
+        ConfigUtils.PASSWORD_CMD_LINE_ARGS = "user_password";
 
 
         ShutdownServiceImpl shutdownService = new ShutdownServiceImpl();
@@ -127,11 +127,6 @@ public class Main
     {
         CmdLine cmdLine = new CmdLine();
 
-        if (isBlank(System.getenv("JICOFO_SECRET")))
-        {
-            cmdLine.addRequiredArgument("--secret");
-        }
-
         // We may end execution here if one of required arguments is missing
         cmdLine.parse(args);
 
@@ -141,9 +136,7 @@ public class Main
         // Try to get domain, can be null after this call(we'll fix that later)
         componentDomain = cmdLine.getOptionValue("domain");
         // Host name
-        host = cmdLine.getOptionValue(
-                "--host",
-                componentDomain == null ? "localhost" : componentDomain);
+        host = cmdLine.getOptionValue("--host", componentDomain == null ? "localhost" : componentDomain);
         // Try to fix component domain
         if (isBlank(componentDomain))
         {
