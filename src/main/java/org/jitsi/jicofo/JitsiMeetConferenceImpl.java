@@ -216,7 +216,7 @@ public class JitsiMeetConferenceImpl
      * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
      * by this <tt>JitsiMeetConference</tt> instance.
      */
-    private final ScheduledExecutorService executor;
+    @NotNull private final ScheduledExecutorService executor;
 
     /**
      * The list of {@link BridgeSession} currently in use by this conference.
@@ -2495,16 +2495,13 @@ public class JitsiMeetConferenceImpl
      */
     private void rescheduleSingleParticipantTimeout()
     {
-        if (executor != null)
-        {
-            cancelSingleParticipantTimeout();
+        cancelSingleParticipantTimeout();
 
-            long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
+        long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
-            singleParticipantTout = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
+        singleParticipantTout = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
-            logger.debug("Scheduled single person timeout for " + getRoomName());
-        }
+        logger.debug("Scheduled single person timeout for " + getRoomName());
     }
 
     /**
@@ -2512,7 +2509,7 @@ public class JitsiMeetConferenceImpl
      */
     private void cancelSingleParticipantTimeout()
     {
-        if (executor != null && singleParticipantTout != null)
+        if (singleParticipantTout != null)
         {
             // This log is printed also when it's executed by the timeout thread
             // itself
