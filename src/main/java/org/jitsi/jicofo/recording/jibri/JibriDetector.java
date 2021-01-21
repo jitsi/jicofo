@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.recording.jibri;
 
 import kotlin.*;
+import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging.*;
 import org.jitsi.xmpp.extensions.jibri.*;
@@ -26,6 +27,8 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
+
+import java.util.concurrent.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
@@ -42,7 +45,14 @@ public class JibriDetector
      */
     private static final Logger logger = Logger.getLogger(JibriDetector.class);
 
-    private final EventEmitter<EventHandler> eventEmitter = new EventEmitter<>();
+
+    /**
+     * TODO: Refactor to use a common executor.
+     */
+    private final static ExecutorService eventEmitterExecutor
+            = Executors.newSingleThreadExecutor(new CustomizableThreadFactory("JibriDetector-AsyncEventEmitter", false));
+
+    private final AsyncEventEmitter<EventHandler> eventEmitter = new AsyncEventEmitter<>(eventEmitterExecutor);
 
     /**
      * Indicates whether this instance detects SIP gateway Jibris or regular
@@ -121,7 +131,7 @@ public class JibriDetector
     {
         logger.info(getLogName() + ": " + jid + " went offline");
 
-        eventEmitter.fireEvent(handler ->
+        eventEmitter.fireEventAsync(handler ->
         {
             handler.instanceOffline(jid);
             return Unit.INSTANCE;
