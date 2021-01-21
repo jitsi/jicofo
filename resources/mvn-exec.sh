@@ -8,6 +8,6 @@ fi
 
 . $CONFIG
 
-export JICOFO_SECRET JICOFO_AUTH_PASSWORD
+export JICOFO_AUTH_PASSWORD
 
-exec mvn compile exec:exec -Dexec.executable=java -Dexec.args="-cp %classpath ${JAVA_SYS_PROPS} org.jitsi.jicofo.Main --domain=\"${JICOFO_HOSTNAME}\" --host=\"${JICOFO_HOST}\" --port=\"${JICOFO_PORT}\" --user_domain=\"${JICOFO_AUTH_DOMAIN}\" --user_name=\"${JICOFO_AUTH_USER}\""
+exec mvn compile exec:exec -Dexec.executable=java -Dexec.args="-cp %classpath ${JAVA_SYS_PROPS} org.jitsi.jicofo.Main --domain=\"${JICOFO_HOSTNAME}\" --host=\"${JICOFO_HOST}\" --user_domain=\"${JICOFO_AUTH_DOMAIN}\" --user_name=\"${JICOFO_AUTH_USER}\""
