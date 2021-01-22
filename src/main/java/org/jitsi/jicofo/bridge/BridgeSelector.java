@@ -20,6 +20,7 @@ package org.jitsi.jicofo.bridge;
 import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
@@ -48,11 +49,17 @@ public class BridgeSelector
     private final static Logger logger = Logger.getLogger(BridgeSelector.class);
 
     /**
+     * TODO: Refactor to use a common executor.
+     */
+    private final static ExecutorService eventEmitterExecutor
+        = Executors.newSingleThreadExecutor(new CustomizableThreadFactory("BridgeSelector-AsyncEventEmitter", false));
+
+    /**
      * The map of bridge JID to <tt>Bridge</tt>.
      */
     private final Map<Jid, Bridge> bridges = new HashMap<>();
 
-    private final EventEmitter<EventHandler> eventEmitter = new EventEmitter<>();
+    private final AsyncEventEmitter<EventHandler> eventEmitter = new AsyncEventEmitter<>(eventEmitterExecutor);
 
     /**
      * The bridge selection strategy.
@@ -257,7 +264,7 @@ public class BridgeSelector
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());
 
-        eventEmitter.fireEvent(handler ->
+        eventEmitter.fireEventAsync(handler ->
         {
             handler.bridgeAdded(bridge);
             return Unit.INSTANCE;
@@ -268,7 +275,7 @@ public class BridgeSelector
     {
         logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
-        eventEmitter.fireEvent(handler ->
+        eventEmitter.fireEventAsync(handler ->
         {
             handler.bridgeRemoved(bridge);
             return Unit.INSTANCE;
