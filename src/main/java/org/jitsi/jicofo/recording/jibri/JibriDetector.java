@@ -50,7 +50,8 @@ public class JibriDetector
      * TODO: Refactor to use a common executor.
      */
     private final static ExecutorService eventEmitterExecutor
-            = Executors.newSingleThreadExecutor(new CustomizableThreadFactory("JibriDetector-AsyncEventEmitter", false));
+            = Executors.newSingleThreadExecutor(
+                    new CustomizableThreadFactory("JibriDetector-AsyncEventEmitter", false));
 
     private final AsyncEventEmitter<EventHandler> eventEmitter = new AsyncEventEmitter<>(eventEmitterExecutor);
 
