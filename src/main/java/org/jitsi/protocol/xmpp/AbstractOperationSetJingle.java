@@ -18,7 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -43,8 +43,7 @@ public abstract class AbstractOperationSetJingle
      * The {@code Logger} used by the class {@code AbstractOperationSetJingle}
      * and its instances to print debug-related information.
      */
-    private static final Logger logger
-        = Logger.getLogger(AbstractOperationSetJingle.class);
+    private static final Logger logger = new LoggerImpl(AbstractOperationSetJingle.class.getName());
 
     /**
      * The list of active Jingle sessions.

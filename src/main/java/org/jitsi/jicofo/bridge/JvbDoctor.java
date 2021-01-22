@@ -19,11 +19,10 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.Logger;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -38,13 +37,6 @@ import static org.jitsi.jicofo.bridge.BridgeConfig.config;
  * The class is responsible for doing health checks of currently known
  * jitsi-videobridge instances.
  *
- * Listens to <tt>BridgeEvent#BRIDGE_UP</tt>/<tt>BridgeEvent#BRIDGE_OFFLINE</tt>
- * and schedules/cancels new health check jobs. When a health check task fails
- * <tt>BridgeEvent#HEALTH_CHECK_FAILED</tt> is triggered.
- *
- * Class is started by listing on OSGi activator list in
- * {@link JicofoBundleConfig}
- *
  * @author Pawel Domas
  */
 public class JvbDoctor
@@ -52,7 +44,7 @@ public class JvbDoctor
     /**
      * The logger.
      */
-    private static final Logger logger = Logger.getLogger(JvbDoctor.class);
+    private static final Logger logger = new LoggerImpl(JvbDoctor.class.getName());
 
     /**
      * Tells how often we send health checks to the bridge in ms.

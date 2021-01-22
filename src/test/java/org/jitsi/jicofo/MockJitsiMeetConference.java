@@ -20,7 +20,7 @@ package org.jitsi.jicofo;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -33,13 +33,15 @@ import java.util.*;
 public class MockJitsiMeetConference
     implements JitsiMeetConference
 {
+    private static final Logger logger = new LoggerImpl(MockJitsiMeetConference.class.getName());
+
     /**
      * {@inheritDoc}
      */
     @Override
     public Logger getLogger()
     {
-        return null;
+        return logger;
     }
 
     /**

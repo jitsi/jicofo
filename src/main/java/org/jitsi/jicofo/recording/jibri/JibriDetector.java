@@ -20,7 +20,7 @@ package org.jitsi.jicofo.recording.jibri;
 import kotlin.*;
 import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 
 import org.jitsi.jicofo.*;
@@ -43,7 +43,7 @@ public class JibriDetector
     /**
      * The logger
      */
-    private static final Logger logger = Logger.getLogger(JibriDetector.class);
+    private static final Logger logger = new LoggerImpl(JibriDetector.class.getName());
 
 
     /**

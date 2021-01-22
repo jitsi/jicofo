@@ -20,7 +20,7 @@ package org.jitsi.impl.reservation.rest;
 import org.jitsi.assertions.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.json.simple.parser.*;
 import org.jxmpp.jid.*;
 
@@ -41,7 +41,7 @@ public class RESTReservations
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(RESTReservations.class);
+    private final static Logger logger = new LoggerImpl(RESTReservations.class.getName());
 
     /**
      * How often do we verify conference duration ?

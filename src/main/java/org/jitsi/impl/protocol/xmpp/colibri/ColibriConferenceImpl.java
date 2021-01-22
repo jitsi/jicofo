@@ -22,8 +22,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.service.neomedia.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -49,7 +48,7 @@ public class ColibriConferenceImpl
 {
     public final static Stats stats = new Stats();
 
-    private final static Logger logger = Logger.getLogger(ColibriConferenceImpl.class);
+    private final static Logger logger = new LoggerImpl(ColibriConferenceImpl.class.getName());
 
     /**
      * The instance of XMPP connection.
@@ -117,11 +116,6 @@ public class ColibriConferenceImpl
     private boolean disposed;
 
     /**
-     * The global ID of the conference.
-     */
-    private String gid;
-
-    /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by the new
      *        instance to communicate.
@@ -137,7 +131,6 @@ public class ColibriConferenceImpl
      */
     public void setGID(String gid)
     {
-        this.gid = gid;
         conferenceState.setGID(gid);
     }
 
@@ -311,7 +304,7 @@ public class ColibriConferenceImpl
      * @throws BadRequestException if the response
      * @throws WrongResponseTypeException if the response contains no error, but
      * is not of the expected {@link ColibriConferenceIQ} type.
-     * @throws ColibriConference in case the response contained an XMPP error
+     * @throws ColibriException in case the response contained an XMPP error
      * not listed above.
      */
     private void maybeThrowOperationFailed(Stanza response)
@@ -387,7 +380,7 @@ public class ColibriConferenceImpl
      *
      * @return <tt>true</tt> if current thread is conference creator.
      *
-     * @throws ColibriConference if the current thread is not the conference
+     * @throws ColibriException if the current thread is not the conference
      * creator thread and the conference creator thread produced an exception.
      * The exception will be a clone of the original.
      */
@@ -656,8 +649,7 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
-                                   boolean mute)
+    public boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute)
     {
         if (checkIfDisposed("muteParticipant"))
         {
@@ -668,8 +660,7 @@ public class ColibriConferenceImpl
         request.setID(conferenceState.getID());
         request.setName(conferenceState.getName());
 
-        ColibriConferenceIQ.Content audioContent
-            = channelsInfo.getContent("audio");
+        ColibriConferenceIQ.Content audioContent = channelsInfo.getContent("audio");
 
         if (audioContent == null || isBlank(request.getID()))
         {
@@ -678,20 +669,12 @@ public class ColibriConferenceImpl
             return false;
         }
 
-        ColibriConferenceIQ.Content requestContent
-            = new ColibriConferenceIQ.Content(audioContent.getName());
-
+        ColibriConferenceIQ.Content requestContent = new ColibriConferenceIQ.Content(audioContent.getName());
         for (ColibriConferenceIQ.Channel channel : audioContent.getChannels())
         {
-            ColibriConferenceIQ.Channel requestChannel
-                = new ColibriConferenceIQ.Channel();
-
+            ColibriConferenceIQ.Channel requestChannel = new ColibriConferenceIQ.Channel();
             requestChannel.setID(channel.getID());
-
-            requestChannel.setDirection(
-                    mute ? MediaDirection.SENDONLY.toString()
-                        : MediaDirection.SENDRECV.toString());
-
+            requestChannel.setDirection(mute ? "sendonly" : "sendrecv");
             requestContent.addChannel(requestChannel);
         }
 

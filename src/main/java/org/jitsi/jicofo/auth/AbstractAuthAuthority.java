@@ -25,7 +25,7 @@ import java.util.function.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jxmpp.jid.*;
@@ -43,7 +43,7 @@ public abstract class AbstractAuthAuthority
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(AbstractAuthAuthority.class);
+    private final static Logger logger = new LoggerImpl(AbstractAuthAuthority.class.getName());
 
     /**
      * Interval at which we check for authentication sessions expiration.

@@ -24,7 +24,7 @@ import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -46,7 +46,7 @@ public class BridgeSelector
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(BridgeSelector.class);
+    private final static Logger logger = new LoggerImpl(BridgeSelector.class.getName());
 
     /**
      * TODO: Refactor to use a common executor.
@@ -288,8 +288,7 @@ public class BridgeSelector
     }
 
     /**
-     * @return the {@link Bridge} for the bridge with a particular XMPP
-     * JID.
+     * @return the {@link Bridge} for the bridge with a particular XMPP JID.
      * @param jid the JID of the bridge.
      */
     public Bridge getBridge(Jid jid)

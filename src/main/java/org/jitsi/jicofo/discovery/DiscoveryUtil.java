@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.discovery;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.disco.*;
 import org.jivesoftware.smackx.disco.packet.*;
@@ -37,7 +37,7 @@ public class DiscoveryUtil
     /**
      * The logger
      */
-    private final static Logger logger = Logger.getLogger(DiscoveryUtil.class);
+    private final static Logger logger = new LoggerImpl(DiscoveryUtil.class.getName());
 
     /**
      * List contains default feature set.

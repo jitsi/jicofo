@@ -20,7 +20,8 @@ import org.jitsi.health.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.utils.logging.Logger;
+import org.jitsi.utils.logging2.*;
+import org.jitsi.utils.logging2.Logger;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -44,7 +45,7 @@ public class JicofoHealthChecker implements HealthCheckService
      * The {@code Logger} utilized by the {@code Health} class to print
      * debug-related information.
      */
-    private static final Logger logger = Logger.getLogger(JicofoHealthChecker.class);
+    private static final Logger logger = new LoggerImpl(JicofoHealthChecker.class.getName());
 
     /**
      * The {@code JitsiMeetConfig} properties to be utilized for the purposes of
@@ -132,7 +133,7 @@ public class JicofoHealthChecker implements HealthCheckService
         JicofoServices jicofoServices = JicofoServices.jicofoServicesSingleton;
         if (jicofoServices == null)
         {
-            throw new RuntimeException("No JicoofoServices available");
+            throw new RuntimeException("No JicofoServices available");
         }
 
         BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();

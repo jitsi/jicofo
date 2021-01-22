@@ -21,7 +21,7 @@ import java.util.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 /**
  * Implements standard functionality of <tt>ProtocolProviderService</tt> in
@@ -33,7 +33,7 @@ import org.jitsi.utils.logging.*;
 public abstract class AbstractXmppProvider
     implements XmppProvider
 {
-    private static final Logger logger = Logger.getLogger(AbstractXmppProvider.class);
+    private static final Logger logger = new LoggerImpl(AbstractXmppProvider.class.getName());
 
     /**
      * A list of all listeners registered for
@@ -50,6 +50,7 @@ public abstract class AbstractXmppProvider
      *
      * @param listener the listener to register.
      */
+    @Override
     public void addRegistrationListener(@NotNull RegistrationListener listener)
     {
         synchronized(registrationListeners)
@@ -69,6 +70,7 @@ public abstract class AbstractXmppProvider
      * @param listener the listener to register for
      * <tt>RegistrationStateChangeEvent</tt>s.
      */
+    @Override
     public void removeRegistrationListener(@NotNull RegistrationListener listener)
     {
         synchronized(registrationListeners)
@@ -82,8 +84,7 @@ public abstract class AbstractXmppProvider
         RegistrationListener[] listeners;
         synchronized (registrationListeners)
         {
-            listeners
-                = registrationListeners.toArray(new RegistrationListener[registrationListeners.size()]);
+            listeners = registrationListeners.toArray(new RegistrationListener[registrationListeners.size()]);
         }
 
         for (RegistrationListener listener : listeners)

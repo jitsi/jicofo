@@ -20,7 +20,7 @@ package org.jitsi.jicofo.bridge;
 import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
@@ -35,7 +35,7 @@ public class BridgeMucDetector
     /**
      * The logger used by the {@link BridgeMucDetector} class and its instances.
      */
-    private static final Logger logger = Logger.getLogger(BaseBrewery.class);
+    private static final Logger logger = new LoggerImpl(BaseBrewery.class.getName());
 
     /**
      * The {@link BridgeSelector} instance which will be notified when new

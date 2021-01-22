@@ -21,7 +21,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 public class ProtocolProviderHandler
     implements RegistrationListener
 {
-    private final static Logger logger = Logger.getLogger(ProtocolProviderHandler.class);
+    private final static Logger logger = new LoggerImpl(ProtocolProviderHandler.class.getName());
 
     /**
      * XMPP protocol provider service used by the focus.

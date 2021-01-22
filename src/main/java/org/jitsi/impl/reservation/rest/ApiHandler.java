@@ -25,7 +25,7 @@ import org.apache.http.impl.client.*;
 import org.apache.http.message.*;
 import org.apache.http.util.*;
 import org.jitsi.impl.reservation.rest.json.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.json.simple.parser.*;
 import org.json.simple.parser.ParseException;
 import org.jxmpp.jid.*;
@@ -45,7 +45,7 @@ public class ApiHandler
     /**
      * The logger
      */
-    private static final Logger logger = Logger.getLogger(ApiHandler.class);
+    private static final Logger logger = new LoggerImpl(ApiHandler.class.getName());
 
     /**
      * Base URL of the REST API.
@@ -55,8 +55,7 @@ public class ApiHandler
     /**
      * HTTP client used for sending requests.
      */
-    private final CloseableHttpClient client
-            = HttpClientBuilder.create().build();
+    private final CloseableHttpClient client = HttpClientBuilder.create().build();
 
     /**
      * <tt>JSONParser</tt> instance used for parsing JSON.
@@ -66,8 +65,7 @@ public class ApiHandler
     /**
      * JSON handler for <tt>Conference</tt> objects.
      */
-    private final ConferenceJsonHandler conferenceJson
-            = new ConferenceJsonHandler();
+    private final ConferenceJsonHandler conferenceJson = new ConferenceJsonHandler();
 
     /**
      * JSON handler for error responses.
@@ -104,8 +102,7 @@ public class ApiHandler
                                          EntityBareJid mucRoomName)
             throws IOException, ParseException
     {
-        Conference conference
-            = new Conference(mucRoomName, ownerEmail, new Date());
+        Conference conference = new Conference(mucRoomName, ownerEmail, new Date());
 
         HttpPost post = new HttpPost(baseUrl + "/conference");
 
@@ -185,8 +182,7 @@ public class ApiHandler
             if (200 == statusCode || 201 == statusCode)
             {
                 // OK
-                Conference conference
-                    = readConferenceResponse(null, response);
+                Conference conference = readConferenceResponse(null, response);
     
                 return new ApiResult(statusCode, conference);
             }
@@ -220,8 +216,7 @@ public class ApiHandler
     public ApiResult deleteConference(Number conferenceId)
             throws IOException, ParseException
     {
-        HttpDelete delete
-            = new HttpDelete(baseUrl + "/conference/" + conferenceId);
+        HttpDelete delete = new HttpDelete(baseUrl + "/conference/" + conferenceId);
 
         HttpResponse response = null;
 

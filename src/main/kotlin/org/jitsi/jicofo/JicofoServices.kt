@@ -53,7 +53,6 @@ import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
-import org.osgi.framework.BundleContext
 import java.lang.management.ManagementFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -65,14 +64,9 @@ import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as res
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
 /**
- * Start/stop jicofo-specific services outside OSGi.
+ * Start/stop jicofo-specific services.
  */
-open class JicofoServices(
-    /**
-     * The [BundleContext] into which required OSGi services have been started.
-     */
-    val bundleContext: BundleContext
-) {
+open class JicofoServices {
     private val logger = createLogger()
 
     open fun createXmppProviderFactory(): XmppProviderFactory {
@@ -159,7 +153,6 @@ open class JicofoServices(
 
         healthChecker = if (HealthConfig.config.enabled) {
             JicofoHealthChecker(HealthConfig.config, focusManager).apply {
-                // The health service needs to register a [HealthCheckService] in OSGi to be used by jetty.
                 start()
                 focusManager.setHealth(this)
             }

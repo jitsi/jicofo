@@ -77,7 +77,7 @@ public class MockMultiUserChatOpSet
             MockMucShare sharedDomain = mucDomainSharing.get(roomName);
             if (sharedDomain == null)
             {
-                sharedDomain = new MockMucShare(roomNameJid);
+                sharedDomain = new MockMucShare();
 
                 mucDomainSharing.put(roomName, sharedDomain);
             }

@@ -253,7 +253,7 @@ public interface ColibriConference
 
     /**
      * Mutes audio channels described in given IQ by changing their media
-     * direction to {@link org.jitsi.service.neomedia.MediaDirection#SENDONLY}.
+     * direction to {@code sendonly}.
      * @param channelsInfo the IQ that describes the channels to be muted.
      * @param mute <tt>true</tt> to mute or <tt>false</tt> to unmute audio
      * channels described in <tt>channelsInfo</tt>.

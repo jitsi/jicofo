@@ -20,7 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
@@ -74,7 +74,7 @@ public class ChatRoomImpl
     /**
      * The logger used by this class.
      */
-    private final static Logger logger = Logger.getLogger(ChatRoomImpl.class);
+    private final static Logger logger = new LoggerImpl(ChatRoomImpl.class.getName());
 
     /**
      * Constant used to return empty presence list from
@@ -106,7 +106,7 @@ public class ChatRoomImpl
     /**
      * Smack multi user chat backend instance.
      */
-    private MultiUserChat muc;
+    private final MultiUserChat muc;
 
     /**
      * The resource part of our occupant JID.
@@ -630,9 +630,7 @@ public class ChatRoomImpl
     private void notifyMemberJoined(ChatMemberImpl member)
     {
         ChatRoomMemberPresenceChangeEvent event
-            = new ChatRoomMemberPresenceChangeEvent(
-                    this, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            = new ChatRoomMemberPresenceChangeEvent(this, member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED);
 
         listeners.forEach(l -> l.memberPresenceChanged(event));
     }
@@ -640,9 +638,7 @@ public class ChatRoomImpl
     private void notifyMemberLeft(ChatMemberImpl member)
     {
         ChatRoomMemberPresenceChangeEvent event
-            = new ChatRoomMemberPresenceChangeEvent(
-                    this, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            = new ChatRoomMemberPresenceChangeEvent(this, member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT);
 
         listeners.forEach(l -> l.memberPresenceChanged(event));
     }
@@ -650,9 +646,7 @@ public class ChatRoomImpl
     private void notifyMemberKicked(ChatMemberImpl member)
     {
         ChatRoomMemberPresenceChangeEvent event
-            = new ChatRoomMemberPresenceChangeEvent(
-                    this, member,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED, null);
+            = new ChatRoomMemberPresenceChangeEvent(this, member, ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED);
 
         listeners.forEach(l -> l.memberPresenceChanged(event));
     }

@@ -17,8 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
-
 /**
  * A <tt>ChatRoomMemberPropertyChangeEvent</tt> is issued whenever a chat room
  * member property has changed (such as the nickname for example). Event codes

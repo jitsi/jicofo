@@ -28,8 +28,7 @@ class JibriDetectorTest : ShouldSpec({
                 ChatRoomMemberPresenceChangeEvent(
                     mockk(),
                     it,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED,
-                    "reason"
+                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED
                 )
             )
         }

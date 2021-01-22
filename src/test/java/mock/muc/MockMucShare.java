@@ -18,7 +18,7 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -32,16 +32,9 @@ import java.util.*;
 public class MockMucShare
     implements ChatRoomMemberPresenceListener
 {
-    private final static Logger logger = Logger.getLogger(MockMucShare.class);
-
-    private final EntityBareJid roomName;
+    private final static Logger logger = new LoggerImpl(MockMucShare.class.getName());
 
     private final List<MockMultiUserChat> groupedChats = new ArrayList<>();
-
-    public MockMucShare(EntityBareJid roomName)
-    {
-        this.roomName = roomName;
-    }
 
     public void nextRoomCreated(MockMultiUserChat chatRoom)
     {

@@ -21,7 +21,7 @@ import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -38,16 +38,9 @@ import org.jxmpp.stringprep.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-/**
- *
- */
 public class MockParticipant
 {
-    /**
-     * The logger.
-     */
-    private final static Logger logger
-        = Logger.getLogger(MockParticipant.class);
+    private final static Logger logger = new LoggerImpl(MockParticipant.class.getName());
 
     private final static Random random = new Random(System.nanoTime());
 
@@ -83,17 +76,13 @@ public class MockParticipant
 
     private final MediaSourceMap localSSRCs = new MediaSourceMap();
 
-    private MediaSourceGroupMap localSSRCGroups = new MediaSourceGroupMap();
+    private final MediaSourceGroupMap localSSRCGroups = new MediaSourceGroupMap();
 
     private String ssrcVideoType = SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE;
 
-    private boolean useSsrcGroups;
+    private final BlockingQueue<JingleIQ> ssrcAddQueue = new LinkedBlockingQueue<>();
 
-    private final BlockingQueue<JingleIQ> ssrcAddQueue
-        = new LinkedBlockingQueue<>();
-
-    private final BlockingQueue<JingleIQ> ssrcRemoveQueue
-        = new LinkedBlockingQueue<>();
+    private final BlockingQueue<JingleIQ> ssrcRemoveQueue = new LinkedBlockingQueue<>();
 
     public MockParticipant(String nick)
     {
@@ -214,24 +203,10 @@ public class MockParticipant
 
         // Add video SSRC
         addLocalVideoSSRC(nextSSRC(), ssrcVideoType);
-        if (useSsrcGroups)
-        {
-            // 2nd video SSRC
-            addLocalVideoSSRC(nextSSRC(), ssrcVideoType);
-        }
 
         for (SourcePacketExtension videoSSRC : getVideoSSRCS())
         {
             videoRtpDesc.addChildExtension(videoSSRC);
-        }
-
-        if (useSsrcGroups)
-        {
-            // Video SSRC group
-            SourceGroup videoGroup = getLocalSSRCGroup("video");
-            videoGroup.addSources(getVideoSSRCS());
-
-            videoRtpDesc.addChildExtension(videoGroup.getExtensionCopy());
         }
 
         myContents.add(video);
@@ -511,22 +486,6 @@ public class MockParticipant
         }
     }
 
-    public void switchVideoSSRCs(long[] newVideoSSRCs, boolean useSsrcGroups)
-    {
-        MediaSourceMap toRemove = new MediaSourceMap();
-        toRemove.addSources("video", localSSRCs.getSourcesForMedia("video"));
-
-        // Send source-remove
-        jingle.sendRemoveSourceIQ(
-            toRemove, localSSRCGroups.copy(), jingleSession);
-
-        // Remove old ssrcs(and clear groups)
-        localSSRCs.remove(toRemove);
-        localSSRCGroups = new MediaSourceGroupMap();
-
-        videoSourceAdd(newVideoSSRCs, useSsrcGroups);
-    }
-
     private SourceGroup getLocalSSRCGroup(String media)
     {
         List<SourceGroup> videoGroups
@@ -565,9 +524,7 @@ public class MockParticipant
 
         if (audioSources.size() < count)
         {
-            throw new IllegalArgumentException(
-                    "audio source size(" + audioSources.size()
-                            + ") < count(" + count + ")");
+            throw new IllegalArgumentException("audio source size(" + audioSources.size() + ") < count(" + count + ")");
         }
 
         List<SourcePacketExtension> toRemove = new ArrayList<>(count);
@@ -584,8 +541,7 @@ public class MockParticipant
         jingle.sendRemoveSourceIQ(removeMap, null, jingleSession);
     }
 
-    private List<SourcePacketExtension> sourceAdd(
-            String media, int count, boolean useGroups, String[] videoTypes)
+    private List<SourcePacketExtension> sourceAdd(String media, int count, boolean useGroups, String[] videoTypes)
     {
         long[] ssrcs = new long[count];
         for (int i=0; i<count; i++)
@@ -595,8 +551,7 @@ public class MockParticipant
         return sourceAdd(media, ssrcs, useGroups, videoTypes);
     }
 
-    public List<SourcePacketExtension> videoSourceAdd(
-            long[] newSSRCs, boolean useSsrcGroups)
+    public List<SourcePacketExtension> videoSourceAdd(long[] newSSRCs, boolean useSsrcGroups)
     {
         return sourceAdd("video", newSSRCs, useSsrcGroups, null);
     }
@@ -604,8 +559,7 @@ public class MockParticipant
     public List<SourcePacketExtension> sourceAdd(
         String media, long[] newSSRCs, boolean useSsrcGroups, String[] ssrcsVideoTypes)
     {
-        List<SourcePacketExtension> addedSSRCs
-            = new ArrayList<>(newSSRCs.length);
+        List<SourcePacketExtension> addedSSRCs = new ArrayList<>(newSSRCs.length);
         MediaSourceMap toAdd = new MediaSourceMap();
         SourceGroup sourceGroup = getLocalSSRCGroup(media);
 
@@ -618,8 +572,7 @@ public class MockParticipant
                 videoType = ssrcsVideoTypes[i];
             }
 
-            SourcePacketExtension ssrcPe
-                = addLocalSSRC(media, newSSRCs[i], videoType);
+            SourcePacketExtension ssrcPe = addLocalSSRC(media, newSSRCs[i], videoType);
 
             toAdd.addSource(media, ssrcPe);
             addedSSRCs.add(ssrcPe);
@@ -656,40 +609,6 @@ public class MockParticipant
         throws InterruptedException
     {
         return ssrcRemoveQueue.poll(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    public void waitForSSRCCondition( SSRCCondition    condition,
-                                      long             timeout)
-        throws InterruptedException
-    {
-        synchronized (sourceLock)
-        {
-            long start = System.currentTimeMillis();
-            long end = start + timeout;
-
-            while (!condition.checkCondition(this) &&
-                       System.currentTimeMillis() < end)
-            {
-                long wait = end - System.currentTimeMillis();
-                if (wait > 0)
-                {
-                    sourceLock.wait(wait);
-                }
-            }
-
-            //if (!condition.checkCondition(this))
-              // fail(errorMsg);
-        }
-    }
-
-    public boolean isUseSsrcGroups()
-    {
-        return useSsrcGroups;
-    }
-
-    public void setUseSsrcGroups(boolean useSsrcGroups)
-    {
-        this.useSsrcGroups = useSsrcGroups;
     }
 
     public Jid getMyJid()
@@ -755,10 +674,5 @@ public class MockParticipant
     class JingleHandler extends DefaultJingleRequestHandler
     {
 
-    }
-
-    public interface SSRCCondition
-    {
-        boolean checkCondition(MockParticipant me);
     }
 }

@@ -24,7 +24,7 @@ import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -51,8 +51,7 @@ public class JibriRecorder
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    static private final Logger classLogger
-        = Logger.getLogger(JibriRecorder.class);
+    static private final Logger classLogger = new LoggerImpl(JibriRecorder.class.getName());
 
     /**
      * The current recording session or <tt>null</tt>.
@@ -75,7 +74,7 @@ public class JibriRecorder
             conference,
             connection,
             scheduledExecutor,
-            Logger.getLogger(classLogger, conference.getLogger()),
+            new LoggerImpl(JibriRecorder.class.getName(), conference.getLogger().getLevel()),
             jibriDetector);
     }
 
@@ -180,8 +179,7 @@ public class JibriRecorder
 
                 if (exc instanceof StartException.AllBusy)
                 {
-                    logger.info("Failed to start a Jibri session, " +
-                                        "all Jibris were busy");
+                    logger.info("Failed to start a Jibri session, all Jibris were busy");
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.resource_constraint,
@@ -189,8 +187,7 @@ public class JibriRecorder
                 }
                 else if (exc instanceof StartException.NotAvailable)
                 {
-                    logger.info("Failed to start a Jibri session, " +
-                                        "no Jibris available");
+                    logger.info("Failed to start a Jibri session, no Jibris available");
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.service_unavailable,
@@ -198,8 +195,7 @@ public class JibriRecorder
                 }
                 else
                 {
-                    logger.info(
-                        "Failed to start a Jibri session:" + reason, exc);
+                    logger.warn("Failed to start a Jibri session:" + reason, exc);
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.internal_server_error,

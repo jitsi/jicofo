@@ -20,7 +20,7 @@ package mock.muc;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -41,7 +41,7 @@ public class MockMultiUserChat
     /**
      * The logger
      */
-    private static final Logger logger = Logger.getLogger(MockMultiUserChat.class);
+    private static final Logger logger = new LoggerImpl(MockMultiUserChat.class.getName());
 
     private final EntityBareJid roomName;
 
@@ -157,7 +157,7 @@ public class MockMultiUserChat
         {
             members.add(member);
             me = member;
-            fireMemberPresenceEvent(me,ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            fireMemberPresenceEvent(me,ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED);
         }
 
         if (isOwner)
@@ -198,7 +198,7 @@ public class MockMultiUserChat
             }
 
             members.add(member);
-            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED, null);
+            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED);
             return member;
         }
     }
@@ -225,7 +225,7 @@ public class MockMultiUserChat
                         "Member is not in the room " + member);
             }
 
-            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT);
         }
     }
 
@@ -247,7 +247,7 @@ public class MockMultiUserChat
         {
             members.remove(me);
 
-            fireMemberPresenceEvent(me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT, null);
+            fireMemberPresenceEvent(me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT);
         }
 
         me = null;
@@ -316,8 +316,6 @@ public class MockMultiUserChat
             return;
         }
 
-        ChatRoomMemberRole oldRole = member.getRole();
-
         member.setRole(newRole);
     }
 
@@ -365,12 +363,10 @@ public class MockMultiUserChat
      * @param member the <tt>ChatRoomMember</tt> that changed its presence
      * status
      * @param eventID the identifier of the event
-     * @param eventReason the reason of this event
      */
-    private void fireMemberPresenceEvent(ChatRoomMember member, String eventID, String eventReason)
+    private void fireMemberPresenceEvent(ChatRoomMember member, String eventID)
     {
-        ChatRoomMemberPresenceChangeEvent evt
-            = new ChatRoomMemberPresenceChangeEvent(this, member, eventID, eventReason);
+        ChatRoomMemberPresenceChangeEvent evt = new ChatRoomMemberPresenceChangeEvent(this, member, eventID);
 
         Iterable<ChatRoomMemberPresenceListener> listeners;
         synchronized (memberListeners)
@@ -382,8 +378,7 @@ public class MockMultiUserChat
             listener.memberPresenceChanged(evt);
     }
 
-    private void fireLocalUserRoleEvent(ChatRoomMember member,
-                                        boolean isInitial)
+    private void fireLocalUserRoleEvent(ChatRoomMember member, boolean isInitial)
     {
         ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(member.getRole(), isInitial);
 

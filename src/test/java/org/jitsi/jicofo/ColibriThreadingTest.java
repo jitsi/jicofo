@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import mock.*;
 import mock.jvb.*;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
@@ -82,7 +81,6 @@ public class ColibriThreadingTest
 
     @After
     public void tearDown()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -104,7 +102,7 @@ public class ColibriThreadingTest
                     new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
-        mockBridge.start(osgi.bc);
+        mockBridge.start();
 
         AllocThreadingTestColibriConference colibriConf =
                 new AllocThreadingTestColibriConference(
@@ -187,7 +185,7 @@ public class ColibriThreadingTest
         assertEquals(1, mockBridge.getConferenceCount());
         assertEquals(allocators.length, mockBridge.getEndpointCount());
 
-        mockBridge.stop(osgi.bc);
+        mockBridge.stop();
     }
 
     /**
@@ -207,7 +205,7 @@ public class ColibriThreadingTest
                     new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
-        mockBridge.start(osgi.bc);
+        mockBridge.start();
 
         AllocThreadingTestColibriConference colibriConf =
                 new AllocThreadingTestColibriConference(
@@ -289,7 +287,7 @@ public class ColibriThreadingTest
         // No conference created
         assertEquals(0, mockBridge.getConferenceCount());
 
-        mockBridge.stop(osgi.bc);
+        mockBridge.stop();
     }
 
     /**

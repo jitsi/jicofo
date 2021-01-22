@@ -26,7 +26,7 @@ import org.jitsi.xmpp.extensions.rayo.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
@@ -46,7 +46,7 @@ public class IqHandler
     /**
      * The logger
      */
-    private final static Logger logger = Logger.getLogger(IqHandler.class);
+    private final static Logger logger = new LoggerImpl(IqHandler.class.getName());
 
     /**
      * <tt>FocusManager</tt> instance for accessing info about all active

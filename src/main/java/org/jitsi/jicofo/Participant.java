@@ -24,7 +24,7 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -42,12 +42,6 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 public class Participant
     extends AbstractParticipant
 {
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private final static Logger classLogger = Logger.getLogger(Participant.class);
-
     /**
      * Returns the endpoint ID for a participant in the videobridge (Colibri)
      * context. This method can be used before <tt>Participant</tt> instance is
@@ -90,11 +84,6 @@ public class Participant
      */
     private JingleSession jingleSession;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -135,7 +124,7 @@ public class Participant
 
         this.roomMember = Objects.requireNonNull(roomMember, "roomMember");
         this.maxSourceCount = maxSourceCount;
-        this.logger = Logger.getLogger(classLogger, conference.getLogger());
+        this.logger = new LoggerImpl(getClass().getName(), conference.getLogger().getLevel());
     }
 
     /**

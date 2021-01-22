@@ -20,7 +20,7 @@ package org.jitsi.jicofo.xmpp;
 import org.jitsi.assertions.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.stringprep.*;
@@ -47,7 +47,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * The logger
      */
-    private static final Logger logger = Logger.getLogger(BaseBrewery.class);
+    private static final Logger logger = new LoggerImpl(BaseBrewery.class.getName());
 
     /**
      * The MUC JID of the room which this detector will join.
@@ -259,8 +259,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         BrewInstance instance = find(member);
         if (instance != null)
         {
-            logger.info("Jid member " + member + " had a transient error, moving to the back" +
-                "of the queue");
+            logger.info("Jid member " + member + " had a transient error, moving to the back of the queue");
             // Move the instance to the back of the list
             removeInstance(instance);
             addInstance(instance);

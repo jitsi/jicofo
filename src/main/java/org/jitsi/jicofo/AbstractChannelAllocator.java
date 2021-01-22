@@ -21,9 +21,10 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
+import javax.validation.constraints.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
@@ -37,25 +38,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public abstract class AbstractChannelAllocator implements Runnable
 {
-    /**
-     * Error code used in {@link OperationFailedException} when Colibri channel
-     * allocation fails.
-     * FIXME: consider moving to OperationFailedException ?
-     */
-    final static int CHANNEL_ALLOCATION_FAILED_ERR_CODE = 21;
-
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private final static Logger classLogger
-        = Logger.getLogger(AbstractChannelAllocator.class);
-
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -125,18 +107,17 @@ public abstract class AbstractChannelAllocator implements Runnable
      */
     protected AbstractChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
-            JitsiMeetConferenceImpl.BridgeSession bridgeSession,
-            AbstractParticipant participant,
+            @NotNull JitsiMeetConferenceImpl.BridgeSession bridgeSession,
+            @NotNull AbstractParticipant participant,
             boolean[] startMuted,
             boolean reInvite)
     {
         this.meetConference = meetConference;
-        this.bridgeSession
-            = Objects.requireNonNull(bridgeSession, "bridgeSession");
-        this.participant = Objects.requireNonNull(participant, "participant");
+        this.bridgeSession = bridgeSession;
+        this.participant = participant;
         this.startMuted = startMuted;
         this.reInvite = reInvite;
-        this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
+        this.logger = new LoggerImpl(getClass().getName(), meetConference.getLogger().getLevel());
     }
 
     /**

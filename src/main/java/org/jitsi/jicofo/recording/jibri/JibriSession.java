@@ -22,9 +22,8 @@ import org.jitsi.jicofo.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
@@ -46,12 +45,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class JibriSession
 {
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    static private final Logger classLogger = Logger.getLogger(JibriSession.class);
-
     private static final JibriStats stats = new JibriStats();
 
     public static JSONObject getGlobalStats()
@@ -102,11 +95,6 @@ public class JibriSession
      */
     private JibriIq.Status jibriStatus = JibriIq.Status.UNDEFINED;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -246,7 +234,7 @@ public class JibriSession
         this.applicationData = applicationData;
         this.xmpp = connection;
         jibriDetector.addHandler(jibriEventHandler);
-        logger = Logger.getLogger(classLogger, logLevelDelegate);
+        logger = new LoggerImpl(getClass().getName(), logLevelDelegate.getLevel());
     }
 
     /**
@@ -449,7 +437,6 @@ public class JibriSession
 
     /**
      * Process a {@link JibriIq} *request* from Jibri
-     * @param request
      * @return the response
      */
     IQ processJibriIqRequestFromJibri(JibriIq request)
@@ -461,7 +448,6 @@ public class JibriSession
     /**
      * Process a {@link JibriIq} from Jibri (note that this
      * may be an IQ request or an IQ response)
-     * @param iq
      */
     private void processJibriIqFromJibri(JibriIq iq)
     {
@@ -665,8 +651,7 @@ public class JibriSession
         // new state), make sure we stop the pending timeout task
         if (pendingTimeoutTask != null && !Status.PENDING.equals(newStatus))
         {
-            logger.info(
-                "Jibri is no longer pending, cancelling pending timeout task");
+            logger.info("Jibri is no longer pending, cancelling pending timeout task");
             pendingTimeoutTask.cancel(false);
             pendingTimeoutTask = null;
         }
@@ -677,8 +662,7 @@ public class JibriSession
             boolean shouldRetry;
             if (shouldRetryParam == null)
             {
-                logger.warn("failureReason was non-null but shouldRetry " +
-                    "wasn't set, will NOT retry");
+                logger.warn("failureReason was non-null but shouldRetry wasn't set, will NOT retry");
                 shouldRetry = false;
             }
             else
@@ -695,14 +679,11 @@ public class JibriSession
                     retryRequestWithAnotherJibri();
 
                     // The fallback to another Jibri succeeded.
-                    logger.info(
-                        "Successfully resumed session with another Jibri");
+                    logger.info("Successfully resumed session with another Jibri");
                 }
                 catch (StartException exc)
                 {
-                    logger.info(
-                        "Failed to fall back to another Jibri, this "
-                            + "session has now failed: " + exc, exc);
+                    logger.warn("Failed to fall back to another Jibri, this session has now failed: " + exc, exc);
                     // Propagate up that the session has failed entirely.
                     // We'll pass the original failure reason.
                     dispatchSessionStateChanged(newStatus, failureReason);
@@ -713,16 +694,14 @@ public class JibriSession
             {
                 if (!shouldRetry)
                 {
-                    logger.info("Jibri failed and signaled that we " +
-                        "should not retry the same request");
+                    logger.info("Jibri failed and signaled that we should not retry the same request");
                 }
                 else
                 {
                     // The Jibri we tried failed and we've reached the maxmium
                     // amount of retries we've been configured to attempt, so we'll
                     // give up trying to handle this request.
-                    logger.info("Jibri failed, but max amount of retries ("
-                        + maxNumRetries + ") reached, giving up");
+                    logger.info("Jibri failed, but max amount of retries (" + maxNumRetries + ") reached, giving up");
                 }
                 dispatchSessionStateChanged(newStatus, failureReason);
                 cleanupSession();
@@ -915,8 +894,6 @@ public class JibriSession
 
     /**
      * Returns true if the given IQ represens a busy response from Jibri
-     * @param iq
-     * @return
      */
     private boolean isBusyResponse(JibriIq iq)
     {

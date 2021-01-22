@@ -22,6 +22,8 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.logging2.*;
+import org.jitsi.utils.logging2.Logger;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -33,7 +35,6 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 
-import org.jitsi.utils.logging.Logger;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -71,11 +72,6 @@ public class JitsiMeetConferenceImpl
                JingleRequestHandler
 {
     /**
-     * The classLogger instance used by this class.
-     */
-    private final static Logger classLogger = Logger.getLogger(JitsiMeetConferenceImpl.class);
-
-    /**
      * A random generator.
      */
     private final static Random RANDOM = new Random();
@@ -102,7 +98,7 @@ public class JitsiMeetConferenceImpl
      * {@link #classLogger} or the one passed to the constructor, whichever
      * is higher.
      */
-    private final Logger logger = Logger.getLogger(classLogger, null);
+    private final Logger logger;
 
     /**
      * The instance of conference configuration.
@@ -265,6 +261,7 @@ public class JitsiMeetConferenceImpl
             long gid,
             boolean includeInStatistics)
     {
+        this.logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         this.protocolProviderHandler = Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
         this.jvbXmppConnection = Objects.requireNonNull(jvbXmppConnection, "jvbXmppConnection");
         this.config = Objects.requireNonNull(config, "config");
@@ -274,11 +271,6 @@ public class JitsiMeetConferenceImpl
         this.focusUserName = focusUserName;
         this.listener = listener;
         this.etherpadName = createSharedDocumentName();
-
-        if (logLevel != null)
-        {
-            logger.setLevel(logLevel);
-        }
         this.includeInStatistics = includeInStatistics;
     }
 

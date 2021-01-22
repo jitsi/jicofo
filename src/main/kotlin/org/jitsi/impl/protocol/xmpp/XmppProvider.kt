@@ -41,13 +41,13 @@ interface XmppProvider {
      * Registers the specified listener with this provider so that it would receive notifications on changes of its
      * state.
      */
-    fun addRegistrationListener(listener: RegistrationListener?)
+    fun addRegistrationListener(listener: RegistrationListener)
 
     /**
      * Removes the specified listener.
      * @param listener the listener to remove.
      */
-    fun removeRegistrationListener(listener: RegistrationListener?)
+    fun removeRegistrationListener(listener: RegistrationListener)
 
     val config: XmppConnectionConfig
     val xmppConnection: XmppConnection?

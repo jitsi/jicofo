@@ -17,8 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
-
 import java.util.*;
 
 /**
@@ -72,12 +70,6 @@ public class ChatRoomMemberPresenceChangeEvent
     private final String eventType;
 
     /**
-     * An optional String indicating a possible reason as to why the event
-     * might have occurred.
-     */
-    private final String reason;
-
-    /**
      * Creates a <tt>ChatRoomMemberPresenceChangeEvent</tt> representing that
      * a change in the presence of a <tt>ChatRoomMember</tt> has occurred.
      * Changes may include the participant being kicked, join, left, etc.
@@ -85,18 +77,15 @@ public class ChatRoomMemberPresenceChangeEvent
      * @param sourceRoom the <tt>ChatRoom</tt> that produced this event
      * @param sourceMember the <tt>ChatRoomMember</tt> who this event is about
      * @param eventType the event type; one of the MEMBER_XXX constants
-     * @param reason the reason explaining why this event might have occurred
      */
     public ChatRoomMemberPresenceChangeEvent(
             ChatRoom sourceRoom,
             ChatRoomMember sourceMember,
-            String eventType,
-            String reason )
+            String eventType)
     {
         super(sourceRoom);
         this.sourceMember = sourceMember;
         this.eventType = eventType;
-        this.reason = reason;
     }
 
     /**
@@ -117,17 +106,6 @@ public class ChatRoomMemberPresenceChangeEvent
     public ChatRoomMember getChatRoomMember()
     {
         return sourceMember;
-    }
-
-    /**
-     * A reason String indicating a human readable reason for this event.
-     *
-     * @return a human readable String containing the reason for this event,
-     * or null if no particular reason was specified.
-     */
-    public String getReason()
-    {
-        return reason;
     }
 
     /**
