@@ -148,7 +148,7 @@ public class ChatRoomRoleAndPresence
                 owner = null;
                 electNewOwner();
             }
-            if (evt instanceof ChatRoomMemberPresenceChangeEvent.Kicked)
+            if (evt instanceof Kicked)
             {
                 conference.onMemberKicked(sourceMember);
             }
