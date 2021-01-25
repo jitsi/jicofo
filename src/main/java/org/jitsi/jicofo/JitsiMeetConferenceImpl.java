@@ -44,6 +44,7 @@ import org.jxmpp.jid.parts.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
@@ -56,19 +57,14 @@ import java.util.stream.*;
  * on 4 different objects ({@link #bridges}, {@link #participantLock},
  * {@code this} and {@link BridgeSession#octoParticipant}). At the time of this
  * writing it seems that multiple locks are acquired only in the following
- * orders:
- * {@code participantsLock} -> {@code bridges}, and
- * {@code participantsLock} -> {@code this} -> {@code bridges}.
+ * order: * {@code participantsLock} -> {@code bridges}.
  *
  * This seems safe, but it is hard to maintain this way, and we should
  * re-factor to simplify.
  *
- * TODO: fix inconsistent synchronization.
- *
  * @author Pawel Domas
  * @author Boris Grozev
  */
-@SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference,
                RegistrationListener,
@@ -179,7 +175,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Indicates if this instance has been started (initialized).
      */
-    private volatile boolean started;
+    private AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * The time at which this conference was created.
@@ -305,15 +301,13 @@ public class JitsiMeetConferenceImpl
      *         possible. {@link ConferenceListener}s will be notified that this
      *         conference has ended.
      */
-    public synchronized void start()
+    public void start()
         throws Exception
     {
-        if (started)
+        if (!started.compareAndSet(false, true))
         {
             return;
         }
-
-        started = true;
 
         try
         {
@@ -387,14 +381,12 @@ public class JitsiMeetConferenceImpl
      * Stops the conference, disposes colibri channels and releases all
      * resources used by the focus.
      */
-    synchronized void stop()
+    void stop()
     {
-        if (!started)
+        if (!started.compareAndSet(true, false))
         {
             return;
         }
-
-        started = false;
 
         if (jibriSipGateway != null)
         {
@@ -2257,7 +2249,7 @@ public class JitsiMeetConferenceImpl
     private void onBridgeUp(Jid bridgeJid)
     {
         // Check if we're not shutting down
-        if (!started)
+        if (!started.get())
         {
             return;
         }
