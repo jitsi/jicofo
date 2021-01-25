@@ -139,11 +139,11 @@
       <artifactId>javassist</artifactId>
       <version>3.22.0-CR2</version>
     </dependency>
-     <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
+    <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
     <dependency>
-        <groupId>com.github.spotbugs</groupId>
-        <artifactId>spotbugs-annotations</artifactId>
-        <version>${spotbugs.version}</version>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <version>${spotbugs.version}</version>
     </dependency>
     <!-- runtime -->
     <dependency>
@@ -369,42 +369,89 @@
           </archive>
         </configuration>
       </plugin>
-	  <plugin>
-		  <groupId>org.apache.maven.plugins</groupId>
-		  <artifactId>maven-checkstyle-plugin</artifactId>
-		  <version>3.1.1</version>
-		  <configuration>
-			  <configLocation>checkstyle.xml</configLocation>
-		  </configuration>
-		  <executions>
-			  <execution>
-				  <goals>
-					  <goal>check</goal>
-				  </goals>
-			  </execution>
-		  </executions>
-	  </plugin>
       <plugin>
-          <groupId>com.github.spotbugs</groupId>
-          <artifactId>spotbugs-maven-plugin</artifactId>
-          <version>${spotbugs.version}</version>
-          <configuration>
-              <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
-              <includeTests>true</includeTests>
-          </configuration>
-          <executions>
-              <execution>
-                  <phase>verify</phase>
-                  <goals><goal>check</goal></goals>
-              </execution>
-          </executions>
-          <dependencies>
-            <dependency>
-               <groupId>com.github.spotbugs</groupId>
-               <artifactId>spotbugs</artifactId>
-               <version>${spotbugs.version}</version>
-            </dependency>
-          </dependencies>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.1.1</version>
+        <configuration>
+          <configLocation>checkstyle.xml</configLocation>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>${spotbugs.version}</version>
+        <configuration>
+          <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+          <includeTests>true</includeTests>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals><goal>check</goal></goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs</artifactId>
+            <version>${spotbugs.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>ktlint</id>
+            <phase>verify</phase>
+            <configuration>
+              <target name="ktlint">
+                <java taskname="ktlint" dir="${basedir}" fork="true" failonerror="true"
+                      classpathref="maven.plugin.classpath" classname="com.pinterest.ktlint.Main">
+                  <arg value="src/**/*.kt"/>
+                  <!-- to generate report in checkstyle format prepend following args: -->
+                  <!--
+                  <arg value="[dash][dash]reporter=plain"/>
+                  <arg value="[dash][dash]reporter=checkstyle,output=${project.build.directory}/ktlint.xml"/>
+                  -->
+                  <!-- see https://github.com/shyiko/ktlint#usage for more -->
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+          <execution>
+            <id>ktlint-format</id>
+            <configuration>
+              <target name="ktlint">
+                <java taskname="ktlint" dir="${basedir}" fork="true" failonerror="true"
+                      classpathref="maven.plugin.classpath" classname="com.pinterest.ktlint.Main">
+                  <arg value="-F"/>
+                  <arg value="src/**/*.kt"/>
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.pinterest</groupId>
+            <artifactId>ktlint</artifactId>
+            <version>0.39.0</version>
+          </dependency>
+          <!-- additional 3rd party ruleset(s) can be specified here -->
+        </dependencies>
       </plugin>
     </plugins>
   </build>
