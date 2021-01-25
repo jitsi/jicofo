@@ -115,7 +115,7 @@ jicofo {
         fi
 
         # Make sure the client-proxy is set correctly.
-        hocon -f $HOCON_CONFIG set xmpp.client.client-proxy "focus.$JVB_HOSTNAME"
+        hocon -f $HOCON_CONFIG set jicofo.xmpp.client.client-proxy "focus.$JVB_HOSTNAME"
 
         # we don't want to start the daemon as root
         if ! getent group jitsi > /dev/null ; then
