@@ -34,9 +34,10 @@ fun parseJidFromClientProxyJid(
     /**
      * The JID to parse.
      */
-    jid: Jid): Jid {
+    jid: Jid
+): Jid {
 
-    clientProxy?: return jid
+    clientProxy ?: return jid
 
     if (clientProxy == jid.asDomainBareJid()) {
         jid.resourceOrNull?.let { resource ->

@@ -34,7 +34,8 @@ class AuthConfigTest : ConfigTest() {
             config.authenticationLifetime shouldBe Duration.ofHours(24)
         }
         context("With legacy config") {
-            withLegacyConfig("""
+            withLegacyConfig(
+                """
                 org.jitsi.jicofo.auth.URL=XMPP:test@example.com
                 org.jitsi.jicofo.auth.LOGOUT_URL=logout
                 org.jitsi.jicofo.auth.DISABLE_AUTOLOGIN=true
@@ -51,7 +52,8 @@ class AuthConfigTest : ConfigTest() {
             }
         }
         context("With new config") {
-            withNewConfig("""
+            withNewConfig(
+                """
                 jicofo.authentication {
                   enabled = false
                   type = JWT
@@ -60,7 +62,8 @@ class AuthConfigTest : ConfigTest() {
                   enable-auto-login = false
                   authentication-lifetime = 5 minutes
                 }
-            """) {
+            """
+            ) {
                 val config = AuthConfig()
 
                 config.enabled shouldBe false
@@ -69,9 +72,7 @@ class AuthConfigTest : ConfigTest() {
                 config.logoutUrl shouldBe "logout"
                 config.type shouldBe AuthConfig.Type.JWT
                 config.authenticationLifetime shouldBe Duration.ofMinutes(5)
-
             }
         }
     }
-
 }

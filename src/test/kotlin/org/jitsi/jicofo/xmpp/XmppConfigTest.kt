@@ -38,13 +38,15 @@ class XmppConfigTest : ConfigTest() {
                 config.password shouldBe null
             }
             context("Legacy config") {
-                withLegacyConfig("""
+                withLegacyConfig(
+                    """
                     org.jitsi.jicofo.HOSTNAME=hostname
                     org.jitsi.jicofo.XMPP_PORT=5223
                     org.jitsi.jicofo.FOCUS_USER_DOMAIN=domain
                     org.jitsi.jicofo.FOCUS_USER_NAME=user
                     org.jitsi.jicofo.FOCUS_USER_PASSWORD=pass
-                """) {
+                """
+                ) {
                     val config = XmppClientConnectionConfig()
                     config.enabled shouldBe true
                     config.hostname shouldBe "hostname"
@@ -55,7 +57,8 @@ class XmppConfigTest : ConfigTest() {
                 }
             }
             context("New config") {
-                withNewConfig("""
+                withNewConfig(
+                    """
                     jicofo.xmpp.client {
                         hostname = "hostname2"
                         port = 5224
@@ -63,7 +66,8 @@ class XmppConfigTest : ConfigTest() {
                         username = "user2"
                         password = "pass2"
                     }
-                """) {
+                """
+                ) {
                     val config = XmppClientConnectionConfig()
                     config.enabled shouldBe true
                     config.hostname shouldBe "hostname2"
@@ -89,13 +93,15 @@ class XmppConfigTest : ConfigTest() {
                 config.password shouldBe null
             }
             context("Legacy config") {
-                withLegacyConfig("""
+                withLegacyConfig(
+                    """
                     org.jitsi.jicofo.BRIDGE_MUC_XMPP_HOST=hostname
                     org.jitsi.jicofo.BRIDGE_MUC_XMPP_PORT=6223
                     org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_DOMAIN=domain
                     org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER=user
                     org.jitsi.jicofo.BRIDGE_MUC_XMPP_USER_PASS=pass
-                """) {
+                """
+                ) {
                     val config = XmppServiceConnectionConfig()
                     config.enabled shouldBe true
                     config.hostname shouldBe "hostname"
@@ -106,7 +112,8 @@ class XmppConfigTest : ConfigTest() {
                 }
             }
             context("New config") {
-                withNewConfig("""
+                withNewConfig(
+                    """
                     jicofo.xmpp.service {
                         enabled = true
                         hostname = "hostname2"
@@ -115,7 +122,8 @@ class XmppConfigTest : ConfigTest() {
                         username = "user2"
                         password = "pass2"
                     }
-                """) {
+                """
+                ) {
                     val config = XmppServiceConnectionConfig()
                     config.enabled shouldBe true
                     config.hostname shouldBe "hostname2"

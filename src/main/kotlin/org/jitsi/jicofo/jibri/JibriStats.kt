@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.jitsi.jicofo.jibri;
+package org.jitsi.jicofo.jibri
 
 import org.jitsi.jicofo.recording.jibri.JibriSession
 import org.json.simple.JSONObject

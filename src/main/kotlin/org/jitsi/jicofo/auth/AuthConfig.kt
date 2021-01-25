@@ -18,9 +18,9 @@
 
 package org.jitsi.jicofo.auth
 
-import org.jitsi.metaconfig.config
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import java.time.Duration
 

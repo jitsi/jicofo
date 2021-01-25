@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.metaconfig.config
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate

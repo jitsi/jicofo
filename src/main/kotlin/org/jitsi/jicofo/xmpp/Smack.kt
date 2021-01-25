@@ -102,7 +102,7 @@ fun registerXmppExtensions() {
         StatsId.Provider()
     )
 
-    //Add the extensions used for handling the inviting of transcriber
+    // Add the extensions used for handling the inviting of transcriber
     ProviderManager.addExtensionProvider(
         TranscriptionRequestExtension.ELEMENT_NAME,
         TranscriptionRequestExtension.NAMESPACE,
