@@ -203,8 +203,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         JicofoJingleUtils.addBundleExtensions(jingleIQ);
         if (startMuted[0] || startMuted[1])
         {
-            JicofoJingleUtils.addStartMutedExtension(
-                jingleIQ, startMuted[0], startMuted[1]);
+            JicofoJingleUtils.addStartMutedExtension(jingleIQ, startMuted[0], startMuted[1]);
         }
 
         // Include info about the BridgeSession which provides the transport

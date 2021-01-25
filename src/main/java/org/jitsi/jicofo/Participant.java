@@ -102,11 +102,6 @@ public class Participant
     private boolean mutedStatus;
 
     /**
-     * Participant's display name.
-     */
-    private String displayName = null;
-
-    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
@@ -366,16 +361,6 @@ public class Participant
     }
 
     /**
-     * Return a <tt>Boolean</tt> which informs about this participant's video
-     * muted status. The <tt>null</tt> value stands for 'unknown'/not signalled,
-     * <tt>true</tt> for muted and <tt>false</tt> means unmuted.
-     */
-    public Boolean isVideoMuted()
-    {
-        return roomMember.hasVideoMuted();
-    }
-
-    /**
      * Extracts and stores transport information from given map of Jingle
      * content.  If we already have the transport information it will be
      * merged into the currently stored one with
@@ -462,30 +447,12 @@ public class Participant
     }
 
     /**
-     * Returns the display name of the participant.
-     * @return the display name of the participant.
-     */
-    public String getDisplayName()
-    {
-        return displayName;
-    }
-
-    /**
      * Returns the stats ID of the participant.
      * @return the stats ID of the participant.
      */
     public String getStatId()
     {
         return roomMember.getStatsId();
-    }
-
-    /**
-     * Sets the display name of the participant.
-     * @param displayName the display name to set.
-     */
-    public void setDisplayName(String displayName)
-    {
-        this.displayName = displayName;
     }
 
     /**

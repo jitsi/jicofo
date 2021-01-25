@@ -30,6 +30,8 @@ import org.jxmpp.stringprep.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
+
 /**
  * Mock {@link ChatRoom} implementation.
  *
@@ -157,7 +159,7 @@ public class MockMultiUserChat
         {
             members.add(member);
             me = member;
-            fireMemberPresenceEvent(me,ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED);
+            fireMemberPresenceEvent(new Joined(me));
         }
 
         if (isOwner)
@@ -198,7 +200,7 @@ public class MockMultiUserChat
             }
 
             members.add(member);
-            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED);
+            fireMemberPresenceEvent(new Joined(member));
             return member;
         }
     }
@@ -225,7 +227,7 @@ public class MockMultiUserChat
                         "Member is not in the room " + member);
             }
 
-            fireMemberPresenceEvent(member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT);
+            fireMemberPresenceEvent(new Left(member));
         }
     }
 
@@ -247,7 +249,7 @@ public class MockMultiUserChat
         {
             members.remove(me);
 
-            fireMemberPresenceEvent(me, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT);
+            fireMemberPresenceEvent(new Left(me));
         }
 
         me = null;
@@ -288,12 +290,6 @@ public class MockMultiUserChat
     {
         localUserRoleListeners.remove(listener);
     }
-
-    @Override
-    public void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener) { }
-
-    @Override
-    public void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener) { }
 
     @Override
     public List<ChatRoomMember> getMembers()
@@ -359,15 +355,9 @@ public class MockMultiUserChat
      * Creates the corresponding ChatRoomMemberPresenceChangeEvent and notifies
      * all <tt>ChatRoomMemberPresenceListener</tt>s that a ChatRoomMember has
      * joined or left this <tt>ChatRoom</tt>.
-     *
-     * @param member the <tt>ChatRoomMember</tt> that changed its presence
-     * status
-     * @param eventID the identifier of the event
      */
-    private void fireMemberPresenceEvent(ChatRoomMember member, String eventID)
+    private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent evt)
     {
-        ChatRoomMemberPresenceChangeEvent evt = new ChatRoomMemberPresenceChangeEvent(this, member, eventID);
-
         Iterable<ChatRoomMemberPresenceListener> listeners;
         synchronized (memberListeners)
         {

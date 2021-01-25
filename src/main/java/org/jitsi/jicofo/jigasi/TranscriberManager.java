@@ -18,6 +18,7 @@
 
 package org.jitsi.jicofo.jigasi;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.utils.logging2.*;
@@ -33,15 +34,14 @@ import java.util.concurrent.*;
 import java.util.stream.*;
 
 /**
- * The {@link TranscriberManager} class is responsible for listening to
- * {@link ChatRoomMemberPropertyChangeEvent}s to see whether a
+ * The {@link TranscriberManager} class is responsible for listening to presence updates to see whether a
  * {@link ChatRoomMember} is requesting a transcriber by adding a
  * {@link TranscriptionLanguageExtension} to their {@link Presence}.
  *
  * @author Nik Vaessen
  */
 public class TranscriberManager
-    implements ChatRoomMemberPropertyChangeListener
+    implements ChatRoomMemberPresenceListener
 {
     /**
      * The logger of this class.
@@ -95,10 +95,6 @@ public class TranscriberManager
         this.jigasiDetector = jigasiDetector;
     }
 
-    /**
-     * Initialise the manager by starting to listen for
-     * {@link ChatRoomMemberPropertyChangeEvent}s.
-     */
     public void init()
     {
         if(executorService != null)
@@ -108,66 +104,45 @@ public class TranscriberManager
         }
 
         executorService = Executors.newSingleThreadExecutor();
-        chatRoom.addMemberPropertyChangeListener(this);
+        chatRoom.addMemberPresenceListener(this);
 
         logger.debug("initialised transcriber manager");
     }
 
-    /**
-     * Stop the manager by stopping to listen for
-     * {@link ChatRoomMemberPropertyChangeEvent}s.
-     */
     public void dispose()
     {
         executorService.shutdown();
         executorService = null;
-        chatRoom.removeMemberPropertyChangeListener(this);
+        chatRoom.removeMemberPresenceListener(this);
 
         logger.debug("disposed transcriber manager");
     }
 
-    /**
-     * Listener method for each {@link ChatRoomMemberPropertyChangeEvent}, which
-     * can possibly indicate the transcriber needs to be invited.
-     *
-     * {@inheritDoc}
-     */
     @Override
-    public void chatRoomPropertyChanged(ChatRoomMemberPropertyChangeEvent event)
+    public void memberPresenceChanged(@Nullable ChatRoomMemberPresenceChangeEvent evt)
     {
-        if(event.getNewValue() instanceof Presence)
+        if (evt instanceof ChatRoomMemberPresenceChangeEvent.PresenceUpdated)
         {
-            onNewPresence(event);
-        }
-    }
+            Presence presence = evt.getChatRoomMember().getPresence();
 
-    /**
-     * Check whether a {@link ChatRoomMemberPropertyChangeEvent} is due to a new {@link Presence}, and when it is, deal
-     * with the information is has provided.
-     *
-     * @param event the event to check the {@link Presence} off
-     */
-    private void onNewPresence(ChatRoomMemberPropertyChangeEvent event)
-    {
-        Presence presence = getPresenceOrNull(event);
+            if (presence == null)
+            {
+                return;
+            }
 
-        if(presence == null)
-        {
-            return;
-        }
-
-        TranscriptionStatusExtension transcriptionStatusExtension = getTranscriptionStatus(presence);
-        if(transcriptionStatusExtension != null
-            && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
-        {
-            // puts the stopping in the single threaded executor
-            // so we can order the events and avoid indicating active = false
-            // while we are starting due to concurrent presences processed
-            executorService.submit(this::stopTranscribing);
-        }
-        if(isRequestingTranscriber(presence) && !active)
-        {
-            executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
+            TranscriptionStatusExtension transcriptionStatusExtension = getTranscriptionStatus(presence);
+            if (transcriptionStatusExtension != null
+                    && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
+            {
+                // puts the stopping in the single threaded executor
+                // so we can order the events and avoid indicating active = false
+                // while we are starting due to concurrent presences processed
+                executorService.submit(this::stopTranscribing);
+            }
+            if (isRequestingTranscriber(presence) && !active)
+            {
+                executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
+            }
         }
     }
 
@@ -317,21 +292,4 @@ public class TranscriberManager
 
         return Boolean.parseBoolean(ext.getText());
     }
-
-    /**
-     * Extract the presence from the {@link ChatRoomMemberPropertyChangeEvent}.
-     *
-     * @param event the {@link ChatRoomMemberPropertyChangeEvent} to extract from
-     * @return the {@link Presence}, or null when not available.
-     */
-    private Presence getPresenceOrNull(ChatRoomMemberPropertyChangeEvent event)
-    {
-        if(event.getNewValue() instanceof Presence)
-        {
-            return ((Presence) event.getNewValue());
-        }
-
-        return null;
-    }
-
 }

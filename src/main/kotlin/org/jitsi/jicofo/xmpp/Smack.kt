@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.jicofo.discovery.Version
-import org.jitsi.jicofo.discovery.VersionIqProvider
 import org.jitsi.xmpp.extensions.DefaultPacketExtensionProvider
 import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
 import org.jitsi.xmpp.extensions.colibri.ColibriIQProvider
@@ -116,12 +114,6 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
     )
 
-    // Override original Smack Version IQ class
-    ProviderManager.addIQProvider(
-        Version.ELEMENT,
-        Version.NAMESPACE,
-        VersionIqProvider()
-    )
     // Register Colibri
     ProviderManager.addIQProvider(
         ColibriConferenceIQ.ELEMENT_NAME,

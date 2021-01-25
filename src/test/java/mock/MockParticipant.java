@@ -671,8 +671,78 @@ public class MockParticipant
         return addLocalSSRC("audio", ssrc, null);
     }
 
-    class JingleHandler extends DefaultJingleRequestHandler
+    static class JingleHandler
+        implements JingleRequestHandler
     {
+        /**
+         * The logger used by this instance.
+         */
+        private final static Logger logger = new LoggerImpl(JingleHandler.class.getName());
 
+        @Override
+        public XMPPError onAddSource(JingleSession jingleSession,
+            List<ContentPacketExtension> contents)
+        {
+            logger.warn("Ignored Jingle 'source-add'");
+
+            return null;
+        }
+
+        @Override
+        public XMPPError onRemoveSource(JingleSession jingleSession,
+            List<ContentPacketExtension> contents)
+        {
+            logger.warn("Ignored Jingle 'source-remove'");
+
+            return null;
+        }
+
+        @Override
+        public XMPPError onSessionAccept(JingleSession jingleSession,
+            List<ContentPacketExtension> answer)
+        {
+            logger.warn("Ignored Jingle 'session-accept'");
+
+            return null;
+        }
+
+        @Override
+        public XMPPError onSessionTerminate(JingleSession jingleSession, JingleIQ iq)
+        {
+            logger.warn("Ignored Jingle 'session-terminate'");
+
+            return null;
+        }
+
+        @Override
+        public XMPPError onSessionInfo(JingleSession session, JingleIQ iq)
+        {
+            logger.warn("Ignored Jingle 'session-info'");
+
+            return null;
+        }
+
+        @Override
+        public XMPPError onTransportAccept(JingleSession jingleSession,
+            List<ContentPacketExtension> contents)
+        {
+            logger.warn("Ignored Jingle 'transport-accept'");
+
+            return null;
+        }
+
+        @Override
+        public void onTransportInfo(JingleSession jingleSession,
+            List<ContentPacketExtension> contents)
+        {
+            logger.warn("Ignored Jingle 'transport-info'");
+        }
+
+        @Override
+        public void onTransportReject(JingleSession jingleSession,
+            JingleIQ      rejectIQ)
+        {
+            logger.warn("Ignored Jingle 'transport-reject'");
+        }
     }
 }

@@ -25,11 +25,7 @@ class JibriDetectorTest : ShouldSpec({
         .map { createJibriMember(it) }
         .forEach {
             detector.memberPresenceChanged(
-                ChatRoomMemberPresenceChangeEvent(
-                    mockk(),
-                    it,
-                    ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED
-                )
+                ChatRoomMemberPresenceChangeEvent.Joined(it)
             )
         }
 

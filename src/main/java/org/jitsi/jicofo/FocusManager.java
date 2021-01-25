@@ -270,8 +270,6 @@ public class FocusManager
      *                   for the list of valid properties.
      *
      * @return new {@link JitsiMeetConferenceImpl} instance
-     *
-     * @throws Exception if any error occurs.
      */
     private JitsiMeetConferenceImpl createConference(
             EntityBareJid room, Map<String, String> properties,
@@ -577,11 +575,6 @@ public class FocusManager
     public void setHealth(JicofoHealthChecker jicofoHealthChecker)
     {
         this.healthChecker = jicofoHealthChecker;
-    }
-
-    public XmppProvider getJvbProtocolProvider()
-    {
-        return jvbProtocolProvider.getProtocolProvider();
     }
 
     /**

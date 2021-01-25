@@ -111,22 +111,6 @@ public interface ChatRoom
     void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
 
     /**
-     * Adds a listener that will be notified of changes in the property of a
-     * room member such as the nickname being changed.
-     *
-     * @param listener a room member property change listener.
-     */
-    void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener);
-
-    /**
-     * Removes a listener that was being notified of changes in the property of
-     * a chat room member such as the nickname being changed.
-     *
-     * @param listener a room member property change listener.
-     */
-    void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener);
-
-    /**
      * Returns a <tt>List</tt> of <tt>ChatRoomMember</tt>s corresponding to all
      * members currently participating in this room.
      *

@@ -39,6 +39,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
+
 /**
  * Stripped implementation of <tt>ChatRoom</tt> using Smack library.
  *
@@ -138,12 +140,6 @@ public class ChatRoomImpl
      * Nickname to member impl class map.
      */
     private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
-
-    /**
-     * The list of <tt>ChatRoomMemberPropertyChangeListener</tt>.
-     */
-    private final CopyOnWriteArrayList<ChatRoomMemberPropertyChangeListener> propListeners
-            = new CopyOnWriteArrayList<>();
 
     /**
      * Local user role.
@@ -501,18 +497,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void addMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener)
-    {
-        propListeners.add(listener);
-    }
-
-    @Override
-    public void removeMemberPropertyChangeListener(ChatRoomMemberPropertyChangeListener listener)
-    {
-        propListeners.remove(listener);
-    }
-
-    @Override
     public List<ChatRoomMember> getMembers()
     {
         synchronized (members)
@@ -627,39 +611,9 @@ public class ChatRoomImpl
         return false;
     }
 
-    private void notifyMemberJoined(ChatMemberImpl member)
+    private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent event)
     {
-        ChatRoomMemberPresenceChangeEvent event
-            = new ChatRoomMemberPresenceChangeEvent(this, member, ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED);
-
         listeners.forEach(l -> l.memberPresenceChanged(event));
-    }
-
-    private void notifyMemberLeft(ChatMemberImpl member)
-    {
-        ChatRoomMemberPresenceChangeEvent event
-            = new ChatRoomMemberPresenceChangeEvent(this, member, ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT);
-
-        listeners.forEach(l -> l.memberPresenceChanged(event));
-    }
-
-    private void notifyMemberKicked(ChatMemberImpl member)
-    {
-        ChatRoomMemberPresenceChangeEvent event
-            = new ChatRoomMemberPresenceChangeEvent(this, member, ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED);
-
-        listeners.forEach(l -> l.memberPresenceChanged(event));
-    }
-
-    private void notifyMemberPropertyChanged(ChatMemberImpl member)
-    {
-        ChatRoomMemberPropertyChangeEvent event
-            = new ChatRoomMemberPropertyChangeEvent(
-                    member,
-                    ChatRoomMemberPropertyChangeEvent.MEMBER_PRESENCE,
-                    null, member.getPresence());
-
-        propListeners.forEach(l -> l.chatRoomPropertyChanged(event));
     }
 
     Occupant getOccupant(ChatMemberImpl chatMember)
@@ -926,7 +880,7 @@ public class ChatRoomImpl
             if (memberJoined)
             {
                 // Trigger member "joined"
-                notifyMemberJoined(chatMember);
+                fireMemberPresenceEvent(new Joined(chatMember));
             }
             else if (memberLeft)
             {
@@ -937,7 +891,7 @@ public class ChatRoomImpl
 
             if (!memberLeft)
             {
-                notifyMemberPropertyChanged(chatMember);
+                fireMemberPresenceEvent(new PresenceUpdated(chatMember));
             }
         }
     }
@@ -1040,7 +994,7 @@ public class ChatRoomImpl
 
             if (member != null)
             {
-                notifyMemberLeft(member);
+                fireMemberPresenceEvent(new Left(member));
             }
             else
             {
@@ -1074,7 +1028,7 @@ public class ChatRoomImpl
                 return;
             }
 
-            notifyMemberKicked(member);
+            fireMemberPresenceEvent(new Kicked(member));
         }
 
         @Override

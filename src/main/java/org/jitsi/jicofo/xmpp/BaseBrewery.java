@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
+
 /**
  * <tt>BaseBrewery</tt> manages the pool of service instances which
  * exist in the current session. Does that by joining "brewery" room where
@@ -41,7 +43,6 @@ import java.util.function.*;
  */
 public abstract class BaseBrewery<T extends ExtensionElement>
     implements ChatRoomMemberPresenceListener,
-               ChatRoomMemberPropertyChangeListener,
                 RegistrationListener
 {
     /**
@@ -169,7 +170,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         {
             chatRoom = protocolProvider.getProtocolProvider().createRoom(breweryJid);
             chatRoom.addMemberPresenceListener(this);
-            chatRoom.addMemberPropertyChangeListener(this);
             chatRoom.join();
 
             logger.info("Joined brewery room: " + breweryJid);
@@ -182,7 +182,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             if (chatRoom != null)
             {
                 chatRoom.removeMemberPresenceListener(this);
-                chatRoom.removeMemberPropertyChangeListener(this);
                 chatRoom = null;
             }
         }
@@ -198,7 +197,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             if(chatRoom != null)
             {
                 chatRoom.removeMemberPresenceListener(this);
-                chatRoom.removeMemberPropertyChangeListener(this);
                 chatRoom.leave();
 
                 logger.info("Left brewery room: " + breweryJid);
@@ -215,19 +213,15 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     }
 
     @Override
-    synchronized public void memberPresenceChanged(
-        ChatRoomMemberPresenceChangeEvent presenceEvent)
+    synchronized public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent presenceEvent)
     {
         ChatRoomMember chatMember = presenceEvent.getChatRoomMember();
-        String eventType = presenceEvent.getEventType();
-        if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
+        if (presenceEvent instanceof Joined || presenceEvent instanceof PresenceUpdated)
         {
             // Process idle or busy
             processMemberPresence(chatMember);
         }
-        else if (ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType))
+        else if (presenceEvent instanceof Left || presenceEvent instanceof Kicked)
         {
             // Process offline status
             BrewInstance instance = find(getJid(chatMember));
@@ -237,15 +231,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
                 removeInstance(instance);
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void chatRoomPropertyChanged(ChatRoomMemberPropertyChangeEvent memberPropertyEvent)
-    {
-        processMemberPresence(memberPropertyEvent.getSourceChatRoomMember());
     }
 
     /**
@@ -280,8 +265,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return;
         }
 
-        T ext
-            = presence.getExtension(extensionElementName, extensionNamespace);
+        T ext = presence.getExtension(extensionElementName, extensionNamespace);
 
         // if the extension is missing skip processing
         if (ext == null)
