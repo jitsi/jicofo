@@ -304,7 +304,7 @@ public class ColibriThreadingTest
         return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
     }
 
-    class MockPeerAllocator
+    static class MockPeerAllocator
     {
         private final String endpointId;
 

@@ -17,6 +17,7 @@
  */
 package mock.xmpp.colibri;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
@@ -65,7 +66,7 @@ public class AllocThreadingTestColibriConference
 
     /**
      * The queue used to put and acquire endpoint names arriving on
-     * {@link ColibriConferenceImpl.ConferenceCreationSemaphore}.
+     * {@code ColibriConferenceImpl.ConferenceCreationSemaphore}.
      * Used to verify if all running threads have reached the semaphore.
      */
     private final BlockingQueue<String> createConfSemaphoreQueue
@@ -197,8 +198,7 @@ public class AllocThreadingTestColibriConference
     {
         createConfSemaphoreQueue.add(endpointId);
 
-        boolean isCreator
-            =  super.acquireCreateConferenceSemaphore(endpointId);
+        boolean isCreator =  super.acquireCreateConferenceSemaphore(endpointId);
 
         if (isCreator)
         {
@@ -231,6 +231,7 @@ public class AllocThreadingTestColibriConference
         return responseReceivedQueue.poll(timeoutSeconds, TimeUnit.SECONDS);
     }
 
+    @SuppressFBWarnings("WA_NOT_IN_LOOP")
     @Override
     protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)

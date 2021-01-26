@@ -25,6 +25,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.stringprep.*;
 
+import javax.validation.constraints.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -213,7 +214,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     }
 
     @Override
-    synchronized public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent presenceEvent)
+    synchronized public void memberPresenceChanged(@NotNull ChatRoomMemberPresenceChangeEvent presenceEvent)
     {
         ChatRoomMember chatMember = presenceEvent.getChatRoomMember();
         if (presenceEvent instanceof Joined || presenceEvent instanceof PresenceUpdated)

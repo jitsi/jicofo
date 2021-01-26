@@ -37,11 +37,11 @@ import java.util.concurrent.*;
 public class MockProtocolProvider
     extends AbstractXmppProvider
 {
-    private MockXmppConnection connection;
+    private final MockXmppConnection connection;
 
-    private AbstractOperationSetJingle jingleOpSet;
+    private final AbstractOperationSetJingle jingleOpSet;
 
-    private MockMultiUserChatOpSet mucApi;
+    private final MockMultiUserChatOpSet mucApi;
 
     @NotNull public XmppConnectionConfig config;
 

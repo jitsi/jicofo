@@ -57,7 +57,8 @@ class BridgeConfigTest : ConfigTest() {
             }
             context("With legacy config") {
                 withLegacyConfig(
-                    "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY=SplitBridgeSelectionStrategy") {
+                    "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY=SplitBridgeSelectionStrategy"
+                ) {
                     config.selectionStrategy.shouldBeInstanceOf<SplitBridgeSelectionStrategy>()
                 }
             }
@@ -74,7 +75,6 @@ class BridgeConfigTest : ConfigTest() {
             }
         }
     }
-
 }
 private val legacyConfig = """
 org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE=111

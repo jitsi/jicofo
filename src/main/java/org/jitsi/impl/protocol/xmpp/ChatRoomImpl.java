@@ -154,7 +154,7 @@ public class ChatRoomImpl
     /**
      * Number of members in the chat room. That excludes the focus member.
      */
-    private Integer memberCount = 0;
+    private int memberCount = 0;
 
     /** The conference that is backed by this MUC room. */
     private JitsiMeetConference conference;
@@ -568,6 +568,10 @@ public class ChatRoomImpl
         admin.addItem(item);
 
         XmppConnection connection = xmppProvider.getXmppConnection();
+        if (connection == null)
+        {
+            throw new IllegalStateException("Failed to grant ownership, no connection.");
+        }
 
         try
         {
@@ -754,8 +758,7 @@ public class ChatRoomImpl
                 memberCount++;
             }
 
-            ChatMemberImpl newMember
-                = new ChatMemberImpl(jid, ChatRoomImpl.this, memberCount);
+            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, memberCount);
 
             members.put(jid, newMember);
 

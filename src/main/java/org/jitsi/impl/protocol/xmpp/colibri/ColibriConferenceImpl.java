@@ -749,14 +749,14 @@ public class ColibriConferenceImpl
             // RTP description
             if (descriptionMap != null)
             {
-                for (String contentName : descriptionMap.keySet())
+                for (Map.Entry<String, RtpDescriptionPacketExtension> entry : descriptionMap.entrySet())
                 {
                     ColibriConferenceIQ.Channel channel
-                        = localChannelsInfo.getContent(contentName)
+                        = localChannelsInfo.getContent(entry.getKey())
                             .getChannels().get(0);
                     send |= colibriBuilder.addRtpDescription(
-                            descriptionMap.get(contentName),
-                            contentName,
+                            entry.getValue(),
+                            entry.getKey(),
                             channel);
                 }
             }

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import com.typesafe.config.*;
+import edu.umd.cs.findbugs.annotations.*;
 import mock.muc.*;
 import org.jitsi.config.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -31,8 +32,6 @@ public class OSGiHandler
 {
     private static OSGiHandler instance = new OSGiHandler();
 
-    private boolean deadlocked;
-
     private OSGiHandler() { }
 
     public static OSGiHandler getInstance()
@@ -42,17 +41,10 @@ public class OSGiHandler
 
     public JicofoServices jicofoServices;
 
-    public void setDeadlocked(boolean deadlocked)
-    {
-        this.deadlocked = deadlocked;
-    }
-
+    @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
     public void init()
         throws Exception
     {
-        if (deadlocked)
-            throw new RuntimeException("Running on deadlocked stack");
-
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
         System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, "test.domain.net");
@@ -74,15 +66,7 @@ public class OSGiHandler
 
     public void shutdown()
     {
-        if (deadlocked)
-            return;
-
         MockMultiUserChatOpSet.cleanMucSharing();
-    }
-
-    public boolean isDeadlocked()
-    {
-        return deadlocked;
     }
 }
 

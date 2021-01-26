@@ -50,5 +50,5 @@ interface ChatRoomMemberPresenceListener {
      * containing the source chat room and type, and reason of the presence
      * change
      */
-    fun memberPresenceChanged(evt: ChatRoomMemberPresenceChangeEvent?)
+    fun memberPresenceChanged(evt: ChatRoomMemberPresenceChangeEvent)
 }

@@ -37,8 +37,7 @@ public class ParticipantTest
     {
         Participant p = new Participant(
                 new MockJitsiMeetConference(),
-                new MockRoomMember(JidCreate.entityFullFrom("something@server.com/1234"), null),
-                0);
+                new MockRoomMember(JidCreate.entityFullFrom("something@server.com/1234"), null));
 
         p.setClock(Clock.fixed(Instant.now(), ZoneId.systemDefault()));
 

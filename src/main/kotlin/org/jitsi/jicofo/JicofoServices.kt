@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
@@ -66,6 +67,7 @@ import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 /**
  * Start/stop jicofo-specific services.
  */
+@SuppressFBWarnings("MS_CANNOT_BE_FINAL")
 open class JicofoServices {
     private val logger = createLogger()
 
@@ -102,10 +104,10 @@ open class JicofoServices {
     val bridgeSelector = BridgeSelector(scheduledPool)
     private val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
         BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector).apply { init() }
-        else null
+    else null
     val jibriDetector = if (JibriConfig.config.breweryEnabled()) {
         logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.breweryJid)
-        JibriDetector(xmppServices.clientConnection, JibriConfig.config.breweryJid, false).apply{ init() }
+        JibriDetector(xmppServices.clientConnection, JibriConfig.config.breweryJid, false).apply { init() }
     } else null
     val sipJibriDetector = if (JibriConfig.config.sipBreweryEnabled()) {
         logger.info("Using a SIP Jibri detector with MUC: " + JibriConfig.config.sipBreweryJid)
@@ -217,8 +219,7 @@ open class JicofoServices {
                 )
             }
             authAuthority
-        }
-        else {
+        } else {
             logger.info("Authentication service disabled.")
             null
         }

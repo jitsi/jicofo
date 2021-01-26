@@ -284,18 +284,16 @@ public class MediaSourceGroupMap
     {
         Map<String, List<SourceGroup>> mapCopy = new HashMap<>();
 
-        for (String mediaType : groupMap.keySet())
+        for (Map.Entry<String, List<SourceGroup>> entry : groupMap.entrySet())
         {
-            List<SourceGroup> listToCopy
-                = new ArrayList<>(groupMap.get(mediaType));
-            List<SourceGroup> listCopy = new ArrayList<>(listToCopy.size());
+            List<SourceGroup> listCopy = new ArrayList<>();
 
-            for (SourceGroup group : listToCopy)
+            for (SourceGroup group : entry.getValue())
             {
                 listCopy.add(group.copy());
             }
 
-            mapCopy.put(mediaType, listCopy);
+            mapCopy.put(entry.getKey(), listCopy);
         }
 
         return new MediaSourceGroupMap(mapCopy);
@@ -331,18 +329,17 @@ public class MediaSourceGroupMap
     {
         Map<String, List<SourceGroupPacketExtension>> map = new HashMap<>();
 
-        for (String mediaType : groupMap.keySet())
+        for (Map.Entry<String, List<SourceGroup>> entry : groupMap.entrySet())
         {
-            List<SourceGroup> groups = groupMap.get(mediaType);
             List<SourceGroupPacketExtension> peGroups
-                = new ArrayList<>(groups.size());
+                = new ArrayList<>(entry.getValue().size());
 
-            for (SourceGroup group : groups)
+            for (SourceGroup group : entry.getValue())
             {
                 peGroups.add(group.getExtensionCopy());
             }
 
-            map.put(mediaType, peGroups);
+            map.put(entry.getKey(), peGroups);
         }
 
         return map;

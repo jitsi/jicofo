@@ -108,8 +108,7 @@ public class ConferenceJsonTest
         Map<String, Object> objects = conf.createJSonMap();
 
         assertEquals("test1" ,objects.get(ConferenceJsonHandler.CONF_NAME_KEY));
-        assertEquals("pawel.gawel", objects.get(ConferenceJsonHandler
-                .CONF_OWNER_KEY));
+        assertEquals("pawel.gawel", objects.get(ConferenceJsonHandler.CONF_OWNER_KEY));
 
         // FIXME: This will fail in different time zone
         //assertEquals(

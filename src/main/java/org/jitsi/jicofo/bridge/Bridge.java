@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
@@ -33,9 +34,11 @@ import static org.jitsi.jicofo.bridge.BridgeConfig.config;
  * to the jitsi-videobridge instance, such as numbers of channels and streams,
  * the region in which the instance resides, etc.
  *
+ * TODO fix comparator (should not be reflexive unless the objects are the same?)
  * @author Pawel Domas
  * @author Boris Grozev
  */
+@SuppressFBWarnings("EQ_COMPARETO_USE_OBJECT_EQUALS")
 public class Bridge
     implements Comparable<Bridge>
 {

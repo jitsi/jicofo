@@ -87,13 +87,13 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setRoom(room1);
 
         // CASE 1: No session-id passed and room does not exist
-        IQ response = conferenceIqHandler.handleIq(query);
+        IQ errorResponse = conferenceIqHandler.handleIq(query);
 
         // REPLY WITH: 'not-authorized'
-        assertNotNull(response);
+        assertNotNull(errorResponse);
         assertEquals(
                 XMPPError.Condition.not_authorized,
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 2: Valid session-id passed and room does not exist
 
@@ -103,29 +103,25 @@ public class ShibbolethAuthenticationAuthorityTest
 
         query.setSessionId(user1Session);
 
-        response = conferenceIqHandler.handleIq(query);
-        assertTrue(response instanceof ConferenceIq);
+        ConferenceIq conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
 
         // CASE 3: no session-id, room exists
         query.setSessionId(null);
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        response = conferenceIqHandler.handleIq(query);
-
-        // REPLY with null - no errors
-        assertTrue(response instanceof ConferenceIq);
+        conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
 
         // CASE 4: invalid session-id, room exists
         query.setSessionId("someinvalidsessionid");
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        response = conferenceIqHandler.handleIq(query);
+        errorResponse = conferenceIqHandler.handleIq(query);
 
         // REPLY with session-invalid
-        assertNotNull(response);
-        assertNotNull(response.getError().getExtension(
+        assertNotNull(errorResponse);
+        assertNotNull(errorResponse.getError().getExtension(
                 SessionInvalidPacketExtension.ELEMENT_NAME,
                 SessionInvalidPacketExtension.NAMESPACE));
 
@@ -136,35 +132,33 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        response = conferenceIqHandler.handleIq(query);
-        // REPLY with null - no error
-        assertTrue(response instanceof ConferenceIq);
+        conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
 
         // CASE 6: do not allow to use session-id from different machine
         query.setSessionId(user2Session);
         query.setFrom(user1Jid);
         query.setMachineUID(user1MachineUid);
 
-        response = conferenceIqHandler.handleIq(query);
+        errorResponse = conferenceIqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(response);
+        assertNotNull(errorResponse);
         assertEquals(
                 XMPPError.Condition.not_acceptable,
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 8: session used without machine UID
         query.setFrom(user1Jid);
         query.setSessionId(user1ShibbolethIdentity);
         query.setMachineUID(null);
 
-        response = conferenceIqHandler.handleIq(query);
+        errorResponse = conferenceIqHandler.handleIq(query);
 
         // not-acceptable
-        assertNotNull(response);
+        assertNotNull(errorResponse);
         assertNotNull(
                 XMPPError.Condition.not_acceptable.toString(),
-                response.getError().getCondition());
+                errorResponse.getError().getCondition());
 
         // CASE 9: authenticate for the same user from different machine
         String user3machineUID = "machine3UID";
@@ -178,8 +172,6 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setMachineUID(user3machineUID);
         query.setSessionId(user3Session);
 
-        response = conferenceIqHandler.handleIq(query);
-
-        assertTrue(response instanceof ConferenceIq);
+        conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
     }
 }

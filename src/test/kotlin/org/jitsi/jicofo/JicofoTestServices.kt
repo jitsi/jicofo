@@ -27,7 +27,6 @@ class JicofoTestServices : JicofoServices() {
         return object : XmppProviderFactory {
             override fun createXmppProvider(config: XmppConnectionConfig): XmppProvider {
                 return MockProtocolProvider(config)
-
             }
         }
     }

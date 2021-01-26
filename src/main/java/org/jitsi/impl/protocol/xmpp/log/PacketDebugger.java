@@ -15,12 +15,15 @@
  */
 package org.jitsi.impl.protocol.xmpp.log;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 
 import java.io.*;
+import java.lang.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Implements {@link SmackDebugger} in order to get info about XMPP traffic.
@@ -54,21 +57,23 @@ public class PacketDebugger
     /**
      * Total XMPP packets  received.
      */
-    private volatile long totalPacketsRecv = 0;
+    private AtomicLong totalPacketsRecv = new AtomicLong();
 
     /**
      * Total XMPP packets sent.
      */
-    private volatile long totalPacketsSent = 0;
+    private AtomicLong totalPacketsSent = new AtomicLong();
 
     /**
      * Creates new {@link PacketDebugger}
      * {@inheritDoc}
      */
+    @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
     public PacketDebugger(XMPPConnection connection, Writer writer, Reader reader)
     {
         super(connection, writer, reader);
 
+        // Change the static value only if an instance is created.
         AbstractDebugger.printInterpreted = true;
 
         debuggerMap.put(connection, this);
@@ -80,7 +85,7 @@ public class PacketDebugger
      */
     public long getTotalPacketsRecv()
     {
-        return totalPacketsRecv;
+        return totalPacketsRecv.get();
     }
 
     /**
@@ -89,24 +94,23 @@ public class PacketDebugger
      */
     public long getTotalPacketsSent()
     {
-        return totalPacketsSent;
+        return totalPacketsSent.get();
     }
 
     // It's fine to do non-atomic as it's only 1 thread doing write operation
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     @Override
     protected void log(String logMessage)
     {
         if (logMessage.startsWith("SENT"))
         {
-            totalPacketsSent += 1;
+            totalPacketsSent.incrementAndGet();
         }
         else if (logMessage.startsWith("RCV PKT ("))
         {
-            totalPacketsRecv += 1;
+            totalPacketsRecv.incrementAndGet();
         }
 
         if (logger.isDebugEnabled() && !logMessage.startsWith("RECV ("))

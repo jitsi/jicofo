@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.reservation.rest;
 
+import edu.umd.cs.findbugs.annotations.*;
 import org.apache.http.*;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.*;
@@ -40,6 +41,7 @@ import java.util.*;
  *
  * @author Pawel Domas
  */
+@SuppressFBWarnings("DM_DEFAULT_ENCODING")
 public class ApiHandler
 {
     /**

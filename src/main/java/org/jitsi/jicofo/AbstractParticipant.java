@@ -84,11 +84,6 @@ public abstract class AbstractParticipant
     private MediaSourceGroupMap sourceGroupsToRemove = new MediaSourceGroupMap();
 
     /**
-     * Tells how many unique sources per media participant is allowed to advertise
-     */
-    protected int maxSourceCount = -1;
-
-    /**
      * Returns currently stored map of RTP description to Colibri content name.
      * @return a <tt>Map<String,RtpDescriptionPacketExtension></tt> which maps
      *         the RTP descriptions to the corresponding Colibri content names.

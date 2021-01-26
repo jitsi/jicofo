@@ -47,14 +47,13 @@ class JibriDetectorTest : ShouldSpec({
             }
         }
     }
-
 })
 
 private fun createJibriMember(jid: EntityFullJid): ChatRoomMember {
     return mockk {
         every { occupantJid } returns jid
         every { presence } returns mockk<Presence> {
-            every { getExtension<ExtensionElement>(JibriStatusPacketExt.ELEMENT_NAME, JibriStatusPacketExt.NAMESPACE)} answers {
+            every { getExtension<ExtensionElement>(JibriStatusPacketExt.ELEMENT_NAME, JibriStatusPacketExt.NAMESPACE) } answers {
                 JibriStatusPacketExt().apply {
                     healthStatus = HealthStatusPacketExt().apply { status = HealthStatusPacketExt.Health.HEALTHY }
                     busyStatus = JibriBusyStatusPacketExt().apply { setAttribute("status", "idle") }
