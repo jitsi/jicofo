@@ -47,7 +47,7 @@ class JibriConfig {
     fun sipBreweryEnabled() = sipBreweryJid != null
 
     val pendingTimeout: Duration by config {
-        "org.jitsi.jicofo.jibri.PENDING_TIMEOUT".from(legacyConfig)
+        "org.jitsi.jicofo.jibri.PENDING_TIMEOUT".from(legacyConfig).convertFrom<Long> { Duration.ofSeconds(it) }
         "jicofo.jibri.pending-timeout".from(newConfig)
     }
 
