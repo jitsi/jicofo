@@ -46,6 +46,8 @@ public class Main
     public static void main(String[] args)
             throws ParseException
     {
+        logger.info("Starting Jicofo.");
+
         Thread.setDefaultUncaughtExceptionHandler((t, e) ->
                 logger.error("An uncaught exception occurred in thread=" + t, e));
 

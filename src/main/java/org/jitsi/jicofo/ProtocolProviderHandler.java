@@ -35,7 +35,9 @@ import java.util.concurrent.*;
 public class ProtocolProviderHandler
     implements RegistrationListener
 {
-    private final static Logger logger = new LoggerImpl(ProtocolProviderHandler.class.getName());
+    // TODO: Remove the empty context when jitsi-utils is updated
+    private final static Logger logger
+            = new LoggerImpl(ProtocolProviderHandler.class.getName(), new LogContext(Collections.emptyMap()));
 
     /**
      * XMPP protocol provider service used by the focus.
@@ -61,11 +63,12 @@ public class ProtocolProviderHandler
     {
         this.config = config;
         this.scheduledExecutorService = scheduledExecutorService;
+        logger.addContext("xmpp_connection", config.getName());
     }
 
     public void start(XmppProviderFactory xmppProviderFactory)
     {
-        protocolService = xmppProviderFactory.createXmppProvider(config);
+        protocolService = xmppProviderFactory.createXmppProvider(config, logger);
         protocolService.addRegistrationListener(this);
         if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
         {
@@ -91,7 +94,7 @@ public class ProtocolProviderHandler
     @Override
     public void registrationChanged(boolean registered)
     {
-        logger.info(this + ": " + (registered ? "registered" : "unregistered"));
+        logger.info(registered ? "registered" : "unregistered");
 
         if (registered)
         {
@@ -138,7 +141,6 @@ public class ProtocolProviderHandler
     public void removeRegistrationListener(RegistrationListener l)
     {
         boolean ok = regListeners.remove(l);
-        logger.debug("Listener removed ? " + ok + ", " + l);
     }
 
     /**

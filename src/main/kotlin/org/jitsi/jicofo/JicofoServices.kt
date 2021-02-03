@@ -51,6 +51,7 @@ import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
@@ -75,8 +76,8 @@ open class JicofoServices {
         // Init smack shit
         initializeSmack()
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig): XmppProvider {
-                return XmppProtocolProvider(config)
+            override fun createXmppProvider(config: XmppConnectionConfig, parentLogger: Logger): XmppProvider {
+                return XmppProtocolProvider(config, parentLogger)
             }
         }
     }
@@ -119,7 +120,6 @@ open class JicofoServices {
     } else null
 
     val focusManager: FocusManager = FocusManager().also {
-        logger.info("Starting FocusManager.")
         it.start(xmppServices.clientConnection, xmppServices.serviceConnection)
     }
 

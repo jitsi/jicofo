@@ -18,7 +18,8 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.utils.logging2.Logger
 
 interface XmppProviderFactory {
-    fun createXmppProvider(config: XmppConnectionConfig): XmppProvider
+    fun createXmppProvider(config: XmppConnectionConfig, parentLogger: Logger): XmppProvider
 }

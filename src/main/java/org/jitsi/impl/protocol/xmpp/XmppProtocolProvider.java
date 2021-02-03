@@ -67,10 +67,7 @@ public class XmppProtocolProvider
         SmackConfiguration.setDebuggerFactory(PacketDebugger::new);
     }
 
-    /**
-     * The logger used by this class.
-     */
-    private final static Logger logger = new LoggerImpl(XmppProtocolProvider.class.getName());
+    private final Logger logger;
 
     /**
      * Jingle operation set.
@@ -116,9 +113,10 @@ public class XmppProtocolProvider
     /**
      * Creates new instance of {@link XmppProtocolProvider} with the given configuration.
      */
-    public XmppProtocolProvider(@NotNull XmppConnectionConfig config)
+    public XmppProtocolProvider(@NotNull XmppConnectionConfig config, @NotNull Logger parentLogger)
     {
         this.config = config;
+        this.logger = parentLogger.createChildLogger(XmppProtocolProvider.class.getName());
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
@@ -441,7 +439,7 @@ public class XmppProtocolProvider
      * Listener that just logs that we are currently reconnecting or we
      * failed to reconnect.
      */
-    static class XmppReConnectionListener
+    private class XmppReConnectionListener
         implements ReconnectionListener
     {
         @Override
@@ -460,7 +458,7 @@ public class XmppProtocolProvider
     /**
      * Implements {@link XmppConnection}.
      */
-    private static class XmppConnectionAdapter
+    private class XmppConnectionAdapter
         implements XmppConnection
     {
         private final XMPPConnection connection;
