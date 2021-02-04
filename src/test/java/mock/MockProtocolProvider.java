@@ -28,8 +28,6 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import java.util.concurrent.*;
-
 /**
  *
  * @author Pawel Domas
@@ -60,7 +58,7 @@ public class MockProtocolProvider
     }
 
     @Override
-    public void register(ScheduledExecutorService executorService)
+    public void start()
     {
         if (jingleOpSet != null)
         {
@@ -71,7 +69,7 @@ public class MockProtocolProvider
     }
 
     @Override
-    public void unregister()
+    public void stop()
     {
         if (jingleOpSet != null)
         {
@@ -131,5 +129,10 @@ public class MockProtocolProvider
     public ChatRoom findOrCreateRoom(@NotNull String name) throws RoomExistsException
     {
         return mucApi.findRoom(name);
+    }
+
+    @Override
+    public void addXmppConnectionListener(@NotNull XmppProvider.XmppConnectionInitializedListener listener)
+    {
     }
 }

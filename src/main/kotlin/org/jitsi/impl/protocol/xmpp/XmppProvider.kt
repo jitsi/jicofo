@@ -29,8 +29,8 @@ import java.util.concurrent.ScheduledExecutorService
  * Based on Jitsi's `ProtocolProviderService`, simplified for the needs of jicofo.
  */
 interface XmppProvider {
-    fun register(executorService: ScheduledExecutorService?)
-    fun unregister()
+    fun start()
+    fun stop()
 
     /**
      * @return true if the provider is currently registered and false otherwise.
@@ -62,4 +62,14 @@ interface XmppProvider {
     fun findOrCreateRoom(name: String): ChatRoom
 
     class RoomExistsException(message: String) : Exception(message)
+
+    fun addXmppConnectionListener(listener: XmppConnectionInitializedListener)
+
+    /**
+     * Interface to use to notify about the XmppConnection being initialized. This is just meant as a temporary solution
+     * until the flow to setup XMPP is cleaned up.
+     */
+    interface XmppConnectionInitializedListener {
+        fun xmppConnectionInitialized(xmppConnection: XmppConnection)
+    }
 }

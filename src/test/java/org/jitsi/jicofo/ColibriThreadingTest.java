@@ -106,8 +106,7 @@ public class ColibriThreadingTest
 
         AllocThreadingTestColibriConference colibriConf =
                 new AllocThreadingTestColibriConference(
-                        osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider()
-                                .getXmppConnection());
+                        osgi.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
@@ -209,8 +208,7 @@ public class ColibriThreadingTest
 
         AllocThreadingTestColibriConference colibriConf =
                 new AllocThreadingTestColibriConference(
-                        osgi.jicofoServices.getXmppServices().getClientConnection().getProtocolProvider()
-                                .getXmppConnection());
+                        osgi.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
 

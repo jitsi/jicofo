@@ -69,6 +69,8 @@ public class XmppProtocolProvider
 
     private final Logger logger;
 
+    private final List<XmppConnectionInitializedListener> xmppConnectionListeners = new ArrayList<>();
+
     /**
      * Jingle operation set.
      */
@@ -103,20 +105,21 @@ public class XmppProtocolProvider
      */
     private XmppConnectionAdapter connectionAdapter;
 
-    /**
-     * Whether to disable TLS certificate verification.
-     */
-    private boolean disableCertificateVerification = false;
-
     @NotNull private final XmppConnectionConfig config;
+    @NotNull private final ScheduledExecutorService executor;
 
     /**
      * Creates new instance of {@link XmppProtocolProvider} with the given configuration.
      */
-    public XmppProtocolProvider(@NotNull XmppConnectionConfig config, @NotNull Logger parentLogger)
+    public XmppProtocolProvider(
+            @NotNull XmppConnectionConfig config,
+            @NotNull ScheduledExecutorService executor,
+            @NotNull Logger parentLogger)
     {
         this.config = config;
+        this.executor = executor;
         this.logger = parentLogger.createChildLogger(XmppProtocolProvider.class.getName());
+        logger.addContext("xmpp_connection", config.getName());
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
@@ -141,7 +144,12 @@ public class XmppProtocolProvider
     }
 
     @Override
-    public synchronized void register(ScheduledExecutorService executorService)
+    public void start()
+    {
+        register(executor);
+    }
+
+    private synchronized void register(ScheduledExecutorService executorService)
     {
         XMPPTCPConnectionConfiguration.Builder connConfig
             = XMPPTCPConnectionConfiguration.builder()
@@ -164,7 +172,7 @@ public class XmppProtocolProvider
             connConfig.performSaslAnonymousAuthentication();
         }
 
-        if (disableCertificateVerification)
+        if (config.getDisableCertificateVerification())
         {
             logger.warn("Disabling TLS certificate verification!");
             connConfig.setCustomX509TrustManager(new TrustAllX509TrustManager());
@@ -251,7 +259,7 @@ public class XmppProtocolProvider
      * {@inheritDoc}
      */
     @Override
-    public synchronized void unregister()
+    public synchronized void stop()
     {
         if (connection == null)
         {
@@ -353,11 +361,6 @@ public class XmppProtocolProvider
         return stats;
     }
 
-    public void setDisableCertificateVerification(boolean disableCertificateVerification)
-    {
-        this.disableCertificateVerification = disableCertificateVerification;
-    }
-
     @Override
     public @NotNull ChatRoom createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
     {
@@ -368,6 +371,28 @@ public class XmppProtocolProvider
     public @NotNull ChatRoom findOrCreateRoom(@NotNull String name) throws XmppStringprepException
     {
         return muc.findOrCreateRoom(name);
+    }
+
+    @Override
+    protected void fireRegistrationStateChanged(boolean registered)
+    {
+        super.fireRegistrationStateChanged(registered);
+
+        if (registered)
+        {
+            XmppConnection xmppConnection = getXmppConnection();
+            if (xmppConnection != null)
+            {
+                xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
+                xmppConnectionListeners.forEach(it -> it.xmppConnectionInitialized(xmppConnection));
+                logger.info("Set replyTimeout=" + config.getReplyTimeout());
+            }
+            else
+            {
+                logger.error("Unable to set Smack replyTimeout, no XmppConnection.");
+            }
+        }
+
     }
 
     class XmppConnectionListener
@@ -629,6 +654,18 @@ public class XmppProtocolProvider
             {
                 rooms.remove(chatRoom.getName());
             }
+        }
+    }
+
+    @Override
+    public void addXmppConnectionListener(XmppConnectionInitializedListener listener)
+    {
+        xmppConnectionListeners.add(listener);
+
+        XmppConnection connection = getXmppConnection();
+        if (connection != null)
+        {
+            listener.xmppConnectionInitialized(connection);
         }
     }
 }

@@ -19,6 +19,7 @@ package org.jitsi.jicofo.recording.jibri;
 
 import kotlin.*;
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging2.*;
@@ -65,19 +66,17 @@ public class JibriDetector
 
     /**
      * Creates new instance of <tt>JibriDetector</tt>
-     * @param protocolProvider the instance fo <tt>ProtocolProviderHandler</tt>
-     * for Jicofo's XMPP connection.
      * @param breweryJid the JID of the brewery MUC room.
      * @param isSip <tt>true</tt> if this instance will work with SIP gateway
      * Jibris or <tt>false</tt> for live streaming Jibris
      */
     public JibriDetector(
-            ProtocolProviderHandler protocolProvider,
+            XmppProvider xmppProvider,
             @NotNull Jid breweryJid,
             boolean isSip)
     {
         super(
-            protocolProvider,
+            xmppProvider,
             breweryJid,
             JibriStatusPacketExt.ELEMENT_NAME,
             JibriStatusPacketExt.NAMESPACE,

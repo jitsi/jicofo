@@ -80,17 +80,17 @@ public class TranscriberManager
      * Create a {@link TranscriberManager} responsible for inviting Jigasi as
      * a transcriber when this is desired.
      *
-     * @param protocolProviderHandler the handler giving access a XmppConnection
      * @param jigasiDetector detector for Jigasi instances which can be dialed
      * to invite a transcriber
      */
-    public TranscriberManager(ProtocolProviderHandler protocolProviderHandler,
+    public TranscriberManager(XmppProvider xmppProvider,
                               JitsiMeetConferenceImpl conference,
                               JigasiDetector jigasiDetector,
                               Logger parentLogger)
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
-        this.connection = protocolProviderHandler.getProtocolProvider().getXmppConnection();
+        // TODO: handle the connection changing (reconnect)
+        this.connection = xmppProvider.getXmppConnection();
 
         this.conference = conference;
         this.chatRoom = conference.getChatRoom();

@@ -47,7 +47,7 @@ public class MockMultiUserChat
 
     private final EntityBareJid roomName;
 
-    private final XmppProvider protocolProvider;
+    private final XmppProvider xmppProvider;
 
     private volatile boolean isJoined;
 
@@ -66,12 +66,10 @@ public class MockMultiUserChat
     // The nickname to join with
     private final String myNickname;
 
-    public MockMultiUserChat(EntityBareJid roomName,
-                             XmppProvider protocolProviderService,
-                             String myNickname)
+    public MockMultiUserChat(EntityBareJid roomName, XmppProvider xmppProvider, String myNickname)
     {
         this.roomName = roomName;
-        this.protocolProvider = protocolProviderService;
+        this.xmppProvider = xmppProvider;
         this.myNickname = myNickname;
     }
 
@@ -391,7 +389,7 @@ public class MockMultiUserChat
     @Override
     public String toString()
     {
-        return "MockMUC@" + hashCode() + "["+ this.roomName + ", " + protocolProvider + "]";
+        return "MockMUC@" + hashCode() + "["+ this.roomName + ", " + xmppProvider + "]";
     }
 
     @Override

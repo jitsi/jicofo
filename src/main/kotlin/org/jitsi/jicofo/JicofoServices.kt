@@ -76,8 +76,12 @@ open class JicofoServices {
         // Init smack shit
         initializeSmack()
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig, parentLogger: Logger): XmppProvider {
-                return XmppProtocolProvider(config, parentLogger)
+            override fun createXmppProvider(
+                config: XmppConnectionConfig,
+                executor: ScheduledExecutorService,
+                parentLogger: Logger
+            ): XmppProvider {
+                return XmppProtocolProvider(config, executor, parentLogger)
             }
         }
     }

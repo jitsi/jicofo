@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.jigasi;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
@@ -59,13 +60,12 @@ public class JigasiDetector
     /**
      * Constructs new JigasiDetector.
      *
-     * @param protocolProvider the xmpp protocol provider
      * @param breweryJid the JID of the brewery room.
      */
-    public JigasiDetector(@NotNull ProtocolProviderHandler protocolProvider, @NotNull Jid breweryJid)
+    public JigasiDetector(@NotNull XmppProvider xmppProvider, @NotNull Jid breweryJid)
     {
         super(
-            protocolProvider,
+            xmppProvider,
             breweryJid,
             ColibriStatsExtension.ELEMENT_NAME,
             ColibriStatsExtension.NAMESPACE,

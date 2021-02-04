@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.bridge
 
-import org.jitsi.jicofo.ProtocolProviderHandler
+import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
@@ -29,7 +29,7 @@ import org.jxmpp.jid.Jid
  * @author Boris Grozev
  */
 class BridgeMucDetector(
-    protocolProvider: ProtocolProviderHandler,
+    xmppProvider: XmppProvider,
     /**
      * The [BridgeSelector] instance which will be notified when new jitsi-videobridge instances are detected, or when
      * they update their status.
@@ -37,7 +37,7 @@ class BridgeMucDetector(
     private val bridgeSelector: BridgeSelector,
     breweryJid: Jid
 ) : BaseBrewery<ColibriStatsExtension?>(
-    protocolProvider,
+    xmppProvider,
     breweryJid,
     ColibriStatsExtension.ELEMENT_NAME,
     ColibriStatsExtension.NAMESPACE,

@@ -58,7 +58,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * The <tt>ProtocolProviderHandler</tt> for Jicofo's XMPP connection.
      */
-    private final ProtocolProviderHandler protocolProvider;
+    private final XmppProvider xmppProvider;
 
     /**
      * The <tt>ChatRoom</tt> instance for the brewery.
@@ -82,8 +82,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
     /**
      * Creates new instance of <tt>BaseBrewery</tt>
-     * @param protocolProvider the {@link ProtocolProviderHandler} instance
-     * to which this detector will attach.
      * @param breweryJid the MUC JID of the room which this detector will join,
      * e.g. {@code roomName@muc-servicename.jabserver.com}.
      * @param presenceExtensionElementName the element name of the extension
@@ -92,14 +90,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * which this brewery will look for.
      */
     public BaseBrewery(
-        @NotNull ProtocolProviderHandler protocolProvider,
+        @NotNull XmppProvider xmppProvider,
         @NotNull Jid breweryJid,
         String presenceExtensionElementName,
         String presenceExtensionNamespace,
         Logger parentLogger)
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
-        this.protocolProvider = protocolProvider;
+        this.xmppProvider = xmppProvider;
         this.breweryJid = breweryJid;
         logger.addContext("brewery", breweryJid.getLocalpartOrThrow().toString());
         this.extensionElementName = presenceExtensionElementName;
@@ -122,7 +120,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public void init()
     {
-        protocolProvider.addRegistrationListener(this);
+        xmppProvider.addRegistrationListener(this);
 
         maybeStart();
     }
@@ -132,7 +130,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     private void maybeStart()
     {
-        if (chatRoom == null && protocolProvider.getProtocolProvider().isRegistered())
+        if (chatRoom == null && xmppProvider.isRegistered())
         {
             start();
         }
@@ -143,7 +141,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public void dispose()
     {
-        protocolProvider.removeRegistrationListener(this);
+        xmppProvider.removeRegistrationListener(this);
 
         stop();
     }
@@ -171,7 +169,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         try
         {
-            chatRoom = protocolProvider.getProtocolProvider().createRoom(breweryJid.toString());
+            chatRoom = xmppProvider.createRoom(breweryJid.toString());
             chatRoom.addMemberPresenceListener(this);
             chatRoom.join();
 
