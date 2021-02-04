@@ -1,6 +1,6 @@
 package org.jitsi.jicofo.bridge;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.json.simple.*;
 
 import java.util.*;
@@ -18,7 +18,7 @@ public abstract class BridgeSelectionStrategy
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(BridgeSelectionStrategy.class);
+    private final static Logger logger = new LoggerImpl(BridgeSelectionStrategy.class.getName());
 
     /**
      * Total number of times selection succeeded because there was a bridge
@@ -65,7 +65,7 @@ public abstract class BridgeSelectionStrategy
     /**
      * Maximum participants per bridge in one conference, or {@code -1} for no maximum.
      */
-    private int maxParticipantsPerBridge = config.maxBridgeParticipants();
+    private final int maxParticipantsPerBridge = config.maxBridgeParticipants();
 
     /**
      * Selects a bridge to be used for a new participant in a conference.

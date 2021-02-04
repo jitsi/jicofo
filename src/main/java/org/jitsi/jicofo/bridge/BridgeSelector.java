@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,20 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.utils.concurrent.*;
+import org.jitsi.utils.event.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
-import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.event.*;
-
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.*;
 
 /**
@@ -46,24 +46,20 @@ public class BridgeSelector
     /**
      * The logger.
      */
-    private final static Logger logger = Logger.getLogger(BridgeSelector.class);
+    private final static Logger logger = new LoggerImpl(BridgeSelector.class.getName());
 
     /**
-     * Stores reference to <tt>EventHandler</tt> registration, so that it can be
-     * unregistered on {@link #dispose()}.
+     * TODO: Refactor to use a common executor.
      */
-    private ServiceRegistration<EventHandler> handlerRegistration;
+    private final static ExecutorService eventEmitterExecutor
+        = Executors.newSingleThreadExecutor(new CustomizableThreadFactory("BridgeSelector-AsyncEventEmitter", false));
 
     /**
      * The map of bridge JID to <tt>Bridge</tt>.
      */
     private final Map<Jid, Bridge> bridges = new HashMap<>();
 
-    /**
-     * The <tt>EventAdmin</tt> used by this instance to fire/send
-     * <tt>BridgeEvent</tt>s.
-     */
-    private EventAdmin eventAdmin;
+    private final AsyncEventEmitter<EventHandler> eventEmitter = new AsyncEventEmitter<>(eventEmitterExecutor);
 
     /**
      * The bridge selection strategy.
@@ -76,9 +72,10 @@ public class BridgeSelector
      * Creates new instance of {@link BridgeSelector}.
      *
      */
-    public BridgeSelector()
+    public BridgeSelector(ScheduledExecutorService executor)
     {
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+        jvbDoctor.start(executor, getBridges());
     }
 
     /**
@@ -212,8 +209,7 @@ public class BridgeSelector
      */
     synchronized public Bridge selectBridge(
             @NotNull JitsiMeetConference conference,
-            String participantRegion,
-            boolean allowMultiBridge)
+            String participantRegion)
     {
         List<Bridge> bridges
             = getPrioritizedBridgesList().stream()
@@ -223,7 +219,7 @@ public class BridgeSelector
             bridges,
             conference.getBridges(),
             participantRegion,
-            allowMultiBridge);
+            OctoConfig.config.getEnabled());
     }
 
     /**
@@ -232,10 +228,9 @@ public class BridgeSelector
      * @param conference the conference for which a bridge is to be selected.
      * @return the selected bridge, represented by its {@link Bridge}.
      */
-    public Bridge selectBridge(
-            @NotNull JitsiMeetConference conference)
+    public Bridge selectBridge(@NotNull JitsiMeetConference conference)
     {
-        return selectBridge(conference, null, false);
+        return selectBridge(conference, null);
     }
 
     /**
@@ -269,47 +264,31 @@ public class BridgeSelector
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());
 
-        eventAdmin.postEvent(BridgeEvent.createBridgeUp(bridge.getJid()));
+        eventEmitter.fireEventAsync(handler ->
+        {
+            handler.bridgeAdded(bridge);
+            return Unit.INSTANCE;
+        });
     }
 
     private void notifyBridgeDown(Bridge bridge)
     {
         logger.debug("Propagating bridge went down event: " + bridge.getJid());
 
-        eventAdmin.postEvent(BridgeEvent.createBridgeDown(bridge.getJid()));
-    }
-
-    /**
-     * Initializes this instance by loading the config and obtaining required
-     * service references.
-     */
-    public void init()
-    {
-        this.eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin == null)
+        eventEmitter.fireEventAsync(handler ->
         {
-            throw new IllegalStateException("EventAdmin service not found");
-        }
-
-        jvbDoctor.start(FocusBundleActivator.getSharedScheduledThreadPool(), getBridges());
+            handler.bridgeRemoved(bridge);
+            return Unit.INSTANCE;
+        });
     }
 
-    /**
-     * Unregisters any event listeners.
-     */
-    public void dispose()
+    public void stop()
     {
         jvbDoctor.stop();
-        if (handlerRegistration != null)
-        {
-            handlerRegistration.unregister();
-            handlerRegistration = null;
-        }
     }
 
     /**
-     * @return the {@link Bridge} for the bridge with a particular XMPP
-     * JID.
+     * @return the {@link Bridge} for the bridge with a particular XMPP JID.
      * @param jid the JID of the bridge.
      */
     public Bridge getBridge(Jid jid)
@@ -348,5 +327,20 @@ public class BridgeSelector
         stats.put("operational_bridge_count", getOperationalBridgeCount());
 
         return stats;
+    }
+
+    public void addHandler(EventHandler eventHandler)
+    {
+        eventEmitter.addHandler(eventHandler);
+    }
+    public void removeHandler(EventHandler eventHandler)
+    {
+        eventEmitter.removeHandler(eventHandler);
+    }
+
+    public interface EventHandler
+    {
+        void bridgeRemoved(Bridge bridge);
+        void bridgeAdded(Bridge bridge);
     }
 }

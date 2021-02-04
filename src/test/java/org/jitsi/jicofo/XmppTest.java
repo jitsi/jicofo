@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.impl.reservation.rest.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.xmpp.util.*;
 
+import org.jivesoftware.smack.packet.IQ;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
 
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-import org.xmpp.packet.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,6 @@ public class XmppTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -58,22 +57,16 @@ public class XmppTest
     public void testAllocateConference()
         throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testRoom@example.com");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testRoom@example.com");
 
-        FocusComponent focusComponent = osgi.jicofoServices.getFocusComponent();
+        IqHandler iqHandler = osgi.jicofoServices.getIqHandler();
 
         ConferenceIq conferenceIq = new ConferenceIq();
 
+        conferenceIq.setFrom("from@example.com");
         conferenceIq.setRoom(roomName);
 
-        IQ result = focusComponent.handleIQSetImpl(IQUtils.convert(conferenceIq));
-
+        ConferenceIq result = (ConferenceIq) iqHandler.handleIq(conferenceIq);
         assertNotNull(result);
-
-        org.jivesoftware.smack.packet.IQ response =  IQUtils.convert(result);
-        assertTrue(response instanceof ConferenceIq);
-
-
     }
 }

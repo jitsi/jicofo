@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,15 +142,15 @@ public class MediaSourceMap
         Map<String, CopyOnWriteArrayList<SourcePacketExtension>> mapCopy
             = new HashMap<>();
 
-        for (String mediaType : sources.keySet())
+        for(Map.Entry<String, CopyOnWriteArrayList<SourcePacketExtension>> entry : sources.entrySet())
         {
             CopyOnWriteArrayList<SourcePacketExtension> sourcesCopy
-                = sources.get(mediaType).stream()
+                = entry.getValue().stream()
                     .map(SourcePacketExtension::copy)
                     .collect(
                         Collectors.toCollection(CopyOnWriteArrayList::new));
 
-            mapCopy.put(mediaType, sourcesCopy);
+            mapCopy.put(entry.getKey(), sourcesCopy);
         }
 
         return new MediaSourceMap(mapCopy);

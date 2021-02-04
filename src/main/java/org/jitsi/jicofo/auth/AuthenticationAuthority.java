@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.auth;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -76,6 +77,7 @@ public interface AuthenticationAuthority
      * @return XMPP error that will be sent to the user if we do not accept
      *         the request.
      */
+    @NotNull
     IQ processLogoutIq(LogoutIq iq);
 
     /**

@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,15 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -42,12 +44,6 @@ public class Participant
     extends AbstractParticipant
 {
     /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private final static Logger classLogger = Logger.getLogger(Participant.class);
-
-    /**
      * Returns the endpoint ID for a participant in the videobridge (Colibri)
      * context. This method can be used before <tt>Participant</tt> instance is
      * created for the <tt>ChatRoomMember</tt>.
@@ -55,7 +51,7 @@ public class Participant
      * @param chatRoomMember XMPP MUC chat room member which represents a
      *                       <tt>Participant</tt>.
      */
-    public static String getEndpointId(XmppChatMember chatRoomMember)
+    public static String getEndpointId(ChatRoomMember chatRoomMember)
     {
         return chatRoomMember.getName(); // XMPP MUC Nickname
     }
@@ -82,18 +78,13 @@ public class Participant
     /**
      * MUC chat member of this participant.
      */
-    private final XmppChatMember roomMember;
+    private final ChatRoomMember roomMember;
 
     /**
      * Jingle session (if any) established with this peer.
      */
     private JingleSession jingleSession;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -112,29 +103,17 @@ public class Participant
     private boolean mutedStatus;
 
     /**
-     * Participant's display name.
-     */
-    private String displayName = null;
-
-    /**
      * Creates new {@link Participant} for given chat room member.
      *
-     * @param roomMember the {@link XmppChatMember} that represent this
+     * @param roomMember the {@link ChatRoomMember} that represent this
      *                   participant in MUC conference room.
-     *
-     * @param maxSourceCount how many unique sources per media this participant
-     *                     instance will be allowed to advertise.
      */
-    public Participant(JitsiMeetConference    conference,
-                       XmppChatMember         roomMember,
-                       int maxSourceCount)
+    public Participant(@NotNull JitsiMeetConference conference, @NotNull ChatRoomMember roomMember)
     {
         super(conference.getLogger());
-        Objects.requireNonNull(conference, "conference");
 
-        this.roomMember = Objects.requireNonNull(roomMember, "roomMember");
-        this.maxSourceCount = maxSourceCount;
-        this.logger = Logger.getLogger(classLogger, conference.getLogger());
+        this.roomMember = roomMember;
+        this.logger = new LoggerImpl(getClass().getName(), conference.getLogger().getLevel());
     }
 
     /**
@@ -184,10 +163,10 @@ public class Participant
     }
 
     /**
-     * Returns {@link XmppChatMember} that represents this participant in
+     * Returns {@link ChatRoomMember} that represents this participant in
      * conference multi-user chat room.
      */
-    public XmppChatMember getChatMember()
+    public ChatRoomMember getChatMember()
     {
         return roomMember;
     }
@@ -392,16 +371,6 @@ public class Participant
     }
 
     /**
-     * Return a <tt>Boolean</tt> which informs about this participant's video
-     * muted status. The <tt>null</tt> value stands for 'unknown'/not signalled,
-     * <tt>true</tt> for muted and <tt>false</tt> means unmuted.
-     */
-    public Boolean isVideoMuted()
-    {
-        return roomMember.hasVideoMuted();
-    }
-
-    /**
      * Extracts and stores transport information from given map of Jingle
      * content.  If we already have the transport information it will be
      * merged into the currently stored one with
@@ -428,9 +397,7 @@ public class Participant
         }
         if (transport == null)
         {
-            logger.error(
-                "No valid transport supplied in transport-update from "
-                    + getChatMember().getContactAddress());
+            logger.error( "No valid transport supplied in transport-update from " + getChatMember().getName());
             return;
         }
 
@@ -490,30 +457,12 @@ public class Participant
     }
 
     /**
-     * Returns the display name of the participant.
-     * @return the display name of the participant.
-     */
-    public String getDisplayName()
-    {
-        return displayName;
-    }
-
-    /**
      * Returns the stats ID of the participant.
      * @return the stats ID of the participant.
      */
     public String getStatId()
     {
         return roomMember.getStatsId();
-    }
-
-    /**
-     * Sets the display name of the participant.
-     * @param displayName the display name to set.
-     */
-    public void setDisplayName(String displayName)
-    {
-        this.displayName = displayName;
     }
 
     /**

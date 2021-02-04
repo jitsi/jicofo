@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,12 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
-import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.jicofo.osgi.*;
-import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.Logger;
-import org.jitsi.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 
@@ -40,13 +37,6 @@ import static org.jitsi.jicofo.bridge.BridgeConfig.config;
  * The class is responsible for doing health checks of currently known
  * jitsi-videobridge instances.
  *
- * Listens to <tt>BridgeEvent#BRIDGE_UP</tt>/<tt>BridgeEvent#BRIDGE_OFFLINE</tt>
- * and schedules/cancels new health check jobs. When a health check task fails
- * <tt>BridgeEvent#HEALTH_CHECK_FAILED</tt> is triggered.
- *
- * Class is started by listing on OSGi activator list in
- * {@link JicofoBundleConfig}
- *
  * @author Pawel Domas
  */
 public class JvbDoctor
@@ -54,7 +44,7 @@ public class JvbDoctor
     /**
      * The logger.
      */
-    private static final Logger logger = Logger.getLogger(JvbDoctor.class);
+    private static final Logger logger = new LoggerImpl(JvbDoctor.class.getName());
 
     /**
      * Tells how often we send health checks to the bridge in ms.
@@ -87,16 +77,12 @@ public class JvbDoctor
         this.listener = listener;
     }
 
-    private XmppConnection getConnection() {
-        FocusManager focusManager
-                = ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
-        ProtocolProviderService protocolProvider
-                = focusManager.getJvbProtocolProvider();
-        OperationSetDirectSmackXmpp xmppOpSet
-                = protocolProvider.getOperationSet(OperationSetDirectSmackXmpp.class);
+    private XmppConnection getConnection()
+    {
+        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
+        XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection().getProtocolProvider();
 
-        return protocolProvider.isRegistered()
-                ? xmppOpSet.getXmppConnection() : null;
+        return xmppProvider.isRegistered() ? xmppProvider.getXmppConnection() : null;
     }
 
     synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
@@ -282,8 +268,6 @@ public class JvbDoctor
                 if (taskInvalid())
                     return;
 
-                logger.debug("Health check response from: " + bridgeJid + ": " + IQUtils.responseToXML(response));
-
                 if (response == null)
                 {
                     logger.warn("Health check timed out for: " + bridgeJid);
@@ -308,10 +292,8 @@ public class JvbDoctor
                     XMPPError error = response.getError();
                     XMPPError.Condition condition = error.getCondition();
 
-                    if (XMPPError.Condition.internal_server_error
-                            .equals(condition)
-                        || XMPPError.Condition.service_unavailable
-                            .equals(condition))
+                    if (XMPPError.Condition.internal_server_error.equals(condition)
+                        || XMPPError.Condition.service_unavailable.equals(condition))
                     {
                         // Health check failure
                         logger.warn("Health check failed for: " + bridgeJid + ": " + error.toXML().toString());

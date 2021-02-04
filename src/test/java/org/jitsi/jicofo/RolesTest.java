@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import net.java.sip.communicator.service.protocol.*;
-
+import org.jitsi.impl.protocol.xmpp.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -49,7 +48,6 @@ public class RolesTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -60,10 +58,9 @@ public class RolesTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConference = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConference = TestConference.allocate(serverName, roomName);
         MockProtocolProvider pps = testConference.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant[] users = new MockParticipant[4];

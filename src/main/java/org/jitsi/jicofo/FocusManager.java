@@ -17,29 +17,22 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.xmpp.XmppConfig;
-import org.jitsi.eventadmin.*;
-import org.jitsi.utils.logging.Logger; // disambiguation
-
+import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.logging2.*;
+import org.jitsi.utils.logging2.Logger;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
-
 
 /**
  * Manages {@link JitsiMeetConference} on some server. Takes care of creating
@@ -49,13 +42,12 @@ import java.util.logging.*;
  * @author Boris Grozev
  */
 public class FocusManager
-    implements JitsiMeetConferenceImpl.ConferenceListener,
-               RegistrationStateChangeListener
+    implements JitsiMeetConferenceImpl.ConferenceListener
 {
     /**
      * The logger used by this instance.
      */
-    private final static Logger logger = Logger.getLogger(FocusManager.class);
+    private final static Logger logger = new LoggerImpl(FocusManager.class.getName());
 
     /**
      * The pseudo-random generator which is to be used when generating IDs.
@@ -66,11 +58,6 @@ public class FocusManager
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private final FocusExpireThread expireThread = new FocusExpireThread();
-
-    /**
-     * <tt>FocusManager</tt> service registration.
-     */
-    private ServiceRegistration<FocusManager> serviceRegistration;
 
     /**
      * Jitsi Meet conferences mapped by MUC room names.
@@ -107,21 +94,9 @@ public class FocusManager
     private ProtocolProviderHandler protocolProviderHandler;
 
     /**
-     * <tt>JitsiMeetServices</tt> instance that recognizes currently available
-     * conferencing services like Jitsi videobridge or SIP gateway.
-     */
-    private JitsiMeetServices jitsiMeetServices;
-
-    /**
      * The XMPP connection provider that will be used to detect JVB's and allocate channels.
      */
     private ProtocolProviderHandler jvbProtocolProvider;
-
-    /**
-     * Handler that takes care of pre-processing various Jitsi Meet extensions
-     * IQs sent from conference participants to the focus.
-     */
-    private MeetExtensionsHandler meetExtensionsHandler;
 
     /**
      * A class that holds Jicofo-wide statistics
@@ -131,7 +106,7 @@ public class FocusManager
     /**
      * TODO: refactor to avoid the reference.
      */
-    private Health health;
+    private JicofoHealthChecker healthChecker;
 
     /**
      * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
@@ -142,22 +117,17 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start()
-        throws Exception
+    public void start(
+            ProtocolProviderHandler protocolProviderHandler,
+            ProtocolProviderHandler jvbProtocolProvider)
     {
-        BundleContext bundleContext = FocusBundleActivator.bundleContext;
-
-        // Register early, because some of the dependencies e.g.
-        // (JitsiMeetServices -> BridgeSelector -> JvbDoctor) need it. This
-        // will be cleaned up at a later stage.
-        serviceRegistration = bundleContext.registerService(FocusManager.class, this, null);
-
         expireThread.start();
 
         int octoId = 0;
-        if (JicofoConfig.config.getOctoId() != null)
+        Integer configuredId = OctoConfig.config.getId();
+        if (configuredId != null)
         {
-            octoId = JicofoConfig.config.getOctoId();
+            octoId = configuredId;
         }
         if (octoId < 1 || octoId > 0xffff)
         {
@@ -173,35 +143,8 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        protocolProviderHandler = new ProtocolProviderHandler(XmppConfig.client);
-        protocolProviderHandler.start();
-
-        if (XmppConfig.service.getEnabled())
-        {
-            logger.info("Using dedicated Service XMPP connection for JVB MUC: " + jvbProtocolProvider);
-            jvbProtocolProvider = new ProtocolProviderHandler(XmppConfig.service);
-            jvbProtocolProvider.start();
-            jvbProtocolProvider.register();
-        }
-        else
-        {
-            logger.warn("No dedicated Service XMPP connection configured." +
-                        " Falling back to the client XMPP connection for JVB MUC");
-            jvbProtocolProvider = protocolProviderHandler;
-        }
-
-        jitsiMeetServices = new JitsiMeetServices(protocolProviderHandler, jvbProtocolProvider);
-        jitsiMeetServices.start();
-
-        meetExtensionsHandler = new MeetExtensionsHandler(this);
-
-        bundleContext.registerService(
-                JitsiMeetServices.class,
-                jitsiMeetServices,
-                null);
-
-        protocolProviderHandler.addRegistrationListener(this);
-        protocolProviderHandler.register();
+        this.protocolProviderHandler = protocolProviderHandler;
+        this.jvbProtocolProvider = jvbProtocolProvider;
     }
 
     /**
@@ -209,28 +152,7 @@ public class FocusManager
      */
     public void stop()
     {
-        if (serviceRegistration != null)
-        {
-            serviceRegistration.unregister();
-            serviceRegistration = null;
-        }
         expireThread.stop();
-
-        if (jitsiMeetServices != null)
-        {
-            try
-            {
-                jitsiMeetServices.stop();
-            }
-            catch (Exception e)
-            {
-                logger.error("Error when trying to stop JitsiMeetServices", e);
-            }
-        }
-
-        meetExtensionsHandler.dispose();
-
-        protocolProviderHandler.stop();
     }
 
     /**
@@ -244,16 +166,10 @@ public class FocusManager
      * @throws Exception if for any reason we have failed to create
      *                   the conference
      */
-    public boolean conferenceRequest(
-            EntityBareJid          room,
-            Map<String, String>    properties)
+    public boolean conferenceRequest(EntityBareJid room, Map<String, String> properties)
         throws Exception
     {
-        return conferenceRequest(
-                room,
-                properties,
-                null /* logging level - not specified which means that the one
-                        from the logging configuration will be used */);
+        return conferenceRequest(room, properties, Level.ALL);
     }
 
     /**
@@ -325,7 +241,7 @@ public class FocusManager
         }
         catch (Exception e)
         {
-            logger.info("Exception while trying to start the conference", e);
+            logger.warn("Exception while trying to start the conference", e);
 
             // stop() method is called by the conference automatically in order
             // to not release the lock on JitsiMeetConference instance and avoid
@@ -355,8 +271,6 @@ public class FocusManager
      *                   for the list of valid properties.
      *
      * @return new {@link JitsiMeetConferenceImpl} instance
-     *
-     * @throws Exception if any error occurs.
      */
     private JitsiMeetConferenceImpl createConference(
             EntityBareJid room, Map<String, String> properties,
@@ -403,15 +317,6 @@ public class FocusManager
             sb.append(options);
 
             logger.info(sb);
-        }
-
-        // Send focus created event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                EventFactory.focusCreated(
-                    String.valueOf(conference.getId()), conference.getRoomName()));
         }
 
         return conference;
@@ -491,15 +396,8 @@ public class FocusManager
             }
 
             for (FocusAllocationListener listener : listeners)
-                listener.onFocusDestroyed(roomName);
-
-            // Send focus destroyed event
-            EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-            if (eventAdmin != null)
             {
-                eventAdmin.postEvent(
-                    EventFactory.focusDestroyed(
-                        String.valueOf(conference.getId()), conference.getRoomName()));
+                listener.onFocusDestroyed(roomName);
             }
         }
     }
@@ -592,20 +490,12 @@ public class FocusManager
         }
     }
 
-    /**
-     * Returns instance of <tt>JitsiMeetServices</tt> used in conferences.
-     */
-    public JitsiMeetServices getJitsiMeetServices()
-    {
-        return jitsiMeetServices;
-    }
-
     @SuppressWarnings("unchecked")
     public JSONObject getStats()
     {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we'll merge stats from different "child" objects here.
-        JSONObject stats = jitsiMeetServices.getStats();
+        JSONObject stats = new JSONObject();
         stats.put("total_participants", statistics.totalParticipants.get());
         stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
         stats.put("conferences", getNonHealthCheckConferenceCount());
@@ -664,100 +554,38 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         // XMPP traffic stats
-        ProtocolProviderService pps = protocolProviderHandler.getProtocolProvider();
+        XmppProvider pps = protocolProviderHandler.getProtocolProvider();
         if (pps instanceof XmppProtocolProvider)
         {
             XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) pps;
             stats.put("xmpp", xmppProtocolProvider.getStats());
         }
 
-        if (health != null)
+        if (healthChecker != null)
         {
-            stats.put("slow_health_check", health.getTotalSlowHealthChecks());
+            stats.put("slow_health_check", healthChecker.getTotalSlowHealthChecks());
         }
 
         JSONObject jibriStats = JibriSession.getGlobalStats();
         jibriSessionStats.toJSON(jibriStats);
-        // This intentionally duplicates stats.jibri_detector into stats.jibri.detector to keep backward compatibility
-        // for a while.
-        JibriDetector jibriDetector = jitsiMeetServices.getJibriDetector();
-        if (jibriDetector != null)
-        {
-            jibriStats.put("detector", jibriDetector.getStats());
-        }
-        // This intentionally duplicates stats.sip_jibri_detector into stats.jibri.sip_detector to keep backward
-        // compatibility for a while.
-        JibriDetector sipJibriDetector = jitsiMeetServices.getSipJibriDetector();
-        if (sipJibriDetector != null)
-        {
-            jibriStats.put("sip_detector", sipJibriDetector.getStats());
-        }
         stats.put("jibri", jibriStats);
 
         return stats;
     }
 
-    public void setHealth(Health health)
+    public void setHealth(JicofoHealthChecker jicofoHealthChecker)
     {
-        this.health = health;
+        this.healthChecker = jicofoHealthChecker;
     }
 
     /**
-     * Returns {@link ProtocolProviderService} for the JVB XMPP connection.
-     */
-    public ProtocolProviderService getJvbProtocolProvider()
-    {
-        return jvbProtocolProvider.getProtocolProvider();
-    }
-
-    /**
-     * Interface used to listen for focus lifecycle events.
-     */
-    public interface FocusAllocationListener
-    {
-        /**
-         * Method fired when focus is destroyed.
-         * @param roomName the name of the conference room for which focus
-         *                 has been destroyed.
-         */
-        void onFocusDestroyed(EntityBareJid roomName);
-
-        // Add focus allocated method if needed
-    }
-
-    /**
-     * Returns operation set instance for focus XMPP connection.
-     *
-     * @param opsetClass operation set class.
-     * @param <T> the class of Operation Set to be returned
-     * @return operation set instance of given class or <tt>null</tt> if
-     * given operation set is not implemented by focus XMPP provider.
-     */
-    public <T extends OperationSet> T getOperationSet(Class<T> opsetClass)
-    {
-        return protocolProviderHandler.getOperationSet(opsetClass);
-    }
-
-    /**
-     * Gets the {@code ProtocolProviderSerivce} for focus XMPP connection.
+     * Gets the {@code ProtocolProviderService} for focus XMPP connection.
      *
      * @return  the {@code ProtocolProviderService} for focus XMPP connection
      */
-    public ProtocolProviderService getProtocolProvider()
+    public XmppProvider getProtocolProvider()
     {
         return protocolProviderHandler.getProtocolProvider();
-    }
-
-    @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
-    {
-        RegistrationState registrationState = evt.getNewState();
-        logger.info("XMPP provider reg state: " + registrationState);
-        if (RegistrationState.REGISTERED.equals(registrationState))
-        {
-            // Do initializations which require valid connection
-            meetExtensionsHandler.init();
-        }
     }
 
     public @NotNull Statistics getStatistics()
@@ -884,5 +712,20 @@ public class FocusManager
                 }
             }
         }
+    }
+
+    /**
+     * Interface used to listen for focus lifecycle events.
+     */
+    public interface FocusAllocationListener
+    {
+        /**
+         * Method fired when focus is destroyed.
+         * @param roomName the name of the conference room for which focus
+         *                 has been destroyed.
+         */
+        void onFocusDestroyed(EntityBareJid roomName);
+
+        // Add focus allocated method if needed
     }
 }

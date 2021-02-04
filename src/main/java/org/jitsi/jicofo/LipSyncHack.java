@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,14 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import net.java.sip.communicator.service.protocol.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -66,13 +65,6 @@ import java.util.*;
 public class LipSyncHack implements OperationSetJingle
 {
     /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    static private final Logger classLogger
-        = Logger.getLogger(LipSyncHack.class);
-
-    /**
      * Parent conference for which this instance is doing stream merging.
      */
     private final JitsiMeetConference conference;
@@ -82,11 +74,6 @@ public class LipSyncHack implements OperationSetJingle
      */
     private final OperationSetJingle jingleImpl;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -103,7 +90,7 @@ public class LipSyncHack implements OperationSetJingle
         this.conference = Objects.requireNonNull(conference, "conference");
         this.jingleImpl = Objects.requireNonNull(jingleImpl, "jingleImpl");
 
-        this.logger = Logger.getLogger(classLogger, conference.getLogger());
+        this.logger = new LoggerImpl(LipSyncHack.class.getName(), conference.getLogger().getLevel());
     }
 
     private MediaSourceMap getParticipantSSRCMap(Jid mucJid)
@@ -133,24 +120,20 @@ public class LipSyncHack implements OperationSetJingle
     private boolean isOkToMergeParticipantAV(Jid participantJid,
                                              Jid ownerJid)
     {
-        Participant participant
-            = conference.findParticipantForRoomJid(participantJid);
+        Participant participant = conference.findParticipantForRoomJid(participantJid);
         if (participant == null)
         {
             logger.error("No target participant found for: " + participantJid);
             return false;
         }
 
-        Participant streamsOwner
-            = conference.findParticipantForRoomJid(ownerJid);
+        Participant streamsOwner = conference.findParticipantForRoomJid(ownerJid);
         if (streamsOwner == null)
         {
             // Do not log that error for the JVB
             if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
             {
-                logger.error(
-                    "Stream owner not a participant or not found for jid: "
-                        + ownerJid);
+                logger.error("Stream owner not a participant or not found for jid: " + ownerJid);
             }
             return false;
         }
@@ -175,6 +158,7 @@ public class LipSyncHack implements OperationSetJingle
         boolean merged = false;
         if (isOkToMergeParticipantAV(participant, owner))
         {
+            logger.info("Enabling lip-sync for " + participant.toString());
             merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
         }
 

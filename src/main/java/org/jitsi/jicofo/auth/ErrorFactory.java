@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.auth;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
+import org.jitsi.jicofo.reservation.*;
 import org.jivesoftware.smack.packet.*;
 
 /**
@@ -81,6 +82,30 @@ public class ErrorFactory
         // not acceptable
         final XMPPError error
             = XMPPError.from(XMPPError.Condition.not_acceptable, errorMessage)
+                .build();
+
+        return IQ.createErrorResponse(query, error);
+    }
+
+    /**
+     * Creates XMPP error response which will describe given
+     * <tt>ReservationSystem.Result</tt>.
+     *
+     * @param query query IQ for which XMPP error response will be crated.
+     * @param result reservation system result which contains all details about
+     *               specific reservation error.
+     *
+     * @return XMPP error response which describes given
+     *         <tt>ReservationSystem.Result</tt>.
+     */
+    public static IQ createReservationError(ConferenceIq query,
+                                            ReservationSystem.Result result)
+    {
+        final XMPPError error
+            = XMPPError.from(
+                    XMPPError.Condition.service_unavailable,
+                    result.getErrorMessage())
+                .addExtension(new ReservationErrorPacketExt(result.getCode()))
                 .build();
 
         return IQ.createErrorResponse(query, error);

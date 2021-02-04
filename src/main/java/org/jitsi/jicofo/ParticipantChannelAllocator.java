@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -27,7 +27,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -43,18 +43,6 @@ import java.util.*;
  */
 public class ParticipantChannelAllocator extends AbstractChannelAllocator
 {
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    private final static Logger classLogger
-        = Logger.getLogger(ParticipantChannelAllocator.class);
-
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -74,7 +62,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     {
         super(meetConference, bridgeSession, participant, startMuted, reInvite);
         this.participant = participant;
-        this.logger = Logger.getLogger(classLogger, meetConference.getLogger());
+        this.logger = new LoggerImpl(getClass().getName(), meetConference.getLogger().getLevel());
     }
 
     /**
@@ -215,8 +203,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         JicofoJingleUtils.addBundleExtensions(jingleIQ);
         if (startMuted[0] || startMuted[1])
         {
-            JicofoJingleUtils.addStartMutedExtension(
-                jingleIQ, startMuted[0], startMuted[1]);
+            JicofoJingleUtils.addStartMutedExtension(jingleIQ, startMuted[0], startMuted[1]);
         }
 
         // Include info about the BridgeSession which provides the transport

@@ -52,15 +52,3 @@ msgstr ""
 #: ../templates:3001
 msgid "The secret used to connect to xmpp server as jicofo user."
 msgstr ""
-
-#. Type: password
-#. Description
-#: ../templates:4001
-msgid "Component secret:"
-msgstr ""
-
-#. Type: password
-#. Description
-#: ../templates:4001
-msgid "The secret used to connect to xmpp server as component"
-msgstr ""

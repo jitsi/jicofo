@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,23 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
-import org.jitsi.utils.logging.*;
+import kotlin.*;
+import org.jitsi.utils.concurrent.*;
+import org.jitsi.utils.event.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 
-import org.jitsi.eventadmin.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.osgi.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
+
+import java.util.concurrent.*;
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances which exist in
  * the current session. Does that by joining "brewery" room where Jibris connect
- * to and publish their's status in MUC presence. It emits {@link JibriEvent}s
- * to reflect current Jibri's status.
+ * to and publish their's status in MUC presence.
  *
  * @author Pawel Domas
  */
@@ -41,13 +43,17 @@ public class JibriDetector
     /**
      * The logger
      */
-    private static final Logger logger = Logger.getLogger(JibriDetector.class);
+    private static final Logger logger = new LoggerImpl(JibriDetector.class.getName());
+
 
     /**
-     * The reference to the <tt>EventAdmin</tt> service which is used to send
-     * {@link JibriEvent}s.
+     * TODO: Refactor to use a common executor.
      */
-    private final OSGIServiceRef<EventAdmin> eventAdminRef;
+    private final static ExecutorService eventEmitterExecutor
+            = Executors.newSingleThreadExecutor(
+                    new CustomizableThreadFactory("JibriDetector-AsyncEventEmitter", false));
+
+    private final AsyncEventEmitter<EventHandler> eventEmitter = new AsyncEventEmitter<>(eventEmitterExecutor);
 
     /**
      * Indicates whether this instance detects SIP gateway Jibris or regular
@@ -73,7 +79,6 @@ public class JibriDetector
             JibriStatusPacketExt.ELEMENT_NAME,
             JibriStatusPacketExt.NAMESPACE);
 
-        this.eventAdminRef = new OSGIServiceRef<>(FocusBundleActivator.bundleContext, EventAdmin.class);
         this.isSip = isSip;
     }
 
@@ -113,19 +118,11 @@ public class JibriDetector
     {
         logger.info("Received Jibri " + jid + " status " + presenceExt.toXML());
 
-        if (presenceExt.isAvailable())
-        {
-            notifyJibriStatus(jid, true);
-        }
-        else
+        if (!presenceExt.isAvailable())
         {
             if (presenceExt.getBusyStatus() == null || presenceExt.getHealthStatus() == null)
             {
                 notifyInstanceOffline(jid);
-            }
-            else
-            {
-                notifyJibriStatus(jid, false);
             }
         }
     }
@@ -135,30 +132,21 @@ public class JibriDetector
     {
         logger.info(getLogName() + ": " + jid + " went offline");
 
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin != null)
+        eventEmitter.fireEventAsync(handler ->
         {
-            eventAdmin.postEvent(JibriEvent.newWentOfflineEvent(jid, this.isSip));
-        }
-        else
-        {
-            logger.warn("No EventAdmin!");
-        }
+            handler.instanceOffline(jid);
+            return Unit.INSTANCE;
+        });
     }
 
-    private void notifyJibriStatus(Jid jibriJid, boolean available)
+    void addHandler(EventHandler eventHandler)
     {
-        logger.info(getLogName() + ": " + jibriJid + " available: " + available);
+        eventEmitter.addHandler(eventHandler);
+    }
 
-        EventAdmin eventAdmin = eventAdminRef.get();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(JibriEvent.newStatusChangedEvent(jibriJid, available, isSip));
-        }
-        else
-        {
-            logger.warn("No EventAdmin!");
-        }
+    void removeHandler(EventHandler eventHandler)
+    {
+        eventEmitter.removeHandler(eventHandler);
     }
 
     @SuppressWarnings("unchecked")
@@ -170,5 +158,10 @@ public class JibriDetector
             "available",
             getInstanceCount(brewInstance -> brewInstance.status != null && brewInstance.status.isAvailable()));
         return stats;
+    }
+
+    public interface EventHandler
+    {
+        default void instanceOffline(Jid jid) {}
     }
 }

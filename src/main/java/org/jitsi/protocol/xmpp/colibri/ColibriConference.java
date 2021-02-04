@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,9 @@ package org.jitsi.protocol.xmpp.colibri;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import net.java.sip.communicator.service.protocol.*;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -60,14 +57,6 @@ public interface ColibriConference
     String getConferenceId();
 
     /**
-     * Sets Jitsi Meet config that provides Colibri channels configurable
-     * properties.
-     * @param config <tt>JitsiMeetConfig</tt> to be used for allocating
-     * Colibri channels in this conference.
-     */
-    void setConfig(JitsiMeetConfig config);
-
-    /**
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
@@ -99,8 +88,6 @@ public interface ColibriConference
      * of ICE session.
      * @param contents content list that describes peer media.
      * @return <tt>ColibriConferenceIQ</tt> that describes allocated channels.
-     *
-     * @throws OperationFailedException if channel allocation fails.
      */
     default ColibriConferenceIQ createColibriChannels(
         String endpointId,
@@ -266,7 +253,7 @@ public interface ColibriConference
 
     /**
      * Mutes audio channels described in given IQ by changing their media
-     * direction to {@link org.jitsi.service.neomedia.MediaDirection#SENDONLY}.
+     * direction to {@code sendonly}.
      * @param channelsInfo the IQ that describes the channels to be muted.
      * @param mute <tt>true</tt> to mute or <tt>false</tt> to unmute audio
      * channels described in <tt>channelsInfo</tt>.

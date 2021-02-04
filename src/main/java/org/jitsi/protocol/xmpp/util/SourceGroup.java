@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,13 +45,11 @@ public class SourceGroup
      * @return the list of <tt>SourceGroup</tt>s described by given
      *         <tt>ContentPacketExtension</tt>.
      */
-    public static List<SourceGroup> getSourceGroupsForContent(
-            ContentPacketExtension content)
+    public static List<SourceGroup> getSourceGroupsForContent(ContentPacketExtension content)
     {
         List<SourceGroup> groups = new ArrayList<>();
 
-        RtpDescriptionPacketExtension rtpDescPe
-            = JingleUtils.getRtpDescription(content);
+        RtpDescriptionPacketExtension rtpDescPe = JingleUtils.getRtpDescription(content);
 
         if (rtpDescPe == null)
         {
@@ -59,8 +57,7 @@ public class SourceGroup
         }
 
         List<SourceGroupPacketExtension> groupExtensions
-            = rtpDescPe.getChildExtensionsOfType(
-                    SourceGroupPacketExtension.class);
+            = rtpDescPe.getChildExtensionsOfType(SourceGroupPacketExtension.class);
 
         for (SourceGroupPacketExtension groupPe : groupExtensions)
         {
@@ -125,15 +122,7 @@ public class SourceGroup
      */
     public boolean belongsToGroup(SourcePacketExtension source)
     {
-        for (SourcePacketExtension groupSrcs : this.getSources())
-        {
-            if (groupSrcs.sourceEquals(source))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return getSources().stream().anyMatch(groupSources -> groupSources.equals(source));
     }
 
     /**
@@ -143,7 +132,7 @@ public class SourceGroup
      * the media section {@link SourcePacketExtension}s, as normally
      * {@link SourcePacketExtension}s signalled inside of
      * {@link SourceGroupPacketExtension} do not contain any parameters
-     * including MSID. See {@link SSRCValidator#copySourceParamsToGroups()}.
+     * including MSID. See {@code SSRCValidator#copySourceParamsToGroups()}.
      *
      * @return a {@link String}
      */
@@ -236,6 +225,12 @@ public class SourceGroup
         }
 
         return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(getSemantics(), getSources());
     }
 
     /**

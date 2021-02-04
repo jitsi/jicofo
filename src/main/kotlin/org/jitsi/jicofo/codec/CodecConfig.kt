@@ -91,8 +91,7 @@ class OpusConfig : CodecConfig("jicofo.codec.audio.opus", "opus") {
     val red = CodecConfig("$base.red", "red")
 }
 
-
-open class RtpExtensionConfig(base: String ) {
+open class RtpExtensionConfig(base: String) {
     open val enabled: Boolean by config {
         "$base.enabled".from(JitsiConfig.newConfig)
     }
@@ -148,7 +147,8 @@ class Config {
     val videoContentType: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy(
             "$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE",
-            "jicofo.codec.rtp-extensions.video-content-type")
+            "jicofo.codec.rtp-extensions.video-content-type"
+        )
     @JvmField
     val framemarking: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "jicofo.codec.rtp-extensions.framemarking")
@@ -160,4 +160,3 @@ class Config {
         val config = Config()
     }
 }
-

@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,18 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import net.java.sip.communicator.service.protocol.*;
-import org.jitsi.jicofo.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.service.neomedia.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.parts.*;
 
 import java.time.*;
 import java.util.*;
@@ -52,8 +48,7 @@ public class ColibriConferenceImpl
 {
     public final static Stats stats = new Stats();
 
-    private final static Logger logger
-        = Logger.getLogger(ColibriConferenceImpl.class);
+    private final static Logger logger = new LoggerImpl(ColibriConferenceImpl.class.getName());
 
     /**
      * The instance of XMPP connection.
@@ -121,11 +116,6 @@ public class ColibriConferenceImpl
     private boolean disposed;
 
     /**
-     * The global ID of the conference.
-     */
-    private String gid;
-
-    /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
      * @param connection XMPP connection object that wil be used by the new
      *        instance to communicate.
@@ -141,7 +131,6 @@ public class ColibriConferenceImpl
      */
     public void setGID(String gid)
     {
-        this.gid = gid;
         conferenceState.setGID(gid);
     }
 
@@ -206,18 +195,6 @@ public class ColibriConferenceImpl
 
     /**
      * {@inheritDoc}
-     */
-    @Override
-    public void setConfig(JitsiMeetConfig config)
-    {
-        synchronized (syncRoot)
-        {
-            colibriBuilder.setAudioPacketDelay(config.getAudioPacketDelay());
-        }
-    }
-
-    /**
-     * {@inheritDoc}
      * </p>
      * Blocks until a reply is received (and might also block waiting for
      * the conference to be allocated before sending the request).
@@ -269,12 +246,12 @@ public class ColibriConferenceImpl
                 logger.debug(Thread.currentThread() + " sending alloc request");
             }
 
-            logRequest("Channel allocate request", allocateRequest);
+            logStanza("Channel allocate request", allocateRequest);
 
             // FIXME retry allocation on timeout ?
             Stanza response = sendAllocRequest(endpointId, allocateRequest);
 
-            logResponse("Channel allocate response", response);
+            logStanza("Channel allocate response", response);
 
             // Verify the response and throw OperationFailedException
             // if it's not a success
@@ -327,7 +304,7 @@ public class ColibriConferenceImpl
      * @throws BadRequestException if the response
      * @throws WrongResponseTypeException if the response contains no error, but
      * is not of the expected {@link ColibriConferenceIQ} type.
-     * @throws ColibriConference in case the response contained an XMPP error
+     * @throws ColibriException in case the response contained an XMPP error
      * not listed above.
      */
     private void maybeThrowOperationFailed(Stanza response)
@@ -403,7 +380,7 @@ public class ColibriConferenceImpl
      *
      * @return <tt>true</tt> if current thread is conference creator.
      *
-     * @throws ColibriConference if the current thread is not the conference
+     * @throws ColibriException if the current thread is not the conference
      * creator thread and the conference creator thread produced an exception.
      * The exception will be a clone of the original.
      */
@@ -474,27 +451,17 @@ public class ColibriConferenceImpl
         }
     }
 
-    private void logResponse(String message, Stanza response)
+    private void logStanza(String message, Stanza stanza)
     {
         if (!logger.isDebugEnabled())
         {
             return;
         }
 
-        String responseXml = IQUtils.responseToXML(response);
+        String stanzaStr = stanza == null ? "null" : stanza.toXML().toString();
+        stanzaStr = stanzaStr.replace(">",">\n");
 
-        responseXml = responseXml.replace(">",">\n");
-
-        logger.debug(message + "\n" + responseXml);
-    }
-
-    private void logRequest(String message, IQ iq)
-    {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug(message + "\n" + iq.toXML().toString()
-                    .replace(">",">\n"));
-        }
+        logger.debug(message + "\n" + stanzaStr);
     }
 
     /**
@@ -524,7 +491,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Expire peer channels", request);
+            logStanza("Expire peer channels", request);
 
             // Send and forget
             connection.sendStanza(request);
@@ -582,7 +549,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Sending source update: ", request);
+            logStanza("Sending source update: ", request);
 
             connection.sendStanza(request);
         }
@@ -617,7 +584,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Sending bundle transport info update: ", request);
+            logStanza("Sending bundle transport info update: ", request);
 
             connection.sendStanza(request);
         }
@@ -655,7 +622,7 @@ public class ColibriConferenceImpl
 
                 if (request != null)
                 {
-                    logRequest("Expire conference: ", request);
+                    logStanza("Expire conference: ", request);
 
                     connection.sendStanza(request);
                 }
@@ -682,8 +649,7 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public boolean muteParticipant(ColibriConferenceIQ channelsInfo,
-                                   boolean mute)
+    public boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute)
     {
         if (checkIfDisposed("muteParticipant"))
         {
@@ -694,8 +660,7 @@ public class ColibriConferenceImpl
         request.setID(conferenceState.getID());
         request.setName(conferenceState.getName());
 
-        ColibriConferenceIQ.Content audioContent
-            = channelsInfo.getContent("audio");
+        ColibriConferenceIQ.Content audioContent = channelsInfo.getContent("audio");
 
         if (audioContent == null || isBlank(request.getID()))
         {
@@ -704,20 +669,12 @@ public class ColibriConferenceImpl
             return false;
         }
 
-        ColibriConferenceIQ.Content requestContent
-            = new ColibriConferenceIQ.Content(audioContent.getName());
-
+        ColibriConferenceIQ.Content requestContent = new ColibriConferenceIQ.Content(audioContent.getName());
         for (ColibriConferenceIQ.Channel channel : audioContent.getChannels())
         {
-            ColibriConferenceIQ.Channel requestChannel
-                = new ColibriConferenceIQ.Channel();
-
+            ColibriConferenceIQ.Channel requestChannel = new ColibriConferenceIQ.Channel();
             requestChannel.setID(channel.getID());
-
-            requestChannel.setDirection(
-                    mute ? MediaDirection.SENDONLY.toString()
-                        : MediaDirection.SENDRECV.toString());
-
+            requestChannel.setDirection(mute ? "sendonly" : "sendrecv");
             requestContent.addChannel(requestChannel);
         }
 
@@ -792,14 +749,14 @@ public class ColibriConferenceImpl
             // RTP description
             if (descriptionMap != null)
             {
-                for (String contentName : descriptionMap.keySet())
+                for (Map.Entry<String, RtpDescriptionPacketExtension> entry : descriptionMap.entrySet())
                 {
                     ColibriConferenceIQ.Channel channel
-                        = localChannelsInfo.getContent(contentName)
+                        = localChannelsInfo.getContent(entry.getKey())
                             .getChannels().get(0);
                     send |= colibriBuilder.addRtpDescription(
-                            descriptionMap.get(contentName),
-                            contentName,
+                            entry.getValue(),
+                            entry.getKey(),
                             channel);
                 }
             }
@@ -833,7 +790,7 @@ public class ColibriConferenceImpl
 
         if (request != null)
         {
-            logRequest("Sending channel info update: ", request);
+            logStanza("Sending channel info update: ", request);
 
             connection.sendStanza(request);
         }

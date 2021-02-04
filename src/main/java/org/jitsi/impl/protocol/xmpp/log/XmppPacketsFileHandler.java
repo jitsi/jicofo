@@ -42,8 +42,7 @@ public class XmppPacketsFileHandler extends FileHandler
      */
     static class Formatter extends java.util.logging.Formatter
     {
-        static final SimpleDateFormat stampFormat
-            = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        final SimpleDateFormat stampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
         @Override
         public String format(LogRecord record)
@@ -51,7 +50,7 @@ public class XmppPacketsFileHandler extends FileHandler
             Date when = Date.from(Instant.ofEpochMilli(record.getMillis()));
             String msg = record.getMessage();
 
-            return String.format("%s: %s\n", stampFormat.format(when), msg);
+            return String.format("%s: %s%n", stampFormat.format(when), msg);
         }
     }
 }

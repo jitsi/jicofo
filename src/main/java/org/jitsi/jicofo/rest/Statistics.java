@@ -15,14 +15,11 @@
  */
 package org.jitsi.jicofo.rest;
 
-import org.jitsi.impl.protocol.xmpp.colibri.*;
-import org.jitsi.jicofo.util.*;
-import org.json.simple.*;
+import org.jitsi.jicofo.*;
 
-import java.lang.management.*;
-import javax.inject.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.util.*;
 
 /**
  * Adds statistics REST endpoint exposes some internal Jicofo stats.
@@ -30,9 +27,6 @@ import javax.ws.rs.core.*;
 @Path("/stats")
 public class Statistics
 {
-    @Inject
-    protected FocusManagerProvider focusManagerProvider;
-
     /**
      * Returns json string with statistics.
      * @return json string with statistics.
@@ -42,15 +36,8 @@ public class Statistics
     @SuppressWarnings("unchecked")
     public String getStats()
     {
-        JSONObject stats = new JSONObject();
-
-        // We want to avoid exposing unnecessary hierarchy levels in the stats,
-        // so we merge the FocusManager and ColibriConference stats in the root object.
-        stats.putAll(focusManagerProvider.get().getStats());
-        stats.putAll(ColibriConferenceImpl.stats.toJson());
-
-        stats.put("threads", ManagementFactory.getThreadMXBean().getThreadCount());
-
-        return stats.toJSONString();
+        JicofoServices jicofoServices
+                = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton, "jicofoServices");
+        return jicofoServices.getStats().toJSONString();
     }
 }

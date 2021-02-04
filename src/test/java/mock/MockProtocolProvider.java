@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,206 +19,91 @@ package mock;
 
 import mock.muc.*;
 import mock.xmpp.*;
-import mock.xmpp.colibri.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
+import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.utils.logging.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
+
+import java.util.concurrent.*;
 
 /**
  *
  * @author Pawel Domas
  */
 public class MockProtocolProvider
-    extends AbstractProtocolProviderService
+    extends AbstractXmppProvider
 {
-    /**
-     * The logger.
-     */
-    private final static Logger logger
-        = Logger.getLogger(MockProtocolProvider.class);
+    private final MockXmppConnection connection;
 
-    private final MockAccountID accountId;
+    private final AbstractOperationSetJingle jingleOpSet;
 
-    private RegistrationState registrationState
-        = RegistrationState.UNREGISTERED;
+    private final MockMultiUserChatOpSet mucApi;
 
-    private MockXmppConnection connection;
+    @NotNull public XmppConnectionConfig config;
 
-    private AbstractOperationSetJingle jingleOpSet;
-
-    public MockProtocolProvider(MockAccountID accountId)
+    public MockProtocolProvider(@NotNull XmppConnectionConfig config)
     {
-        this.accountId = accountId;
+        this.config = config;
+        connection = new MockXmppConnection(getOurJID());
+        mucApi = new MockMultiUserChatOpSet(this);
+        this.jingleOpSet = new MockOperationSetJingle(this);
     }
 
     @Override
-    public void register(SecurityAuthority authority)
-        throws OperationFailedException
+    public String toString()
+    {
+        return "MockProtocolProvider " + config;
+    }
+
+    @Override
+    public void register(ScheduledExecutorService executorService)
     {
         if (jingleOpSet != null)
         {
             connection.registerIQRequestHandler(jingleOpSet);
         }
 
-        setRegistrationState(
-            RegistrationState.REGISTERED,
-            RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-            null);
-    }
-
-    private void setRegistrationState(RegistrationState newState,
-                                      int reasonCode,
-                                      String reason)
-    {
-        RegistrationState oldState = getRegistrationState();
-
-        this.registrationState = newState;
-
-        fireRegistrationStateChanged(
-            oldState, newState, reasonCode, reason);
+        setRegistered(true);
     }
 
     @Override
     public void unregister()
-        throws OperationFailedException
     {
         if (jingleOpSet != null)
         {
             connection.unregisterIQRequestHandler(jingleOpSet);
         }
 
-        setRegistrationState(
-            RegistrationState.UNREGISTERED,
-            RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-            null);
+        setRegistered(false);
     }
 
     @Override
-    public RegistrationState getRegistrationState()
+    public XmppConnectionConfig getConfig()
     {
-        return registrationState;
+        return config;
     }
+
 
     @Override
-    public String getProtocolName()
-    {
-        return accountId.getProtocolName();
-    }
-
-    @Override
-    public ProtocolIcon getProtocolIcon()
-    {
-        return null;
-    }
-
-    @Override
-    public void shutdown()
-    {
-        try
-        {
-            unregister();
-        }
-        catch (OperationFailedException e)
-        {
-            logger.error(e, e);
-        }
-    }
-
-    @Override
-    public AccountID getAccountID()
-    {
-        return accountId;
-    }
-
-    @Override
-    public boolean isSignalingTransportSecure()
-    {
-        return false;
-    }
-
-    @Override
-    public TransportProtocol getTransportProtocol()
-    {
-        return null;
-    }
-
-
-    public void includeBasicTeleOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetBasicTelephony.class,
-            new MockBasicTeleOpSet(this));
-    }
-
-    public void includeMultiUserChatOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetMultiUserChat.class,
-            new MockMultiUserChatOpSet(this));
-    }
-
-    public void includeColibriOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetColibriConference.class,
-            new MockColibriOpSet(this));
-    }
-
-    public void includeJingleOpSet()
-    {
-        this.jingleOpSet = new MockOperationSetJingle(this);
-
-        addSupportedOperationSet(
-            OperationSetJingle.class,
-            jingleOpSet);
-    }
-
-    public void includeSimpleCapsOpSet()
-    {
-        try
-        {
-            addSupportedOperationSet(
-                OperationSetSimpleCaps.class,
-                new MockSetSimpleCapsOpSet(
-                        JidCreate.from(accountId.getServerAddress())));
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void includeDirectXmppOpSet()
-    {
-        addSupportedOperationSet(
-            OperationSetDirectSmackXmpp.class,
-            new MockSmackXmppOpSet(this));
-    }
-
-    public void includeJitsiMeetTools()
-    {
-        addSupportedOperationSet(
-            OperationSetJitsiMeetTools.class,
-            new MockJitsiMeetTools(this));
-    }
-
-    public OperationSetBasicTelephony getTelephony()
-    {
-        return getOperationSet(OperationSetBasicTelephony.class);
-    }
-
     public XmppConnection getXmppConnection()
     {
-        if (this.connection == null)
-        {
-            this.connection = new MockXmppConnection(getOurJID());
-        }
         return connection;
+    }
+
+    @Override
+    public XMPPConnection getXmppConnectionRaw()
+    {
+        return null;
+    }
+
+    @Override
+    public OperationSetJingle getJingleApi()
+    {
+        return jingleOpSet;
     }
 
     public EntityFullJid getOurJID()
@@ -226,7 +111,7 @@ public class MockProtocolProvider
         try
         {
             return JidCreate.entityFullFrom(
-                    "mock-" + accountId.getAccountAddress());
+                    "mock-" + config.getUsername() + "@" + config.getDomain() + "/" + config.getUsername());
         }
         catch (XmppStringprepException e)
         {
@@ -234,21 +119,17 @@ public class MockProtocolProvider
         }
     }
 
-    public MockMultiUserChatOpSet getMockChatOpSet()
+    @NotNull
+    @Override
+    public ChatRoom createRoom(@NotNull String name) throws RoomExistsException
     {
-        return (MockMultiUserChatOpSet)
-            getOperationSet(OperationSetMultiUserChat.class);
+        return mucApi.createChatRoom(name);
     }
 
-    public MockSetSimpleCapsOpSet getMockCapsOpSet()
+    @NotNull
+    @Override
+    public ChatRoom findOrCreateRoom(@NotNull String name) throws RoomExistsException
     {
-        return (MockSetSimpleCapsOpSet)
-            getOperationSet(OperationSetSimpleCaps.class);
-    }
-
-    public MockColibriOpSet getMockColibriOpSet()
-    {
-        return (MockColibriOpSet)
-            getOperationSet(OperationSetColibriConference.class);
+        return mucApi.findRoom(name);
     }
 }

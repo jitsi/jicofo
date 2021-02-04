@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,11 @@ package mock.util;
 import mock.*;
 
 import mock.jvb.*;
-import mock.muc.*;
 
 import mock.xmpp.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.osgi.*;
-
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 
@@ -37,15 +33,9 @@ import java.util.*;
  */
 public class TestConference
 {
-    private final BundleContext bc;
-
     private EntityBareJid roomName;
 
-    private final OSGIServiceRef<JitsiMeetServices> meetServicesRef;
-
     private Jid mockBridgeJid;
-
-    private final OSGIServiceRef<FocusManager> focusManagerRef;
 
     private MockProtocolProvider focusProtocolProvider;
 
@@ -53,36 +43,20 @@ public class TestConference
 
     private MockVideobridge mockBridge;
 
-    private MockMultiUserChat chat;
 
-    static public TestConference allocate(
-        BundleContext ctx, String serverName, EntityBareJid roomName)
+    static public TestConference allocate(String serverName, EntityBareJid roomName)
         throws Exception
     {
-        TestConference newConf = new TestConference(ctx);
+        TestConference newConf = new TestConference();
 
         newConf.createJvbAndConference(serverName, roomName);
 
         return newConf;
     }
 
-    static public TestConference allocate(
-        BundleContext ctx, EntityBareJid roomName,
-        MockVideobridge mockBridge)
-        throws Exception
+    private FocusManager getFocusManager()
     {
-        TestConference newConf = new TestConference(ctx);
-
-        newConf.createConferenceRoom(roomName, mockBridge);
-
-        return newConf;
-    }
-
-    public TestConference(BundleContext osgi)
-    {
-        this.bc = osgi;
-        this.meetServicesRef = new OSGIServiceRef<>(osgi, JitsiMeetServices.class);
-        this.focusManagerRef = new OSGIServiceRef<>(osgi, FocusManager.class);
+        return OSGiHandler.getInstance().jicofoServices.getFocusManager();
     }
 
     private void createJvbAndConference(String serverName, EntityBareJid roomName)
@@ -92,16 +66,16 @@ public class TestConference
 
         MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
 
-        mockBridge.start(bc);
+        mockBridge.start();
 
-        meetServicesRef.get().getBridgeSelector().addJvbAddress(mockBridgeJid);
+        OSGiHandler.getInstance().jicofoServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
 
         createConferenceRoom(roomName, mockBridge);
     }
 
     public void stop()
     {
-        mockBridge.stop(bc);
+        mockBridge.stop();
     }
 
     private void createConferenceRoom(EntityBareJid roomName, MockVideobridge mockJvb)
@@ -113,23 +87,16 @@ public class TestConference
 
         HashMap<String,String> properties = new HashMap<>();
 
-        focusManagerRef.get().conferenceRequest(roomName, properties);
+        getFocusManager().conferenceRequest(roomName, properties);
 
-        this.conference = focusManagerRef.get().getConference(roomName);
-
-        MockMultiUserChatOpSet mucOpSet
-            = getFocusProtocolProvider().getMockChatOpSet();
-
-        this.chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        this.conference = getFocusManager().getConference(roomName);
     }
 
     public MockProtocolProvider getFocusProtocolProvider()
     {
         if (focusProtocolProvider == null)
         {
-            focusProtocolProvider
-                = (MockProtocolProvider) focusManagerRef
-                        .get().getProtocolProvider();
+            focusProtocolProvider = (MockProtocolProvider) getFocusManager().getProtocolProvider();
         }
         return focusProtocolProvider;
     }
@@ -137,16 +104,6 @@ public class TestConference
     public MockVideobridge getMockVideoBridge()
     {
         return mockBridge;
-    }
-
-    public MockParticipant addParticipant()
-    {
-        MockParticipant newParticipant
-            = new MockParticipant(StringGenerator.nextRandomStr());
-
-        newParticipant.join(chat);
-
-        return newParticipant;
     }
 
     public int getParticipantCount()

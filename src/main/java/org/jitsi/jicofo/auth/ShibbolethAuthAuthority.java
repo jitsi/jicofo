@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,19 @@
  */
 package org.jitsi.jicofo.auth;
 
+import org.jitsi.jicofo.rest.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
-import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Shibboleth implementation of {@link AuthenticationAuthority} interface.
  *
- * Authentication servlet {@link ShibbolethHandler} must be deployed under
+ * Authentication servlet {@link ShibbolethLogin} must be deployed under
  * the location secured by Shibboleth(called *login location*). When user wants
  * to login, the application retrieves login URL and redirects user to it(see
  * {@link #createLoginUrl(String, EntityFullJid, EntityBareJid, boolean)}.
@@ -154,24 +154,20 @@ public class ShibbolethAuthAuthority
      * @param authIdentity the identity obtained from external authentication
      *                     system that will be bound to the user's JID.
      * @param roomName the name of the conference room.
-     * @param properties the map of Shibboleth attributes/headers to be logged.
      * @return <tt>true</tt> if user has been authenticated successfully or
      *         <tt>false</tt> if given token is invalid.
      */
-    String authenticateUser(String machineUID,
+    public String authenticateUser(String machineUID,
                             String authIdentity,
-                            EntityBareJid roomName,
-                            Map<String, String> properties)
+                            EntityBareJid roomName)
     {
         synchronized (syncRoot)
         {
-            AuthenticationSession session
-                = findSessionForIdentity(machineUID, authIdentity);
+            AuthenticationSession session = findSessionForIdentity(machineUID, authIdentity);
 
             if (session == null)
             {
-                session = createNewSession(
-                    machineUID, authIdentity, roomName, properties);
+                session = createNewSession(machineUID, authIdentity, roomName);
             }
 
             return session.getSessionId();

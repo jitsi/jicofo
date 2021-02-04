@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,15 @@
  */
 package org.jitsi.jicofo.discovery;
 
-import net.java.sip.communicator.service.protocol.*;
-
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smackx.disco.*;
+import org.jivesoftware.smackx.disco.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * Utility class for feature discovery.
@@ -35,24 +37,17 @@ public class DiscoveryUtil
     /**
      * The logger
      */
-    private final static Logger logger = Logger.getLogger(DiscoveryUtil.class);
-
-    /**
-     * List contains default feature set.
-     */
-    private static ArrayList<String> defaultFeatures;
+    private final static Logger logger = new LoggerImpl(DiscoveryUtil.class.getName());
 
     /**
      * Audio RTP feature name.
      */
-    public final static String FEATURE_AUDIO
-            = "urn:xmpp:jingle:apps:rtp:audio";
+    public final static String FEATURE_AUDIO = "urn:xmpp:jingle:apps:rtp:audio";
 
     /**
      * Video RTP feature name.
      */
-    public final static String FEATURE_VIDEO
-            = "urn:xmpp:jingle:apps:rtp:video";
+    public final static String FEATURE_VIDEO = "urn:xmpp:jingle:apps:rtp:video";
 
     /**
      * ICE feature name.
@@ -114,6 +109,23 @@ public class DiscoveryUtil
      */
     public final static String FEATURE_AUDIO_MUTE = "http://jitsi.org/protocol/audio-mute";
 
+    private static final List<String> defaultFeatures = Arrays.asList(
+            FEATURE_AUDIO,
+            FEATURE_VIDEO,
+            FEATURE_ICE,
+            FEATURE_SCTP,
+            FEATURE_DTLS,
+            FEATURE_RTCP_MUX,
+            FEATURE_RTP_BUNDLE);
+
+    /**
+     * Returns default participant feature set(all features).
+     */
+    static public List<String> getDefaultParticipantFeatureSet()
+    {
+        return defaultFeatures;
+    }
+
     /**
      * Gets the list of features supported by participant. If we fail to
      * obtain it due to network failure default feature list is returned.
@@ -121,11 +133,16 @@ public class DiscoveryUtil
      *        be used for discovery.
      * @param address XMPP address of the participant.
      */
-    public static List<String> discoverParticipantFeatures
-        (ProtocolProviderService protocolProvider, EntityFullJid address)
+    public static List<String> discoverParticipantFeatures(XmppProvider protocolProvider, EntityFullJid address)
     {
-        OperationSetSimpleCaps disco = protocolProvider.getOperationSet(OperationSetSimpleCaps.class);
-        if (disco == null)
+        XMPPConnection xmppConnection = protocolProvider.getXmppConnectionRaw();
+        if (xmppConnection == null)
+        {
+            logger.error("No xmpp connection " + protocolProvider);
+            return getDefaultParticipantFeatureSet();
+        }
+        ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection);
+        if (discoveryManager == null)
         {
             logger.error("Service discovery not supported by " + protocolProvider);
             return getDefaultParticipantFeatureSet();
@@ -135,8 +152,23 @@ public class DiscoveryUtil
 
         logger.info("Doing feature discovery for " + address);
 
-        // Discover participant feature set
-        List<String> participantFeatures = disco.getFeatures(address);
+        List<String> participantFeatures = null;
+        try
+        {
+            DiscoverInfo info = discoveryManager.discoverInfo(address);
+            if (info != null)
+            {
+                participantFeatures = info.getFeatures()
+                        .stream()
+                        .map(DiscoverInfo.Feature::getVar)
+                        .collect(Collectors.toList());
+            }
+        }
+        catch (Exception e)
+        {
+            logger.warn(String.format( "Failed to discover features for %s: %s", address, e.getMessage()));
+        }
+
         if (participantFeatures == null)
         {
             logger.warn("Failed to discover features for "+ address + " assuming default feature set.");
@@ -158,47 +190,9 @@ public class DiscoveryUtil
         }
         else
         {
-            logger.info(
-                String.format(
-                    "Successfully discovered features for %s in %d",
-                    address,
-                    tookMillis));
+            logger.info(String.format("Successfully discovered features for %s in %d", address, tookMillis));
         }
 
         return participantFeatures;
-    }
-
-    /**
-     * Returns default participant feature set(all features).
-     */
-    static public List<String> getDefaultParticipantFeatureSet()
-    {
-        if (defaultFeatures == null)
-        {
-            defaultFeatures = new ArrayList<>();
-            defaultFeatures.add(FEATURE_AUDIO);
-            defaultFeatures.add(FEATURE_VIDEO);
-            defaultFeatures.add(FEATURE_ICE);
-            defaultFeatures.add(FEATURE_SCTP);
-            defaultFeatures.add(FEATURE_DTLS);
-            defaultFeatures.add(FEATURE_RTCP_MUX);
-            defaultFeatures.add(FEATURE_RTP_BUNDLE);
-        }
-        return defaultFeatures;
-    }
-
-    /**
-     * Returns <tt>true</tt> if <tt>list1</tt> and <tt>list2</tt> contain the
-     * same elements where items order is not relevant.
-     * @param list1 the first list of <tt>String</tt> to be compared against
-     *              the second list.
-     * @param list2 the second list of <tt>String</tt> to be compared against
-     *              the first list.
-     */
-    static public boolean areTheSame(List<String> list1, List<String> list2)
-    {
-        return list1.size() == list2.size()
-            && list2.containsAll(list1)
-            && list1.containsAll(list2);
     }
 }

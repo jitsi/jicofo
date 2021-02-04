@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
+import mock.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -28,12 +29,10 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockMultiUserChatOpSet
-    extends AbstractOperationSetMultiUserChat
 {
-    private static final Map<String, MockMucShare> mucDomainSharing
-        = new HashMap<>();
+    private static final Map<String, MockMucShare> mucDomainSharing = new HashMap<>();
 
-    private final ProtocolProviderService protocolProviderService;
+    private final MockProtocolProvider protocolProviderService;
 
     private final Map<EntityBareJid, MockMultiUserChat> chatRooms
         = new HashMap<>();
@@ -50,46 +49,13 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    public MockMultiUserChatOpSet(
-        ProtocolProviderService protocolProviderService)
+    public MockMultiUserChatOpSet(MockProtocolProvider protocolProviderService)
     {
         this.protocolProviderService = protocolProviderService;
     }
 
-    @Override
-    public List<String> getExistingChatRooms()
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        synchronized (chatRooms)
-        {
-            ArrayList<String> result = new ArrayList<>();
-            for (EntityBareJid n : chatRooms.keySet())
-            {
-                result.add(n.toString());
-            }
-
-            return result;
-        }
-    }
-
-    @Override
-    public List<ChatRoom> getCurrentlyJoinedChatRooms()
-    {
-        return null;
-    }
-
-    @Override
-    public List<String> getCurrentlyJoinedChatRooms(
-        ChatRoomMember chatRoomMember)
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        return null;
-    }
-
-    @Override
-    public ChatRoom createChatRoom(String roomName,
-                                   Map<String, Object> roomProperties)
-        throws OperationFailedException, OperationNotSupportedException
+    public ChatRoom createChatRoom(String roomName)
+        throws XmppProvider.RoomExistsException
     {
         EntityBareJid roomNameJid = fixRoomName(roomName);
 
@@ -97,20 +63,21 @@ public class MockMultiUserChatOpSet
         {
             if (chatRooms.containsKey(roomNameJid))
             {
-                throw new OperationFailedException(
-                    "Room " + roomName + " already exists.",
-                    OperationFailedException.GENERAL_ERROR);
+                throw new XmppProvider.RoomExistsException("Room " + roomName + " already exists.");
             }
 
             MockMultiUserChat chatRoom
-                = new MockMultiUserChat(roomNameJid, protocolProviderService);
+                = new MockMultiUserChat(
+                    roomNameJid,
+                    protocolProviderService,
+                    protocolProviderService.config.getUsername().toString());
 
             chatRooms.put(roomNameJid, chatRoom);
 
             MockMucShare sharedDomain = mucDomainSharing.get(roomName);
             if (sharedDomain == null)
             {
-                sharedDomain = new MockMucShare(roomNameJid);
+                sharedDomain = new MockMucShare();
 
                 mucDomainSharing.put(roomName, sharedDomain);
             }
@@ -121,9 +88,8 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    @Override
     public ChatRoom findRoom(String roomName)
-        throws OperationFailedException, OperationNotSupportedException
+        throws XmppProvider.RoomExistsException
     {
         // MUC room names are case insensitive
         EntityBareJid roomNameJid = fixRoomName(roomName);
@@ -132,30 +98,11 @@ public class MockMultiUserChatOpSet
         {
             if (!chatRooms.containsKey(roomNameJid))
             {
-                ChatRoom room = createChatRoom(roomName, null);
+                ChatRoom room = createChatRoom(roomName);
                 chatRooms.put(roomNameJid, (MockMultiUserChat) room);
             }
             return chatRooms.get(roomNameJid);
         }
-    }
-
-    @Override
-    public void rejectInvitation(ChatRoomInvitation invitation,
-                                 String rejectReason)
-    {
-
-    }
-
-    @Override
-    public boolean isMultiChatSupportedByContact(Contact contact)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isPrivateMessagingContact(String contactAddress)
-    {
-        return false;
     }
 
     static public void cleanMucSharing()

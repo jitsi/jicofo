@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;

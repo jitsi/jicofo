@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ Atlassian Pty Ltd
+ * Copyright @ 2017-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -48,8 +48,7 @@ public class JibriSipGateway
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    static private final Logger classLogger
-        = Logger.getLogger(JibriSipGateway.class);
+    static private final Logger classLogger = new LoggerImpl(JibriSipGateway.class.getName());
 
     /**
      * Map of SIP {@link JibriSession}s mapped per SIP address which
@@ -59,24 +58,22 @@ public class JibriSipGateway
 
     /**
      * Creates new instance of {@link JibriSipGateway}.
-     * @param bundleContext OSGi context.
      * @param conference parent conference for which the new instance will be managing Jibri SIP sessions.
      * @param xmppConnection the connection which will be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriSipGateway(
-           BundleContext bundleContext,
            JitsiMeetConferenceImpl conference,
            XmppConnection xmppConnection,
-           ScheduledExecutorService scheduledExecutor)
+           ScheduledExecutorService scheduledExecutor,
+           JibriDetector jibriDetector)
     {
         super(
-            bundleContext,
-            true /* handles SIP Jibri events */,
             conference,
             xmppConnection,
             scheduledExecutor,
-            Logger.getLogger(classLogger, conference.getLogger()));
+            new LoggerImpl(JibriSipGateway.class.getName(), conference.getLogger().getLevel()),
+            jibriDetector);
 
     }
 
@@ -169,19 +166,18 @@ public class JibriSipGateway
             }
             catch (StartException exc)
             {
-                String reason = exc.getReason();
-                logger.info(
-                    "Failed to start a Jibri session: "  +  reason, exc);
+                String reason = exc.getMessage();
+                logger.warn("Failed to start a Jibri session: "  +  reason, exc);
                 sipSessions.remove(sipAddress);
                 ErrorIQ errorIq;
-                if (StartException.ALL_BUSY.equals(reason))
+                if (exc instanceof StartException.AllBusy)
                 {
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.resource_constraint,
                             "all Jibris are busy");
                 }
-                else if(StartException.NOT_AVAILABLE.equals(reason))
+                else if(exc instanceof StartException.NotAvailable)
                 {
                     errorIq = ErrorResponse.create(
                             iq,
@@ -249,18 +245,17 @@ public class JibriSipGateway
             "Publishing new jibri-sip-call-state: " + session.getSipAddress()
                 + sipCallState.toXML() + " in: " + conference.getRoomName());
 
-        ChatRoom2 chatRoom2 = conference.getChatRoom();
+        ChatRoom chatRoom = conference.getChatRoom();
 
         // Publish that in the presence
-        if (chatRoom2 != null)
+        if (chatRoom != null)
         {
             LinkedList<ExtensionElement> toRemove = new LinkedList<>();
-            for (ExtensionElement ext : chatRoom2.getPresenceExtensions())
+            for (ExtensionElement ext : chatRoom.getPresenceExtensions())
             {
                 // Exclude all that do not match
-                if (ext instanceof  SipCallState
-                        && session.getSipAddress().equals(
-                                ((SipCallState)ext).getSipAddress()))
+                if (ext instanceof SipCallState
+                        && session.getSipAddress().equals(((SipCallState)ext).getSipAddress()))
                 {
                     toRemove.add(ext);
                 }
@@ -268,7 +263,7 @@ public class JibriSipGateway
             ArrayList<ExtensionElement> newExt = new ArrayList<>();
             newExt.add(sipCallState);
 
-            chatRoom2.modifyPresence(toRemove, newExt);
+            chatRoom.modifyPresence(toRemove, newExt);
         }
     }
 }

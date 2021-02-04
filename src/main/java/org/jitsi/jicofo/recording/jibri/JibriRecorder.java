@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -51,8 +51,7 @@ public class JibriRecorder
      * The class logger which can be used to override logging level inherited
      * from {@link JitsiMeetConference}.
      */
-    static private final Logger classLogger
-        = Logger.getLogger(JibriRecorder.class);
+    static private final Logger classLogger = new LoggerImpl(JibriRecorder.class.getName());
 
     /**
      * The current recording session or <tt>null</tt>.
@@ -61,24 +60,22 @@ public class JibriRecorder
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
-     * @param bundleContext OSGi {@link BundleContext}.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
      * @param connection the XMPP connection which will be used for communication.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriRecorder(
-            BundleContext bundleContext,
             JitsiMeetConferenceImpl conference,
             XmppConnection connection,
-            ScheduledExecutorService scheduledExecutor)
+            ScheduledExecutorService scheduledExecutor,
+            JibriDetector jibriDetector)
     {
         super(
-            bundleContext,
-            false /* deals with non SIP Jibri events */,
             conference,
             connection,
             scheduledExecutor,
-            Logger.getLogger(classLogger, conference.getLogger()));
+            new LoggerImpl(JibriRecorder.class.getName(), conference.getLogger().getLevel()),
+            jibriDetector);
     }
 
     /**
@@ -178,21 +175,19 @@ public class JibriRecorder
             catch (JibriSession.StartException exc)
             {
                 ErrorIQ errorIq;
-                String reason = exc.getReason();
+                String reason = exc.getMessage();
 
-                if (StartException.ALL_BUSY.equals(reason))
+                if (exc instanceof StartException.AllBusy)
                 {
-                    logger.info("Failed to start a Jibri session, " +
-                                        "all Jibris were busy");
+                    logger.info("Failed to start a Jibri session, all Jibris were busy");
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.resource_constraint,
                             "all Jibris are busy");
                 }
-                else if (StartException.NOT_AVAILABLE.equals(reason))
+                else if (exc instanceof StartException.NotAvailable)
                 {
-                    logger.info("Failed to start a Jibri session, " +
-                                        "no Jibris available");
+                    logger.info("Failed to start a Jibri session, no Jibris available");
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.service_unavailable,
@@ -200,8 +195,7 @@ public class JibriRecorder
                 }
                 else
                 {
-                    logger.info(
-                        "Failed to start a Jibri session:" + reason, exc);
+                    logger.warn("Failed to start a Jibri session:" + reason, exc);
                     errorIq = ErrorResponse.create(
                             iq,
                             XMPPError.Condition.internal_server_error,
@@ -300,11 +294,11 @@ public class JibriRecorder
                     + recordingStatus.toXML()
                     + " in: " + conference.getRoomName());
 
-        ChatRoom2 chatRoom2 = conference.getChatRoom();
+        ChatRoom chatRoom = conference.getChatRoom();
 
-        if (chatRoom2 != null)
+        if (chatRoom != null)
         {
-            meetTools.sendPresenceExtension(chatRoom2, recordingStatus);
+            chatRoom.setPresenceExtension(recordingStatus, false);
         }
     }
 }

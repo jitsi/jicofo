@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,11 @@ import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
 import org.jitsi.config.*;
-import org.jitsi.jicofo.osgi.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.meet.*;
 import org.jitsi.metaconfig.*;
+import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.logging.*;
-import org.osgi.framework.*;
-import org.xeustechnologies.jcl.*;
+import org.jitsi.utils.logging2.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -39,7 +36,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class Main
 {
-    private static final Logger logger = Logger.getLogger(Main.class);
+    private static final Logger logger = new LoggerImpl(Main.class.getName());
 
     /**
      * Program entry point.
@@ -59,42 +56,19 @@ public class Main
         // Make sure that passwords are not printed by ConfigurationService
         // on startup by setting password regExpr and cmd line args list
         ConfigUtils.PASSWORD_SYS_PROPS = "pass";
-        ConfigUtils.PASSWORD_CMD_LINE_ARGS = "secret,user_password";
+        ConfigUtils.PASSWORD_CMD_LINE_ARGS = "user_password";
 
 
-        final Object exitSyncRoot = new Object();
+        ShutdownServiceImpl shutdownService = new ShutdownServiceImpl();
         // Register shutdown hook to perform cleanup before exit
-        Runtime.getRuntime().addShutdownHook(new Thread(() ->
-        {
-            synchronized (exitSyncRoot)
-            {
-                exitSyncRoot.notifyAll();
-            }
-        }));
-        logger.info("Starting OSGi services.");
-        BundleActivator activator = startOsgi(exitSyncRoot);
+        Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
 
-        logger.debug("Waiting for OSGi services to start");
-        try
-        {
-            WaitableBundleActivator.waitUntilStarted();
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to start all OSGi bundles, exiting.");
-            OSGi.stop(activator);
-            return;
-        }
-        logger.info("OSGi services started.");
-
-        JicofoServices jicofoServices = new JicofoServices(WaitableBundleActivator.getBundleContext());
+        JicofoServices jicofoServices = new JicofoServices();
+        JicofoServices.jicofoServicesSingleton = jicofoServices;
 
         try
         {
-            synchronized (exitSyncRoot)
-            {
-                exitSyncRoot.wait();
-            }
+            shutdownService.waitForShutdown();
         }
         catch (Exception e)
         {
@@ -103,66 +77,9 @@ public class Main
 
         logger.info("Stopping services.");
         jicofoServices.stop();
-        OSGi.stop(activator);
+        JicofoServices.jicofoServicesSingleton = null;
     }
 
-    private static BundleActivator startOsgi(Object exitSyncRoot)
-    {
-        JicofoBundleConfig bundleConfig = new JicofoBundleConfig();
-        OSGi.setBundleConfig(bundleConfig);
-        bundleConfig.setSystemPropertyDefaults();
-
-        ClassLoader classLoader = loadBundlesJars(bundleConfig);
-        OSGi.setClassLoader(classLoader);
-
-        /*
-         * Start OSGi. It will invoke the application programming interfaces
-         * (APIs) of Jitsi Videobridge. Each of them will keep the application
-         * alive.
-         */
-        BundleActivator activator = new BundleActivator()
-        {
-            @Override
-            public void start(BundleContext bundleContext)
-            {
-                bundleContext.registerService(
-                        ShutdownService.class,
-                        new ShutdownService()
-                        {
-                            private boolean shutdownStarted = false;
-
-                            @Override
-                            public void beginShutdown()
-                            {
-                                if (shutdownStarted)
-                                    return;
-
-                                shutdownStarted = true;
-
-                                synchronized (exitSyncRoot)
-                                {
-                                    exitSyncRoot.notifyAll();
-                                }
-                            }
-                        }, null
-                );
-            }
-
-            @Override
-            public void stop(BundleContext bundleContext)
-                    throws Exception
-            {
-                // We're doing nothing
-            }
-        };
-
-
-        // Start OSGi
-        logger.warn("Starting Osgi");
-        OSGi.start(activator);
-
-        return activator;
-    }
     /**
      * Read the command line arguments and env variables, and set the corresponding system properties used for
      * configuration of the XMPP component and client connections.
@@ -171,11 +88,6 @@ public class Main
             throws ParseException
     {
         CmdLine cmdLine = new CmdLine();
-
-        if (isBlank(System.getenv("JICOFO_SECRET")))
-        {
-            cmdLine.addRequiredArgument("--secret");
-        }
 
         // We may end execution here if one of required arguments is missing
         cmdLine.parse(args);
@@ -186,9 +98,7 @@ public class Main
         // Try to get domain, can be null after this call(we'll fix that later)
         componentDomain = cmdLine.getOptionValue("domain");
         // Host name
-        host = cmdLine.getOptionValue(
-                "--host",
-                componentDomain == null ? "localhost" : componentDomain);
+        host = cmdLine.getOptionValue("--host", componentDomain == null ? "localhost" : componentDomain);
         // Try to fix component domain
         if (isBlank(componentDomain))
         {
@@ -206,22 +116,6 @@ public class Main
             // as well as XMPP client connection.
             System.setProperty(XmppClientConnectionConfig.legacyHostnamePropertyName, host);
         }
-
-        String componentSubDomain = cmdLine.getOptionValue("--subdomain", "focus");
-        int port = cmdLine.getIntOptionValue("--port", 5347);
-        String secret = cmdLine.getOptionValue("--secret");
-        if (isBlank(secret))
-        {
-            secret = System.getenv("JICOFO_SECRET");
-        }
-
-        XmppComponentConfig.config = new XmppComponentConfig(
-                host == null ? "" : host,
-                componentDomain == null ? "" : componentDomain,
-                componentSubDomain == null ? "" : componentSubDomain,
-                port,
-                secret == null ? "" : secret
-        );
 
         // XMPP client connection
         String focusDomain = cmdLine.getOptionValue("--user_domain");
@@ -269,24 +163,5 @@ public class Main
                 configLogger.debug(function0::invoke);
             }
         });
-    }
-
-    /**
-     * Creates class loader that able to load classes from jars of selected by
-     * bundleConfig {@code OSGiBundleConfig#BUNDLES_JARS_PATH} parameter.
-     * @param bundleConfig - instance with path to extended bundles jar.
-     * @return OSGi class loader for bundles.
-     */
-    private static ClassLoader loadBundlesJars(OSGiBundleConfig bundleConfig)
-    {
-        String bundlesJarsPath = bundleConfig.getBundlesJarsPath();
-        if (bundlesJarsPath == null)
-        {
-            return ClassLoader.getSystemClassLoader();
-        }
-
-        JarClassLoader jcl = new JarClassLoader();
-        jcl.add(bundlesJarsPath + "/");
-        return new OSGiClassLoader(jcl, ClassLoader.getSystemClassLoader());
     }
 }

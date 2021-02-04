@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import mock.*;
 import mock.jvb.*;
 import mock.util.*;
 
+import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -36,6 +37,7 @@ import org.jxmpp.jid.impl.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * FIXME: include into test suite(problems between OSGi restarts)
@@ -58,7 +60,6 @@ public class ColibriTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -67,24 +68,15 @@ public class ColibriTest
     public void testChannelAllocation()
         throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testroom@conference.pawel.jitsi.net");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference
-            = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConference = TestConference.allocate(serverName, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
+        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
+        ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());
 
-        MockProtocolProvider pps
-            = testConference.getFocusProtocolProvider();
-
-        OperationSetColibriConference colibriTool
-            = pps.getOperationSet(OperationSetColibriConference.class);
-
-        ColibriConference colibriConf = colibriTool.createNewConference();
-
-        colibriConf.setConfig(config);
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 
         colibriConf.setJitsiVideobridge(mockBridge.getBridgeJid());
@@ -98,15 +90,11 @@ public class ColibriTest
         String peer1 = "endpoint1";
         String peer2 = "endpoint2";
 
-        ColibriConferenceIQ peer1Channels
-            = colibriConf.createColibriChannels(
-                peer1, null, true, contents);
+        ColibriConferenceIQ peer1Channels = colibriConf.createColibriChannels(peer1, null, true, contents);
 
         assertEquals(1, mockBridge.getEndpointCount());
 
-        ColibriConferenceIQ peer2Channels
-            = colibriConf.createColibriChannels(
-                peer2, null, true, contents);
+        ColibriConferenceIQ peer2Channels = colibriConf.createColibriChannels(peer2, null, true, contents);
 
         assertEquals(2, mockBridge.getEndpointCount());
 

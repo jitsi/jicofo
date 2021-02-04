@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@ package org.jitsi.jicofo.codec;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-
-import org.jitsi.service.neomedia.*;
-import org.jitsi.service.neomedia.codec.*;
 
 import java.net.*;
 import java.util.*;
@@ -78,11 +75,6 @@ public class JingleOfferFactory
     /**
      * Creates a {@link ContentPacketExtension} for the data media type that
      * will be included in initial conference offer.
-     *
-     * @param useIce pass <tt>false</tt> if RAW transport instead of ICE
-     * should be indicated in the offer.
-     * @param useDtls whether to add a DTLS element under the transport
-     * elements in the offer.
      *
      * @return <tt>ContentPacketExtension</tt> for given media type that will be
      *         used in initial conference offer.
@@ -161,7 +153,7 @@ public class JingleOfferFactory
             // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
             RTPHdrExtPacketExtension toOffset = new RTPHdrExtPacketExtension();
             toOffset.setID(String.valueOf(config.tof.id()));
-            toOffset.setURI(URI.create(RTPExtension.TOF_URN));
+            toOffset.setURI(URI.create("urn:ietf:params:rtp-hdrext:toffset"));
             rtpDesc.addExtmap(toOffset);
         }
 
@@ -170,7 +162,7 @@ public class JingleOfferFactory
             // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
             RTPHdrExtPacketExtension absSendTime = new RTPHdrExtPacketExtension();
             absSendTime.setID(String.valueOf(config.absSendTime.id()));
-            absSendTime.setURI(URI.create(RTPExtension.ABS_SEND_TIME_URN));
+            absSendTime.setURI(URI.create("http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time"));
             rtpDesc.addExtmap(absSendTime);
         }
 
@@ -179,7 +171,7 @@ public class JingleOfferFactory
             // a=extmap:XXX urn:ietf:params:rtp-hdrext:framemarking
             RTPHdrExtPacketExtension framemarking = new RTPHdrExtPacketExtension();
             framemarking.setID(String.valueOf(config.framemarking.id()));
-            framemarking.setURI(URI.create(RTPExtension.FRAME_MARKING_URN));
+            framemarking.setURI(URI.create("http://tools.ietf.org/html/draft-ietf-avtext-framemarking-07"));
             rtpDesc.addExtmap(framemarking);
         }
 
@@ -188,7 +180,7 @@ public class JingleOfferFactory
             // http://www.webrtc.org/experiments/rtp-hdrext/video-content-type
             RTPHdrExtPacketExtension videoContentType = new RTPHdrExtPacketExtension();
             videoContentType.setID(String.valueOf(config.videoContentType.id()));
-            videoContentType.setURI(URI.create(RTPExtension.VIDEO_CONTENT_TYPE_URN));
+            videoContentType.setURI(URI.create("http://www.webrtc.org/experiments/rtp-hdrext/video-content-type"));
             rtpDesc.addExtmap(videoContentType);
         }
 
@@ -196,14 +188,14 @@ public class JingleOfferFactory
         {
             RTPHdrExtPacketExtension rtpStreamId = new RTPHdrExtPacketExtension();
             rtpStreamId.setID(String.valueOf(config.rid.enabled()));
-            rtpStreamId.setURI(URI.create(RTPExtension.RTP_STREAM_ID_URN));
+            rtpStreamId.setURI(URI.create("urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id"));
             rtpDesc.addExtmap(rtpStreamId);
         }
 
         if (config.vp8.enabled())
         {
             // a=rtpmap:XXX VP8/90000
-            PayloadTypePacketExtension vp8 = addPayloadTypeExtension(rtpDesc, config.vp8.pt(), Constants.VP8, 90000);
+            PayloadTypePacketExtension vp8 = addPayloadTypeExtension(rtpDesc, config.vp8.pt(), "VP8", 90000);
 
             addExtensionsToVideoPayloadType(vp8, options, config.vp8);
         }
@@ -226,7 +218,7 @@ public class JingleOfferFactory
         if (config.vp9.enabled())
         {
             // a=rtpmap:XXX VP9/90000
-            PayloadTypePacketExtension vp9 = addPayloadTypeExtension(rtpDesc, config.vp9.pt(), Constants.VP9, 90000);
+            PayloadTypePacketExtension vp9 = addPayloadTypeExtension(rtpDesc, config.vp9.pt(), "VP9", 90000);
 
             addExtensionsToVideoPayloadType(vp9, options, config.vp9);
         }
@@ -237,7 +229,7 @@ public class JingleOfferFactory
             // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
             RTPHdrExtPacketExtension tcc = new RTPHdrExtPacketExtension();
             tcc.setID(String.valueOf(config.tcc.id()));
-            tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
+            tcc.setURI(URI.create("http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01"));
             rtpDesc.addExtmap(tcc);
         }
 
@@ -248,7 +240,7 @@ public class JingleOfferFactory
             {
                 // a=rtpmap:96 rtx/90000
                 PayloadTypePacketExtension rtx
-                        = addPayloadTypeExtension(rtpDesc, config.vp8.rtxPt(), Constants.RTX, 90000);
+                        = addPayloadTypeExtension(rtpDesc, config.vp8.rtxPt(), "rtx", 90000);
 
                 // a=fmtp:96 apt=100
                 addParameterExtension(rtx, "apt", String.valueOf(config.vp8.pt()));
@@ -269,8 +261,7 @@ public class JingleOfferFactory
             if (config.vp9.rtxEnabled())
             {
                 // a=rtpmap:97 rtx/90000
-                PayloadTypePacketExtension rtxVP9
-                        = addPayloadTypeExtension(rtpDesc, config.vp9.rtxPt(), Constants.RTX, 90000);
+                PayloadTypePacketExtension rtxVP9 = addPayloadTypeExtension(rtpDesc, config.vp9.rtxPt(), "rtx", 90000);
 
                 // a=fmtp:97 apt=101
                 addParameterExtension(rtxVP9, "apt", String.valueOf(config.vp9.pt()));
@@ -280,7 +271,7 @@ public class JingleOfferFactory
             {
                 // a=rtpmap:99 rtx/90000
                 PayloadTypePacketExtension rtxH264
-                        = addPayloadTypeExtension(rtpDesc, config.h264.rtxPt(), Constants.RTX, 90000);
+                        = addPayloadTypeExtension(rtpDesc, config.h264.rtxPt(), "rtx", 90000);
 
                 // a=fmtp:99 apt=107
                 addParameterExtension(rtxH264, "apt", String.valueOf(config.h264.pt()));
@@ -415,7 +406,7 @@ public class JingleOfferFactory
         {
             RTPHdrExtPacketExtension ssrcAudioLevel = new RTPHdrExtPacketExtension();
             ssrcAudioLevel.setID(String.valueOf(config.audioLevel.id()));
-            ssrcAudioLevel.setURI(URI.create(RTPExtension.SSRC_AUDIO_LEVEL_URN));
+            ssrcAudioLevel.setURI(URI.create("urn:ietf:params:rtp-hdrext:ssrc-audio-level"));
             rtpDesc.addExtmap(ssrcAudioLevel);
         }
 
@@ -431,7 +422,7 @@ public class JingleOfferFactory
             }
 
             // a=rtpmap:111 opus/48000/2
-            PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, config.opus.pt(), Constants.OPUS, 48000);
+            PayloadTypePacketExtension opus = addPayloadTypeExtension(rtpDesc, config.opus.pt(), "opus", 48000);
             // Opus is always signaled with 2 channels, regardless of 'stereo'
             opus.setChannels(2);
 
@@ -463,7 +454,7 @@ public class JingleOfferFactory
                 // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
                 RTPHdrExtPacketExtension tcc = new RTPHdrExtPacketExtension();
                 tcc.setID(String.valueOf(config.tcc.id()));
-                tcc.setURI(URI.create(RTPExtension.TRANSPORT_CC_URN));
+                tcc.setURI(URI.create("http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01"));
                 rtpDesc.addExtmap(tcc);
 
                 // a=rtcp-fb:111 transport-cc
@@ -486,7 +477,7 @@ public class JingleOfferFactory
         if (config.telephoneEvent.enabled())
         {
             // rtpmap:126 telephone-event/8000
-            addPayloadTypeExtension(rtpDesc, config.telephoneEvent.pt(), Constants.TELEPHONE_EVENT, 8000);
+            addPayloadTypeExtension(rtpDesc, config.telephoneEvent.pt(), "telephone-event", 8000);
         }
 
         // a=maxptime:60

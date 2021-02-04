@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,11 @@
  */
 package org.jitsi.jicofo;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-
-import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider;
-import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.XmppConnectionConfig;
+import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 
-import org.jitsi.utils.logging.*;
-import org.osgi.framework.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,77 +33,40 @@ import java.util.concurrent.*;
  * @author Pawel Domas
  */
 public class ProtocolProviderHandler
-    implements RegistrationStateChangeListener
+    implements RegistrationListener
 {
-    private final static Logger logger = Logger.getLogger(ProtocolProviderHandler.class);
-
-    /**
-     * XMPP provider factory used to create and destroy XMPP account used by
-     * the focus.
-     */
-    private ProtocolProviderFactory xmppProviderFactory;
-
-    /**
-     * XMPP account used by the focus.
-     */
-    private AccountID xmppAccount;
+    private final static Logger logger = new LoggerImpl(ProtocolProviderHandler.class.getName());
 
     /**
      * XMPP protocol provider service used by the focus.
      */
-    private ProtocolProviderService protocolService;
+    private XmppProvider protocolService;
 
     /**
      * Registration listeners notified about encapsulated protocol service
      * instance registration state changes.
      */
-    private final List<RegistrationStateChangeListener> regListeners = new CopyOnWriteArrayList<>();
+    private final List<RegistrationListener> regListeners = new CopyOnWriteArrayList<>();
+
+    private final List<XmppConnectionListener> xmppConnectionListeners = new ArrayList<>();
 
     private final XmppConnectionConfig config;
 
-    public ProtocolProviderHandler(XmppConnectionConfig config)
+    /**
+     * Executor to use to run `register`.
+     */
+    private final ScheduledExecutorService scheduledExecutorService;
+
+    public ProtocolProviderHandler(XmppConnectionConfig config, ScheduledExecutorService scheduledExecutorService)
     {
         this.config = config;
+        this.scheduledExecutorService = scheduledExecutorService;
     }
 
-    public void start()
+    public void start(XmppProviderFactory xmppProviderFactory)
     {
-        xmppProviderFactory
-            = ProtocolProviderFactory.getProtocolProviderFactory(
-                    FocusBundleActivator.bundleContext,
-                    ProtocolNames.JABBER);
-
-        if (config.getPassword() != null)
-        {
-            xmppAccount
-                = xmppProviderFactory.createAccount(
-                FocusAccountFactory.createFocusAccountProperties(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    config.getDomain(),
-                    config.getUsername(),
-                    config.getPassword()));
-        }
-        else
-        {
-            xmppAccount
-                = xmppProviderFactory.createAccount(
-                FocusAccountFactory.createFocusAccountProperties(
-                    config.getHostname(),
-                    String.valueOf(config.getPort()),
-                    config.getDomain(),
-                    config.getUsername()));
-        }
-
-        if (!xmppProviderFactory.loadAccount(xmppAccount))
-        {
-            throw new RuntimeException("Failed to load account: " + xmppAccount);
-        }
-
-        ServiceReference<ProtocolProviderService> protoRef = xmppProviderFactory.getProviderForAccount(xmppAccount);
-
-        protocolService = FocusBundleActivator.bundleContext.getService(protoRef);
-        protocolService.addRegistrationStateChangeListener(this);
+        protocolService = xmppProviderFactory.createXmppProvider(config);
+        protocolService.addRegistrationListener(this);
         if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
         {
             ((XmppProtocolProvider) protocolService).setDisableCertificateVerification(true);
@@ -120,9 +78,8 @@ public class ProtocolProviderHandler
      */
     public void stop()
     {
-        protocolService.removeRegistrationStateChangeListener(this);
-
-        xmppProviderFactory.uninstallAccount(xmppAccount);
+        protocolService.removeRegistrationListener(this);
+        protocolService.unregister();
     }
 
     /**
@@ -132,30 +89,30 @@ public class ProtocolProviderHandler
      * {@inheritDoc}
      */
     @Override
-    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    public void registrationChanged(boolean registered)
     {
-        logger.info(this + ": " + evt);
+        logger.info(this + ": " + (registered ? "registered" : "unregistered"));
 
-        if (RegistrationState.REGISTERED.equals(evt.getNewState()))
+        if (registered)
         {
-            OperationSetDirectSmackXmpp operationSetDirectSmackXmpp
-                = protocolService.getOperationSet(OperationSetDirectSmackXmpp.class);
-            if (operationSetDirectSmackXmpp != null)
+            XmppConnection xmppConnection = protocolService.getXmppConnection();
+            if (xmppConnection != null)
             {
-                operationSetDirectSmackXmpp.getXmppConnection().setReplyTimeout(config.getReplyTimeout().toMillis());
+                xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
+                xmppConnectionListeners.forEach(it -> it.xmppConnectionInitialized(xmppConnection));
                 logger.info("Set replyTimeout=" + config.getReplyTimeout());
             }
             else
             {
-                logger.error("Unable to set Smack replyTimeout, no OperationSet.");
+                logger.error("Unable to set Smack replyTimeout, no XmppConnection.");
             }
         }
 
-        for(RegistrationStateChangeListener l : regListeners)
+        for(RegistrationListener l : regListeners)
         {
             try
             {
-                l.registrationStateChanged(evt);
+                l.registrationChanged(registered);
             }
             catch (Exception e)
             {
@@ -170,7 +127,7 @@ public class ProtocolProviderHandler
      * @param l the listener that will be notified about created protocol
      *           provider's registration state changes.
      */
-    public void addRegistrationListener(RegistrationStateChangeListener l)
+    public void addRegistrationListener(RegistrationListener l)
     {
         regListeners.add(l);
     }
@@ -178,19 +135,10 @@ public class ProtocolProviderHandler
     /**
      * Removes given <tt>RegistrationStateChangeListener</tt>.
      */
-    public void removeRegistrationListener(RegistrationStateChangeListener l)
+    public void removeRegistrationListener(RegistrationListener l)
     {
         boolean ok = regListeners.remove(l);
         logger.debug("Listener removed ? " + ok + ", " + l);
-    }
-
-    /**
-     * Utility method for obtaining operation sets from underlying protocol
-     * provider service.
-     */
-    public <T extends OperationSet> T getOperationSet(Class<T> opSetClass)
-    {
-        return protocolService.getOperationSet(opSetClass);
     }
 
     /**
@@ -207,8 +155,7 @@ public class ProtocolProviderHandler
      */
     public void register()
     {
-        // FIXME: not pooled thread created
-        new RegisterThread(protocolService).start();
+        protocolService.register(scheduledExecutorService);
     }
 
     /**
@@ -216,21 +163,9 @@ public class ProtocolProviderHandler
      * <tt>ProtocolProviderHandler</tt> has been started or <tt>null</tt>
      * otherwise.
      */
-    public ProtocolProviderService getProtocolProvider()
+    public XmppProvider getProtocolProvider()
     {
         return protocolService;
-    }
-
-    /**
-     * Obtains XMPP connection for the underlying XMPP protocol provider
-     * service.
-     * @return {@link XmppConnection} or null if the underlying protocol provider is not registered yet.
-     */
-    public XmppConnection getXmppConnection()
-    {
-        return Objects.requireNonNull(
-                getOperationSet(OperationSetDirectSmackXmpp.class), "OperationSetDirectSmackXmpp")
-                    .getXmppConnection();
     }
 
     /**
@@ -239,6 +174,27 @@ public class ProtocolProviderHandler
     @Override
     public String toString()
     {
-        return protocolService != null ? protocolService.toString() : super.toString();
+        return "ProtocolProviderHandler " + config;
     }
+
+    public void addXmppConnectionListener(XmppConnectionListener listener)
+    {
+        xmppConnectionListeners.add(listener);
+
+        XmppConnection connection = protocolService.getXmppConnection();
+        if (connection != null)
+        {
+            listener.xmppConnectionInitialized(connection);
+        }
+    }
+
+    /**
+     * Interface to use to notify about the XmppConnection being initialized. This is just meant as a temporary solution
+     * until the flow to setup XMPP is cleaned up.
+     */
+    public interface XmppConnectionListener
+    {
+        void xmppConnectionInitialized(XmppConnection xmppConnection);
+    }
+
 }

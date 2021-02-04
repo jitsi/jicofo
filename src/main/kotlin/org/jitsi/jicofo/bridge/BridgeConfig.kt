@@ -76,11 +76,11 @@ class BridgeConfig {
 
     private fun createSelectionStrategy(className: String): BridgeSelectionStrategy {
         return try {
-            val clazz = Class.forName("${javaClass.getPackage().name}.${className}")
+            val clazz = Class.forName("${javaClass.getPackage().name}.$className")
             clazz.getConstructor().newInstance() as BridgeSelectionStrategy
         } catch (e: Exception) {
-                val clazz = Class.forName(className)
-                clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+            val clazz = Class.forName(className)
+            clazz.getConstructor().newInstance() as BridgeSelectionStrategy
         }
     }
 
@@ -120,4 +120,3 @@ class BridgeConfig {
         val config = BridgeConfig()
     }
 }
-

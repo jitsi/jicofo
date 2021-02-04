@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -40,12 +40,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class SSRCValidator
 {
-    /**
-     * The logger used by this class
-     */
-    private final static Logger classLogger
-        = Logger.getLogger(SSRCValidator.class);
-
     /**
      * The logger used by this instance. It uses the log level delegate from
      * the logger passed to the constructor.
@@ -210,7 +204,7 @@ public class SSRCValidator
         this.sources = sources.copyDeep();
         this.sourceGroups = sourceGroups.copy();
         this.maxSourceCount = maxSourceCount;
-        this.logger = Logger.getLogger(classLogger, logLevelDelegate);
+        this.logger = new LoggerImpl(SSRCValidator.class.getName(), logLevelDelegate.getLevel());
     }
 
     /**

@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ Atlassian Pty Ltd
+ * Copyright @ 2017-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,19 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import edu.umd.cs.findbugs.annotations.*;
+import org.jetbrains.annotations.Nullable;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.eventadmin.*;
-import org.jitsi.jicofo.*;
-import org.jitsi.osgi.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -50,13 +47,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class JibriSession
 {
-    /**
-     * The class logger which can be used to override logging level inherited
-     * from {@link JitsiMeetConference}.
-     */
-    static private final Logger classLogger = Logger.getLogger(JibriSession.class);
-
-    private static JibriStats stats = new JibriStats();
+    private static final JibriStats stats = new JibriStats();
 
     public static JSONObject getGlobalStats()
     {
@@ -75,7 +66,9 @@ public class JibriSession
     /**
      * The JID of the Jibri currently being used by this session or
      * <tt>null</tt> otherwise.
+     * TODO: Fix the inconsistent synchronization
      */
+    @SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
     private Jid currentJibriJid;
 
     /**
@@ -97,21 +90,15 @@ public class JibriSession
     private final JibriDetector jibriDetector;
 
     /**
-     * Helper class that registers for {@link JibriEvent}s in the OSGi context
-     * obtained from the {@link FocusBundleActivator}.
+     * Helper class that registers for events from the {@link JibriDetector}.
      */
-    private final JibriEventHandler jibriEventHandler = new JibriEventHandler();
+    private final JibriDetectorEventHandler jibriEventHandler = new JibriDetectorEventHandler();
 
     /**
      * Current Jibri recording status.
      */
     private JibriIq.Status jibriStatus = JibriIq.Status.UNDEFINED;
 
-    /**
-     * The logger for this instance. Uses the logging level either of the
-     * {@link #classLogger} or {@link JitsiMeetConference#getLogger()}
-     * whichever is higher.
-     */
     private final Logger logger;
 
     /**
@@ -194,7 +181,6 @@ public class JibriSession
 
     /**
      * Creates new {@link JibriSession} instance.
-     * @param bundleContext the OSGI context.
      * @param owner the session owner which will be notified about this session
      * state changes.
      * @param roomName the name if the XMPP MUC room (full address).
@@ -251,7 +237,8 @@ public class JibriSession
         this.sessionId = sessionId;
         this.applicationData = applicationData;
         this.xmpp = connection;
-        logger = Logger.getLogger(classLogger, logLevelDelegate);
+        jibriDetector.addHandler(jibriEventHandler);
+        logger = new LoggerImpl(getClass().getName(), logLevelDelegate.getLevel());
     }
 
     /**
@@ -341,15 +328,14 @@ public class JibriSession
             logger.error("Unable to find an available Jibri, can't start");
 
             if (jibriDetector.isAnyInstanceConnected()) {
-                throw new StartException(StartException.ALL_BUSY);
+                throw new StartException.AllBusy();
             }
 
-            throw new StartException(StartException.NOT_AVAILABLE);
+            throw new StartException.NotAvailable();
         }
 
         try
         {
-            jibriEventHandler.start(FocusBundleActivator.bundleContext);
             logger.info("Starting session with Jibri " + jibriJid);
 
             sendJibriStartIq(jibriJid);
@@ -357,14 +343,17 @@ public class JibriSession
         catch (Exception e)
         {
             logger.error("Failed to send start Jibri IQ: " + e, e);
-            jibriDetector.memberHadTransientError(jibriJid);
+            if (!(e instanceof StartException.OneBusy))
+            {
+                jibriDetector.memberHadTransientError(jibriJid);
+            }
             if (!maxRetriesExceeded())
             {
                 retryRequestWithAnotherJibri();
             }
             else
             {
-                throw new StartException(StartException.INTERNAL_SERVER_ERROR);
+                throw new StartException.InternalServerError();
             }
         }
     }
@@ -428,14 +417,7 @@ public class JibriSession
         logger.info("Cleaning up current JibriSession");
         currentJibriJid = null;
         numRetries = 0;
-        try
-        {
-            jibriEventHandler.stop(FocusBundleActivator.bundleContext);
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to stop Jibri event handler: " + e, e);
-        }
+        jibriDetector.removeHandler(jibriEventHandler);
     }
 
     /**
@@ -445,8 +427,7 @@ public class JibriSession
      */
     public boolean accept(JibriIq packet)
     {
-        return currentJibriJid != null
-            && (packet.getFrom().equals(currentJibriJid));
+        return currentJibriJid != null && (packet.getFrom().equals(currentJibriJid));
     }
 
     /**
@@ -460,7 +441,6 @@ public class JibriSession
 
     /**
      * Process a {@link JibriIq} *request* from Jibri
-     * @param request
      * @return the response
      */
     IQ processJibriIqRequestFromJibri(JibriIq request)
@@ -472,7 +452,6 @@ public class JibriSession
     /**
      * Process a {@link JibriIq} from Jibri (note that this
      * may be an IQ request or an IQ response)
-     * @param iq
      */
     private void processJibriIqFromJibri(JibriIq iq)
     {
@@ -480,17 +459,13 @@ public class JibriSession
         JibriIq.Status status = iq.getStatus();
         if (!JibriIq.Status.UNDEFINED.equals(status))
         {
-            logger.info(
-                "Updating status from JIBRI: "
-                    + iq.toXML() + " for " + roomName);
+            logger.info("Updating status from JIBRI: " + iq.toXML() + " for " + roomName);
 
-            handleJibriStatusUpdate(
-                iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
+            handleJibriStatusUpdate(iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
         }
         else
         {
-            logger.error(
-                "Received UNDEFINED status from jibri: " + iq.toString());
+            logger.error("Received UNDEFINED status from jibri: " + iq.toString());
         }
     }
 
@@ -572,20 +547,22 @@ public class JibriSession
                     "Unexpected response to start request: "
                             + (reply != null ? reply.toXML() : "null"));
 
-            throw new StartException(StartException.UNEXPECTED_RESPONSE);
+            throw new StartException.UnexpectedResponse();
         }
 
         JibriIq jibriIq = (JibriIq) reply;
-
-        // According to the "protocol" only PENDING status is allowed in
-        // response to the start request.
-        if (!Status.PENDING.equals(jibriIq.getStatus()))
+        if (isBusyResponse(jibriIq))
+        {
+            logger.info("Jibri " + jibriIq.getFrom() + " was busy");
+            throw new StartException.OneBusy();
+        }
+        if (!isPendingResponse(jibriIq))
         {
             logger.error(
                 "Unexpected status received in response to the start IQ: "
                         + jibriIq.toXML());
 
-            throw new StartException(StartException.UNEXPECTED_RESPONSE);
+            throw new StartException.UnexpectedResponse();
         }
 
         processJibriIqFromJibri(jibriIq);
@@ -674,8 +651,7 @@ public class JibriSession
         // new state), make sure we stop the pending timeout task
         if (pendingTimeoutTask != null && !Status.PENDING.equals(newStatus))
         {
-            logger.info(
-                "Jibri is no longer pending, cancelling pending timeout task");
+            logger.info("Jibri is no longer pending, cancelling pending timeout task");
             pendingTimeoutTask.cancel(false);
             pendingTimeoutTask = null;
         }
@@ -686,8 +662,7 @@ public class JibriSession
             boolean shouldRetry;
             if (shouldRetryParam == null)
             {
-                logger.warn("failureReason was non-null but shouldRetry " +
-                    "wasn't set, will NOT retry");
+                logger.warn("failureReason was non-null but shouldRetry wasn't set, will NOT retry");
                 shouldRetry = false;
             }
             else
@@ -704,14 +679,11 @@ public class JibriSession
                     retryRequestWithAnotherJibri();
 
                     // The fallback to another Jibri succeeded.
-                    logger.info(
-                        "Successfully resumed session with another Jibri");
+                    logger.info("Successfully resumed session with another Jibri");
                 }
                 catch (StartException exc)
                 {
-                    logger.info(
-                        "Failed to fall back to another Jibri, this "
-                            + "session has now failed: " + exc, exc);
+                    logger.warn("Failed to fall back to another Jibri, this session has now failed: " + exc, exc);
                     // Propagate up that the session has failed entirely.
                     // We'll pass the original failure reason.
                     dispatchSessionStateChanged(newStatus, failureReason);
@@ -722,16 +694,14 @@ public class JibriSession
             {
                 if (!shouldRetry)
                 {
-                    logger.info("Jibri failed and signaled that we " +
-                        "should not retry the same request");
+                    logger.info("Jibri failed and signaled that we should not retry the same request");
                 }
                 else
                 {
                     // The Jibri we tried failed and we've reached the maxmium
                     // amount of retries we've been configured to attempt, so we'll
                     // give up trying to handle this request.
-                    logger.info("Jibri failed, but max amount of retries ("
-                        + maxNumRetries + ") reached, giving up");
+                    logger.info("Jibri failed, but max amount of retries (" + maxNumRetries + ") reached, giving up");
                 }
                 dispatchSessionStateChanged(newStatus, failureReason);
                 cleanupSession();
@@ -773,47 +743,6 @@ public class JibriSession
     public String getSessionId()
     {
         return this.sessionId;
-    }
-
-    /**
-     * Helper class handles registration for the {@link JibriEvent}s.
-     */
-    private class JibriEventHandler
-        extends EventHandlerActivator
-    {
-
-        private JibriEventHandler()
-        {
-            super(new String[]{
-                JibriEvent.STATUS_CHANGED, JibriEvent.WENT_OFFLINE});
-        }
-
-        @Override
-        public void handleEvent(Event event)
-        {
-            if (!JibriEvent.isJibriEvent(event))
-            {
-                logger.error("Invalid event: " + event);
-                return;
-            }
-
-            final JibriEvent jibriEvent = (JibriEvent) event;
-            final String topic = jibriEvent.getTopic();
-            final Jid jibriJid = jibriEvent.getJibriJid();
-
-            synchronized (JibriSession.this)
-            {
-                if (JibriEvent.WENT_OFFLINE.equals(topic)
-                    && jibriJid.equals(currentJibriJid))
-                {
-                    logger.error(
-                        nickname() + " went offline: " + jibriJid
-                            + " for room: " + roomName);
-                    handleJibriStatusUpdate(
-                        jibriJid, Status.OFF, FailureReason.ERROR, true);
-                }
-            }
-        }
     }
 
     /**
@@ -885,25 +814,47 @@ public class JibriSession
                 JibriIq.FailureReason         failureReason);
     }
 
-    static public class StartException extends Exception
+    static public abstract class StartException extends Exception
     {
-        final static String ALL_BUSY = "All Jibri instances are busy";
-        final static String INTERNAL_SERVER_ERROR = "Internal server error";
-        final static String NOT_AVAILABLE = "No Jibris available";
-        final static String UNEXPECTED_RESPONSE = "Unexpected response";
-
-        private final String reason;
-
-        StartException(String reason)
+        public StartException(String message)
         {
-            super(reason);
-
-            this.reason = reason;
+            super(message);
         }
 
-        String getReason()
+        static public class AllBusy extends StartException
         {
-            return reason;
+            public AllBusy()
+            {
+                super("All jibri instances are busy");
+            }
+        }
+        static public class InternalServerError extends StartException
+        {
+            public InternalServerError()
+            {
+                super("Internal server error");
+            }
+        }
+        static public class NotAvailable extends StartException
+        {
+            public NotAvailable()
+            {
+                super("No Jibris available");
+            }
+        }
+        static public class UnexpectedResponse extends StartException
+        {
+            public UnexpectedResponse()
+            {
+                super("Unexpected response");
+            }
+        }
+        static public class OneBusy extends StartException
+        {
+            public OneBusy()
+            {
+                super("This Jibri instance was busy");
+            }
         }
     }
 
@@ -925,4 +876,35 @@ public class JibriSession
          */
         RECORDING
     }
+
+    private class JibriDetectorEventHandler implements JibriDetector.EventHandler
+    {
+        @Override
+        public void instanceOffline(Jid jid)
+        {
+            if (jid.equals(currentJibriJid))
+            {
+                logger.warn(nickname() + " went offline: " + jid
+                        + " for room: " + roomName);
+                handleJibriStatusUpdate(
+                        jid, Status.OFF, FailureReason.ERROR, true);
+            }
+        }
+    }
+
+    /**
+     * Returns true if the given IQ represens a busy response from Jibri
+     */
+    private boolean isBusyResponse(JibriIq iq)
+    {
+        return Status.OFF.equals(iq.getStatus()) &&
+            iq.isFailure() &&
+            FailureReason.BUSY.equals(iq.getFailureReason());
+    }
+
+    private boolean isPendingResponse(JibriIq iq)
+    {
+        return Status.PENDING.equals(iq.getStatus());
+    }
+
 }

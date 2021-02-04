@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,15 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.service.protocol.jabber.*;
-
-import org.jitsi.impl.protocol.xmpp.colibri.*;
+import edu.umd.cs.findbugs.annotations.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.recording.jibri.*;
-import org.jitsi.osgi.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.retry.*;
-import org.jitsi.service.configuration.*;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -47,6 +41,8 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.io.*;
+import java.lang.*;
+import java.lang.SuppressWarnings;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -56,10 +52,13 @@ import static org.jivesoftware.smack.SmackException.*;
  * XMPP protocol provider service used by Jitsi Meet focus to create anonymous
  * accounts. Implemented with Smack.
  *
+ * TODO: fix inconsistent synchronization.
+ *
  * @author Pawel Domas
  */
+@SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
 public class XmppProtocolProvider
-    extends AbstractProtocolProviderService
+    extends AbstractXmppProvider
 {
     static
     {
@@ -71,22 +70,15 @@ public class XmppProtocolProvider
     /**
      * The logger used by this class.
      */
-    private final static Logger logger = Logger.getLogger(XmppProtocolProvider.class);
-
-    /**
-     * Active account.
-     */
-    private final JabberAccountID jabberAccountID;
+    private final static Logger logger = new LoggerImpl(XmppProtocolProvider.class.getName());
 
     /**
      * Jingle operation set.
      */
     private final OperationSetJingleImpl jingleOpSet;
+    private final OperationSetJibri jibriApi;
 
-    /**
-     * Current registration state.
-     */
-    private RegistrationState registrationState = RegistrationState.UNREGISTERED;
+    private final Muc muc = new Muc();
 
     /**
      * The XMPP connection used by this instance.
@@ -110,11 +102,6 @@ public class XmppProtocolProvider
     private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
 
     /**
-     * Colibri operation set.
-     */
-    private final OperationSetColibriConferenceImpl colibriTools = new OperationSetColibriConferenceImpl();
-
-    /**
      * Smack connection adapter to {@link XmppConnection} used by this instance.
      */
     private XmppConnectionAdapter connectionAdapter;
@@ -124,67 +111,45 @@ public class XmppProtocolProvider
      */
     private boolean disableCertificateVerification = false;
 
+    @NotNull private final XmppConnectionConfig config;
+
     /**
-     * Creates new instance of {@link XmppProtocolProvider} for given AccountID.
-     *
-     * @param accountID the <tt>JabberAccountID</tt> that will be used by new
-     *                  instance.
+     * Creates new instance of {@link XmppProtocolProvider} with the given configuration.
      */
-    public XmppProtocolProvider(AccountID accountID)
+    public XmppProtocolProvider(@NotNull XmppConnectionConfig config)
     {
-        this.jabberAccountID = (JabberAccountID) accountID;
+        this.config = config;
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
-        addSupportedOperationSet(OperationSetColibriConference.class, colibriTools);
-
-        this.jingleOpSet = new OperationSetJingleImpl(this);
-        addSupportedOperationSet(OperationSetJingle.class, jingleOpSet);
-
-        addSupportedOperationSet(OperationSetMultiUserChat.class, new OperationSetMultiUserChatImpl(this));
-        addSupportedOperationSet(OperationSetJitsiMeetTools.class, new OperationSetMeetToolsImpl());
-        addSupportedOperationSet(OperationSetSimpleCaps.class, new OpSetSimpleCapsImpl(this));
-        addSupportedOperationSet(OperationSetDirectSmackXmpp.class, new OpSetDirectSmackXmppImpl(this));
-        addSupportedOperationSet(OperationSetJibri.class, new OperationSetJibri(this));
+        jingleOpSet = new OperationSetJingleImpl(this);
+        jibriApi = new OperationSetJibri(this);
     }
 
     /**
      * Initializes Jicofo's feature list.
      */
     private void initializeFeaturesList() {
+        // This can be removed once all clients are updated reading this from the presence conference property
         ServiceDiscoveryManager serviceDiscoveryManager = ServiceDiscoveryManager.getInstanceFor(connection);
         serviceDiscoveryManager.addFeature("https://jitsi.org/meet/jicofo/terminate-restart");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public synchronized void register(SecurityAuthority securityAuthority)
-        throws OperationFailedException
+    public String toString()
     {
-        DomainBareJid serviceName;
-        try
-        {
-            serviceName = JidCreate.domainBareFrom(getAccountID().getUserID());
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new OperationFailedException(
-                    "Invalid UserID",
-                    OperationFailedException.ILLEGAL_ARGUMENT,
-                    e);
-        }
+        // Avoid calling super.toString() as it uses the account ID.
+        return "XmppProtocolProvider " + config;
+    }
 
-        String serverAddressUserSetting = jabberAccountID.getServerAddress();
-
-        int serverPort = getAccountID().getAccountPropertyInt(ProtocolProviderFactory.SERVER_PORT, 5222);
-
+    @Override
+    public synchronized void register(ScheduledExecutorService executorService)
+    {
         XMPPTCPConnectionConfiguration.Builder connConfig
             = XMPPTCPConnectionConfiguration.builder()
-                .setHost(serverAddressUserSetting)
-                .setPort(serverPort)
-                .setXmppDomain(serviceName);
+                .setHost(config.getHostname())
+                .setPort(config.getPort())
+                .setXmppDomain(config.getDomain());
 
         // Required for PacketDebugger and XMPP stats to work
         connConfig.setDebuggerEnabled(true);
@@ -196,7 +161,7 @@ public class XmppProtocolProvider
         // Disable GSSAPI.
         SASLAuthentication.unregisterSASLMechanism(SASLGSSAPIMechanism.class.getName());
 
-        if (jabberAccountID.isAnonymousAuthUsed())
+        if (config.getPassword() == null)
         {
             connConfig.performSaslAnonymousAuthentication();
         }
@@ -211,11 +176,6 @@ public class XmppProtocolProvider
         connection = new XMPPTCPConnection(connConfig.build());
 
         this.initializeFeaturesList();
-
-        ScheduledExecutorService executorService
-            = ServiceUtils2.getService(
-                    XmppProtocolActivator.bundleContext,
-                    ScheduledExecutorService.class);
 
         connectRetry = new RetryStrategy(executorService);
 
@@ -250,19 +210,17 @@ public class XmppProtocolProvider
 
             ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
 
-            if (!jabberAccountID.isAnonymousAuthUsed())
+            if (config.getPassword() != null)
             {
-                String login = jabberAccountID.getAuthorizationName();
-                String pass = jabberAccountID.getPassword();
-                Resourcepart resource = Resourcepart.from(jabberAccountID.getResource());
+                String login = config.getUsername().toString();
+                String pass = config.getPassword();
+                Resourcepart resource = config.getUsername();
                 connection.login(login, pass, resource);
             }
 
-            colibriTools.initialize(getConnectionAdapter());
-
             connection.registerIQRequestHandler(jingleOpSet);
 
-            logger.info("XMPP provider " + jabberAccountID + " connected (JID: " + connection.getUser() + ")");
+            logger.info("XMPP provider connected (JID: " + connection.getUser() + ")");
 
             return false;
         }
@@ -291,42 +249,11 @@ public class XmppProtocolProvider
         }
     }
 
-    private void notifyConnected()
-    {
-        if (!RegistrationState.REGISTERED.equals(registrationState))
-        {
-            RegistrationState oldState = registrationState;
-            registrationState = RegistrationState.REGISTERED;
-
-            fireRegistrationStateChanged(
-                oldState,
-                RegistrationState.REGISTERED,
-                RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-                null);
-        }
-    }
-
-    private void notifyDisconnected()
-    {
-        if (!RegistrationState.UNREGISTERED.equals(registrationState))
-        {
-            RegistrationState oldState = registrationState;
-            registrationState = RegistrationState.UNREGISTERED;
-
-            fireRegistrationStateChanged(
-                oldState,
-                RegistrationState.UNREGISTERED,
-                RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
-                null);
-        }
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
     public synchronized void unregister()
-        throws OperationFailedException
     {
         if (connection == null)
         {
@@ -346,82 +273,15 @@ public class XmppProtocolProvider
 
         connection = null;
 
-        logger.info("XMPP provider " + jabberAccountID + " disconnected");
+        logger.info(this + " Disconnected ");
 
-        notifyDisconnected();
+        setRegistered(false);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public RegistrationState getRegistrationState()
+    public @NotNull XmppConnectionConfig getConfig()
     {
-        return registrationState;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getProtocolName()
-    {
-        return ProtocolNames.JABBER;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ProtocolIcon getProtocolIcon()
-    {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void shutdown()
-    {
-        if (connection != null)
-        {
-            try
-            {
-                unregister();
-            }
-            catch (OperationFailedException e)
-            {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AccountID getAccountID()
-    {
-        return jabberAccountID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isSignalingTransportSecure()
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TransportProtocol getTransportProtocol()
-    {
-        return TransportProtocol.UNKNOWN;
+        return config;
     }
 
     /**
@@ -429,9 +289,22 @@ public class XmppProtocolProvider
      *
      * @return implementation of {@link org.jitsi.protocol.xmpp.XmppConnection}
      */
-    public XMPPConnection getConnection()
+    @Override
+    public XMPPConnection getXmppConnectionRaw()
     {
         return connection;
+    }
+
+    @Override
+    public @NotNull OperationSetJingle getJingleApi()
+    {
+        return jingleOpSet;
+    }
+
+    @Override
+    public OperationSetJibri getJibriApi()
+    {
+        return jibriApi;
     }
 
     /**
@@ -444,12 +317,8 @@ public class XmppProtocolProvider
         return connection != null ? connection.getUser() : null;
     }
 
-    /**
-     * Lazy initializer for {@link #connectionAdapter}.
-     *
-     * @return {@link XmppConnection} provided by this instance.
-     */
-    XmppConnection getConnectionAdapter()
+    @Override
+    public XmppConnection getXmppConnection()
     {
         if (connectionAdapter == null && connection != null)
         {
@@ -491,6 +360,17 @@ public class XmppProtocolProvider
         this.disableCertificateVerification = disableCertificateVerification;
     }
 
+    @Override
+    public @NotNull ChatRoom createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
+    {
+        return muc.createChatRoom(name);
+    }
+
+    @Override
+    public @NotNull ChatRoom findOrCreateRoom(@NotNull String name) throws XmppStringprepException
+    {
+        return muc.findOrCreateRoom(name);
+    }
 
     class XmppConnectionListener
         implements ConnectionListener
@@ -503,7 +383,7 @@ public class XmppProtocolProvider
         @Override
         public void authenticated(XMPPConnection connection, boolean resumed)
         {
-            notifyConnected();
+            setRegistered(true);
         }
 
         @Override
@@ -515,7 +395,7 @@ public class XmppProtocolProvider
 
             //notifyConnFailed(null);
 
-            notifyDisconnected();
+            setRegistered(false);
         }
 
         @Override
@@ -527,7 +407,7 @@ public class XmppProtocolProvider
 
             //notifyConnFailed(e);
 
-            notifyDisconnected();
+            setRegistered(false);
         }
 
         /**
@@ -588,6 +468,11 @@ public class XmppProtocolProvider
         XmppConnectionAdapter(XMPPConnection connection)
         {
             this.connection = Objects.requireNonNull(connection, "connection");
+        }
+
+        public XMPPConnection getConnection()
+        {
+            return connection;
         }
 
         @Override
@@ -686,6 +571,66 @@ public class XmppProtocolProvider
         public void setReplyTimeout(long replyTimeoutMs)
         {
             connection.setReplyTimeout(replyTimeoutMs);
+        }
+    }
+
+    private class Muc
+    {
+        /**
+         * The map of active chat rooms mapped by their names.
+         */
+        private final Map<String, ChatRoomImpl> rooms = new HashMap<>();
+
+        private ChatRoom createChatRoom(String roomName)
+                throws XmppStringprepException, RoomExistsException
+        {
+            EntityBareJid roomJid = JidCreate.entityBareFrom(roomName);
+
+            synchronized (rooms)
+            {
+                if (rooms.containsKey(roomName))
+                {
+                    throw new RoomExistsException("Room '" + roomName + "' exists");
+                }
+
+                ChatRoomImpl newRoom = new ChatRoomImpl(XmppProtocolProvider.this, roomJid, this::removeRoom);
+
+                rooms.put(newRoom.getName(), newRoom);
+
+                return newRoom;
+            }
+        }
+
+        private ChatRoom findOrCreateRoom(String roomName)
+                throws XmppStringprepException
+        {
+            roomName = roomName.toLowerCase();
+
+            synchronized (rooms)
+            {
+                ChatRoom room = rooms.get(roomName);
+
+                if (room == null)
+                {
+                    try
+                    {
+                        room = createChatRoom(roomName);
+                    }
+                    catch (RoomExistsException e)
+                    {
+                        throw new RuntimeException("Unexpected RoomExistsException.");
+                    }
+                }
+                return room;
+            }
+        }
+
+        public void removeRoom(ChatRoomImpl chatRoom)
+        {
+            synchronized (rooms)
+            {
+                rooms.remove(chatRoom.getName());
+            }
         }
     }
 }

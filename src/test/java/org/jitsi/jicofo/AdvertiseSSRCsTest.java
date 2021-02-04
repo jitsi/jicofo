@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import org.jitsi.osgi.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.protocol.xmpp.util.*;
@@ -50,7 +49,6 @@ public class AdvertiseSSRCsTest
 
     @After
     public void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -64,13 +62,11 @@ public class AdvertiseSSRCsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
 
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -146,10 +142,9 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -199,10 +194,9 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -259,11 +253,10 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(osgi.bc, serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
 
         MockProtocolProvider pps = testConf.getFocusProtocolProvider();
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-        MockMultiUserChat chat = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");

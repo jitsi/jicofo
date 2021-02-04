@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,14 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import net.java.sip.communicator.service.protocol.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.osgi.framework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -60,12 +59,6 @@ public abstract class CommonJibriStuff
     protected final Logger logger;
 
     /**
-     * Meet tools instance used to inject packet extensions to Jicofo's MUC
-     * presence.
-     */
-    final OperationSetJitsiMeetTools meetTools;
-
-    /**
      * Jibri detector which notifies about Jibri availability status changes.
      */
     final JibriDetector jibriDetector;
@@ -84,31 +77,21 @@ public abstract class CommonJibriStuff
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
-     * @param bundleContext OSGi {@link BundleContext}.
-     * @param isSIP indicates whether this stuff is for SIP Jibri or for regular Jibris.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
      * @param xmppConnection XMPP operation set which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     CommonJibriStuff(
-            BundleContext bundleContext,
-            boolean isSIP,
             JitsiMeetConferenceImpl conference,
             XmppConnection xmppConnection,
             ScheduledExecutorService scheduledExecutor,
-            Logger logger)
+            Logger logger,
+            JibriDetector jibriDetector)
     {
         this.connection = Objects.requireNonNull(xmppConnection, "xmppConnection");
         this.conference = Objects.requireNonNull(conference, "conference");
         this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
-        this.jibriDetector
-            = isSIP
-                ? conference.getServices().getSipJibriDetector()
-                : conference.getServices().getJibriDetector();
-
-        ProtocolProviderService protocolService = conference.getXmppProvider();
-
-        this.meetTools = protocolService.getOperationSet(OperationSetJitsiMeetTools.class);
+        this.jibriDetector = jibriDetector;
 
         this.logger = logger;
     }
@@ -189,7 +172,7 @@ public abstract class CommonJibriStuff
             return false;
         }
 
-        XmppChatMember chatMember = conference.findMember(from);
+        ChatRoomMember chatMember = conference.findMember(from);
         if (chatMember == null)
         {
             logger.warn("Chat member not found for: " + from);

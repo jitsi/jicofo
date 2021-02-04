@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2017 Atlassian Pty Ltd
+ * Copyright @ 2017-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
  */
 package mock.xmpp;
 
-import net.java.sip.communicator.service.protocol.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -27,7 +27,6 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
-import java.io.*;
 import java.util.*;
 
 import static org.jivesoftware.smack.SmackException.*;
@@ -36,12 +35,9 @@ public class MockXmppConnection
     extends AbstractXMPPConnection
     implements XmppConnection
 {
-    private final static Logger logger
-            = Logger.getLogger(MockXmppConnection.class);
+    private final static Logger logger = new LoggerImpl(MockXmppConnection.class.getName());
 
-    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue
-            = Collections.synchronizedMap(
-                    new HashMap<Jid, MockXmppConnection>());
+    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
 
     private static class MockXmppConnectionConfiguration
             extends ConnectionConfiguration
@@ -113,7 +109,6 @@ public class MockXmppConnection
 
     @Override
     public void sendNonza(Nonza element)
-            throws NotConnectedException, InterruptedException
     {
     }
 
@@ -127,16 +122,12 @@ public class MockXmppConnection
     protected void loginInternal(String username,
                                  String password,
                                  Resourcepart resource)
-            throws XMPPException, SmackException,
-            IOException, InterruptedException
     {
         // nothing to do
     }
 
     @Override
     protected void connectInternal()
-            throws SmackException, IOException,
-            XMPPException, InterruptedException
     {
         sharedStanzaQueue.put(user, this);
         tlsHandled.reportSuccess();
@@ -145,7 +136,6 @@ public class MockXmppConnection
 
     @Override
     protected void sendStanzaInternal(final Stanza packet)
-            throws NotConnectedException, InterruptedException
     {
         packet.setFrom(user);
         final MockXmppConnection target = sharedStanzaQueue.get(packet.getTo());
@@ -155,13 +145,7 @@ public class MockXmppConnection
             return;
         }
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run()
-            {
-                target.invokeStanzaCollectorsAndNotifyRecvListeners(packet);
-            }
-        });
+        Thread t = new Thread(() -> target.invokeStanzaCollectorsAndNotifyRecvListeners(packet));
         t.start();
     }
 

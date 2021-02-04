@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,90 +17,53 @@
  */
 package mock.muc;
 
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-import org.jitsi.protocol.xmpp.*;
-import org.jitsi.utils.logging.*;
-import org.jxmpp.jid.*;
+import org.jitsi.impl.protocol.xmpp.*;
 
 import java.util.*;
 
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
+
 /**
- * The purpose of this class is to simulate mock room joined by all
- * <tt>net.java.sip.communicator.service.protocol.mock.MockProtocolProvider</tt>s
- * only if they share the same room name.
+ * The purpose of this class is to simulate mock room joined by all <tt>MockProtocolProvider</tt>s only if they share
+ * the same room name.
  *
  * @author Pawel Domas
  */
 public class MockMucShare
-    implements ChatRoomMemberPresenceListener
 {
-    private final static Logger logger = Logger.getLogger(MockMucShare.class);
-
-    private final EntityBareJid roomName;
-
     private final List<MockMultiUserChat> groupedChats = new ArrayList<>();
-
-    public MockMucShare(EntityBareJid roomName)
-    {
-        this.roomName = roomName;
-    }
 
     public void nextRoomCreated(MockMultiUserChat chatRoom)
     {
         groupedChats.add(chatRoom);
 
-        chatRoom.addMemberPresenceListener(this);
+        Listener listener = new Listener(chatRoom);
+        chatRoom.addMemberPresenceListener(listener);
 
         // Copy existing members if any
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            broadcastMemberJoined(chatRoom, member);
+            broadcastMemberJoined(chatRoom, listener, member);
         }
     }
 
-    @Override
-    public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
-    {
-        String eventType = evt.getEventType();
-
-        if (ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED.equals(eventType))
-        {
-            broadcastMemberJoined(evt.getChatRoom(), evt.getChatRoomMember());
-        }
-        else if(
-            ChatRoomMemberPresenceChangeEvent.MEMBER_KICKED.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_LEFT.equals(eventType)
-            || ChatRoomMemberPresenceChangeEvent.MEMBER_QUIT.equals(eventType) )
-        {
-            broadcastMemberLeft(
-                    evt.getChatRoom(),
-                    (XmppChatMember)evt.getChatRoomMember());
-        }
-        else
-        {
-            logger.warn("Unsupported event type: " + eventType);
-        }
-    }
-
-    private void broadcastMemberJoined(ChatRoom chatRoom,
-                                       ChatRoomMember chatRoomMember)
+    private void broadcastMemberJoined(ChatRoom chatRoom, Listener listener, ChatRoomMember chatRoomMember)
     {
         for (MockMultiUserChat chatToNotify : groupedChats)
         {
             if (chatToNotify != chatRoom)
             {
-                chatToNotify.removeMemberPresenceListener(this);
+                // ???
+                chatToNotify.removeMemberPresenceListener(listener);
 
                 chatToNotify.mockJoin((MockRoomMember) chatRoomMember);
 
-                chatToNotify.addMemberPresenceListener(this);
+                chatToNotify.addMemberPresenceListener(listener);
             }
         }
     }
 
-    private void broadcastMemberLeft(ChatRoom chatRoom,
-                                     XmppChatMember chatRoomMember)
+    private void broadcastMemberLeft(ChatRoom chatRoom, ChatRoomMember chatRoomMember)
     {
         for (MockMultiUserChat chatToNotify : groupedChats)
         {
@@ -116,4 +79,29 @@ public class MockMucShare
             }
         }
     }
+
+    private class Listener
+            implements ChatRoomMemberPresenceListener
+    {
+        private final ChatRoom chatRoom;
+        private Listener(ChatRoom chatRoom)
+        {
+            this.chatRoom = chatRoom;
+        }
+
+        @Override
+        public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
+        {
+
+            if (evt instanceof Joined)
+            {
+                broadcastMemberJoined(chatRoom, this, evt.getChatRoomMember());
+            }
+            else if(evt instanceof Kicked || evt instanceof Left)
+            {
+                broadcastMemberLeft(chatRoom, evt.getChatRoomMember());
+            }
+        }
+    }
+
 }

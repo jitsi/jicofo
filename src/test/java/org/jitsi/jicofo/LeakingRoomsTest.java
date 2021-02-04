@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015 Atlassian Pty Ltd
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import mock.*;
 import mock.muc.*;
 import mock.util.*;
-import mock.xmpp.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -43,7 +42,6 @@ public class LeakingRoomsTest
 
     @AfterClass
     public static void tearDownClass()
-        throws Exception
     {
         osgi.shutdown();
     }
@@ -52,24 +50,12 @@ public class LeakingRoomsTest
     public void testOneToOneConference()
             throws Exception
     {
-        EntityBareJid roomName = JidCreate.entityBareFrom(
-                "testLeaks@conference.pawel.jitsi.net");
+        EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf
-            = TestConference.allocate(osgi.bc, serverName, roomName);
-
-        MockProtocolProvider pps
-                = testConf.getFocusProtocolProvider();
-
-        MockMultiUserChatOpSet mucOpSet = pps.getMockChatOpSet();
-
-        MockMultiUserChat chat
-                = (MockMultiUserChat) mucOpSet.findRoom(roomName.toString());
-
-        // Add discovery delay
-        MockSetSimpleCapsOpSet discoOpSet = pps.getMockCapsOpSet();
-        discoOpSet.addDiscoveryDelay(30);
+        TestConference testConf = TestConference.allocate(serverName, roomName);
+        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");

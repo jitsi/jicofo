@@ -15,7 +15,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
-import org.jitsi.utils.logging.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -29,8 +29,7 @@ public class SingleBridgeSelectionStrategy
     /**
      * The logger.
      */
-    private final static Logger logger
-            = Logger.getLogger(BridgeSelectionStrategy.class);
+    private final static Logger logger = new LoggerImpl(SingleBridgeSelectionStrategy.class.getName());
 
     /**
      * Default constructor.

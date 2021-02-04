@@ -17,8 +17,10 @@ package org.jitsi.jicofo.rest;
 
 import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
-import org.jitsi.jicofo.util.*;
-import org.osgi.framework.*;
+import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.auth.*;
+import org.jitsi.jicofo.health.*;
+import org.jitsi.utils.version.*;
 
 import java.time.*;
 
@@ -30,9 +32,10 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(BundleContext bundleContext)
+    public Application(ShibbolethAuthAuthority shibbolethAuthAuthority,
+                       @NotNull Version version,
+                       JicofoHealthChecker healthChecker)
     {
-        register(new OsgiServiceBinder(bundleContext));
         register(new AbstractBinder()
         {
             @Override
@@ -42,7 +45,17 @@ public class Application
             }
         });
         packages("org.jitsi.jicofo.rest");
-        // Load any resources from Jicoco
-        packages("org.jitsi.rest");
+
+        if (healthChecker != null)
+        {
+            register(new org.jitsi.rest.Health(healthChecker));
+        }
+
+        register(new org.jitsi.rest.Version(version));
+
+        if (shibbolethAuthAuthority != null)
+        {
+            register(new ShibbolethLogin(shibbolethAuthAuthority));
+        }
     }
 }

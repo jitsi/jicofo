@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.metaconfig.config
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
@@ -33,9 +33,6 @@ class XmppConfig {
 
         @JvmField
         val client = XmppClientConnectionConfig()
-
-        @JvmField
-        val component = XmppComponentConfig()
 
         @JvmField
         val config = XmppConfig()
@@ -101,6 +98,8 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.service.disable-certificate-verification".from(newConfig)
     }
+
+    override fun toString(): String = "XmppServiceConnectionConfig[hostname=$hostname, port=$port, username=$username]"
 }
 
 class XmppClientConnectionConfig : XmppConnectionConfig {
@@ -192,33 +191,19 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
         "jicofo.xmpp.client.disable-certificate-verification".from(newConfig)
     }
 
+    val clientProxy: DomainBareJid? by optionalconfig {
+        "jicofo.xmpp.client.client-proxy".from(newConfig).convertFrom<String> {
+            JidCreate.domainBareFrom(it)
+        }
+    }
+
+    override fun toString(): String = "XmppClientConnectionConfig[hostname=$hostname, port=$port, username=$username]"
+
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
         const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
         const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
         const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
         const val legacyXmppDomainPropertyName = "org.jitsi.jicofo.XMPP_DOMAIN"
-    }
-}
-
-/**
- * The XMPP component connection is deprecated and will be removed. These properties are configured via command line
- * arguments and only supported temporarily.
- */
-data class XmppComponentConfig(
-    val hostname: String = "",
-    val domain: String = "",
-    val subdomain: String = "",
-    val port: Int = -1,
-    val secret: String = ""
-) {
-    companion object {
-        /**
-         * The configuration to use for the XMPP component connection. The default uses values chosen to allow tests to
-         * run (i.e. dummy values which allow [FocusComponent] to be instantiated and only throw if it attempts to
-         * connect).
-         */
-        @JvmField
-        var config = XmppComponentConfig()
     }
 }

@@ -91,10 +91,12 @@ class CodecConfigTest : ConfigTest() {
                     config.vp8.rtxEnabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.rtxPt() }
                 }
-                withLegacyConfig("""
+                withLegacyConfig(
+                    """
                     org.jitsi.jicofo.VP8_PT=-1
                     org.jitsi.jicofo.VP8_RTX_PT=111
-                """.trimIndent()) {
+                    """.trimIndent()
+                ) {
                     config.vp8.enabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.pt() }
                     config.vp8.rtxEnabled() shouldBe false
@@ -173,7 +175,7 @@ class CodecConfigTest : ConfigTest() {
                         }
                       }
                     }
-                """.trimIndent()
+                    """.trimIndent()
                 ) {
                     config.vp8.enabled() shouldBe false
                     shouldThrow<Throwable> { config.vp8.pt() }

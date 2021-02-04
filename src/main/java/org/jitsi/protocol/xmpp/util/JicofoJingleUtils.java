@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2018 Atlassian Pty Ltd
+ * Copyright @ 2018-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,7 @@ public class JicofoJingleUtils
      */
     public static void addBundleExtensions(JingleIQ jingleIQ)
     {
-        GroupPacketExtension group
-            = GroupPacketExtension.createBundleGroup(jingleIQ.getContentList());
+        GroupPacketExtension group = GroupPacketExtension.createBundleGroup(jingleIQ.getContentList());
 
         jingleIQ.addExtension(group);
     }
@@ -47,11 +46,9 @@ public class JicofoJingleUtils
      * @param audioMute the value to set for the {@code audio} attribute.
      * @param videoMute the value to set for the {@code video} attribute.
      */
-    public static void addStartMutedExtension(
-        JingleIQ jingleIQ, boolean audioMute, boolean videoMute)
+    public static void addStartMutedExtension(JingleIQ jingleIQ, boolean audioMute, boolean videoMute)
     {
-        StartMutedPacketExtension startMutedExt
-            = new StartMutedPacketExtension();
+        StartMutedPacketExtension startMutedExt = new StartMutedPacketExtension();
         startMutedExt.setAudioMute(audioMute);
         startMutedExt.setVideoMute(videoMute);
         jingleIQ.addExtension(startMutedExt);
