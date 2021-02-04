@@ -1643,7 +1643,8 @@ public class JitsiMeetConferenceImpl
      * groups of a participant that sends the session-accept or transport-accept
      * Jingle IQs.
      */
-    private XMPPError onSessionAcceptInternal(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    private XMPPError onSessionAcceptInternal(
+            @NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         Participant participant = findParticipantForJingleSession(jingleSession);
         Jid participantJid = jingleSession.getAddress();
