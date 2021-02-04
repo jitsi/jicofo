@@ -109,7 +109,7 @@ public class MockMultiUserChat
     @Override
     public String getLocalNickname()
     {
-        return null;
+        return myNickname;
     }
 
     @Override

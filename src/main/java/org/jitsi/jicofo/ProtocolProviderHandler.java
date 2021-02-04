@@ -61,7 +61,10 @@ public class ProtocolProviderHandler
     {
         this.config = config;
         this.scheduledExecutorService = scheduledExecutorService;
-        logger.addContext("xmpp_connection", config.getName());
+        if (config != null)
+        {
+            logger.addContext("xmpp_connection", config.getName());
+        }
     }
 
     public void start(XmppProviderFactory xmppProviderFactory)
