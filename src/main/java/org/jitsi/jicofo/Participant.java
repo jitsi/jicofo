@@ -396,8 +396,7 @@ public class Participant
         }
         else
         {
-            TransportSignaling.mergeTransportExtension(
-                    bundleTransport, transport);
+            TransportSignaling.mergeTransportExtension(bundleTransport, transport);
         }
     }
 

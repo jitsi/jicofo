@@ -111,7 +111,7 @@ public class ProtocolProviderHandler
             }
         }
 
-        for(RegistrationListener l : regListeners)
+        for (RegistrationListener l : regListeners)
         {
             try
             {

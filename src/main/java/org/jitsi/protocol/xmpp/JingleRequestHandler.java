@@ -22,6 +22,7 @@ import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jivesoftware.smack.packet.*;
 
+import javax.validation.constraints.*;
 import java.util.*;
 
 /**
@@ -44,7 +45,7 @@ public interface JingleRequestHandler
      * @return <tt>XMPPError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onAddSource(JingleSession jingleSession, List<ContentPacketExtension> contents);
+    XMPPError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Callback fired when 'source-remove' proprietary Jingle notification is
@@ -59,7 +60,7 @@ public interface JingleRequestHandler
      * @return <tt>XMPPError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onRemoveSource(JingleSession jingleSession, List<ContentPacketExtension> contents);
+    XMPPError onRemoveSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Callback fired when 'session-accept' is received from the client.
@@ -70,7 +71,7 @@ public interface JingleRequestHandler
      * @return <tt>XMPPError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onSessionAccept(JingleSession jingleSession, List<ContentPacketExtension> answer);
+    XMPPError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer);
 
     /**
      * Callback fired when 'session-info' is received from the client.
@@ -81,7 +82,7 @@ public interface JingleRequestHandler
      * @return <tt>XMPPError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onSessionInfo(JingleSession jingleSession, JingleIQ iq);
+    XMPPError onSessionInfo(@NotNull JingleSession jingleSession, JingleIQ iq);
 
     /**
      * Callback fired when 'session-terminate' is received from the client.
@@ -92,7 +93,7 @@ public interface JingleRequestHandler
      * @return <tt>XMPPError</tt> if an error should be returned as response to the original request or <tt>null</tt>
      * to reply with RESULT.
      */
-    XMPPError onSessionTerminate(JingleSession jingleSession, JingleIQ iq);
+    XMPPError onSessionTerminate(@NotNull JingleSession jingleSession, JingleIQ iq);
 
     /**
      * Callback fired when 'transport-info' is received from the client.
@@ -100,7 +101,7 @@ public interface JingleRequestHandler
      * @param jingleSession the session that has received the notification.
      * @param contents content list that contains media transport description.
      */
-    void onTransportInfo(JingleSession jingleSession, List<ContentPacketExtension> contents);
+    void onTransportInfo(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Called when 'transport-accept' IQ is received from the client.
@@ -111,7 +112,7 @@ public interface JingleRequestHandler
      * @return <tt>XMPPError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onTransportAccept(JingleSession jingleSession, List<ContentPacketExtension> contents);
+    XMPPError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Called when 'transport-reject' IQ is received from the client.
@@ -119,5 +120,5 @@ public interface JingleRequestHandler
      * @param jingleSession the session that has received the notification
      * @param rejectIq full reject IQ provided for further analysis purposes
      */
-    void onTransportReject(JingleSession jingleSession, JingleIQ rejectIq);
+    void onTransportReject(@NotNull JingleSession jingleSession, JingleIQ rejectIq);
 }
