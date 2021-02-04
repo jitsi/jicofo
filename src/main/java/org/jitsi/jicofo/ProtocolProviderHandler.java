@@ -141,7 +141,7 @@ public class ProtocolProviderHandler
      */
     public void removeRegistrationListener(RegistrationListener l)
     {
-        boolean ok = regListeners.remove(l);
+        regListeners.remove(l);
     }
 
     /**
