@@ -166,8 +166,7 @@ public class ChatRoomImpl
      */
     public ChatRoomImpl(@NotNull XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
     {
-        // TODO remove the empty context when jitsi-utils is updated.
-        logger = new LoggerImpl(getClass().getName(), new LogContext(Collections.emptyMap()));
+        logger = new LoggerImpl(getClass().getName());
         logger.addContext("room", roomJid.getResourceOrEmpty().toString());
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;

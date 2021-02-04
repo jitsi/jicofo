@@ -47,8 +47,7 @@ public class JibriDetector
      */
     private static Logger createLogger(String type)
     {
-        // TODO remove empty conteext
-        Logger logger = new LoggerImpl(JibriDetector.class.getName(), new LogContext(Collections.emptyMap()));
+        Logger logger = new LoggerImpl(JibriDetector.class.getName());
         logger.addContext("type", type);
         return logger;
     }

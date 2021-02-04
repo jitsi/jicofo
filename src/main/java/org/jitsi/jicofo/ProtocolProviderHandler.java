@@ -35,9 +35,7 @@ import java.util.concurrent.*;
 public class ProtocolProviderHandler
     implements RegistrationListener
 {
-    // TODO: Remove the empty context when jitsi-utils is updated
-    private final static Logger logger
-            = new LoggerImpl(ProtocolProviderHandler.class.getName(), new LogContext(Collections.emptyMap()));
+    private final static Logger logger = new LoggerImpl(ProtocolProviderHandler.class.getName());
 
     /**
      * XMPP protocol provider service used by the focus.

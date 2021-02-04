@@ -252,9 +252,7 @@ public class JitsiMeetConferenceImpl
             long gid,
             boolean includeInStatistics)
     {
-        // TODO Remove empty context when jitsi-utils is updated
-        logger = new LoggerImpl(
-                JitsiMeetConferenceImpl.class.getName(), logLevel, new LogContext(Collections.emptyMap()));
+        logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.getResourceOrEmpty().toString());
 
         this.protocolProviderHandler = protocolProviderHandler;

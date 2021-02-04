@@ -51,8 +51,7 @@ public class JigasiDetector
      */
     private static Logger createLogger()
     {
-        // TODO remove empry context
-        Logger logger = new LoggerImpl(JigasiDetector.class.getName(), new LogContext(Collections.emptyMap()));
+        Logger logger = new LoggerImpl(JigasiDetector.class.getName());
         logger.addContext("type", "jigasi");
         return logger;
     }

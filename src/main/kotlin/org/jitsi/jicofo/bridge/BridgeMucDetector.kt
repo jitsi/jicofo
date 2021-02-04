@@ -19,7 +19,6 @@ package org.jitsi.jicofo.bridge
 
 import org.jitsi.jicofo.ProtocolProviderHandler
 import org.jitsi.jicofo.xmpp.BaseBrewery
-import org.jitsi.utils.logging2.LogContext
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.Jid
@@ -42,8 +41,7 @@ class BridgeMucDetector(
     breweryJid,
     ColibriStatsExtension.ELEMENT_NAME,
     ColibriStatsExtension.NAMESPACE,
-    // TODO remove empty conteext when jitsi-utils is updated
-    LoggerImpl("BridgeMucDetector", LogContext(emptyMap())).apply { addContext("type", "bridge") }
+    LoggerImpl("BridgeMucDetector").apply { addContext("type", "bridge") }
 ) {
 
     override fun onInstanceStatusChanged(jid: Jid, stats: ColibriStatsExtension) {
