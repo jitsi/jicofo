@@ -99,8 +99,7 @@ public class BridgeSelector
      * @param stats the last reported statistics
      * @return the {@link Bridge} instance for thee given JID.
      */
-    synchronized public Bridge addJvbAddress(
-            Jid bridgeJid, ColibriStatsExtension stats)
+    synchronized public Bridge addJvbAddress(Jid bridgeJid, ColibriStatsExtension stats)
     {
         Bridge bridge = bridges.get(bridgeJid);
         if (bridge != null)

@@ -43,7 +43,7 @@ public class JigasiSelectorTest
     {
         brewery = new MockBrewery<>(
             new ProtocolProviderHandler(null, new ScheduledThreadPoolExecutor(1)),
-            "roomName@muc-servicename.jabserver.com"
+            JidCreate.from("roomName@muc-servicename.jabserver.com")
         );
     }
 

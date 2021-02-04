@@ -17,8 +17,10 @@
  */
 package mock.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -27,27 +29,25 @@ import java.util.*;
 public class MockBrewery<T extends ExtensionElement>
     extends BaseBrewery<T>
 {
-    public MockBrewery(
-        ProtocolProviderHandler protocolProvider,
-        String breweryJid)
+    public MockBrewery(ProtocolProviderHandler protocolProvider, Jid breweryJid)
     {
-        super(protocolProvider, breweryJid, null, null);
+        super(protocolProvider, breweryJid, null, null, new LoggerImpl(MockBrewery.class.getName()));
     }
 
     @Override
-    protected void onInstanceStatusChanged(Jid jid, T status)
+    protected void onInstanceStatusChanged(@NotNull Jid jid, @NotNull T status)
     {}
 
     @Override
     protected void notifyInstanceOffline(Jid jid)
     {}
 
-    public void addNewBrewInstance(Jid jid, T el)
+    public void addNewBrewInstance(@NotNull Jid jid, @NotNull T el)
     {
         processInstanceStatusChanged(jid, el);
     }
 
-    public void updateInstanceStats(Jid jid, T el)
+    public void updateInstanceStats(@NotNull Jid jid, @NotNull T el)
     {
         processInstanceStatusChanged(jid, el);
     }
