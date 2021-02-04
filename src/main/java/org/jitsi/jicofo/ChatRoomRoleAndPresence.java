@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.utils.logging2.*;
@@ -74,12 +75,13 @@ public class ChatRoomRoleAndPresence
     private ChatRoomMember owner;
 
     public ChatRoomRoleAndPresence(JitsiMeetConferenceImpl conference,
-                                   ChatRoom chatRoom)
+                                   ChatRoom chatRoom,
+                                   @NotNull Logger parentLogger)
     {
         this.conference = Objects.requireNonNull(conference, "conference");
         this.chatRoom = Objects.requireNonNull(chatRoom, "chatRoom");
 
-        this.logger = new LoggerImpl(getClass().getName(), conference.getLogger().getLevel());
+        this.logger = parentLogger.createChildLogger(getClass().getName());
     }
 
     /**

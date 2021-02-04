@@ -76,7 +76,7 @@ public class ChatRoomImpl
     /**
      * The logger used by this class.
      */
-    private final static Logger logger = new LoggerImpl(ChatRoomImpl.class.getName());
+    private final Logger logger;
 
     /**
      * Constant used to return empty presence list from
@@ -166,6 +166,9 @@ public class ChatRoomImpl
      */
     public ChatRoomImpl(@NotNull XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
     {
+        // TODO remove the empty context when jitsi-utils is updated.
+        logger = new LoggerImpl(getClass().getName(), new LogContext(Collections.emptyMap()));
+        logger.addContext("room", roomJid.getResourceOrEmpty().toString());
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;

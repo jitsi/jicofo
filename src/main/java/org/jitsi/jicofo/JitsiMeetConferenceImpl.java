@@ -175,7 +175,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Indicates if this instance has been started (initialized).
      */
-    private AtomicBoolean started = new AtomicBoolean(false);
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * The time at which this conference was created.
@@ -261,7 +261,11 @@ public class JitsiMeetConferenceImpl
             long gid,
             boolean includeInStatistics)
     {
-        this.logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
+        // TODO Remove empty context when jitsi-utils is updated
+        logger = new LoggerImpl(
+                JitsiMeetConferenceImpl.class.getName(), logLevel, new LogContext(Collections.emptyMap()));
+        logger.addContext("room", roomName.getResourceOrEmpty().toString());
+
         this.protocolProviderHandler = protocolProviderHandler;
         this.jvbXmppConnection = jvbXmppConnection;
         this.config = config;
@@ -478,13 +482,14 @@ public class JitsiMeetConferenceImpl
         chatRoom = protocolProviderHandler.getProtocolProvider().findOrCreateRoom(roomName.toString());
         chatRoom.setConference(this);
 
-        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
+        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
         rolesAndPresence.init();
 
         transcriberManager = new TranscriberManager(
             protocolProviderHandler,
             this,
-            jicofoServices.getJigasiDetector());
+            jicofoServices.getJigasiDetector(),
+            logger);
         transcriberManager.init();
 
         chatRoom.join();
