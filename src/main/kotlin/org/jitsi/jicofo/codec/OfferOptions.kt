@@ -32,8 +32,8 @@ data class OfferOptions(
     var sctp: Boolean = true,
     var stereo: Boolean = true,
     var tcc: Boolean = true,
+    var remb: Boolean = false,
     var rtx: Boolean = true,
-    var remb: Boolean = true,
     var opusRed: Boolean = true,
     var minBitrate: Int? = null,
     var startBitrate: Int? = null,
@@ -49,10 +49,6 @@ val OctoOptions = OfferOptions(
 
 fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
-    tcc = tcc && jitsiMeetConfig.isTccEnabled
-    rtx = rtx && jitsiMeetConfig.isRtxEnabled
-    remb = remb && jitsiMeetConfig.isRembEnabled
-    opusRed = opusRed && jitsiMeetConfig.isOpusRedEnabled
     if (jitsiMeetConfig.minBitrate > 0) {
         minBitrate = min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
     }
@@ -71,5 +67,7 @@ fun OfferOptions.applyConstraints(participant: Participant) {
     video = video && participant.hasVideoSupport()
     sctp = sctp && participant.hasSctpSupport()
     rtx = rtx && participant.hasRtxSupport()
+    remb = remb && participant.hasRembSupport()
+    tcc = tcc && participant.hasTccSupport()
     opusRed = opusRed && participant.hasOpusRedSupport()
 }

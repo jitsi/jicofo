@@ -39,28 +39,6 @@ public class JitsiMeetConfig
     private final static Logger logger = new LoggerImpl(JitsiMeetConfig.class.getName());
 
     /**
-     * The name of the "disableRtx" property.
-     */
-    public static final String PNAME_DISABLE_RTX = "disableRtx";
-
-    /**
-     * The name of the property which enables the inclusion of the REMB RTCP
-     * in the offer.
-     */
-    public static final String PNAME_ENABLE_REMB = "enableRemb";
-
-    /**
-     * The name of the property which enables the inclusion of the TCC RTP
-     * header extension in the offer.
-     */
-    public static final String PNAME_ENABLE_TCC = "enableTcc";
-
-    /**
-     * Whether RED should be enabled for opus.
-     */
-    public static final String PNAME_ENABLE_OPUS_RED = "enableOpusRed";
-
-    /**
      * The name of the "minBitrate" property.
      */
     public static final String PNAME_MIN_BITRATE = "minBitrate";
@@ -91,16 +69,6 @@ public class JitsiMeetConfig
     public static final String PNAME_OPUS_MAX_AVG_BITRATE = "opusMaxAverageBitrate";
 
     /**
-     * Disable REMBs by default.
-     */
-    private static final boolean DEFAULT_ENABLE_REMB = false;
-
-    /**
-     * Enable TCC by default.
-     */
-    private static final boolean DEFAULT_ENABLE_TCC = true;
-
-    /**
      * The default value of the "startBitrate" property.
      */
     public static final int DEFAULT_START_BITRATE = 800;
@@ -115,41 +83,6 @@ public class JitsiMeetConfig
     public JitsiMeetConfig(Map<String, String> properties)
     {
         this.properties = properties;
-    }
-
-    /**
-     * @return {@code true} iff RTX is enabled in this {@link JitsiMeetConfig}.
-     */
-    public boolean isRtxEnabled()
-    {
-        String disableRtxStr = properties.get(PNAME_DISABLE_RTX);
-        return isBlank(disableRtxStr) || !Boolean.parseBoolean(disableRtxStr);
-    }
-
-    /**
-     * Gets a boolean that indicates whether or not to enable the REMB RTP
-     * header extension in created offers.
-     */
-    public boolean isRembEnabled()
-    {
-        Boolean enableRemb = getBoolean(PNAME_ENABLE_REMB);
-        return enableRemb == null ? DEFAULT_ENABLE_REMB : enableRemb;
-    }
-
-    /**
-     * Gets a boolean that indicates whether or not to enable the TCC RTP header
-     * extension in created offers.
-     */
-    public boolean isTccEnabled()
-    {
-        Boolean enableTcc = getBoolean(PNAME_ENABLE_TCC);
-        return enableTcc == null ? DEFAULT_ENABLE_TCC : enableTcc;
-    }
-
-    public boolean isOpusRedEnabled()
-    {
-        Boolean enableOpusRed = getBoolean(PNAME_ENABLE_OPUS_RED);
-        return enableOpusRed != null && enableOpusRed;
     }
 
     private Boolean getBoolean(String name)
