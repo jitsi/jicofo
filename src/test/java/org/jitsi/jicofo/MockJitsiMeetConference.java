@@ -55,12 +55,6 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public EntityFullJid getFocusJid()
-    {
-        return null;
-    }
-
-    @Override
     public ChatRoom getChatRoom()
     {
         return null;

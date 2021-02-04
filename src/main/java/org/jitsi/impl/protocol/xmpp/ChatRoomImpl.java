@@ -180,6 +180,12 @@ public class ChatRoomImpl
         muc.addParticipantListener(this);
     }
 
+    @Override
+    public String getLocalNickname()
+    {
+        return muc.getNickname().toString();
+    }
+
     /**
      * Sets the conference that is backed by this MUC. Can only be set once.
      * @param conference the conference backed by this MUC.

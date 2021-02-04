@@ -107,6 +107,12 @@ public class MockMultiUserChat
     }
 
     @Override
+    public String getLocalNickname()
+    {
+        return null;
+    }
+
+    @Override
     public String getName()
     {
         return roomName.toString();

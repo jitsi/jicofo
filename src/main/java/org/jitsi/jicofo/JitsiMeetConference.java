@@ -62,12 +62,6 @@ public interface JitsiMeetConference
     EntityBareJid getRoomName();
 
     /**
-     * Returns focus MUC JID if it is in the room or <tt>null</tt> otherwise.
-     * JID example: room_name@muc.server.com/focus_nickname.
-     */
-    EntityFullJid getFocusJid();
-
-    /**
      * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
      * currently in or <tt>null</tt> if it isn't in any.
      */

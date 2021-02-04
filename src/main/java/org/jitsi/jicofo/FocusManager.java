@@ -117,9 +117,7 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start(
-            ProtocolProviderHandler protocolProviderHandler,
-            ProtocolProviderHandler jvbProtocolProvider)
+    public void start(ProtocolProviderHandler protocolProviderHandler, ProtocolProviderHandler jvbProtocolProvider)
     {
         expireThread.start();
 
@@ -285,7 +283,6 @@ public class FocusManager
             conference
                     = new JitsiMeetConferenceImpl(
                     room,
-                    XmppConfig.client.getUsername(),
                     protocolProviderHandler,
                     jvbProtocolProvider,
                     this, config, logLevel,

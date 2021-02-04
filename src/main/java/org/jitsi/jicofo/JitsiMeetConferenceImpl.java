@@ -38,8 +38,6 @@ import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.jid.parts.*;
 
 import java.time.Instant;
 import java.util.*;
@@ -114,11 +112,6 @@ public class JitsiMeetConferenceImpl
      */
     @NotNull
     private final ProtocolProviderHandler jvbXmppConnection;
-
-    /**
-     * The name of XMPP user used by the focus to login.
-     */
-    private final Resourcepart focusUserName;
 
     /** Jibri operation set to (un)register recorders. */
     private OperationSetJibri jibriOpSet;
@@ -243,7 +236,6 @@ public class JitsiMeetConferenceImpl
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
-     * @param focusUserName focus user login.
      * @param listener the listener that will be notified about this instance
      *        events.
      * @param config the conference configuration instance.
@@ -252,7 +244,6 @@ public class JitsiMeetConferenceImpl
      */
     public JitsiMeetConferenceImpl(
             EntityBareJid roomName,
-            Resourcepart focusUserName,
             @NotNull ProtocolProviderHandler protocolProviderHandler,
             @NotNull ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
@@ -272,7 +263,6 @@ public class JitsiMeetConferenceImpl
 
         this.gid = gid;
         this.roomName = roomName;
-        this.focusUserName = focusUserName;
         this.listener = listener;
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
@@ -286,7 +276,6 @@ public class JitsiMeetConferenceImpl
 
     public JitsiMeetConferenceImpl(
             EntityBareJid roomName,
-            Resourcepart focusUserName,
             @NotNull ProtocolProviderHandler protocolProviderHandler,
             @NotNull ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
@@ -294,7 +283,7 @@ public class JitsiMeetConferenceImpl
             Level logLevel,
             long gid)
     {
-       this(roomName, focusUserName, protocolProviderHandler, jvbXmppConnection,
+       this(roomName, protocolProviderHandler, jvbXmppConnection,
             listener, config, logLevel, gid, false);
     }
 
@@ -1024,16 +1013,12 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Check if given chat member is a focus.
-     *
-     * @param member the member to check.
-     *
-     * @return <tt>true</tt> if given {@link ChatRoomMember} is a focus
-     *         participant.
+     * Check whether a {@link ChatRoomMember} is the local member.
+     * TODO: just stop firing events for the local member.
      */
     boolean isFocusMember(ChatRoomMember member)
     {
-        return member.getName().equals(focusUserName.toString());
+        return member.getName().equals(chatRoom.getLocalNickname());
     }
 
     /**
@@ -2102,15 +2087,6 @@ public class JitsiMeetConferenceImpl
     public boolean hasHadAtLeastOneParticipant()
     {
         return hasHadAtLeastOneParticipant;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public EntityFullJid getFocusJid()
-    {
-        return JidCreate.fullFrom(roomName, focusUserName);
     }
 
     /**
