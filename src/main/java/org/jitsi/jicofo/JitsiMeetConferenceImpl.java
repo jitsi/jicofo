@@ -280,6 +280,8 @@ public class JitsiMeetConferenceImpl
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.jicofoServices = jicofoServices;
         executor = jicofoServices.getScheduledPool();
+
+        logger.info("Created new conference, roomJid=" + roomName);
     }
 
     public JitsiMeetConferenceImpl(
@@ -344,7 +346,8 @@ public class JitsiMeetConferenceImpl
                             this,
                             getXmppConnection(),
                             executor,
-                            jibriDetector);
+                            jibriDetector,
+                            logger);
 
                 jibriOpSet.addJibri(jibriRecorder);
             }
@@ -357,7 +360,8 @@ public class JitsiMeetConferenceImpl
                             this,
                             getXmppConnection(),
                             executor,
-                            sipJibriDetector);
+                            sipJibriDetector,
+                            logger);
 
                 jibriOpSet.addJibri(jibriSipGateway);
             }
@@ -451,6 +455,7 @@ public class JitsiMeetConferenceImpl
             }
         }
 
+        logger.info("Stopped.");
         if (listener != null)
         {
             listener.conferenceEnded(this);
@@ -670,7 +675,7 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            final Participant participant = new Participant(this, chatRoomMember);
+            final Participant participant = new Participant(chatRoomMember, logger);
 
             participants.add(participant);
             inviteParticipant(participant, false, hasToStartMuted(participant, justJoined));
@@ -822,7 +827,8 @@ public class JitsiMeetConferenceImpl
                         bridgeSession,
                         participant,
                         startMuted,
-                        reInvite);
+                        reInvite,
+                        logger);
 
             participant.setChannelAllocator(channelAllocator);
             jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
@@ -2320,14 +2326,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns the <tt>Logger</tt> used by this instance.
-     */
-    public Logger getLogger()
-    {
-        return logger;
-    }
-
-    /**
      * A method to be called by {@link AbstractChannelAllocator} just after it
      * has created a new Colibri conference on the JVB.
      */
@@ -2872,7 +2870,7 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Creating an Octo participant for " + bridge);
 
-            OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays);
+            OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays, logger);
 
             MediaSourceMap remoteSources = getAllSources(participants, true);
             MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants, true);
@@ -2880,7 +2878,7 @@ public class JitsiMeetConferenceImpl
             octoParticipant.addSourcesAndGroups(remoteSources, remoteGroups);
 
             OctoChannelAllocator channelAllocator
-                = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant);
+                = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant, logger);
             octoParticipant.setChannelAllocator(channelAllocator);
 
             jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);

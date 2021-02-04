@@ -110,14 +110,15 @@ public abstract class AbstractChannelAllocator implements Runnable
             @NotNull JitsiMeetConferenceImpl.BridgeSession bridgeSession,
             @NotNull AbstractParticipant participant,
             boolean[] startMuted,
-            boolean reInvite)
+            boolean reInvite,
+            Logger parentLogger)
     {
         this.meetConference = meetConference;
         this.bridgeSession = bridgeSession;
         this.participant = participant;
         this.startMuted = startMuted;
         this.reInvite = reInvite;
-        this.logger = new LoggerImpl(getClass().getName(), meetConference.getLogger().getLevel());
+        this.logger = parentLogger.createChildLogger(getClass().getName());
     }
 
     /**

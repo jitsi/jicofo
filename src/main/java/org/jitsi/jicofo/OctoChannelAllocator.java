@@ -54,11 +54,13 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
     public OctoChannelAllocator(
             JitsiMeetConferenceImpl conference,
             JitsiMeetConferenceImpl.BridgeSession bridgeSession,
-            OctoParticipant participant)
+            OctoParticipant participant,
+            Logger parentLogger)
     {
-        super(conference, bridgeSession, participant, null, false);
+        super(conference, bridgeSession, participant, null, false, parentLogger);
         this.participant = participant;
-        this.logger = new LoggerImpl(OctoChannelAllocator.class.getName(), conference.getLogger().getLevel());
+        logger = parentLogger.createChildLogger(OctoChannelAllocator.class.getName());
+        logger.addContext("bridge", bridgeSession.bridge.getJid().toString());
     }
 
     /**

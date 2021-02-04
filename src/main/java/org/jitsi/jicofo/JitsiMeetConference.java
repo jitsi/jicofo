@@ -36,12 +36,6 @@ import java.util.*;
 public interface JitsiMeetConference
 {
     /**
-     * @return the <tt>Logger</tt> instance which might be used to inherit
-     * the logging level assigned on the per conference basis.
-     */
-    Logger getLogger();
-
-    /**
      * Checks how many {@link Participant}s are in the conference.
      * @return an integer greater than 0.
      */

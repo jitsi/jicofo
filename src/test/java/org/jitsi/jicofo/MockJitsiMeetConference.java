@@ -33,17 +33,6 @@ import java.util.*;
 public class MockJitsiMeetConference
     implements JitsiMeetConference
 {
-    private static final Logger logger = new LoggerImpl(MockJitsiMeetConference.class.getName());
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Logger getLogger()
-    {
-        return logger;
-    }
-
     /**
      * {@inheritDoc}
      */

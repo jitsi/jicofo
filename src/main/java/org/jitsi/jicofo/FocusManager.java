@@ -300,25 +300,6 @@ public class FocusManager
             statistics.totalConferencesCreated.incrementAndGet();
         }
 
-        if (conference.getLogger().isInfoEnabled())
-        {
-            StringBuilder sb = new StringBuilder("Created new focus for ");
-            sb.append(room).append("@").append(XmppConfig.client.getDomain());
-            sb.append(". Conference count ").append(conferences.size());
-            sb.append(",").append("options: ");
-            StringBuilder options = new StringBuilder();
-            for (Map.Entry<String, String> option : properties.entrySet())
-            {
-                options.append(option.getKey())
-                    .append("=")
-                    .append(option.getValue())
-                    .append(" ");
-            }
-            sb.append(options);
-
-            logger.info(sb);
-        }
-
         return conference;
     }
 
@@ -380,11 +361,6 @@ public class FocusManager
         {
             conferences.remove(roomName);
             conferenceGids.remove(conference.getId());
-
-            if (conference.getLogger().isInfoEnabled())
-                logger.info(
-                    "Disposed conference for room: " + roomName
-                        + " conference count: " + conferences.size());
 
             // It is not clear whether the code below necessarily needs to
             // hold the lock or not.
@@ -697,11 +673,6 @@ public class FocusManager
 
                         if (Duration.between(conference.getCreationTime(), Instant.now()).compareTo(timeout) > 0)
                         {
-                            if (conference.getLogger().isInfoEnabled())
-                            {
-                                logger.info("Stopping conference with no participants: " + conference.getRoomName());
-                            }
-
                             conference.stop();
                         }
                     }
