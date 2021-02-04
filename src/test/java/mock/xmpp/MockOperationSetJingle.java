@@ -26,24 +26,16 @@ import java.util.*;
 
 /**
  * Implementation of {@link MockOperationSetJingle} for
- * {@link XmppProtocolProvider}.
+ * {@link XmppProviderImpl}.
  *
  * @author Pawel Domas
  */
 public class MockOperationSetJingle
     extends AbstractOperationSetJingle
 {
-    /**
-     * Parent {@link XmppProtocolProvider}.
-     */
-    private final MockProtocolProvider xmppProvider;
+    private final MockXmppProvider xmppProvider;
 
-    /**
-     * Creates new instance of <tt>OperationSetJingleImpl</tt>.
-     *
-     * @param xmppProvider parent XMPP protocol provider
-     */
-    public MockOperationSetJingle(MockProtocolProvider xmppProvider)
+    public MockOperationSetJingle(MockXmppProvider xmppProvider)
     {
         Objects.requireNonNull(xmppProvider);
         this.xmppProvider = xmppProvider;

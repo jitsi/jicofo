@@ -129,22 +129,20 @@ public class DiscoveryUtil
     /**
      * Gets the list of features supported by participant. If we fail to
      * obtain it due to network failure default feature list is returned.
-     * @param protocolProvider protocol provider service instance that will
-     *        be used for discovery.
      * @param address XMPP address of the participant.
      */
-    public static List<String> discoverParticipantFeatures(XmppProvider protocolProvider, EntityFullJid address)
+    public static List<String> discoverParticipantFeatures(XmppProvider xmppProvider, EntityFullJid address)
     {
-        XMPPConnection xmppConnection = protocolProvider.getXmppConnectionRaw();
+        XMPPConnection xmppConnection = xmppProvider.getXmppConnectionRaw();
         if (xmppConnection == null)
         {
-            logger.error("No xmpp connection " + protocolProvider);
+            logger.error("No xmpp connection " + xmppProvider);
             return getDefaultParticipantFeatureSet();
         }
         ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection);
         if (discoveryManager == null)
         {
-            logger.error("Service discovery not supported by " + protocolProvider);
+            logger.error("Service discovery not supported by " + xmppProvider);
             return getDefaultParticipantFeatureSet();
         }
 

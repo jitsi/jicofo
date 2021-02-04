@@ -330,7 +330,7 @@ public class JitsiMeetConferenceImpl
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            getXmppConnection(),
+                            clientXmppProvider.getXmppConnection(),
                             executor,
                             jibriDetector,
                             logger);
@@ -344,7 +344,7 @@ public class JitsiMeetConferenceImpl
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            getXmppConnection(),
+                            clientXmppProvider.getXmppConnection(),
                             executor,
                             sipJibriDetector,
                             logger);
@@ -2051,20 +2051,7 @@ public class JitsiMeetConferenceImpl
         return roomName;
     }
 
-    /**
-     * @return {@link XmppConnection} instance for this conference.
-     */
-    XmppConnection getXmppConnection()
-    // XXX
-    {
-        return clientXmppProvider.getXmppConnection();
-    }
-
-    /**
-     * Returns XMPP protocol provider of the focus account.
-     */
-    // XXX
-    public XmppProvider getXmppProvider()
+    public XmppProvider getClientXmppProvider()
     {
         return clientXmppProvider;
     }

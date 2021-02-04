@@ -23,24 +23,16 @@ import org.jxmpp.jid.*;
 
 /**
  * Implementation of {@link OperationSetJingleImpl} for
- * {@link XmppProtocolProvider}.
+ * {@link XmppProviderImpl}.
  *
  * @author Pawel Domas
  */
 public class OperationSetJingleImpl
     extends AbstractOperationSetJingle
 {
-    /**
-     * Parent {@link XmppProtocolProvider}.
-     */
-    private final XmppProtocolProvider xmppProvider;
+    private final XmppProviderImpl xmppProvider;
 
-    /**
-     * Creates new instance of <tt>OperationSetJingleImpl</tt>.
-     *
-     * @param xmppProvider parent XMPP protocol provider
-     */
-    OperationSetJingleImpl(XmppProtocolProvider xmppProvider)
+    OperationSetJingleImpl(XmppProviderImpl xmppProvider)
     {
         this.xmppProvider = xmppProvider;
     }

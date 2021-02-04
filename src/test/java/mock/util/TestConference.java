@@ -37,21 +37,26 @@ public class TestConference
 
     private Jid mockBridgeJid;
 
-    private MockProtocolProvider focusProtocolProvider;
+    private MockXmppProvider xmppProvider;
 
     public JitsiMeetConferenceImpl conference;
 
     private MockVideobridge mockBridge;
 
 
-    static public TestConference allocate(String serverName, EntityBareJid roomName)
+    static public TestConference allocate(String serverName, EntityBareJid roomName, MockXmppProvider xmppProvider)
         throws Exception
     {
-        TestConference newConf = new TestConference();
+        TestConference newConf = new TestConference(xmppProvider);
 
         newConf.createJvbAndConference(serverName, roomName);
 
         return newConf;
+    }
+
+    private TestConference(MockXmppProvider xmppProvider)
+    {
+        this.xmppProvider = xmppProvider;
     }
 
     private FocusManager getFocusManager()
@@ -92,13 +97,9 @@ public class TestConference
         this.conference = getFocusManager().getConference(roomName);
     }
 
-    public MockProtocolProvider getFocusProtocolProvider()
+    public MockXmppProvider getXmppProvider()
     {
-        if (focusProtocolProvider == null)
-        {
-            focusProtocolProvider = (MockProtocolProvider) getFocusManager().getProtocolProvider();
-        }
-        return focusProtocolProvider;
+        return xmppProvider;
     }
 
     public MockVideobridge getMockVideoBridge()

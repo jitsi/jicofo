@@ -37,18 +37,18 @@ public class OperationSetJibri
 {
     private final List<CommonJibriStuff> jibris = Collections.synchronizedList(new LinkedList<>());
 
-    private final XmppProtocolProvider protocolProvider;
+    private final XmppProvider xmppProvider;
 
     /**
      * Creates a new instance of this class.
      *
-     * @param protocolProvider the XMPP to which this instance is bound.
+     * @param xmppProvider the XMPP to which this instance is bound.
      */
-    public OperationSetJibri(XmppProtocolProvider protocolProvider)
+    public OperationSetJibri(XmppProvider xmppProvider)
     {
         super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, Mode.async);
-        this.protocolProvider = protocolProvider;
-        protocolProvider.addRegistrationListener(this);
+        this.xmppProvider = xmppProvider;
+        xmppProvider.addRegistrationListener(this);
     }
 
     /**
@@ -106,7 +106,7 @@ public class OperationSetJibri
         // Do initializations which require valid connection
         if (registered)
         {
-            XMPPConnection xmppConnection = protocolProvider.getXmppConnectionRaw();
+            XMPPConnection xmppConnection = xmppProvider.getXmppConnectionRaw();
             if (xmppConnection == null)
             {
                 throw new IllegalStateException("XMPPConnection is null while registered.");

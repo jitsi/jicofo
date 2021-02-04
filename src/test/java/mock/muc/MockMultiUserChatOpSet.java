@@ -32,7 +32,7 @@ public class MockMultiUserChatOpSet
 {
     private static final Map<String, MockMucShare> mucDomainSharing = new HashMap<>();
 
-    private final MockProtocolProvider xmppProvider;
+    private final MockXmppProvider xmppProvider;
 
     private final Map<EntityBareJid, MockMultiUserChat> chatRooms
         = new HashMap<>();
@@ -49,7 +49,7 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    public MockMultiUserChatOpSet(MockProtocolProvider xmppProvider)
+    public MockMultiUserChatOpSet(MockXmppProvider xmppProvider)
     {
         this.xmppProvider = xmppProvider;
     }

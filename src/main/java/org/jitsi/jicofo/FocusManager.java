@@ -22,7 +22,6 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.json.simple.*;
@@ -528,15 +527,15 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         // XMPP traffic stats
-        if (clientXmppProvider instanceof XmppProtocolProvider)
+        if (clientXmppProvider instanceof XmppProviderImpl)
         {
-            XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) clientXmppProvider;
-            stats.put("xmpp", xmppProtocolProvider.getStats());
+            XmppProviderImpl xmppProviderImpl = (XmppProviderImpl) clientXmppProvider;
+            stats.put("xmpp", xmppProviderImpl.getStats());
         }
-        if (serviceXmppProvider instanceof XmppProtocolProvider)
+        if (serviceXmppProvider instanceof XmppProviderImpl)
         {
-            XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) serviceXmppProvider;
-            stats.put("xmpp_service", xmppProtocolProvider.getStats());
+            XmppProviderImpl xmppProviderImpl = (XmppProviderImpl) serviceXmppProvider;
+            stats.put("xmpp_service", xmppProviderImpl.getStats());
         }
 
         if (healthChecker != null)
@@ -554,12 +553,6 @@ public class FocusManager
     public void setHealth(JicofoHealthChecker jicofoHealthChecker)
     {
         this.healthChecker = jicofoHealthChecker;
-    }
-
-    // XXX rename
-    public XmppProvider getProtocolProvider()
-    {
-        return clientXmppProvider;
     }
 
     public @NotNull Statistics getStatistics()

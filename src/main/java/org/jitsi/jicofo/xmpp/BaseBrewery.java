@@ -19,7 +19,6 @@ package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -55,9 +54,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     private final Jid breweryJid;
 
-    /**
-     * The <tt>ProtocolProviderHandler</tt> for Jicofo's XMPP connection.
-     */
     private final XmppProvider xmppProvider;
 
     /**

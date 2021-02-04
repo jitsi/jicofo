@@ -53,8 +53,8 @@ public class LeakingRoomsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(serverName, roomName);
-        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users

@@ -77,7 +77,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         EntityFullJid address = participant.getMucJid();
 
         // Feature discovery
-        List<String> features = DiscoveryUtil.discoverParticipantFeatures(meetConference.getXmppProvider(), address);
+        List<String> features =
+                DiscoveryUtil.discoverParticipantFeatures(meetConference.getClientXmppProvider(), address);
         participant.setSupportedFeatures(features);
 
         JitsiMeetConfig config = meetConference.getConfig();

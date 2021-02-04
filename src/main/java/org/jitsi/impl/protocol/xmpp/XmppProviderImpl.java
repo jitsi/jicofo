@@ -49,15 +49,12 @@ import java.util.concurrent.*;
 import static org.jivesoftware.smack.SmackException.*;
 
 /**
- * XMPP protocol provider service used by Jitsi Meet focus to create anonymous
- * accounts. Implemented with Smack.
- *
  * TODO: fix inconsistent synchronization.
  *
  * @author Pawel Domas
  */
 @SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
-public class XmppProtocolProvider
+public class XmppProviderImpl
     extends AbstractXmppProvider
 {
     static
@@ -109,16 +106,16 @@ public class XmppProtocolProvider
     @NotNull private final ScheduledExecutorService executor;
 
     /**
-     * Creates new instance of {@link XmppProtocolProvider} with the given configuration.
+     * Creates new instance of {@link XmppProviderImpl} with the given configuration.
      */
-    public XmppProtocolProvider(
+    public XmppProviderImpl(
             @NotNull XmppConnectionConfig config,
             @NotNull ScheduledExecutorService executor,
             @NotNull Logger parentLogger)
     {
         this.config = config;
         this.executor = executor;
-        this.logger = parentLogger.createChildLogger(XmppProtocolProvider.class.getName());
+        this.logger = parentLogger.createChildLogger(XmppProviderImpl.class.getName());
         logger.addContext("xmpp_connection", config.getName());
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
@@ -140,7 +137,7 @@ public class XmppProtocolProvider
     public String toString()
     {
         // Avoid calling super.toString() as it uses the account ID.
-        return "XmppProtocolProvider " + config;
+        return "XmppProviderImpl " + config;
     }
 
     @Override
@@ -334,8 +331,7 @@ public class XmppProtocolProvider
     }
 
     /**
-     * Generates a {@link JSONObject} with statistics  for this protocol
-     * provider instance.
+     * Generates a {@link JSONObject} with statistics for this {@link XmppProviderImpl}.
      * @return JSON stats
      */
     @SuppressWarnings("unchecked")
@@ -616,7 +612,7 @@ public class XmppProtocolProvider
                     throw new RoomExistsException("Room '" + roomName + "' exists");
                 }
 
-                ChatRoomImpl newRoom = new ChatRoomImpl(XmppProtocolProvider.this, roomJid, this::removeRoom);
+                ChatRoomImpl newRoom = new ChatRoomImpl(XmppProviderImpl.this, roomJid, this::removeRoom);
 
                 rooms.put(newRoom.getName(), newRoom);
 

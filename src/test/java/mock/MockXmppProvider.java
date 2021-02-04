@@ -32,7 +32,7 @@ import org.jxmpp.stringprep.*;
  *
  * @author Pawel Domas
  */
-public class MockProtocolProvider
+public class MockXmppProvider
     extends AbstractXmppProvider
 {
     private final MockXmppConnection connection;
@@ -43,7 +43,7 @@ public class MockProtocolProvider
 
     @NotNull public XmppConnectionConfig config;
 
-    public MockProtocolProvider(@NotNull XmppConnectionConfig config)
+    public MockXmppProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
         connection = new MockXmppConnection(getOurJID());
@@ -54,7 +54,7 @@ public class MockProtocolProvider
     @Override
     public String toString()
     {
-        return "MockProtocolProvider " + config;
+        return "MockXmppProvider " + config;
     }
 
     @Override

@@ -62,9 +62,9 @@ public class AdvertiseSSRCsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
 
-        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        MockXmppProvider pps = testConf.getXmppProvider();
 
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
@@ -142,8 +142,8 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName);
-        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
@@ -194,8 +194,8 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName);
-        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users
@@ -253,9 +253,9 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName);
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
 
-        MockProtocolProvider pps = testConf.getFocusProtocolProvider();
+        MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
 
         // Join with all users

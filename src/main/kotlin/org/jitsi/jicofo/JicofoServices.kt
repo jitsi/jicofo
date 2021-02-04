@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
-import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider
+import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
@@ -81,7 +81,7 @@ open class JicofoServices {
                 executor: ScheduledExecutorService,
                 parentLogger: Logger
             ): XmppProvider {
-                return XmppProtocolProvider(config, executor, parentLogger)
+                return XmppProviderImpl(config, executor, parentLogger)
             }
         }
     }

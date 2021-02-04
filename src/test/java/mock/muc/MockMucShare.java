@@ -24,7 +24,7 @@ import java.util.*;
 import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
- * The purpose of this class is to simulate mock room joined by all <tt>MockProtocolProvider</tt>s only if they share
+ * The purpose of this class is to simulate mock room joined by all {@link mock.MockXmppProvider}s only if they share
  * the same room name.
  *
  * @author Pawel Domas

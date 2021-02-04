@@ -62,9 +62,7 @@ public interface ChatRoom
     /**
      * Leave this chat room. Once this method is called, the user won't be
      * listed as a member of the chat room any more and no further chat events
-     * will be delivered. Depending on the underlying protocol and
-     * implementation leave() might cause the room to be destroyed if it has
-     * been created by the local user.
+     * will be delivered.
      */
     void leave();
 

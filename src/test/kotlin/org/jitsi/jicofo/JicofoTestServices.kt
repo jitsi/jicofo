@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo
 
-import mock.MockProtocolProvider
+import mock.MockXmppProvider
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
@@ -32,7 +32,7 @@ class JicofoTestServices : JicofoServices() {
                 executor: ScheduledExecutorService,
                 parrentLogger: Logger
             ): XmppProvider {
-                return MockProtocolProvider(config)
+                return MockXmppProvider(config)
             }
         }
     }
