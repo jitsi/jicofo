@@ -22,7 +22,6 @@ import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.reservation.ReservationSystem
-import org.jitsi.protocol.xmpp.ExtendedXmppConnection
 import org.jitsi.utils.logging2.createLogger
 import java.util.concurrent.ScheduledExecutorService
 
@@ -76,12 +75,7 @@ class XmppServices(
         )
 
         val iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            clientConnection.addXmppConnectionListener(
-                object : XmppProvider.XmppConnectionInitializedListener {
-                    override fun xmppConnectionInitialized(extendedXmppConnection: ExtendedXmppConnection) {
-                        init(extendedXmppConnection)
-                    }
-                })
+            init(clientConnection.xmppConnection)
         }
         this.iqHandler = iqHandler
     }

@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jetbrains.annotations.*;

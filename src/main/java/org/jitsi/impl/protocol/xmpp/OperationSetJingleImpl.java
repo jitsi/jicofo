@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 
 /**
@@ -40,6 +41,6 @@ public class OperationSetJingleImpl
      */
     protected ExtendedXmppConnection getConnection()
     {
-        return xmppProvider.getExtendedXmppConnection();
+        return xmppProvider.getXmppConnection();
     }
 }

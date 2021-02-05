@@ -49,7 +49,7 @@ public class MockParticipant
 
     private MockRoomMember user;
 
-    private ExtendedXmppConnection mockConnection;
+    private MockExtendedXmppConnection mockConnection;
 
     private UtilityJingleOpSet jingle;
 
@@ -224,19 +224,17 @@ public class MockParticipant
 
         // ACK invite
         IQ inviteAck = JingleIQ.createResultIQ(invite);
-        mockConnection.sendStanza(inviteAck);
+        mockConnection.tryToSendStanza(inviteAck);
 
         initContents();
 
         processStanza(invite);
 
-        JingleIQ user1Accept = generateSessionAccept(
-            invite,
-            createTransportMap(invite));
+        JingleIQ user1Accept = generateSessionAccept(invite, createTransportMap(invite));
 
         logger.info(nick + " accept: " + user1Accept.toXML());
 
-        mockConnection.sendStanza(user1Accept);
+        mockConnection.tryToSendStanza(user1Accept);
 
         this.myJid = user1Accept.getFrom();
         this.remoteJid = user1Accept.getTo();
@@ -324,8 +322,7 @@ public class MockParticipant
             {
                 IceUdpTransportPacketExtension transportCopy
                     = IceUdpTransportPacketExtension
-                            .cloneTransportAndCandidates(
-                                transportMap.get(content.getName()), true);
+                            .cloneTransportAndCandidates(transportMap.get(content.getName()), true);
 
                 content.addChildExtension(transportCopy);
 
@@ -338,10 +335,9 @@ public class MockParticipant
         }
 
         JingleIQ transportInfoIq
-            = JinglePacketFactory.createTransportInfo(
-                myJid, remoteJid, jingleSession.getSessionID(), contents);
+            = JinglePacketFactory.createTransportInfo(myJid, remoteJid, jingleSession.getSessionID(), contents);
 
-        mockConnection.sendStanza(transportInfoIq);
+        mockConnection.tryToSendStanza(transportInfoIq);
 
         return transportInfoIq;
     }
@@ -350,9 +346,7 @@ public class MockParticipant
             JingleIQ sessionInit,
             Map<String, IceUdpTransportPacketExtension> transportMap)
     {
-        JingleIQ accept = new JingleIQ(
-                JingleAction.SESSION_ACCEPT,
-                sessionInit.getSID());
+        JingleIQ accept = new JingleIQ(JingleAction.SESSION_ACCEPT, sessionInit.getSID());
 
         accept.setStanzaId(StanzaIdUtil.newStanzaId());
         accept.setType(IQ.Type.set);
@@ -360,29 +354,22 @@ public class MockParticipant
         accept.setTo(sessionInit.getFrom());
 
         // Jingle BUNDLE extension
-        accept.addExtension(
-            GroupPacketExtension.createBundleGroup(
-                sessionInit.getContentList()));
+        accept.addExtension(GroupPacketExtension.createBundleGroup( sessionInit.getContentList()));
 
         for (ContentPacketExtension contentOffer : myContents)
         {
-            ContentPacketExtension acceptContent
-                = new ContentPacketExtension();
+            ContentPacketExtension acceptContent = new ContentPacketExtension();
 
             acceptContent.setName(contentOffer.getName());
 
-            acceptContent.setCreator(
-                ContentPacketExtension.CreatorEnum.responder);
+            acceptContent.setCreator(ContentPacketExtension.CreatorEnum.responder);
 
             acceptContent.setSenders(contentOffer.getSenders());
 
-            acceptContent.addChildExtension(
-                transportMap.get(contentOffer.getName()));
+            acceptContent.addChildExtension(transportMap.get(contentOffer.getName()));
 
             // Copy RTPDescription
-            acceptContent.addChildExtension(
-                contentOffer.getFirstChildOfType(
-                    RtpDescriptionPacketExtension.class));
+            acceptContent.addChildExtension(contentOffer.getFirstChildOfType(RtpDescriptionPacketExtension.class));
 
             accept.addContent(acceptContent);
         }
@@ -405,14 +392,12 @@ public class MockParticipant
             synchronized (sourceLock)
             {
                 MediaSourceMap ssrcMap
-                        = MediaSourceMap.getSourcesFromContent(
-                        modifySSRcIq.getContentList());
+                        = MediaSourceMap.getSourcesFromContent(modifySSRcIq.getContentList());
 
                 remoteSSRCs.add(ssrcMap);
 
                 MediaSourceGroupMap ssrcGroupMap
-                        = MediaSourceGroupMap.getSourceGroupsForContents(
-                        modifySSRcIq.getContentList());
+                        = MediaSourceGroupMap.getSourceGroupsForContents(modifySSRcIq.getContentList());
 
                 remoteSSRCgroups.add(ssrcGroupMap);
 
@@ -426,15 +411,12 @@ public class MockParticipant
         {
             synchronized (sourceLock)
             {
-                MediaSourceMap ssrcMap
-                    = MediaSourceMap.getSourcesFromContent(
-                            modifySSRcIq.getContentList());
+                MediaSourceMap ssrcMap = MediaSourceMap.getSourcesFromContent(modifySSRcIq.getContentList());
 
                 remoteSSRCs.add(ssrcMap);
 
                 MediaSourceGroupMap ssrcGroupMap
-                    = MediaSourceGroupMap.getSourceGroupsForContents(
-                            modifySSRcIq.getContentList());
+                    = MediaSourceGroupMap.getSourceGroupsForContents(modifySSRcIq.getContentList());
 
                 remoteSSRCgroups.add(ssrcGroupMap);
 
@@ -457,15 +439,12 @@ public class MockParticipant
         {
             synchronized (sourceLock)
             {
-                MediaSourceMap ssrcsToRemove
-                    = MediaSourceMap.getSourcesFromContent(
-                            modifySSRcIq.getContentList());
+                MediaSourceMap ssrcsToRemove = MediaSourceMap.getSourcesFromContent(modifySSRcIq.getContentList());
 
                 remoteSSRCs.remove(ssrcsToRemove);
 
                 MediaSourceGroupMap ssrcGroupsToRemove
-                    = MediaSourceGroupMap.getSourceGroupsForContents(
-                            modifySSRcIq.getContentList());
+                    = MediaSourceGroupMap.getSourceGroupsForContents(modifySSRcIq.getContentList());
 
                 remoteSSRCgroups.remove(ssrcGroupsToRemove);
 
@@ -496,8 +475,7 @@ public class MockParticipant
         }
         if (videoGroups.size() == 0)
         {
-            SourceGroupPacketExtension ssrcGroup
-                = SourceGroupPacketExtension.createSimulcastGroup();
+            SourceGroupPacketExtension ssrcGroup = SourceGroupPacketExtension.createSimulcastGroup();
 
             group = new SourceGroup(ssrcGroup);
 
@@ -518,8 +496,7 @@ public class MockParticipant
 
     public void audioSourceRemove(int count)
     {
-        List<SourcePacketExtension> audioSources
-                = this.localSSRCs.getSourcesForMedia("audio");
+        List<SourcePacketExtension> audioSources = this.localSSRCs.getSourcesForMedia("audio");
 
         if (audioSources.size() < count)
         {

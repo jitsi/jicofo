@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp.colibri;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
@@ -494,7 +495,7 @@ public class ColibriConferenceImpl
             logStanza("Expire peer channels", request);
 
             // Send and forget
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
@@ -551,7 +552,7 @@ public class ColibriConferenceImpl
         {
             logStanza("Sending source update: ", request);
 
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
@@ -586,7 +587,7 @@ public class ColibriConferenceImpl
         {
             logStanza("Sending bundle transport info update: ", request);
 
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
@@ -624,7 +625,7 @@ public class ColibriConferenceImpl
                 {
                     logStanza("Expire conference: ", request);
 
-                    connection.sendStanza(request);
+                    connection.tryToSendStanza(request);
                 }
             }
 
@@ -690,7 +691,7 @@ public class ColibriConferenceImpl
 
         request.addContent(requestContent);
 
-        connection.sendStanza(request);
+        connection.tryToSendStanza(request);
 
         // FIXME wait for response and set local status
 
@@ -792,7 +793,7 @@ public class ColibriConferenceImpl
         {
             logStanza("Sending channel info update: ", request);
 
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 

@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
@@ -27,8 +28,6 @@ import org.jitsi.retry.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.iqrequest.*;
-import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
@@ -39,14 +38,11 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
-import java.io.*;
 import java.lang.*;
 import java.lang.SuppressWarnings;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-
-import static org.jivesoftware.smack.SmackException.*;
 
 /**
  * @author Pawel Domas
@@ -63,8 +59,6 @@ public class XmppProviderImpl
 
     private final Logger logger;
 
-    private final List<XmppConnectionInitializedListener> xmppConnectionListeners = new ArrayList<>();
-
     /**
      * Jingle operation set.
      */
@@ -76,7 +70,7 @@ public class XmppProviderImpl
     /**
      * The XMPP connection used by this instance.
      */
-    @NotNull private final AbstractXMPPConnection connection;
+    @NotNull private final ExtendedXmppConnectionImpl connection;
 
     private final AtomicBoolean started = new AtomicBoolean(false);
 
@@ -95,11 +89,6 @@ public class XmppProviderImpl
      * Listens to re-connection status updates.
      */
     @NotNull private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
-
-    /**
-     * Smack connection adapter to {@link ExtendedXmppConnection} used by this instance.
-     */
-    @NotNull private final XmppProviderImpl.ExtendedXmppConnectionImpl extendedXmppConnection;
 
     @NotNull private final XmppConnectionConfig config;
 
@@ -121,7 +110,6 @@ public class XmppProviderImpl
         jibriApi = new OperationSetJibri(this);
 
         connection = createXmppConnection();
-        extendedXmppConnection = new ExtendedXmppConnectionImpl(connection);
         connectRetry = new RetryStrategy(executor);
     }
 
@@ -148,7 +136,7 @@ public class XmppProviderImpl
      * Create the Smack {@link AbstractXMPPConnection} based on the specicied config.
      * @return
      */
-    private AbstractXMPPConnection createXmppConnection()
+    private ExtendedXmppConnectionImpl createXmppConnection()
     {
         XMPPTCPConnectionConfiguration.Builder connConfig
                 = XMPPTCPConnectionConfiguration.builder()
@@ -187,7 +175,7 @@ public class XmppProviderImpl
         EntityCapsManager capsManager = EntityCapsManager.getInstanceFor(connection);
         capsManager.enableEntityCaps();
 
-        return connection;
+        return new ExtendedXmppConnectionImpl(connection, logger);
     }
 
 
@@ -214,7 +202,8 @@ public class XmppProviderImpl
 
                 // XXX Is there a reason we add listeners *after* we call connect()?
                 connection.addConnectionListener(connListener);
-                ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
+                ReconnectionManager.getInstanceFor(
+                        connection.getSmackXMPPConnection()).addReconnectionListener(reConnListener);
 
                 if (config.getPassword() != null)
                 {
@@ -227,7 +216,7 @@ public class XmppProviderImpl
                 connection.registerIQRequestHandler(jingleOpSet);
                 return false;
             }
-            catch (XMPPException | InterruptedException | SmackException | IOException e)
+            catch (Exception e)
             {
                 logger.error("Failed to connect/login: " + e.getMessage(), e);
                 // If the connect part succeeded, but login failed we don't want to
@@ -235,7 +224,8 @@ public class XmppProviderImpl
                 // the RetryStrategy
                 connection.removeConnectionListener(connListener);
 
-                ReconnectionManager reconnectionManager = ReconnectionManager.getInstanceFor(connection);
+                ReconnectionManager reconnectionManager
+                        = ReconnectionManager.getInstanceFor(connection.getSmackXMPPConnection());
                 if (reconnectionManager != null)
                 {
                     reconnectionManager.removeReconnectionListener(reConnListener);
@@ -288,7 +278,7 @@ public class XmppProviderImpl
      * @return implementation of {@link ExtendedXmppConnection}
      */
     @Override
-    public XMPPConnection getXmppConnection()
+    public ExtendedXmppConnection getXmppConnection()
     {
         return connection;
     }
@@ -303,12 +293,6 @@ public class XmppProviderImpl
     public OperationSetJibri getJibriApi()
     {
         return jibriApi;
-    }
-
-    @Override
-    public ExtendedXmppConnection getExtendedXmppConnection()
-    {
-        return extendedXmppConnection;
     }
 
     /**
@@ -351,19 +335,18 @@ public class XmppProviderImpl
 
         if (registered)
         {
-            ExtendedXmppConnection xmppConnection = getExtendedXmppConnection();
-            if (xmppConnection != null)
-            {
-                xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
-                xmppConnectionListeners.forEach(it -> it.xmppConnectionInitialized(xmppConnection));
-                logger.info("Set replyTimeout=" + config.getReplyTimeout());
-            }
-            else
-            {
-                logger.error("Unable to set Smack replyTimeout, no XmppConnection.");
-            }
+            ExtendedXmppConnection xmppConnection = getXmppConnection();
+            xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
+            logger.info("Set replyTimeout=" + config.getReplyTimeout());
         }
 
+    }
+
+    @NotNull
+    @Override
+    public List<String> discoverFeatures(@NotNull EntityFullJid jid)
+    {
+        return DiscoveryUtil.discoverParticipantFeatures(this, jid);
     }
 
     class XmppConnectionListener
@@ -451,123 +434,6 @@ public class XmppProviderImpl
         }
     }
 
-    /**
-     * Implements {@link ExtendedXmppConnection}.
-     */
-    private class ExtendedXmppConnectionImpl
-        implements ExtendedXmppConnection
-    {
-        private final XMPPConnection connection;
-
-        ExtendedXmppConnectionImpl(XMPPConnection connection)
-        {
-            this.connection = Objects.requireNonNull(connection, "connection");
-        }
-
-        public XMPPConnection getConnection()
-        {
-            return connection;
-        }
-
-        @Override
-        public EntityFullJid getUser()
-        {
-            return this.connection.getUser();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void sendStanza(Stanza packet)
-        {
-            Objects.requireNonNull(packet, "packet");
-            try
-            {
-                connection.sendStanza(packet);
-            }
-            catch (NotConnectedException e)
-            {
-                logger.error("No connection - unable to send packet: " + packet.toXML(), e);
-            }
-            catch (InterruptedException e)
-            {
-                logger.error("Failed to send packet: " + packet.toXML().toString(), e);
-            }
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public IQ sendPacketAndGetReply(IQ packet)
-            throws OperationFailedException
-        {
-            Objects.requireNonNull(packet, "packet");
-
-            try
-            {
-                StanzaCollector packetCollector = connection.createStanzaCollectorAndSend(packet);
-                try
-                {
-                    //FIXME: retry allocation on timeout
-                    return packetCollector.nextResult();
-                }
-                finally
-                {
-                    packetCollector.cancel();
-                }
-            }
-            catch (InterruptedException
-                    /*| XMPPErrorException
-                    | NoResponseException*/ e)
-            {
-                throw new OperationFailedException(
-                        "No response or failed otherwise: " + packet.toXML(),
-                        OperationFailedException.GENERAL_ERROR,
-                        e);
-            }
-            catch (NotConnectedException e)
-            {
-                throw new OperationFailedException(
-                    "No connection - unable to send packet: " + packet.toXML(),
-                    OperationFailedException.PROVIDER_NOT_REGISTERED,
-                    e);
-            }
-        }
-
-        @Override
-        public void sendIqWithResponseCallback(
-                IQ iq,
-                StanzaListener stanzaListener,
-                ExceptionCallback exceptionCallback,
-                long timeout)
-            throws NotConnectedException, InterruptedException
-        {
-            connection.sendIqWithResponseCallback(iq, stanzaListener, exceptionCallback, timeout);
-        }
-
-        @Override
-        public IQRequestHandler registerIQRequestHandler(
-            IQRequestHandler handler)
-        {
-            return connection.registerIQRequestHandler(handler);
-        }
-
-        @Override
-        public IQRequestHandler unregisterIQRequestHandler(
-            IQRequestHandler handler)
-        {
-            return connection.unregisterIQRequestHandler(handler);
-        }
-
-        @Override
-        public void setReplyTimeout(long replyTimeoutMs)
-        {
-            connection.setReplyTimeout(replyTimeoutMs);
-        }
-    }
-
     private class Muc
     {
         /**
@@ -625,18 +491,6 @@ public class XmppProviderImpl
             {
                 rooms.remove(chatRoom.getName());
             }
-        }
-    }
-
-    @Override
-    public void addXmppConnectionListener(XmppConnectionInitializedListener listener)
-    {
-        xmppConnectionListeners.add(listener);
-
-        ExtendedXmppConnection connection = getExtendedXmppConnection();
-        if (connection != null)
-        {
-            listener.xmppConnectionInitialized(connection);
         }
     }
 }

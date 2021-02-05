@@ -74,11 +74,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     protected List<ContentPacketExtension> createOffer()
         throws UnsupportedFeatureConfigurationException
     {
-        EntityFullJid address = participant.getMucJid();
-
         // Feature discovery
-        List<String> features =
-                DiscoveryUtil.discoverParticipantFeatures(meetConference.getClientXmppProvider(), address);
+        List<String> features = meetConference.getClientXmppProvider().discoverFeatures(participant.getMucJid());
         participant.setSupportedFeatures(features);
 
         JitsiMeetConfig config = meetConference.getConfig();

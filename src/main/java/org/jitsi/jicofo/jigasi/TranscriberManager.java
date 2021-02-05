@@ -21,6 +21,7 @@ package org.jitsi.jicofo.jigasi;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
@@ -90,7 +91,7 @@ public class TranscriberManager
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
         // TODO: handle the connection changing (reconnect)
-        this.connection = xmppProvider.getExtendedXmppConnection();
+        this.connection = xmppProvider.getXmppConnection();
 
         this.conference = conference;
         this.chatRoom = conference.getChatRoom();

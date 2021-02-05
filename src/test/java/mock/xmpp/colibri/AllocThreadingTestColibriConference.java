@@ -18,11 +18,11 @@
 package mock.xmpp.colibri;
 
 import edu.umd.cs.findbugs.annotations.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
-import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
 

@@ -18,7 +18,7 @@
 package mock.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -108,6 +108,12 @@ public class MockExtendedXmppConnection
     }
 
     @Override
+    public AbstractXMPPConnection getSmackXMPPConnection()
+    {
+        return this;
+    }
+
+    @Override
     public void sendNonza(Nonza element)
     {
     }
@@ -163,7 +169,7 @@ public class MockExtendedXmppConnection
     }
 
     @Override
-    public void sendStanza(Stanza packet)
+    public void tryToSendStanza(Stanza packet)
     {
         try
         {

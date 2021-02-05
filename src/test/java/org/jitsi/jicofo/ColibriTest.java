@@ -75,7 +75,7 @@ public class ColibriTest
         TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
         MockXmppProvider pps = testConference.getXmppProvider();
-        ColibriConference colibriConf = new ColibriConferenceImpl(pps.getExtendedXmppConnection());
+        ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());
 
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 

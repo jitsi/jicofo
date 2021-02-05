@@ -27,7 +27,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
-import org.jitsi.protocol.xmpp.ExtendedXmppConnection
+import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.test.concurrent.FakeScheduledExecutorService
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq

@@ -192,7 +192,7 @@ public class IqHandler
 
                 muteStatusUpdate.setMute(doMute);
 
-                connection.sendStanza(muteStatusUpdate);
+                connection.tryToSendStanza(muteStatusUpdate);
             }
         }
         else

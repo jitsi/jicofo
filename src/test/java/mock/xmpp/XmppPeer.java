@@ -17,6 +17,7 @@
  */
 package mock.xmpp;
 
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.iqrequest.*;

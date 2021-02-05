@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 
@@ -575,11 +576,7 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        ExtendedXmppConnection connection = xmppProvider.getExtendedXmppConnection();
-        if (connection == null)
-        {
-            throw new IllegalStateException("Failed to grant ownership, no connection.");
-        }
+        ExtendedXmppConnection connection = xmppProvider.getXmppConnection();
 
         try
         {
@@ -726,12 +723,7 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        ExtendedXmppConnection connection = xmppProvider.getExtendedXmppConnection();
-        if (connection == null)
-        {
-            logger.error("Failed to send presence extension - no connection");
-            return;
-        }
+        ExtendedXmppConnection connection = xmppProvider.getXmppConnection();
 
         // The initial presence sent by smack contains an empty "x"
         // extension. If this extension is included in a subsequent stanza,
@@ -742,7 +734,7 @@ public class ChatRoomImpl
 
         lastPresenceSent.setStanzaId(StanzaIdUtil.newStanzaId());
 
-        connection.sendStanza(lastPresenceSent);
+        connection.tryToSendStanza(lastPresenceSent);
     }
 
     /**

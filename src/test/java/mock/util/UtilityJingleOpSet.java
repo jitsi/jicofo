@@ -18,6 +18,8 @@
 package mock.util;
 
 import mock.*;
+import mock.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -35,12 +37,12 @@ public class UtilityJingleOpSet
      */
     private final static Logger logger = new LoggerImpl(UtilityJingleOpSet.class.getName());
 
-    private final ExtendedXmppConnection connection;
+    private final MockExtendedXmppConnection connection;
 
     private final BlockingQueue<JingleIQ> sessionInvites = new LinkedBlockingQueue<>();
     public MockParticipant mockParticipant;
 
-    public UtilityJingleOpSet(ExtendedXmppConnection connection)
+    public UtilityJingleOpSet(MockExtendedXmppConnection connection)
     {
         this.connection = connection;
     }

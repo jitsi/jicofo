@@ -21,12 +21,15 @@ import mock.muc.*;
 import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
+
+import java.util.*;
 
 /**
  *
@@ -87,15 +90,9 @@ public class MockXmppProvider
 
 
     @Override
-    public ExtendedXmppConnection getExtendedXmppConnection()
+    public ExtendedXmppConnection getXmppConnection()
     {
         return connection;
-    }
-
-    @Override
-    public XMPPConnection getXmppConnection()
-    {
-        return null;
     }
 
     @Override
@@ -131,8 +128,10 @@ public class MockXmppProvider
         return mucApi.findRoom(name);
     }
 
+    @NotNull
     @Override
-    public void addXmppConnectionListener(@NotNull XmppProvider.XmppConnectionInitializedListener listener)
+    public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
+        return DiscoveryUtil.getDefaultParticipantFeatureSet();
     }
 }

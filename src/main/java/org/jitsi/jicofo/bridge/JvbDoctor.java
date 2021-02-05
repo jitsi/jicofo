@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
@@ -82,7 +83,7 @@ public class JvbDoctor
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection();
 
-        return xmppProvider.isRegistered() ? xmppProvider.getExtendedXmppConnection() : null;
+        return xmppProvider.getXmppConnection();
     }
 
     synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
@@ -220,7 +221,7 @@ public class JvbDoctor
         {
             ExtendedXmppConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
-            if (connection == null)
+            if (!connection.isConnected())
             {
                 logger.warn("XMPP disconnected - skipping health check for: " + bridgeJid);
                 return;

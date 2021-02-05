@@ -17,7 +17,7 @@
  */
 package mock.jvb;
 
-import org.jitsi.protocol.xmpp.*;
+import mock.xmpp.*;
 import org.jitsi.shutdown.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.version.*;
@@ -38,7 +38,7 @@ public class MockVideobridge
      */
     private static final Logger logger = new LoggerImpl(MockVideobridge.class.getName());
 
-    private final ExtendedXmppConnection connection;
+    private final MockExtendedXmppConnection connection;
 
     private final Jid bridgeJid;
 
@@ -48,7 +48,7 @@ public class MockVideobridge
 
     private final ColibriConferenceIqHandler confIqSetHandler = new ColibriConferenceIqHandler(IQ.Type.set);
 
-    public MockVideobridge(ExtendedXmppConnection connection, Jid bridgeJid)
+    public MockVideobridge(MockExtendedXmppConnection connection, Jid bridgeJid)
     {
         this.connection = connection;
         this.bridgeJid = bridgeJid;

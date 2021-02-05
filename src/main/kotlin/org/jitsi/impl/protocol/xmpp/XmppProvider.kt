@@ -18,10 +18,10 @@
 package org.jitsi.impl.protocol.xmpp
 
 import org.jitsi.jicofo.recording.jibri.OperationSetJibri
+import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
-import org.jitsi.protocol.xmpp.ExtendedXmppConnection
-import org.jivesoftware.smack.XMPPConnection
+import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.stringprep.XmppStringprepException
 
 /**
@@ -49,8 +49,7 @@ interface XmppProvider {
     fun removeRegistrationListener(listener: RegistrationListener)
 
     val config: XmppConnectionConfig
-    val extendedXmppConnection: ExtendedXmppConnection?
-    val xmppConnection: XMPPConnection?
+    val xmppConnection: ExtendedXmppConnection
     val jingleApi: OperationSetJingle
     val jibriApi: OperationSetJibri?
 
@@ -62,13 +61,5 @@ interface XmppProvider {
 
     class RoomExistsException(message: String) : Exception(message)
 
-    fun addXmppConnectionListener(listener: XmppConnectionInitializedListener)
-
-    /**
-     * Interface to use to notify about the XmppConnection being initialized. This is just meant as a temporary solution
-     * until the flow to setup XMPP is cleaned up.
-     */
-    interface XmppConnectionInitializedListener {
-        fun xmppConnectionInitialized(extendedXmppConnection: ExtendedXmppConnection)
-    }
+    fun discoverFeatures(jid: EntityFullJid): List<String>
 }

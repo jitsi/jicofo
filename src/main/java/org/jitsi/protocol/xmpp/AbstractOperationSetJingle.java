@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -382,7 +383,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().sendStanza(addSourceIq);
+        getConnection().tryToSendStanza(addSourceIq);
     }
 
     /**
@@ -485,7 +486,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().sendStanza(removeSourceIq);
+        getConnection().tryToSendStanza(removeSourceIq);
     }
 
     /**
@@ -539,7 +540,7 @@ public abstract class AbstractOperationSetJingle
                     reason,
                     message);
 
-            getConnection().sendStanza(terminate);
+            getConnection().tryToSendStanza(terminate);
         }
 
         sessions.remove(session.getSessionID());

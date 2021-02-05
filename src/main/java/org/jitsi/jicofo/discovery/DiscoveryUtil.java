@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.discovery;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.disco.*;
@@ -133,13 +134,14 @@ public class DiscoveryUtil
      */
     public static List<String> discoverParticipantFeatures(XmppProvider xmppProvider, EntityFullJid address)
     {
-        XMPPConnection xmppConnection = xmppProvider.getXmppConnection();
-        if (xmppConnection == null)
+        ExtendedXmppConnection xmppConnection = xmppProvider.getXmppConnection();
+        if (!xmppConnection.isConnected())
         {
-            logger.error("No xmpp connection " + xmppProvider);
+            logger.error("XMPP not connected " + xmppProvider);
             return getDefaultParticipantFeatureSet();
         }
-        ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection);
+        ServiceDiscoveryManager discoveryManager =
+                ServiceDiscoveryManager.getInstanceFor(xmppConnection.getSmackXMPPConnection());
         if (discoveryManager == null)
         {
             logger.error("Service discovery not supported by " + xmppProvider);

@@ -19,6 +19,7 @@ package mock.xmpp;
 
 import mock.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 
 import java.util.*;
@@ -46,6 +47,6 @@ public class MockOperationSetJingle
     @Override
     protected ExtendedXmppConnection getConnection()
     {
-        return xmppProvider.getExtendedXmppConnection();
+        return xmppProvider.getXmppConnection();
     }
 }

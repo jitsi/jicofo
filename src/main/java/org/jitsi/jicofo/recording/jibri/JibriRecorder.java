@@ -20,6 +20,7 @@ package org.jitsi.jicofo.recording.jibri;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
