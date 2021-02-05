@@ -23,7 +23,6 @@ import org.jitsi.protocol.xmpp.OperationSetJingle
 import org.jitsi.protocol.xmpp.XmppConnection
 import org.jivesoftware.smack.XMPPConnection
 import org.jxmpp.stringprep.XmppStringprepException
-import java.util.concurrent.ScheduledExecutorService
 
 /**
  * Based on Jitsi's `ProtocolProviderService`, simplified for the needs of jicofo.

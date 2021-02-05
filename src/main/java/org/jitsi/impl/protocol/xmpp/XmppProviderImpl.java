@@ -103,7 +103,6 @@ public class XmppProviderImpl
     private XmppConnectionAdapter connectionAdapter;
 
     @NotNull private final XmppConnectionConfig config;
-    @NotNull private final ScheduledExecutorService executor;
 
     /**
      * Creates new instance of {@link XmppProviderImpl} with the given configuration.
@@ -114,7 +113,6 @@ public class XmppProviderImpl
             @NotNull Logger parentLogger)
     {
         this.config = config;
-        this.executor = executor;
         this.logger = parentLogger.createChildLogger(XmppProviderImpl.class.getName());
         logger.addContext("xmpp_connection", config.getName());
 
@@ -122,34 +120,32 @@ public class XmppProviderImpl
 
         jingleOpSet = new OperationSetJingleImpl(this);
         jibriApi = new OperationSetJibri(this);
+
+        this.connection = createXmppConnection();
+        connectRetry = new RetryStrategy(executor);
     }
 
-    /**
-     * Initializes Jicofo's feature list.
-     */
-    private void initializeFeaturesList() {
-        // This can be removed once all clients are updated reading this from the presence conference property
-        ServiceDiscoveryManager serviceDiscoveryManager = ServiceDiscoveryManager.getInstanceFor(connection);
-        serviceDiscoveryManager.addFeature("https://jitsi.org/meet/jicofo/terminate-restart");
-    }
 
     @Override
     public String toString()
     {
-        // Avoid calling super.toString() as it uses the account ID.
         return "XmppProviderImpl " + config;
     }
 
     @Override
     public void start()
     {
-        register(executor);
+        connectRetry.runRetryingTask(new SimpleRetryTask(0, 5000L, true, this::doConnect));
     }
 
-    private synchronized void register(ScheduledExecutorService executorService)
+    /**
+     * Create the Smack {@link AbstractXMPPConnection} based on the specicied config.
+     * @return
+     */
+    private AbstractXMPPConnection createXmppConnection()
     {
         XMPPTCPConnectionConfiguration.Builder connConfig
-            = XMPPTCPConnectionConfiguration.builder()
+                = XMPPTCPConnectionConfiguration.builder()
                 .setHost(config.getHostname())
                 .setPort(config.getPort())
                 .setXmppDomain(config.getDomain());
@@ -176,20 +172,18 @@ public class XmppProviderImpl
             connConfig.setHostnameVerifier(new TrustAllHostnameVerifier());
         }
 
-        connection = new XMPPTCPConnection(connConfig.build());
+        AbstractXMPPConnection connection = new XMPPTCPConnection(connConfig.build());
 
-        this.initializeFeaturesList();
-
-        connectRetry = new RetryStrategy(executorService);
+        // This can be removed once all clients are updated reading this from the presence conference property
+        ServiceDiscoveryManager serviceDiscoveryManager = ServiceDiscoveryManager.getInstanceFor(connection);
+        serviceDiscoveryManager.addFeature("https://jitsi.org/meet/jicofo/terminate-restart");
 
         EntityCapsManager capsManager = EntityCapsManager.getInstanceFor(connection);
-
         capsManager.enableEntityCaps();
 
-        // FIXME we could make retry interval configurable, but we do not have
-        // control over retries executed by smack after first connect, so...
-        connectRetry.runRetryingTask(new SimpleRetryTask(0, 5000L, true, this::doConnect));
+        return connection;
     }
+
 
     /**
      * Method tries to establish the connection to XMPP server and return
