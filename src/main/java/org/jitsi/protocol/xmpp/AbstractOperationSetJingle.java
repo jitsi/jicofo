@@ -78,7 +78,10 @@ public abstract class AbstractOperationSetJingle
      *
      * @return our JID
      */
-    protected abstract Jid getOurJID();
+    protected Jid getOurJID()
+    {
+        return getConnection().getUser();
+    }
 
     /**
      * Returns {@link XmppConnection} implementation.

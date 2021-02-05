@@ -38,15 +38,6 @@ public class OperationSetJingleImpl
     }
 
     /**
-     * Returns our XMPP address that will be used as 'from' attribute
-     * in Jingle QIs.
-     */
-    protected EntityFullJid getOurJID()
-    {
-        return xmppProvider.getOurJid();
-    }
-
-    /**
      * {@inheritDoc}
      */
     protected XmppConnection getConnection()

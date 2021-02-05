@@ -42,17 +42,9 @@ public class MockOperationSetJingle
     }
 
     /**
-     * Returns our XMPP address that will be used as 'from' attribute
-     * in Jingle QIs.
-     */
-    protected EntityFullJid getOurJID()
-    {
-        return getConnection().getUser();
-    }
-
-    /**
      * {@inheritDoc}
      */
+    @Override
     protected XmppConnection getConnection()
     {
         return xmppProvider.getXmppConnection();

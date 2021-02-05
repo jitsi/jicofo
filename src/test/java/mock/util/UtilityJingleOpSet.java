@@ -87,12 +87,6 @@ public class UtilityJingleOpSet
     }
 
     @Override
-    protected Jid getOurJID()
-    {
-        return connection.getUser();
-    }
-
-    @Override
     protected XmppConnection getConnection()
     {
         return connection;

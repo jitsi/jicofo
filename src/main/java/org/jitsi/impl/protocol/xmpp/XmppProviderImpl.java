@@ -84,22 +84,22 @@ public class XmppProviderImpl
      * We need a retry strategy for the first connect attempt. Later those are
      * handled by Smack internally.
      */
-    private final RetryStrategy connectRetry;
+    @NotNull private final RetryStrategy connectRetry;
 
     /**
      * Listens to connection status updates.
      */
-    private final XmppConnectionListener connListener = new XmppConnectionListener();
+    @NotNull private final XmppConnectionListener connListener = new XmppConnectionListener();
 
     /**
      * Listens to re-connection status updates.
      */
-    private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
+    @NotNull private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
 
     /**
      * Smack connection adapter to {@link XmppConnection} used by this instance.
      */
-    private XmppConnectionAdapter connectionAdapter;
+    @NotNull private final XmppConnectionAdapter connectionAdapter;
 
     @NotNull private final XmppConnectionConfig config;
 
@@ -120,7 +120,8 @@ public class XmppProviderImpl
         jingleOpSet = new OperationSetJingleImpl(this);
         jibriApi = new OperationSetJibri(this);
 
-        this.connection = createXmppConnection();
+        connection = createXmppConnection();
+        connectionAdapter = new XmppConnectionAdapter(connection);
         connectRetry = new RetryStrategy(executor);
     }
 
@@ -317,10 +318,6 @@ public class XmppProviderImpl
     @Override
     public XmppConnection getXmppConnection()
     {
-        if (connectionAdapter == null)
-        {
-            connectionAdapter = new XmppConnectionAdapter(connection);
-        }
         return connectionAdapter;
     }
 
