@@ -155,9 +155,9 @@ public class JibriSession
     private final String applicationData;
 
     /**
-     * {@link XmppConnection} instance used to send/listen for XMPP packets.
+     * {@link ExtendedXmppConnection} instance used to send/listen for XMPP packets.
      */
-    private final XmppConnection xmpp;
+    private final ExtendedXmppConnection xmpp;
 
     /**
      * The maximum amount of retries we'll attempt
@@ -210,7 +210,7 @@ public class JibriSession
             Jid initiator,
             long pendingTimeout,
             int maxNumRetries,
-            XmppConnection connection,
+            ExtendedXmppConnection connection,
             ScheduledExecutorService scheduledExecutor,
             JibriDetector jibriDetector,
             boolean isSIP,

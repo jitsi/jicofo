@@ -26,7 +26,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.packet.*;
@@ -50,7 +49,7 @@ public class MockParticipant
 
     private MockRoomMember user;
 
-    private XmppConnection mockConnection;
+    private ExtendedXmppConnection mockConnection;
 
     private UtilityJingleOpSet jingle;
 
@@ -137,7 +136,7 @@ public class MockParticipant
             throw new RuntimeException(e);
         }
 
-        mockConnection = new MockXmppConnection(myJid);
+        mockConnection = new MockExtendedXmppConnection(myJid);
         jingle = new UtilityJingleOpSet(mockConnection);
         jingle.mockParticipant = this;
         mockConnection.registerIQRequestHandler(jingle);

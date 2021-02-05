@@ -64,7 +64,7 @@ public class JibriSipGateway
      */
     public JibriSipGateway(
            JitsiMeetConferenceImpl conference,
-           XmppConnection xmppConnection,
+           ExtendedXmppConnection xmppConnection,
            ScheduledExecutorService scheduledExecutor,
            JibriDetector jibriDetector,
            Logger parentLogger)

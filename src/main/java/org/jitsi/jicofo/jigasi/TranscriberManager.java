@@ -61,9 +61,9 @@ public class TranscriberManager
     private final JigasiDetector jigasiDetector;
 
     /**
-     * The {@link XmppConnection} used to Dial Jigasi.
+     * The {@link ExtendedXmppConnection} used to Dial Jigasi.
      */
-    private final XmppConnection connection;
+    private final ExtendedXmppConnection connection;
 
     /**
      * The transcription status; either active or inactive based on this boolean
@@ -90,7 +90,7 @@ public class TranscriberManager
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
         // TODO: handle the connection changing (reconnect)
-        this.connection = xmppProvider.getXmppConnection();
+        this.connection = xmppProvider.getExtendedXmppConnection();
 
         this.conference = conference;
         this.chatRoom = conference.getChatRoom();

@@ -53,7 +53,7 @@ public class ColibriConferenceImpl
     /**
      * The instance of XMPP connection.
      */
-    private final XmppConnection connection;
+    private final ExtendedXmppConnection connection;
 
     /**
      * XMPP address of videobridge component.
@@ -120,7 +120,7 @@ public class ColibriConferenceImpl
      * @param connection XMPP connection object that wil be used by the new
      *        instance to communicate.
      */
-    public ColibriConferenceImpl(XmppConnection connection)
+    public ColibriConferenceImpl(ExtendedXmppConnection connection)
     {
         this.connection = Objects.requireNonNull(connection, "connection");
     }
@@ -415,7 +415,7 @@ public class ColibriConferenceImpl
      *         the request timed out.
      *
      * @throws ColibriException If sending the packet fails (see
-     * {@link XmppConnection#sendPacketAndGetReply(IQ)}).
+     * {@link ExtendedXmppConnection#sendPacketAndGetReply(IQ)}).
      */
     protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)

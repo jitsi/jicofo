@@ -69,7 +69,7 @@ public class TestConference
     {
         this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
 
-        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
+        MockVideobridge mockBridge = new MockVideobridge(new MockExtendedXmppConnection(mockBridgeJid), mockBridgeJid);
 
         mockBridge.start();
 

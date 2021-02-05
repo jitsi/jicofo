@@ -48,9 +48,9 @@ public abstract class CommonJibriStuff
     protected final JitsiMeetConferenceImpl conference;
 
     /**
-     * The {@link XmppConnection} used for communication.
+     * The {@link ExtendedXmppConnection} used for communication.
      */
-    protected final XmppConnection connection;
+    protected final ExtendedXmppConnection connection;
 
     /**
      * The logger instance pass to the constructor that wil be used by this
@@ -83,7 +83,7 @@ public abstract class CommonJibriStuff
      */
     CommonJibriStuff(
             JitsiMeetConferenceImpl conference,
-            XmppConnection xmppConnection,
+            ExtendedXmppConnection xmppConnection,
             ScheduledExecutorService scheduledExecutor,
             Logger logger,
             JibriDetector jibriDetector)

@@ -35,7 +35,7 @@ import org.jxmpp.stringprep.*;
 public class MockXmppProvider
     extends AbstractXmppProvider
 {
-    private final MockXmppConnection connection;
+    private final MockExtendedXmppConnection connection;
 
     private final AbstractOperationSetJingle jingleOpSet;
 
@@ -46,7 +46,7 @@ public class MockXmppProvider
     public MockXmppProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
-        connection = new MockXmppConnection(getOurJID());
+        connection = new MockExtendedXmppConnection(getOurJID());
         mucApi = new MockMultiUserChatOpSet(this);
         this.jingleOpSet = new MockOperationSetJingle(this);
     }
@@ -87,13 +87,13 @@ public class MockXmppProvider
 
 
     @Override
-    public XmppConnection getXmppConnection()
+    public ExtendedXmppConnection getExtendedXmppConnection()
     {
         return connection;
     }
 
     @Override
-    public XMPPConnection getXmppConnectionRaw()
+    public XMPPConnection getXmppConnection()
     {
         return null;
     }

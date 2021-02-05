@@ -66,7 +66,7 @@ public class JibriRecorder
      */
     public JibriRecorder(
             JitsiMeetConferenceImpl conference,
-            XmppConnection connection,
+            ExtendedXmppConnection connection,
             ScheduledExecutorService scheduledExecutor,
             JibriDetector jibriDetector,
             Logger parentLogger)

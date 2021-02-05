@@ -109,7 +109,7 @@ public class AllocThreadingTestColibriConference
      * @param connection XMPP connection object that wil be used by new
      *                   instance.
      */
-    public AllocThreadingTestColibriConference(XmppConnection connection)
+    public AllocThreadingTestColibriConference(ExtendedXmppConnection connection)
     {
         super(connection);
     }

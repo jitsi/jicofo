@@ -106,7 +106,7 @@ public class OperationSetJibri
         // Do initializations which require valid connection
         if (registered)
         {
-            XMPPConnection xmppConnection = xmppProvider.getXmppConnectionRaw();
+            XMPPConnection xmppConnection = xmppProvider.getXmppConnection();
             if (xmppConnection == null)
             {
                 throw new IllegalStateException("XMPPConnection is null while registered.");

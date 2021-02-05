@@ -20,7 +20,7 @@ package org.jitsi.impl.protocol.xmpp
 import org.jitsi.jicofo.recording.jibri.OperationSetJibri
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
-import org.jitsi.protocol.xmpp.XmppConnection
+import org.jitsi.protocol.xmpp.ExtendedXmppConnection
 import org.jivesoftware.smack.XMPPConnection
 import org.jxmpp.stringprep.XmppStringprepException
 
@@ -49,8 +49,8 @@ interface XmppProvider {
     fun removeRegistrationListener(listener: RegistrationListener)
 
     val config: XmppConnectionConfig
-    val xmppConnection: XmppConnection?
-    val xmppConnectionRaw: XMPPConnection?
+    val extendedXmppConnection: ExtendedXmppConnection?
+    val xmppConnection: XMPPConnection?
     val jingleApi: OperationSetJingle
     val jibriApi: OperationSetJibri?
 
@@ -69,6 +69,6 @@ interface XmppProvider {
      * until the flow to setup XMPP is cleaned up.
      */
     interface XmppConnectionInitializedListener {
-        fun xmppConnectionInitialized(xmppConnection: XmppConnection)
+        fun xmppConnectionInitialized(extendedXmppConnection: ExtendedXmppConnection)
     }
 }

@@ -55,7 +55,7 @@ public class IqHandler
     private final FocusManager focusManager;
 
     /** The currently used XMPP connection. */
-    private XmppConnection connection;
+    private ExtendedXmppConnection connection;
 
     private final MuteIqHandler muteIqHandler = new MuteIqHandler();
     private final DialIqHandler dialIqHandler = new DialIqHandler();
@@ -83,7 +83,7 @@ public class IqHandler
     /**
      * Initializes this instance and bind packet listeners.
      */
-    public void init(XmppConnection connection)
+    public void init(ExtendedXmppConnection connection)
     {
         this.connection = connection;
 

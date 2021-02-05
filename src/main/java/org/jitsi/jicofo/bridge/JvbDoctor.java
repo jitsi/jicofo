@@ -77,12 +77,12 @@ public class JvbDoctor
         this.listener = listener;
     }
 
-    private XmppConnection getConnection()
+    private ExtendedXmppConnection getConnection()
     {
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection();
 
-        return xmppProvider.isRegistered() ? xmppProvider.getXmppConnection() : null;
+        return xmppProvider.isRegistered() ? xmppProvider.getExtendedXmppConnection() : null;
     }
 
     synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
@@ -218,7 +218,7 @@ public class JvbDoctor
         private void doHealthCheck()
             throws OperationFailedException
         {
-            XmppConnection connection = getConnection();
+            ExtendedXmppConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
             if (connection == null)
             {

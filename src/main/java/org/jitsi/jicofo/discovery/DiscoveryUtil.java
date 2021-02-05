@@ -133,7 +133,7 @@ public class DiscoveryUtil
      */
     public static List<String> discoverParticipantFeatures(XmppProvider xmppProvider, EntityFullJid address)
     {
-        XMPPConnection xmppConnection = xmppProvider.getXmppConnectionRaw();
+        XMPPConnection xmppConnection = xmppProvider.getXmppConnection();
         if (xmppConnection == null)
         {
             logger.error("No xmpp connection " + xmppProvider);

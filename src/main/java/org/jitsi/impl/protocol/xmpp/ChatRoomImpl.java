@@ -172,7 +172,7 @@ public class ChatRoomImpl
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
 
-        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnectionRaw());
+        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnection());
         muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);
@@ -328,7 +328,7 @@ public class ChatRoomImpl
     @Override
     public void leave()
     {
-        XMPPConnection connection = xmppProvider.getXmppConnectionRaw();
+        XMPPConnection connection = xmppProvider.getXmppConnection();
         if (connection != null)
         {
             try
@@ -575,7 +575,7 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        XmppConnection connection = xmppProvider.getXmppConnection();
+        ExtendedXmppConnection connection = xmppProvider.getExtendedXmppConnection();
         if (connection == null)
         {
             throw new IllegalStateException("Failed to grant ownership, no connection.");
@@ -726,7 +726,7 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        XmppConnection connection = xmppProvider.getXmppConnection();
+        ExtendedXmppConnection connection = xmppProvider.getExtendedXmppConnection();
         if (connection == null)
         {
             logger.error("Failed to send presence extension - no connection");

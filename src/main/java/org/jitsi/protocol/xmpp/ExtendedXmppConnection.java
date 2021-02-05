@@ -24,11 +24,10 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 /**
- * The interface for Smack XMPP connection.
- *
+ * An extended version of Smack's XMPPConnection.
  * @author Pawel Domas
  */
-public interface XmppConnection
+public interface ExtendedXmppConnection
 {
     EntityFullJid getUser();
 

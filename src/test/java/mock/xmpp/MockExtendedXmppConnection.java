@@ -31,13 +31,13 @@ import java.util.*;
 
 import static org.jivesoftware.smack.SmackException.*;
 
-public class MockXmppConnection
+public class MockExtendedXmppConnection
     extends AbstractXMPPConnection
-    implements XmppConnection
+    implements ExtendedXmppConnection
 {
-    private final static Logger logger = new LoggerImpl(MockXmppConnection.class.getName());
+    private final static Logger logger = new LoggerImpl(MockExtendedXmppConnection.class.getName());
 
-    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<Jid, MockExtendedXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
 
     private static class MockXmppConnectionConfiguration
             extends ConnectionConfiguration
@@ -79,7 +79,7 @@ public class MockXmppConnection
     }
 
     @SuppressWarnings("deprecation")
-    public MockXmppConnection(final Jid ourJid)
+    public MockExtendedXmppConnection(final Jid ourJid)
     {
         super(new MockXmppConnectionConfiguration.Builder()
                 .setXmppDomain("example.com")
@@ -138,7 +138,7 @@ public class MockXmppConnection
     protected void sendStanzaInternal(final Stanza packet)
     {
         packet.setFrom(user);
-        final MockXmppConnection target = sharedStanzaQueue.get(packet.getTo());
+        final MockExtendedXmppConnection target = sharedStanzaQueue.get(packet.getTo());
         if (target == null)
         {
             System.out.println("Connection for " + packet.getTo() + " not found!");

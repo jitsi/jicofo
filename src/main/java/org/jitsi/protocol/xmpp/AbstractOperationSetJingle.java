@@ -84,11 +84,11 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Returns {@link XmppConnection} implementation.
+     * Returns {@link ExtendedXmppConnection} implementation.
      *
-     * @return {@link XmppConnection} implementation
+     * @return {@link ExtendedXmppConnection} implementation
      */
-    protected abstract XmppConnection getConnection();
+    protected abstract ExtendedXmppConnection getConnection();
 
     /**
      * Finds Jingle session for given session identifier.

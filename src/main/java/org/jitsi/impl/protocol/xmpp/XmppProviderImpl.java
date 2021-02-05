@@ -97,9 +97,9 @@ public class XmppProviderImpl
     @NotNull private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
 
     /**
-     * Smack connection adapter to {@link XmppConnection} used by this instance.
+     * Smack connection adapter to {@link ExtendedXmppConnection} used by this instance.
      */
-    @NotNull private final XmppConnectionAdapter connectionAdapter;
+    @NotNull private final XmppProviderImpl.ExtendedXmppConnectionImpl extendedXmppConnection;
 
     @NotNull private final XmppConnectionConfig config;
 
@@ -121,7 +121,7 @@ public class XmppProviderImpl
         jibriApi = new OperationSetJibri(this);
 
         connection = createXmppConnection();
-        connectionAdapter = new XmppConnectionAdapter(connection);
+        extendedXmppConnection = new ExtendedXmppConnectionImpl(connection);
         connectRetry = new RetryStrategy(executor);
     }
 
@@ -283,12 +283,12 @@ public class XmppProviderImpl
     }
 
     /**
-     * Returns implementation of {@link org.jitsi.protocol.xmpp.XmppConnection}.
+     * Returns implementation of {@link ExtendedXmppConnection}.
      *
-     * @return implementation of {@link org.jitsi.protocol.xmpp.XmppConnection}
+     * @return implementation of {@link ExtendedXmppConnection}
      */
     @Override
-    public XMPPConnection getXmppConnectionRaw()
+    public XMPPConnection getXmppConnection()
     {
         return connection;
     }
@@ -305,20 +305,10 @@ public class XmppProviderImpl
         return jibriApi;
     }
 
-    /**
-     * Returns our JID if we're connected or <tt>null</tt> otherwise.
-     *
-     * @return our JID if we're connected or <tt>null</tt> otherwise
-     */
-    public EntityFullJid getOurJid()
-    {
-        return connection.getUser();
-    }
-
     @Override
-    public XmppConnection getXmppConnection()
+    public ExtendedXmppConnection getExtendedXmppConnection()
     {
-        return connectionAdapter;
+        return extendedXmppConnection;
     }
 
     /**
@@ -361,7 +351,7 @@ public class XmppProviderImpl
 
         if (registered)
         {
-            XmppConnection xmppConnection = getXmppConnection();
+            ExtendedXmppConnection xmppConnection = getExtendedXmppConnection();
             if (xmppConnection != null)
             {
                 xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
@@ -462,14 +452,14 @@ public class XmppProviderImpl
     }
 
     /**
-     * Implements {@link XmppConnection}.
+     * Implements {@link ExtendedXmppConnection}.
      */
-    private class XmppConnectionAdapter
-        implements XmppConnection
+    private class ExtendedXmppConnectionImpl
+        implements ExtendedXmppConnection
     {
         private final XMPPConnection connection;
 
-        XmppConnectionAdapter(XMPPConnection connection)
+        ExtendedXmppConnectionImpl(XMPPConnection connection)
         {
             this.connection = Objects.requireNonNull(connection, "connection");
         }
@@ -643,7 +633,7 @@ public class XmppProviderImpl
     {
         xmppConnectionListeners.add(listener);
 
-        XmppConnection connection = getXmppConnection();
+        ExtendedXmppConnection connection = getExtendedXmppConnection();
         if (connection != null)
         {
             listener.xmppConnectionInitialized(connection);

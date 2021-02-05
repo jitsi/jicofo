@@ -330,7 +330,7 @@ public class JitsiMeetConferenceImpl
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            clientXmppProvider.getXmppConnection(),
+                            clientXmppProvider.getExtendedXmppConnection(),
                             executor,
                             jibriDetector,
                             logger);
@@ -344,7 +344,7 @@ public class JitsiMeetConferenceImpl
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            clientXmppProvider.getXmppConnection(),
+                            clientXmppProvider.getExtendedXmppConnection(),
                             executor,
                             sipJibriDetector,
                             logger);
@@ -621,7 +621,7 @@ public class JitsiMeetConferenceImpl
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        XmppConnection xmppConnection = serviceXmppProvider.getXmppConnection();
+        ExtendedXmppConnection xmppConnection = serviceXmppProvider.getExtendedXmppConnection();
         Objects.requireNonNull(xmppConnection);
 
         ColibriConferenceImpl colibriConference = new ColibriConferenceImpl(xmppConnection);
