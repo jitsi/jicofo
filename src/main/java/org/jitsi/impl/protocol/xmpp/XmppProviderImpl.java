@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.recording.jibri.*;
@@ -45,15 +44,13 @@ import java.lang.*;
 import java.lang.SuppressWarnings;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.jivesoftware.smack.SmackException.*;
 
 /**
- * TODO: fix inconsistent synchronization.
- *
  * @author Pawel Domas
  */
-@SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
 public class XmppProviderImpl
     extends AbstractXmppProvider
 {
@@ -79,13 +76,15 @@ public class XmppProviderImpl
     /**
      * The XMPP connection used by this instance.
      */
-    private AbstractXMPPConnection connection;
+    @NotNull private final AbstractXMPPConnection connection;
+
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * We need a retry strategy for the first connect attempt. Later those are
      * handled by Smack internally.
      */
-    private RetryStrategy connectRetry;
+    private final RetryStrategy connectRetry;
 
     /**
      * Listens to connection status updates.
@@ -135,6 +134,12 @@ public class XmppProviderImpl
     @Override
     public void start()
     {
+        if (!started.compareAndSet(false, true))
+        {
+            logger.info("Already started.");
+            return;
+        }
+
         connectRetry.runRetryingTask(new SimpleRetryTask(0, 5000L, true, this::doConnect));
     }
 
@@ -192,57 +197,55 @@ public class XmppProviderImpl
      * detect that there is no chance to get connected any any future retries
      * should be canceled.
      */
-    synchronized private boolean doConnect()
+    private boolean doConnect()
     {
-        if (connection == null)
+        if (!started.get())
         {
             return false;
         }
 
-        try
+        synchronized (this)
         {
-            connection.connect();
-
-            connection.addConnectionListener(connListener);
-
-            ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
-
-            if (config.getPassword() != null)
+            try
             {
-                String login = config.getUsername().toString();
-                String pass = config.getPassword();
-                Resourcepart resource = config.getUsername();
-                connection.login(login, pass, resource);
+                connection.connect();
+                logger.info("Connected, JID= " + connection.getUser());
+
+                // XXX Is there a reason we add listeners *after* we call connect()?
+                connection.addConnectionListener(connListener);
+                ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
+
+                if (config.getPassword() != null)
+                {
+                    String login = config.getUsername().toString();
+                    String pass = config.getPassword();
+                    Resourcepart resource = config.getUsername();
+                    connection.login(login, pass, resource);
+                }
+
+                connection.registerIQRequestHandler(jingleOpSet);
+                return false;
             }
-
-            connection.registerIQRequestHandler(jingleOpSet);
-
-            logger.info("XMPP provider connected (JID: " + connection.getUser() + ")");
-
-            return false;
-        }
-        catch (XMPPException
-                | InterruptedException
-                | SmackException
-                | IOException e)
-        {
-            logger.error("Failed to connect/login: " + e.getMessage(), e);
-            // If the connect part succeeded, but login failed we don't want to
-            // rely on Smack's built-in retries, as it will be handled by
-            // the RetryStrategy
-            connection.removeConnectionListener(connListener);
-
-            ReconnectionManager reconnectionManager = ReconnectionManager.getInstanceFor(connection);
-            if (reconnectionManager != null)
+            catch (XMPPException | InterruptedException | SmackException | IOException e)
             {
-                reconnectionManager.removeReconnectionListener(reConnListener);
-            }
+                logger.error("Failed to connect/login: " + e.getMessage(), e);
+                // If the connect part succeeded, but login failed we don't want to
+                // rely on Smack's built-in retries, as it will be handled by
+                // the RetryStrategy
+                connection.removeConnectionListener(connListener);
 
-            if (connection.isConnected())
-            {
-                connection.disconnect();
+                ReconnectionManager reconnectionManager = ReconnectionManager.getInstanceFor(connection);
+                if (reconnectionManager != null)
+                {
+                    reconnectionManager.removeReconnectionListener(reConnListener);
+                }
+
+                if (connection.isConnected())
+                {
+                    connection.disconnect();
+                }
+                return true;
             }
-            return true;
         }
     }
 
@@ -250,27 +253,24 @@ public class XmppProviderImpl
      * {@inheritDoc}
      */
     @Override
-    public synchronized void stop()
+    public void stop()
     {
-        if (connection == null)
+        if (!started.compareAndSet(true, false))
         {
+            logger.info("Already stopped or not started.");
             return;
         }
 
-        if (connectRetry != null)
+        synchronized (this)
         {
             connectRetry.cancel();
-            connectRetry = null;
+
+            connection.disconnect();
+            logger.info("Disconnected.");
+
+            connection.unregisterIQRequestHandler(jingleOpSet);
+            connection.removeConnectionListener(connListener);
         }
-
-        connection.disconnect();
-
-        connection.unregisterIQRequestHandler(jingleOpSet);
-        connection.removeConnectionListener(connListener);
-
-        connection = null;
-
-        logger.info(this + " Disconnected ");
 
         setRegistered(false);
     }
@@ -311,13 +311,13 @@ public class XmppProviderImpl
      */
     public EntityFullJid getOurJid()
     {
-        return connection != null ? connection.getUser() : null;
+        return connection.getUser();
     }
 
     @Override
     public XmppConnection getXmppConnection()
     {
-        if (connectionAdapter == null && connection != null)
+        if (connectionAdapter == null)
         {
             connectionAdapter = new XmppConnectionAdapter(connection);
         }
@@ -333,13 +333,7 @@ public class XmppProviderImpl
     {
         JSONObject stats = new JSONObject();
 
-        if (connection == null)
-        {
-            return stats;
-        }
-
         PacketDebugger debugger = PacketDebugger.forConnection(connection);
-
         if (debugger == null)
         {
             return stats;
