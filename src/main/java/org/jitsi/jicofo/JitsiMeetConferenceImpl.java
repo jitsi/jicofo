@@ -462,7 +462,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        chatRoom = clientXmppProvider.findOrCreateRoom(roomName.toString());
+        chatRoom = clientXmppProvider.findOrCreateRoom(roomName);
         chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);

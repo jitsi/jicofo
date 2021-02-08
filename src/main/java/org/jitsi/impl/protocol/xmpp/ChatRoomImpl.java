@@ -224,89 +224,77 @@ public class ChatRoomImpl
 
     @Override
     public void join()
-        throws OperationFailedException
+        throws SmackException, XMPPException, InterruptedException
     {
         // TODO: clean-up the way we figure out what nickname to use.
         joinAs(xmppProvider.getConfig().getUsername());
     }
 
-    private void joinAs(Resourcepart nickname) throws OperationFailedException
+    private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
-        try
-        {
-            this.myResourcepart = nickname;
-            this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
+        this.myResourcepart = nickname;
+        this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
                                                           myResourcepart);
 
-            this.presenceInterceptor = new PresenceListener()
-            {
-                @Override
-                public void processPresence(Presence packet)
-                {
-                    lastPresenceSent = packet;
-                }
-            };
-            muc.addPresenceInterceptor(presenceInterceptor);
-
-            muc.createOrJoin(myResourcepart);
-
-            // Make the room non-anonymous, so that others can
-            // recognize focus JID
-            Form config = muc.getConfigurationForm();
-            /*Iterator<FormField> fields = config.getFields();
-            while (fields.hasNext())
-            {
-                FormField field = fields.next();
-                logger.info("FORM: " + field.toXML());
-            }*/
-            Form answer = config.createAnswerForm();
-            // Room non-anonymous
-            String whoisFieldName = "muc#roomconfig_whois";
-            FormField whois = answer.getField(whoisFieldName);
-            if (whois == null)
-            {
-                whois = new FormField(whoisFieldName);
-                answer.addField(whois);
-            }
-
-            whois.addValue("anyone");
-            // Room moderated
-            //FormField roomModerated
-            //    = new FormField("muc#roomconfig_moderatedroom");
-            //roomModerated.addValue("true");
-            //answer.addField(roomModerated);
-            // Only participants can send private messages
-            //FormField onlyParticipantsPm
-            //        = new FormField("muc#roomconfig_allowpm");
-            //onlyParticipantsPm.addValue("participants");
-            //answer.addField(onlyParticipantsPm);
-            // Presence broadcast
-            //FormField presenceBroadcast
-            //        = new FormField("muc#roomconfig_presencebroadcast");
-            //presenceBroadcast.addValue("participant");
-            //answer.addField(presenceBroadcast);
-            // Get member list
-            //FormField getMemberList
-            //        = new FormField("muc#roomconfig_getmemberlist");
-            //getMemberList.addValue("participant");
-            //answer.addField(getMemberList);
-            // Public logging
-            //FormField publicLogging
-            //        = new FormField("muc#roomconfig_enablelogging");
-            //publicLogging.addValue("false");
-            //answer.addField(publicLogging);
-
-            muc.sendConfigurationForm(answer);
-        }
-        catch (XMPPException
-                | MucAlreadyJoinedException
-                | NotAMucServiceException
-                | NoResponseException
-                | NotConnectedException
-                | InterruptedException e)
+        this.presenceInterceptor = new PresenceListener()
         {
-            throw new OperationFailedException("Failed to join the room", e);
+            @Override
+            public void processPresence(Presence packet)
+            {
+                lastPresenceSent = packet;
+            }
+        };
+        muc.addPresenceInterceptor(presenceInterceptor);
+
+        muc.createOrJoin(myResourcepart);
+
+        // Make the room non-anonymous, so that others can
+        // recognize focus JID
+        Form config = muc.getConfigurationForm();
+        /*Iterator<FormField> fields = config.getFields();
+        while (fields.hasNext())
+        {
+            FormField field = fields.next();
+            logger.info("FORM: " + field.toXML());
+        }*/
+        Form answer = config.createAnswerForm();
+        // Room non-anonymous
+        String whoisFieldName = "muc#roomconfig_whois";
+        FormField whois = answer.getField(whoisFieldName);
+        if (whois == null)
+        {
+            whois = new FormField(whoisFieldName);
+            answer.addField(whois);
         }
+
+        whois.addValue("anyone");
+        // Room moderated
+        //FormField roomModerated
+        //    = new FormField("muc#roomconfig_moderatedroom");
+        //roomModerated.addValue("true");
+        //answer.addField(roomModerated);
+        // Only participants can send private messages
+        //FormField onlyParticipantsPm
+        //        = new FormField("muc#roomconfig_allowpm");
+        //onlyParticipantsPm.addValue("participants");
+        //answer.addField(onlyParticipantsPm);
+        // Presence broadcast
+        //FormField presenceBroadcast
+        //        = new FormField("muc#roomconfig_presencebroadcast");
+        //presenceBroadcast.addValue("participant");
+        //answer.addField(presenceBroadcast);
+        // Get member list
+        //FormField getMemberList
+        //        = new FormField("muc#roomconfig_getmemberlist");
+        //getMemberList.addValue("participant");
+        //answer.addField(getMemberList);
+        // Public logging
+        //FormField publicLogging
+        //        = new FormField("muc#roomconfig_enablelogging");
+        //publicLogging.addValue("false");
+        //answer.addField(publicLogging);
+
+        muc.sendConfigurationForm(answer);
     }
 
     @Override

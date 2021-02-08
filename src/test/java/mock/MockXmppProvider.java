@@ -27,6 +27,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
+import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
@@ -116,14 +117,14 @@ public class MockXmppProvider
 
     @NotNull
     @Override
-    public ChatRoom createRoom(@NotNull String name) throws RoomExistsException
+    public ChatRoom createRoom(@NotNull EntityBareJid name) throws RoomExistsException
     {
         return mucApi.createChatRoom(name);
     }
 
     @NotNull
     @Override
-    public ChatRoom findOrCreateRoom(@NotNull String name) throws RoomExistsException
+    public ChatRoom findOrCreateRoom(@NotNull EntityBareJid name) throws RoomExistsException
     {
         return mucApi.findRoom(name);
     }

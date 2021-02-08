@@ -20,9 +20,9 @@ package org.jitsi.jicofo.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -52,7 +52,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * The MUC JID of the room which this detector will join.
      */
-    private final Jid breweryJid;
+    private final EntityBareJid breweryJid;
 
     private final XmppProvider xmppProvider;
 
@@ -87,7 +87,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public BaseBrewery(
         @NotNull XmppProvider xmppProvider,
-        @NotNull Jid breweryJid,
+        @NotNull EntityBareJid breweryJid,
         String presenceExtensionElementName,
         String presenceExtensionNamespace,
         Logger parentLogger)
@@ -165,13 +165,13 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         try
         {
-            chatRoom = xmppProvider.createRoom(breweryJid.toString());
+            chatRoom = xmppProvider.createRoom(breweryJid);
             chatRoom.addMemberPresenceListener(this);
             chatRoom.join();
 
             logger.info("Joined the room.");
         }
-        catch (OperationFailedException | XmppStringprepException | XmppProvider.RoomExistsException e)
+        catch (InterruptedException | SmackException | XMPPException | XmppProvider.RoomExistsException e)
         {
             logger.error("Failed to create room.", e);
 

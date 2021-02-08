@@ -41,7 +41,7 @@ public class JigasiSelectorTest
     {
         brewery = new MockBrewery<>(
             OSGiHandler.getInstance().jicofoServices.getXmppServices().getClientConnection(),
-            JidCreate.from("roomName@muc-servicename.jabserver.com")
+            JidCreate.entityBareFrom("roomName@muc-servicename.jabserver.com")
         );
     }
 

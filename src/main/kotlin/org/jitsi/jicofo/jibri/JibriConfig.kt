@@ -21,26 +21,26 @@ import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
-import org.jxmpp.jid.Jid
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
 class JibriConfig {
-    val breweryJid: Jid? by optionalconfig {
+    val breweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.jibri.BREWERY".from(legacyConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
         "jicofo.jibri.brewery-jid".from(newConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
     }
 
-    val sipBreweryJid: Jid? by optionalconfig {
+    val sipBreweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.jibri.SIP_BREWERY".from(legacyConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
         "jicofo.jibri-sip.brewery-jid".from(newConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
     }
 

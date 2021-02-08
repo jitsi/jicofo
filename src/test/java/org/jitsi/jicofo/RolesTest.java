@@ -60,7 +60,7 @@ public class RolesTest
         String serverName = "test-server";
         TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
         MockXmppProvider pps = testConference.getXmppProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
         // Join with all users
         MockParticipant[] users = new MockParticipant[4];

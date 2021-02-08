@@ -25,12 +25,10 @@ import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -72,7 +70,7 @@ public class JibriDetector
      */
     public JibriDetector(
             XmppProvider xmppProvider,
-            @NotNull Jid breweryJid,
+            @NotNull EntityBareJid breweryJid,
             boolean isSip)
     {
         super(

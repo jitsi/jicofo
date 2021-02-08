@@ -491,8 +491,6 @@ public class JibriSession
     /**
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
-     * @throws OperationFailedException if XMPP connection failed
-     * @throws StartException if something went wrong
      */
     private void sendJibriStartIq(final Jid jibriJid)
         throws SmackException.NotConnectedException,

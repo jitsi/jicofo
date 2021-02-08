@@ -19,7 +19,6 @@ package mock.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
@@ -30,7 +29,7 @@ import java.util.*;
 public class MockBrewery<T extends ExtensionElement>
     extends BaseBrewery<T>
 {
-    public MockBrewery(XmppProvider xmppProvider, Jid breweryJid)
+    public MockBrewery(XmppProvider xmppProvider, EntityBareJid breweryJid)
     {
         super(xmppProvider, breweryJid, null, null, new LoggerImpl(MockBrewery.class.getName()));
     }

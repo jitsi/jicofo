@@ -21,12 +21,16 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.muc.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
+import java.lang.*;
+import java.lang.String;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -124,7 +128,7 @@ public class MockMultiUserChat
 
     @Override
     public void join()
-        throws OperationFailedException
+            throws SmackException
     {
         joinAs(myNickname);
     }
@@ -136,10 +140,10 @@ public class MockMultiUserChat
     }
 
     private void joinAs(String nickname)
-        throws OperationFailedException
+            throws SmackException
     {
         if (isJoined)
-            throw new OperationFailedException("Already joined the room");
+            throw new MultiUserChatException.MucAlreadyJoinedException();
 
         isJoined = true;
 
@@ -150,7 +154,7 @@ public class MockMultiUserChat
         }
         catch (XmppStringprepException e)
         {
-            throw new OperationFailedException("Invalid mock room member JID", e);
+            throw new RuntimeException("Invalid mock room member JID", e);
         }
 
         // FIXME: for mock purposes we are always the owner on join()

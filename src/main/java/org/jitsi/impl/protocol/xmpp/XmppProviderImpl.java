@@ -34,9 +34,7 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.jxmpp.stringprep.*;
 
 import java.lang.*;
 import java.lang.SuppressWarnings;
@@ -311,13 +309,13 @@ public class XmppProviderImpl
     }
 
     @Override
-    public @NotNull ChatRoom createRoom(@NotNull String name) throws RoomExistsException, XmppStringprepException
+    public @NotNull ChatRoom createRoom(@NotNull EntityBareJid name) throws RoomExistsException
     {
         return muc.createChatRoom(name);
     }
 
     @Override
-    public @NotNull ChatRoom findOrCreateRoom(@NotNull String name) throws XmppStringprepException
+    public @NotNull ChatRoom findOrCreateRoom(@NotNull EntityBareJid name)
     {
         return muc.findOrCreateRoom(name);
     }
@@ -447,10 +445,10 @@ public class XmppProviderImpl
          */
         private final Map<String, ChatRoomImpl> rooms = new HashMap<>();
 
-        private ChatRoom createChatRoom(String roomName)
-                throws XmppStringprepException, RoomExistsException
+        private ChatRoom createChatRoom(EntityBareJid roomJid)
+                throws RoomExistsException
         {
-            EntityBareJid roomJid = JidCreate.entityBareFrom(roomName);
+            String roomName = roomJid.toString();
 
             synchronized (rooms)
             {
@@ -467,10 +465,9 @@ public class XmppProviderImpl
             }
         }
 
-        private ChatRoom findOrCreateRoom(String roomName)
-                throws XmppStringprepException
+        private ChatRoom findOrCreateRoom(EntityBareJid roomJid)
         {
-            roomName = roomName.toLowerCase();
+            String roomName = roomJid.toString().toLowerCase();
 
             synchronized (rooms)
             {
@@ -480,7 +477,7 @@ public class XmppProviderImpl
                 {
                     try
                     {
-                        room = createChatRoom(roomName);
+                        room = createChatRoom(roomJid);
                     }
                     catch (RoomExistsException e)
                     {

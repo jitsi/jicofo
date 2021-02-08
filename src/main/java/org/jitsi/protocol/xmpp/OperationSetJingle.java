@@ -45,8 +45,6 @@ public interface OperationSetJingle
      * to new Jingle session instance.
      *
      * @return {@code true} the client didn't come back with en error response.
-     *
-     * @throws OperationFailedException if the operation fails, because the XMPP connection is broken.
      */
     boolean initiateSession(
         JingleIQ jingleIQ,
@@ -75,8 +73,6 @@ public interface OperationSetJingle
      * @param session the <tt>JingleSession</tt> for which the IQ will be sent.
      *
      * @return {@code true} the client didn't come back with an error response.
-     *
-     * @throws OperationFailedException if the operation * fails, because the XMPP connection is broken.
      */
     boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
         throws SmackException.NotConnectedException;

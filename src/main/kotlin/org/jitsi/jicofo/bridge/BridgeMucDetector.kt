@@ -21,6 +21,7 @@ import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.Jid
 
 /**
@@ -35,7 +36,7 @@ class BridgeMucDetector(
      * they update their status.
      */
     private val bridgeSelector: BridgeSelector,
-    breweryJid: Jid
+    breweryJid: EntityBareJid
 ) : BaseBrewery<ColibriStatsExtension?>(
     xmppProvider,
     breweryJid,

@@ -62,7 +62,7 @@ public class JigasiDetector
      *
      * @param breweryJid the JID of the brewery room.
      */
-    public JigasiDetector(@NotNull XmppProvider xmppProvider, @NotNull Jid breweryJid)
+    public JigasiDetector(@NotNull XmppProvider xmppProvider, @NotNull EntityBareJid breweryJid)
     {
         super(
             xmppProvider,

@@ -178,8 +178,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * @param address the destination JID.
      * @param contents the list of contents to include.
      * @return {@code false} on failure.
-     * @throws OperationFailedException if we are unable to send a packet
-     * because the XMPP connection is broken.
+     * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
+     * connected.
      */
     private boolean doInviteOrReinvite(
         Jid address, List<ContentPacketExtension> contents)

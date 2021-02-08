@@ -20,8 +20,6 @@ package mock.muc;
 import mock.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -34,36 +32,21 @@ public class MockMultiUserChatOpSet
 
     private final MockXmppProvider xmppProvider;
 
-    private final Map<EntityBareJid, MockMultiUserChat> chatRooms
-        = new HashMap<>();
-
-    private static EntityBareJid fixRoomName(String room)
-    {
-        try
-        {
-            return JidCreate.entityBareFrom(room);
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
+    private final Map<EntityBareJid, MockMultiUserChat> chatRooms = new HashMap<>();
 
     public MockMultiUserChatOpSet(MockXmppProvider xmppProvider)
     {
         this.xmppProvider = xmppProvider;
     }
 
-    public ChatRoom createChatRoom(String roomName)
+    public ChatRoom createChatRoom(EntityBareJid roomNameJid)
         throws XmppProvider.RoomExistsException
     {
-        EntityBareJid roomNameJid = fixRoomName(roomName);
-
         synchronized (chatRooms)
         {
             if (chatRooms.containsKey(roomNameJid))
             {
-                throw new XmppProvider.RoomExistsException("Room " + roomName + " already exists.");
+                throw new XmppProvider.RoomExistsException("Room " + roomNameJid + " already exists.");
             }
 
             MockMultiUserChat chatRoom
@@ -74,6 +57,7 @@ public class MockMultiUserChatOpSet
 
             chatRooms.put(roomNameJid, chatRoom);
 
+            String roomName = roomNameJid.toString();
             MockMucShare sharedDomain = mucDomainSharing.get(roomName);
             if (sharedDomain == null)
             {
@@ -88,20 +72,17 @@ public class MockMultiUserChatOpSet
         }
     }
 
-    public ChatRoom findRoom(String roomName)
+    public ChatRoom findRoom(EntityBareJid roomJid)
         throws XmppProvider.RoomExistsException
     {
-        // MUC room names are case insensitive
-        EntityBareJid roomNameJid = fixRoomName(roomName);
-
         synchronized (chatRooms)
         {
-            if (!chatRooms.containsKey(roomNameJid))
+            if (!chatRooms.containsKey(roomJid))
             {
-                ChatRoom room = createChatRoom(roomName);
-                chatRooms.put(roomNameJid, (MockMultiUserChat) room);
+                ChatRoom room = createChatRoom(roomJid);
+                chatRooms.put(roomJid, (MockMultiUserChat) room);
             }
-            return chatRooms.get(roomNameJid);
+            return chatRooms.get(roomJid);
         }
     }
 
