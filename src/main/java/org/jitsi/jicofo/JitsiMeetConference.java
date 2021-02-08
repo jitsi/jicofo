@@ -36,12 +36,6 @@ import java.util.*;
 public interface JitsiMeetConference
 {
     /**
-     * @return the <tt>Logger</tt> instance which might be used to inherit
-     * the logging level assigned on the per conference basis.
-     */
-    Logger getLogger();
-
-    /**
      * Checks how many {@link Participant}s are in the conference.
      * @return an integer greater than 0.
      */
@@ -66,12 +60,6 @@ public interface JitsiMeetConference
      * Returns the name of conference multi-user chat room.
      */
     EntityBareJid getRoomName();
-
-    /**
-     * Returns focus MUC JID if it is in the room or <tt>null</tt> otherwise.
-     * JID example: room_name@muc.server.com/focus_nickname.
-     */
-    EntityFullJid getFocusJid();
 
     /**
      * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is

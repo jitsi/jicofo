@@ -48,8 +48,7 @@ public abstract class AbstractOperationSetJingle
     /**
      * The list of active Jingle sessions.
      */
-    protected final Map<String, JingleSession> sessions
-        = new ConcurrentHashMap<>();
+    protected final Map<String, JingleSession> sessions = new ConcurrentHashMap<>();
 
     protected AbstractOperationSetJingle()
     {

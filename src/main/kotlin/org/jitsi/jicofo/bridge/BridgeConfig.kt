@@ -112,7 +112,6 @@ class BridgeConfig {
             JidCreate.bareFrom(it)
         }
     }
-    fun breweryEnabled() = breweryJid != null
 
     companion object {
         const val BASE = "jicofo.bridge"

@@ -58,11 +58,13 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             JitsiMeetConferenceImpl.BridgeSession bridgeSession,
             Participant participant,
             boolean[] startMuted,
-            boolean reInvite)
+            boolean reInvite,
+            Logger parentLogger)
     {
-        super(meetConference, bridgeSession, participant, startMuted, reInvite);
+        super(meetConference, bridgeSession, participant, startMuted, reInvite, parentLogger);
         this.participant = participant;
-        this.logger = new LoggerImpl(getClass().getName(), meetConference.getLogger().getLevel());
+        logger = parentLogger.createChildLogger(getClass().getName());
+        logger.addContext("participant", participant.getChatMember().getName());
     }
 
     /**

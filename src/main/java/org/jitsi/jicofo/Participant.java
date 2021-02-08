@@ -108,12 +108,12 @@ public class Participant
      * @param roomMember the {@link ChatRoomMember} that represent this
      *                   participant in MUC conference room.
      */
-    public Participant(@NotNull JitsiMeetConference conference, @NotNull ChatRoomMember roomMember)
+    public Participant(@NotNull ChatRoomMember roomMember, Logger parentLogger)
     {
-        super(conference.getLogger());
+        super(parentLogger);
 
         this.roomMember = roomMember;
-        this.logger = new LoggerImpl(getClass().getName(), conference.getLogger().getLevel());
+        this.logger = parentLogger.createChildLogger(getClass().getName());
     }
 
     /**
@@ -412,8 +412,7 @@ public class Participant
         }
         else
         {
-            TransportSignaling.mergeTransportExtension(
-                    bundleTransport, transport);
+            TransportSignaling.mergeTransportExtension(bundleTransport, transport);
         }
     }
 

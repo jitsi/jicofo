@@ -34,7 +34,6 @@ class JibriConfig {
             JidCreate.bareFrom(it)
         }
     }
-    fun breweryEnabled() = breweryJid != null
 
     val sipBreweryJid: Jid? by optionalconfig {
         "org.jitsi.jicofo.jibri.SIP_BREWERY".from(legacyConfig).convertFrom<String> {
@@ -44,7 +43,6 @@ class JibriConfig {
             JidCreate.bareFrom(it)
         }
     }
-    fun sipBreweryEnabled() = sipBreweryJid != null
 
     val pendingTimeout: Duration by config {
         "org.jitsi.jicofo.jibri.PENDING_TIMEOUT".from(legacyConfig).convertFrom<Long> { Duration.ofSeconds(it) }

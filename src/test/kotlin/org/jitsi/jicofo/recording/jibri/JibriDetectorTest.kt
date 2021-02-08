@@ -15,7 +15,7 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 
 class JibriDetectorTest : ShouldSpec({
-    val detector = JibriDetector(mockk(), JidCreate.bareFrom("brewery_name"), false)
+    val detector = JibriDetector(mockk(), JidCreate.from("brewery_name@example.com"), false)
     val jibriJids = listOf(
         JidCreate.entityFullFrom("jibri1@bar.com/nick"),
         JidCreate.entityFullFrom("jibri2@bar.com/nick")

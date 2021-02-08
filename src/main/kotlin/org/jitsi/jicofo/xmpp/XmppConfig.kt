@@ -48,6 +48,7 @@ interface XmppConnectionConfig {
     val password: String?
     val replyTimeout: Duration
     val disableCertificateVerification: Boolean
+    val name: String
 }
 
 class XmppServiceConnectionConfig : XmppConnectionConfig {
@@ -100,6 +101,8 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
     }
 
     override fun toString(): String = "XmppServiceConnectionConfig[hostname=$hostname, port=$port, username=$username]"
+
+    override val name = "service"
 }
 
 class XmppClientConnectionConfig : XmppConnectionConfig {
@@ -198,6 +201,8 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     }
 
     override fun toString(): String = "XmppClientConnectionConfig[hostname=$hostname, port=$port, username=$username]"
+
+    override val name = "client"
 
     companion object {
         const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"

@@ -27,6 +27,7 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
+import javax.validation.constraints.*;
 import java.util.*;
 
 /**
@@ -84,13 +85,14 @@ public class LipSyncHack implements OperationSetJingle
      * @param jingleImpl the Jingle operations set that will be wrapped in order
      *        to modify some of the Jingle requests.
      */
-    public LipSyncHack(JitsiMeetConference    conference,
-                       OperationSetJingle     jingleImpl)
+    public LipSyncHack(
+            @NotNull JitsiMeetConference conference,
+            @NotNull OperationSetJingle jingleImpl,
+            @NotNull Logger parentLogger)
     {
-        this.conference = Objects.requireNonNull(conference, "conference");
-        this.jingleImpl = Objects.requireNonNull(jingleImpl, "jingleImpl");
-
-        this.logger = new LoggerImpl(LipSyncHack.class.getName(), conference.getLogger().getLevel());
+        this.conference = conference;
+        this.jingleImpl = jingleImpl;
+        this.logger = parentLogger.createChildLogger(getClass().getName());
     }
 
     private MediaSourceMap getParticipantSSRCMap(Jid mucJid)

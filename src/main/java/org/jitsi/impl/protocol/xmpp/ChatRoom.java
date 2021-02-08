@@ -191,4 +191,9 @@ public interface ChatRoom
     void setConference(JitsiMeetConference conference);
 
     void setPresenceExtension(ExtensionElement extension, boolean remove);
+
+    /**
+     * Get the nickname of the local occupant.
+     */
+    String getLocalNickname();
 }

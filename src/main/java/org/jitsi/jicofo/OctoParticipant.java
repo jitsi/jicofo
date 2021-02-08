@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -56,9 +57,9 @@ public class OctoParticipant
      * will be a part of.
      * @param relays the list of Octo relays
      */
-    OctoParticipant(JitsiMeetConference conference, List<String> relays)
+    OctoParticipant(JitsiMeetConference conference, List<String> relays, Logger parentLogger)
     {
-        super(conference.getLogger());
+        super(parentLogger);
         this.relays = relays;
     }
 

@@ -51,6 +51,7 @@ import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
@@ -75,8 +76,8 @@ open class JicofoServices {
         // Init smack shit
         initializeSmack()
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig): XmppProvider {
-                return XmppProtocolProvider(config)
+            override fun createXmppProvider(config: XmppConnectionConfig, parentLogger: Logger): XmppProvider {
+                return XmppProtocolProvider(config, parentLogger)
             }
         }
     }
@@ -102,28 +103,44 @@ open class JicofoServices {
     val xmppServices = XmppServices(scheduledPool, xmppProviderFactory)
 
     val bridgeSelector = BridgeSelector(scheduledPool)
-    private val bridgeDetector = if (BridgeConfig.config.breweryEnabled())
-        BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector).apply { init() }
-    else null
-    val jibriDetector = if (JibriConfig.config.breweryEnabled()) {
-        logger.info("Using a Jibri detector with MUC: " + JibriConfig.config.breweryJid)
-        JibriDetector(xmppServices.clientConnection, JibriConfig.config.breweryJid, false).apply { init() }
-    } else null
-    val sipJibriDetector = if (JibriConfig.config.sipBreweryEnabled()) {
-        logger.info("Using a SIP Jibri detector with MUC: " + JibriConfig.config.sipBreweryJid)
-        JibriDetector(xmppServices.clientConnection, JibriConfig.config.sipBreweryJid, true).apply { init() }
-    } else null
-    val jigasiDetector = if (JigasiConfig.config.breweryEnabled()) {
-        logger.info("Using a Jigasi detector with MUC: " + JigasiConfig.config.breweryJid)
-        JigasiDetector(xmppServices.clientConnection, JigasiConfig.config.breweryJid).apply { init() }
-    } else null
+    private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
+        BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector, breweryJid).apply { init() }
+    } ?: run {
+        logger.error("No bridge detector configured.")
+        null
+    }
+    val jibriDetector = JibriConfig.config.breweryJid?.let { breweryJid ->
+        JibriDetector(xmppServices.clientConnection, breweryJid, false).apply { init() }
+    } ?: run {
+        logger.info("No Jibri detector configured.")
+        null
+    }
+    val sipJibriDetector = JibriConfig.config.sipBreweryJid?.let { breweryJid ->
+        JibriDetector(xmppServices.clientConnection, breweryJid, true).apply { init() }
+    }  ?: run {
+        logger.info("No SIP Jibri detector configured.")
+        null
+    }
+    val jigasiDetector = JigasiConfig.config.breweryJid?.let { breweryJid ->
+        JigasiDetector(xmppServices.clientConnection, breweryJid).apply { init() }
+    } ?: run {
+        logger.info("No Jigasi detector configured.")
+        null
+    }
 
     val focusManager: FocusManager = FocusManager().also {
-        logger.info("Starting FocusManager.")
         it.start(xmppServices.clientConnection, xmppServices.serviceConnection)
     }
 
-    private val reservationSystem: RESTReservations?
+    private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
+        logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
+        RESTReservations(reservationConfig.baseUrl) { name, reason ->
+            focusManager.destroyConference(name, reason)
+        }.apply {
+            focusManager.addFocusAllocationListener(this)
+            start()
+        }
+    } else null
     private val healthChecker: JicofoHealthChecker?
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
@@ -136,15 +153,6 @@ open class JicofoServices {
         get() = xmppServices.iqHandler!!
 
     init {
-        reservationSystem = if (reservationConfig.enabled) {
-            logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
-            RESTReservations(reservationConfig.baseUrl) { name, reason ->
-                focusManager.destroyConference(name, reason)
-            }.apply {
-                focusManager.addFocusAllocationListener(this)
-                start()
-            }
-        } else null
 
         xmppServices.init(
             authenticationAuthority = authenticationAuthority,

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import mock.muc.*;
+import org.jitsi.utils.logging2.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -36,8 +37,8 @@ public class ParticipantTest
             throws XmppStringprepException
     {
         Participant p = new Participant(
-                new MockJitsiMeetConference(),
-                new MockRoomMember(JidCreate.entityFullFrom("something@server.com/1234"), null));
+                new MockRoomMember(JidCreate.entityFullFrom("something@server.com/1234"), null),
+                new LoggerImpl(getClass().getName()));
 
         p.setClock(Clock.fixed(Instant.now(), ZoneId.systemDefault()));
 

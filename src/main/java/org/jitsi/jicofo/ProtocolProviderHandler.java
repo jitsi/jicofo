@@ -61,11 +61,15 @@ public class ProtocolProviderHandler
     {
         this.config = config;
         this.scheduledExecutorService = scheduledExecutorService;
+        if (config != null)
+        {
+            logger.addContext("xmpp_connection", config.getName());
+        }
     }
 
     public void start(XmppProviderFactory xmppProviderFactory)
     {
-        protocolService = xmppProviderFactory.createXmppProvider(config);
+        protocolService = xmppProviderFactory.createXmppProvider(config, logger);
         protocolService.addRegistrationListener(this);
         if (protocolService instanceof XmppProtocolProvider && config.getDisableCertificateVerification())
         {
@@ -91,7 +95,7 @@ public class ProtocolProviderHandler
     @Override
     public void registrationChanged(boolean registered)
     {
-        logger.info(this + ": " + (registered ? "registered" : "unregistered"));
+        logger.info(registered ? "registered" : "unregistered");
 
         if (registered)
         {
@@ -108,7 +112,7 @@ public class ProtocolProviderHandler
             }
         }
 
-        for(RegistrationListener l : regListeners)
+        for (RegistrationListener l : regListeners)
         {
             try
             {
@@ -137,8 +141,7 @@ public class ProtocolProviderHandler
      */
     public void removeRegistrationListener(RegistrationListener l)
     {
-        boolean ok = regListeners.remove(l);
-        logger.debug("Listener removed ? " + ok + ", " + l);
+        regListeners.remove(l);
     }
 
     /**

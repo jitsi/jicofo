@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.jigasi;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
@@ -31,7 +33,7 @@ import java.util.stream.*;
 /**
  * <tt>JigasiDetector</tt> manages the pool of Jigasi instances which exist in
  * the current session. Does that by joining "brewery" room where Jigasi connect
- * to and publish their's status in MUC presence.
+ * to and publish their status in MUC presence.
  * @author Damian Minkov
  */
 public class JigasiDetector
@@ -43,21 +45,35 @@ public class JigasiDetector
     private final String localRegion = JicofoConfig.config.localRegion();
 
     /**
+     * Create a new logger instance to be passed as the parent logger (so super's log level is controlled through
+     * the properties for this class).
+     * @return
+     */
+    private static Logger createLogger()
+    {
+        Logger logger = new LoggerImpl(JigasiDetector.class.getName());
+        logger.addContext("type", "jigasi");
+        return logger;
+    }
+
+    /**
      * Constructs new JigasiDetector.
      *
      * @param protocolProvider the xmpp protocol provider
      * @param breweryJid the JID of the brewery room.
      */
-    public JigasiDetector(ProtocolProviderHandler protocolProvider, Jid breweryJid)
+    public JigasiDetector(@NotNull ProtocolProviderHandler protocolProvider, @NotNull Jid breweryJid)
     {
-        super(protocolProvider,
-            String.valueOf(breweryJid),
+        super(
+            protocolProvider,
+            breweryJid,
             ColibriStatsExtension.ELEMENT_NAME,
-            ColibriStatsExtension.NAMESPACE);
+            ColibriStatsExtension.NAMESPACE,
+            createLogger());
     }
 
     @Override
-    protected void onInstanceStatusChanged(Jid jid, ColibriStatsExtension status)
+    protected void onInstanceStatusChanged(@NotNull Jid jid, @NotNull ColibriStatsExtension status)
     {}
 
     @Override
@@ -72,8 +88,7 @@ public class JigasiDetector
      * @return XMPP address of Jigasi instance or <tt>null</tt> if there are
      * no Jigasis available currently.
      */
-    public Jid selectTranscriber(
-        List<Jid> exclude, Collection<String> preferredRegions)
+    public Jid selectTranscriber(List<Jid> exclude, Collection<String> preferredRegions)
     {
         return JigasiDetector.selectJigasi(instances, exclude, preferredRegions, localRegion, true);
     }
@@ -219,7 +234,7 @@ public class JigasiDetector
         int numberOfParticipants = Integer.MAX_VALUE;
         for (BrewInstance jigasi : filteredByRegion)
         {
-            int currentParticipants = getParticipantsCount(jigasi);
+            int currentParticipants = getParticipantCount(jigasi);
             if (currentParticipants < numberOfParticipants)
             {
                 numberOfParticipants = currentParticipants;
@@ -237,8 +252,7 @@ public class JigasiDetector
      */
     private static boolean isInGracefulShutdown(BrewInstance bi)
     {
-        return bi.status != null
-            && Boolean.parseBoolean(bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
+        return bi.status != null && Boolean.parseBoolean(bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
     }
 
     /**
@@ -248,8 +262,7 @@ public class JigasiDetector
      */
     private static boolean supportTranscription(BrewInstance bi)
     {
-        return bi.status != null
-            && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
+        return bi.status != null && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
     }
 
     /**
@@ -259,8 +272,7 @@ public class JigasiDetector
      */
     private static boolean supportSip(BrewInstance bi)
     {
-        return bi.status != null
-            && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_SIP));
+        return bi.status != null && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_SIP));
     }
 
     /**
@@ -283,8 +295,7 @@ public class JigasiDetector
      * @param preferredRegions a list of preferred regions.
      * @return whether the {@code BrewInstance} is in a preferred region.
      */
-    private static boolean isInPreferredRegion(
-        BrewInstance bi, Collection<String> preferredRegions)
+    private static boolean isInPreferredRegion(BrewInstance bi, Collection<String> preferredRegions)
     {
         return bi.status != null && preferredRegions.contains(bi.status.getValueAsString(REGION));
     }
@@ -295,11 +306,9 @@ public class JigasiDetector
      * @param region a region to check.
      * @return whether the {@code BrewInstance} is in a region.
      */
-    private static boolean isInRegion(
-        BrewInstance bi, String region)
+    private static boolean isInRegion(BrewInstance bi, String region)
     {
-        return bi.status != null
-            && region.equals(bi.status.getValueAsString(REGION));
+        return bi.status != null && region.equals(bi.status.getValueAsString(REGION));
     }
 
     /**
@@ -307,10 +316,9 @@ public class JigasiDetector
      * @param bi the {@code BrewInstance} to check.
      * @return the number of participants or 0 if nothing reported.
      */
-    private static int getParticipantsCount(
-        BrewInstance bi)
+    private static int getParticipantCount(BrewInstance bi)
     {
-        return bi.status != null ? bi.status.getValueAsInt(PARTICIPANTS): 0;
+        return bi.status != null ? bi.status.getValueAsInt(PARTICIPANTS) : 0;
     }
 
     public int getJigasiSipCount()

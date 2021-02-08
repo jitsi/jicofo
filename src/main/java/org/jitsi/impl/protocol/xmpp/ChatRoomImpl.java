@@ -76,7 +76,7 @@ public class ChatRoomImpl
     /**
      * The logger used by this class.
      */
-    private final static Logger logger = new LoggerImpl(ChatRoomImpl.class.getName());
+    private final Logger logger;
 
     /**
      * Constant used to return empty presence list from
@@ -166,6 +166,8 @@ public class ChatRoomImpl
      */
     public ChatRoomImpl(@NotNull XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
     {
+        logger = new LoggerImpl(getClass().getName());
+        logger.addContext("room", roomJid.getResourceOrEmpty().toString());
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
@@ -175,6 +177,12 @@ public class ChatRoomImpl
 
         muc.addParticipantStatusListener(memberListener);
         muc.addParticipantListener(this);
+    }
+
+    @Override
+    public String getLocalNickname()
+    {
+        return muc.getNickname().toString();
     }
 
     /**

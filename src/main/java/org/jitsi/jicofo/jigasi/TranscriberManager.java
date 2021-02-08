@@ -46,7 +46,7 @@ public class TranscriberManager
     /**
      * The logger of this class.
      */
-    private final static Logger logger = new LoggerImpl(TranscriberManager.class.getName());
+    private final Logger logger;
 
     /**
      * The {@link ChatRoom} of the conference this class is managing
@@ -86,8 +86,10 @@ public class TranscriberManager
      */
     public TranscriberManager(ProtocolProviderHandler protocolProviderHandler,
                               JitsiMeetConferenceImpl conference,
-                              JigasiDetector jigasiDetector)
+                              JigasiDetector jigasiDetector,
+                              Logger parentLogger)
     {
+        this.logger = parentLogger.createChildLogger(getClass().getName());
         this.connection = protocolProviderHandler.getProtocolProvider().getXmppConnection();
 
         this.conference = conference;
@@ -97,7 +99,7 @@ public class TranscriberManager
 
     public void init()
     {
-        if(executorService != null)
+        if (executorService != null)
         {
             executorService.shutdown();
             executorService = null;
@@ -180,7 +182,7 @@ public class TranscriberManager
      */
     private void startTranscribing(Collection<String> preferredRegions)
     {
-        if(active)
+        if (active)
         {
             return;
         }
@@ -202,7 +204,7 @@ public class TranscriberManager
 
         Jid jigasiJid = jigasiDetector.selectTranscriber(exclude, preferredRegions);
 
-        if(jigasiJid == null)
+        if (jigasiJid == null)
         {
             logger.warn("Unable to invite transcriber due to no Jigasi instances being available");
             return;
@@ -228,15 +230,13 @@ public class TranscriberManager
                 }
                 else
                 {
-                    logger.warn("failed to invite transcriber. Got error: " +
-                        response.getError().getErrorGenerator());
+                    logger.warn("failed to invite transcriber. Got error: " + response.getError().getErrorGenerator());
                     retry = true;
                 }
             }
             else
             {
-                logger.warn("failed to invite transcriber; lack of response" +
-                    " from XmmpConnection");
+                logger.warn("failed to invite transcriber; lack of response from XmmpConnection");
                 retry = true;
             }
 
@@ -276,7 +276,7 @@ public class TranscriberManager
      */
     private boolean isRequestingTranscriber(Presence presence)
     {
-        if(presence == null)
+        if (presence == null)
         {
             return false;
         }
@@ -285,7 +285,7 @@ public class TranscriberManager
             TranscriptionRequestExtension.ELEMENT_NAME,
             TranscriptionRequestExtension.NAMESPACE);
 
-        if(ext == null)
+        if (ext == null)
         {
             return false;
         }
