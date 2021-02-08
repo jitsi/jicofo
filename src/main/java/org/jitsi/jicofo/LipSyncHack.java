@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -25,6 +24,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
 import javax.validation.constraints.*;
@@ -232,7 +232,7 @@ public class LipSyncHack implements OperationSetJingle
     public boolean initiateSession(
         JingleIQ jingleIQ,
         JingleRequestHandler requestHandler)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         processAllParticipantsSSRCs(jingleIQ.getContentList(), jingleIQ.getTo());
 
@@ -247,7 +247,7 @@ public class LipSyncHack implements OperationSetJingle
      */
     @Override
     public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         processAllParticipantsSSRCs(
             jingleIQ.getContentList(),

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.impl.protocol.xmpp.OperationFailedException
 import org.jitsi.utils.logging2.Logger
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
@@ -51,26 +50,13 @@ class ExtendedXmppConnectionImpl(
         }
     }
 
-    @Throws(OperationFailedException::class)
+    @Throws(SmackException.NotConnectedException::class)
     override fun sendPacketAndGetReply(stanza: IQ): IQ? {
+        val packetCollector: StanzaCollector = createStanzaCollectorAndSend(stanza)
         return try {
-            val packetCollector: StanzaCollector = createStanzaCollectorAndSend(stanza)
-            try {
-                packetCollector.nextResult()
-            } finally {
-                packetCollector.cancel()
-            }
-        } catch (e: InterruptedException)
-        {
-            throw OperationFailedException(
-                "No response or failed otherwise: " + stanza.toXML(),
-                e
-            )
-        } catch (e: SmackException.NotConnectedException) {
-            throw OperationFailedException(
-                "No connection - unable to send packet: " + stanza.toXML(),
-                e
-            )
+            packetCollector.nextResult()
+        } finally {
+            packetCollector.cancel()
         }
     }
 
@@ -95,7 +81,7 @@ class ExtendedXmppConnectionImpl(
 
 interface ExtendedXmppConnection : XMPPConnection {
     fun tryToSendStanza(packet: Stanza)
-    @Throws(OperationFailedException::class)
+    @Throws(SmackException.NotConnectedException::class)
     fun sendPacketAndGetReply(stanza: IQ): IQ?
 
     /**

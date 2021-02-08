@@ -20,7 +20,6 @@ package org.jitsi.impl.protocol.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
@@ -581,16 +580,13 @@ public class ChatRoomImpl
             IQ reply = connection.sendPacketAndGetReply(admin);
             if (reply == null || reply.getType() != IQ.Type.result)
             {
-                // FIXME: we should have checked exceptions for all operations
-                // in ChatRoom interface which are expected to fail.
-                // OperationFailedException maybe ?
+                // XXX FIXME throw a declared exception.
                 throw new RuntimeException("Failed to grant owner: " + (reply == null ? "" : reply.toXML()));
             }
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
-            // XXX FIXME unable to throw OperationFailedException, because of
-            // the ChatRoom interface
+            // XXX FIXME throw a declared exception.
             throw new RuntimeException("Failed to grant owner - XMPP disconnected", e);
         }
     }

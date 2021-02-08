@@ -17,13 +17,13 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.util.*;
 
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.Jid;
@@ -133,7 +133,7 @@ public abstract class AbstractOperationSetJingle
     public boolean initiateSession(
         JingleIQ inviteIQ,
         JingleRequestHandler requestHandler)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         String sid = inviteIQ.getSID();
         JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
@@ -183,7 +183,7 @@ public abstract class AbstractOperationSetJingle
     public boolean replaceTransport(
         JingleIQ jingleIQ,
         JingleSession session)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
 

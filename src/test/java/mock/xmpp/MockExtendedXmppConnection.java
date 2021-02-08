@@ -189,34 +189,27 @@ public class MockExtendedXmppConnection
 
     @Override
     public IQ sendPacketAndGetReply(IQ packet)
-            throws OperationFailedException
+            throws SmackException.NotConnectedException
     {
         Objects.requireNonNull(packet, "packet");
 
+        packet.setFrom(user);
+
         try
         {
-            packet.setFrom(user);
-            StanzaCollector packetCollector
-                    = createStanzaCollectorAndSend(packet);
+            StanzaCollector packetCollector = createStanzaCollectorAndSend(packet);
             try
             {
                 //FIXME: retry allocation on timeout
                 return packetCollector.nextResult();
-            }
-            finally
+            } finally
             {
                 packetCollector.cancel();
             }
         }
-        catch (InterruptedException
-               /* |XMPPException.XMPPErrorException
-                | NoResponseException*/ e)
+        catch (InterruptedException e)
         {
-            throw new OperationFailedException("No response or failed otherwise: " + packet.toXML(), e);
-        }
-        catch (NotConnectedException e)
-        {
-            throw new OperationFailedException("No connection - unable to send packet: " + packet.toXML(), e);
+            throw new RuntimeException("Interrupted", e);
         }
     }
 

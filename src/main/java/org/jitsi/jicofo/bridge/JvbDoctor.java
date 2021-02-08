@@ -23,8 +23,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
-import org.jitsi.protocol.xmpp.*;
-
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jxmpp.jid.*;
@@ -213,11 +212,11 @@ public class JvbDoctor
 
         /**
          * Performs a health check.
-         * @throws OperationFailedException when XMPP got disconnected -
+         * @throws org.jivesoftware.smack.SmackException.NotConnectedException when XMPP is not connected,
          * the task should terminate.
          */
         private void doHealthCheck()
-            throws OperationFailedException
+            throws SmackException.NotConnectedException
         {
             ExtendedXmppConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
@@ -234,9 +233,7 @@ public class JvbDoctor
 
             logger.debug("Sending health-check request to: " + bridgeJid);
 
-            IQ response
-                = connection.sendPacketAndGetReply(
-                        newHealthCheckIQ(bridgeJid));
+            IQ response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)

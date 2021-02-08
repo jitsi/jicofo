@@ -21,6 +21,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -50,7 +51,7 @@ public interface OperationSetJingle
     boolean initiateSession(
         JingleIQ jingleIQ,
         JingleRequestHandler requestHandler)
-        throws OperationFailedException;
+        throws SmackException.NotConnectedException;
 
     /**
      * Creates a {@code session-initiate} IQ for a specific address and adds
@@ -78,7 +79,7 @@ public interface OperationSetJingle
      * @throws OperationFailedException if the operation * fails, because the XMPP connection is broken.
      */
     boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
-        throws OperationFailedException;
+        throws SmackException.NotConnectedException;
 
     /**
      * Creates a {@code transport-replace} packet for a particular

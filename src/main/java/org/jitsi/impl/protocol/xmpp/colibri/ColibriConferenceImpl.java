@@ -17,9 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -27,6 +25,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -430,9 +429,9 @@ public class ColibriConferenceImpl
             stats.allocateChannelsRequestTook(end - start);
             return reply;
         }
-        catch (OperationFailedException ofe)
+        catch (SmackException.NotConnectedException e)
         {
-            throw new ColibriException(ofe.getMessage());
+            throw new ColibriException(e.getMessage());
         }
     }
 

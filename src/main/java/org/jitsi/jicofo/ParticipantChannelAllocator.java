@@ -28,6 +28,7 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -107,7 +108,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      */
     @Override
     protected void invite(List<ContentPacketExtension> offer)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         /*
            This check makes sure that when we're trying to invite
@@ -182,7 +183,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      */
     private boolean doInviteOrReinvite(
         Jid address, List<ContentPacketExtension> contents)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         OperationSetJingle jingle = meetConference.getJingle();
         JingleSession jingleSession = participant.getJingleSession();

@@ -26,7 +26,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -252,7 +252,7 @@ public class TranscriberManager
                 selectTranscriber(retryCount - 1, exclude, preferredRegions);
             }
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed sending dialIq to transcriber", e);
         }

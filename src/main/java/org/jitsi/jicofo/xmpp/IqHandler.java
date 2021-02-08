@@ -25,8 +25,8 @@ import org.jitsi.xmpp.extensions.rayo.*;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
@@ -296,7 +296,7 @@ public class IqHandler
             reply.setStanzaId(dialIq.getStanzaId());
             return reply;
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed to send DialIq - XMPP disconnected", e);
             return IQ.createErrorResponse(
