@@ -337,11 +337,7 @@ public class ChatRoomImpl
                 muc.removePresenceInterceptor(presenceInterceptor);
             }
 
-            if (memberListener != null)
-            {
-                muc.removeParticipantStatusListener(memberListener);
-            }
-
+            muc.removeParticipantStatusListener(memberListener);
             muc.removeParticipantListener(this);
 
             if (leaveCallback != null)
@@ -349,28 +345,6 @@ public class ChatRoomImpl
                 leaveCallback.accept(this);
             }
         }
-
-        // Simulate member left events
-        // No need to do this - we dispose whole conference anyway on stop
-        /*HashMap<String, ChatMemberImpl> membersCopy;
-        synchronized (members)
-        {
-            membersCopy
-                = new HashMap<String, ChatMemberImpl>(members);
-        }
-
-        for (ChatMemberImpl member : membersCopy.values())
-        {
-            memberListener.left(member.getContactAddress());
-        }*/
-
-        /*
-        FIXME: we do not care about local user left for now
-        opSetMuc.fireLocalUserPresenceEvent(
-                this,
-                LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
-                reason,
-                alternateAddress);*/
     }
 
     @Override
