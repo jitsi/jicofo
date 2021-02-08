@@ -292,18 +292,17 @@ public class XmppProviderImpl
      * @return JSON stats
      */
     @SuppressWarnings("unchecked")
-    public JSONObject getStats()
+    @Override
+    public @NotNull JSONObject getStats()
     {
         JSONObject stats = new JSONObject();
 
         PacketDebugger debugger = PacketDebugger.forConnection(connection);
-        if (debugger == null)
+        if (debugger != null)
         {
-            return stats;
+            stats.put("total_sent", debugger.getTotalPacketsSent());
+            stats.put("total_recv", debugger.getTotalPacketsRecv());
         }
-
-        stats.put("total_sent", debugger.getTotalPacketsSent());
-        stats.put("total_recv", debugger.getTotalPacketsRecv());
 
         return stats;
     }

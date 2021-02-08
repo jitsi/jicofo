@@ -25,9 +25,9 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
@@ -146,5 +146,12 @@ public class MockXmppProvider
     public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
     {
         throw new RuntimeException("Not implemented.");
+    }
+
+    @NotNull
+    @Override
+    public JSONObject getStats()
+    {
+        return new JSONObject();
     }
 }

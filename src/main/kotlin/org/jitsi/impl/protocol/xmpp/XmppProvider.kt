@@ -21,6 +21,7 @@ import org.jitsi.jicofo.recording.jibri.CommonJibriStuff
 import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
+import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 
@@ -61,6 +62,7 @@ interface XmppProvider {
     fun discoverFeatures(jid: EntityFullJid): List<String>
     fun addJibriIqHandler(jibriIqHandler: CommonJibriStuff)
     fun removeJibriIqHandler(jibriIqHandler: CommonJibriStuff)
+    fun getStats(): JSONObject
 
     class RoomExistsException(message: String) : Exception(message)
 }

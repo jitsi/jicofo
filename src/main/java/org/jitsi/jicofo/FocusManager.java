@@ -527,16 +527,8 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         // XMPP traffic stats
-        if (clientXmppProvider instanceof XmppProviderImpl)
-        {
-            XmppProviderImpl xmppProviderImpl = (XmppProviderImpl) clientXmppProvider;
-            stats.put("xmpp", xmppProviderImpl.getStats());
-        }
-        if (serviceXmppProvider instanceof XmppProviderImpl)
-        {
-            XmppProviderImpl xmppProviderImpl = (XmppProviderImpl) serviceXmppProvider;
-            stats.put("xmpp_service", xmppProviderImpl.getStats());
-        }
+        stats.put("xmpp", clientXmppProvider.getStats());
+        stats.put("xmpp_service", serviceXmppProvider.getStats());
 
         if (healthChecker != null)
         {
