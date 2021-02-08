@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.recording.jibri;
+package org.jitsi.jicofo.xmpp;
 
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -27,28 +27,18 @@ import org.jivesoftware.smack.packet.*;
 import java.util.*;
 
 /**
- * This operation is basically just an IQ handler for {@link JibriIq}s.
- * However, all conferences register here so that they can get a hold of
- * the incoming Jibri IQs and process them.
+ * A Smack {@link IQRequestHandler} for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
+ * handling to specific {@link CommonJibriStuff} instances.
  */
-public class OperationSetJibri
+public class JibriIqHandler
     extends AbstractIqRequestHandler
-    implements RegistrationListener
 {
     private final List<CommonJibriStuff> jibris = Collections.synchronizedList(new LinkedList<>());
 
-    private final XmppProvider xmppProvider;
-
-    /**
-     * Creates a new instance of this class.
-     *
-     * @param xmppProvider the XMPP to which this instance is bound.
-     */
-    public OperationSetJibri(XmppProvider xmppProvider)
+    public JibriIqHandler(XMPPConnection xmppConnection)
     {
         super(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, Mode.async);
-        this.xmppProvider = xmppProvider;
-        xmppProvider.addRegistrationListener(this);
+        xmppConnection.registerIQRequestHandler(this);
     }
 
     /**
@@ -96,22 +86,6 @@ public class OperationSetJibri
             return theJibri.handleIQRequest((JibriIq) iq);
         }
 
-        return ErrorResponse.create(
-                iq, XMPPError.Condition.item_not_found, null);
-    }
-
-    @Override
-    public void registrationChanged(boolean registered)
-    {
-        // Do initializations which require valid connection
-        if (registered)
-        {
-            XMPPConnection xmppConnection = xmppProvider.getXmppConnection();
-            if (xmppConnection == null)
-            {
-                throw new IllegalStateException("XMPPConnection is null while registered.");
-            }
-            xmppConnection.registerIQRequestHandler(this);
-        }
+        return ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null);
     }
 }

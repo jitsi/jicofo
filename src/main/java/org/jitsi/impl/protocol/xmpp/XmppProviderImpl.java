@@ -63,7 +63,7 @@ public class XmppProviderImpl
      * Jingle operation set.
      */
     private final OperationSetJingleImpl jingleOpSet;
-    private final OperationSetJibri jibriApi;
+    private final JibriIqHandler jibriIqHandler;
 
     private final Muc muc = new Muc();
 
@@ -107,10 +107,10 @@ public class XmppProviderImpl
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
         jingleOpSet = new OperationSetJingleImpl(this);
-        jibriApi = new OperationSetJibri(this);
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(executor);
+        jibriIqHandler = new JibriIqHandler(connection);
     }
 
 
@@ -289,12 +289,6 @@ public class XmppProviderImpl
         return jingleOpSet;
     }
 
-    @Override
-    public OperationSetJibri getJibriApi()
-    {
-        return jibriApi;
-    }
-
     /**
      * Generates a {@link JSONObject} with statistics for this {@link XmppProviderImpl}.
      * @return JSON stats
@@ -347,6 +341,18 @@ public class XmppProviderImpl
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
         return DiscoveryUtil.discoverParticipantFeatures(this, jid);
+    }
+
+    @Override
+    public void addJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    {
+        this.jibriIqHandler.addJibri(jibriIqHandler);
+    }
+
+    @Override
+    public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    {
+        this.jibriIqHandler.removeJibri(jibriIqHandler);
     }
 
     class XmppConnectionListener

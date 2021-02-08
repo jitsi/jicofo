@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp
 
-import org.jitsi.jicofo.recording.jibri.OperationSetJibri
+import org.jitsi.jicofo.recording.jibri.CommonJibriStuff
 import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
@@ -51,7 +51,6 @@ interface XmppProvider {
     val config: XmppConnectionConfig
     val xmppConnection: ExtendedXmppConnection
     val jingleApi: OperationSetJingle
-    val jibriApi: OperationSetJibri?
 
     @Throws(RoomExistsException::class, XmppStringprepException::class)
     fun createRoom(name: String): ChatRoom
@@ -59,7 +58,9 @@ interface XmppProvider {
     @Throws(RoomExistsException::class, XmppStringprepException::class)
     fun findOrCreateRoom(name: String): ChatRoom
 
-    class RoomExistsException(message: String) : Exception(message)
-
     fun discoverFeatures(jid: EntityFullJid): List<String>
+    fun addJibriIqHandler(jibriIqHandler: CommonJibriStuff)
+    fun removeJibriIqHandler(jibriIqHandler: CommonJibriStuff)
+
+    class RoomExistsException(message: String) : Exception(message)
 }

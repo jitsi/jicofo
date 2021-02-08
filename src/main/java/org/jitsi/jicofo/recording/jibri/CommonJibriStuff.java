@@ -22,7 +22,6 @@ import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -195,7 +194,7 @@ public abstract class CommonJibriStuff
      * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
      * if the user is a moderator.
      */
-    final synchronized IQ handleIQRequest(JibriIq iq)
+    final synchronized public IQ handleIQRequest(JibriIq iq)
     {
         if (logger.isDebugEnabled())
         {

@@ -22,9 +22,9 @@ import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -133,5 +133,17 @@ public class MockXmppProvider
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
         return DiscoveryUtil.getDefaultParticipantFeatureSet();
+    }
+
+    @Override
+    public void addJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    {
+        throw new RuntimeException("Not implemented.");
+    }
+
+    @Override
+    public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    {
+        throw new RuntimeException("Not implemented.");
     }
 }
