@@ -307,9 +307,7 @@ public class ChatRoomImpl
                 | NotConnectedException
                 | InterruptedException e)
         {
-            throw new OperationFailedException(
-                "Failed to join the room",
-                OperationFailedException.GENERAL_ERROR, e);
+            throw new OperationFailedException("Failed to join the room", e);
         }
     }
 

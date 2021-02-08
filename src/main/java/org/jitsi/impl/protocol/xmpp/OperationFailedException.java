@@ -23,7 +23,6 @@ package org.jitsi.impl.protocol.xmpp;
  * <p>
  * <tt>OperationFailedException</tt> contains an error code that gives more
  * information on the exception. The application can obtain the error code using
- * {@link OperationFailedException#getErrorCode()}. The error code values are
  * defined in the <tt>OperationFailedException</tt> fields.
  * </p>
  *
@@ -38,64 +37,30 @@ public class OperationFailedException
     private static final long serialVersionUID = 0L;
 
     /**
-     * Set when no other error code can describe the exception that occurred.
-     */
-    public static final int GENERAL_ERROR = 1;
-
-    /**
      * Set to indicate that a provider needs to be registered or signed on
      * a public service before calling the method that threw the exception.
      */
     public static final int PROVIDER_NOT_REGISTERED = 3;
 
     /**
-     * Indicates that the exception was thrown because a method has been
-     * passed an illegal or inappropriate argument.
-     */
-    public static final int ILLEGAL_ARGUMENT = 11;
-
-    /**
-     * The error code of the exception
-     */
-    private final int errorCode;
-
-    /**
      * Creates an exception with the specified error message and error code.
      * @param message A message containing details on the error that caused the
      * exception
-     * @param errorCode the error code of the exception (one of the error code
-     * fields of this class)
      */
-    public OperationFailedException(String message, int errorCode)
+    public OperationFailedException(String message)
     {
         super(message);
-        this.errorCode = errorCode;
     }
 
     /**
      * Creates an exception with the specified message, errorCode and cause.
      * @param message A message containing details on the error that caused the
      * exception
-     * @param errorCode the error code of the exception (one of the error code
-     * fields of this class)
      * @param cause the error that caused this exception
      */
     public OperationFailedException(String message,
-                                    int errorCode,
                                     Throwable cause)
     {
         super(message, cause);
-
-        this.errorCode = errorCode;
-    }
-
-    /**
-     * Obtain the error code value.
-     *
-     * @return the error code for the exception.
-     */
-    public int getErrorCode()
-    {
-        return errorCode;
     }
 }

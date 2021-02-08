@@ -64,13 +64,11 @@ class ExtendedXmppConnectionImpl(
         {
             throw OperationFailedException(
                 "No response or failed otherwise: " + stanza.toXML(),
-                OperationFailedException.GENERAL_ERROR,
                 e
             )
         } catch (e: SmackException.NotConnectedException) {
             throw OperationFailedException(
                 "No connection - unable to send packet: " + stanza.toXML(),
-                OperationFailedException.PROVIDER_NOT_REGISTERED,
                 e
             )
         }

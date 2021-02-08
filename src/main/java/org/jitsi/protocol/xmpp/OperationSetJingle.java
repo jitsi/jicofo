@@ -45,9 +45,7 @@ public interface OperationSetJingle
      *
      * @return {@code true} the client didn't come back with en error response.
      *
-     * @throws OperationFailedException with
-     * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} if the operation
-     * fails, because the XMPP connection is broken.
+     * @throws OperationFailedException if the operation fails, because the XMPP connection is broken.
      */
     boolean initiateSession(
         JingleIQ jingleIQ,
@@ -77,9 +75,7 @@ public interface OperationSetJingle
      *
      * @return {@code true} the client didn't come back with an error response.
      *
-     * @throws OperationFailedException with
-     * {@link OperationFailedException#PROVIDER_NOT_REGISTERED} if the operation
-     * fails, because the XMPP connection is broken.
+     * @throws OperationFailedException if the operation * fails, because the XMPP connection is broken.
      */
     boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
         throws OperationFailedException;

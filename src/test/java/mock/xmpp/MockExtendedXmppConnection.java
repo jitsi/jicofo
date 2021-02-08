@@ -212,17 +212,11 @@ public class MockExtendedXmppConnection
                /* |XMPPException.XMPPErrorException
                 | NoResponseException*/ e)
         {
-            throw new OperationFailedException(
-                    "No response or failed otherwise: " + packet.toXML(),
-                    OperationFailedException.GENERAL_ERROR,
-                    e);
+            throw new OperationFailedException("No response or failed otherwise: " + packet.toXML(), e);
         }
         catch (NotConnectedException e)
         {
-            throw new OperationFailedException(
-                    "No connection - unable to send packet: " + packet.toXML(),
-                    OperationFailedException.PROVIDER_NOT_REGISTERED,
-                    e);
+            throw new OperationFailedException("No connection - unable to send packet: " + packet.toXML(), e);
         }
     }
 

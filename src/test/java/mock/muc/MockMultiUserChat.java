@@ -139,7 +139,7 @@ public class MockMultiUserChat
         throws OperationFailedException
     {
         if (isJoined)
-            throw new OperationFailedException("Already joined the room", 0);
+            throw new OperationFailedException("Already joined the room");
 
         isJoined = true;
 
@@ -150,10 +150,7 @@ public class MockMultiUserChat
         }
         catch (XmppStringprepException e)
         {
-            throw new OperationFailedException(
-                    "Invalid mock room member JID",
-                    OperationFailedException.ILLEGAL_ARGUMENT,
-                    e);
+            throw new OperationFailedException("Invalid mock room member JID", e);
         }
 
         // FIXME: for mock purposes we are always the owner on join()
