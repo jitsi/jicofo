@@ -37,12 +37,6 @@ public class OperationFailedException
     private static final long serialVersionUID = 0L;
 
     /**
-     * Set to indicate that a provider needs to be registered or signed on
-     * a public service before calling the method that threw the exception.
-     */
-    public static final int PROVIDER_NOT_REGISTERED = 3;
-
-    /**
      * Creates an exception with the specified error message and error code.
      * @param message A message containing details on the error that caused the
      * exception

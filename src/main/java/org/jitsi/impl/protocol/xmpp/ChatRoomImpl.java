@@ -227,14 +227,14 @@ public class ChatRoomImpl
         throws OperationFailedException
     {
         // TODO: clean-up the way we figure out what nickname to use.
-        joinAs(xmppProvider.getConfig().getUsername().toString());
+        joinAs(xmppProvider.getConfig().getUsername());
     }
 
-    private void joinAs(String nickname) throws OperationFailedException
+    private void joinAs(Resourcepart nickname) throws OperationFailedException
     {
         try
         {
-            this.myResourcepart = Resourcepart.from(nickname);
+            this.myResourcepart = nickname;
             this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
                                                           myResourcepart);
 
@@ -299,7 +299,6 @@ public class ChatRoomImpl
             muc.sendConfigurationForm(answer);
         }
         catch (XMPPException
-                | XmppStringprepException
                 | MucAlreadyJoinedException
                 | NotAMucServiceException
                 | NoResponseException
@@ -327,44 +326,39 @@ public class ChatRoomImpl
     public void leave()
     {
         XMPPConnection connection = xmppProvider.getXmppConnection();
-        if (connection != null)
+        try
         {
-            try
+            // FIXME smack4: there used to be a custom dispose() method
+            // if leave() fails, there might still be some listeners
+            // lingering around
+            muc.leave();
+        }
+        catch (NotConnectedException | InterruptedException e)
+        {
+            // when the connection is not connected and
+            // we get NotConnectedException, this is expected (skip log)
+            if (connection.isConnected() || e instanceof InterruptedException)
             {
-                // FIXME smack4: there used to be a custom dispose() method
-                // if leave() fails, there might still be some listeners
-                // lingering around
-                muc.leave();
+                logger.error("Failed to properly leave " + muc.toString(), e);
             }
-            catch (NotConnectedException | InterruptedException e)
+        }
+        finally
+        {
+            if (presenceInterceptor != null)
             {
-                // when the connection is not connected and
-                // we get NotConnectedException, this is expected (skip log)
-                if (connection.isConnected()
-                    || e instanceof InterruptedException)
-                {
-                    logger.error(
-                        "Failed to properly leave " + muc.toString(), e);
-                }
+                muc.removePresenceInterceptor(presenceInterceptor);
             }
-            finally
+
+            if (memberListener != null)
             {
-                if (presenceInterceptor != null)
-                {
-                    muc.removePresenceInterceptor(presenceInterceptor);
-                }
+                muc.removeParticipantStatusListener(memberListener);
+            }
 
-                if (memberListener != null)
-                {
-                    muc.removeParticipantStatusListener(memberListener);
-                }
+            muc.removeParticipantListener(this);
 
-                muc.removeParticipantListener(this);
-
-                if (leaveCallback != null)
-                {
-                    leaveCallback.accept(this);
-                }
+            if (leaveCallback != null)
+            {
+                leaveCallback.accept(this);
             }
         }
 
