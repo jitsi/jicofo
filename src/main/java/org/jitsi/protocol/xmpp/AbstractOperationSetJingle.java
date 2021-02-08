@@ -79,7 +79,8 @@ public abstract class AbstractOperationSetJingle
      *
      * @return our JID
      */
-    protected Jid getOurJID()
+    @Override
+    public Jid getOurJID()
     {
         return getConnection().getUser();
     }
@@ -101,29 +102,6 @@ public abstract class AbstractOperationSetJingle
     public JingleSession getSession(String sid)
     {
         return sessions.get(sid);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JingleIQ createSessionInitiate(
-        Jid address, List<ContentPacketExtension> contents)
-    {
-        String sid = JingleIQ.generateSID();
-        JingleIQ jingleIQ = new JingleIQ(JingleAction.SESSION_INITIATE, sid);
-
-        jingleIQ.setTo(address);
-        jingleIQ.setFrom(getOurJID());
-        jingleIQ.setInitiator(getOurJID());
-        jingleIQ.setType(IQ.Type.set);
-
-        for (ContentPacketExtension content : contents)
-        {
-            jingleIQ.addContent(content);
-        }
-
-        return jingleIQ;
     }
 
     /**
@@ -154,26 +132,6 @@ public abstract class AbstractOperationSetJingle
                             + reply.toXML());
             return false;
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JingleIQ createTransportReplace(JingleSession session, List<ContentPacketExtension> contents)
-    {
-        JingleIQ jingleIQ = new JingleIQ(JingleAction.TRANSPORT_REPLACE, session.getSessionID());
-        jingleIQ.setTo(session.getAddress());
-        jingleIQ.setFrom(getOurJID());
-        jingleIQ.setInitiator(getOurJID());
-        jingleIQ.setType(IQ.Type.set);
-
-        for (ContentPacketExtension content : contents)
-        {
-            jingleIQ.addContent(content);
-        }
-
-        return jingleIQ;
     }
 
     /**

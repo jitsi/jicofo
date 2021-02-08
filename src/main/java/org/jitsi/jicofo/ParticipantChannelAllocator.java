@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -194,11 +195,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         if (initiateSession)
         {
             // will throw OperationFailedExc if XMPP connection is broken
-            jingleIQ = jingle.createSessionInitiate(address, contents);
+            jingleIQ = JingleUtilsKt.createSessionInitiate(jingle.getOurJID(), address, contents);
         }
         else
         {
-            jingleIQ = jingle.createTransportReplace(jingleSession, contents);
+            jingleIQ = JingleUtilsKt.createTransportReplace(jingle.getOurJID(), jingleSession, contents);
         }
 
         JicofoJingleUtils.addBundleExtensions(jingleIQ);

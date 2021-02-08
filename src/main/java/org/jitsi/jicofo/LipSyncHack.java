@@ -239,6 +239,12 @@ public class LipSyncHack implements OperationSetJingle
         return jingleImpl.initiateSession(jingleIQ, requestHandler);
     }
 
+    @Override
+    public Jid getOurJID()
+    {
+        return jingleImpl.getOurJID();
+    }
+
     /**
      * We're doing the same thing as in {@link #initiateSession}. So go there
      * for more docs.
@@ -254,28 +260,6 @@ public class LipSyncHack implements OperationSetJingle
             session.getAddress());
 
         return jingleImpl.replaceTransport(jingleIQ, session);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JingleIQ createTransportReplace(
-        JingleSession session,
-        List<ContentPacketExtension> contents)
-    {
-        return jingleImpl.createTransportReplace(session, contents);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JingleIQ createSessionInitiate(
-        Jid address,
-        List<ContentPacketExtension> contents)
-    {
-        return jingleImpl.createSessionInitiate(address, contents);
     }
 
     /**

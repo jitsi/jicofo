@@ -17,14 +17,11 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
-
-import java.util.*;
 
 /**
  * Operation set allows to establish and control Jingle sessions. Exposed
@@ -51,18 +48,7 @@ public interface OperationSetJingle
         JingleRequestHandler requestHandler)
         throws SmackException.NotConnectedException;
 
-    /**
-     * Creates a {@code session-initiate} IQ for a specific address and adds
-     * a list of {@link ContentPacketExtension} to it.
-     *
-     * @param address the destination JID.
-     * @param contents the list of contents to add.
-     *
-     * @return the IQ which was created.
-     */
-    JingleIQ createSessionInitiate(
-        Jid address,
-        List<ContentPacketExtension> contents);
+    Jid getOurJID();
 
     /**
      * Sends a 'transport-replace' IQ to the client. Blocks waiting for a
@@ -76,18 +62,6 @@ public interface OperationSetJingle
      */
     boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
         throws SmackException.NotConnectedException;
-
-    /**
-     * Creates a {@code transport-replace} packet for a particular
-     * {@link JingleSession}.
-     *
-     * @param session the {@link JingleSession}.
-     * @param contents the list of {@code content}s to include.
-     * @return the IQ which was created.
-     */
-    JingleIQ createTransportReplace(
-        JingleSession session,
-        List<ContentPacketExtension> contents);
 
     /**
      * Sends 'source-add' proprietary notification.
