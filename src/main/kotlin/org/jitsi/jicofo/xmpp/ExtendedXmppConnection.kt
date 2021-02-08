@@ -63,7 +63,7 @@ class ExtendedXmppConnectionImpl(
     /**
      * This is part of [AbstractXMPPConnection], but not [XMPPConnection], so we have to delegate explicitly.
      */
-    fun connect(): AbstractXMPPConnection? =  xmppConnection.connect()
+    fun connect(): AbstractXMPPConnection? = xmppConnection.connect()
 
     /**
      * This is part of [AbstractXMPPConnection], but not [XMPPConnection], so we have to delegate explicitly.
@@ -73,7 +73,7 @@ class ExtendedXmppConnectionImpl(
     /**
      * This is part of [AbstractXMPPConnection], but not [XMPPConnection], so we have to delegate explicitly.
      */
-    fun login(username: CharSequence , password: String?, resource: Resourcepart) =
+    fun login(username: CharSequence, password: String?, resource: Resourcepart) =
         xmppConnection.login(username, password, resource)
 
     override fun getSmackXMPPConnection() = xmppConnection

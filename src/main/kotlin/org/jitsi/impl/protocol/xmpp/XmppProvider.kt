@@ -21,11 +21,8 @@ import org.jitsi.jicofo.recording.jibri.CommonJibriStuff
 import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
-import org.jxmpp.jid.BareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
-import org.jxmpp.jid.parts.Resourcepart
-import org.jxmpp.stringprep.XmppStringprepException
 
 /**
  * Based on Jitsi's `ProtocolProviderService`, simplified for the needs of jicofo.
