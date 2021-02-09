@@ -22,7 +22,6 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.json.simple.*;
@@ -89,14 +88,15 @@ public class FocusManager
     private final List<FocusAllocationListener> focusAllocListeners = new ArrayList<>();
 
     /**
-     * XMPP protocol provider handler used by the focus.
+     * The XMPP provider for the connection to clients (endpoints).
      */
-    private ProtocolProviderHandler protocolProviderHandler;
+    private XmppProvider clientXmppProvider;
 
     /**
-     * The XMPP connection provider that will be used to detect JVB's and allocate channels.
+     * The XMPP provider for the service connection (for bridges). This may be the same instance as
+     * {@link #clientXmppProvider}.
      */
-    private ProtocolProviderHandler jvbProtocolProvider;
+    private XmppProvider serviceXmppProvider;
 
     /**
      * A class that holds Jicofo-wide statistics
@@ -117,7 +117,7 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start(ProtocolProviderHandler protocolProviderHandler, ProtocolProviderHandler jvbProtocolProvider)
+    public void start(XmppProvider clientXmppProvider, XmppProvider serviceXmppProvider)
     {
         expireThread.start();
 
@@ -141,8 +141,8 @@ public class FocusManager
             this.octoId = octoId;
         }
 
-        this.protocolProviderHandler = protocolProviderHandler;
-        this.jvbProtocolProvider = jvbProtocolProvider;
+        this.clientXmppProvider = clientXmppProvider;
+        this.serviceXmppProvider = serviceXmppProvider;
     }
 
     /**
@@ -282,11 +282,11 @@ public class FocusManager
             long id = generateConferenceId();
             conference
                     = new JitsiMeetConferenceImpl(
-                    room,
-                    protocolProviderHandler,
-                    jvbProtocolProvider,
-                    this, config, logLevel,
-                    id, includeInStatistics);
+                        room,
+                        clientXmppProvider,
+                        serviceXmppProvider,
+                        this, config, logLevel,
+                        id, includeInStatistics);
 
             conferences.put(room, conference);
             conferenceGids.add(id);
@@ -527,12 +527,8 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         // XMPP traffic stats
-        XmppProvider pps = protocolProviderHandler.getProtocolProvider();
-        if (pps instanceof XmppProtocolProvider)
-        {
-            XmppProtocolProvider xmppProtocolProvider = (XmppProtocolProvider) pps;
-            stats.put("xmpp", xmppProtocolProvider.getStats());
-        }
+        stats.put("xmpp", clientXmppProvider.getStats());
+        stats.put("xmpp_service", serviceXmppProvider.getStats());
 
         if (healthChecker != null)
         {
@@ -549,16 +545,6 @@ public class FocusManager
     public void setHealth(JicofoHealthChecker jicofoHealthChecker)
     {
         this.healthChecker = jicofoHealthChecker;
-    }
-
-    /**
-     * Gets the {@code ProtocolProviderService} for focus XMPP connection.
-     *
-     * @return  the {@code ProtocolProviderService} for focus XMPP connection
-     */
-    public XmppProvider getProtocolProvider()
-    {
-        return protocolProviderHandler.getProtocolProvider();
     }
 
     public @NotNull Statistics getStatistics()

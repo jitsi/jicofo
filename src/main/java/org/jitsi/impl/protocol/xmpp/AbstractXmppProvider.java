@@ -20,14 +20,9 @@ package org.jitsi.impl.protocol.xmpp;
 import java.util.*;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.utils.logging2.*;
 
 /**
- * Implements standard functionality of <tt>ProtocolProviderService</tt> in
- * order to make it easier for implementers to provide complete solutions while
- * focusing on protocol-specific details.
- *
  * @author Lyubomir Marinov
  */
 public abstract class AbstractXmppProvider
@@ -79,7 +74,7 @@ public abstract class AbstractXmppProvider
         }
     }
 
-    public void fireRegistrationStateChanged(boolean registered)
+    protected void fireRegistrationStateChanged(boolean registered)
     {
         RegistrationListener[] listeners;
         synchronized (registrationListeners)
@@ -123,11 +118,5 @@ public abstract class AbstractXmppProvider
             this.registered = registered;
             fireRegistrationStateChanged(registered);
         }
-    }
-
-    @Override
-    public OperationSetJibri getJibriApi()
-    {
-        return null;
     }
 }

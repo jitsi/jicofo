@@ -19,7 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
@@ -172,7 +172,7 @@ public class ChatRoomImpl
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
 
-        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnectionRaw());
+        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppProvider.getXmppConnection());
         muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);
@@ -224,92 +224,77 @@ public class ChatRoomImpl
 
     @Override
     public void join()
-        throws OperationFailedException
+        throws SmackException, XMPPException, InterruptedException
     {
         // TODO: clean-up the way we figure out what nickname to use.
-        joinAs(xmppProvider.getConfig().getUsername().toString());
+        joinAs(xmppProvider.getConfig().getUsername());
     }
 
-    private void joinAs(String nickname) throws OperationFailedException
+    private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
-        try
-        {
-            this.myResourcepart = Resourcepart.from(nickname);
-            this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
+        this.myResourcepart = nickname;
+        this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
                                                           myResourcepart);
 
-            this.presenceInterceptor = new PresenceListener()
-            {
-                @Override
-                public void processPresence(Presence packet)
-                {
-                    lastPresenceSent = packet;
-                }
-            };
-            muc.addPresenceInterceptor(presenceInterceptor);
-
-            muc.createOrJoin(myResourcepart);
-
-            // Make the room non-anonymous, so that others can
-            // recognize focus JID
-            Form config = muc.getConfigurationForm();
-            /*Iterator<FormField> fields = config.getFields();
-            while (fields.hasNext())
-            {
-                FormField field = fields.next();
-                logger.info("FORM: " + field.toXML());
-            }*/
-            Form answer = config.createAnswerForm();
-            // Room non-anonymous
-            String whoisFieldName = "muc#roomconfig_whois";
-            FormField whois = answer.getField(whoisFieldName);
-            if (whois == null)
-            {
-                whois = new FormField(whoisFieldName);
-                answer.addField(whois);
-            }
-
-            whois.addValue("anyone");
-            // Room moderated
-            //FormField roomModerated
-            //    = new FormField("muc#roomconfig_moderatedroom");
-            //roomModerated.addValue("true");
-            //answer.addField(roomModerated);
-            // Only participants can send private messages
-            //FormField onlyParticipantsPm
-            //        = new FormField("muc#roomconfig_allowpm");
-            //onlyParticipantsPm.addValue("participants");
-            //answer.addField(onlyParticipantsPm);
-            // Presence broadcast
-            //FormField presenceBroadcast
-            //        = new FormField("muc#roomconfig_presencebroadcast");
-            //presenceBroadcast.addValue("participant");
-            //answer.addField(presenceBroadcast);
-            // Get member list
-            //FormField getMemberList
-            //        = new FormField("muc#roomconfig_getmemberlist");
-            //getMemberList.addValue("participant");
-            //answer.addField(getMemberList);
-            // Public logging
-            //FormField publicLogging
-            //        = new FormField("muc#roomconfig_enablelogging");
-            //publicLogging.addValue("false");
-            //answer.addField(publicLogging);
-
-            muc.sendConfigurationForm(answer);
-        }
-        catch (XMPPException
-                | XmppStringprepException
-                | MucAlreadyJoinedException
-                | NotAMucServiceException
-                | NoResponseException
-                | NotConnectedException
-                | InterruptedException e)
+        this.presenceInterceptor = new PresenceListener()
         {
-            throw new OperationFailedException(
-                "Failed to join the room",
-                OperationFailedException.GENERAL_ERROR, e);
+            @Override
+            public void processPresence(Presence packet)
+            {
+                lastPresenceSent = packet;
+            }
+        };
+        muc.addPresenceInterceptor(presenceInterceptor);
+
+        muc.createOrJoin(myResourcepart);
+
+        // Make the room non-anonymous, so that others can
+        // recognize focus JID
+        Form config = muc.getConfigurationForm();
+        /*Iterator<FormField> fields = config.getFields();
+        while (fields.hasNext())
+        {
+            FormField field = fields.next();
+            logger.info("FORM: " + field.toXML());
+        }*/
+        Form answer = config.createAnswerForm();
+        // Room non-anonymous
+        String whoisFieldName = "muc#roomconfig_whois";
+        FormField whois = answer.getField(whoisFieldName);
+        if (whois == null)
+        {
+            whois = new FormField(whoisFieldName);
+            answer.addField(whois);
         }
+
+        whois.addValue("anyone");
+        // Room moderated
+        //FormField roomModerated
+        //    = new FormField("muc#roomconfig_moderatedroom");
+        //roomModerated.addValue("true");
+        //answer.addField(roomModerated);
+        // Only participants can send private messages
+        //FormField onlyParticipantsPm
+        //        = new FormField("muc#roomconfig_allowpm");
+        //onlyParticipantsPm.addValue("participants");
+        //answer.addField(onlyParticipantsPm);
+        // Presence broadcast
+        //FormField presenceBroadcast
+        //        = new FormField("muc#roomconfig_presencebroadcast");
+        //presenceBroadcast.addValue("participant");
+        //answer.addField(presenceBroadcast);
+        // Get member list
+        //FormField getMemberList
+        //        = new FormField("muc#roomconfig_getmemberlist");
+        //getMemberList.addValue("participant");
+        //answer.addField(getMemberList);
+        // Public logging
+        //FormField publicLogging
+        //        = new FormField("muc#roomconfig_enablelogging");
+        //publicLogging.addValue("false");
+        //answer.addField(publicLogging);
+
+        muc.sendConfigurationForm(answer);
     }
 
     @Override
@@ -328,69 +313,38 @@ public class ChatRoomImpl
     @Override
     public void leave()
     {
-        XMPPConnection connection = xmppProvider.getXmppConnectionRaw();
-        if (connection != null)
+        XMPPConnection connection = xmppProvider.getXmppConnection();
+        try
         {
-            try
+            // FIXME smack4: there used to be a custom dispose() method
+            // if leave() fails, there might still be some listeners
+            // lingering around
+            muc.leave();
+        }
+        catch (NotConnectedException | InterruptedException e)
+        {
+            // when the connection is not connected and
+            // we get NotConnectedException, this is expected (skip log)
+            if (connection.isConnected() || e instanceof InterruptedException)
             {
-                // FIXME smack4: there used to be a custom dispose() method
-                // if leave() fails, there might still be some listeners
-                // lingering around
-                muc.leave();
-            }
-            catch (NotConnectedException | InterruptedException e)
-            {
-                // when the connection is not connected and
-                // we get NotConnectedException, this is expected (skip log)
-                if (connection.isConnected()
-                    || e instanceof InterruptedException)
-                {
-                    logger.error(
-                        "Failed to properly leave " + muc.toString(), e);
-                }
-            }
-            finally
-            {
-                if (presenceInterceptor != null)
-                {
-                    muc.removePresenceInterceptor(presenceInterceptor);
-                }
-
-                if (memberListener != null)
-                {
-                    muc.removeParticipantStatusListener(memberListener);
-                }
-
-                muc.removeParticipantListener(this);
-
-                if (leaveCallback != null)
-                {
-                    leaveCallback.accept(this);
-                }
+                logger.error("Failed to properly leave " + muc.toString(), e);
             }
         }
-
-        // Simulate member left events
-        // No need to do this - we dispose whole conference anyway on stop
-        /*HashMap<String, ChatMemberImpl> membersCopy;
-        synchronized (members)
+        finally
         {
-            membersCopy
-                = new HashMap<String, ChatMemberImpl>(members);
+            if (presenceInterceptor != null)
+            {
+                muc.removePresenceInterceptor(presenceInterceptor);
+            }
+
+            muc.removeParticipantStatusListener(memberListener);
+            muc.removeParticipantListener(this);
+
+            if (leaveCallback != null)
+            {
+                leaveCallback.accept(this);
+            }
         }
-
-        for (ChatMemberImpl member : membersCopy.values())
-        {
-            memberListener.left(member.getContactAddress());
-        }*/
-
-        /*
-        FIXME: we do not care about local user left for now
-        opSetMuc.fireLocalUserPresenceEvent(
-                this,
-                LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
-                reason,
-                alternateAddress);*/
     }
 
     @Override
@@ -575,27 +529,20 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        XmppConnection connection = xmppProvider.getXmppConnection();
-        if (connection == null)
-        {
-            throw new IllegalStateException("Failed to grant ownership, no connection.");
-        }
+        ExtendedXmppConnection connection = xmppProvider.getXmppConnection();
 
         try
         {
             IQ reply = connection.sendPacketAndGetReply(admin);
             if (reply == null || reply.getType() != IQ.Type.result)
             {
-                // FIXME: we should have checked exceptions for all operations
-                // in ChatRoom interface which are expected to fail.
-                // OperationFailedException maybe ?
+                // XXX FIXME throw a declared exception.
                 throw new RuntimeException("Failed to grant owner: " + (reply == null ? "" : reply.toXML()));
             }
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
-            // XXX FIXME unable to throw OperationFailedException, because of
-            // the ChatRoom interface
+            // XXX FIXME throw a declared exception.
             throw new RuntimeException("Failed to grant owner - XMPP disconnected", e);
         }
     }
@@ -726,12 +673,7 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        XmppConnection connection = xmppProvider.getXmppConnection();
-        if (connection == null)
-        {
-            logger.error("Failed to send presence extension - no connection");
-            return;
-        }
+        ExtendedXmppConnection connection = xmppProvider.getXmppConnection();
 
         // The initial presence sent by smack contains an empty "x"
         // extension. If this extension is included in a subsequent stanza,
@@ -742,7 +684,7 @@ public class ChatRoomImpl
 
         lastPresenceSent.setStanzaId(StanzaIdUtil.newStanzaId());
 
-        connection.sendStanza(lastPresenceSent);
+        connection.tryToSendStanza(lastPresenceSent);
     }
 
     /**

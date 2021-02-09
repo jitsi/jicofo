@@ -20,19 +20,18 @@ package org.jitsi.jicofo.jigasi
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.optionalconfig
-import org.jxmpp.jid.Jid
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 
 class JigasiConfig {
-    val breweryJid: Jid? by optionalconfig {
+    val breweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.jigasi.BREWERY".from(legacyConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
         "jicofo.jigasi.brewery-jid".from(newConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
     }
-    fun breweryEnabled() = breweryJid != null
 
     companion object {
         @JvmField

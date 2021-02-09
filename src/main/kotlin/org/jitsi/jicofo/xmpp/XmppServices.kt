@@ -18,11 +18,10 @@
 package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
+import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.FocusManager
-import org.jitsi.jicofo.ProtocolProviderHandler
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.reservation.ReservationSystem
-import org.jitsi.protocol.xmpp.XmppConnection
 import org.jitsi.utils.logging2.createLogger
 import java.util.concurrent.ScheduledExecutorService
 
@@ -32,19 +31,18 @@ class XmppServices(
 ) {
     private val logger = createLogger()
 
-    val clientConnection: ProtocolProviderHandler = ProtocolProviderHandler(
+    val clientConnection: XmppProvider = xmppProviderFactory.createXmppProvider(
         XmppConfig.client,
-        scheduledExecutorService
+        scheduledExecutorService,
+        logger
     ).apply {
-        start(xmppProviderFactory)
-        register()
+        start()
     }
 
-    val serviceConnection: ProtocolProviderHandler = if (XmppConfig.service.enabled) {
+    val serviceConnection: XmppProvider = if (XmppConfig.service.enabled) {
         logger.info("Using dedicated Service XMPP connection for JVB MUC.")
-        ProtocolProviderHandler(XmppConfig.service, scheduledExecutorService).apply {
-            start(xmppProviderFactory)
-            register()
+        xmppProviderFactory.createXmppProvider(XmppConfig.service, scheduledExecutorService, logger).apply {
+            start()
         }
     } else {
         logger.info("No dedicated Service XMPP connection configured, re-using the client XMPP connection.")
@@ -77,12 +75,7 @@ class XmppServices(
         )
 
         val iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
-            clientConnection.addXmppConnectionListener(
-                object : ProtocolProviderHandler.XmppConnectionListener {
-                    override fun xmppConnectionInitialized(xmppConnection: XmppConnection) {
-                        init(xmppConnection)
-                    }
-                })
+            init(clientConnection.xmppConnection)
         }
         this.iqHandler = iqHandler
     }

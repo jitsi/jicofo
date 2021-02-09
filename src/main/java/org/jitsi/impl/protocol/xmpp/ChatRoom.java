@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jitsi.jicofo.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -43,12 +44,9 @@ public interface ChatRoom
     /**
      * Joins this chat room with the nickname of the local user so that the
      * user would start receiving events and messages for it.
-     *
-     * @throws OperationFailedException with the corresponding code if an error
-     * occurs while joining the room.
      */
     void join()
-        throws OperationFailedException;
+        throws SmackException, XMPPException, InterruptedException;
 
     /**
      * Returns true if the local user is currently in the multi user chat
@@ -62,9 +60,7 @@ public interface ChatRoom
     /**
      * Leave this chat room. Once this method is called, the user won't be
      * listed as a member of the chat room any more and no further chat events
-     * will be delivered. Depending on the underlying protocol and
-     * implementation leave() might cause the room to be destroyed if it has
-     * been created by the local user.
+     * will be delivered.
      */
     void leave();
 

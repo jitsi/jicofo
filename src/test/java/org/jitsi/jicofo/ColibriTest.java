@@ -72,9 +72,9 @@ public class ColibriTest
         String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference = TestConference.allocate(serverName, roomName);
+        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
-        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
+        MockXmppProvider pps = testConference.getXmppProvider();
         ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());
 
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));

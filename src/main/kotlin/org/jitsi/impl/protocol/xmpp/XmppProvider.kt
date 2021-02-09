@@ -17,20 +17,20 @@
  */
 package org.jitsi.impl.protocol.xmpp
 
-import org.jitsi.jicofo.recording.jibri.OperationSetJibri
+import org.jitsi.jicofo.recording.jibri.CommonJibriStuff
+import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
-import org.jitsi.protocol.xmpp.XmppConnection
-import org.jivesoftware.smack.XMPPConnection
-import org.jxmpp.stringprep.XmppStringprepException
-import java.util.concurrent.ScheduledExecutorService
+import org.json.simple.JSONObject
+import org.jxmpp.jid.EntityBareJid
+import org.jxmpp.jid.EntityFullJid
 
 /**
  * Based on Jitsi's `ProtocolProviderService`, simplified for the needs of jicofo.
  */
 interface XmppProvider {
-    fun register(executorService: ScheduledExecutorService?)
-    fun unregister()
+    fun start()
+    fun stop()
 
     /**
      * @return true if the provider is currently registered and false otherwise.
@@ -50,16 +50,19 @@ interface XmppProvider {
     fun removeRegistrationListener(listener: RegistrationListener)
 
     val config: XmppConnectionConfig
-    val xmppConnection: XmppConnection?
-    val xmppConnectionRaw: XMPPConnection?
+    val xmppConnection: ExtendedXmppConnection
     val jingleApi: OperationSetJingle
-    val jibriApi: OperationSetJibri?
 
-    @Throws(RoomExistsException::class, XmppStringprepException::class)
-    fun createRoom(name: String): ChatRoom
+    @Throws(RoomExistsException::class)
+    fun createRoom(name: EntityBareJid): ChatRoom
 
-    @Throws(RoomExistsException::class, XmppStringprepException::class)
-    fun findOrCreateRoom(name: String): ChatRoom
+    @Throws(RoomExistsException::class)
+    fun findOrCreateRoom(name: EntityBareJid): ChatRoom
+
+    fun discoverFeatures(jid: EntityFullJid): List<String>
+    fun addJibriIqHandler(jibriIqHandler: CommonJibriStuff)
+    fun removeJibriIqHandler(jibriIqHandler: CommonJibriStuff)
+    fun getStats(): JSONObject
 
     class RoomExistsException(message: String) : Exception(message)
 }

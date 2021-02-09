@@ -20,7 +20,7 @@ package org.jitsi.jicofo.bridge
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
-import org.jxmpp.jid.Jid
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
@@ -104,12 +104,12 @@ class BridgeConfig {
             .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
     }
 
-    val breweryJid: Jid? by optionalconfig {
+    val breweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC".from(JitsiConfig.legacyConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
         "$BASE.brewery-jid".from(JitsiConfig.newConfig).convertFrom<String> {
-            JidCreate.bareFrom(it)
+            JidCreate.entityBareFrom(it)
         }
     }
 

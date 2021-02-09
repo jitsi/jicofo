@@ -19,11 +19,11 @@ package org.jitsi.jicofo.bridge;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
-import org.jitsi.protocol.xmpp.*;
-
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 import org.jxmpp.jid.*;
@@ -77,12 +77,12 @@ public class JvbDoctor
         this.listener = listener;
     }
 
-    private XmppConnection getConnection()
+    private ExtendedXmppConnection getConnection()
     {
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection().getProtocolProvider();
+        XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection();
 
-        return xmppProvider.isRegistered() ? xmppProvider.getXmppConnection() : null;
+        return xmppProvider.getXmppConnection();
     }
 
     synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
@@ -212,15 +212,15 @@ public class JvbDoctor
 
         /**
          * Performs a health check.
-         * @throws OperationFailedException when XMPP got disconnected -
+         * @throws org.jivesoftware.smack.SmackException.NotConnectedException when XMPP is not connected,
          * the task should terminate.
          */
         private void doHealthCheck()
-            throws OperationFailedException
+            throws SmackException.NotConnectedException
         {
-            XmppConnection connection = getConnection();
+            ExtendedXmppConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
-            if (connection == null)
+            if (!connection.isConnected())
             {
                 logger.warn("XMPP disconnected - skipping health check for: " + bridgeJid);
                 return;
@@ -233,9 +233,7 @@ public class JvbDoctor
 
             logger.debug("Sending health-check request to: " + bridgeJid);
 
-            IQ response
-                = connection.sendPacketAndGetReply(
-                        newHealthCheckIQ(bridgeJid));
+            IQ response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)

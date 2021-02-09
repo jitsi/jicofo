@@ -21,11 +21,12 @@ package org.jitsi.jicofo.jigasi;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -61,9 +62,9 @@ public class TranscriberManager
     private final JigasiDetector jigasiDetector;
 
     /**
-     * The {@link XmppConnection} used to Dial Jigasi.
+     * The {@link ExtendedXmppConnection} used to Dial Jigasi.
      */
-    private final XmppConnection connection;
+    private final ExtendedXmppConnection connection;
 
     /**
      * The transcription status; either active or inactive based on this boolean
@@ -80,17 +81,17 @@ public class TranscriberManager
      * Create a {@link TranscriberManager} responsible for inviting Jigasi as
      * a transcriber when this is desired.
      *
-     * @param protocolProviderHandler the handler giving access a XmppConnection
      * @param jigasiDetector detector for Jigasi instances which can be dialed
      * to invite a transcriber
      */
-    public TranscriberManager(ProtocolProviderHandler protocolProviderHandler,
+    public TranscriberManager(XmppProvider xmppProvider,
                               JitsiMeetConferenceImpl conference,
                               JigasiDetector jigasiDetector,
                               Logger parentLogger)
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
-        this.connection = protocolProviderHandler.getProtocolProvider().getXmppConnection();
+        // TODO: handle the connection changing (reconnect)
+        this.connection = xmppProvider.getXmppConnection();
 
         this.conference = conference;
         this.chatRoom = conference.getChatRoom();
@@ -251,7 +252,7 @@ public class TranscriberManager
                 selectTranscriber(retryCount - 1, exclude, preferredRegions);
             }
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed sending dialIq to transcriber", e);
         }

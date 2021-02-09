@@ -19,7 +19,12 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.utils.logging2.Logger
+import java.util.concurrent.ScheduledExecutorService
 
 interface XmppProviderFactory {
-    fun createXmppProvider(config: XmppConnectionConfig, parentLogger: Logger): XmppProvider
+    fun createXmppProvider(
+        config: XmppConnectionConfig,
+        executor: ScheduledExecutorService,
+        parentLogger: Logger
+    ): XmppProvider
 }

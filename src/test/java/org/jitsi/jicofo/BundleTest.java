@@ -65,11 +65,11 @@ public class BundleTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConference = TestConference.allocate(serverName, roomName);
+        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
 
-        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
+        MockXmppProvider pps = testConference.getXmppProvider();
 
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
         MockParticipant user1 = new MockParticipant("user1");
 

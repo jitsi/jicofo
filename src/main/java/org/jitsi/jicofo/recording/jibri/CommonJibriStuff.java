@@ -19,9 +19,9 @@ package org.jitsi.jicofo.recording.jibri;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -48,9 +48,9 @@ public abstract class CommonJibriStuff
     protected final JitsiMeetConferenceImpl conference;
 
     /**
-     * The {@link XmppConnection} used for communication.
+     * The {@link ExtendedXmppConnection} used for communication.
      */
-    protected final XmppConnection connection;
+    protected final ExtendedXmppConnection connection;
 
     /**
      * The logger instance pass to the constructor that wil be used by this
@@ -83,7 +83,7 @@ public abstract class CommonJibriStuff
      */
     CommonJibriStuff(
             JitsiMeetConferenceImpl conference,
-            XmppConnection xmppConnection,
+            ExtendedXmppConnection xmppConnection,
             ScheduledExecutorService scheduledExecutor,
             Logger logger,
             JibriDetector jibriDetector)
@@ -194,7 +194,7 @@ public abstract class CommonJibriStuff
      * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
      * if the user is a moderator.
      */
-    final synchronized IQ handleIQRequest(JibriIq iq)
+    final synchronized public IQ handleIQRequest(JibriIq iq)
     {
         if (logger.isDebugEnabled())
         {

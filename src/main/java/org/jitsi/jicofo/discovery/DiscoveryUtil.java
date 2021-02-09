@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.discovery;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smackx.disco.*;
@@ -129,22 +130,21 @@ public class DiscoveryUtil
     /**
      * Gets the list of features supported by participant. If we fail to
      * obtain it due to network failure default feature list is returned.
-     * @param protocolProvider protocol provider service instance that will
-     *        be used for discovery.
      * @param address XMPP address of the participant.
      */
-    public static List<String> discoverParticipantFeatures(XmppProvider protocolProvider, EntityFullJid address)
+    public static List<String> discoverParticipantFeatures(XmppProvider xmppProvider, EntityFullJid address)
     {
-        XMPPConnection xmppConnection = protocolProvider.getXmppConnectionRaw();
-        if (xmppConnection == null)
+        ExtendedXmppConnection xmppConnection = xmppProvider.getXmppConnection();
+        if (!xmppConnection.isConnected())
         {
-            logger.error("No xmpp connection " + protocolProvider);
+            logger.error("XMPP not connected " + xmppProvider);
             return getDefaultParticipantFeatureSet();
         }
-        ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection);
+        ServiceDiscoveryManager discoveryManager =
+                ServiceDiscoveryManager.getInstanceFor(xmppConnection.getSmackXMPPConnection());
         if (discoveryManager == null)
         {
-            logger.error("Service discovery not supported by " + protocolProvider);
+            logger.error("Service discovery not supported by " + xmppProvider);
             return getDefaultParticipantFeatureSet();
         }
 

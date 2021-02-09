@@ -21,23 +21,25 @@ import mock.muc.*;
 import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jivesoftware.smack.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import java.util.concurrent.*;
+import java.util.*;
 
 /**
  *
  * @author Pawel Domas
  */
-public class MockProtocolProvider
+public class MockXmppProvider
     extends AbstractXmppProvider
 {
-    private final MockXmppConnection connection;
+    private final MockExtendedXmppConnection connection;
 
     private final AbstractOperationSetJingle jingleOpSet;
 
@@ -45,10 +47,10 @@ public class MockProtocolProvider
 
     @NotNull public XmppConnectionConfig config;
 
-    public MockProtocolProvider(@NotNull XmppConnectionConfig config)
+    public MockXmppProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
-        connection = new MockXmppConnection(getOurJID());
+        connection = new MockExtendedXmppConnection(getOurJID());
         mucApi = new MockMultiUserChatOpSet(this);
         this.jingleOpSet = new MockOperationSetJingle(this);
     }
@@ -56,11 +58,11 @@ public class MockProtocolProvider
     @Override
     public String toString()
     {
-        return "MockProtocolProvider " + config;
+        return "MockXmppProvider " + config;
     }
 
     @Override
-    public void register(ScheduledExecutorService executorService)
+    public void start()
     {
         if (jingleOpSet != null)
         {
@@ -71,7 +73,7 @@ public class MockProtocolProvider
     }
 
     @Override
-    public void unregister()
+    public void stop()
     {
         if (jingleOpSet != null)
         {
@@ -89,15 +91,9 @@ public class MockProtocolProvider
 
 
     @Override
-    public XmppConnection getXmppConnection()
+    public ExtendedXmppConnection getXmppConnection()
     {
         return connection;
-    }
-
-    @Override
-    public XMPPConnection getXmppConnectionRaw()
-    {
-        return null;
     }
 
     @Override
@@ -121,15 +117,41 @@ public class MockProtocolProvider
 
     @NotNull
     @Override
-    public ChatRoom createRoom(@NotNull String name) throws RoomExistsException
+    public ChatRoom createRoom(@NotNull EntityBareJid name) throws RoomExistsException
     {
         return mucApi.createChatRoom(name);
     }
 
     @NotNull
     @Override
-    public ChatRoom findOrCreateRoom(@NotNull String name) throws RoomExistsException
+    public ChatRoom findOrCreateRoom(@NotNull EntityBareJid name) throws RoomExistsException
     {
         return mucApi.findRoom(name);
+    }
+
+    @NotNull
+    @Override
+    public List<String> discoverFeatures(@NotNull EntityFullJid jid)
+    {
+        return DiscoveryUtil.getDefaultParticipantFeatureSet();
+    }
+
+    @Override
+    public void addJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    {
+        throw new RuntimeException("Not implemented.");
+    }
+
+    @Override
+    public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    {
+        throw new RuntimeException("Not implemented.");
+    }
+
+    @NotNull
+    @Override
+    public JSONObject getStats()
+    {
+        return new JSONObject();
     }
 }

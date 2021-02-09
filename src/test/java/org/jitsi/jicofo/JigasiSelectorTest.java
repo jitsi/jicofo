@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import mock.xmpp.*;
 import org.jitsi.jicofo.jigasi.*;
-import org.jitsi.jicofo.xmpp.XmppConfig;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
@@ -27,7 +26,6 @@ import org.jxmpp.jid.impl.*;
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 
@@ -41,9 +39,10 @@ public class JigasiSelectorTest
     public static void setUpClass()
         throws Exception
     {
+        OSGiHandler.getInstance().init();
         brewery = new MockBrewery<>(
-            new ProtocolProviderHandler(null, new ScheduledThreadPoolExecutor(1)),
-            JidCreate.from("roomName@muc-servicename.jabserver.com")
+            OSGiHandler.getInstance().jicofoServices.getXmppServices().getClientConnection(),
+            JidCreate.entityBareFrom("roomName@muc-servicename.jabserver.com")
         );
     }
 

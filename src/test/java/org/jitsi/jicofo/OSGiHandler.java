@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import com.typesafe.config.*;
 import edu.umd.cs.findbugs.annotations.*;
+import mock.*;
 import mock.muc.*;
 import org.jitsi.config.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -62,6 +63,11 @@ public class OSGiHandler
         SmackKt.initializeSmack();
         jicofoServices = new JicofoTestServices();
         JicofoServices.jicofoServicesSingleton = jicofoServices;
+    }
+
+    public MockXmppProvider getXmppProvider()
+    {
+        return (MockXmppProvider) jicofoServices.getXmppServices().getClientConnection();
     }
 
     public void shutdown()

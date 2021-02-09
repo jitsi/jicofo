@@ -17,12 +17,13 @@
  */
 package org.jitsi.protocol.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.util.*;
 
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.Jid;
@@ -78,14 +79,18 @@ public abstract class AbstractOperationSetJingle
      *
      * @return our JID
      */
-    protected abstract Jid getOurJID();
+    @Override
+    public Jid getOurJID()
+    {
+        return getConnection().getUser();
+    }
 
     /**
-     * Returns {@link XmppConnection} implementation.
+     * Returns {@link ExtendedXmppConnection} implementation.
      *
-     * @return {@link XmppConnection} implementation
+     * @return {@link ExtendedXmppConnection} implementation
      */
-    protected abstract XmppConnection getConnection();
+    protected abstract ExtendedXmppConnection getConnection();
 
     /**
      * Finds Jingle session for given session identifier.
@@ -103,33 +108,10 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public JingleIQ createSessionInitiate(
-        Jid address, List<ContentPacketExtension> contents)
-    {
-        String sid = JingleIQ.generateSID();
-        JingleIQ jingleIQ = new JingleIQ(JingleAction.SESSION_INITIATE, sid);
-
-        jingleIQ.setTo(address);
-        jingleIQ.setFrom(getOurJID());
-        jingleIQ.setInitiator(getOurJID());
-        jingleIQ.setType(IQ.Type.set);
-
-        for (ContentPacketExtension content : contents)
-        {
-            jingleIQ.addContent(content);
-        }
-
-        return jingleIQ;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean initiateSession(
         JingleIQ inviteIQ,
         JingleRequestHandler requestHandler)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         String sid = inviteIQ.getSID();
         JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
@@ -156,30 +138,10 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public JingleIQ createTransportReplace(JingleSession session, List<ContentPacketExtension> contents)
-    {
-        JingleIQ jingleIQ = new JingleIQ(JingleAction.TRANSPORT_REPLACE, session.getSessionID());
-        jingleIQ.setTo(session.getAddress());
-        jingleIQ.setFrom(getOurJID());
-        jingleIQ.setInitiator(getOurJID());
-        jingleIQ.setType(IQ.Type.set);
-
-        for (ContentPacketExtension content : contents)
-        {
-            jingleIQ.addContent(content);
-        }
-
-        return jingleIQ;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean replaceTransport(
         JingleIQ jingleIQ,
         JingleSession session)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
 
@@ -379,7 +341,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().sendStanza(addSourceIq);
+        getConnection().tryToSendStanza(addSourceIq);
     }
 
     /**
@@ -482,7 +444,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().sendStanza(removeSourceIq);
+        getConnection().tryToSendStanza(removeSourceIq);
     }
 
     /**
@@ -536,7 +498,7 @@ public abstract class AbstractOperationSetJingle
                     reason,
                     message);
 
-            getConnection().sendStanza(terminate);
+            getConnection().tryToSendStanza(terminate);
         }
 
         sessions.remove(session.getSessionID());

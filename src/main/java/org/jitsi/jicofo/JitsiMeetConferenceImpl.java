@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -100,21 +101,18 @@ public class JitsiMeetConferenceImpl
     private final JitsiMeetConfig config;
 
     /**
-     * XMPP protocol provider handler used by the focus.
+     * The XMPP provider for the connection to clients (endpoints). It is currently also used to communicate with
+     * jibri and jigasi, but that may change.
      */
     @NotNull
-    private final ProtocolProviderHandler protocolProviderHandler;
+    private final XmppProvider clientXmppProvider;
 
     /**
-     * XMPP protocol provider used for the JVB connection. Unless configured
-     * with properties defined in {@link BridgeMucDetector} it wil be the same
-     * as {@link #protocolProviderHandler}
+     * The XMPP provider for the service connection (currently used only for bridges, but may later be used for
+     * jigasi and jibri as well). This may be the same instance as {@link #clientXmppProvider}.
      */
     @NotNull
-    private final ProtocolProviderHandler jvbXmppConnection;
-
-    /** Jibri operation set to (un)register recorders. */
-    private OperationSetJibri jibriOpSet;
+    private final XmppProvider serviceXmppProvider;
 
     /**
      * Conference room chat instance.
@@ -244,8 +242,8 @@ public class JitsiMeetConferenceImpl
      */
     public JitsiMeetConferenceImpl(
             EntityBareJid roomName,
-            @NotNull ProtocolProviderHandler protocolProviderHandler,
-            @NotNull ProtocolProviderHandler jvbXmppConnection,
+            @NotNull XmppProvider clientXmppProvider,
+            @NotNull XmppProvider serviceXmppProvider,
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
@@ -255,8 +253,8 @@ public class JitsiMeetConferenceImpl
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.getResourceOrEmpty().toString());
 
-        this.protocolProviderHandler = protocolProviderHandler;
-        this.jvbXmppConnection = jvbXmppConnection;
+        this.clientXmppProvider = clientXmppProvider;
+        this.serviceXmppProvider = serviceXmppProvider;
         this.config = config;
 
         this.gid = gid;
@@ -274,15 +272,14 @@ public class JitsiMeetConferenceImpl
 
     public JitsiMeetConferenceImpl(
             EntityBareJid roomName,
-            @NotNull ProtocolProviderHandler protocolProviderHandler,
-            @NotNull ProtocolProviderHandler jvbXmppConnection,
+            @NotNull XmppProvider clientXmppProvider,
+            @NotNull XmppProvider serviceXmppProvider,
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
             long gid)
     {
-       this(roomName, protocolProviderHandler, jvbXmppConnection,
-            listener, config, logLevel, gid, false);
+       this(roomName, clientXmppProvider, serviceXmppProvider, listener, config, logLevel, gid, false);
     }
 
     /**
@@ -304,7 +301,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            jingle = protocolProviderHandler.getProtocolProvider().getJingleApi();
+            jingle = clientXmppProvider.getJingleApi();
 
             // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
             // be used for clients that signal support (see Participant.hasLipSyncSupport).
@@ -313,44 +310,42 @@ public class JitsiMeetConferenceImpl
                 jingle = new LipSyncHack(this, jingle, logger);
             }
 
-            jibriOpSet = protocolProviderHandler.getProtocolProvider().getJibriApi();
-
             BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
-            if (protocolProviderHandler.isRegistered())
+            if (clientXmppProvider.isRegistered())
             {
                 joinTheRoom();
             }
 
-            protocolProviderHandler.addRegistrationListener(this);
+            clientXmppProvider.addRegistrationListener(this);
 
             JibriDetector jibriDetector = jicofoServices.getJibriDetector();
-            if (jibriDetector != null && jibriOpSet != null)
+            if (jibriDetector != null)
             {
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            getXmppConnection(),
+                            clientXmppProvider.getXmppConnection(),
                             executor,
                             jibriDetector,
                             logger);
 
-                jibriOpSet.addJibri(jibriRecorder);
+                clientXmppProvider.addJibriIqHandler(jibriRecorder);
             }
 
             JibriDetector sipJibriDetector = jicofoServices.getSipJibriDetector();
-            if (sipJibriDetector != null && jibriOpSet != null)
+            if (sipJibriDetector != null)
             {
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            getXmppConnection(),
+                            clientXmppProvider.getXmppConnection(),
                             executor,
                             sipJibriDetector,
                             logger);
 
-                jibriOpSet.addJibri(jibriSipGateway);
+                clientXmppProvider.addJibriIqHandler(jibriSipGateway);
             }
         }
         catch (Exception e)
@@ -389,7 +384,7 @@ public class JitsiMeetConferenceImpl
             {
                 logger.error("jibriSipGateway.dispose error", e);
             }
-            jibriOpSet.removeJibri(jibriSipGateway);
+            clientXmppProvider.removeJibriIqHandler(jibriSipGateway);
             jibriSipGateway = null;
         }
 
@@ -403,11 +398,11 @@ public class JitsiMeetConferenceImpl
             {
                 logger.error("jibriRecorder.dispose error", e);
             }
-            jibriOpSet.removeJibri(jibriRecorder);
+            clientXmppProvider.removeJibriIqHandler(jibriRecorder);
             jibriRecorder = null;
         }
 
-        protocolProviderHandler.removeRegistrationListener(this);
+        clientXmppProvider.removeRegistrationListener(this);
 
         BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         bridgeSelector.removeHandler(bridgeSelectorEventHandler);
@@ -467,14 +462,14 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        chatRoom = protocolProviderHandler.getProtocolProvider().findOrCreateRoom(roomName.toString());
+        chatRoom = clientXmppProvider.findOrCreateRoom(roomName);
         chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
         rolesAndPresence.init();
 
         transcriberManager = new TranscriberManager(
-            protocolProviderHandler,
+            clientXmppProvider,
             this,
             jicofoServices.getJigasiDetector(),
             logger);
@@ -622,9 +617,7 @@ public class JitsiMeetConferenceImpl
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        XmppProvider jvbXmppProvider = jvbXmppConnection.getProtocolProvider();
-        Objects.requireNonNull(jvbXmppProvider);
-        XmppConnection xmppConnection = jvbXmppProvider.getXmppConnection();
+        ExtendedXmppConnection xmppConnection = serviceXmppProvider.getXmppConnection();
         Objects.requireNonNull(xmppConnection);
 
         ColibriConferenceImpl colibriConference = new ColibriConferenceImpl(xmppConnection);
@@ -2054,20 +2047,9 @@ public class JitsiMeetConferenceImpl
         return roomName;
     }
 
-    /**
-     * @return {@link XmppConnection} instance for this conference.
-     */
-    XmppConnection getXmppConnection()
+    public XmppProvider getClientXmppProvider()
     {
-        return protocolProviderHandler.getProtocolProvider().getXmppConnection();
-    }
-
-    /**
-     * Returns XMPP protocol provider of the focus account.
-     */
-    public XmppProvider getXmppProvider()
-    {
-        return protocolProviderHandler.getProtocolProvider();
+        return clientXmppProvider;
     }
 
     public ChatRoomMember findMember(Jid from)
@@ -2610,7 +2592,7 @@ public class JitsiMeetConferenceImpl
         private void dispose()
         {
             // We will not expire channels if the bridge is faulty or when our connection is down.
-            if (!hasFailed && protocolProviderHandler.isRegistered())
+            if (!hasFailed && clientXmppProvider.isRegistered())
             {
                 colibriConference.expireConference();
             }

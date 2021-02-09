@@ -342,11 +342,10 @@ public class Participant
      * @see DiscoveryUtil for the list of predefined feature constants.
      * @param supportedFeatures the list of features to set.
      */
-    public void setSupportedFeatures(List<String> supportedFeatures)
+    public void setSupportedFeatures(@NotNull List<String> supportedFeatures)
         throws UnsupportedFeatureConfigurationException
     {
-        this.supportedFeatures
-            = Objects.requireNonNull(supportedFeatures, "supportedFeatures");
+        this.supportedFeatures = supportedFeatures;
         if (!hasBundleSupport()) {
             throw new UnsupportedFeatureConfigurationException("Participant doesn't support bundle, which is required");
         }

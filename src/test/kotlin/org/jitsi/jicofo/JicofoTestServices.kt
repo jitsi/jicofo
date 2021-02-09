@@ -17,17 +17,22 @@
  */
 package org.jitsi.jicofo
 
-import mock.MockProtocolProvider
+import mock.MockXmppProvider
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.utils.logging2.Logger
+import java.util.concurrent.ScheduledExecutorService
 
 class JicofoTestServices : JicofoServices() {
     override fun createXmppProviderFactory(): XmppProviderFactory {
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig, parrentLogger: Logger): XmppProvider {
-                return MockProtocolProvider(config)
+            override fun createXmppProvider(
+                config: XmppConnectionConfig,
+                executor: ScheduledExecutorService,
+                parrentLogger: Logger
+            ): XmppProvider {
+                return MockXmppProvider(config)
             }
         }
     }

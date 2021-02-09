@@ -19,11 +19,10 @@ package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -53,12 +52,9 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * The MUC JID of the room which this detector will join.
      */
-    private final Jid breweryJid;
+    private final EntityBareJid breweryJid;
 
-    /**
-     * The <tt>ProtocolProviderHandler</tt> for Jicofo's XMPP connection.
-     */
-    private final ProtocolProviderHandler protocolProvider;
+    private final XmppProvider xmppProvider;
 
     /**
      * The <tt>ChatRoom</tt> instance for the brewery.
@@ -82,8 +78,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
     /**
      * Creates new instance of <tt>BaseBrewery</tt>
-     * @param protocolProvider the {@link ProtocolProviderHandler} instance
-     * to which this detector will attach.
      * @param breweryJid the MUC JID of the room which this detector will join,
      * e.g. {@code roomName@muc-servicename.jabserver.com}.
      * @param presenceExtensionElementName the element name of the extension
@@ -92,14 +86,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * which this brewery will look for.
      */
     public BaseBrewery(
-        @NotNull ProtocolProviderHandler protocolProvider,
-        @NotNull Jid breweryJid,
+        @NotNull XmppProvider xmppProvider,
+        @NotNull EntityBareJid breweryJid,
         String presenceExtensionElementName,
         String presenceExtensionNamespace,
         Logger parentLogger)
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
-        this.protocolProvider = protocolProvider;
+        this.xmppProvider = xmppProvider;
         this.breweryJid = breweryJid;
         logger.addContext("brewery", breweryJid.getLocalpartOrThrow().toString());
         this.extensionElementName = presenceExtensionElementName;
@@ -122,7 +116,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public void init()
     {
-        protocolProvider.addRegistrationListener(this);
+        xmppProvider.addRegistrationListener(this);
 
         maybeStart();
     }
@@ -132,7 +126,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     private void maybeStart()
     {
-        if (chatRoom == null && protocolProvider.getProtocolProvider().isRegistered())
+        if (chatRoom == null && xmppProvider.isRegistered())
         {
             start();
         }
@@ -143,7 +137,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public void dispose()
     {
-        protocolProvider.removeRegistrationListener(this);
+        xmppProvider.removeRegistrationListener(this);
 
         stop();
     }
@@ -171,13 +165,13 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         try
         {
-            chatRoom = protocolProvider.getProtocolProvider().createRoom(breweryJid.toString());
+            chatRoom = xmppProvider.createRoom(breweryJid);
             chatRoom.addMemberPresenceListener(this);
             chatRoom.join();
 
             logger.info("Joined the room.");
         }
-        catch (OperationFailedException | XmppStringprepException | XmppProvider.RoomExistsException e)
+        catch (InterruptedException | SmackException | XMPPException | XmppProvider.RoomExistsException e)
         {
             logger.error("Failed to create room.", e);
 

@@ -21,12 +21,16 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.muc.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
+import java.lang.*;
+import java.lang.String;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -47,7 +51,7 @@ public class MockMultiUserChat
 
     private final EntityBareJid roomName;
 
-    private final XmppProvider protocolProvider;
+    private final XmppProvider xmppProvider;
 
     private volatile boolean isJoined;
 
@@ -66,12 +70,10 @@ public class MockMultiUserChat
     // The nickname to join with
     private final String myNickname;
 
-    public MockMultiUserChat(EntityBareJid roomName,
-                             XmppProvider protocolProviderService,
-                             String myNickname)
+    public MockMultiUserChat(EntityBareJid roomName, XmppProvider xmppProvider, String myNickname)
     {
         this.roomName = roomName;
-        this.protocolProvider = protocolProviderService;
+        this.xmppProvider = xmppProvider;
         this.myNickname = myNickname;
     }
 
@@ -126,7 +128,7 @@ public class MockMultiUserChat
 
     @Override
     public void join()
-        throws OperationFailedException
+            throws SmackException
     {
         joinAs(myNickname);
     }
@@ -138,10 +140,10 @@ public class MockMultiUserChat
     }
 
     private void joinAs(String nickname)
-        throws OperationFailedException
+            throws SmackException
     {
         if (isJoined)
-            throw new OperationFailedException("Already joined the room", 0);
+            throw new MultiUserChatException.MucAlreadyJoinedException();
 
         isJoined = true;
 
@@ -152,10 +154,7 @@ public class MockMultiUserChat
         }
         catch (XmppStringprepException e)
         {
-            throw new OperationFailedException(
-                    "Invalid mock room member JID",
-                    OperationFailedException.ILLEGAL_ARGUMENT,
-                    e);
+            throw new RuntimeException("Invalid mock room member JID", e);
         }
 
         // FIXME: for mock purposes we are always the owner on join()
@@ -391,7 +390,7 @@ public class MockMultiUserChat
     @Override
     public String toString()
     {
-        return "MockMUC@" + hashCode() + "["+ this.roomName + ", " + protocolProvider + "]";
+        return "MockMUC@" + hashCode() + "["+ this.roomName + ", " + xmppProvider + "]";
     }
 
     @Override

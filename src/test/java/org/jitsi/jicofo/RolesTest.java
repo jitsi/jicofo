@@ -58,9 +58,9 @@ public class RolesTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConference = TestConference.allocate(serverName, roomName);
-        MockProtocolProvider pps = testConference.getFocusProtocolProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName.toString());
+        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        MockXmppProvider pps = testConference.getXmppProvider();
+        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
         // Join with all users
         MockParticipant[] users = new MockParticipant[4];

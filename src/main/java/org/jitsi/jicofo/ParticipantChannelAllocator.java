@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -28,6 +29,7 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -74,10 +76,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
     protected List<ContentPacketExtension> createOffer()
         throws UnsupportedFeatureConfigurationException
     {
-        EntityFullJid address = participant.getMucJid();
-
         // Feature discovery
-        List<String> features = DiscoveryUtil.discoverParticipantFeatures(meetConference.getXmppProvider(), address);
+        List<String> features = meetConference.getClientXmppProvider().discoverFeatures(participant.getMucJid());
         participant.setSupportedFeatures(features);
 
         JitsiMeetConfig config = meetConference.getConfig();
@@ -109,7 +109,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      */
     @Override
     protected void invite(List<ContentPacketExtension> offer)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         /*
            This check makes sure that when we're trying to invite
@@ -179,12 +179,12 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * @param address the destination JID.
      * @param contents the list of contents to include.
      * @return {@code false} on failure.
-     * @throws OperationFailedException if we are unable to send a packet
-     * because the XMPP connection is broken.
+     * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
+     * connected.
      */
     private boolean doInviteOrReinvite(
         Jid address, List<ContentPacketExtension> contents)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
         OperationSetJingle jingle = meetConference.getJingle();
         JingleSession jingleSession = participant.getJingleSession();
@@ -195,11 +195,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         if (initiateSession)
         {
             // will throw OperationFailedExc if XMPP connection is broken
-            jingleIQ = jingle.createSessionInitiate(address, contents);
+            jingleIQ = JingleUtilsKt.createSessionInitiate(jingle.getOurJID(), address, contents);
         }
         else
         {
-            jingleIQ = jingle.createTransportReplace(jingleSession, contents);
+            jingleIQ = JingleUtilsKt.createTransportReplace(jingle.getOurJID(), jingleSession, contents);
         }
 
         JicofoJingleUtils.addBundleExtensions(jingleIQ);

@@ -17,47 +17,29 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-
-import org.jxmpp.jid.*;
 
 /**
  * Implementation of {@link OperationSetJingleImpl} for
- * {@link XmppProtocolProvider}.
+ * {@link XmppProviderImpl}.
  *
  * @author Pawel Domas
  */
 public class OperationSetJingleImpl
     extends AbstractOperationSetJingle
 {
-    /**
-     * Parent {@link XmppProtocolProvider}.
-     */
-    private final XmppProtocolProvider xmppProvider;
+    private final XmppProviderImpl xmppProvider;
 
-    /**
-     * Creates new instance of <tt>OperationSetJingleImpl</tt>.
-     *
-     * @param xmppProvider parent XMPP protocol provider
-     */
-    OperationSetJingleImpl(XmppProtocolProvider xmppProvider)
+    OperationSetJingleImpl(XmppProviderImpl xmppProvider)
     {
         this.xmppProvider = xmppProvider;
     }
 
     /**
-     * Returns our XMPP address that will be used as 'from' attribute
-     * in Jingle QIs.
-     */
-    protected EntityFullJid getOurJID()
-    {
-        return xmppProvider.getOurJid();
-    }
-
-    /**
      * {@inheritDoc}
      */
-    protected XmppConnection getConnection()
+    protected ExtendedXmppConnection getConnection()
     {
         return xmppProvider.getXmppConnection();
     }

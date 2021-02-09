@@ -18,7 +18,7 @@
 package mock.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -31,13 +31,13 @@ import java.util.*;
 
 import static org.jivesoftware.smack.SmackException.*;
 
-public class MockXmppConnection
+public class MockExtendedXmppConnection
     extends AbstractXMPPConnection
-    implements XmppConnection
+    implements ExtendedXmppConnection
 {
-    private final static Logger logger = new LoggerImpl(MockXmppConnection.class.getName());
+    private final static Logger logger = new LoggerImpl(MockExtendedXmppConnection.class.getName());
 
-    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<Jid, MockExtendedXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
 
     private static class MockXmppConnectionConfiguration
             extends ConnectionConfiguration
@@ -79,7 +79,7 @@ public class MockXmppConnection
     }
 
     @SuppressWarnings("deprecation")
-    public MockXmppConnection(final Jid ourJid)
+    public MockExtendedXmppConnection(final Jid ourJid)
     {
         super(new MockXmppConnectionConfiguration.Builder()
                 .setXmppDomain("example.com")
@@ -105,6 +105,12 @@ public class MockXmppConnection
         {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public AbstractXMPPConnection getSmackXMPPConnection()
+    {
+        return this;
     }
 
     @Override
@@ -138,7 +144,7 @@ public class MockXmppConnection
     protected void sendStanzaInternal(final Stanza packet)
     {
         packet.setFrom(user);
-        final MockXmppConnection target = sharedStanzaQueue.get(packet.getTo());
+        final MockExtendedXmppConnection target = sharedStanzaQueue.get(packet.getTo());
         if (target == null)
         {
             System.out.println("Connection for " + packet.getTo() + " not found!");
@@ -163,7 +169,7 @@ public class MockXmppConnection
     }
 
     @Override
-    public void sendStanza(Stanza packet)
+    public void tryToSendStanza(Stanza packet)
     {
         try
         {
@@ -183,40 +189,27 @@ public class MockXmppConnection
 
     @Override
     public IQ sendPacketAndGetReply(IQ packet)
-            throws OperationFailedException
+            throws SmackException.NotConnectedException
     {
         Objects.requireNonNull(packet, "packet");
 
+        packet.setFrom(user);
+
         try
         {
-            packet.setFrom(user);
-            StanzaCollector packetCollector
-                    = createStanzaCollectorAndSend(packet);
+            StanzaCollector packetCollector = createStanzaCollectorAndSend(packet);
             try
             {
                 //FIXME: retry allocation on timeout
                 return packetCollector.nextResult();
-            }
-            finally
+            } finally
             {
                 packetCollector.cancel();
             }
         }
-        catch (InterruptedException
-               /* |XMPPException.XMPPErrorException
-                | NoResponseException*/ e)
+        catch (InterruptedException e)
         {
-            throw new OperationFailedException(
-                    "No response or failed otherwise: " + packet.toXML(),
-                    OperationFailedException.GENERAL_ERROR,
-                    e);
-        }
-        catch (NotConnectedException e)
-        {
-            throw new OperationFailedException(
-                    "No connection - unable to send packet: " + packet.toXML(),
-                    OperationFailedException.PROVIDER_NOT_REGISTERED,
-                    e);
+            throw new RuntimeException("Interrupted", e);
         }
     }
 

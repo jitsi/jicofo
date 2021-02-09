@@ -60,9 +60,9 @@ public class ConnectionMockTest
     public void testXmpConnectionIqGet()
             throws InterruptedException, XmppStringprepException
     {
-        peerA.getConnection().sendStanza(getIq("B"));
-        peerA.getConnection().sendStanza(getIq("C"));
-        peerB.getConnection().sendStanza(getIq("A"));
+        peerA.getConnection().tryToSendStanza(getIq("B"));
+        peerA.getConnection().tryToSendStanza(getIq("C"));
+        peerB.getConnection().tryToSendStanza(getIq("A"));
 
         Thread.sleep(500);
 

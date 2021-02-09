@@ -25,8 +25,8 @@ import org.jitsi.xmpp.extensions.rayo.*;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
@@ -55,7 +55,7 @@ public class IqHandler
     private final FocusManager focusManager;
 
     /** The currently used XMPP connection. */
-    private XmppConnection connection;
+    private ExtendedXmppConnection connection;
 
     private final MuteIqHandler muteIqHandler = new MuteIqHandler();
     private final DialIqHandler dialIqHandler = new DialIqHandler();
@@ -83,7 +83,7 @@ public class IqHandler
     /**
      * Initializes this instance and bind packet listeners.
      */
-    public void init(XmppConnection connection)
+    public void init(ExtendedXmppConnection connection)
     {
         this.connection = connection;
 
@@ -192,7 +192,7 @@ public class IqHandler
 
                 muteStatusUpdate.setMute(doMute);
 
-                connection.sendStanza(muteStatusUpdate);
+                connection.tryToSendStanza(muteStatusUpdate);
             }
         }
         else
@@ -296,7 +296,7 @@ public class IqHandler
             reply.setStanzaId(dialIq.getStanzaId());
             return reply;
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed to send DialIq - XMPP disconnected", e);
             return IQ.createErrorResponse(

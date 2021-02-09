@@ -22,6 +22,7 @@ import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
 import javax.validation.constraints.*;
@@ -151,7 +152,6 @@ public abstract class AbstractChannelAllocator implements Runnable
     }
 
     private void doRun()
-        throws OperationFailedException
     {
         List<ContentPacketExtension> offer;
 
@@ -199,7 +199,7 @@ public abstract class AbstractChannelAllocator implements Runnable
         {
             invite(offer);
         }
-        catch (OperationFailedException e)
+        catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed to invite participant: ", e);
         }
@@ -211,7 +211,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * (or re-invite) him to the conference.
      */
     protected void invite(List<ContentPacketExtension> offer)
-        throws OperationFailedException
+        throws SmackException.NotConnectedException
     {
     }
 

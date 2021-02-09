@@ -19,49 +19,33 @@ package mock.xmpp;
 
 import mock.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
  * Implementation of {@link MockOperationSetJingle} for
- * {@link XmppProtocolProvider}.
+ * {@link XmppProviderImpl}.
  *
  * @author Pawel Domas
  */
 public class MockOperationSetJingle
     extends AbstractOperationSetJingle
 {
-    /**
-     * Parent {@link XmppProtocolProvider}.
-     */
-    private final MockProtocolProvider xmppProvider;
+    private final MockXmppProvider xmppProvider;
 
-    /**
-     * Creates new instance of <tt>OperationSetJingleImpl</tt>.
-     *
-     * @param xmppProvider parent XMPP protocol provider
-     */
-    public MockOperationSetJingle(MockProtocolProvider xmppProvider)
+    public MockOperationSetJingle(MockXmppProvider xmppProvider)
     {
         Objects.requireNonNull(xmppProvider);
         this.xmppProvider = xmppProvider;
     }
 
     /**
-     * Returns our XMPP address that will be used as 'from' attribute
-     * in Jingle QIs.
-     */
-    protected EntityFullJid getOurJID()
-    {
-        return getConnection().getUser();
-    }
-
-    /**
      * {@inheritDoc}
      */
-    protected XmppConnection getConnection()
+    @Override
+    protected ExtendedXmppConnection getConnection()
     {
         return xmppProvider.getXmppConnection();
     }

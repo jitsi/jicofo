@@ -21,10 +21,10 @@ import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -155,9 +155,9 @@ public class JibriSession
     private final String applicationData;
 
     /**
-     * {@link XmppConnection} instance used to send/listen for XMPP packets.
+     * {@link ExtendedXmppConnection} instance used to send/listen for XMPP packets.
      */
-    private final XmppConnection xmpp;
+    private final ExtendedXmppConnection xmpp;
 
     /**
      * The maximum amount of retries we'll attempt
@@ -210,7 +210,7 @@ public class JibriSession
             Jid initiator,
             long pendingTimeout,
             int maxNumRetries,
-            XmppConnection connection,
+            ExtendedXmppConnection connection,
             ScheduledExecutorService scheduledExecutor,
             JibriDetector jibriDetector,
             boolean isSIP,
@@ -491,11 +491,9 @@ public class JibriSession
     /**
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
-     * @throws OperationFailedException if XMPP connection failed
-     * @throws StartException if something went wrong
      */
     private void sendJibriStartIq(final Jid jibriJid)
-        throws OperationFailedException,
+        throws SmackException.NotConnectedException,
                StartException
     {
         // Store Jibri JID to make the packet filter accept the response

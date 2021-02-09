@@ -21,8 +21,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
-import org.jitsi.impl.protocol.xmpp.XmppProtocolProvider
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
 import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -76,8 +76,12 @@ open class JicofoServices {
         // Init smack shit
         initializeSmack()
         return object : XmppProviderFactory {
-            override fun createXmppProvider(config: XmppConnectionConfig, parentLogger: Logger): XmppProvider {
-                return XmppProtocolProvider(config, parentLogger)
+            override fun createXmppProvider(
+                config: XmppConnectionConfig,
+                executor: ScheduledExecutorService,
+                parentLogger: Logger
+            ): XmppProvider {
+                return XmppProviderImpl(config, executor, parentLogger)
             }
         }
     }
@@ -117,7 +121,7 @@ open class JicofoServices {
     }
     val sipJibriDetector = JibriConfig.config.sipBreweryJid?.let { breweryJid ->
         JibriDetector(xmppServices.clientConnection, breweryJid, true).apply { init() }
-    }  ?: run {
+    } ?: run {
         logger.info("No SIP Jibri detector configured.")
         null
     }

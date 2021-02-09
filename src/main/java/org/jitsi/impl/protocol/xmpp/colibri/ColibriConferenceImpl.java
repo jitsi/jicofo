@@ -17,8 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -26,6 +25,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
@@ -53,7 +53,7 @@ public class ColibriConferenceImpl
     /**
      * The instance of XMPP connection.
      */
-    private final XmppConnection connection;
+    private final ExtendedXmppConnection connection;
 
     /**
      * XMPP address of videobridge component.
@@ -120,7 +120,7 @@ public class ColibriConferenceImpl
      * @param connection XMPP connection object that wil be used by the new
      *        instance to communicate.
      */
-    public ColibriConferenceImpl(XmppConnection connection)
+    public ColibriConferenceImpl(ExtendedXmppConnection connection)
     {
         this.connection = Objects.requireNonNull(connection, "connection");
     }
@@ -415,7 +415,7 @@ public class ColibriConferenceImpl
      *         the request timed out.
      *
      * @throws ColibriException If sending the packet fails (see
-     * {@link XmppConnection#sendPacketAndGetReply(IQ)}).
+     * {@link ExtendedXmppConnection#sendPacketAndGetReply(IQ)}).
      */
     protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)
@@ -429,9 +429,9 @@ public class ColibriConferenceImpl
             stats.allocateChannelsRequestTook(end - start);
             return reply;
         }
-        catch (OperationFailedException ofe)
+        catch (SmackException.NotConnectedException e)
         {
-            throw new ColibriException(ofe.getMessage());
+            throw new ColibriException(e.getMessage());
         }
     }
 
@@ -494,7 +494,7 @@ public class ColibriConferenceImpl
             logStanza("Expire peer channels", request);
 
             // Send and forget
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
@@ -551,7 +551,7 @@ public class ColibriConferenceImpl
         {
             logStanza("Sending source update: ", request);
 
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
@@ -586,7 +586,7 @@ public class ColibriConferenceImpl
         {
             logStanza("Sending bundle transport info update: ", request);
 
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
@@ -624,7 +624,7 @@ public class ColibriConferenceImpl
                 {
                     logStanza("Expire conference: ", request);
 
-                    connection.sendStanza(request);
+                    connection.tryToSendStanza(request);
                 }
             }
 
@@ -690,7 +690,7 @@ public class ColibriConferenceImpl
 
         request.addContent(requestContent);
 
-        connection.sendStanza(request);
+        connection.tryToSendStanza(request);
 
         // FIXME wait for response and set local status
 
@@ -792,7 +792,7 @@ public class ColibriConferenceImpl
         {
             logStanza("Sending channel info update: ", request);
 
-            connection.sendStanza(request);
+            connection.tryToSendStanza(request);
         }
     }
 
