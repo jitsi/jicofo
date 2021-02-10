@@ -22,7 +22,7 @@
     <slf4j.version>1.7.26</slf4j.version>
     <apache-http.version>4.4.1</apache-http.version>
     <jersey.version>2.32</jersey.version>
-    <jicoco.version>1.1-77-g10b7019</jicoco.version>
+    <jicoco.version>1.1-79-g6099be5</jicoco.version>
     <jitsi.utils.version>1.0-77-g66f8733</jitsi.utils.version>
     <spotbugs.version>4.2.0</spotbugs.version>
   </properties>
