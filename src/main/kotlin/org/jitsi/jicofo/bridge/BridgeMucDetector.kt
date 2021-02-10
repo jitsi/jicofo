@@ -42,7 +42,7 @@ class BridgeMucDetector(
     breweryJid,
     ColibriStatsExtension.ELEMENT_NAME,
     ColibriStatsExtension.NAMESPACE,
-    LoggerImpl("BridgeMucDetector").apply { addContext("type", "bridge") }
+    LoggerImpl(BridgeMucDetector::class.simpleName).apply { addContext("type", "bridge") }
 ) {
 
     override fun onInstanceStatusChanged(jid: Jid, stats: ColibriStatsExtension) {
