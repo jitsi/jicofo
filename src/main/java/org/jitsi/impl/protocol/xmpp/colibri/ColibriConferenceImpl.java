@@ -21,6 +21,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -649,23 +650,22 @@ public class ColibriConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute, @Nullable MediaType mediaType)
+    public boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute, MediaType mediaType)
     {
         if (checkIfDisposed("muteParticipant"))
         {
             return false;
         }
-        MediaType muteMediaType = Optional.ofNullable(mediaType).orElse(MediaType.AUDIO);
 
         ColibriConferenceIQ request = new ColibriConferenceIQ();
         request.setID(conferenceState.getID());
         request.setName(conferenceState.getName());
 
-        ColibriConferenceIQ.Content content = channelsInfo.getContent((muteMediaType == MediaType.VIDEO) ? "video" : "audio");
+        ColibriConferenceIQ.Content content = channelsInfo.getContent(mediaType.toString());
 
         if (content == null || isBlank(request.getID()))
         {
-            logger.error("Failed to mute - no " + muteMediaType.toString() + " content." +
+            logger.error("Failed to mute - no " + mediaType.toString() + " content." +
                              " Conf ID: " + request.getID());
             return false;
         }

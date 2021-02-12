@@ -2086,9 +2086,8 @@ public class JitsiMeetConferenceImpl
      * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
      * @return <tt>true</tt> if status has been set successfully.
      */
-    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute, @Nullable MediaType mediaType)
+    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        MediaType muteMediaType = Optional.ofNullable(mediaType).orElse(MediaType.AUDIO);
         Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
@@ -2139,7 +2138,7 @@ public class JitsiMeetConferenceImpl
         boolean succeeded
             = bridgeSession != null
                     && participantChannels != null
-                    && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, muteMediaType);
+                    && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType);
 
         if (succeeded)
         {
