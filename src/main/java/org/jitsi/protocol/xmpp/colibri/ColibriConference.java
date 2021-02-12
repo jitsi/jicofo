@@ -256,11 +256,12 @@ public interface ColibriConference
      * direction to {@code sendonly}.
      * @param channelsInfo the IQ that describes the channels to be muted.
      * @param mute <tt>true</tt> to mute or <tt>false</tt> to unmute audio
+     * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
      * channels described in <tt>channelsInfo</tt>.
      * @return <tt>true</tt> if the operation has succeeded or <tt>false</tt>
      * otherwise.
      */
-    boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute);
+    boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute, @Nullable MediaType mediaType);
 
     /**
      * Disposes of any resources allocated by this instance. Once disposed this

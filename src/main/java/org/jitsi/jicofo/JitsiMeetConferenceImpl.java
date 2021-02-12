@@ -2083,10 +2083,12 @@ public class JitsiMeetConferenceImpl
      * @param fromJid MUC jid of the participant that requested mute status change.
      * @param toBeMutedJid MUC jid of the participant whose mute status will be changed (eventually).
      * @param doMute the new audio mute status to set.
+     * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
      * @return <tt>true</tt> if status has been set successfully.
      */
-    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute)
+    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute, @Nullable MediaType mediaType)
     {
+        MediaType muteMediaType = Optional.ofNullable(mediaType).orElse(MediaType.AUDIO);
         Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
@@ -2137,7 +2139,7 @@ public class JitsiMeetConferenceImpl
         boolean succeeded
             = bridgeSession != null
                     && participantChannels != null
-                    && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute);
+                    && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, muteMediaType);
 
         if (succeeded)
         {
