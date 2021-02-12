@@ -263,7 +263,8 @@ public class IqHandler
         }
         else
         {
-            result = IQ.createErrorResponse(muteVideoIq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
+            result = IQ.createErrorResponse(
+                muteVideoIq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
         return result;
