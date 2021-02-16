@@ -78,6 +78,7 @@ public class IqHandler
         this.authenticationIqHandler = authenticationIqHandler;
 
         MuteIqProvider.registerMuteIqProvider();
+        MuteVideoIqProvider.registerMuteVideoIqProvider();
         new RayoIqProvider().registerRayoIQs();
         StartMutedProvider.registerStartMutedProvider();
     }
@@ -251,7 +252,7 @@ public class IqHandler
 
             if (!muteVideoIq.getFrom().equals(jid))
             {
-                MuteIq muteStatusUpdate = new MuteIq();
+                MuteVideoIq muteStatusUpdate = new MuteVideoIq();
                 muteStatusUpdate.setActor(from);
                 muteStatusUpdate.setType(IQ.Type.set);
                 muteStatusUpdate.setTo(jid);
