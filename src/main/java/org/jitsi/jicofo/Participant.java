@@ -103,6 +103,11 @@ public class Participant
     private boolean mutedStatus;
 
     /**
+     * Remembers participant's video muted status.
+     */
+    private boolean videoMutedStatus;
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
@@ -367,6 +372,25 @@ public class Participant
     public boolean isMuted()
     {
         return mutedStatus;
+    }
+
+    /**
+     * Sets video muted status of this participant.
+     * @param mutedStatus new muted status to set.
+     */
+    public void setVideoMuted(boolean mutedStatus)
+    {
+        this.videoMutedStatus = mutedStatus;
+    }
+
+    /**
+     * Return a <tt>Boolean</tt> which informs about this participant's video
+     * muted status. The <tt>null</tt> value stands for 'unknown'/not signalled,
+     * <tt>true</tt> for muted and <tt>false</tt> means unmuted.
+     */
+    public Boolean isVideoMuted()
+    {
+        return videoMutedStatus;
     }
 
     /**
