@@ -241,7 +241,7 @@ public class JitsiMeetConferenceImpl
      *        See {@link #logger} for more details.
      */
     public JitsiMeetConferenceImpl(
-            EntityBareJid roomName,
+            @NotNull EntityBareJid roomName,
             @NotNull XmppProvider clientXmppProvider,
             @NotNull XmppProvider serviceXmppProvider,
             ConferenceListener listener,
@@ -251,7 +251,7 @@ public class JitsiMeetConferenceImpl
             boolean includeInStatistics)
     {
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
-        logger.addContext("room", roomName.getResourceOrEmpty().toString());
+        logger.addContext("room", roomName.toString());
 
         this.clientXmppProvider = clientXmppProvider;
         this.serviceXmppProvider = serviceXmppProvider;
@@ -271,7 +271,7 @@ public class JitsiMeetConferenceImpl
     }
 
     public JitsiMeetConferenceImpl(
-            EntityBareJid roomName,
+            @NotNull EntityBareJid roomName,
             @NotNull XmppProvider clientXmppProvider,
             @NotNull XmppProvider serviceXmppProvider,
             ConferenceListener listener,

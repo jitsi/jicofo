@@ -271,7 +271,7 @@ public class FocusManager
      * @return new {@link JitsiMeetConferenceImpl} instance
      */
     private JitsiMeetConferenceImpl createConference(
-            EntityBareJid room, Map<String, String> properties,
+            @NotNull EntityBareJid room, Map<String, String> properties,
             Level logLevel, boolean includeInStatistics)
     {
         JitsiMeetConfig config = new JitsiMeetConfig(properties);
