@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge;
 
 import edu.umd.cs.findbugs.annotations.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
@@ -107,8 +108,12 @@ public class Bridge
      * working bridges go down and might eventually get elevated back to
      * {@code true}.
      */
-    private volatile boolean isOperational
-        = true /* we assume it is operational */;
+    private volatile boolean isOperational = true;
+
+    /**
+     * Start out with the configured value, update if the bridge reports a value.
+     */
+    private double averageParticipantStress = config.averageParticipantStress();
 
     /**
      * The time when this instance has failed.
@@ -143,20 +148,18 @@ public class Bridge
         }
         stats = this.stats;
 
-        double stressLevel;
-        String stressLevelStr = stats.getValueAsString("stress_level");
-        if (stressLevelStr != null)
+        Double stressLevel = UtilKt.getDouble(stats, "stress_level");
+        if (stressLevel != null)
         {
-            try
-            {
-                stressLevel = Double.parseDouble(stressLevelStr);
-                lastReportedStressLevel = stressLevel;
-                usePacketRateStatForStress = false;
-            }
-            catch (Exception ignored)
-            {
-            }
+            lastReportedStressLevel = stressLevel;
+            usePacketRateStatForStress = false;
         }
+        Double averageParticipantStress = UtilKt.getDouble(stats, "average_participant_stress");
+        if (averageParticipantStress != null)
+        {
+            this.averageParticipantStress = averageParticipantStress;
+        }
+
         Integer packetRateDown = null;
         Integer packetRateUp = null;
         try
@@ -316,8 +319,7 @@ public class Bridge
         }
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
-        return (lastReportedStressLevel +
-            Math.max(0, getRecentlyAddedEndpointCount()) * config.getAverageParticipantStress());
+        return (lastReportedStressLevel + Math.max(0, getRecentlyAddedEndpointCount()) * averageParticipantStress);
     }
 
     /**
@@ -334,13 +336,11 @@ public class Bridge
      */
     private double getStressFromPacketRate()
     {
-        double stress =
-            (lastReportedPacketRatePps
-                + Math.max(0, getRecentlyAddedEndpointCount()) * config.averageParticipantPacketRatePps())
-                / (double) config.maxBridgePacketRatePps();
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
-        return stress;
+        return (lastReportedPacketRatePps
+            + Math.max(0, getRecentlyAddedEndpointCount()) * config.averageParticipantPacketRatePps())
+            / (double) config.maxBridgePacketRatePps();
     }
 
     /**
