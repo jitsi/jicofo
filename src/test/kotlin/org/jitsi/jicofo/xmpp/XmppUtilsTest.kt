@@ -24,7 +24,7 @@ import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 class XmppUtilsTest : ShouldSpec() {
     init {
         context("ColibriStatsExtension test") {
-            with (ColibriStatsExtension()) {
+            with(ColibriStatsExtension()) {
                 addStat("int", 5)
                 addStat("double", 5.0)
                 addStat("valid-string", "5")

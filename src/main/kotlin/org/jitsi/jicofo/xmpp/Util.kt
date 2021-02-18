@@ -53,7 +53,7 @@ fun parseJidFromClientProxyJid(
 }
 
 fun ColibriStatsExtension.getDouble(name: String): Double? = try {
-        getValueAsString(name)?.toDouble()
-    } catch (e: Exception) {
-        null
-    }
+    getValueAsString(name)?.toDouble()
+} catch (e: Exception) {
+    null
+}
