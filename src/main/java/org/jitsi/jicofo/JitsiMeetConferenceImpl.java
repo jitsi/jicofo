@@ -493,12 +493,6 @@ public class JitsiMeetConferenceImpl
             Boolean.TRUE.toString(),
             false);
 
-        // Advertise the conference creation time in presence
-        setConferenceProperty(
-            ConferenceProperties.KEY_CREATED_MS,
-            Long.toString(System.currentTimeMillis()),
-            false);
-
         presenceExtensions.add(ConferenceProperties.clone(conferenceProperties));
 
         // updates presence with presenceExtensions and sends it
