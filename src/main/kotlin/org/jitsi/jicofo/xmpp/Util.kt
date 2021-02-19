@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
@@ -49,4 +50,10 @@ fun parseJidFromClientProxyJid(
         }
     }
     return jid
+}
+
+fun ColibriStatsExtension.getDouble(name: String): Double? = try {
+    getValueAsString(name)?.toDouble()
+} catch (e: Exception) {
+    null
 }
