@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp.colibri;
 
 import org.jitsi.protocol.xmpp.colibri.exception.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -252,16 +253,17 @@ public interface ColibriConference
     void expireConference();
 
     /**
-     * Mutes audio channels described in given IQ by changing their media
+     * Mutes audio  or video channels described in given IQ by changing their media
      * direction to {@code sendonly}.
      * @param channelsInfo the IQ that describes the channels to be muted.
-     * @param mute <tt>true</tt> to mute or <tt>false</tt> to unmute audio
-     * channels described in <tt>channelsInfo</tt>.
+     * @param mute <tt>true</tt> to mute or <tt>false</tt> to unmute channels 
+     * described in <tt>channelsInfo</tt>.
+     * @param mediaType optional mediaType of the channel to mute; defaults to audio.
      * @return <tt>true</tt> if the operation has succeeded or <tt>false</tt>
      * otherwise.
      */
-    boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute);
-
+    boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute, MediaType mediaType);
+    
     /**
      * Disposes of any resources allocated by this instance. Once disposed this
      * instance must not be used anymore.
