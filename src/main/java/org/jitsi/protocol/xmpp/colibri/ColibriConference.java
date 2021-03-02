@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol.xmpp.colibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -44,11 +45,7 @@ public interface ColibriConference
      */
     void setJitsiVideobridge(Jid videobridgeJid);
 
-    /**
-     * Returns XMPP address of currently used videobridge or <tt>null</tt>
-     * if the isn't any.
-     */
-    Jid getJitsiVideobridge();
+    void setMeetingId(@NotNull String meetingId);
 
     /**
      * Returns the identifier assigned for our conference by the videobridge.
