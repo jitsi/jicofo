@@ -262,21 +262,26 @@ public abstract class AbstractOperationSetJingle
                                 MediaSourceGroupMap ssrcGroupMap,
                                 JingleSession        session)
     {
-        JingleIQ addSourceIq
-            = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
+        boolean onlyInjected =
+                ssrcs.getSourcesForMedia("video").isEmpty() &&
+                        ssrcs.getSourcesForMedia("audio").stream().allMatch(SourcePacketExtension::isInjected);
+        if (onlyInjected)
+        {
+            logger.info("Suppressing source-remove for injected SSRC.");
+            return;
+        }
 
+        JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
         addSourceIq.setFrom(getOurJID());
         addSourceIq.setType(IQ.Type.set);
 
         for (String media : ssrcs.getMediaTypes())
         {
-            ContentPacketExtension content
-                = new ContentPacketExtension();
+            ContentPacketExtension content = new ContentPacketExtension();
 
             content.setName(media);
 
-            RtpDescriptionPacketExtension rtpDesc
-                = new RtpDescriptionPacketExtension();
+            RtpDescriptionPacketExtension rtpDesc = new RtpDescriptionPacketExtension();
 
             rtpDesc.setMedia(media);
 
@@ -365,10 +370,18 @@ public abstract class AbstractOperationSetJingle
     @Override
     public void sendRemoveSourceIQ(MediaSourceMap ssrcs,
                                    MediaSourceGroupMap ssrcGroupMap,
-                                   JingleSession        session)
+                                   JingleSession session)
     {
-        JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE,
-                session.getSessionID());
+        boolean onlyInjected =
+                ssrcs.getSourcesForMedia("video").isEmpty() &&
+                        ssrcs.getSourcesForMedia("audio").stream().allMatch(SourcePacketExtension::isInjected);
+        if (onlyInjected)
+        {
+            logger.info("Suppressing source-remove for injected SSRC.");
+            return;
+        }
+
+        JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE, session.getSessionID());
 
         removeSourceIq.setFrom(getOurJID());
         removeSourceIq.setType(IQ.Type.set);

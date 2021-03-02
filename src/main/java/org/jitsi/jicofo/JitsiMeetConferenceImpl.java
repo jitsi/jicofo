@@ -1671,6 +1671,7 @@ public class JitsiMeetConferenceImpl
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
             sourcePacketExtension.setSSRC(ssrc);
+            sourcePacketExtension.setInjected(true);
             sourcesAdvertised.addSource(MediaType.AUDIO.toString(), sourcePacketExtension);
         }
         MediaSourceMap sourcesAdded;
