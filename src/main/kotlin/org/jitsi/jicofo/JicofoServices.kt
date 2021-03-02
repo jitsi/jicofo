@@ -46,6 +46,7 @@ import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
+import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
 import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
@@ -247,6 +248,7 @@ open class JicofoServices {
         jigasiDetector?.let { put("jigasi_detector", it.stats) }
         putAll(ColibriConferenceImpl.stats.toJson())
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
+        put("jingle", AbstractOperationSetJingle.getStats())
     }
 
     companion object {

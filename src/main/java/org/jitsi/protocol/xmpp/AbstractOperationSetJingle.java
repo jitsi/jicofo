@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -26,6 +27,7 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
+import org.json.simple.*;
 import org.jxmpp.jid.Jid;
 
 import java.util.*;
@@ -46,6 +48,13 @@ public abstract class AbstractOperationSetJingle
      */
     private static final Logger logger = new LoggerImpl(AbstractOperationSetJingle.class.getName());
 
+    private static final JingleStats stats = new JingleStats();
+
+    public static JSONObject getStats()
+    {
+        return stats.toJson();
+    }
+
     /**
      * The list of active Jingle sessions.
      */
@@ -53,8 +62,7 @@ public abstract class AbstractOperationSetJingle
 
     protected AbstractOperationSetJingle()
     {
-        super(JingleIQ.ELEMENT_NAME, JingleIQ.NAMESPACE,
-              IQ.Type.set, Mode.sync);
+        super(JingleIQ.ELEMENT_NAME, JingleIQ.NAMESPACE, IQ.Type.set, Mode.sync);
     }
 
     @Override
@@ -108,9 +116,7 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean initiateSession(
-        JingleIQ inviteIQ,
-        JingleRequestHandler requestHandler)
+    public boolean initiateSession(JingleIQ inviteIQ, JingleRequestHandler requestHandler)
         throws SmackException.NotConnectedException
     {
         String sid = inviteIQ.getSID();
@@ -119,6 +125,7 @@ public abstract class AbstractOperationSetJingle
         sessions.put(sid, session);
 
         IQ reply = getConnection().sendPacketAndGetReply(inviteIQ);
+        stats.stanzaSent(inviteIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
         {
@@ -138,9 +145,7 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(
-        JingleIQ jingleIQ,
-        JingleSession session)
+    public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
         throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
@@ -154,6 +159,7 @@ public abstract class AbstractOperationSetJingle
         }
 
         IQ reply = getConnection().sendPacketAndGetReply(jingleIQ);
+        stats.stanzaSent(jingleIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
         {
@@ -185,6 +191,7 @@ public abstract class AbstractOperationSetJingle
             return IQ.createErrorResponse(
                 iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
+        stats.stanzaReceived(action);
 
         if (session == null)
         {
@@ -342,6 +349,7 @@ public abstract class AbstractOperationSetJingle
                 + ssrcs + " " + ssrcGroupMap);
 
         getConnection().tryToSendStanza(addSourceIq);
+        stats.stanzaSent(JingleAction.SOURCEADD);
     }
 
     /**
@@ -445,6 +453,7 @@ public abstract class AbstractOperationSetJingle
                 + ssrcs + " " + ssrcGroupMap);
 
         getConnection().tryToSendStanza(removeSourceIq);
+        stats.stanzaSent(JingleAction.SOURCEREMOVE);
     }
 
     /**
@@ -499,6 +508,7 @@ public abstract class AbstractOperationSetJingle
                     message);
 
             getConnection().tryToSendStanza(terminate);
+            stats.stanzaSent(JingleAction.SESSION_TERMINATE);
         }
 
         sessions.remove(session.getSessionID());
