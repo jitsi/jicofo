@@ -115,6 +115,12 @@ public class MockMultiUserChat
     }
 
     @Override
+    public String getMeetingId()
+    {
+        return null;
+    }
+
+    @Override
     public String getName()
     {
         return roomName.toString();

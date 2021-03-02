@@ -82,8 +82,7 @@ public class ChatRoomImpl
      * Constant used to return empty presence list from
      * {@link #getPresenceExtensions()} in case there's no presence available.
      */
-    private final static Collection<ExtensionElement>
-        EMPTY_PRESENCE_LIST = Collections.emptyList();
+    private final static Collection<ExtensionElement> EMPTY_PRESENCE_LIST = Collections.emptyList();
 
     /**
      * Parent MUC operation set.
@@ -160,6 +159,11 @@ public class ChatRoomImpl
     private JitsiMeetConference conference;
 
     /**
+     * The value of thee "meetingId" field from the MUC form, if present.
+     */
+    private String meetingId = null;
+
+    /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param roomJid the room JID (e.g. "room@service").
@@ -177,6 +181,11 @@ public class ChatRoomImpl
 
         muc.addParticipantStatusListener(memberListener);
         muc.addParticipantListener(this);
+    }
+
+    public String getMeetingId()
+    {
+        return meetingId;
     }
 
     @Override
@@ -248,15 +257,15 @@ public class ChatRoomImpl
 
         muc.createOrJoin(myResourcepart);
 
-        // Make the room non-anonymous, so that others can
-        // recognize focus JID
+        // Make the room non-anonymous, so that others can recognize focus JID
         Form config = muc.getConfigurationForm();
-        /*Iterator<FormField> fields = config.getFields();
-        while (fields.hasNext())
+        String meetingIdFieldName = "muc#roominfo_meetingId";
+        FormField meetingIdField = config.getField(meetingIdFieldName);
+        if (meetingIdField != null)
         {
-            FormField field = fields.next();
-            logger.info("FORM: " + field.toXML());
-        }*/
+            meetingId = meetingIdField.getValues().stream().findFirst().orElse(null);
+        }
+
         Form answer = config.createAnswerForm();
         // Room non-anonymous
         String whoisFieldName = "muc#roomconfig_whois";
@@ -268,31 +277,6 @@ public class ChatRoomImpl
         }
 
         whois.addValue("anyone");
-        // Room moderated
-        //FormField roomModerated
-        //    = new FormField("muc#roomconfig_moderatedroom");
-        //roomModerated.addValue("true");
-        //answer.addField(roomModerated);
-        // Only participants can send private messages
-        //FormField onlyParticipantsPm
-        //        = new FormField("muc#roomconfig_allowpm");
-        //onlyParticipantsPm.addValue("participants");
-        //answer.addField(onlyParticipantsPm);
-        // Presence broadcast
-        //FormField presenceBroadcast
-        //        = new FormField("muc#roomconfig_presencebroadcast");
-        //presenceBroadcast.addValue("participant");
-        //answer.addField(presenceBroadcast);
-        // Get member list
-        //FormField getMemberList
-        //        = new FormField("muc#roomconfig_getmemberlist");
-        //getMemberList.addValue("participant");
-        //answer.addField(getMemberList);
-        // Public logging
-        //FormField publicLogging
-        //        = new FormField("muc#roomconfig_enablelogging");
-        //publicLogging.addValue("false");
-        //answer.addField(publicLogging);
 
         muc.sendConfigurationForm(answer);
     }

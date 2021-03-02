@@ -76,7 +76,7 @@ public class JitsiMeetConferenceImpl
 
     /**
      * A "global" identifier of this {@link JitsiMeetConferenceImpl} (i.e.
-     * a unique ID accross a set of independent jicofo instances).
+     * a unique ID across a set of independent jicofo instances).
      */
     private final long gid;
 
@@ -625,6 +625,11 @@ public class JitsiMeetConferenceImpl
         colibriConference.setGID(Long.toHexString(gid));
 
         colibriConference.setName(chatRoom.getRoomJid());
+        String meetingId = chatRoom.getMeetingId();
+        if (meetingId != null)
+        {
+            colibriConference.setMeetingId(meetingId);
+        }
         colibriConference.setJitsiVideobridge(bridgeJid);
 
         return colibriConference;

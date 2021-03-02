@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
@@ -130,6 +131,7 @@ public class ColibriConferenceImpl
      * Sets the "global" ID of the conference.
      * @param gid the value to set.
      */
+    @Override
     public void setGID(String gid)
     {
         conferenceState.setGID(gid);
@@ -174,15 +176,6 @@ public class ColibriConferenceImpl
                 "Cannot change the bridge on active conference");
         }
         this.jitsiVideobridge = videobridgeJid;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Jid getJitsiVideobridge()
-    {
-        return this.jitsiVideobridge;
     }
 
     /**
@@ -439,6 +432,7 @@ public class ColibriConferenceImpl
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean hasJustAllocated()
     {
         synchronized (syncRoot)
@@ -702,15 +696,23 @@ public class ColibriConferenceImpl
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */
+    @Override
     public void setName(EntityBareJid name)
     {
         conferenceState.setName(name);
+    }
+
+    @Override
+    public void setMeetingId(@NotNull String meetingId)
+    {
+        conferenceState.setMeetingId(meetingId);
     }
 
     /**
      * Gets world readable name that identifies the conference.
      * @return the name.
      */
+    @Override
     public EntityBareJid getName()
     {
         return conferenceState.getName();
