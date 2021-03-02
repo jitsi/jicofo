@@ -267,7 +267,7 @@ public abstract class AbstractOperationSetJingle
                         ssrcs.getSourcesForMedia("audio").stream().allMatch(SourcePacketExtension::isInjected);
         if (onlyInjected)
         {
-            logger.info("Suppressing source-remove for injected SSRC.");
+            logger.debug("Suppressing source-add for injected SSRC.");
             return;
         }
 
@@ -377,7 +377,7 @@ public abstract class AbstractOperationSetJingle
                         ssrcs.getSourcesForMedia("audio").stream().allMatch(SourcePacketExtension::isInjected);
         if (onlyInjected)
         {
-            logger.info("Suppressing source-remove for injected SSRC.");
+            logger.debug("Suppressing source-remove for injected SSRC.");
             return;
         }
 
