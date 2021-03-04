@@ -145,6 +145,11 @@ public class XmppProviderImpl
         // Required for PacketDebugger and XMPP stats to work
         connConfig.setDebuggerEnabled(true);
 
+        if (!config.getUseTls())
+        {
+            connConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
+        }
+
         ReconnectionManager.setEnabledPerDefault(true);
 
         // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but tries
