@@ -29,7 +29,7 @@ case "$1" in
             db_input critical jitsi-videobridge/jvb-hostname || true
             db_go
         fi
-        JVB_HOSTNAME="$RET"
+        JVB_HOSTNAME=$(echo "$RET" | xargs echo -n)
 
         # generate config on new install
         if [ "$OLDCONFIG" = "false" ] || [ "$JVB_HOSTNAME" != "$JICOFO_HOSTNAME" ]; then
