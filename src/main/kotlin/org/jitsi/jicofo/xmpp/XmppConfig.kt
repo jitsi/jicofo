@@ -48,6 +48,7 @@ interface XmppConnectionConfig {
     val password: String?
     val replyTimeout: Duration
     val disableCertificateVerification: Boolean
+    val useTls: Boolean
     val name: String
 }
 
@@ -98,6 +99,10 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
     override val disableCertificateVerification: Boolean by config {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.service.disable-certificate-verification".from(newConfig)
+    }
+
+    override val useTls: Boolean by config {
+        "jicofo.xmpp.service.use-tls".from(newConfig)
     }
 
     override fun toString(): String = "XmppServiceConnectionConfig[hostname=$hostname, port=$port, username=$username]"
@@ -192,6 +197,10 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     override val disableCertificateVerification: Boolean by config {
         "org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED".from(legacyConfig)
         "jicofo.xmpp.client.disable-certificate-verification".from(newConfig)
+    }
+
+    override val useTls: Boolean by config {
+        "jicofo.xmpp.client.use-tls".from(newConfig)
     }
 
     val clientProxy: DomainBareJid? by optionalconfig {
