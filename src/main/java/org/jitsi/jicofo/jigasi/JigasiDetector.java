@@ -252,7 +252,7 @@ public class JigasiDetector
      */
     private static boolean isInGracefulShutdown(BrewInstance bi)
     {
-        return bi.status != null && Boolean.parseBoolean(bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
+        return Boolean.parseBoolean(bi.status.getValueAsString(SHUTDOWN_IN_PROGRESS));
     }
 
     /**
@@ -262,7 +262,7 @@ public class JigasiDetector
      */
     private static boolean supportTranscription(BrewInstance bi)
     {
-        return bi.status != null && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
+        return Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_TRANSCRIPTION));
     }
 
     /**
@@ -272,7 +272,7 @@ public class JigasiDetector
      */
     private static boolean supportSip(BrewInstance bi)
     {
-        return bi.status != null && Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_SIP));
+        return Boolean.parseBoolean(bi.status.getValueAsString(SUPPORTS_SIP));
     }
 
     /**
@@ -284,8 +284,7 @@ public class JigasiDetector
      */
     private static boolean isLegacyInstance(BrewInstance bi)
     {
-        return bi.status != null
-            && (bi.status.getValue(SUPPORTS_TRANSCRIPTION) == null
+        return (bi.status.getValue(SUPPORTS_TRANSCRIPTION) == null
             && bi.status.getValue(SUPPORTS_SIP) == null);
     }
 
@@ -297,7 +296,7 @@ public class JigasiDetector
      */
     private static boolean isInPreferredRegion(BrewInstance bi, Collection<String> preferredRegions)
     {
-        return bi.status != null && preferredRegions.contains(bi.status.getValueAsString(REGION));
+        return preferredRegions.contains(bi.status.getValueAsString(REGION));
     }
 
     /**
@@ -308,7 +307,7 @@ public class JigasiDetector
      */
     private static boolean isInRegion(BrewInstance bi, String region)
     {
-        return bi.status != null && region.equals(bi.status.getValueAsString(REGION));
+        return region.equals(bi.status.getValueAsString(REGION));
     }
 
     /**
@@ -318,24 +317,24 @@ public class JigasiDetector
      */
     private static int getParticipantCount(BrewInstance bi)
     {
-        return bi.status != null ? bi.status.getValueAsInt(PARTICIPANTS) : 0;
+        return bi.status.getValueAsInt(PARTICIPANTS);
     }
 
     public int getJigasiSipCount()
     {
-        return (int) instances.stream().filter(i -> supportSip(i)).count();
+        return (int) instances.stream().filter(JigasiDetector::supportSip).count();
     }
 
     public int getJigasiSipInGracefulShutdownCount()
     {
         return (int) instances.stream()
-            .filter(i -> supportSip(i))
-            .filter(i -> isInGracefulShutdown(i)).count();
+            .filter(JigasiDetector::supportSip)
+            .filter(JigasiDetector::isInGracefulShutdown).count();
     }
 
     public int getJigasiTranscriberCount()
     {
-        return (int) instances.stream().filter(i -> supportTranscription(i)).count();
+        return (int) instances.stream().filter(JigasiDetector::supportTranscription).count();
     }
 
     @SuppressWarnings("unchecked")

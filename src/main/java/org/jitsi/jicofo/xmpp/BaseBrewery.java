@@ -373,9 +373,10 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         /**
          * One of {@link ExtensionElement}
          */
+        @NotNull
         public T status;
 
-        BrewInstance(@NotNull Jid jid, T status)
+        BrewInstance(@NotNull Jid jid, @NotNull T status)
         {
             this.jid = jid;
             this.status = status;
