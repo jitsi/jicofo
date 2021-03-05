@@ -154,6 +154,7 @@ public class TranscriberManager
      * in the conference, empty list if nothing found or an error occurs.
      * @return a list of used bridge regions.
      */
+    @NotNull
     private Collection<String> getBridgeRegions()
     {
         return conference.getBridges().keySet().stream()
@@ -181,14 +182,15 @@ public class TranscriberManager
      * Method which is able to invite the transcriber by dialing Jigasi
      * @param preferredRegions a list of preferred regions.
      */
-    private void startTranscribing(Collection<String> preferredRegions)
+    private void startTranscribing(@NotNull Collection<String> preferredRegions)
     {
         if (active)
         {
             return;
         }
 
-        selectTranscriber(2, null, preferredRegions);
+        // We need a modifiable list for the "exclude" parameter.
+        selectTranscriber(2, new ArrayList<>(), preferredRegions);
     }
 
     /**
@@ -199,7 +201,10 @@ public class TranscriberManager
      * we already tried sending in attempt to retry.
      * @param preferredRegions a list of preferred regions.
      */
-    private void selectTranscriber(int retryCount, List<Jid> exclude, Collection<String> preferredRegions)
+    private void selectTranscriber(
+            int retryCount,
+            @NotNull List<Jid> exclude,
+            @NotNull Collection<String> preferredRegions)
     {
         logger.info("Attempting to invite transcriber");
 
@@ -243,10 +248,6 @@ public class TranscriberManager
 
             if (retry && retryCount > 0)
             {
-                if (exclude == null)
-                {
-                    exclude = new ArrayList<>();
-                }
                 exclude.add(jigasiJid);
 
                 selectTranscriber(retryCount - 1, exclude, preferredRegions);

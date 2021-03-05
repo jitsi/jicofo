@@ -76,7 +76,7 @@ class JibriDetector(
 
     val stats: JSONObject
         get() = JSONObject().apply {
-            this["count"] = getInstanceCount(null)
+            this["count"] = instanceCount
             this["available"] = getInstanceCount { it.status.isAvailable }
         }
 
@@ -84,6 +84,9 @@ class JibriDetector(
         fun instanceOffline(jid: Jid) {}
     }
 
+    /**
+     * The companion object is necessary for the implicit call to this.createLogger() in the super constructor!
+     */
     companion object {
         /**
          * TODO: Refactor to use a common executor.
