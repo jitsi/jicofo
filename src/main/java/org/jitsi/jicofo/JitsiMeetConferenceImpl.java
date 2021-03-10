@@ -749,7 +749,7 @@ public class JitsiMeetConferenceImpl
 
         // Some of the bridges in the conference may have become non-operational. Inviting a new participant to the
         // conference requires communication with its bridges, so we remove them from the conference first.
-        removeNonOperationalBridges(true);
+        removeNonOperationalBridges(true /* includeInGracefulShutdown */);
 
         synchronized (bridges)
         {
