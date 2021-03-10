@@ -707,7 +707,8 @@ public class JitsiMeetConferenceImpl
      */
     private Stream<BridgeSession> operationalBridges(boolean includeInGracefulShutdown)
     {
-        return bridges.stream().filter(session -> !session.hasFailed && session.bridge.isOperational(includeInGracefulShutdown));
+        return bridges.stream().filter(session -> !session.hasFailed
+            && session.bridge.isOperational(includeInGracefulShutdown));
     }
 
     /**

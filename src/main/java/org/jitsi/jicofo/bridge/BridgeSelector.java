@@ -321,7 +321,8 @@ public class BridgeSelector
 
     public int getOperationalBridgeCount()
     {
-        return (int) bridges.values().stream().filter(b -> b.isOperational(false /* includeInGracefulShutdown */)).count();
+        return (int) bridges.values().stream()
+            .filter(b -> b.isOperational(false /* includeInGracefulShutdown */)).count();
     }
 
     @SuppressWarnings("unchecked")
