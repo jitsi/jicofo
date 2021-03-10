@@ -215,7 +215,15 @@ public class BridgeSelector
                 .filter(b -> b.isOperational(false /* includeInGracefulShutdown */))
                 .collect(Collectors.toList());
 
-        // TODO if the list is empty, we may want to consider the bridges that are in graceful shutdown mode
+        // if the list is empty, we include bridges that are in graceful shutdown mode (the alternative is to crash the
+        // user)
+        if (bridges.isEmpty())
+        {
+            bridges
+                = getPrioritizedBridgesList(true /* includeInGracefulShutdown */).stream()
+                    .filter(b -> b.isOperational(true /* includeInGracefulShutdown */))
+                    .collect(Collectors.toList());
+        }
 
         return bridgeSelectionStrategy.select(
             bridges,
