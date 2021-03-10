@@ -211,9 +211,12 @@ public class BridgeSelector
             String participantRegion)
     {
         List<Bridge> bridges
-            = getPrioritizedBridgesList().stream()
-                .filter(Bridge::isOperational)
+            = getPrioritizedBridgesList(false /* includeInGracefulShutdown */).stream()
+                .filter(b -> b.isOperational(false /* includeInGracefulShutdown */))
                 .collect(Collectors.toList());
+
+        // TODO if the list is empty, we may want to consider the bridges that are in graceful shutdown mode
+
         return bridgeSelectionStrategy.select(
             bridges,
             conference.getBridges(),
@@ -236,7 +239,7 @@ public class BridgeSelector
      * Returns the list of all known videobridges JIDs ordered by load and
      * *operational* status. Not operational bridges are at the end of the list.
      */
-    private List<Bridge> getPrioritizedBridgesList()
+    private List<Bridge> getPrioritizedBridgesList(boolean includeInGracefulShutdown)
     {
         ArrayList<Bridge> bridgeList;
         synchronized (this)
@@ -245,7 +248,7 @@ public class BridgeSelector
         }
         Collections.sort(bridgeList);
 
-        bridgeList.removeIf(bridge -> !bridge.isOperational());
+        bridgeList.removeIf(bridge -> !bridge.isOperational(includeInGracefulShutdown));
 
         return bridgeList;
     }
@@ -311,9 +314,14 @@ public class BridgeSelector
         return new ArrayList<>(bridges.values());
     }
 
+    public int getInGracefulShutdownBridgeCount()
+    {
+        return (int) bridges.values().stream().filter(Bridge::isInGracefulShutdown).count();
+    }
+
     public int getOperationalBridgeCount()
     {
-        return (int) bridges.values().stream().filter(Bridge::isOperational).count();
+        return (int) bridges.values().stream().filter(b -> b.isOperational(false /* includeInGracefulShutdown */)).count();
     }
 
     @SuppressWarnings("unchecked")
@@ -324,6 +332,7 @@ public class BridgeSelector
         JSONObject stats = bridgeSelectionStrategy.getStats();
         stats.put("bridge_count", getBridgeCount());
         stats.put("operational_bridge_count", getOperationalBridgeCount());
+        stats.put("in_shutdown_bridge_count", getInGracefulShutdownBridgeCount());
 
         return stats;
     }
