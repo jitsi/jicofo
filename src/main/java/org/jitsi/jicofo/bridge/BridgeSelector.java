@@ -33,6 +33,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
 
+import static org.glassfish.jersey.internal.guava.Predicates.not;
+
 /**
  * Class exposes methods for selecting best videobridge from all currently
  * available.
@@ -221,7 +223,7 @@ public class BridgeSelector
         List<Bridge> candidateBridges
             = prioritizedBridges.stream()
                 .filter(Bridge::isOperational)
-                .filter(b -> !b.isInGracefulShutdown())
+                .filter(not(Bridge::isInGracefulShutdown))
                 .collect(Collectors.toList());
 
         // if there's no candidate bridge, we include bridges that are in graceful shutdown mode
