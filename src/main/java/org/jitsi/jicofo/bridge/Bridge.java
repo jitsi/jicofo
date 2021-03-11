@@ -219,7 +219,7 @@ public class Bridge
         }
     }
 
-    public boolean isOperational(boolean includeInGracefulShutdown)
+    public boolean isOperational()
     {
         // To filter out intermittent failures, do not return operational
         // until past the reset threshold since the last failure.
@@ -229,7 +229,7 @@ public class Bridge
             return false;
         }
 
-        return isOperational && (includeInGracefulShutdown || !shutdownInProgress);
+        return isOperational;
     }
 
     /**

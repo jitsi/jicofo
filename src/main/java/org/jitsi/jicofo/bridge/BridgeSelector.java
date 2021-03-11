@@ -210,23 +210,32 @@ public class BridgeSelector
             @NotNull JitsiMeetConference conference,
             String participantRegion)
     {
-        List<Bridge> bridges
-            = getPrioritizedBridgesList(false /* includeInGracefulShutdown */).stream()
-                .filter(b -> b.isOperational(false /* includeInGracefulShutdown */))
+        // the list of all known videobridges JIDs ordered by load and *operational* status.
+        ArrayList<Bridge> prioritizedBridges;
+        synchronized (this)
+        {
+            prioritizedBridges = new ArrayList<>(bridges.values());
+        }
+        Collections.sort(prioritizedBridges);
+
+        List<Bridge> candidateBridges
+            = prioritizedBridges.stream()
+                .filter(Bridge::isOperational)
+                .filter(b -> !b.isInGracefulShutdown())
                 .collect(Collectors.toList());
 
-        // if the list is empty, we include bridges that are in graceful shutdown mode (the alternative is to crash the
-        // user)
-        if (bridges.isEmpty())
+        // if there's no candidate bridge, we include bridges that are in graceful shutdown mode
+        // (the alternative is to crash the user)
+        if (candidateBridges.isEmpty())
         {
-            bridges
-                = getPrioritizedBridgesList(true /* includeInGracefulShutdown */).stream()
-                    .filter(b -> b.isOperational(true /* includeInGracefulShutdown */))
+            candidateBridges
+                = prioritizedBridges.stream()
+                    .filter(Bridge::isOperational)
                     .collect(Collectors.toList());
         }
 
         return bridgeSelectionStrategy.select(
-            bridges,
+            candidateBridges,
             conference.getBridges(),
             participantRegion,
             OctoConfig.config.getEnabled());
@@ -241,24 +250,6 @@ public class BridgeSelector
     public Bridge selectBridge(@NotNull JitsiMeetConference conference)
     {
         return selectBridge(conference, null);
-    }
-
-    /**
-     * Returns the list of all known videobridges JIDs ordered by load and
-     * *operational* status. Not operational bridges are at the end of the list.
-     */
-    private List<Bridge> getPrioritizedBridgesList(boolean includeInGracefulShutdown)
-    {
-        ArrayList<Bridge> bridgeList;
-        synchronized (this)
-        {
-            bridgeList = new ArrayList<>(bridges.values());
-        }
-        Collections.sort(bridgeList);
-
-        bridgeList.removeIf(bridge -> !bridge.isOperational(includeInGracefulShutdown));
-
-        return bridgeList;
     }
 
     /**
@@ -330,7 +321,8 @@ public class BridgeSelector
     public int getOperationalBridgeCount()
     {
         return (int) bridges.values().stream()
-            .filter(b -> b.isOperational(false /* includeInGracefulShutdown */)).count();
+            .filter(Bridge::isOperational)
+            .filter(b -> !b.isInGracefulShutdown()).count();
     }
 
     @SuppressWarnings("unchecked")

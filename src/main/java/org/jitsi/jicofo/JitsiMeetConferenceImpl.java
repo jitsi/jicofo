@@ -705,19 +705,18 @@ public class JitsiMeetConferenceImpl
      * Get a stream of those bridges which are operational.
      * Caller should be synchronized on bridges.
      */
-    private Stream<BridgeSession> operationalBridges(boolean includeInGracefulShutdown)
+    private Stream<BridgeSession> operationalBridges()
     {
-        return bridges.stream().filter(session -> !session.hasFailed
-            && session.bridge.isOperational(includeInGracefulShutdown));
+        return bridges.stream().filter(session -> !session.hasFailed && session.bridge.isOperational());
     }
 
     /**
      * Removes all non-operational bridges from the conference and re-invites their participants.
      */
-    private void removeNonOperationalBridges(boolean includeInGracefulShutdown)
+    private void removeNonOperationalBridges()
     {
         Set<Jid> nonOperationalBridges = bridges.stream()
-                .filter(session -> session.hasFailed || !session.bridge.isOperational(includeInGracefulShutdown))
+                .filter(session -> session.hasFailed || !session.bridge.isOperational())
                 .map(session -> session.bridge.getJid())
                 .collect(Collectors.toSet());
         if (!nonOperationalBridges.isEmpty())
@@ -749,7 +748,7 @@ public class JitsiMeetConferenceImpl
 
         // Some of the bridges in the conference may have become non-operational. Inviting a new participant to the
         // conference requires communication with its bridges, so we remove them from the conference first.
-        removeNonOperationalBridges(true /* includeInGracefulShutdown */);
+        removeNonOperationalBridges();
 
         synchronized (bridges)
         {
@@ -760,7 +759,7 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            if (!bridge.isOperational(true /* includeInGracefulShutdown */))
+            if (!bridge.isOperational())
             {
                 logger.error("The selected bridge is non-operational: " + bridge);
             }
@@ -777,7 +776,7 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridges.size()));
 
-                if (operationalBridges(true /* includeInGracefulShutdown */).count() >= 2)
+                if (operationalBridges().count() >= 2)
                 {
                     if (!getFocusManager().isJicofoIdConfigured())
                     {
@@ -832,7 +831,7 @@ public class JitsiMeetConferenceImpl
             List<String> allRelays = getAllRelays(null);
 
             logger.info("Updating Octo relays: " + allRelays);
-            operationalBridges(true /* includeInGracefulShutdown */).forEach(bridge -> bridge.setRelays(allRelays));
+            operationalBridges().forEach(bridge -> bridge.setRelays(allRelays));
         }
     }
 
@@ -846,7 +845,7 @@ public class JitsiMeetConferenceImpl
         synchronized (bridges)
         {
             return
-                operationalBridges(true /* includeInGracefulShutdown */)
+                operationalBridges()
                     .map(bridge -> bridge.bridge.getRelayId())
                     .filter(Objects::nonNull)
                     .filter(bridge -> !bridge.equals(exclude))
@@ -1466,7 +1465,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (bridges)
         {
-            operationalBridges(true /* includeInGracefulShutdown */)
+            operationalBridges()
                 .filter(bridge -> !bridge.equals(exclude))
                 .forEach(bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
         }
@@ -1826,7 +1825,7 @@ public class JitsiMeetConferenceImpl
 
         synchronized (bridges)
         {
-            operationalBridges(true /* includeInGracefulShutdown */)
+            operationalBridges()
                 .filter(bridge -> !bridge.equals(bridgeSession))
                 .forEach(bridge -> bridge.removeSourcesFromOcto(removedSources, removedGroups));
         }
@@ -2389,7 +2388,7 @@ public class JitsiMeetConferenceImpl
             // least used elsewhere).
             synchronized (bridges)
             {
-                operationalBridges(true /* includeInGracefulShutdown */)
+                operationalBridges()
                     .filter(bridge -> !bridge.equals(session))
                     .forEach(
                         bridge -> bridge.removeSourcesFromOcto(

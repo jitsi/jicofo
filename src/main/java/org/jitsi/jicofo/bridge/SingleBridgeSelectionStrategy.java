@@ -62,7 +62,7 @@ public class SingleBridgeSelectionStrategy
         }
 
         Bridge bridge = conferenceBridges.keySet().stream().findFirst().get();
-        if (!bridge.isOperational(true /* includeInGracefulShutdown */))
+        if (!bridge.isOperational())
         {
             logger.error(
                 "The conference already has a bridge, but it is not "
