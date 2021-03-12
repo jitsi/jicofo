@@ -116,6 +116,11 @@ public class Bridge
     private double averageParticipantStress = config.averageParticipantStress();
 
     /**
+     * Stores a boolean that indicates whether the bridge is in graceful shutdown mode.
+     */
+    private boolean shutdownInProgress = false /* we assume it is not shutting down */;
+
+    /**
      * The time when this instance has failed.
      */
     private volatile long failureTimestamp;
@@ -176,15 +181,9 @@ public class Bridge
             lastReportedPacketRatePps = packetRateDown + packetRateUp;
         }
 
-        // FIXME graceful shutdown should be treated separately from
-        //  "operational". When jvb is in graceful shutdown it does not allow
-        //  any new conferences but it allows to add participants to
-        //  the existing ones. Marking a bridge not operational while in
-        //  graceful shutdown will move the conference as soon as any new
-        //  participant joins and that is not very graceful.
         if (Boolean.parseBoolean(stats.getValueAsString(SHUTDOWN_IN_PROGRESS)))
         {
-            setIsOperational(false);
+            shutdownInProgress = true;
         }
 
         String newVersion = stats.getValueAsString(VERSION);
@@ -234,27 +233,48 @@ public class Bridge
     }
 
     /**
-     * The least value is returned the least the bridge is loaded. Currently
-     * we use the bitrate to estimate load.
-     * <p>
-     * {@inheritDoc}
+     * Returns a negative number if this instance is more able to serve conferences than o. For details see
+     * {@link #compare(Bridge, Bridge)}.
+     *
+     * @param o the other bridge instance
+     *
+     * @return a negative number if this instance is more able to serve conferences than o
      */
     @Override
     public int compareTo(Bridge o)
     {
-        boolean meOperational = isOperational();
-        boolean otherOperational = o.isOperational();
+        return compare(this, o);
+    }
 
-        if (meOperational && !otherOperational)
+    /**
+     * Returns a negative number if b1 is more able to serve conferences than b2. The computation is based on the
+     * following three comparisons
+     *
+     * operating bridges < non operating bridges
+     * not in graceful shutdown mode < bridges in graceful shutdown mode
+     * lower stress < higher stress
+     *
+     * @param b1 the 1st bridge instance
+     * @param b2 the 2nd bridge instance
+     *
+     * @return a negative number if b1 is more able to serve conferences than b2
+     */
+    public static int compare(Bridge b1, Bridge b2)
+    {
+        int myPriority = getPriority(b1);
+        int otherPriority = getPriority(b2);
+
+        if (myPriority != otherPriority)
         {
-            return -1;
-        }
-        else if (!meOperational && otherOperational)
-        {
-            return 1;
+            return myPriority - otherPriority;
         }
 
-        return Double.compare(this.getStress(), o.getStress());
+        return Double.compare(b1.getStress(), b2.getStress());
+    }
+
+    private static int getPriority(Bridge b)
+    {
+        return b.isOperational() ? (b.isInGracefulShutdown() ? 2 : 1) : 3;
     }
 
     /**
@@ -359,5 +379,10 @@ public class Bridge
     public int getOctoVersion()
     {
         return octoVersion;
+    }
+
+    public boolean isInGracefulShutdown()
+    {
+        return shutdownInProgress;
     }
 }

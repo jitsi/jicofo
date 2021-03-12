@@ -33,6 +33,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
 
+import static org.glassfish.jersey.internal.guava.Predicates.not;
+
 /**
  * Class exposes methods for selecting best videobridge from all currently
  * available.
@@ -210,12 +212,32 @@ public class BridgeSelector
             @NotNull JitsiMeetConference conference,
             String participantRegion)
     {
-        List<Bridge> bridges
-            = getPrioritizedBridgesList().stream()
+        // the list of all known videobridges JIDs ordered by load and *operational* status.
+        ArrayList<Bridge> prioritizedBridges;
+        synchronized (this)
+        {
+            prioritizedBridges = new ArrayList<>(bridges.values());
+        }
+        Collections.sort(prioritizedBridges);
+
+        List<Bridge> candidateBridges
+            = prioritizedBridges.stream()
                 .filter(Bridge::isOperational)
+                .filter(not(Bridge::isInGracefulShutdown))
                 .collect(Collectors.toList());
+
+        // if there's no candidate bridge, we include bridges that are in graceful shutdown mode
+        // (the alternative is to crash the user)
+        if (candidateBridges.isEmpty())
+        {
+            candidateBridges
+                = prioritizedBridges.stream()
+                    .filter(Bridge::isOperational)
+                    .collect(Collectors.toList());
+        }
+
         return bridgeSelectionStrategy.select(
-            bridges,
+            candidateBridges,
             conference.getBridges(),
             participantRegion,
             OctoConfig.config.getEnabled());
@@ -230,24 +252,6 @@ public class BridgeSelector
     public Bridge selectBridge(@NotNull JitsiMeetConference conference)
     {
         return selectBridge(conference, null);
-    }
-
-    /**
-     * Returns the list of all known videobridges JIDs ordered by load and
-     * *operational* status. Not operational bridges are at the end of the list.
-     */
-    private List<Bridge> getPrioritizedBridgesList()
-    {
-        ArrayList<Bridge> bridgeList;
-        synchronized (this)
-        {
-            bridgeList = new ArrayList<>(bridges.values());
-        }
-        Collections.sort(bridgeList);
-
-        bridgeList.removeIf(bridge -> !bridge.isOperational());
-
-        return bridgeList;
     }
 
     /**
@@ -311,9 +315,16 @@ public class BridgeSelector
         return new ArrayList<>(bridges.values());
     }
 
+    public int getInGracefulShutdownBridgeCount()
+    {
+        return (int) bridges.values().stream().filter(Bridge::isInGracefulShutdown).count();
+    }
+
     public int getOperationalBridgeCount()
     {
-        return (int) bridges.values().stream().filter(Bridge::isOperational).count();
+        return (int) bridges.values().stream()
+            .filter(Bridge::isOperational)
+            .filter(not(Bridge::isInGracefulShutdown)).count();
     }
 
     @SuppressWarnings("unchecked")
@@ -324,6 +335,7 @@ public class BridgeSelector
         JSONObject stats = bridgeSelectionStrategy.getStats();
         stats.put("bridge_count", getBridgeCount());
         stats.put("operational_bridge_count", getOperationalBridgeCount());
+        stats.put("in_shutdown_bridge_count", getInGracefulShutdownBridgeCount());
 
         return stats;
     }
