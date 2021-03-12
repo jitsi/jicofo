@@ -40,7 +40,7 @@ class BridgeTest : ShouldSpec({
         }
 
         should("the bridge that is in graceful shutdown mode should have lower priority (should compare higher)") {
-            val bridge1: Bridge =  mockk {
+            val bridge1: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
                 every { stress } returns 10.0
