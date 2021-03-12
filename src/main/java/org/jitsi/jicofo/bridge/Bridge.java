@@ -233,28 +233,48 @@ public class Bridge
     }
 
     /**
-     * The least value is returned the least the bridge is loaded. Currently
-     * we use the bitrate to estimate load.
-     * <p>
-     * {@inheritDoc}
+     * Returns a negative number if this instance is more able to serve conferences than o. For details see
+     * {@link #compare(Bridge, Bridge)}.
+     *
+     * @param o the other bridge instance
+     *
+     * @return a negative number if this instance is more able to serve conferences than o
      */
     @Override
     public int compareTo(Bridge o)
     {
-        int myPriority = getPriority();
-        int otherPriority = o.getPriority();
+        return compare(this, o);
+    }
+
+    /**
+     * Returns a negative number if b1 is more able to serve conferences than b2. The computation is based on the
+     * following three comparisons
+     *
+     * operating bridges < non operating bridges
+     * not in graceful shutdown mode < bridges in graceful shutdown mode
+     * lower stress < higher stress
+     *
+     * @param b1 the 1st bridge instance
+     * @param b2 the 2nd bridge instance
+     *
+     * @return a negative number if b1 is more able to serve conferences than b2
+     */
+    public static int compare(Bridge b1, Bridge b2)
+    {
+        int myPriority = getPriority(b1);
+        int otherPriority = getPriority(b2);
 
         if (myPriority != otherPriority)
         {
             return myPriority - otherPriority;
         }
 
-        return Double.compare(this.getStress(), o.getStress());
+        return Double.compare(b1.getStress(), b2.getStress());
     }
 
-    private int getPriority()
+    private static int getPriority(Bridge b)
     {
-        return isOperational ? 3 : shutdownInProgress ? 2 : 1;
+        return b.isOperational() ? (b.isInGracefulShutdown() ? 2 : 1) : 3;
     }
 
     /**
