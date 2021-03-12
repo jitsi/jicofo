@@ -19,13 +19,11 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.ints.shouldBeLessThan
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
-import org.jxmpp.jid.impl.JidCreate
 
 class BridgeTest : ShouldSpec({
     context("when comparing two bridges") {
         should("the bridge that is operational should have higher priority (should compare lower)") {
-            val bridge1: Bridge = spyk(Bridge(JidCreate.from("bridge1.example.com"))) {
+            val bridge1: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
                 every { stress } returns 10.0
@@ -55,13 +53,13 @@ class BridgeTest : ShouldSpec({
         }
 
         should("the bridge that is stressed should have lower priority (should compare higher)") {
-            val bridge1: Bridge = spyk(Bridge(JidCreate.from("bridge1.example.com"))) {
+            val bridge1: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
                 every { stress } returns 10.0
             }
 
-            val bridge2: Bridge = spyk(Bridge(JidCreate.from("bridge2.example.com"))) {
+            val bridge2: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
                 every { stress } returns .1
