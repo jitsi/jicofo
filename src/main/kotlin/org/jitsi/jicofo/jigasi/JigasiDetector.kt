@@ -61,7 +61,7 @@ class JigasiDetector(
      * @return the JID of the selected instance, or  `null` if there are no available jigasis that satisfy the
      * constraints (are not excluded and support SIP).
      */
-    fun selectJigasi(exclude: List<Jid>, preferredRegions: Collection<String>): Jid? =
+    fun selectSipJigasi(exclude: List<Jid>, preferredRegions: Collection<String>): Jid? =
         selectJigasi(instances, exclude, preferredRegions, config.localRegion, transcriber = false)
 
     val stats: JSONObject
@@ -84,11 +84,10 @@ class JigasiDetector(
             transcriber: Boolean
         ): Jid? {
 
-            val availableInstances = instances.filter {
-                !exclude.contains(it.jid) &&
-                    !it.isInGracefulShutdown() &&
-                    if (transcriber) it.supportsTranscription() else it.supportsSip()
-            }
+            val availableInstances = instances
+                .filter { !exclude.contains(it.jid) }
+                .filter { !it.isInGracefulShutdown() }
+                .filter { if (transcriber) it.supportsTranscription() else it.supportsSip() }
 
             // Try to match the preferred region.
             availableInstances.filter { it.isInRegion(*preferredRegions.toTypedArray()) }.let {
