@@ -299,16 +299,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         onInstanceStatusChanged(jid, extension);
     }
 
-    public int getInstanceCount(Predicate<? super BrewInstance> filter)
+    public int getInstanceCount()
     {
-        if  (filter != null)
-        {
-            return (int) instances.stream()
-                    .filter(filter)
-                    .count();
-        }
-
         return instances.size();
+    }
+
+    public int getInstanceCount(@NotNull Predicate<? super BrewInstance> filter)
+    {
+        return (int) instances.stream().filter(filter) .count();
     }
 
     /**
@@ -357,12 +355,12 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * Notifies that a brewing instance is going offline.
      * @param jid the instance muc address
      */
-    abstract protected void notifyInstanceOffline(Jid jid);
+    abstract protected void notifyInstanceOffline(@NotNull Jid jid);
 
     /**
      * Internal structure for storing information about brewing instances.
      */
-    protected class BrewInstance
+    public class BrewInstance
     {
         /**
          * Eg. "room@muc.server.net/nick"
@@ -373,9 +371,10 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         /**
          * One of {@link ExtensionElement}
          */
+        @NotNull
         public T status;
 
-        BrewInstance(@NotNull Jid jid, T status)
+        BrewInstance(@NotNull Jid jid, @NotNull T status)
         {
             this.jid = jid;
             this.status = status;
