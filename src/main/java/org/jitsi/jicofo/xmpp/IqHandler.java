@@ -310,6 +310,10 @@ public class IqHandler
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
         }
 
+        if (exclude == null)
+        {
+            exclude = new ArrayList<>();
+        }
 
         Set<String> bridgeRegions = conference.getBridges().keySet().stream()
             .map(Bridge::getRegion)
@@ -342,10 +346,6 @@ public class IqHandler
             {
                 if (retryCount > 0)
                 {
-                    if (exclude == null)
-                    {
-                        exclude = new ArrayList<>();
-                    }
                     exclude.add(jigasiJid);
 
                     // let's retry lowering the number of attempts
