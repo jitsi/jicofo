@@ -2140,15 +2140,6 @@ public class JitsiMeetConferenceImpl
                     && participantChannels != null
                     && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType);
 
-        if (succeeded)
-        {
-            if (mediaType == MediaType.AUDIO) {
-                participant.setMuted(doMute);
-            } else if (mediaType == MediaType.VIDEO) {
-                participant.setVideoMuted(doMute);
-            }
-        }
-
         return succeeded;
     }
 
