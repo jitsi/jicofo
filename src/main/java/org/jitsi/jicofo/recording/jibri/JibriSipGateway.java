@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
@@ -64,11 +65,11 @@ public class JibriSipGateway
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriSipGateway(
-           JitsiMeetConferenceImpl conference,
-           ExtendedXmppConnection xmppConnection,
-           ScheduledExecutorService scheduledExecutor,
-           JibriDetector jibriDetector,
-           Logger parentLogger)
+           @NotNull JitsiMeetConferenceImpl conference,
+           @NotNull ExtendedXmppConnection xmppConnection,
+           @NotNull ScheduledExecutorService scheduledExecutor,
+           @NotNull JibriDetector jibriDetector,
+           @NotNull Logger parentLogger)
     {
         super(
             conference,

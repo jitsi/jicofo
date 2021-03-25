@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.recording.jibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -43,37 +44,42 @@ import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
 public abstract class CommonJibriStuff
 {
     /**
+     * The length of the session id field we generate to uniquely identify a
+     * Jibri session
+     */
+    static final int SESSION_ID_LENGTH = 16;
+
+    /**
      * The Jitsi Meet conference instance.
      */
+    @NotNull
     protected final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link ExtendedXmppConnection} used for communication.
      */
+    @NotNull
     protected final ExtendedXmppConnection connection;
 
     /**
      * The logger instance pass to the constructor that wil be used by this
      * instance for logging.
      */
+    @NotNull
     protected final Logger logger;
 
     /**
      * Jibri detector which notifies about Jibri availability status changes.
      */
+    @NotNull
     final JibriDetector jibriDetector;
 
     /**
      * Executor service used by {@link JibriSession} to schedule pending timeout
      * tasks.
      */
+    @NotNull
     final ScheduledExecutorService scheduledExecutor;
-
-    /**
-     * The length of the session id field we generate to uniquely identify a
-     * Jibri session
-     */
-    static final int SESSION_ID_LENGTH = 16;
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
@@ -82,15 +88,15 @@ public abstract class CommonJibriStuff
      * @param scheduledExecutor the executor service used by this instance
      */
     CommonJibriStuff(
-            JitsiMeetConferenceImpl conference,
-            ExtendedXmppConnection xmppConnection,
-            ScheduledExecutorService scheduledExecutor,
-            Logger logger,
-            JibriDetector jibriDetector)
+            @NotNull JitsiMeetConferenceImpl conference,
+            @NotNull ExtendedXmppConnection xmppConnection,
+            @NotNull ScheduledExecutorService scheduledExecutor,
+            @NotNull Logger logger,
+            @NotNull JibriDetector jibriDetector)
     {
-        this.connection = Objects.requireNonNull(xmppConnection, "xmppConnection");
-        this.conference = Objects.requireNonNull(conference, "conference");
-        this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
+        this.connection = xmppConnection;
+        this.conference = conference;
+        this.scheduledExecutor = scheduledExecutor;
         this.jibriDetector = jibriDetector;
 
         this.logger = logger;
