@@ -41,7 +41,7 @@ import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
  *
  * @author Pawel Domas
  */
-public abstract class BaseJibriRecorder
+public abstract class BaseJibri
 {
     /**
      * The length of the session id field we generate to uniquely identify a
@@ -89,7 +89,7 @@ public abstract class BaseJibriRecorder
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
      * @param scheduledExecutor the executor service used by this instance
      */
-    BaseJibriRecorder(
+    BaseJibri(
             @NotNull JitsiMeetConferenceImpl conference,
             @NotNull XmppProvider xmppProvider,
             @NotNull ScheduledExecutorService scheduledExecutor,

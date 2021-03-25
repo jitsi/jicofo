@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.jicofo.jibri.BaseJibriRecorder
+import org.jitsi.jicofo.jibri.BaseJibri
 import org.jitsi.jicofo.util.ErrorResponse
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
@@ -29,24 +29,24 @@ import java.util.LinkedList
 
 /**
  * A Smack [IQRequestHandler] for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
- * handling to specific [BaseJibriRecorder] instances.
+ * handling to specific [BaseJibri] instances.
  */
 class JibriIqHandler :
     AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.async) {
 
-    private val jibris = Collections.synchronizedList(LinkedList<BaseJibriRecorder>())
+    private val jibris = Collections.synchronizedList(LinkedList<BaseJibri>())
 
-    fun addJibri(jibri: BaseJibriRecorder) {
+    fun addJibri(jibri: BaseJibri) {
         jibris.add(jibri)
     }
 
-    fun removeJibri(jibri: BaseJibriRecorder?) {
+    fun removeJibri(jibri: BaseJibri?) {
         jibris.remove(jibri)
     }
 
     /**
      * {@inheritDoc}
-     * Pass the request to the first [BaseJibriRecorder] that wants it.
+     * Pass the request to the first [BaseJibri] that wants it.
      */
     override fun handleIQRequest(iq: IQ): IQ = synchronized(jibris) {
         iq as JibriIq

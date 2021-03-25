@@ -67,7 +67,7 @@ class JibriStats {
         val globalStats = JibriStats()
 
         @JvmStatic
-        fun getStats(recorders: Collection<BaseJibriRecorder?>) = globalStats.toJson().apply {
+        fun getStats(recorders: Collection<BaseJibri?>) = globalStats.toJson().apply {
             val sessions = recorders.filterNotNull().flatMap { it.jibriSessions }
 
             this["live_streaming_active"] = sessions.count {

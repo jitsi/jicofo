@@ -487,7 +487,7 @@ public class FocusManager
         int numParticipants = 0;
         int largestConferenceSize = 0;
         int[] conferenceSizes = new int[22];
-        Set<BaseJibriRecorder> jibriRecordersAndGateways = new HashSet<>();
+        Set<BaseJibri> jibriRecordersAndGateways = new HashSet<>();
         for (JitsiMeetConference conference : getConferences())
         {
             if (!conference.includeInStatistics())
