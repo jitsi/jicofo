@@ -43,7 +43,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class JibriRecorder
     extends BaseJibri
-    implements JibriSession.Owner
+    implements JibriSession.StateListener
 {
     /**
      * The class logger which can be used to override logging level inherited

@@ -97,7 +97,7 @@ public class JibriSession
     /**
      * The owner which will be notified about status changes of this session.
      */
-    private final Owner owner;
+    private final StateListener stateListener;
 
     /**
      * Reference to scheduled {@link PendingStatusTimeout}
@@ -172,7 +172,7 @@ public class JibriSession
 
     /**
      * Creates new {@link JibriSession} instance.
-     * @param owner the session owner which will be notified about this session
+     * @param stateListener the session owner which will be notified about this session
      * state changes.
      * @param roomName the name if the XMPP MUC room (full address).
      * @param pendingTimeout how many seconds this session can wait in pending
@@ -194,7 +194,7 @@ public class JibriSession
      * select logging level for this instance {@link #logger}.
      */
     JibriSession(
-            JibriSession.Owner owner,
+            StateListener stateListener,
             EntityBareJid roomName,
             Jid initiator,
             long pendingTimeout,
@@ -210,7 +210,7 @@ public class JibriSession
             String applicationData,
             Logger logLevelDelegate)
     {
-        this.owner = owner;
+        this.stateListener = stateListener;
         this.roomName = roomName;
         this.initiator = initiator;
         this.pendingTimeout = pendingTimeout;
@@ -230,7 +230,7 @@ public class JibriSession
 
     /**
      * Used internally to call
-     * {@link Owner#onSessionStateChanged(JibriSession, Status, FailureReason)}.
+     * {@link StateListener#onSessionStateChanged(JibriSession, Status, FailureReason)}.
      * @param newStatus the new status to dispatch.
      * @param failureReason the failure reason associated with the state
      * transition if any.
@@ -241,7 +241,7 @@ public class JibriSession
         {
             stats.sessionFailed(getJibriType());
         }
-        owner.onSessionStateChanged(this, newStatus, failureReason);
+        stateListener.onSessionStateChanged(this, newStatus, failureReason);
     }
 
     /**
@@ -785,7 +785,7 @@ public class JibriSession
      * specifies the session owner which will be notified about any status
      * changes.
      */
-    public interface Owner
+    public interface StateListener
     {
         /**
          * Called on {@link JibriSession} status update.
@@ -794,9 +794,9 @@ public class JibriSession
          * @param failureReason optional error for {@link JibriIq.Status#OFF}.
          */
         void onSessionStateChanged(
-                JibriSession      jibriSession,
-                JibriIq.Status    newStatus,
-                JibriIq.FailureReason         failureReason);
+                JibriSession jibriSession,
+                JibriIq.Status newStatus,
+                JibriIq.FailureReason failureReason);
     }
 
     static public abstract class StartException extends Exception
