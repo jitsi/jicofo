@@ -40,7 +40,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class JibriSipGateway
     extends BaseJibri
-    implements JibriSession.StateListener
 {
     /**
      * The class logger which can be used to override logging level inherited

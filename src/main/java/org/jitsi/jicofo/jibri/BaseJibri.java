@@ -41,7 +41,7 @@ import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
  *
  * @author Pawel Domas
  */
-public abstract class BaseJibri
+public abstract class BaseJibri implements JibriSession.StateListener
 {
     /**
      * The length of the session id field we generate to uniquely identify a
@@ -186,7 +186,7 @@ public abstract class BaseJibri
             return true;
         }
 
-        // Check if the implementation wants to deal with this IQ sub-type
+        // Check if the implementation wants to deal with this IQ sub-type (recording/live-streaming vs SIP).
         if (!acceptType(iq))
         {
             return false;
@@ -209,12 +209,6 @@ public abstract class BaseJibri
         return true;
     }
 
-    /**
-     * Implementors of this class decided here if they want to deal with
-     * the incoming JibriIQ.
-     * @param packet the Jibri IQ to check.
-     * @return <tt>true</tt> if the implementation should handle it.
-     */
     protected abstract boolean acceptType(JibriIq packet);
 
     /**
