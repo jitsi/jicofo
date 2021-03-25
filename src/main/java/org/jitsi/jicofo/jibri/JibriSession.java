@@ -173,7 +173,7 @@ public class JibriSession
     private Jid terminator;
 
     @NotNull
-    private final JibriStats stats = JibriStats.Companion.getGlobalStats();
+    private final JibriStats stats = JibriStats.getGlobalStats();
 
     /**
      * Creates new {@link JibriSession} instance.
