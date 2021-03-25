@@ -41,7 +41,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  * @author Pawel Domas
  */
 public class JibriSipGateway
-    extends CommonJibriStuff
+    extends BaseJibriRecorder
     implements JibriSession.Owner
 {
     /**

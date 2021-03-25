@@ -348,13 +348,13 @@ public class XmppProviderImpl
     }
 
     @Override
-    public void addJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    public void addJibriIqHandler(@NotNull BaseJibriRecorder jibriIqHandler)
     {
         this.jibriIqHandler.addJibri(jibriIqHandler);
     }
 
     @Override
-    public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    public void removeJibriIqHandler(@NotNull BaseJibriRecorder jibriIqHandler)
     {
         this.jibriIqHandler.removeJibri(jibriIqHandler);
     }

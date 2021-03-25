@@ -137,13 +137,13 @@ public class MockXmppProvider
     }
 
     @Override
-    public void addJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    public void addJibriIqHandler(@NotNull BaseJibriRecorder jibriIqHandler)
     {
         throw new RuntimeException("Not implemented.");
     }
 
     @Override
-    public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    public void removeJibriIqHandler(@NotNull BaseJibriRecorder jibriIqHandler)
     {
         throw new RuntimeException("Not implemented.");
     }

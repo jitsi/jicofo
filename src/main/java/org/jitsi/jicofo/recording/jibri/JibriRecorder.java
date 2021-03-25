@@ -44,7 +44,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  * @author Sam Whited
  */
 public class JibriRecorder
-    extends CommonJibriStuff
+    extends BaseJibriRecorder
     implements JibriSession.Owner
 {
     /**
@@ -132,7 +132,7 @@ public class JibriRecorder
 
     /**
      * Starts new session for given iq. It is assumed that
-     * {@link CommonJibriStuff} has checked that there is no recording session
+     * {@link BaseJibriRecorder} has checked that there is no recording session
      * currently active.
      * {@inheritDoc}
      */
