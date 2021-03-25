@@ -20,12 +20,20 @@ import io.kotest.matchers.shouldBe
 class OctoConfigTest : ConfigTest() {
     init {
         context("Enabled flag") {
+            // Note that there's a corresponding flag in the JVB and these two
+            // MUST be in sync (otherwise bridges will crash because they won't
+            // know how to deal with octo channels).
             context("default") {
-                OctoConfig.config.enabled shouldBe true
+                OctoConfig.config.enabled shouldBe false
             }
             context("disabled") {
                 withNewConfig("jicofo.octo.enabled=false") {
                     OctoConfig.config.enabled shouldBe false
+                }
+            }
+            context("enabled") {
+                withNewConfig("jicofo.octo.enabled=true") {
+                    OctoConfig.config.enabled shouldBe true
                 }
             }
         }
