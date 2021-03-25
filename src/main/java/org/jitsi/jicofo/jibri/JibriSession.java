@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.recording.jibri;
+package org.jitsi.jicofo.jibri;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.Nullable;
-import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
@@ -42,6 +41,9 @@ import static org.apache.commons.lang3.StringUtils.*;
  * session. It uses {@link JibriDetector} to select new Jibri.
  *
  * @author Pawel Domas
+ *
+ * This is not meant to be `public`, but has to be exposed because of compatibility with kotlin (JibriStats.kt takes
+ * a parameter type that exposes JibriSession and it can not be restricted to java's "package private").
  */
 public class JibriSession
 {

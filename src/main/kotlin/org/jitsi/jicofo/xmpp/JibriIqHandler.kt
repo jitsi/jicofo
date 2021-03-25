@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.jicofo.recording.jibri.BaseJibriRecorder
+import org.jitsi.jicofo.jibri.BaseJibriRecorder
 import org.jitsi.jicofo.util.ErrorResponse
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler

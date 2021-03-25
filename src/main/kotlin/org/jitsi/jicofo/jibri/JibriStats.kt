@@ -16,8 +16,6 @@
  */
 package org.jitsi.jicofo.jibri
 
-import org.jitsi.jicofo.recording.jibri.BaseJibriRecorder
-import org.jitsi.jicofo.recording.jibri.JibriSession
 import org.json.simple.JSONObject
 import java.util.concurrent.atomic.AtomicInteger
 

@@ -1,4 +1,4 @@
-package org.jitsi.jicofo.recording.jibri
+package org.jitsi.jicofo.jibri
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe

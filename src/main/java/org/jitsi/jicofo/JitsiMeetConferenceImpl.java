@@ -32,7 +32,7 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
-import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.jicofo.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;

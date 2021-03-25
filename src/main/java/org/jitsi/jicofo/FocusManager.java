@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.jibri.*;
-import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;

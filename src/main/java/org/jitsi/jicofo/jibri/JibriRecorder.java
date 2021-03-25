@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.recording.jibri;
+package org.jitsi.jicofo.jibri;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
@@ -30,7 +29,7 @@ import org.jivesoftware.smack.packet.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
+import static org.jitsi.jicofo.jibri.JibriSession.StartException;
 import static org.apache.commons.lang3.StringUtils.*;
 
 /**
@@ -172,7 +171,7 @@ public class JibriRecorder
 
                 return JibriIq.createResult(iq, sessionId);
             }
-            catch (JibriSession.StartException exc)
+            catch (StartException exc)
             {
                 ErrorIQ errorIq;
                 String reason = exc.getMessage();

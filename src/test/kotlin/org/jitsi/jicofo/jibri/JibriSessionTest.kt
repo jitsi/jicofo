@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.recording.jibri
+package org.jitsi.jicofo.jibri
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode

@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp
 
-import org.jitsi.jicofo.recording.jibri.BaseJibriRecorder
+import org.jitsi.jicofo.jibri.BaseJibriRecorder
 import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
