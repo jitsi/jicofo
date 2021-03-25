@@ -2718,7 +2718,7 @@ public class JitsiMeetConferenceImpl
          * a participant doesn't exist yet, it is created.
          * @return the {@link OctoParticipant} for this {@link BridgeSession}.
          */
-        private OctoParticipant getOctoParticipant()
+        private OctoParticipant getOrCreateOctoParticipant()
         {
             if (octoParticipant != null)
             {
@@ -2726,7 +2726,7 @@ public class JitsiMeetConferenceImpl
             }
 
             List<String> remoteRelays = getAllRelays(bridge.getRelayId());
-            return getOctoParticipant(new LinkedList<>(remoteRelays));
+            return getOrCreateOctoParticipant(new LinkedList<>(remoteRelays));
         }
 
         /**
@@ -2735,7 +2735,7 @@ public class JitsiMeetConferenceImpl
          * with {@code relays} as the list of remote Octo relays.
          * @return the {@link OctoParticipant} for this {@link BridgeSession}.
          */
-        private OctoParticipant getOctoParticipant(List<String> relays)
+        private OctoParticipant getOrCreateOctoParticipant(List<String> relays)
         {
             if (octoParticipant == null)
             {
@@ -2755,7 +2755,12 @@ public class JitsiMeetConferenceImpl
          */
         private void addSourcesToOcto(MediaSourceMap sources, MediaSourceGroupMap sourceGroups)
         {
-           OctoParticipant octoParticipant = getOctoParticipant();
+            if (!OctoConfig.config.getEnabled())
+            {
+                return;
+            }
+
+           OctoParticipant octoParticipant = getOrCreateOctoParticipant();
 
            synchronized (octoParticipant)
            {
@@ -2807,12 +2812,17 @@ public class JitsiMeetConferenceImpl
          */
         private void setRelays(List<String> allRelays)
         {
+            if (!OctoConfig.config.getEnabled())
+            {
+                return;
+            }
+
             List<String> remoteRelays = new LinkedList<>(allRelays);
             remoteRelays.remove(bridge.getRelayId());
 
             logger.info("Updating Octo relays for " + bridge);
 
-            OctoParticipant octoParticipant = getOctoParticipant(remoteRelays);
+            OctoParticipant octoParticipant = getOrCreateOctoParticipant(remoteRelays);
             octoParticipant.setRelays(remoteRelays);
             if (octoParticipant.isSessionEstablished())
             {
