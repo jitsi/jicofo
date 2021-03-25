@@ -16,6 +16,7 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.jitsi.jicofo.recording.jibri.BaseJibriRecorder
 import org.jitsi.jicofo.recording.jibri.JibriSession
 import org.json.simple.JSONObject
 import java.util.concurrent.atomic.AtomicInteger
@@ -61,5 +62,26 @@ class JibriStats {
         put("total_live_streaming_failures", totalLiveStreamingFailures.get())
         put("total_recording_failures", totalRecordingFailures.get())
         put("total_sip_call_failures", totalSipCallFailures.get())
+    }
+
+    companion object {
+        @JvmStatic
+        val globalStats = JibriStats()
+
+        @JvmStatic
+        fun getStats(recorders: Collection<BaseJibriRecorder?>) = globalStats.toJson().apply {
+            val sessions = recorders.filterNotNull().flatMap { it.jibriSessions }
+
+            this["live_streaming_active"] = sessions.count {
+                it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive
+            }
+            this["recording_active"] = sessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isActive }
+            this["sip_call_active"] = sessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isActive }
+            this["live_streaming_pending"] = sessions.count {
+                it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isPending
+            }
+            this["recording_pending"] = sessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isPending }
+            this["sip_call_pending"] = sessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isPending }
+        }
     }
 }

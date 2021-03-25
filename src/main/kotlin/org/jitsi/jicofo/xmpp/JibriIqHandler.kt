@@ -30,8 +30,8 @@ import java.util.*
  * A Smack [IQRequestHandler] for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
  * handling to specific [BaseJibriRecorder] instances.
  */
-class JibriIqHandler()
-    : AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.async) {
+class JibriIqHandler() :
+    AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.async) {
 
     private val jibris = Collections.synchronizedList(LinkedList<BaseJibriRecorder>())
 
@@ -48,8 +48,8 @@ class JibriIqHandler()
      * Pass the request to the first [BaseJibriRecorder] that wants it.
      */
     override fun handleIQRequest(iq: IQ): IQ = synchronized(jibris) {
-            iq as JibriIq
-            return jibris.find { it.accept(iq) }?.handleIQRequest(iq)
-                    ?: ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null)
+        iq as JibriIq
+        return jibris.find { it.accept(iq) }?.handleIQRequest(iq)
+            ?: ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null)
     }
 }

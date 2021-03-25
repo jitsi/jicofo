@@ -19,7 +19,6 @@ package org.jitsi.jicofo.recording.jibri;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.Nullable;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
@@ -28,7 +27,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
-import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -47,13 +45,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class JibriSession
 {
-    private static final JibriStats stats = new JibriStats();
-
-    public static JSONObject getGlobalStats()
-    {
-        return stats.toJson();
-    }
-
     /**
      * Returns <tt>true</tt> if given <tt>status</tt> indicates that Jibri is in
      * the middle of starting of the recording process.
@@ -178,6 +169,9 @@ public class JibriSession
      * The full JID of the entity that has initiated the stop of the recording.
      */
     private Jid terminator;
+
+    @NotNull
+    private final JibriStats stats = JibriStats.Companion.getGlobalStats();
 
     /**
      * Creates new {@link JibriSession} instance.

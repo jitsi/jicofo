@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
+import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.utils.logging2.*;
@@ -487,7 +488,7 @@ public class FocusManager
         int numParticipants = 0;
         int largestConferenceSize = 0;
         int[] conferenceSizes = new int[22];
-        Set<JibriSession> jibriSessions = new HashSet<>();
+        Set<BaseJibriRecorder> jibriRecordersAndGateways = new HashSet<>();
         for (JitsiMeetConference conference : getConferences())
         {
             if (!conference.includeInStatistics())
@@ -514,20 +515,10 @@ public class FocusManager
                     : conferenceSizes.length - 1;
             conferenceSizes[conferenceSizeIndex]++;
 
-            JibriRecorder jibriRecorder = conference.getJibriRecorder();
-            if (jibriRecorder != null)
-            {
-                jibriSessions.addAll(jibriRecorder.getJibriSessions());
-            }
-
-            JibriSipGateway jibriSipGateway = conference.getJibriSipGateway();
-            if (jibriSipGateway != null)
-            {
-                jibriSessions.addAll(jibriSipGateway.getJibriSessions());
-            }
+            jibriRecordersAndGateways.add(conference.getJibriRecorder());
+            jibriRecordersAndGateways.add(conference.getJibriSipGateway());
         }
 
-        JibriSessionStats jibriSessionStats = new JibriSessionStats(jibriSessions);
         stats.put("largest_conference", largestConferenceSize);
         stats.put("participants", numParticipants);
         JSONArray conferenceSizesJson = new JSONArray();
@@ -546,9 +537,7 @@ public class FocusManager
             stats.put("slow_health_check", healthChecker.getTotalSlowHealthChecks());
         }
 
-        JSONObject jibriStats = JibriSession.getGlobalStats();
-        jibriSessionStats.toJSON(jibriStats);
-        stats.put("jibri", jibriStats);
+        stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
 
         return stats;
     }
