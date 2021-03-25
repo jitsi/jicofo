@@ -197,14 +197,6 @@ public class JibriRecorder
                 return errorIq;
             }
         }
-        else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
-        {
-            // Bad request - no stream ID and no recording mode
-            return ErrorResponse.create(
-                iq,
-                XMPPError.Condition.bad_request,
-                "Stream ID is empty and recording mode is not FILE");
-        }
         else if (emptyStreamId && recordingMode.equals(RecordingMode.STREAM))
         {
             // Bad request - no stream ID
