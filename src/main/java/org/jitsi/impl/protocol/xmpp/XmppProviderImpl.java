@@ -108,7 +108,8 @@ public class XmppProviderImpl
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(executor);
-        jibriIqHandler = new JibriIqHandler(connection);
+        jibriIqHandler = new JibriIqHandler();
+        connection.registerIQRequestHandler(jibriIqHandler);
     }
 
 
@@ -263,6 +264,7 @@ public class XmppProviderImpl
             logger.info("Disconnected.");
 
             connection.unregisterIQRequestHandler(jingleOpSet);
+            connection.unregisterIQRequestHandler(jibriIqHandler);
             connection.removeConnectionListener(connListener);
         }
 
