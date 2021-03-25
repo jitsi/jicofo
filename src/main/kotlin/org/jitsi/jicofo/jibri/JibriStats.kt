@@ -20,6 +20,9 @@ import org.jitsi.jicofo.recording.jibri.JibriSession
 import org.json.simple.JSONObject
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * Counts total stats (failures by session type).
+ */
 class JibriStats {
     /**
      * How many times a Jibri SIP call has failed to start.

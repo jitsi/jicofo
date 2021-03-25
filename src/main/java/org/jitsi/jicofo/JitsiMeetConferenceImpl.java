@@ -2445,25 +2445,14 @@ public class JitsiMeetConferenceImpl
         return jicofoServices.getFocusManager();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JibriSessionStats getJibriSessionStats()
+    public JibriRecorder getJibriRecorder()
     {
-        List<JibriSession> sessions = new ArrayList<>();
+        return jibriRecorder;
+    }
 
-        if (jibriRecorder != null)
-        {
-            sessions.addAll(jibriRecorder.getJibriSessions());
-        }
-
-        if  (jibriSipGateway != null)
-        {
-            sessions.addAll(jibriSipGateway.getJibriSessions());
-        }
-
-        return new JibriSessionStats(sessions);
+    public JibriSipGateway getJibriSipGateway()
+    {
+        return jibriSipGateway;
     }
 
     /**

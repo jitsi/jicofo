@@ -16,7 +16,7 @@ public class JibriSessionStats
      * @param jibriType the type of Jibri to count.
      * @return how many active Jibri sessions of given type are in the list.
      */
-    private static int countActive(List<JibriSession> sessions,
+    private static int countActive(Collection<JibriSession> sessions,
                                    JibriSession.Type jibriType)
     {
         return countJibris(sessions, jibriType, JibriSession::isActive);
@@ -32,7 +32,7 @@ public class JibriSessionStats
      * the selector's test.
      */
     private static int countJibris(
-            List<JibriSession> sessions,
+            Collection<JibriSession> sessions,
             JibriSession.Type jibriType,
             Function<JibriSession, Boolean> selector)
     {
@@ -57,7 +57,7 @@ public class JibriSessionStats
      * @return how many Jibri sessions of given type and in the pending state
      * are there on the list.
      */
-    private static int countPending(List<JibriSession> sessions,
+    private static int countPending(Collection<JibriSession> sessions,
                                     JibriSession.Type jibriType)
     {
         return countJibris(sessions, jibriType, JibriSession::isPending);
@@ -94,20 +94,12 @@ public class JibriSessionStats
     private int pendingSipCallSessions;
 
     /**
-     * Creates empty instance initialized with 0 stats.
-     */
-    public JibriSessionStats()
-    {
-
-    }
-
-    /**
      * Creates new {@link JibriSessionStats} computed for the given list of
      * {@link JibriSession}.
      *
      * @param sessions the list for which the stats will be generated.
      */
-    public JibriSessionStats(List<JibriSession> sessions)
+    public JibriSessionStats(Collection<JibriSession> sessions)
     {
         activeLiveStreamingSessions
             = countActive(
@@ -134,21 +126,6 @@ public class JibriSessionStats
             = countPending(
                 sessions,
                 JibriSession.Type.SIP_CALL);
-    }
-
-    /**
-     * Merges statistics stored in the given instance with this instance's
-     * state by adding up values.
-     * @param stats the other stats to merge.
-     */
-    public void merge(JibriSessionStats stats)
-    {
-        this.activeLiveStreamingSessions += stats.activeLiveStreamingSessions;
-        this.activeRecordingSessions += stats.activeRecordingSessions;
-        this.activeSipCallSessions += stats.activeSipCallSessions;
-        this.pendingLiveStreamingSessions += stats.pendingLiveStreamingSessions;
-        this.pendingRecordingSessions += stats.pendingRecordingSessions;
-        this.pendingSipCallSessions += stats.pendingSipCallSessions;
     }
 
     /**

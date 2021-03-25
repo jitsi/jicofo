@@ -66,12 +66,6 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public JibriSessionStats getJibriSessionStats()
-    {
-        return new JibriSessionStats();
-    }
-
-    @Override
     public ChatRoomMemberRole getRoleForMucJid(Jid jid)
     {
         return null;

@@ -487,7 +487,7 @@ public class FocusManager
         int numParticipants = 0;
         int largestConferenceSize = 0;
         int[] conferenceSizes = new int[22];
-        JibriSessionStats jibriSessionStats = new JibriSessionStats();
+        Set<JibriSession> jibriSessions = new HashSet<>();
         for (JitsiMeetConference conference : getConferences())
         {
             if (!conference.includeInStatistics())
@@ -514,9 +514,20 @@ public class FocusManager
                     : conferenceSizes.length - 1;
             conferenceSizes[conferenceSizeIndex]++;
 
-            jibriSessionStats.merge(conference.getJibriSessionStats());
+            JibriRecorder jibriRecorder = conference.getJibriRecorder();
+            if (jibriRecorder != null)
+            {
+                jibriSessions.addAll(jibriRecorder.getJibriSessions());
+            }
+
+            JibriSipGateway jibriSipGateway = conference.getJibriSipGateway();
+            if (jibriSipGateway != null)
+            {
+                jibriSessions.addAll(jibriSipGateway.getJibriSessions());
+            }
         }
 
+        JibriSessionStats jibriSessionStats = new JibriSessionStats(jibriSessions);
         stats.put("largest_conference", largestConferenceSize);
         stats.put("participants", numParticipants);
         JSONArray conferenceSizesJson = new JSONArray();

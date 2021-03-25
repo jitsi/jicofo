@@ -75,11 +75,16 @@ public interface JitsiMeetConference
      */
     void setStartMuted(boolean[] startMuted);
 
-    /**
-     * @return a stats snapshot for all {@link JibriSession}s used in this
-     * conference.
-     */
-    JibriSessionStats getJibriSessionStats();
+    default JibriRecorder getJibriRecorder()
+    {
+        return null;
+    }
+
+    default JibriSipGateway getJibriSipGateway()
+    {
+        return null;
+    }
+
 
     /**
      * Gets the role of a member in the conference.
