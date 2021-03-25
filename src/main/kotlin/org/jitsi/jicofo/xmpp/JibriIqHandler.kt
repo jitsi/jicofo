@@ -24,13 +24,14 @@ import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
-import java.util.*
+import java.util.Collections
+import java.util.LinkedList
 
 /**
  * A Smack [IQRequestHandler] for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
  * handling to specific [BaseJibriRecorder] instances.
  */
-class JibriIqHandler() :
+class JibriIqHandler :
     AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.async) {
 
     private val jibris = Collections.synchronizedList(LinkedList<BaseJibriRecorder>())
