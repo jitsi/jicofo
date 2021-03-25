@@ -21,11 +21,9 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -63,19 +61,18 @@ public class JibriRecorder
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
-     * @param connection the XMPP connection which will be used for communication.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriRecorder(
             @NotNull JitsiMeetConferenceImpl conference,
-            @NotNull ExtendedXmppConnection connection,
+            @NotNull XmppProvider xmppProvider,
             @NotNull ScheduledExecutorService scheduledExecutor,
             @NotNull JibriDetector jibriDetector,
             @NotNull Logger parentLogger)
     {
         super(
             conference,
-            connection,
+            xmppProvider,
             scheduledExecutor,
             parentLogger,
             jibriDetector);

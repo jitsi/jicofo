@@ -21,10 +21,8 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -61,19 +59,18 @@ public class JibriSipGateway
     /**
      * Creates new instance of {@link JibriSipGateway}.
      * @param conference parent conference for which the new instance will be managing Jibri SIP sessions.
-     * @param xmppConnection the connection which will be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriSipGateway(
            @NotNull JitsiMeetConferenceImpl conference,
-           @NotNull ExtendedXmppConnection xmppConnection,
+           @NotNull XmppProvider xmppProvider,
            @NotNull ScheduledExecutorService scheduledExecutor,
            @NotNull JibriDetector jibriDetector,
            @NotNull Logger parentLogger)
     {
         super(
             conference,
-            xmppConnection,
+            xmppProvider,
             scheduledExecutor,
             parentLogger,
             jibriDetector);

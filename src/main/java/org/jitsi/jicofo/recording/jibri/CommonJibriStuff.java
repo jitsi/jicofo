@@ -61,6 +61,9 @@ public abstract class CommonJibriStuff
     @NotNull
     protected final ExtendedXmppConnection connection;
 
+    @NotNull
+    private final XmppProvider xmppProvider;
+
     /**
      * The logger instance pass to the constructor that wil be used by this
      * instance for logging.
@@ -84,22 +87,24 @@ public abstract class CommonJibriStuff
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
-     * @param xmppConnection XMPP operation set which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
     CommonJibriStuff(
             @NotNull JitsiMeetConferenceImpl conference,
-            @NotNull ExtendedXmppConnection xmppConnection,
+            @NotNull XmppProvider xmppProvider,
             @NotNull ScheduledExecutorService scheduledExecutor,
             @NotNull Logger logger,
             @NotNull JibriDetector jibriDetector)
     {
-        this.connection = xmppConnection;
+        this.xmppProvider = xmppProvider;
+        this.connection = xmppProvider.getXmppConnection();
         this.conference = conference;
         this.scheduledExecutor = scheduledExecutor;
         this.jibriDetector = jibriDetector;
 
         this.logger = logger;
+
+        xmppProvider.addJibriIqHandler(this);
     }
 
     /**
@@ -147,6 +152,7 @@ public abstract class CommonJibriStuff
      */
     public void dispose()
     {
+        xmppProvider.removeJibriIqHandler(this);
     }
 
     /**
