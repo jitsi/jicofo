@@ -49,7 +49,7 @@ class JibriIqHandler :
      * Pass the request to the first [BaseJibri] that wants it.
      */
     override fun handleIQRequest(iq: IQ): IQ = synchronized(jibris) {
-        iq as JibriIq
+        iq as? JibriIq ?: throw IllegalArgumentException("Unexpected IQ type: ${iq::class}")
         return jibris.find { it.accept(iq) }?.handleIQRequest(iq)
             ?: ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null)
     }
