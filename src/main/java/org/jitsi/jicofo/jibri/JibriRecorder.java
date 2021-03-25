@@ -119,14 +119,7 @@ public class JibriRecorder
     @Override
     public List<JibriSession> getJibriSessions()
     {
-        List<JibriSession> sessions = new ArrayList<>(1);
-
-        if (jibriSession != null)
-        {
-            sessions.add(jibriSession);
-        }
-
-        return sessions;
+        return jibriSession == null ? Collections.emptyList() : Collections.singletonList(jibriSession);
     }
 
     /**
