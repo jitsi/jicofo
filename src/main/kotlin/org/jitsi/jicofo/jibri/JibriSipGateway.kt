@@ -74,7 +74,8 @@ class JibriSipGateway(
     }
 
     override fun getJibriSessionForMeetIq(iq: JibriIq): JibriSession? = sipSessions[iq.sipAddress]
-    override fun getJibriSessions(): List<JibriSession> = ArrayList(sipSessions.values)
+    override val jibriSessions: List<JibriSession>
+        get() = ArrayList(sipSessions.values)
 
     override fun handleStartRequest(iq: JibriIq): IQ =
         if (StringUtils.isNotBlank(iq.sipAddress)) {

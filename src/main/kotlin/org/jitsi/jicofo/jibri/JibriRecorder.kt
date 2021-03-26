@@ -84,7 +84,8 @@ class JibriRecorder(
     /**
      * {@inheritDoc}
      */
-    override fun getJibriSessions(): List<JibriSession> = jibriSession?.let { listOf(it) } ?: emptyList()
+    override val jibriSessions: List<JibriSession>
+        get() = jibriSession?.let { listOf(it) } ?: emptyList()
 
     /**
      * Handles a request to start a jibri session coming from a client in the conference and returns the response to
