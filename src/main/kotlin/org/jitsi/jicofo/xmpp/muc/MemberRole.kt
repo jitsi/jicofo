@@ -15,20 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp;
+package org.jitsi.jicofo.xmpp.muc
+
+import org.jivesoftware.smackx.muc.MUCAffiliation
+import org.jivesoftware.smackx.muc.MUCRole
 
 /**
  * Indicates roles that a chat room member detains in its containing chat room.
- *
- * TODO: get rid of this and use the smack roles directly.
- *
- * @author Emil Ivov
- * @author Valentin Martinet
- * @author Yana Stamcheva
  */
-public enum ChatRoomMemberRole
-    implements Comparable<ChatRoomMemberRole>
-{
+enum class MemberRole {
     /**
      * A role implying the full set of chat room permissions
      */
@@ -52,5 +47,18 @@ public enum ChatRoomMemberRole
     /**
      * A role implying standard participant permissions.
      */
-    GUEST
+    GUEST;
+
+    companion object {
+        @JvmStatic
+        fun fromSmack(mucRole: MUCRole?, mucAffiliation: MUCAffiliation?) = when (mucAffiliation) {
+            MUCAffiliation.admin -> ADMINISTRATOR
+            MUCAffiliation.owner -> OWNER
+            else -> when (mucRole) {
+                MUCRole.moderator -> MODERATOR
+                MUCRole.participant -> MEMBER
+                else -> GUEST
+            }
+        }
+    }
 }

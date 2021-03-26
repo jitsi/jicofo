@@ -21,16 +21,15 @@ import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.ADMINISTRATOR
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.GUEST
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.MEMBER
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.MODERATOR
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.OWNER
-import org.jitsi.impl.protocol.xmpp.ChatRoomImpl.smackRoleToScRole
+import org.jitsi.jicofo.xmpp.muc.MemberRole.ADMINISTRATOR
+import org.jitsi.jicofo.xmpp.muc.MemberRole.GUEST
+import org.jitsi.jicofo.xmpp.muc.MemberRole.MEMBER
+import org.jitsi.jicofo.xmpp.muc.MemberRole.MODERATOR
+import org.jitsi.jicofo.xmpp.muc.MemberRole.OWNER
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
 
-class XmppUtilsTest : ShouldSpec() {
+class MemberRoleTest : ShouldSpec() {
     init {
         context("Order") {
             (GUEST > MEMBER) shouldBe true
@@ -38,15 +37,15 @@ class XmppUtilsTest : ShouldSpec() {
             (MODERATOR > ADMINISTRATOR) shouldBe true
             (ADMINISTRATOR > OWNER) shouldBe true
 
-            GUEST.compareTo(MEMBER) shouldBeGreaterThan  0
-            MEMBER.compareTo(MODERATOR) shouldBeGreaterThan  0
-            MODERATOR.compareTo(ADMINISTRATOR) shouldBeGreaterThan  0
-            ADMINISTRATOR.compareTo(OWNER) shouldBeGreaterThan  0
+            GUEST.compareTo(MEMBER) shouldBeGreaterThan 0
+            MEMBER.compareTo(MODERATOR) shouldBeGreaterThan 0
+            MODERATOR.compareTo(ADMINISTRATOR) shouldBeGreaterThan 0
+            ADMINISTRATOR.compareTo(OWNER) shouldBeGreaterThan 0
         }
         context("From Smack role and affiliation") {
             enumPairsWithNull<MUCRole, MUCAffiliation>().forEach { (mucRole, mucAffiliation) ->
                 withClue("mucRole=$mucRole, mucAffiliation=$mucAffiliation") {
-                    smackRoleToScRole(mucRole, mucAffiliation) shouldBe when (mucAffiliation) {
+                    MemberRole.fromSmack(mucRole, mucAffiliation) shouldBe when (mucAffiliation) {
                         MUCAffiliation.admin -> ADMINISTRATOR
                         MUCAffiliation.owner -> OWNER
                         else -> when (mucRole) {

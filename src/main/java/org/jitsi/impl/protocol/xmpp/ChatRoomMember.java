@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -48,7 +49,7 @@ public interface ChatRoomMember
      * @return a <tt>ChatRoomMemberRole</tt> instance indicating the role
      * the this member in its containing chat room.
      */
-    ChatRoomMemberRole getRole();
+    MemberRole getRole();
 
     /**
      * Sets the role of this chat room member in its containing room.
@@ -56,7 +57,7 @@ public interface ChatRoomMember
      * @param role <tt>ChatRoomMemberRole</tt> instance indicating the role
      * to set for this member in its containing chat room.
      */
-    void setRole(ChatRoomMemberRole role);
+    void setRole(MemberRole role);
 
     /**
      * Returns the JID of the user (outside the MUC), i.e. the "real" JID.

@@ -18,6 +18,7 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
@@ -34,7 +35,7 @@ public class MockRoomMember
 
     private final MockMultiUserChat room;
 
-    private ChatRoomMemberRole role = ChatRoomMemberRole.MEMBER;
+    private MemberRole role = MemberRole.MEMBER;
 
     public MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
     {
@@ -56,7 +57,7 @@ public class MockRoomMember
     }
 
     @Override
-    public ChatRoomMemberRole getRole()
+    public MemberRole getRole()
     {
         return role;
     }
@@ -67,7 +68,7 @@ public class MockRoomMember
     }
 
     @Override
-    public void setRole(ChatRoomMemberRole role)
+    public void setRole(MemberRole role)
     {
         this.role = role;
     }

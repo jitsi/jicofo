@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -90,7 +91,7 @@ public interface JitsiMeetConference
      * @param jid the member whose role is to be determined.
      * @return The member's role or <tt>null</tt> if the JID is not a member.
      */
-    ChatRoomMemberRole getRoleForMucJid(Jid jid);
+    MemberRole getRoleForMucJid(Jid jid);
 
     /**
      * Whether this conference should be considered when generating statistics.

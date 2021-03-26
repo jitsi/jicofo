@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
@@ -82,7 +83,7 @@ public class ChatMemberImpl
      */
     private boolean robot = false;
 
-    private ChatRoomMemberRole role;
+    private MemberRole role;
 
     /**
      * Stores statistics ID for the member.
@@ -123,7 +124,7 @@ public class ChatMemberImpl
     }
 
     @Override
-    public ChatRoomMemberRole getRole()
+    public MemberRole getRole()
     {
         if (this.role == null)
         {
@@ -131,11 +132,11 @@ public class ChatMemberImpl
 
             if (o == null)
             {
-                return ChatRoomMemberRole.GUEST;
+                return MemberRole.GUEST;
             }
             else
             {
-                this.role = ChatRoomImpl.smackRoleToScRole(o.getRole(), o.getAffiliation());
+                this.role = MemberRole.fromSmack(o.getRole(), o.getAffiliation());
             }
         }
         return this.role;
@@ -151,7 +152,7 @@ public class ChatMemberImpl
     }
 
     @Override
-    public void setRole(ChatRoomMemberRole role)
+    public void setRole(MemberRole role)
     {
         throw new RuntimeException("Not implemented yet.");
     }
@@ -228,7 +229,7 @@ public class ChatMemberImpl
         {
             boolean[] startMuted = { ext.getAudioMuted(), ext.getVideoMuted() };
 
-            if (getRole().compareTo(ChatRoomMemberRole.MODERATOR) < 0)
+            if (getRole().compareTo(MemberRole.MODERATOR) < 0)
             {
                 chatRoom.setStartMuted(startMuted);
             }

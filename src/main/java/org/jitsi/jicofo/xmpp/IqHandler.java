@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.Bridge;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.xmpp.extensions.rayo.*;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -295,7 +296,7 @@ public class IqHandler
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
-        ChatRoomMemberRole role = conference.getRoleForMucJid(from);
+        MemberRole role = conference.getRoleForMucJid(from);
 
         if (role == null)
         {
@@ -303,7 +304,7 @@ public class IqHandler
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
         }
 
-        if (ChatRoomMemberRole.MODERATOR.compareTo(role) < 0)
+        if (MemberRole.MODERATOR.compareTo(role) < 0)
         {
             // Moderator permission is required
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));

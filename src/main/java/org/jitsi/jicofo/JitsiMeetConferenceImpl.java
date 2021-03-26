@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -36,7 +37,6 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 
-import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -1246,7 +1246,7 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public ChatRoomMemberRole getRoleForMucJid(Jid mucJid)
+    public MemberRole getRoleForMucJid(Jid mucJid)
     {
         if (chatRoom == null)
         {
@@ -2100,7 +2100,7 @@ public class JitsiMeetConferenceImpl
         }
         // Only moderators can mute others
         if (!fromJid.equals(toBeMutedJid)
-            && ChatRoomMemberRole.MODERATOR.compareTo(principal.getChatMember().getRole()) < 0)
+            && MemberRole.MODERATOR.compareTo(principal.getChatMember().getRole()) < 0)
         {
             logger.warn("Permission denied for mute operation from " + fromJid);
             return false;

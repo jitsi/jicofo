@@ -17,12 +17,12 @@
  */
 package org.jitsi.jicofo.jibri
 
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
 import org.jitsi.jicofo.util.ErrorResponse.create as error
+import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
@@ -199,7 +199,6 @@ abstract class BaseJibri internal constructor(
                 error(iq, XMPPError.Condition.bad_request, "Unable to handle ${iq.action}")
             }
         }
-
     }
 
     private fun verifyModeratorRole(iq: JibriIq): XMPPError? {
@@ -207,9 +206,9 @@ abstract class BaseJibri internal constructor(
         val role = conference.getRoleForMucJid(iq.from)
             ?: return XMPPError.getBuilder(XMPPError.Condition.forbidden).build()
         // Note that with our enum we have GUEST > MEMBER > MODERATOR > OWNER, so this requires at least MODERATOR
-        return if (role > ChatRoomMemberRole.MODERATOR)
+        return if (role > MemberRole.MODERATOR)
             XMPPError.getBuilder(XMPPError.Condition.not_allowed).build()
-            else null
+        else null
     }
 
     protected fun generateSessionId(): String {

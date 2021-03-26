@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -64,7 +65,7 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public ChatRoomMemberRole getRoleForMucJid(Jid jid)
+    public MemberRole getRoleForMucJid(Jid jid)
     {
         return null;
     }
