@@ -309,8 +309,6 @@ public class IqHandler
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
         }
 
-        final List<Jid> excludeList = exclude == null ? new ArrayList<>() : exclude;
-
         Set<String> bridgeRegions = conference.getBridges().keySet().stream()
             .map(Bridge::getRegion)
             .filter(Objects::nonNull)
@@ -319,7 +317,7 @@ public class IqHandler
         // Check if Jigasi is available
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         JigasiDetector detector = jicofoServices.getJigasiDetector();
-        Jid jigasiJid = detector == null ? null : detector.selectSipJigasi(excludeList, bridgeRegions);
+        Jid jigasiJid = detector == null ? null : detector.selectSipJigasi(exclude, bridgeRegions);
 
         if (jigasiJid == null)
         {
@@ -355,10 +353,10 @@ public class IqHandler
                     {
                         if (retryCount > 0)
                         {
-                            excludeList.add(jigasiJid);
+                            exclude.add(jigasiJid);
 
                             // let's retry lowering the number of attempts
-                            IQ result = this.handleRayoIQ(dialIq, retryCount - 1, excludeList);
+                            IQ result = this.handleRayoIQ(dialIq, retryCount - 1, exclude);
                             if (result != null)
                             {
                                 connection.sendStanza(result);
