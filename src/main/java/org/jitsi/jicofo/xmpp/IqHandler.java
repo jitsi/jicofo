@@ -309,6 +309,8 @@ public class IqHandler
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
         }
 
+        final List<Jid> excludeList = exclude == null ? new ArrayList<>() : exclude;
+
         Set<String> bridgeRegions = conference.getBridges().keySet().stream()
             .map(Bridge::getRegion)
             .filter(Objects::nonNull)
@@ -317,7 +319,7 @@ public class IqHandler
         // Check if Jigasi is available
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         JigasiDetector detector = jicofoServices.getJigasiDetector();
-        Jid jigasiJid = detector == null ? null : detector.selectSipJigasi(exclude, bridgeRegions);
+        Jid jigasiJid = detector == null ? null : detector.selectSipJigasi(excludeList, bridgeRegions);
 
         if (jigasiJid == null)
         {
@@ -334,31 +336,57 @@ public class IqHandler
 
         try
         {
-            IQ reply = connection.sendPacketAndGetReply(forwardDialIq);
-
-            if (reply == null)
-            {
-                if (retryCount > 0)
+            connection.sendIqWithResponseCallback(
+                forwardDialIq,
+                reply ->
                 {
-                    exclude.add(jigasiJid);
+                    // Send Jigasi response back to the client
+                    reply.setFrom((Jid)null);
+                    reply.setTo(from);
+                    reply.setStanzaId(dialIq.getStanzaId());
 
-                    // let's retry lowering the number of attempts
-                    return this.handleRayoIQ(dialIq, retryCount - 1, exclude);
-                }
-                else
+                    connection.sendStanza(reply);
+                },
+                exception ->
                 {
-                    return IQ.createErrorResponse(
-                        dialIq, XMPPError.getBuilder(XMPPError.Condition.remote_server_timeout));
-                }
-            }
+                    logger.error("Error sending dialIQ to "+ jigasiJid + " " + exception.getMessage());
 
-            // Send Jigasi response back to the client
-            reply.setFrom((Jid)null);
-            reply.setTo(from);
-            reply.setStanzaId(dialIq.getStanzaId());
-            return reply;
+                    try
+                    {
+                        if (retryCount > 0)
+                        {
+                            excludeList.add(jigasiJid);
+
+                            // let's retry lowering the number of attempts
+                            IQ result = this.handleRayoIQ(dialIq, retryCount - 1, excludeList);
+                            if (result != null)
+                            {
+                                connection.sendStanza(result);
+                            }
+
+                            return;
+                        }
+
+                        if (exception instanceof SmackException.NoResponseException)
+                        {
+                            connection.sendStanza(IQ.createErrorResponse(
+                                dialIq, XMPPError.getBuilder(XMPPError.Condition.remote_server_timeout)));
+                        }
+                        else
+                        {
+                            connection.sendStanza(IQ.createErrorResponse(
+                                dialIq, XMPPError.getBuilder(XMPPError.Condition.undefined_condition)));
+                        }
+                    }
+                    catch(InterruptedException | SmackException.NotConnectedException e)
+                    {
+                        logger.error("Cannot send back dialIq error response", e);
+                    }
+                });
+
+            return null;
         }
-        catch (SmackException.NotConnectedException e)
+        catch (SmackException.NotConnectedException | InterruptedException e)
         {
             logger.error("Failed to send DialIq - XMPP disconnected", e);
             return IQ.createErrorResponse(
