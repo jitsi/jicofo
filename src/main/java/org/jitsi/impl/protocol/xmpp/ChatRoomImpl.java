@@ -48,7 +48,7 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 public class ChatRoomImpl
     implements ChatRoom, PresenceListener
 {
-    static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
+    public static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
         if (affiliation != null) {
             if (affiliation == MUCAffiliation.admin) {
                 return ChatRoomMemberRole.ADMINISTRATOR;
