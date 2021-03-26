@@ -2099,8 +2099,7 @@ public class JitsiMeetConferenceImpl
             return false;
         }
         // Only moderators can mute others
-        if (!fromJid.equals(toBeMutedJid)
-            && MemberRole.MODERATOR.compareTo(principal.getChatMember().getRole()) < 0)
+        if (!fromJid.equals(toBeMutedJid) && !principal.getChatMember().getRole().hasModeratorRights())
         {
             logger.warn("Permission denied for mute operation from " + fromJid);
             return false;

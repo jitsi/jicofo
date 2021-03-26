@@ -22,7 +22,6 @@ import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
 import org.jitsi.jicofo.util.ErrorResponse.create as error
-import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
@@ -202,18 +201,16 @@ abstract class BaseJibri internal constructor(
     }
 
     private fun verifyModeratorRole(iq: JibriIq): XMPPError? {
-        // Only room members are allowed to send requests
         val role = conference.getRoleForMucJid(iq.from)
-            ?: return XMPPError.getBuilder(XMPPError.Condition.forbidden).build()
-        // Note that with our enum we have GUEST > MEMBER > MODERATOR > OWNER, so this requires at least MODERATOR
-        return if (role > MemberRole.MODERATOR)
-            XMPPError.getBuilder(XMPPError.Condition.not_allowed).build()
-        else null
+        return when {
+            // XXX do we need to keep the difference between `forbidden` and `not_allowed`?
+            role == null -> XMPPError.getBuilder(XMPPError.Condition.forbidden).build()
+            role.hasModeratorRights() -> null // no error
+            else -> XMPPError.getBuilder(XMPPError.Condition.not_allowed).build()
+        }
     }
 
-    protected fun generateSessionId(): String {
-        return Utils.generateSessionId(SESSION_ID_LENGTH)
-    }
+    protected fun generateSessionId(): String = Utils.generateSessionId(SESSION_ID_LENGTH)
 
     companion object {
         /**

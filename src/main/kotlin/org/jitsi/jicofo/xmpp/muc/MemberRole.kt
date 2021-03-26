@@ -49,6 +49,12 @@ enum class MemberRole {
      */
     GUEST;
 
+    /**
+     * Has sufficient rights to moderate (i.e. is MODERATOR, ADMINISTRATOR or OWNER).
+     */
+    fun hasModeratorRights() = this <= MODERATOR
+    fun hasAdministratorRights() = this <= ADMINISTRATOR
+
     companion object {
         @JvmStatic
         fun fromSmack(mucRole: MUCRole?, mucAffiliation: MUCAffiliation?) = when (mucAffiliation) {

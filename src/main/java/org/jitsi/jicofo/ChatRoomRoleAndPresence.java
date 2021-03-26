@@ -209,7 +209,7 @@ public class ChatRoomRoleAndPresence
             {
                 continue;
             }
-            else if (MemberRole.OWNER.compareTo(member.getRole()) >=0)
+            else if (member.getRole() == MemberRole.OWNER)
             {
                 // Select existing owner
                 owner = member;
@@ -232,7 +232,7 @@ public class ChatRoomRoleAndPresence
 
     private boolean verifyFocusRole()
     {
-        if (MemberRole.OWNER.compareTo(focusRole) < 0)
+        if (focusRole != MemberRole.OWNER)
         {
             logger.error("Focus must be an owner!");
             conference.stop();
@@ -303,7 +303,7 @@ public class ChatRoomRoleAndPresence
             return;
         }
 
-        if (MemberRole.OWNER.compareTo(member.getRole()) < 0)
+        if (member.getRole() != MemberRole.OWNER)
         {
             String authSessionId = authAuthority.getSessionForJid(jabberId);
             if (authSessionId != null)

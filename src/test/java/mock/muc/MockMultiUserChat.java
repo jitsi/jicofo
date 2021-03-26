@@ -346,9 +346,7 @@ public class MockMultiUserChat
     {
         try
         {
-            grantRole(
-                    JidCreate.entityFullFrom(address),
-                    MemberRole.OWNER);
+            grantRole(JidCreate.entityFullFrom(address), MemberRole.OWNER);
         }
         catch (XmppStringprepException e)
         {

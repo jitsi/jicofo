@@ -19,6 +19,8 @@ package org.jitsi.jicofo.xmpp.muc
 
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.xmpp.muc.MemberRole.ADMINISTRATOR
@@ -41,6 +43,18 @@ class MemberRoleTest : ShouldSpec() {
             MEMBER.compareTo(MODERATOR) shouldBeGreaterThan 0
             MODERATOR.compareTo(ADMINISTRATOR) shouldBeGreaterThan 0
             ADMINISTRATOR.compareTo(OWNER) shouldBeGreaterThan 0
+
+            GUEST.hasModeratorRights().shouldBeFalse()
+            MEMBER.hasModeratorRights().shouldBeFalse()
+            MODERATOR.hasModeratorRights().shouldBeTrue()
+            ADMINISTRATOR.hasModeratorRights().shouldBeTrue()
+            OWNER.hasModeratorRights().shouldBeTrue()
+
+            GUEST.hasAdministratorRights().shouldBeFalse()
+            MEMBER.hasAdministratorRights().shouldBeFalse()
+            MODERATOR.hasAdministratorRights().shouldBeFalse()
+            ADMINISTRATOR.hasAdministratorRights().shouldBeTrue()
+            OWNER.hasAdministratorRights().shouldBeTrue()
         }
         context("From Smack role and affiliation") {
             enumPairsWithNull<MUCRole, MUCAffiliation>().forEach { (mucRole, mucAffiliation) ->

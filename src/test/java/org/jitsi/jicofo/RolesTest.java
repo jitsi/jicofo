@@ -81,7 +81,7 @@ public class RolesTest
             // FIXME: wait for role change otherwise we might randomly fail here
             assertTrue(
                 i + " user should have moderator role(" + users[i].getNickname() + ")",
-                MemberRole.MODERATOR.compareTo(users[i].getChatMember().getRole()) >= 0);
+                users[i].getChatMember().getRole().hasModeratorRights());
 
             users[i].leave();
         }

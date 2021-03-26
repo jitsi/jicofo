@@ -229,7 +229,8 @@ public class ChatMemberImpl
         {
             boolean[] startMuted = { ext.getAudioMuted(), ext.getVideoMuted() };
 
-            if (getRole().compareTo(MemberRole.MODERATOR) < 0)
+            // XXX Is this intended to be allowed for moderators or not?
+            if (getRole().hasAdministratorRights())
             {
                 chatRoom.setStartMuted(startMuted);
             }

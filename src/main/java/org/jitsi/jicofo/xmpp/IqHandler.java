@@ -304,7 +304,7 @@ public class IqHandler
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
         }
 
-        if (MemberRole.MODERATOR.compareTo(role) < 0)
+        if (!role.hasModeratorRights())
         {
             // Moderator permission is required
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
