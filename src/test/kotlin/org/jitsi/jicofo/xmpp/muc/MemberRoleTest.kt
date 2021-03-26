@@ -20,7 +20,11 @@ package org.jitsi.jicofo.xmpp.muc
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.*
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.ADMINISTRATOR
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.GUEST
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.MEMBER
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.MODERATOR
+import org.jitsi.impl.protocol.xmpp.ChatRoomMemberRole.OWNER
 
 class XmppUtilsTest : ShouldSpec() {
     init {
