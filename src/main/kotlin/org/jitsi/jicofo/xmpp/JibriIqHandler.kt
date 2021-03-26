@@ -47,6 +47,9 @@ class JibriIqHandler :
     /**
      * {@inheritDoc}
      * Pass the request to the first [BaseJibri] that wants it.
+     *
+     * Note that this is synchronized to ensure correct use of the synchronized list (and we want to avoid using a
+     * copy on write list for performance reasons).
      */
     override fun handleIQRequest(iq: IQ): IQ = synchronized(jibris) {
         iq as? JibriIq ?: throw IllegalArgumentException("Unexpected IQ type: ${iq::class}")
