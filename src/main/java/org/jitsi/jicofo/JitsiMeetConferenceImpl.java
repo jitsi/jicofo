@@ -1307,7 +1307,7 @@ public class JitsiMeetConferenceImpl
 
         if (!"failed".equalsIgnoreCase(iceState))
         {
-            logger.info(String.format("Ignored ice-state %s from %s state: %s", iceState, address));
+            logger.info(String.format("Ignored ice-state %s from %s", iceState, address));
 
             return null;
         }
