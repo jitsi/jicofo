@@ -27,7 +27,7 @@ import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
 
-class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
+class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority) {
     private val logger = createLogger()
     val loginUrlIqHandler: AbstractIqRequestHandler = LoginUrlIqHandler()
     val logoutIqHandler: AbstractIqRequestHandler = LogoutIqHandler()
@@ -35,19 +35,19 @@ class AuthenticationIqHandler(val authAuthority: AuthenticationAuthority) {
     private fun handleLoginUrlIq(loginUrlIq: LoginUrlIq): IQ {
         val peerFullJid = loginUrlIq.from.asEntityFullJidIfPossible()
         val roomName = loginUrlIq.room ?: return createNotAcceptableErrorResponse(loginUrlIq)
-        val result = LoginUrlIq()
-        result.type = IQ.Type.result
-        result.stanzaId = loginUrlIq.stanzaId
-        result.to = loginUrlIq.from
         val popup = loginUrlIq.popup != null && loginUrlIq.popup
         val machineUID = loginUrlIq.machineUID
         if (StringUtils.isBlank(machineUID)) {
             return createBadRequestErrorResponse(loginUrlIq, "missing mandatory attribute 'machineUID'")
         }
-        val authUrl = authAuthority.createLoginUrl(machineUID, peerFullJid, roomName, popup)
-        result.url = authUrl
-        logger.info("Sending url: " + result.toXML())
-        return result
+
+        return LoginUrlIq().apply {
+            type = IQ.Type.result
+            stanzaId = loginUrlIq.stanzaId
+            to = loginUrlIq.from
+            url = authAuthority.createLoginUrl(machineUID, peerFullJid, roomName, popup)
+            logger.info("Sending url: ${toXML()}")
+        }
     }
 
     private fun handleLogoutIq(logoutIq: LogoutIq): IQ = authAuthority.processLogoutIq(logoutIq)

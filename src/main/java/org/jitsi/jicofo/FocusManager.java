@@ -20,7 +20,7 @@ package org.jitsi.jicofo;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
-import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -487,7 +487,7 @@ public class FocusManager
         int numParticipants = 0;
         int largestConferenceSize = 0;
         int[] conferenceSizes = new int[22];
-        JibriSessionStats jibriSessionStats = new JibriSessionStats();
+        Set<BaseJibri> jibriRecordersAndGateways = new HashSet<>();
         for (JitsiMeetConference conference : getConferences())
         {
             if (!conference.includeInStatistics())
@@ -514,7 +514,8 @@ public class FocusManager
                     : conferenceSizes.length - 1;
             conferenceSizes[conferenceSizeIndex]++;
 
-            jibriSessionStats.merge(conference.getJibriSessionStats());
+            jibriRecordersAndGateways.add(conference.getJibriRecorder());
+            jibriRecordersAndGateways.add(conference.getJibriSipGateway());
         }
 
         stats.put("largest_conference", largestConferenceSize);
@@ -535,9 +536,7 @@ public class FocusManager
             stats.put("slow_health_check", healthChecker.getTotalSlowHealthChecks());
         }
 
-        JSONObject jibriStats = JibriSession.getGlobalStats();
-        jibriSessionStats.toJSON(jibriStats);
-        stats.put("jibri", jibriStats);
+        stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
 
         return stats;
     }

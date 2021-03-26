@@ -15,23 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.recording.jibri;
+package org.jitsi.jicofo.jibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.jibri.JibriConfig;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.jitsi.jicofo.recording.jibri.JibriSession.StartException;
+import static org.jitsi.jicofo.jibri.JibriSession.StartException;
 import static org.apache.commons.lang3.StringUtils.*;
 
 /**
@@ -45,7 +43,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  * @author Sam Whited
  */
 public class JibriRecorder
-    extends CommonJibriStuff
+    extends BaseJibri
     implements JibriSession.Owner
 {
     /**
@@ -62,19 +60,18 @@ public class JibriRecorder
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
-     * @param connection the XMPP connection which will be used for communication.
      * @param scheduledExecutor the executor service used by this instance
      */
     public JibriRecorder(
-            JitsiMeetConferenceImpl conference,
-            ExtendedXmppConnection connection,
-            ScheduledExecutorService scheduledExecutor,
-            JibriDetector jibriDetector,
-            Logger parentLogger)
+            @NotNull JitsiMeetConferenceImpl conference,
+            @NotNull XmppProvider xmppProvider,
+            @NotNull ScheduledExecutorService scheduledExecutor,
+            @NotNull JibriDetector jibriDetector,
+            @NotNull Logger parentLogger)
     {
         super(
             conference,
-            connection,
+            xmppProvider,
             scheduledExecutor,
             parentLogger,
             jibriDetector);
@@ -122,19 +119,12 @@ public class JibriRecorder
     @Override
     public List<JibriSession> getJibriSessions()
     {
-        List<JibriSession> sessions = new ArrayList<>(1);
-
-        if (jibriSession != null)
-        {
-            sessions.add(jibriSession);
-        }
-
-        return sessions;
+        return jibriSession == null ? Collections.emptyList() : Collections.singletonList(jibriSession);
     }
 
     /**
      * Starts new session for given iq. It is assumed that
-     * {@link CommonJibriStuff} has checked that there is no recording session
+     * {@link BaseJibri} has checked that there is no recording session
      * currently active.
      * {@inheritDoc}
      */
@@ -174,7 +164,7 @@ public class JibriRecorder
 
                 return JibriIq.createResult(iq, sessionId);
             }
-            catch (JibriSession.StartException exc)
+            catch (StartException exc)
             {
                 ErrorIQ errorIq;
                 String reason = exc.getMessage();
@@ -206,14 +196,6 @@ public class JibriRecorder
                 jibriSession = null;
                 return errorIq;
             }
-        }
-        else if (emptyStreamId && !recordingMode.equals(RecordingMode.FILE))
-        {
-            // Bad request - no stream ID and no recording mode
-            return ErrorResponse.create(
-                iq,
-                XMPPError.Condition.bad_request,
-                "Stream ID is empty and recording mode is not FILE");
         }
         else if (emptyStreamId && recordingMode.equals(RecordingMode.STREAM))
         {

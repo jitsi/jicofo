@@ -32,7 +32,7 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
-import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.jicofo.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -326,12 +326,10 @@ public class JitsiMeetConferenceImpl
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            clientXmppProvider.getXmppConnection(),
+                            clientXmppProvider,
                             executor,
                             jibriDetector,
                             logger);
-
-                clientXmppProvider.addJibriIqHandler(jibriRecorder);
             }
 
             JibriDetector sipJibriDetector = jicofoServices.getSipJibriDetector();
@@ -340,12 +338,10 @@ public class JitsiMeetConferenceImpl
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            clientXmppProvider.getXmppConnection(),
+                            clientXmppProvider,
                             executor,
                             sipJibriDetector,
                             logger);
-
-                clientXmppProvider.addJibriIqHandler(jibriSipGateway);
             }
         }
         catch (Exception e)
@@ -384,7 +380,6 @@ public class JitsiMeetConferenceImpl
             {
                 logger.error("jibriSipGateway.dispose error", e);
             }
-            clientXmppProvider.removeJibriIqHandler(jibriSipGateway);
             jibriSipGateway = null;
         }
 
@@ -398,7 +393,6 @@ public class JitsiMeetConferenceImpl
             {
                 logger.error("jibriRecorder.dispose error", e);
             }
-            clientXmppProvider.removeJibriIqHandler(jibriRecorder);
             jibriRecorder = null;
         }
 
@@ -2140,15 +2134,6 @@ public class JitsiMeetConferenceImpl
                     && participantChannels != null
                     && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType);
 
-        if (succeeded)
-        {
-            if (mediaType == MediaType.AUDIO) {
-                participant.setMuted(doMute);
-            } else if (mediaType == MediaType.VIDEO) {
-                participant.setVideoMuted(doMute);
-            }
-        }
-
         return succeeded;
     }
 
@@ -2460,25 +2445,14 @@ public class JitsiMeetConferenceImpl
         return jicofoServices.getFocusManager();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JibriSessionStats getJibriSessionStats()
+    public JibriRecorder getJibriRecorder()
     {
-        List<JibriSession> sessions = new ArrayList<>();
+        return jibriRecorder;
+    }
 
-        if (jibriRecorder != null)
-        {
-            sessions.addAll(jibriRecorder.getJibriSessions());
-        }
-
-        if  (jibriSipGateway != null)
-        {
-            sessions.addAll(jibriSipGateway.getJibriSessions());
-        }
-
-        return new JibriSessionStats(sessions);
+    public JibriSipGateway getJibriSipGateway()
+    {
+        return jibriSipGateway;
     }
 
     /**

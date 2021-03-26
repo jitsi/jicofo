@@ -154,7 +154,7 @@ public class IqHandler
             // let's retry 2 times sending the rayo
             // by default we have 15 seconds timeout waiting for reply
             // 3 timeouts will give us 45 seconds to reply to user with an error
-            return handleRayoIQ((RayoIqProvider.DialIq) iqRequest, 2, null);
+            return handleRayoIQ((RayoIqProvider.DialIq) iqRequest, 2, new ArrayList<>());
         }
     }
 
@@ -283,8 +283,7 @@ public class IqHandler
      *
      * @return the iq to be sent as a reply.
      */
-    private IQ handleRayoIQ(RayoIqProvider.DialIq dialIq, int retryCount,
-                            List<Jid> exclude)
+    private IQ handleRayoIQ(RayoIqProvider.DialIq dialIq, int retryCount, @NotNull List<Jid> exclude)
     {
         Jid from = dialIq.getFrom();
 
@@ -308,11 +307,6 @@ public class IqHandler
         {
             // Moderator permission is required
             return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
-        }
-
-        if (exclude == null)
-        {
-            exclude = new ArrayList<>();
         }
 
         Set<String> bridgeRegions = conference.getBridges().keySet().stream()

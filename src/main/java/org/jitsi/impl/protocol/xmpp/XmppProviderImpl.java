@@ -20,7 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.discovery.*;
-import org.jitsi.jicofo.recording.jibri.*;
+import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.retry.*;
@@ -108,7 +108,8 @@ public class XmppProviderImpl
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(executor);
-        jibriIqHandler = new JibriIqHandler(connection);
+        jibriIqHandler = new JibriIqHandler();
+        connection.registerIQRequestHandler(jibriIqHandler);
     }
 
 
@@ -263,6 +264,7 @@ public class XmppProviderImpl
             logger.info("Disconnected.");
 
             connection.unregisterIQRequestHandler(jingleOpSet);
+            connection.unregisterIQRequestHandler(jibriIqHandler);
             connection.removeConnectionListener(connListener);
         }
 
@@ -346,13 +348,13 @@ public class XmppProviderImpl
     }
 
     @Override
-    public void addJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    public void addJibriIqHandler(@NotNull BaseJibri jibriIqHandler)
     {
         this.jibriIqHandler.addJibri(jibriIqHandler);
     }
 
     @Override
-    public void removeJibriIqHandler(@NotNull CommonJibriStuff jibriIqHandler)
+    public void removeJibriIqHandler(@NotNull BaseJibri jibriIqHandler)
     {
         this.jibriIqHandler.removeJibri(jibriIqHandler);
     }

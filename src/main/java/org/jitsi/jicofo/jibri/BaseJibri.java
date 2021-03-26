@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.recording.jibri;
+package org.jitsi.jicofo.jibri;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -40,35 +41,8 @@ import static org.jivesoftware.smack.packet.XMPPError.getBuilder;
  *
  * @author Pawel Domas
  */
-public abstract class CommonJibriStuff
+public abstract class BaseJibri
 {
-    /**
-     * The Jitsi Meet conference instance.
-     */
-    protected final JitsiMeetConferenceImpl conference;
-
-    /**
-     * The {@link ExtendedXmppConnection} used for communication.
-     */
-    protected final ExtendedXmppConnection connection;
-
-    /**
-     * The logger instance pass to the constructor that wil be used by this
-     * instance for logging.
-     */
-    protected final Logger logger;
-
-    /**
-     * Jibri detector which notifies about Jibri availability status changes.
-     */
-    final JibriDetector jibriDetector;
-
-    /**
-     * Executor service used by {@link JibriSession} to schedule pending timeout
-     * tasks.
-     */
-    final ScheduledExecutorService scheduledExecutor;
-
     /**
      * The length of the session id field we generate to uniquely identify a
      * Jibri session
@@ -76,24 +50,61 @@ public abstract class CommonJibriStuff
     static final int SESSION_ID_LENGTH = 16;
 
     /**
+     * The Jitsi Meet conference instance.
+     */
+    @NotNull
+    protected final JitsiMeetConferenceImpl conference;
+
+    /**
+     * The {@link ExtendedXmppConnection} used for communication.
+     */
+    @NotNull
+    protected final ExtendedXmppConnection connection;
+
+    @NotNull
+    private final XmppProvider xmppProvider;
+
+    /**
+     * The logger instance pass to the constructor that wil be used by this
+     * instance for logging.
+     */
+    @NotNull
+    protected final Logger logger;
+
+    /**
+     * Jibri detector which notifies about Jibri availability status changes.
+     */
+    @NotNull
+    final JibriDetector jibriDetector;
+
+    /**
+     * Executor service used by {@link JibriSession} to schedule pending timeout
+     * tasks.
+     */
+    @NotNull
+    final ScheduledExecutorService scheduledExecutor;
+
+    /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
-     * @param xmppConnection XMPP operation set which wil be used to send XMPP queries.
      * @param scheduledExecutor the executor service used by this instance
      */
-    CommonJibriStuff(
-            JitsiMeetConferenceImpl conference,
-            ExtendedXmppConnection xmppConnection,
-            ScheduledExecutorService scheduledExecutor,
-            Logger logger,
-            JibriDetector jibriDetector)
+    BaseJibri(
+            @NotNull JitsiMeetConferenceImpl conference,
+            @NotNull XmppProvider xmppProvider,
+            @NotNull ScheduledExecutorService scheduledExecutor,
+            @NotNull Logger logger,
+            @NotNull JibriDetector jibriDetector)
     {
-        this.connection = Objects.requireNonNull(xmppConnection, "xmppConnection");
-        this.conference = Objects.requireNonNull(conference, "conference");
-        this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
+        this.xmppProvider = xmppProvider;
+        this.connection = xmppProvider.getXmppConnection();
+        this.conference = conference;
+        this.scheduledExecutor = scheduledExecutor;
         this.jibriDetector = jibriDetector;
 
         this.logger = logger;
+
+        xmppProvider.addJibriIqHandler(this);
     }
 
     /**
@@ -141,6 +152,7 @@ public abstract class CommonJibriStuff
      */
     public void dispose()
     {
+        xmppProvider.removeJibriIqHandler(this);
     }
 
     /**

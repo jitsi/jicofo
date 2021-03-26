@@ -36,9 +36,9 @@ import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
+import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
-import org.jitsi.jicofo.recording.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler

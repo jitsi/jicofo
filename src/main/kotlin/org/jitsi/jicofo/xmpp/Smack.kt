@@ -38,7 +38,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionRequestExtension
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
-import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.SmackConfiguration
 import org.jivesoftware.smack.parsing.ExceptionLoggingCallback
 import org.jivesoftware.smack.provider.ProviderManager
@@ -84,12 +83,6 @@ fun registerXmppExtensions() {
         UserInfoPacketExt.ELEMENT_NAME,
         UserInfoPacketExt.NAMESPACE,
         DefaultPacketExtensionProvider(UserInfoPacketExt::class.java)
-    )
-    // <videomuted> element from jitsi-meet presence
-    ProviderManager.addExtensionProvider(
-        VideoMutedExtension.ELEMENT_NAME,
-        VideoMutedExtension.NAMESPACE,
-        DefaultPacketExtensionProvider(VideoMutedExtension::class.java)
     )
     ProviderManager.addExtensionProvider(
         RegionPacketExtension.ELEMENT_NAME,
