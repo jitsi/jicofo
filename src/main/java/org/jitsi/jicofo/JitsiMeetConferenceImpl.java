@@ -826,6 +826,11 @@ public class JitsiMeetConferenceImpl
      */
     private void updateOctoRelays()
     {
+        if (!OctoConfig.config.getEnabled())
+        {
+            return;
+        }
+
         synchronized (bridges)
         {
             List<String> allRelays = getAllRelays(null);
@@ -2812,11 +2817,6 @@ public class JitsiMeetConferenceImpl
          */
         private void setRelays(List<String> allRelays)
         {
-            if (!OctoConfig.config.getEnabled())
-            {
-                return;
-            }
-
             List<String> remoteRelays = new LinkedList<>(allRelays);
             remoteRelays.remove(bridge.getRelayId());
 
