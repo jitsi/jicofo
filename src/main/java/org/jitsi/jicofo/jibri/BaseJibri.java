@@ -21,9 +21,11 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.queue.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -84,6 +86,8 @@ public abstract class BaseJibri
     @NotNull
     final ScheduledExecutorService scheduledExecutor;
 
+    private final PacketQueue<JibriIq> incomingIqQueue;
+
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
@@ -105,6 +109,29 @@ public abstract class BaseJibri
         this.logger = logger;
 
         xmppProvider.addJibriIqHandler(this);
+        incomingIqQueue = new PacketQueue<>(
+                50,
+                true,
+                "jibri-iq-queue-" + conference.getRoomName().getLocalpart().toString(),
+                jibriIq -> {
+                    IQ response = doHandleIQRequest(jibriIq);
+                    try
+                    {
+                        xmppProvider.getXmppConnection().sendStanza(response);
+                    }
+                    catch (SmackException.NotConnectedException e)
+                    {
+                        logger.warn("Failed to send response, smack is not connected.");
+                    }
+                    catch (InterruptedException e)
+                    {
+                        logger.warn("Failed to send response, interrupted.");
+                    }
+                    return true;
+                },
+                scheduledExecutor
+        );
+
     }
 
     /**
@@ -203,10 +230,20 @@ public abstract class BaseJibri
     protected abstract boolean acceptType(JibriIq packet);
 
     /**
-     * <tt>JibriIq</tt> processing. Handles start and stop requests. Will verify
-     * if the user is a moderator.
+     * Enqueue a request, assuming responsibility for sending a response (whether a 'result' or 'error').
      */
-    final synchronized public IQ handleIQRequest(JibriIq iq)
+    public final void handleIQRequest(JibriIq iq)
+    {
+        incomingIqQueue.add(iq);
+    }
+
+    /**
+     * Handles an incoming Jibri IQ from either a jibri instance or a participant in the conference. This may block
+     * waiting for a response over the network.
+     *
+     * @return the IQ to be sent back as a response ('result' or 'error').
+     */
+    private IQ doHandleIQRequest(JibriIq iq)
     {
         if (logger.isDebugEnabled())
         {
