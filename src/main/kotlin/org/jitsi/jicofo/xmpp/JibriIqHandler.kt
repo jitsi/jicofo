@@ -51,9 +51,11 @@ class JibriIqHandler :
      * Note that this is synchronized to ensure correct use of the synchronized list (and we want to avoid using a
      * copy on write list for performance reasons).
      */
-    override fun handleIQRequest(iq: IQ): IQ = synchronized(jibris) {
+    override fun handleIQRequest(iq: IQ): IQ? = synchronized(jibris) {
         iq as? JibriIq ?: throw IllegalArgumentException("Unexpected IQ type: ${iq::class}")
-        return jibris.find { it.accept(iq) }?.handleIQRequest(iq)
-            ?: ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null)
+        val jibri = jibris.find { it.accept(iq) }
+            ?: return ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null)
+        jibri.handleIQRequest(iq)
+        null
     }
 }

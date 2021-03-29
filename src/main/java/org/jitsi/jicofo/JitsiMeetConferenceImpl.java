@@ -83,6 +83,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
      */
+    @NotNull
     private final EntityBareJid roomName;
 
     /**
@@ -2041,6 +2042,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    @NotNull
     public EntityBareJid getRoomName()
     {
         return roomName;
