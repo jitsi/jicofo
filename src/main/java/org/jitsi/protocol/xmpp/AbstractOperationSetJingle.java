@@ -277,6 +277,13 @@ public abstract class AbstractOperationSetJingle
 
         for (String media : ssrcs.getMediaTypes())
         {
+            List<SourcePacketExtension> sources = ssrcs.getSourcesForMedia(media);
+
+            if (sources.size() == 0)
+            {
+                continue;
+            }
+
             ContentPacketExtension content = new ContentPacketExtension();
 
             content.setName(media);
@@ -287,7 +294,7 @@ public abstract class AbstractOperationSetJingle
 
             content.addChildExtension(rtpDesc);
 
-            for (SourcePacketExtension ssrc : ssrcs.getSourcesForMedia(media))
+            for (SourcePacketExtension ssrc : sources)
             {
                 try
                 {
