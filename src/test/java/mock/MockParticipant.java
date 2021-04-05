@@ -21,6 +21,9 @@ import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -37,7 +40,9 @@ import org.jxmpp.stringprep.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class MockParticipant
+import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
+
+public class MockParticipant implements ChatRoomMemberPresenceListener
 {
     private final static Logger logger = new LoggerImpl(MockParticipant.class.getName());
 
@@ -148,6 +153,7 @@ public class MockParticipant
             xmppPeer.start();
             joinLock.notifyAll();
         }
+        chat.addMemberPresenceListener(this);
     }
 
     public static long nextSSRC()
@@ -645,6 +651,33 @@ public class MockParticipant
     public SourcePacketExtension addLocalAudioSSRC(long ssrc)
     {
         return addLocalSSRC("audio", ssrc, null);
+    }
+
+    @Override
+    public void memberPresenceChanged(@NotNull ChatRoomMemberPresenceChangeEvent evt)
+    {
+        if (evt instanceof Left || evt instanceof Kicked)
+        {
+            ChatRoomMember memberWhoLeft = evt.getChatRoomMember();
+            removeSsrcs(memberWhoLeft);
+        }
+    }
+
+    private void removeSsrcs(ChatRoomMember member)
+    {
+        SourcePacketExtension audioSsrc = remoteSSRCs.findSsrcForOwner("audio", member.getJid());
+        if (audioSsrc != null)
+        {
+            remoteSSRCs.remove("audio", audioSsrc);
+        }
+
+        SourcePacketExtension videoSsrc = remoteSSRCs.findSsrcForOwner("video", member.getJid());
+        if (videoSsrc != null)
+        {
+            remoteSSRCs.remove("video", videoSsrc);
+        }
+
+        // We should also remove the member's SSRC groups, but we have no easy way of finding which ones they are.
     }
 
     static class JingleHandler

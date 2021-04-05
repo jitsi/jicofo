@@ -1108,7 +1108,8 @@ public class JitsiMeetConferenceImpl
                         leftParticipant,
                         Reason.GONE,
                         null,
-                        /* no need to send session-terminate - gone */ false);
+                        /* no need to send session-terminate - gone */ false,
+                        /* no need to send source-remove */ false);
             }
             else
             {
@@ -1131,7 +1132,8 @@ public class JitsiMeetConferenceImpl
             Participant participant,
             Reason reason,
             String message,
-            boolean sendSessionTerminate)
+            boolean sendSessionTerminate,
+            boolean sendSourceRemove)
     {
         logger.info(String.format(
                 "Terminating %s, reason: %s, send session-terminate: %s",
@@ -1151,7 +1153,8 @@ public class JitsiMeetConferenceImpl
                     jingleSession,
                     participant.getSourcesCopy(),
                     participant.getSourceGroupsCopy(),
-                    false /* no JVB update - will expire */);
+                    false /* no JVB update - will expire */,
+                    sendSourceRemove);
 
                 participant.setJingleSession(null);
             }
@@ -1395,7 +1398,7 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            terminateParticipant(participant, null, null, /* do not send session-terminate */ false);
+            terminateParticipant(participant, null, null, /* do not send session-terminate */ false, true);
 
             if (restartRequested)
             {
@@ -1627,7 +1630,7 @@ public class JitsiMeetConferenceImpl
         MediaSourceMap sourcesToRemove = MediaSourceMap.getSourcesFromContent(contents);
         MediaSourceGroupMap sourceGroupsToRemove = MediaSourceGroupMap.getSourceGroupsForContents(contents);
 
-        return removeSources(sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
+        return removeSources(sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true, true);
     }
 
     /**
@@ -1746,17 +1749,19 @@ public class JitsiMeetConferenceImpl
 
 
     /**
-     * Removes sources from the conference and notifies other participants.
+     * Removes sources from the conference.
      *
      * @param sourceJingleSession source Jingle session from which sources are being removed.
      * @param sourcesToRemove the {@link MediaSourceMap} of sources to be removed from the conference.
      * @param updateChannels tells whether or not sources update request should be sent to the bridge.
+     * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
     private XMPPError removeSources(
             JingleSession sourceJingleSession,
             MediaSourceMap sourcesToRemove,
             MediaSourceGroupMap sourceGroupsToRemove,
-            boolean updateChannels)
+            boolean updateChannels,
+            boolean sendSourceRemove)
     {
         Participant participant = findParticipantForJingleSession(sourceJingleSession);
         Jid participantJid = sourceJingleSession.getAddress();
@@ -1832,25 +1837,27 @@ public class JitsiMeetConferenceImpl
 
         logger.info("Removing sources from " + participantJid + ": " + removedSources);
 
-        participants.stream()
-            .filter(otherParticipant -> otherParticipant != participant)
-            .forEach(
-                otherParticipant ->
-                {
-                    if (otherParticipant.isSessionEstablished())
-                    {
-                        jingle.sendRemoveSourceIQ(
-                            removedSources,
-                            removedGroups,
-                            otherParticipant.getJingleSession());
-                    }
-                    else
-                    {
-                        logger.warn("Remove source: no jingle session for " + participantJid);
-                        otherParticipant.scheduleSourcesToRemove(removedSources);
-                        otherParticipant.scheduleSourceGroupsToRemove(removedGroups);
-                    }
-                });
+        if (sendSourceRemove)
+        {
+            participants.stream()
+                    .filter(otherParticipant -> otherParticipant != participant)
+                    .forEach(
+                            otherParticipant ->
+                            {
+                                if (otherParticipant.isSessionEstablished())
+                                {
+                                    jingle.sendRemoveSourceIQ(
+                                            removedSources,
+                                            removedGroups,
+                                            otherParticipant.getJingleSession());
+                                } else
+                                {
+                                    logger.warn("Remove source: no jingle session for " + participantJid);
+                                    otherParticipant.scheduleSourcesToRemove(removedSources);
+                                    otherParticipant.scheduleSourceGroupsToRemove(removedGroups);
+                                }
+                            });
+        }
 
         return null;
     }
@@ -2258,7 +2265,8 @@ public class JitsiMeetConferenceImpl
                 channelAllocator.getParticipant(),
                 Reason.GENERAL_ERROR,
                 "jingle session failed",
-                /* send session-terminate */ true);
+                /* send session-terminate */ true,
+                /* send source-remove */ true);
     }
 
     /**
@@ -2869,7 +2877,8 @@ public class JitsiMeetConferenceImpl
                             p,
                             Reason.EXPIRED,
                             "Idle session timeout",
-                            /* send session-terminate */ true);
+                            /* send session-terminate */ true,
+                            /* send source-remove */ false);
 
                     disposeConference();
                 }

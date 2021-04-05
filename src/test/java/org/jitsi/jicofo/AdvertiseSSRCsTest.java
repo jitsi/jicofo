@@ -112,7 +112,9 @@ public class AdvertiseSSRCsTest
 
         user2.leave();
 
-        assertNotNull(user1.waitForRemoveSource(500));
+        // We no longer send source-remove when a member leaves, it is up to the participants to remove a member's
+        // sources when it leaves.
+        // assertNotNull(user1.waitForRemoveSource(500));
 
         assertEquals(1, user1.getRemoteSSRCs("audio").size());
         // No groups
