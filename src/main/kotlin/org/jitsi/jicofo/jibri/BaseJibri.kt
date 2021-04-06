@@ -27,6 +27,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
+import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
 import org.jitsi.jicofo.util.ErrorResponse.create as error
@@ -46,14 +47,14 @@ abstract class BaseJibri internal constructor(
 
     protected val connection: AbstractXMPPConnection = xmppProvider.xmppConnection
 
-    private val incomingIqQueue = PacketQueue<JibriIq>(
+    private val incomingIqQueue = PacketQueue<JibriRequest>(
         50,
         true,
         "jibri-iq-queue-${conference.roomName.localpart}",
-        { jibriIq ->
-            val response = doHandleIQRequest(jibriIq)
+        { jibriRequest ->
+            val response = doHandleIQRequest(jibriRequest.iq)
             try {
-                xmppProvider.xmppConnection.sendStanza(response)
+                jibriRequest.connection.sendStanza(response)
             } catch (e: SmackException.NotConnectedException) {
                 logger.warn("Failed to send response, smack is not connected.")
             } catch (e: InterruptedException) {
@@ -65,6 +66,11 @@ abstract class BaseJibri internal constructor(
         TaskPools.ioPool
     )
 
+    private val clientIqHandler: JibriSessionIqHandler = object : JibriSessionIqHandler {
+        override fun accept(iq: JibriIq) = this@BaseJibri.accept(iq)
+        override fun handleIQRequest(iq: JibriIq) = incomingIqQueue.add(JibriRequest(iq, connection))
+    }
+
     /**
      * The logger instance pass to the constructor that wil be used by this
      * instance for logging.
@@ -72,8 +78,7 @@ abstract class BaseJibri internal constructor(
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
     init {
-        // XXX use a separate interface with xmpp provider (it only needs the accept/handle methods).
-        xmppProvider.addJibriIqHandler(this)
+        xmppProvider.addJibriIqHandler(clientIqHandler)
     }
 
     /**
@@ -114,7 +119,7 @@ abstract class BaseJibri internal constructor(
      * Method called by [JitsiMeetConferenceImpl] when the conference is
      * being stopped.
      */
-    open fun dispose() = xmppProvider.removeJibriIqHandler(this)
+    open fun dispose() = xmppProvider.removeJibriIqHandler(clientIqHandler)
 
     /**
      * Checks if the given [JibriIq] should be accepted by this instance. The IQ may originate either from a
@@ -150,11 +155,6 @@ abstract class BaseJibri internal constructor(
     }
 
     protected abstract fun acceptType(packet: JibriIq): Boolean
-
-    /**
-     * Enqueue a request, assuming responsibility for sending a response (whether a 'result' or 'error').
-     */
-    fun handleIQRequest(iq: JibriIq) = incomingIqQueue.add(iq)
 
     /**
      * Handles an incoming Jibri IQ from either a jibri instance or a participant in the conference. This may block
@@ -219,3 +219,5 @@ abstract class BaseJibri internal constructor(
         const val SESSION_ID_LENGTH = 16
     }
 }
+
+internal data class JibriRequest(val iq: JibriIq, val connection: XMPPConnection)
