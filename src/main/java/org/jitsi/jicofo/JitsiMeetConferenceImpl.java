@@ -1104,6 +1104,8 @@ public class JitsiMeetConferenceImpl
             Participant leftParticipant = findParticipantForChatMember(chatRoomMember);
             if (leftParticipant != null)
             {
+                // We don't send source-remove, because the participant leaving the MUC will notify other participants
+                // that the sources need to be removed (and we want to minimize signaling in large conferences).
                 terminateParticipant(
                         leftParticipant,
                         Reason.GONE,
@@ -1398,7 +1400,12 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            terminateParticipant(participant, null, null, /* do not send session-terminate */ false, true);
+            terminateParticipant(
+                    participant,
+                    null,
+                    null,
+                    /* do not send session-terminate */ false,
+                    /* do send source-remove */ true);
 
             if (restartRequested)
             {
@@ -1850,7 +1857,8 @@ public class JitsiMeetConferenceImpl
                                             removedSources,
                                             removedGroups,
                                             otherParticipant.getJingleSession());
-                                } else
+                                }
+                                else
                                 {
                                     logger.warn("Remove source: no jingle session for " + participantJid);
                                     otherParticipant.scheduleSourcesToRemove(removedSources);
