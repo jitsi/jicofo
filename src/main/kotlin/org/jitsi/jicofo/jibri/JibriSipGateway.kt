@@ -104,7 +104,7 @@ class JibriSipGateway(
                 sipSessions.remove(iq.sipAddress)
                 when (exc) {
                     is AllBusy -> error(iq, XMPPError.Condition.resource_constraint, "all Jibris are busy")
-                    is NotAvailable -> error(iq, XMPPError.Condition.service_unavailable, "no Jibri instances available")
+                    is NotAvailable -> error(iq, XMPPError.Condition.service_unavailable, "no Jibris available")
                     else -> error(iq, XMPPError.Condition.internal_server_error, reason)
                 }
             }

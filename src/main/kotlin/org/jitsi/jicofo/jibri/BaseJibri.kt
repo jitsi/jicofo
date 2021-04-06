@@ -21,15 +21,15 @@ import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
-import org.jitsi.jicofo.util.ErrorResponse.create as error
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
 import org.jivesoftware.smack.AbstractXMPPConnection
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
-import org.jivesoftware.smack.SmackException
+import org.jitsi.jicofo.util.ErrorResponse.create as error
 
 /**
  * Base class shared between [JibriRecorder] (which can deal with only one [JibriSession]) and [JibriSipGateway]
