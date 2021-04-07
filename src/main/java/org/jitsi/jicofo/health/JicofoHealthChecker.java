@@ -22,6 +22,8 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
+import org.jivesoftware.smack.*;
+import org.jivesoftware.smackx.ping.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -29,6 +31,7 @@ import org.jxmpp.stringprep.*;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.*;
 
 import static org.jitsi.jicofo.health.HealthConfig.config;
@@ -168,10 +171,47 @@ public class JicofoHealthChecker implements HealthCheckService
             {
                 throw new RuntimeException("Failed to create conference with room name " + roomName);
             }
+
+            pingClientConnection();
         }
         catch (Exception e)
         {
             throw new RuntimeException("Failed to create conference with room name " + roomName + ":" + e.getMessage());
+        }
+    }
+
+    /**
+     * The check focusManager.conferenceRequest uses Smack's collectors for the response which is executed
+     * in its Reader thread. This ping test use a sync stanza listener which is executed in a single thread
+     * and if something is blocking it healthcheck will fail.
+     *
+     * @throws Exception if the check fails or some other error occurs
+     */
+    private static void pingClientConnection()
+        throws Exception
+    {
+        CountDownLatch pingResponseWait = new CountDownLatch(1);
+        Ping p = new Ping(JidCreate.bareFrom(XmppConfig.client.getXmppDomain()));
+
+        XMPPConnection connection = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton).getXmppServices()
+            .getClientConnection().getXmppConnection();
+        StanzaListener listener = packet -> pingResponseWait.countDown();
+        try
+        {
+            connection.addSyncStanzaListener(
+                listener, stanza -> stanza.getStanzaId().equals(p.getStanzaId())
+            );
+            connection.sendStanza(p);
+
+            // the xmpp server is on localhost so 500ms is more than enough to receive the response
+            if (!pingResponseWait.await(500, TimeUnit.MILLISECONDS))
+            {
+                throw new RuntimeException("did not receive ping from the xmpp server");
+            }
+        }
+        finally
+        {
+            connection.removeSyncStanzaListener(listener);
         }
     }
 
