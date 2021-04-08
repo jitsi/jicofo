@@ -17,6 +17,7 @@ package org.jitsi.jicofo.health;
 
 import kotlin.*;
 import org.jitsi.health.*;
+import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -193,8 +194,9 @@ public class JicofoHealthChecker implements HealthCheckService
         CountDownLatch pingResponseWait = new CountDownLatch(1);
         Ping p = new Ping(JidCreate.bareFrom(XmppConfig.client.getXmppDomain()));
 
-        XMPPConnection connection = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton).getXmppServices()
-            .getClientConnection().getXmppConnection();
+        XmppProvider provider = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton).getXmppServices()
+            .getClientConnection();
+        XMPPConnection connection = provider.getXmppConnection();
         StanzaListener listener = packet -> pingResponseWait.countDown();
         try
         {
@@ -203,8 +205,7 @@ public class JicofoHealthChecker implements HealthCheckService
             );
             connection.sendStanza(p);
 
-            // the xmpp server is on localhost so 500ms is more than enough to receive the response
-            if (!pingResponseWait.await(500, TimeUnit.MILLISECONDS))
+            if (!pingResponseWait.await(provider.getConfig().getReplyTimeout().toMillis(), TimeUnit.MILLISECONDS))
             {
                 throw new RuntimeException("did not receive ping from the xmpp server");
             }
