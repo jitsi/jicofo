@@ -234,8 +234,7 @@ public class MockMultiUserChat
 
             if (!members.remove(member))
             {
-                throw new RuntimeException(
-                        "Member is not in the room " + member);
+                throw new RuntimeException("Member is not in the room " + member);
             }
 
             fireMemberPresenceEvent(new Left(member));
