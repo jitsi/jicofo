@@ -205,7 +205,8 @@ public class JicofoHealthChecker implements HealthCheckService
             );
             connection.sendStanza(p);
 
-            if (!pingResponseWait.await(provider.getConfig().getReplyTimeout().toMillis(), TimeUnit.MILLISECONDS))
+            // will wait for 5 seconds to receive the ping
+            if (!pingResponseWait.await(5, TimeUnit.SECONDS))
             {
                 throw new RuntimeException("did not receive ping from the xmpp server");
             }
