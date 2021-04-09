@@ -201,7 +201,7 @@ public class JicofoHealthChecker implements HealthCheckService
         try
         {
             connection.addSyncStanzaListener(
-                listener, stanza -> stanza.getStanzaId().equals(p.getStanzaId())
+                listener, stanza -> stanza.getStanzaId() != null && stanza.getStanzaId().equals(p.getStanzaId())
             );
             connection.sendStanza(p);
 
