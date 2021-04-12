@@ -70,6 +70,7 @@ public abstract class AbstractXmppProvider
     {
         synchronized(registrationListeners)
         {
+            // Dummy line.
             registrationListeners.remove(listener);
         }
     }
