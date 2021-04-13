@@ -62,9 +62,9 @@ public class TranscriberManager
     private final JigasiDetector jigasiDetector;
 
     /**
-     * The {@link ExtendedXmppConnection} used to Dial Jigasi.
+     * The {@link XMPPConnection} used to Dial Jigasi.
      */
-    private final ExtendedXmppConnection connection;
+    private final AbstractXMPPConnection connection;
 
     /**
      * The transcription status; either active or inactive based on this boolean
@@ -224,7 +224,7 @@ public class TranscriberManager
 
         try
         {
-            IQ response = this.connection.sendPacketAndGetReply(dialIq);
+            IQ response = UtilKt.sendPacketAndGetReply(connection, dialIq);
 
             boolean retry = false;
             if (response != null)

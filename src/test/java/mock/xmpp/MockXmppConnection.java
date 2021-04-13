@@ -17,7 +17,6 @@
  */
 package mock.xmpp;
 
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -28,16 +27,12 @@ import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
-import static org.jivesoftware.smack.SmackException.*;
-
-public class MockExtendedXmppConnection
+public class MockXmppConnection
     extends AbstractXMPPConnection
-    implements ExtendedXmppConnection
 {
-    private final static Logger logger = new LoggerImpl(MockExtendedXmppConnection.class.getName());
+    private final static Logger logger = new LoggerImpl(MockXmppConnection.class.getName());
 
-    private static final Map<Jid, MockExtendedXmppConnection> sharedStanzaQueue
-            = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<Jid, MockXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
 
     private static DomainBareJid domain;
     static
@@ -74,7 +69,7 @@ public class MockExtendedXmppConnection
     }
 
     @SuppressWarnings("deprecation")
-    public MockExtendedXmppConnection(final Jid ourJid)
+    public MockXmppConnection(final Jid ourJid)
     {
         super(new MockXmppConnectionConfiguration.Builder()
                 .setXmppDomain(domain)
@@ -92,12 +87,6 @@ public class MockExtendedXmppConnection
         {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public AbstractXMPPConnection getSmackXMPPConnection()
-    {
-        return this;
     }
 
     @Override
@@ -131,10 +120,10 @@ public class MockExtendedXmppConnection
     protected void sendStanzaInternal(final Stanza packet)
     {
         packet.setFrom(user);
-        final MockExtendedXmppConnection target = sharedStanzaQueue.get(packet.getTo());
+        final MockXmppConnection target = sharedStanzaQueue.get(packet.getTo());
         if (target == null)
         {
-            System.out.println("Connection for " + packet.getTo() + " not found!");
+            logger.error("Connection for " + packet.getTo() + " not found!");
             return;
         }
 
@@ -153,49 +142,5 @@ public class MockExtendedXmppConnection
     public boolean isSecureConnection()
     {
         return false;
-    }
-
-    @Override
-    public void tryToSendStanza(Stanza packet)
-    {
-        try
-        {
-            super.sendStanza(packet);
-        }
-        catch (NotConnectedException e)
-        {
-            logger.error("No connection - unable to send packet: " + packet.toXML(), e);
-        }
-        catch (InterruptedException e)
-        {
-            logger.error("Failed to send packet: " + packet.toXML().toString(), e);
-        }
-    }
-
-    @Override
-    public IQ sendPacketAndGetReply(IQ packet)
-            throws SmackException.NotConnectedException
-    {
-        Objects.requireNonNull(packet, "packet");
-
-        packet.setFrom(user);
-
-        try
-        {
-            StanzaCollector packetCollector = createStanzaCollectorAndSend(packet);
-            try
-            {
-                //FIXME: retry allocation on timeout
-                return packetCollector.nextResult();
-            }
-            finally
-            {
-                packetCollector.cancel();
-            }
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException("Interrupted", e);
-        }
     }
 }

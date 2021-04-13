@@ -18,9 +18,9 @@
 package org.jitsi.impl.protocol.xmpp
 
 import org.jitsi.jicofo.jibri.BaseJibri
-import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
@@ -50,7 +50,7 @@ interface XmppProvider {
     fun removeRegistrationListener(listener: RegistrationListener)
 
     val config: XmppConnectionConfig
-    val xmppConnection: ExtendedXmppConnection
+    val xmppConnection: AbstractXMPPConnection
     val jingleApi: OperationSetJingle
 
     @Throws(RoomExistsException::class)

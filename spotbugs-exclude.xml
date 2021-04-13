@@ -26,6 +26,7 @@
     <Or>
       <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
       <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+      <Bug pattern="DE_MIGHT_IGNORE"/>
     </Or>
     <Or>
       <Source name="~.*\.*Test.kt" />

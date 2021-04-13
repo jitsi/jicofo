@@ -143,9 +143,9 @@ public class JibriSession
     private final String applicationData;
 
     /**
-     * {@link ExtendedXmppConnection} instance used to send/listen for XMPP packets.
+     * {@link AbstractXMPPConnection} instance used to send/listen for XMPP packets.
      */
-    private final ExtendedXmppConnection xmpp;
+    private final AbstractXMPPConnection xmpp;
 
     /**
      * The maximum amount of retries we'll attempt
@@ -199,7 +199,7 @@ public class JibriSession
             Jid initiator,
             long pendingTimeout,
             int maxNumRetries,
-            ExtendedXmppConnection connection,
+            AbstractXMPPConnection connection,
             JibriDetector jibriDetector,
             boolean isSIP,
             String sipAddress,
@@ -524,7 +524,7 @@ public class JibriSession
         // timeout each time.
         reschedulePendingTimeout();
 
-        IQ reply = xmpp.sendPacketAndGetReply(startIq);
+        IQ reply = UtilKt.sendPacketAndGetReply(xmpp, startIq);
 
         if (!(reply instanceof JibriIq))
         {

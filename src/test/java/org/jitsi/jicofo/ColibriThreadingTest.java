@@ -97,11 +97,7 @@ public class ColibriThreadingTest
     {
         Jid mockBridgeJid = JidCreate.from("jvb.example.com");
 
-        MockVideobridge mockBridge
-            = new MockVideobridge(
-                    new MockExtendedXmppConnection(mockBridgeJid),
-                    mockBridgeJid);
-
+        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
         mockBridge.start();
 
         AllocThreadingTestColibriConference colibriConf =
@@ -127,9 +123,7 @@ public class ColibriThreadingTest
             allocators[i].runChannelAllocation();
         }
 
-        MockPeerAllocator creator
-            = findCreator(
-                    colibriConf, Arrays.asList(allocators));
+        MockPeerAllocator creator = findCreator(colibriConf, Arrays.asList(allocators));
 
         assertNotNull(creator);
         assertEquals(0, colibriConf.allocRequestsSentCount());
@@ -149,8 +143,7 @@ public class ColibriThreadingTest
             String endpoint = colibriConf.nextRequestSent(5);
             if (endpoint == null)
             {
-                fail("Endpoints that have failed to " +
-                     "send their request: " + requestsToBeSent);
+                fail("Endpoints that have failed to send their request: " + requestsToBeSent);
             }
             else
             {
@@ -201,7 +194,7 @@ public class ColibriThreadingTest
 
         MockVideobridge mockBridge
             = new MockVideobridge(
-                    new MockExtendedXmppConnection(mockBridgeJid),
+                    new MockXmppConnection(mockBridgeJid),
                     mockBridgeJid);
 
         mockBridge.start();

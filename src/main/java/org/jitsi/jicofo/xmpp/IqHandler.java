@@ -56,7 +56,7 @@ public class IqHandler
     private final FocusManager focusManager;
 
     /** The currently used XMPP connection. */
-    private ExtendedXmppConnection connection;
+    private AbstractXMPPConnection connection;
 
     private final MuteIqHandler muteIqHandler = new MuteIqHandler();
     private final MuteVideoIqHandler muteVideoIqHandler = new MuteVideoIqHandler();
@@ -86,7 +86,7 @@ public class IqHandler
     /**
      * Initializes this instance and bind packet listeners.
      */
-    public void init(ExtendedXmppConnection connection)
+    public void init(AbstractXMPPConnection connection)
     {
         this.connection = connection;
 
@@ -215,7 +215,7 @@ public class IqHandler
 
                 muteStatusUpdate.setMute(doMute);
 
-                connection.tryToSendStanza(muteStatusUpdate);
+                UtilKt.tryToSendStanza(connection, muteStatusUpdate);
             }
         }
         else
@@ -259,7 +259,7 @@ public class IqHandler
 
                 muteStatusUpdate.setMute(doMute);
 
-                connection.tryToSendStanza(muteStatusUpdate);
+                UtilKt.tryToSendStanza(connection, muteStatusUpdate);
             }
         }
         else

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import mock.xmpp.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
@@ -60,9 +61,9 @@ public class ConnectionMockTest
     public void testXmpConnectionIqGet()
             throws InterruptedException, XmppStringprepException
     {
-        peerA.getConnection().tryToSendStanza(getIq("B"));
-        peerA.getConnection().tryToSendStanza(getIq("C"));
-        peerB.getConnection().tryToSendStanza(getIq("A"));
+        UtilKt.tryToSendStanza(peerA.getConnection(), getIq("B"));
+        UtilKt.tryToSendStanza(peerA.getConnection(), getIq("C"));
+        UtilKt.tryToSendStanza(peerB.getConnection(), getIq("A"));
 
         Thread.sleep(500);
 

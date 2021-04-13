@@ -72,7 +72,7 @@ public class JvbDoctor
         this.listener = listener;
     }
 
-    private ExtendedXmppConnection getConnection()
+    private AbstractXMPPConnection getConnection()
     {
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection();
@@ -205,7 +205,7 @@ public class JvbDoctor
         private void doHealthCheck()
             throws SmackException.NotConnectedException
         {
-            ExtendedXmppConnection connection = getConnection();
+            AbstractXMPPConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
             if (!connection.isConnected())
             {
@@ -220,7 +220,7 @@ public class JvbDoctor
 
             logger.debug("Sending health-check request to: " + bridgeJid);
 
-            IQ response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
+            IQ response = UtilKt.sendPacketAndGetReply(connection, newHealthCheckIQ(bridgeJid));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)
@@ -239,7 +239,7 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
+                    response = UtilKt.sendPacketAndGetReply(connection, newHealthCheckIQ(bridgeJid));
                 }
                 catch (InterruptedException e)
                 {

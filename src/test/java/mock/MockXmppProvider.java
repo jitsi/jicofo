@@ -25,6 +25,7 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -39,7 +40,7 @@ import java.util.*;
 public class MockXmppProvider
     extends AbstractXmppProvider
 {
-    private final MockExtendedXmppConnection connection;
+    private final MockXmppConnection connection;
 
     private final AbstractOperationSetJingle jingleOpSet;
 
@@ -50,7 +51,7 @@ public class MockXmppProvider
     public MockXmppProvider(@NotNull XmppConnectionConfig config)
     {
         this.config = config;
-        connection = new MockExtendedXmppConnection(getOurJID());
+        connection = new MockXmppConnection(getOurJID());
         mucApi = new MockMultiUserChatOpSet(this);
         this.jingleOpSet = new MockOperationSetJingle(this);
     }
@@ -91,7 +92,7 @@ public class MockXmppProvider
 
 
     @Override
-    public ExtendedXmppConnection getXmppConnection()
+    public AbstractXMPPConnection getXmppConnection()
     {
         return connection;
     }

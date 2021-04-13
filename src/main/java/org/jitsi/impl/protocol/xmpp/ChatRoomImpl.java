@@ -27,7 +27,6 @@ import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
 import org.jivesoftware.smackx.muc.*;
-import org.jivesoftware.smackx.muc.MultiUserChatException.*;
 import org.jivesoftware.smackx.muc.packet.*;
 import org.jivesoftware.smackx.xdata.*;
 import org.jxmpp.jid.*;
@@ -513,11 +512,11 @@ public class ChatRoomImpl
         MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
         admin.addItem(item);
 
-        ExtendedXmppConnection connection = xmppProvider.getXmppConnection();
+        AbstractXMPPConnection connection = xmppProvider.getXmppConnection();
 
         try
         {
-            IQ reply = connection.sendPacketAndGetReply(admin);
+            IQ reply = UtilKt.sendPacketAndGetReply(connection, admin);
             if (reply == null || reply.getType() != IQ.Type.result)
             {
                 // XXX FIXME throw a declared exception.
@@ -657,8 +656,6 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        ExtendedXmppConnection connection = xmppProvider.getXmppConnection();
-
         // The initial presence sent by smack contains an empty "x"
         // extension. If this extension is included in a subsequent stanza,
         // it indicates that the client lost its synchronization and causes
@@ -668,7 +665,7 @@ public class ChatRoomImpl
 
         lastPresenceSent.setStanzaId(StanzaIdUtil.newStanzaId());
 
-        connection.tryToSendStanza(lastPresenceSent);
+        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent);
     }
 
     /**

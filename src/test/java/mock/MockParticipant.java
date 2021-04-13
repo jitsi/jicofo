@@ -23,7 +23,7 @@ import mock.xmpp.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.utils.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -54,7 +54,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
     private MockRoomMember user;
 
-    private MockExtendedXmppConnection mockConnection;
+    private MockXmppConnection mockConnection;
 
     private UtilityJingleOpSet jingle;
 
@@ -141,7 +141,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
             throw new RuntimeException(e);
         }
 
-        mockConnection = new MockExtendedXmppConnection(myJid);
+        mockConnection = new MockXmppConnection(myJid);
         jingle = new UtilityJingleOpSet(mockConnection);
         jingle.mockParticipant = this;
         mockConnection.registerIQRequestHandler(jingle);
@@ -230,7 +230,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
         // ACK invite
         IQ inviteAck = JingleIQ.createResultIQ(invite);
-        mockConnection.tryToSendStanza(inviteAck);
+        UtilKt.tryToSendStanza(mockConnection, inviteAck);
 
         initContents();
 
@@ -240,7 +240,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
         logger.info(nick + " accept: " + user1Accept.toXML());
 
-        mockConnection.tryToSendStanza(user1Accept);
+        UtilKt.tryToSendStanza(mockConnection, user1Accept);
 
         this.myJid = user1Accept.getFrom();
         this.remoteJid = user1Accept.getTo();
@@ -343,7 +343,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         JingleIQ transportInfoIq
             = JinglePacketFactory.createTransportInfo(myJid, remoteJid, jingleSession.getSessionID(), contents);
 
-        mockConnection.tryToSendStanza(transportInfoIq);
+        UtilKt.tryToSendStanza(mockConnection, transportInfoIq);
 
         return transportInfoIq;
     }

@@ -20,7 +20,6 @@ package org.jitsi.jicofo.jibri;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.queue.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.jicofo.*;
@@ -57,10 +56,10 @@ public abstract class BaseJibri
     protected final JitsiMeetConferenceImpl conference;
 
     /**
-     * The {@link ExtendedXmppConnection} used for communication.
+     * The {@link XMPPConnection} used for communication.
      */
     @NotNull
-    protected final ExtendedXmppConnection connection;
+    protected final AbstractXMPPConnection connection;
 
     @NotNull
     private final XmppProvider xmppProvider;
