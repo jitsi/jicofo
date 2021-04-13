@@ -17,13 +17,12 @@
  */
 package mock.xmpp;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
@@ -37,7 +36,18 @@ public class MockExtendedXmppConnection
 {
     private final static Logger logger = new LoggerImpl(MockExtendedXmppConnection.class.getName());
 
-    private static final Map<Jid, MockExtendedXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<Jid, MockExtendedXmppConnection> sharedStanzaQueue
+            = Collections.synchronizedMap(new HashMap<>());
+
+    private static DomainBareJid domain;
+    static
+    {
+        try
+        {
+            domain = JidCreate.domainBareFrom("example.com");
+        }
+        catch (XmppStringprepException e) {}
+    }
 
     private static class MockXmppConnectionConfiguration
             extends ConnectionConfiguration
@@ -48,9 +58,7 @@ public class MockExtendedXmppConnection
         }
 
         public static final class Builder
-                extends
-                ConnectionConfiguration.Builder<Builder,
-                        MockXmppConnectionConfiguration>
+                extends ConnectionConfiguration.Builder<Builder,MockXmppConnectionConfiguration>
         {
             @Override
             public MockXmppConnectionConfiguration build()
@@ -58,21 +66,8 @@ public class MockExtendedXmppConnection
                 return new MockXmppConnectionConfiguration(this);
             }
 
-            @Override
-            public Builder setXmppDomain(String xmppServiceDomain)
+            protected Builder getThis()
             {
-                try
-                {
-                    return super.setXmppDomain(xmppServiceDomain);
-                }
-                catch (XmppStringprepException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            protected Builder getThis() {
                 return this;
             }
         }
@@ -82,23 +77,15 @@ public class MockExtendedXmppConnection
     public MockExtendedXmppConnection(final Jid ourJid)
     {
         super(new MockXmppConnectionConfiguration.Builder()
-                .setXmppDomain("example.com")
+                .setXmppDomain(domain)
                 .setUsernameAndPassword("mock", "mockpass")
                 .build());
-        if (ourJid instanceof EntityFullJid)
-        {
-            user = (EntityFullJid) ourJid;
-        }
-        else
-        {
-            user = new AnyJidAsEntityFullJid(ourJid);
-        }
+
+        user = new AnyJidAsEntityFullJid(ourJid);
+        setFromMode(FromMode.UNCHANGED);
 
         try
         {
-            setFromMode(FromMode.UNCHANGED);
-            // FIXME smack4: wait for Smack#163
-            setReplyToUnknownIq(false);
             connect();
         }
         catch (Exception e)
@@ -177,13 +164,11 @@ public class MockExtendedXmppConnection
         }
         catch (NotConnectedException e)
         {
-            logger.error("No connection - unable to send packet: "
-                    + packet.toXML(), e);
+            logger.error("No connection - unable to send packet: " + packet.toXML(), e);
         }
         catch (InterruptedException e)
         {
-            logger.error("Failed to send packet: "
-                    + packet.toXML().toString(), e);
+            logger.error("Failed to send packet: " + packet.toXML().toString(), e);
         }
     }
 
@@ -202,7 +187,8 @@ public class MockExtendedXmppConnection
             {
                 //FIXME: retry allocation on timeout
                 return packetCollector.nextResult();
-            } finally
+            }
+            finally
             {
                 packetCollector.cancel();
             }
@@ -211,21 +197,5 @@ public class MockExtendedXmppConnection
         {
             throw new RuntimeException("Interrupted", e);
         }
-    }
-
-    @Override
-    public IQRequestHandler registerIQRequestHandler(IQRequestHandler iqRequestHandler)
-    {
-        IQRequestHandler previous = super.registerIQRequestHandler(iqRequestHandler);
-        if (previous != null && previous != iqRequestHandler)
-        {
-            throw new RuntimeException("A IQ handler for "
-                    + iqRequestHandler.getElement()
-                    + " was already registered! Old: "
-                    + previous.toString()
-                    + ", New: " + iqRequestHandler.toString());
-        }
-
-        return previous;
     }
 }
