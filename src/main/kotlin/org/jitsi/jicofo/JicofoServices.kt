@@ -57,12 +57,8 @@ import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.management.ManagementFactory
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
@@ -87,19 +83,6 @@ open class JicofoServices {
         }
     }
     private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
-
-    /**
-     * Pool of cached threads used for colibri channel allocation.
-     *
-     * The overall thread model of jicofo is not obvious, and should be improved, at which point this should probably
-     * be moved or at least renamed. For the time being, use a specific name to document how it's used.
-     */
-    var channelAllocationExecutor: ExecutorService = ThreadPoolExecutor(
-        0, 1500,
-        60L, TimeUnit.SECONDS,
-        SynchronousQueue(),
-        CustomizableThreadFactory("ColibriChannelAllocationPool", true)
-    )
 
     val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
         200, CustomizableThreadFactory("Jicofo Scheduled", true)
@@ -201,7 +184,7 @@ open class JicofoServices {
             it.stop()
         }
         healthChecker?.stop()
-        channelAllocationExecutor.shutdownNow()
+        TaskPools.ioPool.shutdownNow()
         scheduledPool.shutdownNow()
         jettyServer?.stop()
         xmppServices.stop()

@@ -805,7 +805,7 @@ public class JitsiMeetConferenceImpl
                         logger);
 
             participant.setChannelAllocator(channelAllocator);
-            jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
+            TaskPools.getIoPool().submit(channelAllocator);
 
             if (reInvite)
             {
@@ -2845,7 +2845,7 @@ public class JitsiMeetConferenceImpl
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant, logger);
             octoParticipant.setChannelAllocator(channelAllocator);
 
-            jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
+            TaskPools.getIoPool().submit(channelAllocator);
 
             return octoParticipant;
         }
