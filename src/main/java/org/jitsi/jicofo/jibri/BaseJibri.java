@@ -118,7 +118,7 @@ public abstract class BaseJibri
                     }
                     return true;
                 },
-                TaskPools.getScheduledPool()
+                TaskPools.getIoPool()
         );
 
     }
