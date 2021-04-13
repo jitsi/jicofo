@@ -201,12 +201,6 @@ public class JitsiMeetConferenceImpl
     private final String etherpadName;
 
     /**
-     * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
-     * by this <tt>JitsiMeetConference</tt> instance.
-     */
-    @NotNull private final ScheduledExecutorService executor;
-
-    /**
      * The list of {@link BridgeSession} currently in use by this conference.
      *
      * WARNING: To avoid deadlocks we must make sure that any code paths that
@@ -266,7 +260,6 @@ public class JitsiMeetConferenceImpl
 
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.jicofoServices = jicofoServices;
-        executor = jicofoServices.getScheduledPool();
 
         logger.info("Created new conference, roomJid=" + roomName);
     }
@@ -328,7 +321,6 @@ public class JitsiMeetConferenceImpl
                     = new JibriRecorder(
                             this,
                             clientXmppProvider,
-                            executor,
                             jibriDetector,
                             logger);
             }
@@ -340,7 +332,6 @@ public class JitsiMeetConferenceImpl
                     = new JibriSipGateway(
                             this,
                             clientXmppProvider,
-                            executor,
                             sipJibriDetector,
                             logger);
             }
@@ -2416,7 +2407,8 @@ public class JitsiMeetConferenceImpl
 
         long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
-        singleParticipantTout = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
+        singleParticipantTout = TaskPools.getScheduledPool().schedule(
+                new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
         logger.info("Scheduled single person timeout.");
     }

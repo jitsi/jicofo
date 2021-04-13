@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -39,7 +40,6 @@ import org.jxmpp.jid.parts.*;
 import java.lang.*;
 import java.lang.SuppressWarnings;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -95,7 +95,6 @@ public class XmppProviderImpl
      */
     public XmppProviderImpl(
             @NotNull XmppConnectionConfig config,
-            @NotNull ScheduledExecutorService executor,
             @NotNull Logger parentLogger)
     {
         this.config = config;
@@ -107,7 +106,7 @@ public class XmppProviderImpl
         jingleOpSet = new OperationSetJingleImpl(this);
 
         connection = createXmppConnection();
-        connectRetry = new RetryStrategy(executor);
+        connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
         jibriIqHandler = new JibriIqHandler();
         connection.registerIQRequestHandler(jibriIqHandler);
     }

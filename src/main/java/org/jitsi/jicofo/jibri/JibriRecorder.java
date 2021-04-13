@@ -27,7 +27,6 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.jibri.JibriSession.StartException;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -60,19 +59,16 @@ public class JibriRecorder
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
-     * @param scheduledExecutor the executor service used by this instance
      */
     public JibriRecorder(
             @NotNull JitsiMeetConferenceImpl conference,
             @NotNull XmppProvider xmppProvider,
-            @NotNull ScheduledExecutorService scheduledExecutor,
             @NotNull JibriDetector jibriDetector,
             @NotNull Logger parentLogger)
     {
         super(
             conference,
             xmppProvider,
-            scheduledExecutor,
             parentLogger,
             jibriDetector);
     }
@@ -152,7 +148,6 @@ public class JibriRecorder
                     JibriConfig.config.getPendingTimeout().getSeconds(),
                     JibriConfig.config.getNumRetries(),
                     connection,
-                    scheduledExecutor,
                     jibriDetector,
                     false, null, displayName, streamID, youTubeBroadcastId, sessionId, applicationData,
                     classLogger);

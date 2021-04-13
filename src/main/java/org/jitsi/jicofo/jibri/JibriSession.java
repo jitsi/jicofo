@@ -19,6 +19,7 @@ package org.jitsi.jicofo.jibri;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.Nullable;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
@@ -28,7 +29,6 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
@@ -116,11 +116,6 @@ public class JibriSession
     private final EntityBareJid roomName;
 
     /**
-     * Executor service for used to schedule pending timeout tasks.
-     */
-    private final ScheduledExecutorService scheduledExecutor;
-
-    /**
      * The SIP address attribute received from Jitsi Meet which is to be used to
      * start a SIP call. This field's used only if {@link #isSIP} is set to
      * <tt>true</tt>.
@@ -184,8 +179,6 @@ public class JibriSession
      * state, before trying another Jibri instance or failing with an error.
      * @param connection the XMPP connection which will be used to send/listen
      * for packets.
-     * @param scheduledExecutor the executor service which will be used to
-     * schedule pending timeout task execution.
      * @param jibriDetector the Jibri detector which will be used to select
      * Jibri instance.
      * @param isSIP <tt>true</tt> if it's a SIP session or <tt>false</tt> for
@@ -207,7 +200,6 @@ public class JibriSession
             long pendingTimeout,
             int maxNumRetries,
             ExtendedXmppConnection connection,
-            ScheduledExecutorService scheduledExecutor,
             JibriDetector jibriDetector,
             boolean isSIP,
             String sipAddress,
@@ -221,7 +213,6 @@ public class JibriSession
         this.owner = owner;
         this.roomName = roomName;
         this.initiator = initiator;
-        this.scheduledExecutor = Objects.requireNonNull(scheduledExecutor, "scheduledExecutor");
         this.pendingTimeout = pendingTimeout;
         this.maxNumRetries = maxNumRetries;
         this.isSIP = isSIP;
@@ -578,7 +569,7 @@ public class JibriSession
         if (pendingTimeout > 0)
         {
             pendingTimeoutTask
-                = scheduledExecutor.schedule(
+                = TaskPools.getScheduledPool().schedule(
                         new PendingStatusTimeout(),
                         pendingTimeout, TimeUnit.SECONDS);
         }

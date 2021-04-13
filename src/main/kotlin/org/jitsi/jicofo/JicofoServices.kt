@@ -51,14 +51,11 @@ import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
-import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.management.ManagementFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
@@ -75,22 +72,17 @@ open class JicofoServices {
         return object : XmppProviderFactory {
             override fun createXmppProvider(
                 config: XmppConnectionConfig,
-                executor: ScheduledExecutorService,
                 parentLogger: Logger
             ): XmppProvider {
-                return XmppProviderImpl(config, executor, parentLogger)
+                return XmppProviderImpl(config, parentLogger)
             }
         }
     }
     private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
-    val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
-        200, CustomizableThreadFactory("Jicofo Scheduled", true)
-    )
+    val xmppServices = XmppServices(xmppProviderFactory)
 
-    val xmppServices = XmppServices(scheduledPool, xmppProviderFactory)
-
-    val bridgeSelector = BridgeSelector(scheduledPool)
+    val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector, breweryJid).apply { init() }
     } ?: run {
@@ -185,7 +177,7 @@ open class JicofoServices {
         }
         healthChecker?.stop()
         TaskPools.ioPool.shutdownNow()
-        scheduledPool.shutdownNow()
+        TaskPools.scheduledPool.shutdownNow()
         jettyServer?.stop()
         xmppServices.stop()
         bridgeSelector.stop()

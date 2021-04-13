@@ -30,7 +30,6 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.jivesoftware.smack.packet.XMPPError.Condition.*;
 import static org.jivesoftware.smack.packet.XMPPError.from;
@@ -79,31 +78,21 @@ public abstract class BaseJibri
     @NotNull
     final JibriDetector jibriDetector;
 
-    /**
-     * Executor service used by {@link JibriSession} to schedule pending timeout
-     * tasks.
-     */
-    @NotNull
-    final ScheduledExecutorService scheduledExecutor;
-
     private final PacketQueue<JibriIq> incomingIqQueue;
 
     /**
      * Creates new instance of <tt>JibriRecorder</tt>.
      * @param conference <tt>JitsiMeetConference</tt> to be recorded by new instance.
-     * @param scheduledExecutor the executor service used by this instance
      */
     BaseJibri(
             @NotNull JitsiMeetConferenceImpl conference,
             @NotNull XmppProvider xmppProvider,
-            @NotNull ScheduledExecutorService scheduledExecutor,
             @NotNull Logger logger,
             @NotNull JibriDetector jibriDetector)
     {
         this.xmppProvider = xmppProvider;
         this.connection = xmppProvider.getXmppConnection();
         this.conference = conference;
-        this.scheduledExecutor = scheduledExecutor;
         this.jibriDetector = jibriDetector;
 
         this.logger = logger;
@@ -129,7 +118,7 @@ public abstract class BaseJibri
                     }
                     return true;
                 },
-                scheduledExecutor
+                TaskPools.getScheduledPool()
         );
 
     }

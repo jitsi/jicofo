@@ -25,10 +25,8 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.spyk
 import io.mockk.verify
 import org.jitsi.jicofo.xmpp.ExtendedXmppConnection
-import org.jitsi.test.concurrent.FakeScheduledExecutorService
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.packet.IQ
@@ -44,7 +42,6 @@ class JibriSessionTest : ShouldSpec({
     val pendingTimeout = 60L
     val maxNumRetries = 2
     val extendedXmppConnection: ExtendedXmppConnection = mockk()
-    val executor: FakeScheduledExecutorService = spyk()
     val jibriList = mutableListOf(
         JidCreate.bareFrom("jibri1@bar.com"),
         JidCreate.bareFrom("jibri2@bar.com"),
@@ -70,7 +67,6 @@ class JibriSessionTest : ShouldSpec({
         pendingTimeout,
         maxNumRetries,
         extendedXmppConnection,
-        executor,
         detector,
         false /* isSIP */,
         null /* sipAddress */,
