@@ -76,7 +76,7 @@ fun XMPPConnection.tryToSendStanza(stanza: Stanza) =
     }
 
 @Throws(SmackException.NotConnectedException::class)
-fun AbstractXMPPConnection.sendPacketAndGetReply(stanza: IQ): IQ? = createStanzaCollectorAndSend(stanza).let {
+fun AbstractXMPPConnection.sendStanzaAndGetResponse(stanza: IQ): IQ? = createStanzaCollectorAndSend(stanza).let {
     try {
         it.nextResult()
     } finally {

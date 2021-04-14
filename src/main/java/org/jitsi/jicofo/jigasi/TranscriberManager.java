@@ -224,7 +224,7 @@ public class TranscriberManager
 
         try
         {
-            IQ response = UtilKt.sendPacketAndGetReply(connection, dialIq);
+            IQ response = UtilKt.sendStanzaAndGetResponse(connection, dialIq);
 
             boolean retry = false;
             if (response != null)

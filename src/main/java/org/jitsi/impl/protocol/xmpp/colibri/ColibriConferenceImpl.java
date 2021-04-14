@@ -409,7 +409,7 @@ public class ColibriConferenceImpl
      *         the request timed out.
      *
      * @throws ColibriException If sending the packet fails (see
-     * {@link UtilKt#sendPacketAndGetReply(AbstractXMPPConnection, IQ)} (IQ)}).
+     * {@link UtilKt#sendStanzaAndGetResponse(AbstractXMPPConnection, IQ)} (IQ)}).
      */
     protected Stanza sendAllocRequest(String endpointId,
                                       ColibriConferenceIQ request)
@@ -418,7 +418,7 @@ public class ColibriConferenceImpl
         try
         {
             long start = System.nanoTime();
-            Stanza reply = UtilKt.sendPacketAndGetReply(connection, request);
+            Stanza reply = UtilKt.sendStanzaAndGetResponse(connection, request);
             long end = System.nanoTime();
             stats.allocateChannelsRequestTook(end - start);
             return reply;
