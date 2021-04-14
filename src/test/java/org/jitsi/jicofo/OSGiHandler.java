@@ -35,6 +35,7 @@ public class OSGiHandler
 
     private OSGiHandler() { }
 
+    @NonNull
     public static OSGiHandler getInstance()
     {
         return instance;
@@ -72,6 +73,12 @@ public class OSGiHandler
 
     public void shutdown()
     {
+        System.clearProperty("org.jitsi.jicofo.PING_INTERVAL");
+        System.clearProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName);
+        System.clearProperty(XmppClientConnectionConfig.legacyDomainPropertyName);
+        System.clearProperty(XmppClientConnectionConfig.legacyUsernamePropertyName);
+        JitsiConfig.Companion.reloadNewConfig();
+
         MockMultiUserChatOpSet.cleanMucSharing();
     }
 }
