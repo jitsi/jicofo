@@ -22,6 +22,7 @@ import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.utils.logging2.Logger
+import org.jxmpp.jid.EntityFullJid
 
 class JicofoTestServices : JicofoServices() {
     override fun createXmppProviderFactory(): XmppProviderFactory {
@@ -34,4 +35,7 @@ class JicofoTestServices : JicofoServices() {
             }
         }
     }
+
+    val jicofoJid: EntityFullJid
+        get() = (xmppServices.clientConnection as MockXmppProvider).ourJID
 }

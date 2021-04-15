@@ -41,7 +41,9 @@ public class MockXmppConnection
         {
             domain = JidCreate.domainBareFrom("example.com");
         }
-        catch (XmppStringprepException e) {}
+        catch (XmppStringprepException e) {
+            domain = null;
+        }
     }
 
     private static class MockXmppConnectionConfiguration

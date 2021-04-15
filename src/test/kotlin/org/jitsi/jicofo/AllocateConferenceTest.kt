@@ -20,22 +20,33 @@ package org.jitsi.jicofo
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
+import mock.xmpp.MockXmppConnection
+import org.jitsi.jicofo.xmpp.sendStanzaAndGetResponse
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
+import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
 class AllocateConferenceTest : ShouldSpec() {
-    val osgi = OSGiHandler.getInstance()
+    private val osgi = OSGiHandler.getInstance()
+    private val from = JidCreate.bareFrom("from@example.com")
+    private val xmppConnection = MockXmppConnection(from)
+
     override fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also { osgi.init() }
-    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also { osgi.shutdown() }
+    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
+        xmppConnection.disconnect()
+        osgi.shutdown()
+    }
 
     init {
         context("Handling a ConferenceIQ") {
             val conferenceIq = ConferenceIq().apply {
-                from = JidCreate.bareFrom("from@example.com")
+                this.from = from
                 room = JidCreate.entityBareFrom("testRoom@example.com")
+                to = osgi.jicofoServices.jicofoJid
+                type = IQ.Type.set
             }
 
-            osgi.jicofoServices.iqHandler.handleIq(conferenceIq).shouldBeInstanceOf<ConferenceIq>()
+            xmppConnection.sendStanzaAndGetResponse(conferenceIq).shouldBeInstanceOf<ConferenceIq>()
         }
     }
 }

@@ -41,7 +41,7 @@ public class OSGiHandler
         return instance;
     }
 
-    public JicofoServices jicofoServices;
+    public JicofoTestServices jicofoServices;
 
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
     public void init()
