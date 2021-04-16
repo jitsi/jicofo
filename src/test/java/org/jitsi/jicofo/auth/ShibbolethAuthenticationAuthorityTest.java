@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo.auth;
 
+import mock.xmpp.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
 
-import org.jitsi.jicofo.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 import org.junit.runner.*;
@@ -38,10 +38,12 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ShibbolethAuthenticationAuthorityTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private OSGiHandler osgi = OSGiHandler.getInstance();
 
-    @BeforeClass
-    public static void setUpClass()
+    private MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
+
+    @Before
+    public void setUpClass()
         throws Exception
     {
         // Enable shibboleth authentication
@@ -51,10 +53,10 @@ public class ShibbolethAuthenticationAuthorityTest
         osgi.init();
     }
 
-    @AfterClass
-    public static void tearDownClass()
-        throws Exception
+    @After
+    public void tearDownClass()
     {
+        xmppConnection.shutdown();
         osgi.shutdown();
         System.clearProperty(AuthConfig.legacyLoginUrlPropertyName);
         System.clearProperty(AuthConfig.legacyLogoutUrlPropertyName);
@@ -64,8 +66,6 @@ public class ShibbolethAuthenticationAuthorityTest
     public void testShibbolethAuthenticationModule()
         throws Exception
     {
-        IqHandler conferenceIqHandler = osgi.jicofoServices.getIqHandler();
-
         ShibbolethAuthAuthority shibbolethAuth
             = (ShibbolethAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
 
@@ -85,9 +85,11 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setFrom(user1Jid);
         query.setMachineUID(user1MachineUid);
         query.setRoom(room1);
+        query.setTo(osgi.jicofoServices.getJicofoJid());
+        query.setType(IQ.Type.set);
 
         // CASE 1: No session-id passed and room does not exist
-        IQ errorResponse = conferenceIqHandler.handleIq(query);
+        IQ errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY WITH: 'not-authorized'
         assertNotNull(errorResponse);
@@ -103,21 +105,21 @@ public class ShibbolethAuthenticationAuthorityTest
 
         query.setSessionId(user1Session);
 
-        ConferenceIq conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
+        ConferenceIq conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
 
         // CASE 3: no session-id, room exists
         query.setSessionId(null);
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
 
         // CASE 4: invalid session-id, room exists
         query.setSessionId("someinvalidsessionid");
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        errorResponse = conferenceIqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY with session-invalid
         assertNotNull(errorResponse);
@@ -132,14 +134,14 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setFrom(user2Jid);
         query.setMachineUID(user2MachineUid);
 
-        conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
 
         // CASE 6: do not allow to use session-id from different machine
         query.setSessionId(user2Session);
         query.setFrom(user1Jid);
         query.setMachineUID(user1MachineUid);
 
-        errorResponse = conferenceIqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // not-acceptable
         assertNotNull(errorResponse);
@@ -152,7 +154,7 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setSessionId(user1ShibbolethIdentity);
         query.setMachineUID(null);
 
-        errorResponse = conferenceIqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // not-acceptable
         assertNotNull(errorResponse);
@@ -172,6 +174,6 @@ public class ShibbolethAuthenticationAuthorityTest
         query.setMachineUID(user3machineUID);
         query.setSessionId(user3Session);
 
-        conferenceIqResponse = (ConferenceIq) conferenceIqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
     }
 }
