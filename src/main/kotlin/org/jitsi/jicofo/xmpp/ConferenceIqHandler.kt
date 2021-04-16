@@ -18,11 +18,13 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.FocusManager
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
@@ -32,6 +34,7 @@ import org.jivesoftware.smack.packet.XMPPError
  * Handles XMPP requests for a new conference ([ConferenceIq]).
  */
 class ConferenceIqHandler(
+    val connection: AbstractXMPPConnection,
     val focusManager: FocusManager,
     val focusAuthJid: String,
     val isFocusAnonymous: Boolean,
@@ -133,17 +136,28 @@ class ConferenceIqHandler(
         return null
     }
 
-    override fun handleIQRequest(iqRequest: IQ?): IQ {
-        return if (iqRequest is ConferenceIq) {
-            // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
-            val originalFrom = iqRequest.from
-            iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
-            handleConferenceIq(iqRequest).also {
-                it.to = originalFrom
+    override fun handleIQRequest(iqRequest: IQ?): IQ? {
+        if (iqRequest !is ConferenceIq) {
+            return IQ.createErrorResponse(
+                iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error)).also {
+                    logger.error("Received an unexpected IQ type: $iqRequest")
+                }
             }
-        } else {
-            logger.error("Received an unexpected IQ type: $iqRequest")
-            IQ.createErrorResponse(iqRequest, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+
+        // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
+        val originalFrom = iqRequest.from
+        iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
+
+        TaskPools.ioPool.submit {
+            val response = handleConferenceIq(iqRequest).apply { to = originalFrom }
+
+            try {
+                connection.sendStanza(response)
+            } catch (e: Exception) {
+                logger.error("Failed to send response", e)
+            }
         }
+
+        return null
     }
 }

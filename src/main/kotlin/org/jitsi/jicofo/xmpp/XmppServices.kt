@@ -58,6 +58,7 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     ) {
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
         val conferenceIqHandler = ConferenceIqHandler(
+            connection = clientConnection.xmppConnection,
             focusManager = focusManager,
             focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
             isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
