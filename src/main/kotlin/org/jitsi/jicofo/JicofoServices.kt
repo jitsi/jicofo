@@ -176,8 +176,7 @@ open class JicofoServices {
             it.stop()
         }
         healthChecker?.stop()
-        TaskPools.ioPool.shutdownNow()
-        TaskPools.scheduledPool.shutdownNow()
+        TaskPools.shutdown()
         jettyServer?.stop()
         xmppServices.stop()
         bridgeSelector.stop()

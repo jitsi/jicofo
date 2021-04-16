@@ -18,17 +18,25 @@
 package org.jitsi.jicofo
 
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
 class TaskPools {
     companion object {
         @JvmStatic
-        val ioPool = Executors.newCachedThreadPool(CustomizableThreadFactory("Jicofo Global IO Pool", false))
+        val ioPool: ExecutorService =
+            Executors.newCachedThreadPool(CustomizableThreadFactory("Jicofo Global IO Pool", false))
 
         @JvmStatic
         val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
             200, CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
         )
+
+        @JvmStatic
+        fun shutdown() {
+            ioPool.shutdown()
+            scheduledPool.shutdown()
+        }
     }
 }
