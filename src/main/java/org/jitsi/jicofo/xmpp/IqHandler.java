@@ -393,30 +393,4 @@ public class IqHandler
                     .setDescriptiveEnText("Failed to forward DialIq"));
         }
     }
-
-    /**
-     * Expose a limited set of functionality for use via the XMPP component.
-     */
-    public IQ handleIq(IQ iq)
-    {
-        if (iq instanceof ConferenceIq)
-        {
-            return conferenceIqHandler.handleIQRequest(iq);
-        }
-        else if (iq instanceof LoginUrlIq)
-        {
-            return authenticationIqHandler.getLoginUrlIqHandler().handleIQRequest(iq);
-        }
-        else if (iq instanceof LogoutIq)
-        {
-            return authenticationIqHandler.getLogoutIqHandler().handleIQRequest(iq);
-        }
-        else
-        {
-            return IQ.createErrorResponse(
-                    iq,
-                    XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
-                            .setDescriptiveEnText("Unsupported IQ: " + iq));
-        }
-    }
 }
