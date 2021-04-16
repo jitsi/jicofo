@@ -101,6 +101,8 @@ public enum ChatRoomMemberRole
      * (like the UI) that would not necessarily "know" all possible roles.
      * Higher values of the role index indicate roles with more permissions and
      * lower values pertain to more restrictive roles.
+     *
+     * Another dummy line.
      */
     private final int roleIndex;
 
