@@ -35,12 +35,13 @@ public class OSGiHandler
 
     private OSGiHandler() { }
 
+    @NonNull
     public static OSGiHandler getInstance()
     {
         return instance;
     }
 
-    public JicofoServices jicofoServices;
+    public JicofoTestServices jicofoServices;
 
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
     public void init()
@@ -72,6 +73,12 @@ public class OSGiHandler
 
     public void shutdown()
     {
+        System.clearProperty("org.jitsi.jicofo.PING_INTERVAL");
+        System.clearProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName);
+        System.clearProperty(XmppClientConnectionConfig.legacyDomainPropertyName);
+        System.clearProperty(XmppClientConnectionConfig.legacyUsernamePropertyName);
+        JitsiConfig.Companion.reloadNewConfig();
+
         MockMultiUserChatOpSet.cleanMucSharing();
     }
 }

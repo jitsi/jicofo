@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -39,7 +40,6 @@ import org.jxmpp.jid.parts.*;
 import java.lang.*;
 import java.lang.SuppressWarnings;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -68,7 +68,7 @@ public class XmppProviderImpl
     /**
      * The XMPP connection used by this instance.
      */
-    @NotNull private final ExtendedXmppConnectionImpl connection;
+    @NotNull private final AbstractXMPPConnection connection;
 
     private final AtomicBoolean started = new AtomicBoolean(false);
 
@@ -95,7 +95,6 @@ public class XmppProviderImpl
      */
     public XmppProviderImpl(
             @NotNull XmppConnectionConfig config,
-            @NotNull ScheduledExecutorService executor,
             @NotNull Logger parentLogger)
     {
         this.config = config;
@@ -107,7 +106,7 @@ public class XmppProviderImpl
         jingleOpSet = new OperationSetJingleImpl(this);
 
         connection = createXmppConnection();
-        connectRetry = new RetryStrategy(executor);
+        connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
         jibriIqHandler = new JibriIqHandler();
         connection.registerIQRequestHandler(jibriIqHandler);
     }
@@ -135,7 +134,7 @@ public class XmppProviderImpl
      * Create the Smack {@link AbstractXMPPConnection} based on the specicied config.
      * @return
      */
-    private ExtendedXmppConnectionImpl createXmppConnection()
+    private AbstractXMPPConnection createXmppConnection()
     {
         XMPPTCPConnectionConfiguration.Builder connConfig
                 = XMPPTCPConnectionConfiguration.builder()
@@ -179,7 +178,7 @@ public class XmppProviderImpl
         EntityCapsManager capsManager = EntityCapsManager.getInstanceFor(connection);
         capsManager.enableEntityCaps();
 
-        return new ExtendedXmppConnectionImpl(connection, logger);
+        return connection;
     }
 
 
@@ -206,8 +205,7 @@ public class XmppProviderImpl
 
                 // XXX Is there a reason we add listeners *after* we call connect()?
                 connection.addConnectionListener(connListener);
-                ReconnectionManager.getInstanceFor(
-                        connection.getSmackXMPPConnection()).addReconnectionListener(reConnListener);
+                ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
 
                 if (config.getPassword() != null)
                 {
@@ -228,8 +226,7 @@ public class XmppProviderImpl
                 // the RetryStrategy
                 connection.removeConnectionListener(connListener);
 
-                ReconnectionManager reconnectionManager
-                        = ReconnectionManager.getInstanceFor(connection.getSmackXMPPConnection());
+                ReconnectionManager reconnectionManager = ReconnectionManager.getInstanceFor(connection);
                 if (reconnectionManager != null)
                 {
                     reconnectionManager.removeReconnectionListener(reConnListener);
@@ -277,13 +274,8 @@ public class XmppProviderImpl
         return config;
     }
 
-    /**
-     * Returns implementation of {@link ExtendedXmppConnection}.
-     *
-     * @return implementation of {@link ExtendedXmppConnection}
-     */
     @Override
-    public ExtendedXmppConnection getXmppConnection()
+    public AbstractXMPPConnection getXmppConnection()
     {
         return connection;
     }
@@ -333,7 +325,7 @@ public class XmppProviderImpl
 
         if (registered)
         {
-            ExtendedXmppConnection xmppConnection = getXmppConnection();
+            XMPPConnection xmppConnection = getXmppConnection();
             xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
             logger.info("Set replyTimeout=" + config.getReplyTimeout());
         }

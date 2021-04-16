@@ -22,18 +22,20 @@ import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.utils.logging2.Logger
-import java.util.concurrent.ScheduledExecutorService
+import org.jxmpp.jid.EntityFullJid
 
 class JicofoTestServices : JicofoServices() {
     override fun createXmppProviderFactory(): XmppProviderFactory {
         return object : XmppProviderFactory {
             override fun createXmppProvider(
                 config: XmppConnectionConfig,
-                executor: ScheduledExecutorService,
-                parrentLogger: Logger
+                parentLogger: Logger
             ): XmppProvider {
                 return MockXmppProvider(config)
             }
         }
     }
+
+    val jicofoJid: EntityFullJid
+        get() = (xmppServices.clientConnection as MockXmppProvider).ourJID
 }

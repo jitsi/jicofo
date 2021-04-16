@@ -18,12 +18,12 @@
 package mock.xmpp.colibri;
 
 import edu.umd.cs.findbugs.annotations.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
@@ -109,7 +109,7 @@ public class AllocThreadingTestColibriConference
      * @param connection XMPP connection object that wil be used by new
      *                   instance.
      */
-    public AllocThreadingTestColibriConference(ExtendedXmppConnection connection)
+    public AllocThreadingTestColibriConference(AbstractXMPPConnection connection)
     {
         super(connection);
     }

@@ -26,7 +26,6 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.jibri.JibriSession.StartException;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -58,19 +57,16 @@ public class JibriSipGateway
     /**
      * Creates new instance of {@link JibriSipGateway}.
      * @param conference parent conference for which the new instance will be managing Jibri SIP sessions.
-     * @param scheduledExecutor the executor service used by this instance
      */
     public JibriSipGateway(
            @NotNull JitsiMeetConferenceImpl conference,
            @NotNull XmppProvider xmppProvider,
-           @NotNull ScheduledExecutorService scheduledExecutor,
            @NotNull JibriDetector jibriDetector,
            @NotNull Logger parentLogger)
     {
         super(
             conference,
             xmppProvider,
-            scheduledExecutor,
             parentLogger,
             jibriDetector);
 
@@ -148,7 +144,6 @@ public class JibriSipGateway
                         JibriConfig.config.getPendingTimeout().getSeconds(),
                         JibriConfig.config.getNumRetries(),
                         connection,
-                        scheduledExecutor,
                         jibriDetector,
                         false,
                         sipAddress,

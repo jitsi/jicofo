@@ -23,25 +23,17 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
-import java.util.concurrent.ScheduledExecutorService
 
-class XmppServices(
-    scheduledExecutorService: ScheduledExecutorService,
-    xmppProviderFactory: XmppProviderFactory
-) {
+class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     private val logger = createLogger()
 
-    val clientConnection: XmppProvider = xmppProviderFactory.createXmppProvider(
-        XmppConfig.client,
-        scheduledExecutorService,
-        logger
-    ).apply {
+    val clientConnection: XmppProvider = xmppProviderFactory.createXmppProvider(XmppConfig.client, logger).apply {
         start()
     }
 
     val serviceConnection: XmppProvider = if (XmppConfig.service.enabled) {
         logger.info("Using dedicated Service XMPP connection for JVB MUC.")
-        xmppProviderFactory.createXmppProvider(XmppConfig.service, scheduledExecutorService, logger).apply {
+        xmppProviderFactory.createXmppProvider(XmppConfig.service, logger).apply {
             start()
         }
     } else {
@@ -66,6 +58,7 @@ class XmppServices(
     ) {
         val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
         val conferenceIqHandler = ConferenceIqHandler(
+            connection = clientConnection.xmppConnection,
             focusManager = focusManager,
             focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
             isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),

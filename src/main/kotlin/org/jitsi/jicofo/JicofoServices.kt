@@ -51,18 +51,11 @@ import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
-import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.management.ManagementFactory
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
@@ -79,35 +72,17 @@ open class JicofoServices {
         return object : XmppProviderFactory {
             override fun createXmppProvider(
                 config: XmppConnectionConfig,
-                executor: ScheduledExecutorService,
                 parentLogger: Logger
             ): XmppProvider {
-                return XmppProviderImpl(config, executor, parentLogger)
+                return XmppProviderImpl(config, parentLogger)
             }
         }
     }
     private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
-    /**
-     * Pool of cached threads used for colibri channel allocation.
-     *
-     * The overall thread model of jicofo is not obvious, and should be improved, at which point this should probably
-     * be moved or at least renamed. For the time being, use a specific name to document how it's used.
-     */
-    var channelAllocationExecutor: ExecutorService = ThreadPoolExecutor(
-        0, 1500,
-        60L, TimeUnit.SECONDS,
-        SynchronousQueue(),
-        CustomizableThreadFactory("ColibriChannelAllocationPool", true)
-    )
+    val xmppServices = XmppServices(xmppProviderFactory)
 
-    val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
-        200, CustomizableThreadFactory("Jicofo Scheduled", true)
-    )
-
-    val xmppServices = XmppServices(scheduledPool, xmppProviderFactory)
-
-    val bridgeSelector = BridgeSelector(scheduledPool)
+    val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector, breweryJid).apply { init() }
     } ?: run {
@@ -201,8 +176,7 @@ open class JicofoServices {
             it.stop()
         }
         healthChecker?.stop()
-        channelAllocationExecutor.shutdownNow()
-        scheduledPool.shutdownNow()
+        TaskPools.shutdown()
         jettyServer?.stop()
         xmppServices.stop()
         bridgeSelector.stop()

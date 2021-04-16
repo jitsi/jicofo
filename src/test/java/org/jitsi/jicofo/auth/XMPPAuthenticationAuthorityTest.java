@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.auth;
 
+import mock.xmpp.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 import org.junit.runner.*;
@@ -42,11 +42,13 @@ public class XMPPAuthenticationAuthorityTest
 {
     static OSGiHandler osgi = OSGiHandler.getInstance();
 
-    private static String authDomain = "auth.server.net";
-    private static String guestDomain = "guest.server.net";
+    private String authDomain = "auth.server.net";
+    private String guestDomain = "guest.server.net";
 
-    @BeforeClass
-    public static void setUpClass()
+    private MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
+
+    @Before
+    public void setUpClass()
         throws Exception
     {
         // Enable XMPP authentication
@@ -54,10 +56,10 @@ public class XMPPAuthenticationAuthorityTest
         osgi.init();
     }
 
-    @AfterClass
-    public static void tearDownClass()
-        throws Exception
+    @After
+    public void tearDownClass()
     {
+        xmppConnection.shutdown();
         osgi.shutdown();
         System.clearProperty(AuthConfig.legacyLoginUrlPropertyName);
     }
@@ -66,7 +68,6 @@ public class XMPPAuthenticationAuthorityTest
     public void testXmppDomainAuthentication()
         throws Exception
     {
-        System.err.println("Start test");
         XMPPDomainAuthAuthority xmppAuth = (XMPPDomainAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
 
         assertNotNull(xmppAuth);
@@ -90,9 +91,10 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
+        query.setTo(osgi.jicofoServices.getJicofoJid());
+        query.setType(IQ.Type.set);
 
-        IqHandler iqHandler = osgi.jicofoServices.getIqHandler();
-        IQ errorResponse = iqHandler.handleIq(query);
+        IQ errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY WITH: not-authorized
         assertNotNull(errorResponse);
@@ -106,7 +108,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
 
-        ConferenceIq conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
+        ConferenceIq conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY WITH: null - no errors, session-id set in response
         String user1SessionId = conferenceIqResponse.getSessionId();
@@ -117,7 +119,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setMachineUID(user2MachineUid);
 
-        conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY with null - no errors, no session-id in response
         assertNull(conferenceIqResponse.getSessionId());
@@ -129,7 +131,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user1MachineUid);
         query.setRoom(room2);
 
-        conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY with null - no errors, session-id in response(repeated)
         assertEquals(user1SessionId, conferenceIqResponse.getSessionId());
@@ -139,7 +141,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId("someinvalidsessionid");
         query.setMachineUID(user2MachineUid);
 
-        errorResponse = iqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // REPLY with session-invalid
         assertNotNull(errorResponse.getError().getExtension(
@@ -151,7 +153,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        errorResponse = iqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // not-acceptable
         assertEquals(
@@ -163,7 +165,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setFrom(user2GuestJid);
         query.setMachineUID(user2MachineUid);
 
-        errorResponse = iqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // not-acceptable
         assertNotNull(
@@ -175,7 +177,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(user1SessionId);
         query.setMachineUID(null);
 
-        errorResponse = iqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // not-acceptable
         assertNotNull(
@@ -188,7 +190,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setMachineUID(null);
 
-        errorResponse = iqHandler.handleIq(query);
+        errorResponse = xmppConnection.sendIqAndGetResponse(query);
 
         // not-acceptable
         assertNotNull(
@@ -201,7 +203,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setMachineUID(user3MachineUID);
         query.setSessionId(null);
 
-        conferenceIqResponse = (ConferenceIq) iqHandler.handleIq(query);
+        conferenceIqResponse = (ConferenceIq) xmppConnection.sendIqAndGetResponse(query);
         String user3SessionId = conferenceIqResponse.getSessionId();
 
         assertNotNull(user3SessionId);

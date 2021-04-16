@@ -17,9 +17,8 @@
  */
 package mock.xmpp;
 
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -31,13 +30,13 @@ import java.util.*;
 public class XmppPeer
     implements IQRequestHandler
 {
-    private final ExtendedXmppConnection connection;
+    private final AbstractXMPPConnection connection;
 
     private final List<IQ> iqs = new ArrayList<>();
 
     public XmppPeer(String jid)
     {
-        this(jidCreate(jid), new MockExtendedXmppConnection(jidCreate(jid)));
+        this(jidCreate(jid), new MockXmppConnection(jidCreate(jid)));
     }
 
     private static Jid jidCreate(String jid)
@@ -52,12 +51,12 @@ public class XmppPeer
         }
     }
 
-    public XmppPeer(Jid jid, ExtendedXmppConnection connection)
+    public XmppPeer(Jid jid, AbstractXMPPConnection connection)
     {
         this.connection = connection;
     }
 
-    public ExtendedXmppConnection getConnection()
+    public AbstractXMPPConnection getConnection()
     {
         return connection;
     }

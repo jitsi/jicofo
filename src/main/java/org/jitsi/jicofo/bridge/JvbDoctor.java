@@ -62,11 +62,6 @@ public class JvbDoctor
      */
     private final Map<Jid, ScheduledFuture> tasks = new ConcurrentHashMap<>();
 
-    /**
-     * The executor to use to schedule periodic health check tasks.
-     */
-    private ScheduledExecutorService executor;
-
     private final HealthCheckListener listener;
 
     /**
@@ -77,7 +72,7 @@ public class JvbDoctor
         this.listener = listener;
     }
 
-    private ExtendedXmppConnection getConnection()
+    private AbstractXMPPConnection getConnection()
     {
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection();
@@ -85,7 +80,7 @@ public class JvbDoctor
         return xmppProvider.getXmppConnection();
     }
 
-    synchronized public void start(ScheduledExecutorService executor, Collection<Bridge> initialBridges)
+    synchronized public void start(Collection<Bridge> initialBridges)
     {
         if (!config.getHealthChecksEnabled())
         {
@@ -93,7 +88,6 @@ public class JvbDoctor
             return;
         }
 
-        this.executor = executor;
         initializeHealthChecks(initialBridges);
     }
 
@@ -118,18 +112,11 @@ public class JvbDoctor
 
     synchronized public void stop()
     {
-        try
+        // Remove scheduled tasks
+        ArrayList<Jid> bridges = new ArrayList<>(tasks.keySet());
+        for (Jid bridge : bridges)
         {
-            // Remove scheduled tasks
-            ArrayList<Jid> bridges = new ArrayList<>(tasks.keySet());
-            for (Jid bridge : bridges)
-            {
-                removeBridge(bridge);
-            }
-        }
-        finally
-        {
-            this.executor = null;
+            removeBridge(bridge);
         }
     }
 
@@ -142,7 +129,7 @@ public class JvbDoctor
         }
 
         ScheduledFuture healthTask
-            = executor.scheduleAtFixedRate(
+            = TaskPools.getScheduledPool().scheduleAtFixedRate(
                     new HealthCheckTask(bridgeJid),
                     healthCheckInterval,
                     healthCheckInterval,
@@ -218,7 +205,7 @@ public class JvbDoctor
         private void doHealthCheck()
             throws SmackException.NotConnectedException
         {
-            ExtendedXmppConnection connection = getConnection();
+            AbstractXMPPConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
             if (!connection.isConnected())
             {
@@ -233,7 +220,7 @@ public class JvbDoctor
 
             logger.debug("Sending health-check request to: " + bridgeJid);
 
-            IQ response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
+            IQ response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)
@@ -252,7 +239,7 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    response = connection.sendPacketAndGetReply(newHealthCheckIQ(bridgeJid));
+                    response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
                 }
                 catch (InterruptedException e)
                 {

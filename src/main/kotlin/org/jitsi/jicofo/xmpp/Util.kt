@@ -17,15 +17,23 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
+import org.jivesoftware.smack.AbstractXMPPConnection
+import org.jivesoftware.smack.SmackException
+import org.jivesoftware.smack.XMPPConnection
+import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.Stanza
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 
+val logger = LoggerImpl("org.jitsi.jicofo.xmpp.Util")
+
 /**
  * Reads the original jid as encoded in the resource part by mod_client_proxy, returns the original jid if it format
- * is not as expeceted.
+ * is not as expected.
  */
 fun parseJidFromClientProxyJid(
     /**
@@ -56,4 +64,22 @@ fun ColibriStatsExtension.getDouble(name: String): Double? = try {
     getValueAsString(name)?.toDouble()
 } catch (e: Exception) {
     null
+}
+
+fun XMPPConnection.tryToSendStanza(stanza: Stanza) =
+    try {
+        sendStanza(stanza)
+    } catch (e: SmackException.NotConnectedException) {
+        logger.error("No connection - unable to send packet: " + stanza.toXML(), e)
+    } catch (e: InterruptedException) {
+        logger.error("Failed to send packet: " + stanza.toXML().toString(), e)
+    }
+
+@Throws(SmackException.NotConnectedException::class)
+fun AbstractXMPPConnection.sendIqAndGetResponse(iq: IQ): IQ? = createStanzaCollectorAndSend(iq).let {
+    try {
+        it.nextResult()
+    } finally {
+        it.cancel()
+    }
 }

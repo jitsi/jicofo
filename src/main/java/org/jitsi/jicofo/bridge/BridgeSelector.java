@@ -74,10 +74,10 @@ public class BridgeSelector
      * Creates new instance of {@link BridgeSelector}.
      *
      */
-    public BridgeSelector(ScheduledExecutorService executor)
+    public BridgeSelector()
     {
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
-        jvbDoctor.start(executor, getBridges());
+        jvbDoctor.start(getBridges());
     }
 
     /**

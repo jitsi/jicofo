@@ -134,14 +134,13 @@ public class DiscoveryUtil
      */
     public static List<String> discoverParticipantFeatures(XmppProvider xmppProvider, EntityFullJid address)
     {
-        ExtendedXmppConnection xmppConnection = xmppProvider.getXmppConnection();
+        XMPPConnection xmppConnection = xmppProvider.getXmppConnection();
         if (!xmppConnection.isConnected())
         {
             logger.error("XMPP not connected " + xmppProvider);
             return getDefaultParticipantFeatureSet();
         }
-        ServiceDiscoveryManager discoveryManager =
-                ServiceDiscoveryManager.getInstanceFor(xmppConnection.getSmackXMPPConnection());
+        ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection);
         if (discoveryManager == null)
         {
             logger.error("Service discovery not supported by " + xmppProvider);

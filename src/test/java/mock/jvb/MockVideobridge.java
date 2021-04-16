@@ -38,7 +38,7 @@ public class MockVideobridge
      */
     private static final Logger logger = new LoggerImpl(MockVideobridge.class.getName());
 
-    private final MockExtendedXmppConnection connection;
+    private final MockXmppConnection connection;
 
     private final Jid bridgeJid;
 
@@ -48,7 +48,7 @@ public class MockVideobridge
 
     private final ColibriConferenceIqHandler confIqSetHandler = new ColibriConferenceIqHandler(IQ.Type.set);
 
-    public MockVideobridge(MockExtendedXmppConnection connection, Jid bridgeJid)
+    public MockVideobridge(MockXmppConnection connection, Jid bridgeJid)
     {
         this.connection = connection;
         this.bridgeJid = bridgeJid;

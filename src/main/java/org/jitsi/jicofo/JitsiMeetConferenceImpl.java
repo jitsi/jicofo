@@ -22,7 +22,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -37,6 +36,7 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -201,12 +201,6 @@ public class JitsiMeetConferenceImpl
     private final String etherpadName;
 
     /**
-     * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
-     * by this <tt>JitsiMeetConference</tt> instance.
-     */
-    @NotNull private final ScheduledExecutorService executor;
-
-    /**
      * The list of {@link BridgeSession} currently in use by this conference.
      *
      * WARNING: To avoid deadlocks we must make sure that any code paths that
@@ -266,7 +260,6 @@ public class JitsiMeetConferenceImpl
 
         JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.jicofoServices = jicofoServices;
-        executor = jicofoServices.getScheduledPool();
 
         logger.info("Created new conference, roomJid=" + roomName);
     }
@@ -328,7 +321,6 @@ public class JitsiMeetConferenceImpl
                     = new JibriRecorder(
                             this,
                             clientXmppProvider,
-                            executor,
                             jibriDetector,
                             logger);
             }
@@ -340,7 +332,6 @@ public class JitsiMeetConferenceImpl
                     = new JibriSipGateway(
                             this,
                             clientXmppProvider,
-                            executor,
                             sipJibriDetector,
                             logger);
             }
@@ -606,10 +597,7 @@ public class JitsiMeetConferenceImpl
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        ExtendedXmppConnection xmppConnection = serviceXmppProvider.getXmppConnection();
-        Objects.requireNonNull(xmppConnection);
-
-        ColibriConferenceImpl colibriConference = new ColibriConferenceImpl(xmppConnection);
+        ColibriConferenceImpl colibriConference = new ColibriConferenceImpl(serviceXmppProvider.getXmppConnection());
         // JVB expects the hex string
         colibriConference.setGID(Long.toHexString(gid));
 
@@ -805,7 +793,7 @@ public class JitsiMeetConferenceImpl
                         logger);
 
             participant.setChannelAllocator(channelAllocator);
-            jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
+            TaskPools.getIoPool().submit(channelAllocator);
 
             if (reInvite)
             {
@@ -2416,7 +2404,8 @@ public class JitsiMeetConferenceImpl
 
         long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
-        singleParticipantTout = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
+        singleParticipantTout = TaskPools.getScheduledPool().schedule(
+                new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
         logger.info("Scheduled single person timeout.");
     }
@@ -2845,7 +2834,7 @@ public class JitsiMeetConferenceImpl
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant, logger);
             octoParticipant.setChannelAllocator(channelAllocator);
 
-            jicofoServices.getChannelAllocationExecutor().submit(channelAllocator);
+            TaskPools.getIoPool().submit(channelAllocator);
 
             return octoParticipant;
         }

@@ -93,12 +93,7 @@ public abstract class AbstractOperationSetJingle
         return getConnection().getUser();
     }
 
-    /**
-     * Returns {@link ExtendedXmppConnection} implementation.
-     *
-     * @return {@link ExtendedXmppConnection} implementation
-     */
-    protected abstract ExtendedXmppConnection getConnection();
+    protected abstract AbstractXMPPConnection getConnection();
 
     /**
      * Finds Jingle session for given session identifier.
@@ -124,7 +119,7 @@ public abstract class AbstractOperationSetJingle
 
         sessions.put(sid, session);
 
-        IQ reply = getConnection().sendPacketAndGetReply(inviteIQ);
+        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
         stats.stanzaSent(inviteIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
@@ -158,7 +153,7 @@ public abstract class AbstractOperationSetJingle
                     "Session does not exist for: " + address);
         }
 
-        IQ reply = getConnection().sendPacketAndGetReply(jingleIQ);
+        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
         stats.stanzaSent(jingleIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
@@ -360,7 +355,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().tryToSendStanza(addSourceIq);
+        UtilKt.tryToSendStanza(getConnection(), addSourceIq);
         stats.stanzaSent(JingleAction.SOURCEADD);
     }
 
@@ -472,7 +467,7 @@ public abstract class AbstractOperationSetJingle
                 + " SID: " + session.getSessionID() + " "
                 + ssrcs + " " + ssrcGroupMap);
 
-        getConnection().tryToSendStanza(removeSourceIq);
+        UtilKt.tryToSendStanza(getConnection(), removeSourceIq);
         stats.stanzaSent(JingleAction.SOURCEREMOVE);
     }
 
@@ -527,7 +522,7 @@ public abstract class AbstractOperationSetJingle
                     reason,
                     message);
 
-            getConnection().tryToSendStanza(terminate);
+            UtilKt.tryToSendStanza(getConnection(), terminate);
             stats.stanzaSent(JingleAction.SESSION_TERMINATE);
         }
 
