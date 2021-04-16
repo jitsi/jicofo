@@ -524,7 +524,7 @@ public class JibriSession
         // timeout each time.
         reschedulePendingTimeout();
 
-        IQ reply = UtilKt.sendStanzaAndGetResponse(xmpp, startIq);
+        IQ reply = UtilKt.sendIqAndGetResponse(xmpp, startIq);
 
         if (!(reply instanceof JibriIq))
         {

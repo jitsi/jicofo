@@ -220,7 +220,7 @@ public class JvbDoctor
 
             logger.debug("Sending health-check request to: " + bridgeJid);
 
-            IQ response = UtilKt.sendStanzaAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
+            IQ response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)
@@ -239,7 +239,7 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    response = UtilKt.sendStanzaAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
+                    response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
                 }
                 catch (InterruptedException e)
                 {

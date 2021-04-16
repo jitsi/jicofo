@@ -21,7 +21,7 @@ import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
 import mock.xmpp.MockXmppConnection
-import org.jitsi.jicofo.xmpp.sendStanzaAndGetResponse
+import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
@@ -46,7 +46,7 @@ class AllocateConferenceTest : ShouldSpec() {
                 type = IQ.Type.set
             }
 
-            xmppConnection.sendStanzaAndGetResponse(conferenceIq).shouldBeInstanceOf<ConferenceIq>()
+            xmppConnection.sendIqAndGetResponse(conferenceIq).shouldBeInstanceOf<ConferenceIq>()
         }
     }
 }

@@ -119,7 +119,7 @@ public abstract class AbstractOperationSetJingle
 
         sessions.put(sid, session);
 
-        IQ reply = UtilKt.sendStanzaAndGetResponse(getConnection(), inviteIQ);
+        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
         stats.stanzaSent(inviteIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
@@ -153,7 +153,7 @@ public abstract class AbstractOperationSetJingle
                     "Session does not exist for: " + address);
         }
 
-        IQ reply = UtilKt.sendStanzaAndGetResponse(getConnection(), jingleIQ);
+        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
         stats.stanzaSent(jingleIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))

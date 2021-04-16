@@ -516,7 +516,7 @@ public class ChatRoomImpl
 
         try
         {
-            IQ reply = UtilKt.sendStanzaAndGetResponse(connection, admin);
+            IQ reply = UtilKt.sendIqAndGetResponse(connection, admin);
             if (reply == null || reply.getType() != IQ.Type.result)
             {
                 // XXX FIXME throw a declared exception.

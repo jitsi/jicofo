@@ -17,7 +17,7 @@
  */
 package mock.xmpp
 
-import org.jitsi.jicofo.xmpp.sendStanzaAndGetResponse
+import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 import java.lang.RuntimeException
@@ -27,7 +27,7 @@ class MockXmppConnectionWrapper {
 
     fun sendIqAndGetResponse(iq: IQ): IQ? =
         if (iq.from == null) throw RuntimeException("Can not send IQ with no 'from'.")
-        else xmppConnections.computeIfAbsent(iq.from) { MockXmppConnection(it) }.sendStanzaAndGetResponse(iq)
+        else xmppConnections.computeIfAbsent(iq.from) { MockXmppConnection(it) }.sendIqAndGetResponse(iq)
 
     fun shutdown() = xmppConnections.values.forEach { it.disconnect() }
 }
