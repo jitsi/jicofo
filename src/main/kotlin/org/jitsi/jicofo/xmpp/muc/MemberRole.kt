@@ -40,12 +40,8 @@ enum class MemberRole {
     MODERATOR,
 
     /**
-     * A role implying standard participant permissions.
-     */
-    MEMBER,
-
-    /**
-     * A role implying standard participant permissions.
+     * A role which combines the standard XMPP 'member' and 'visitor' permissions, i.e. the member may or may not be
+     * allowed to send messages, but they certainly don't have any moderation permissions.
      */
     GUEST;
 
@@ -63,7 +59,6 @@ enum class MemberRole {
             MUCAffiliation.owner -> OWNER
             else -> when (mucRole) {
                 MUCRole.moderator -> MODERATOR
-                MUCRole.participant -> MEMBER
                 else -> GUEST
             }
         }

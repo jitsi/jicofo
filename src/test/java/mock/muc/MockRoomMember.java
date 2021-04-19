@@ -35,7 +35,7 @@ public class MockRoomMember
 
     private final MockMultiUserChat room;
 
-    private MemberRole role = MemberRole.MEMBER;
+    private MemberRole role = MemberRole.GUEST;
 
     public MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
     {

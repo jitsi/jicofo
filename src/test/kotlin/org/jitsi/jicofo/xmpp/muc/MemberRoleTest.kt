@@ -25,7 +25,6 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.xmpp.muc.MemberRole.ADMINISTRATOR
 import org.jitsi.jicofo.xmpp.muc.MemberRole.GUEST
-import org.jitsi.jicofo.xmpp.muc.MemberRole.MEMBER
 import org.jitsi.jicofo.xmpp.muc.MemberRole.MODERATOR
 import org.jitsi.jicofo.xmpp.muc.MemberRole.OWNER
 import org.jivesoftware.smackx.muc.MUCAffiliation
@@ -34,33 +33,28 @@ import org.jivesoftware.smackx.muc.MUCRole
 class MemberRoleTest : ShouldSpec() {
     init {
         context("Order") {
-            (GUEST > MEMBER) shouldBe true
-            (MEMBER > MODERATOR) shouldBe true
+            (GUEST > MODERATOR) shouldBe true
             (MODERATOR > ADMINISTRATOR) shouldBe true
             (ADMINISTRATOR > OWNER) shouldBe true
 
-            GUEST.compareTo(MEMBER) shouldBeGreaterThan 0
-            MEMBER.compareTo(MODERATOR) shouldBeGreaterThan 0
+            GUEST.compareTo(MODERATOR) shouldBeGreaterThan 0
             MODERATOR.compareTo(ADMINISTRATOR) shouldBeGreaterThan 0
             ADMINISTRATOR.compareTo(OWNER) shouldBeGreaterThan 0
         }
         context("hasModeratorRights") {
             GUEST.hasModeratorRights().shouldBeFalse()
-            MEMBER.hasModeratorRights().shouldBeFalse()
             MODERATOR.hasModeratorRights().shouldBeTrue()
             ADMINISTRATOR.hasModeratorRights().shouldBeTrue()
             OWNER.hasModeratorRights().shouldBeTrue()
         }
         context("hasAdministratorRights") {
             GUEST.hasAdministratorRights().shouldBeFalse()
-            MEMBER.hasAdministratorRights().shouldBeFalse()
             MODERATOR.hasAdministratorRights().shouldBeFalse()
             ADMINISTRATOR.hasAdministratorRights().shouldBeTrue()
             OWNER.hasAdministratorRights().shouldBeTrue()
         }
         context("hasOwnerRights") {
             GUEST.hasOwnerRights().shouldBeFalse()
-            MEMBER.hasOwnerRights().shouldBeFalse()
             MODERATOR.hasOwnerRights().shouldBeFalse()
             ADMINISTRATOR.hasOwnerRights().shouldBeFalse()
             OWNER.hasOwnerRights().shouldBeTrue()
@@ -73,7 +67,6 @@ class MemberRoleTest : ShouldSpec() {
                         MUCAffiliation.owner -> OWNER
                         else -> when (mucRole) {
                             MUCRole.moderator -> MODERATOR
-                            MUCRole.participant -> MEMBER
                             else -> GUEST
                         }
                     }
