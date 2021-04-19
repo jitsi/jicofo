@@ -32,7 +32,7 @@ import java.util.LinkedList
  * handling to specific [BaseJibri] instances.
  */
 class JibriIqHandler :
-    AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.async) {
+    AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync) {
 
     private val jibris = Collections.synchronizedList(LinkedList<BaseJibri>())
 
