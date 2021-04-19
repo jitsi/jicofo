@@ -2051,6 +2051,7 @@ public class JitsiMeetConferenceImpl
         return roomName;
     }
 
+    @NotNull
     public XmppProvider getClientXmppProvider()
     {
         return clientXmppProvider;
@@ -2277,6 +2278,7 @@ public class JitsiMeetConferenceImpl
      * Returns config for this conference.
      * @return <tt>JitsiMeetConfig</tt> instance used in this conference.
      */
+    @NotNull
     public JitsiMeetConfig getConfig()
     {
         return config;
@@ -2472,7 +2474,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public String toString()
     {
-        return String.format("JitsiMeetConferenceImpl[gid=%d, name=%s]", gid, getRoomName().toString());
+        return String.format("JitsiMeetConferenceImpl[gid=%d, name=%s]", gid, getRoomName());
     }
 
     /**
@@ -2538,7 +2540,7 @@ public class JitsiMeetConferenceImpl
          * The list of participants in the conference which use this
          * {@link BridgeSession}.
          */
-        private List<Participant> participants = new LinkedList<>();
+        private final List<Participant> participants = new LinkedList<>();
 
         /**
          * The {@link ColibriConference} instance used to communicate with
@@ -2665,7 +2667,6 @@ public class JitsiMeetConferenceImpl
          * Sends a COLIBRI message which updates the channels for a particular
          * {@link Participant} in this {@link BridgeSession}, setting the
          * participant's RTP description, sources, transport information, etc.
-         * @param participant
          */
         private void updateColibriChannels(Participant participant)
         {

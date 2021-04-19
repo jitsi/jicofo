@@ -71,10 +71,6 @@ abstract class BaseJibri internal constructor(
         override fun handleIQRequest(iq: JibriIq) = incomingIqQueue.add(JibriRequest(iq, connection))
     }
 
-    /**
-     * The logger instance pass to the constructor that wil be used by this
-     * instance for logging.
-     */
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
     init {
@@ -103,15 +99,11 @@ abstract class BaseJibri internal constructor(
     abstract val jibriSessions: List<JibriSession>
 
     /**
-     * This method will be called when start IQ arrives from Jitsi Meet
-     * participant and [.getJibriSessionForMeetIq] returns
-     * <tt>null</tt>. The implementing class should allocate and store new
-     * [JibriSession]. Once [JibriSession] is created it must be
-     * started by the implementing class.
-     * @param iq the Jibri IQ which is a start request coming from Jitsi Meet
-     * participant
-     * @return the response to the given <tt>iq</tt>. It should be 'result' if
-     * new session has been started or 'error' otherwise.
+     * This method will be called when a `start IQ` arrives from a Jitsi Meet participant and
+     * [.getJibriSessionForMeetIq] returns `null`. The implementing class should allocate and store a new
+     * [JibriSession]. Once a [JibriSession] is created it must be started by the implementing class.
+     * @param iq the start request coming from a Jitsi Meet participant.
+     * @return the response to be sent. It should be 'result' if a new session was started or 'error' otherwise.
      */
     protected abstract fun handleStartRequest(iq: JibriIq): IQ
 
@@ -174,7 +166,6 @@ abstract class BaseJibri internal constructor(
             return error(iq, XMPPError.Condition.bad_request, "undefined action")
         }
 
-        // verifyModeratorRole create 'not_allowed' error on when not moderator
         verifyModeratorRole(iq)?.let {
             logger.warn("Ignored Jibri request from non-moderator.")
             return IQ.createErrorResponse(iq, it)
@@ -194,7 +185,7 @@ abstract class BaseJibri internal constructor(
                 IQ.createResultIQ(iq)
             }
             else -> {
-                logger.warn("Discarded: " + iq.toXML() + " - nothing to be done, ")
+                logger.warn("Discarded jibri IQ with an unknown action: ${iq.toXML()}")
                 error(iq, XMPPError.Condition.bad_request, "Unable to handle ${iq.action}")
             }
         }

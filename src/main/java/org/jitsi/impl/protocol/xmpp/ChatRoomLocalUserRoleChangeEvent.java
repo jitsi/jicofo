@@ -24,7 +24,7 @@ import org.jitsi.jicofo.xmpp.muc.*;
  * source chat room has occurred. Changes may include us being granted admin
  * permissions, or other permissions.
  *
- * @see emberRole
+ * @see MemberRole
  *
  * @author Emil Ivov
  * @author Stephane Remy

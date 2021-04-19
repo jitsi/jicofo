@@ -95,7 +95,7 @@ public class JibriSession
     private final Logger logger;
 
     /**
-     * The owner which will be notified about status changes of this session.
+     * The listener which will be notified about status changes of this session.
      */
     private final StateListener stateListener;
 
@@ -172,8 +172,7 @@ public class JibriSession
 
     /**
      * Creates new {@link JibriSession} instance.
-     * @param stateListener the session owner which will be notified about this session
-     * state changes.
+     * @param stateListener the listener to be notified about this session state changes.
      * @param roomName the name if the XMPP MUC room (full address).
      * @param pendingTimeout how many seconds this session can wait in pending
      * state, before trying another Jibri instance or failing with an error.
