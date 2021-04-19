@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -36,7 +37,6 @@ import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
 
-import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
@@ -1246,7 +1246,7 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public ChatRoomMemberRole getRoleForMucJid(Jid mucJid)
+    public MemberRole getRoleForMucJid(Jid mucJid)
     {
         if (chatRoom == null)
         {
@@ -2051,6 +2051,7 @@ public class JitsiMeetConferenceImpl
         return roomName;
     }
 
+    @NotNull
     public XmppProvider getClientXmppProvider()
     {
         return clientXmppProvider;
@@ -2099,8 +2100,7 @@ public class JitsiMeetConferenceImpl
             return false;
         }
         // Only moderators can mute others
-        if (!fromJid.equals(toBeMutedJid)
-            && ChatRoomMemberRole.MODERATOR.compareTo(principal.getChatMember().getRole()) < 0)
+        if (!fromJid.equals(toBeMutedJid) && !principal.getChatMember().getRole().hasModeratorRights())
         {
             logger.warn("Permission denied for mute operation from " + fromJid);
             return false;
@@ -2278,6 +2278,7 @@ public class JitsiMeetConferenceImpl
      * Returns config for this conference.
      * @return <tt>JitsiMeetConfig</tt> instance used in this conference.
      */
+    @NotNull
     public JitsiMeetConfig getConfig()
     {
         return config;
@@ -2473,7 +2474,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public String toString()
     {
-        return String.format("JitsiMeetConferenceImpl[gid=%d, name=%s]", gid, getRoomName().toString());
+        return String.format("JitsiMeetConferenceImpl[gid=%d, name=%s]", gid, getRoomName());
     }
 
     /**
@@ -2539,7 +2540,7 @@ public class JitsiMeetConferenceImpl
          * The list of participants in the conference which use this
          * {@link BridgeSession}.
          */
-        private List<Participant> participants = new LinkedList<>();
+        private final List<Participant> participants = new LinkedList<>();
 
         /**
          * The {@link ColibriConference} instance used to communicate with
@@ -2666,7 +2667,6 @@ public class JitsiMeetConferenceImpl
          * Sends a COLIBRI message which updates the channels for a particular
          * {@link Participant} in this {@link BridgeSession}, setting the
          * participant's RTP description, sources, transport information, etc.
-         * @param participant
          */
         private void updateColibriChannels(Participant participant)
         {

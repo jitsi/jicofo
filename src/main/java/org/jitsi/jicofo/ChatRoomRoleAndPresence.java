@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
@@ -56,9 +57,9 @@ public class ChatRoomRoleAndPresence
     private AuthenticationAuthority authAuthority;
 
     /**
-     * The {@link ChatRoomMemberRole} of conference focus.
+     * The {@link MemberRole} of our local user in the MUC.
      */
-    private ChatRoomMemberRole focusRole;
+    private MemberRole focusRole;
 
     /**
      * Flag indicates whether auto owner feature is active. First participant to
@@ -175,7 +176,7 @@ public class ChatRoomRoleAndPresence
             // We don't know if we have permissions yet
             logger.warn("Focus role unknown");
 
-            ChatRoomMemberRole userRole = chatRoom.getUserRole();
+            MemberRole userRole = chatRoom.getUserRole();
 
             logger.info("Obtained focus role: " + userRole);
 
@@ -208,7 +209,7 @@ public class ChatRoomRoleAndPresence
             {
                 continue;
             }
-            else if (ChatRoomMemberRole.OWNER.compareTo(member.getRole()) >=0)
+            else if (member.getRole().hasOwnerRights())
             {
                 // Select existing owner
                 owner = member;
@@ -231,7 +232,7 @@ public class ChatRoomRoleAndPresence
 
     private boolean verifyFocusRole()
     {
-        if (ChatRoomMemberRole.OWNER.compareTo(focusRole) < 0)
+        if (focusRole != MemberRole.OWNER)
         {
             logger.error("Focus must be an owner!");
             conference.stop();
@@ -302,7 +303,7 @@ public class ChatRoomRoleAndPresence
             return;
         }
 
-        if (ChatRoomMemberRole.OWNER.compareTo(member.getRole()) < 0)
+        if (member.getRole() != MemberRole.OWNER)
         {
             String authSessionId = authAuthority.getSessionForJid(jabberId);
             if (authSessionId != null)

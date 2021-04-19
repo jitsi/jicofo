@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.jibri.BaseJibri
+import org.jitsi.jicofo.jibri.JibriSessionIqHandler
 import org.jitsi.jicofo.util.ErrorResponse
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
@@ -34,13 +35,13 @@ import java.util.LinkedList
 class JibriIqHandler :
     AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync) {
 
-    private val jibris = Collections.synchronizedList(LinkedList<BaseJibri>())
+    private val jibris = Collections.synchronizedList(LinkedList<JibriSessionIqHandler>())
 
-    fun addJibri(jibri: BaseJibri) {
+    fun addJibri(jibri: JibriSessionIqHandler) {
         jibris.add(jibri)
     }
 
-    fun removeJibri(jibri: BaseJibri?) {
+    fun removeJibri(jibri: JibriSessionIqHandler?) {
         jibris.remove(jibri)
     }
 

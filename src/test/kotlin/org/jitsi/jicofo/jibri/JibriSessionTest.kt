@@ -39,7 +39,7 @@ import org.jxmpp.jid.impl.JidCreate
 class JibriSessionTest : ShouldSpec({
     isolationMode = IsolationMode.InstancePerLeaf
 
-    val owner: JibriSession.Owner = mockk(relaxed = true)
+    val stateListener: JibriSession.StateListener = mockk(relaxed = true)
     val roomName = JidCreate.entityBareFrom("room@bar.com/baz")
     val initiator = JidCreate.bareFrom("foo@bar.com/baz")
     val pendingTimeout = 60L
@@ -66,7 +66,7 @@ class JibriSessionTest : ShouldSpec({
     val logger: Logger = LoggerImpl("JibriSessionTest")
 
     val jibriSession = JibriSession(
-        owner,
+        stateListener,
         roomName,
         initiator,
         pendingTimeout,

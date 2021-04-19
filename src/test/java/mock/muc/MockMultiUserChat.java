@@ -20,6 +20,7 @@ package mock.muc;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -175,7 +176,7 @@ public class MockMultiUserChat
 
         if (isOwner)
         {
-            me.setRole(ChatRoomMemberRole.OWNER);
+            me.setRole(MemberRole.OWNER);
         }
 
         fireLocalUserRoleEvent(me, true);
@@ -266,9 +267,9 @@ public class MockMultiUserChat
     }
 
     @Override
-    public ChatRoomMemberRole getUserRole()
+    public MemberRole getUserRole()
     {
-        return ChatRoomMemberRole.OWNER;
+        return MemberRole.OWNER;
     }
 
     @Override
@@ -313,7 +314,7 @@ public class MockMultiUserChat
         return members.size();
     }
 
-    private void grantRole(EntityFullJid address, ChatRoomMemberRole newRole)
+    private void grantRole(EntityFullJid address, MemberRole newRole)
     {
         MockRoomMember member = findMember(address.getResourceOrNull());
         if (member == null)
@@ -345,9 +346,7 @@ public class MockMultiUserChat
     {
         try
         {
-            grantRole(
-                    JidCreate.entityFullFrom(address),
-                    ChatRoomMemberRole.OWNER);
+            grantRole(JidCreate.entityFullFrom(address), MemberRole.OWNER);
         }
         catch (XmppStringprepException e)
         {

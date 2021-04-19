@@ -17,12 +17,14 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.muc.*;
+
 /**
  * Dispatched to notify interested parties that a change in our role in the
  * source chat room has occurred. Changes may include us being granted admin
  * permissions, or other permissions.
  *
- * @see ChatRoomMemberRole
+ * @see MemberRole
  *
  * @author Emil Ivov
  * @author Stephane Remy
@@ -32,7 +34,7 @@ public class ChatRoomLocalUserRoleChangeEvent
     /**
      * The new role that local participant get.
      */
-    private final ChatRoomMemberRole newRole;
+    private final MemberRole newRole;
     
     /**
      * If <tt>true</tt> this is initial role set.
@@ -46,7 +48,7 @@ public class ChatRoomLocalUserRoleChangeEvent
      * @param newRole the new role that local participant get
      * @param isInitial if <tt>true</tt> this is initial role set.
      */
-    public ChatRoomLocalUserRoleChangeEvent(ChatRoomMemberRole newRole, boolean isInitial)
+    public ChatRoomLocalUserRoleChangeEvent(MemberRole newRole, boolean isInitial)
     {
         this.newRole = newRole;
         this.isInitial = isInitial;
@@ -57,7 +59,7 @@ public class ChatRoomLocalUserRoleChangeEvent
      *
      * @return newRole the new role the local participant get
      */
-    public ChatRoomMemberRole getNewRole()
+    public MemberRole getNewRole()
     {
         return newRole;
     }

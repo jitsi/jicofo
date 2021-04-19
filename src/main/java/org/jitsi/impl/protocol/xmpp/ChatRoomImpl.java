@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
@@ -48,30 +49,6 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 public class ChatRoomImpl
     implements ChatRoom, PresenceListener
 {
-    static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole, MUCAffiliation affiliation) {
-        if (affiliation != null) {
-            if (affiliation == MUCAffiliation.admin) {
-                return ChatRoomMemberRole.ADMINISTRATOR;
-            }
-
-            if (affiliation == MUCAffiliation.owner) {
-                return ChatRoomMemberRole.OWNER;
-            }
-        }
-
-        if (smackRole != null) {
-            if (smackRole == MUCRole.moderator) {
-                return ChatRoomMemberRole.MODERATOR;
-            }
-
-            if (smackRole == MUCRole.participant) {
-                return ChatRoomMemberRole.MEMBER;
-            }
-        }
-
-        return ChatRoomMemberRole.GUEST;
-    }
-
     /**
      * The logger used by this class.
      */
@@ -142,7 +119,7 @@ public class ChatRoomImpl
     /**
      * Local user role.
      */
-    private ChatRoomMemberRole role;
+    private MemberRole role;
 
     /**
      * Stores our last MUC presence packet for future update.
@@ -331,7 +308,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatRoomMemberRole getUserRole()
+    public MemberRole getUserRole()
     {
         if (this.role == null)
         {
@@ -343,7 +320,7 @@ public class ChatRoomImpl
             }
             else
             {
-                this.role = smackRoleToScRole(o.getRole(), o.getAffiliation());
+                this.role = MemberRole.fromSmack(o.getRole(), o.getAffiliation());
             }
         }
 
@@ -393,7 +370,7 @@ public class ChatRoomImpl
      * @param newRole the new role the local user gets
      * @param isInitial if <tt>true</tt> this is initial role set.
      */
-    private void fireLocalUserRoleEvent(ChatRoomMemberRole newRole, boolean isInitial)
+    private void fireLocalUserRoleEvent(MemberRole newRole, boolean isInitial)
     {
         ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(newRole, isInitial);
 
@@ -411,7 +388,7 @@ public class ChatRoomImpl
      * @param role the new role to be set for the local user
      * @param isInitial if <tt>true</tt> this is initial role set.
      */
-    public void setLocalUserRole(ChatRoomMemberRole role, boolean isInitial)
+    public void setLocalUserRole(MemberRole role, boolean isInitial)
     {
         fireLocalUserRoleEvent(role, isInitial);
         this.role = role;
@@ -731,7 +708,7 @@ public class ChatRoomImpl
             // this is the presence for our member initial role and
             // affiliation, as smack do not fire any initial
             // events lets check it and fire events
-            ChatRoomMemberRole jitsiRole = smackRoleToScRole(role, affiliation);
+            MemberRole jitsiRole = MemberRole.fromSmack(role, affiliation);
 
             if (!presence.isAvailable()
                 && MUCAffiliation.none == affiliation

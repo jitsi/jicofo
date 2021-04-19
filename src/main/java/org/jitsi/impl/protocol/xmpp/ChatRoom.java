@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -71,7 +72,7 @@ public interface ChatRoom
      * @return the role currently being used by the local user in the context of
      * the chat room.
      */
-    ChatRoomMemberRole getUserRole();
+    MemberRole getUserRole();
 
     /**
      * Adds a listener that will be notified of changes in our participation in
