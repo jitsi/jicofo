@@ -43,18 +43,27 @@ class MemberRoleTest : ShouldSpec() {
             MEMBER.compareTo(MODERATOR) shouldBeGreaterThan 0
             MODERATOR.compareTo(ADMINISTRATOR) shouldBeGreaterThan 0
             ADMINISTRATOR.compareTo(OWNER) shouldBeGreaterThan 0
-
+        }
+        context("hasModeratorRights") {
             GUEST.hasModeratorRights().shouldBeFalse()
             MEMBER.hasModeratorRights().shouldBeFalse()
             MODERATOR.hasModeratorRights().shouldBeTrue()
             ADMINISTRATOR.hasModeratorRights().shouldBeTrue()
             OWNER.hasModeratorRights().shouldBeTrue()
-
+        }
+        context("hasAdministratorRights") {
             GUEST.hasAdministratorRights().shouldBeFalse()
             MEMBER.hasAdministratorRights().shouldBeFalse()
             MODERATOR.hasAdministratorRights().shouldBeFalse()
             ADMINISTRATOR.hasAdministratorRights().shouldBeTrue()
             OWNER.hasAdministratorRights().shouldBeTrue()
+        }
+        context("hasOwnerRights") {
+            GUEST.hasOwnerRights().shouldBeFalse()
+            MEMBER.hasOwnerRights().shouldBeFalse()
+            MODERATOR.hasOwnerRights().shouldBeFalse()
+            ADMINISTRATOR.hasOwnerRights().shouldBeFalse()
+            OWNER.hasOwnerRights().shouldBeTrue()
         }
         context("From Smack role and affiliation") {
             enumPairsWithNull<MUCRole, MUCAffiliation>().forEach { (mucRole, mucAffiliation) ->

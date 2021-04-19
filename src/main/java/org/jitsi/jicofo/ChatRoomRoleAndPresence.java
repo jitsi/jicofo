@@ -209,7 +209,7 @@ public class ChatRoomRoleAndPresence
             {
                 continue;
             }
-            else if (member.getRole() == MemberRole.OWNER)
+            else if (member.getRole().hasOwnerRights())
             {
                 // Select existing owner
                 owner = member;

@@ -54,6 +54,7 @@ enum class MemberRole {
      */
     fun hasModeratorRights() = this <= MODERATOR
     fun hasAdministratorRights() = this <= ADMINISTRATOR
+    fun hasOwnerRights() = this <= OWNER
 
     companion object {
         @JvmStatic
