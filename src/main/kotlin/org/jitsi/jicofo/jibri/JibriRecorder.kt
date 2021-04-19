@@ -130,7 +130,7 @@ class JibriRecorder(
                     }
                     is NotAvailable -> {
                         logger.info("Failed to start a Jibri session, no Jibris available")
-                        error(iq, XMPPError.Condition.service_unavailable, "no Jibri instances available")
+                        error(iq, XMPPError.Condition.service_unavailable, "no Jibris available")
                     }
                     else -> {
                         logger.warn("Failed to start a Jibri session: ${exc.message}", exc)
