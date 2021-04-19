@@ -52,7 +52,7 @@ class JibriSipGateway(
     jibriDetector
 ) {
     /**
-     * Th SIP [JibriSession]s mapped by the SIP address.
+     * The SIP [JibriSession]s mapped by the SIP address.
      */
     private val sipSessions: MutableMap<String, JibriSession> = HashMap()
 
@@ -131,9 +131,8 @@ class JibriSipGateway(
     }
 
     /**
-     * Updates status of specific [JibriSession]. Jicofo adds multiple
-     * [SipCallState] MUC presence extensions to it's presence. One for
-     * each active SIP Jibri session.
+     * Updates the status of specific a [JibriSession]. Jicofo adds multiple [SipCallState] MUC presence extensions
+     * to its presence. One for each active SIP Jibri session.
      * @param session the session for which the new status will be set
      * @param newStatus the new status
      * @param failureReason option error for OFF state
@@ -149,7 +148,7 @@ class JibriSipGateway(
             sipAddress = session.sipAddress
             sessionId = session.sessionId
         }
-        logger.info("Publishing new state: ${session.sipAddress} ${sipCallState.toXML()} in: " + conference.roomName)
+        logger.info("Publishing new state: ${session.sipAddress} ${sipCallState.toXML()}")
         val chatRoom = conference.chatRoom
 
         // Publish that in the presence

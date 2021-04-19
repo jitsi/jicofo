@@ -64,6 +64,7 @@ class JibriRecorder(
      */
     override fun dispose() {
         jibriSession?.stop(null)
+        jibriSession = null
         super.dispose()
     }
 
@@ -95,13 +96,14 @@ class JibriRecorder(
      */
     override fun handleStartRequest(iq: JibriIq): IQ {
         val streamIdIsEmpty = StringUtils.isBlank(iq.streamId)
-        return if ((
-            !streamIdIsEmpty &&
-                iq.recordingMode == RecordingMode.STREAM ||
-                iq.recordingMode == RecordingMode.UNDEFINED
-            ) ||
-            streamIdIsEmpty && iq.recordingMode == RecordingMode.FILE
-        ) {
+
+        return if (streamIdIsEmpty && iq.recordingMode != RecordingMode.FILE) {
+            // Stream ID is mandatory unless we're recording to a file.
+            error(iq, XMPPError.Condition.bad_request, "Stream ID is empty or undefined")
+        } else if (!streamIdIsEmpty && iq.recordingMode == RecordingMode.FILE) {
+            // Stream ID should not be provided with requests to record to a file.
+            error(iq, XMPPError.Condition.bad_request, "Stream ID is provided for a FILE recording.")
+        } else {
             val sessionId = generateSessionId()
             try {
                 jibriSession = JibriSession(
@@ -131,17 +133,11 @@ class JibriRecorder(
                         error(iq, XMPPError.Condition.service_unavailable, "no Jibri instances available")
                     }
                     else -> {
-                        logger.warn("Failed to start a Jibri session:${exc.message}", exc)
+                        logger.warn("Failed to start a Jibri session: ${exc.message}", exc)
                         error(iq, XMPPError.Condition.internal_server_error, exc.message)
                     }
                 }
             }
-        } else if (streamIdIsEmpty && iq.recordingMode == RecordingMode.STREAM) {
-            // Bad request - no stream ID
-            error(iq, XMPPError.Condition.bad_request, "Stream ID is empty or undefined")
-        } else {
-            // Bad request - catch all
-            error(iq, XMPPError.Condition.bad_request, "Invalid recording mode and stream ID combination")
         }
     }
 
