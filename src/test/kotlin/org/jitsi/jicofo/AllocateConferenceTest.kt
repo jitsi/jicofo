@@ -18,7 +18,6 @@
 package org.jitsi.jicofo
 
 import io.kotest.core.spec.Spec
-import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
 import mock.xmpp.MockXmppConnection
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
@@ -26,15 +25,11 @@ import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
-class AllocateConferenceTest : ShouldSpec() {
-    private val harness = JicofoHarness()
+class AllocateConferenceTest : JicofoHarnessTest() {
     private val from = JidCreate.bareFrom("from@example.com")
     private val xmppConnection = MockXmppConnection(from)
 
-    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
-        xmppConnection.disconnect()
-        harness.shutdown()
-    }
+    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also { xmppConnection.disconnect() }
 
     init {
         context("Handling a ConferenceIQ") {
