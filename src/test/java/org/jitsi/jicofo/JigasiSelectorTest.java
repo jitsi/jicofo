@@ -23,6 +23,7 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.junit.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static java.util.Collections.emptyList;
@@ -32,28 +33,29 @@ import static org.junit.Assert.*;
 
 public class JigasiSelectorTest
 {
-    private static MockBrewery<ColibriStatsExtension> brewery;
-
-    private static int numberOfInstances = 0;
-
-    private static JicofoHarness osgiHandler;
-
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    private static EntityBareJid roomJid;
+    static
     {
-        osgiHandler = new JicofoHarness();
-        osgiHandler.init();
-        brewery = new MockBrewery<>(
-            osgiHandler.jicofoServices.getXmppServices().getClientConnection(),
-            JidCreate.entityBareFrom("roomName@muc-servicename.jabserver.com")
-        );
+        try
+        {
+            roomJid = JidCreate.entityBareFrom("roomName@muc-servicename.jabserver.com");
+        }
+        catch (XmppStringprepException e)
+        {
+            roomJid = null;
+        }
     }
 
-    @AfterClass
-    public static void tearDownClass()
+    private final JicofoHarness harness = new JicofoHarness();
+    private final MockBrewery<ColibriStatsExtension> brewery
+        = new MockBrewery<>(harness.jicofoServices.getXmppServices().getClientConnection(), roomJid);
+
+    private int numberOfInstances = 0;
+
+    @After
+    public void tearDown()
     {
-        osgiHandler.shutdown();
+        harness.shutdown();
     }
 
     private Jid createAndAddInstance()
@@ -61,10 +63,7 @@ public class JigasiSelectorTest
     {
         Jid jid = JidCreate.from("jigasi-" + (++numberOfInstances));
 
-        brewery.addNewBrewInstance(
-            jid,
-            new ColibriStatsExtension()
-        );
+        brewery.addNewBrewInstance(jid, new ColibriStatsExtension());
 
         return jid;
     }

@@ -36,19 +36,12 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    static JicofoHarness osgi = new JicofoHarness();
+    private final JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test
@@ -57,7 +50,8 @@ public class RolesTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConference
+                = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
         MockXmppProvider pps = testConference.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 

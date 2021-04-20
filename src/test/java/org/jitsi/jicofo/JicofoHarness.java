@@ -34,8 +34,13 @@ public class JicofoHarness
 {
     public JicofoTestServices jicofoServices;
 
+    public JicofoHarness()
+    {
+        init();
+    }
+
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-    public void init()
+    private void init()
     {
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig

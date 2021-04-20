@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    private final JicofoHarness osgi = new JicofoHarness();
+    private final JicofoHarness harness = new JicofoHarness();
 
     private Jid jvb1Jid;
     private Jid jvb2Jid;
@@ -57,9 +57,8 @@ public class BridgeSelectorTest
         jvb1Jid = JidCreate.from("jvb.example.com");
         jvb2Jid = JidCreate.from("jvb@example.com");
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
-        osgi.init();
 
-        bridgeSelector = osgi.jicofoServices.getBridgeSelector();
+        bridgeSelector = harness.jicofoServices.getBridgeSelector();
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
         jvb2 = bridgeSelector.addJvbAddress(jvb2Jid);
         jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
@@ -69,7 +68,7 @@ public class BridgeSelectorTest
     public void tearDown()
         throws Exception
     {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test

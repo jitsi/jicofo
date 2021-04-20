@@ -40,27 +40,25 @@ import static org.junit.Assert.assertNull;
 @RunWith(JUnit4.class)
 public class XMPPAuthenticationAuthorityTest
 {
-    static JicofoHarness osgi = new JicofoHarness();
+    private JicofoHarness harness;
 
-    private String authDomain = "auth.server.net";
-    private String guestDomain = "guest.server.net";
+    private final String authDomain = "auth.server.net";
 
     private MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
 
     @Before
-    public void setUpClass()
-        throws Exception
+    public void setUp()
     {
         // Enable XMPP authentication
         System.setProperty(AuthConfig.legacyLoginUrlPropertyName, "XMPP:" + authDomain);
-        osgi.init();
+        harness = new JicofoHarness();
     }
 
     @After
-    public void tearDownClass()
+    public void tearDown()
     {
         xmppConnection.shutdown();
-        osgi.shutdown();
+        harness.shutdown();
         System.clearProperty(AuthConfig.legacyLoginUrlPropertyName);
     }
 
@@ -68,10 +66,12 @@ public class XMPPAuthenticationAuthorityTest
     public void testXmppDomainAuthentication()
         throws Exception
     {
-        XMPPDomainAuthAuthority xmppAuth = (XMPPDomainAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
+        XMPPDomainAuthAuthority xmppAuth
+                = (XMPPDomainAuthAuthority) harness.jicofoServices.getAuthenticationAuthority();
 
         assertNotNull(xmppAuth);
 
+        String guestDomain = "guest.server.net";
         Jid user1GuestJid = JidCreate.from("user1@" + guestDomain);
         Jid user1AuthJid = JidCreate.from("user1@" + authDomain);
         String user1MachineUid="machine1uid";
@@ -91,7 +91,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
-        query.setTo(osgi.jicofoServices.getJicofoJid());
+        query.setTo(harness.jicofoServices.getJicofoJid());
         query.setType(IQ.Type.set);
 
         IQ errorResponse = xmppConnection.sendIqAndGetResponse(query);

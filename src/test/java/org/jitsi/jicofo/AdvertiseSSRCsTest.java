@@ -32,25 +32,15 @@ import org.jxmpp.jid.impl.*;
 
 import static org.junit.Assert.*;
 
-/**
- *
- */
 @RunWith(JUnit4.class)
 public class AdvertiseSSRCsTest
 {
-    private final JicofoHarness osgi = new JicofoHarness();
-
-    @Before
-    public void setUpClass()
-        throws Exception
-    {
-        osgi.init();
-    }
+    private final JicofoHarness harness = new JicofoHarness();
 
     @After
-    public void tearDownClass()
+    public void tearDown()
     {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test
@@ -62,7 +52,7 @@ public class AdvertiseSSRCsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
 
         MockXmppProvider pps = testConf.getXmppProvider();
 
@@ -144,7 +134,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
@@ -196,7 +186,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
@@ -255,7 +245,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
 
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);

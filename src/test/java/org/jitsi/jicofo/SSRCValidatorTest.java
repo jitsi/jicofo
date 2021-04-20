@@ -43,9 +43,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class SSRCValidatorTest
 {
-    static private Logger logger = new LoggerImpl(SSRCValidatorTest.class.getName());
-
-    static JicofoHarness osgi = new JicofoHarness();
+    private final Logger logger = new LoggerImpl(SSRCValidatorTest.class.getName());
 
     private List<SourcePacketExtension> audioSources;
 
@@ -57,23 +55,8 @@ public class SSRCValidatorTest
 
     private List<SourcePacketExtension> videoSources;
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
-    {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-        throws Exception
-    {
-        osgi.shutdown();
-    }
-
     @Before
     public void setUpSources()
-            throws XmppStringprepException
     {
         sources = new MediaSourceMap();
         groups = new MediaSourceGroupMap();

@@ -43,7 +43,7 @@ public class TestConference
 
     private MockVideobridge mockBridge;
 
-    private JicofoHarness osgiHandler;
+    private JicofoHarness harness;
 
     static public TestConference allocate(String serverName, EntityBareJid roomName, MockXmppProvider xmppProvider,
                                           JicofoHarness jicofoHarness)
@@ -51,7 +51,7 @@ public class TestConference
     {
         TestConference newConf = new TestConference(xmppProvider);
 
-        newConf.osgiHandler = jicofoHarness;
+        newConf.harness = jicofoHarness;
         newConf.createJvbAndConference(serverName, roomName);
 
         return newConf;
@@ -64,7 +64,7 @@ public class TestConference
 
     private FocusManager getFocusManager()
     {
-        return osgiHandler.jicofoServices.getFocusManager();
+        return harness.jicofoServices.getFocusManager();
     }
 
     private void createJvbAndConference(String serverName, EntityBareJid roomName)
@@ -76,7 +76,7 @@ public class TestConference
 
         mockBridge.start();
 
-        osgiHandler.jicofoServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
+        harness.jicofoServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
 
         createConferenceRoom(roomName, mockBridge);
     }

@@ -41,7 +41,7 @@ import org.jxmpp.jid.impl.JidCreate
 class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
-    private val osgi = JicofoHarness()
+    private var harness: JicofoHarness? = null
     private val xmppConnection = MockXmppConnectionWrapper()
 
     override fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {
@@ -49,25 +49,25 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
         // TODO port to withLegacyConfig
         System.setProperty(AuthConfig.legacyLoginUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST)
         System.setProperty(AuthConfig.legacyLogoutUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST)
-        osgi.init()
+        harness = JicofoHarness()
     }
 
     override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
         xmppConnection.shutdown()
-        osgi.shutdown()
+        harness?.shutdown()
         System.clearProperty(AuthConfig.legacyLoginUrlPropertyName)
         System.clearProperty(AuthConfig.legacyLogoutUrlPropertyName)
     }
 
     init {
         context("Shibboleth authentication") {
-            val shibbolethAuth = osgi.jicofoServices.authenticationAuthority
+            val shibbolethAuth = harness?.jicofoServices?.authenticationAuthority
             shibbolethAuth.shouldBeInstanceOf<ShibbolethAuthAuthority>()
             shibbolethAuth as ShibbolethAuthAuthority
 
             val room = JidCreate.entityBareFrom("testroom1-shibboeth@example.com")
             val query = ConferenceIq().apply {
-                to = osgi.jicofoServices.jicofoJid
+                to = harness?.jicofoServices?.jicofoJid
                 type = IQ.Type.set
                 this.room = room
             }

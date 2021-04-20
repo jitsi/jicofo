@@ -27,14 +27,13 @@ import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
 class AllocateConferenceTest : ShouldSpec() {
-    private val osgi = JicofoHarness()
+    private val harness = JicofoHarness()
     private val from = JidCreate.bareFrom("from@example.com")
     private val xmppConnection = MockXmppConnection(from)
 
-    override fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also { osgi.init() }
     override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
         xmppConnection.disconnect()
-        osgi.shutdown()
+        harness.shutdown()
     }
 
     init {
@@ -42,7 +41,7 @@ class AllocateConferenceTest : ShouldSpec() {
             val conferenceIq = ConferenceIq().apply {
                 this.from = from
                 room = JidCreate.entityBareFrom("testRoom@example.com")
-                to = osgi.jicofoServices.jicofoJid
+                to = harness.jicofoServices.jicofoJid
                 type = IQ.Type.set
             }
 

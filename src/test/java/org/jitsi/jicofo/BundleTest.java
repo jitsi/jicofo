@@ -33,26 +33,15 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-
-/**
- *
- */
 @RunWith(JUnit4.class)
 public class BundleTest
 {
-    static JicofoHarness osgi = new JicofoHarness();
+    private final JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     /**
@@ -65,7 +54,8 @@ public class BundleTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConference
+                = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
 
         MockXmppProvider pps = testConference.getXmppProvider();
 
@@ -150,12 +140,10 @@ public class BundleTest
             return;
 
         IceUdpTransportPacketExtension firstTransport
-            = firstContent.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
+            = firstContent.getFirstChildOfType(IceUdpTransportPacketExtension.class);
 
         IceUdpTransportPacketExtension transport
-            = content.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
+            = content.getFirstChildOfType(IceUdpTransportPacketExtension.class);
 
         assertTransportTheSame(firstTransport, transport);
     }

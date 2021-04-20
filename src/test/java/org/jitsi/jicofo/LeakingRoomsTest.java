@@ -31,19 +31,12 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    static JicofoHarness osgi = new JicofoHarness();
+    private JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test
@@ -53,7 +46,7 @@ public class LeakingRoomsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
+        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
