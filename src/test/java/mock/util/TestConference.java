@@ -17,10 +17,9 @@
  */
 package mock.util;
 
-import mock.*;
-
 import mock.jvb.*;
 
+import mock.muc.*;
 import mock.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jxmpp.jid.*;
@@ -34,8 +33,7 @@ import java.util.*;
  */
 public class TestConference
 {
-    private static String DEFAULT_SERVER_NAME = "test-server";
-    private Jid mockBridgeJid;
+    private static final String DEFAULT_SERVER_NAME = "test-server";
 
     public JitsiMeetConferenceImpl conference;
 
@@ -60,22 +58,22 @@ public class TestConference
 
     private void createJvbAndConference(String serverName, EntityBareJid roomName)
     {
+        Jid bridgeJid;
         try
         {
-            this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
+            bridgeJid = JidCreate.from("mockjvb." + serverName);
         }
         catch (XmppStringprepException e)
         {
             throw new RuntimeException(e);
         }
 
-        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
-
+        mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid), bridgeJid);
         mockBridge.start();
 
-        harness.jicofoServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
+        harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
 
-        createConferenceRoom(roomName, mockBridge);
+        createConferenceRoom(roomName);
     }
 
     public void stop()
@@ -83,11 +81,8 @@ public class TestConference
         mockBridge.stop();
     }
 
-    private void createConferenceRoom(EntityBareJid roomName, MockVideobridge mockJvb)
+    private void createConferenceRoom(EntityBareJid roomName)
     {
-        this.mockBridge = mockJvb;
-        this.mockBridgeJid = mockJvb.getBridgeJid();
-
         HashMap<String,String> properties = new HashMap<>();
 
         try
@@ -102,11 +97,6 @@ public class TestConference
         this.conference = getFocusManager().getConference(roomName);
     }
 
-    public MockXmppProvider getXmppProvider()
-    {
-        return harness.getXmppProvider();
-    }
-
     public MockVideobridge getMockVideoBridge()
     {
         return mockBridge;
@@ -115,5 +105,10 @@ public class TestConference
     public int getParticipantCount()
     {
         return conference.getParticipantCount();
+    }
+
+    public MockChatRoom getChatRoom()
+    {
+        return (MockChatRoom) conference.getChatRoom();
     }
 }

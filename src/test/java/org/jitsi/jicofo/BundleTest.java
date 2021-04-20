@@ -53,18 +53,15 @@ public class BundleTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         TestConference testConference = new TestConference(harness, roomName);
-
-        MockXmppProvider pps = testConference.getXmppProvider();
-
-        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
+        MockChatRoom chatRoom = testConference.getChatRoom();
 
         MockParticipant user1 = new MockParticipant("user1");
 
-        user1.join(chat);
+        user1.join(chatRoom);
 
         MockParticipant user2 = new MockParticipant("user2");
 
-        user2.join(chat);
+        user2.join(chatRoom);
 
         JingleIQ user1Invite = user1.acceptInvite(6000)[0];
 

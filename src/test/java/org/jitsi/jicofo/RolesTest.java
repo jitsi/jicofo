@@ -50,8 +50,7 @@ public class RolesTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         TestConference testConference = new TestConference(harness, roomName);
-        MockXmppProvider pps = testConference.getXmppProvider();
-        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
+        MockChatRoom chatRoom = testConference.getChatRoom();
 
         // Join with all users
         MockParticipant[] users = new MockParticipant[4];
@@ -59,7 +58,7 @@ public class RolesTest
         {
             users[i] = new MockParticipant("User" + i);
 
-            users[i].join(chat);
+            users[i].join(chatRoom);
         }
         // Accept invite with all users
         for (MockParticipant user : users)

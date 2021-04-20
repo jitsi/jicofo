@@ -51,19 +51,16 @@ public class AdvertiseSSRCsTest
 
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         TestConference testConf = new TestConference(harness, roomName);
-
-        MockXmppProvider pps = testConf.getXmppProvider();
-
-        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
+        MockChatRoom chatRoom = testConf.getChatRoom();
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
         user1.setSsrcVideoType(SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE);
-        user1.join(chat);
+        user1.join(chatRoom);
 
         MockParticipant user2 = new MockParticipant("User2");
         user2.setSsrcVideoType(SSRCInfoPacketExtension.SCREEN_VIDEO_TYPE);
-        user2.join(chat);
+        user2.join(chatRoom);
 
         // Accept invite with all users
         assertNotNull(user1.acceptInvite(4000));
@@ -109,7 +106,7 @@ public class AdvertiseSSRCsTest
         assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
 
         MockParticipant user3 = new MockParticipant("User3");
-        user3.join(chat);
+        user3.join(chatRoom);
         assertNotNull(user3.acceptInvite(4000));
 
         user1.waitForAddSource(2000);
@@ -131,10 +128,8 @@ public class AdvertiseSSRCsTest
             throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
-        String serverName = "test-server";
         TestConference testConf = new TestConference(harness, roomName);
-        MockXmppProvider pps = testConf.getXmppProvider();
-        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
+        MockChatRoom chat = testConf.getChatRoom();
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -184,15 +179,14 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         TestConference testConf = new TestConference(harness, roomName);
-        MockXmppProvider pps = testConf.getXmppProvider();
-        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
+        MockChatRoom chatRoom = testConf.getChatRoom();
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
-        user1.join(chat);
+        user1.join(chatRoom);
 
         MockParticipant user2 = new MockParticipant("User2");
-        user2.join(chat);
+        user2.join(chatRoom);
 
         // Accept invite with all users
         long u1VideoSSRC = MockParticipant.nextSSRC();
@@ -242,17 +236,15 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         TestConference testConf = new TestConference(harness, roomName);
-
-        MockXmppProvider pps = testConf.getXmppProvider();
-        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
+        MockChatRoom chatRoom = testConf.getChatRoom();
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
-        user1.join(chat);
+        user1.join(chatRoom);
         user1.waitForJoinThread(5000);
 
         MockParticipant user2 = new MockParticipant("User2");
-        user2.join(chat);
+        user2.join(chatRoom);
         user2.waitForJoinThread(5000);
 
         int maxSSRCs = ConferenceConfig.config.getMaxSsrcsPerUser();

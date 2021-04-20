@@ -63,8 +63,7 @@ public class ColibriTest
 
         TestConference testConference = new TestConference(harness, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
-        MockXmppProvider pps = testConference.getXmppProvider();
-        ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());
+        ColibriConference colibriConf = new ColibriConferenceImpl(harness.getXmppProvider().getXmppConnection());
 
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 
