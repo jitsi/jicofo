@@ -298,58 +298,6 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         return transportMap;
     }
 
-    public Map<String, IceUdpTransportPacketExtension> generateFakeCandidates()
-    {
-        for (ContentPacketExtension content : myContents)
-        {
-            IceUdpTransportPacketExtension iceTransport
-                = transportMap.get(content.getName());
-
-            CandidatePacketExtension fakeCandidate
-                = new CandidatePacketExtension();
-
-            fakeCandidate.setIP("127.0.0.1");
-            fakeCandidate.setPort(60000);
-            fakeCandidate.setType(CandidateType.host);
-
-            iceTransport.addCandidate(fakeCandidate);
-        }
-        return transportMap;
-    }
-
-    public JingleIQ sendTransportInfo()
-    {
-        List<ContentPacketExtension> contents = new ArrayList<>();
-
-        for (ContentPacketExtension myContent : myContents)
-        {
-            ContentPacketExtension content = new ContentPacketExtension();
-            content.setName(myContent.getName());
-
-            try
-            {
-                IceUdpTransportPacketExtension transportCopy
-                    = IceUdpTransportPacketExtension
-                            .cloneTransportAndCandidates(transportMap.get(content.getName()), true);
-
-                content.addChildExtension(transportCopy);
-
-                contents.add(content);
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        JingleIQ transportInfoIq
-            = JinglePacketFactory.createTransportInfo(myJid, remoteJid, jingleSession.getSessionID(), contents);
-
-        UtilKt.tryToSendStanza(mockConnection, transportInfoIq);
-
-        return transportInfoIq;
-    }
-
     private JingleIQ generateSessionAccept(
             JingleIQ sessionInit,
             Map<String, IceUdpTransportPacketExtension> transportMap)
@@ -360,9 +308,6 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         accept.setType(IQ.Type.set);
         accept.setFrom(sessionInit.getTo());
         accept.setTo(sessionInit.getFrom());
-
-        // Jingle BUNDLE extension
-        accept.addExtension(GroupPacketExtension.createBundleGroup( sessionInit.getContentList()));
 
         for (ContentPacketExtension contentOffer : myContents)
         {
