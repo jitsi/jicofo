@@ -56,7 +56,7 @@ public class ColibriTest
     {
         MockXmppConnection connection = harness.getXmppProvider().getXmppConnection();
         Jid bridgeJid = JidCreate.from("bridge.example.com");
-        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid), bridgeJid);
+        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid));
         mockBridge.start();
 
         ColibriConference colibriConf = new ColibriConferenceImpl(connection);

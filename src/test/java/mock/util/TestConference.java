@@ -68,7 +68,7 @@ public class TestConference
             throw new RuntimeException(e);
         }
 
-        mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid), bridgeJid);
+        mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid));
         mockBridge.start();
 
         harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
