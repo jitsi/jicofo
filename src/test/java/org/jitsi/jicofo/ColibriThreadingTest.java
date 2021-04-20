@@ -22,7 +22,6 @@ import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.junit.*;
@@ -185,8 +184,6 @@ public class ColibriThreadingTest
 
         private Thread thread;
 
-        public ColibriConferenceIQ channels;
-
         private boolean working;
 
         public MockPeerAllocator(String            endpointId,
@@ -207,8 +204,7 @@ public class ColibriThreadingTest
                 {
                     try
                     {
-                        channels = colibriConference.createColibriChannels(
-                            endpointId, null, true, createContents());
+                        colibriConference.createColibriChannels(endpointId, null, true, createContents());
                     }
                     catch (ColibriException e)
                     {
