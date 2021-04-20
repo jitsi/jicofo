@@ -54,7 +54,7 @@ public class AdvertiseSSRCsTest
 
         MockXmppProvider pps = testConf.getXmppProvider();
 
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -134,7 +134,7 @@ public class AdvertiseSSRCsTest
         String serverName = "test-server";
         TestConference testConf = new TestConference(harness, roomName);
         MockXmppProvider pps = testConf.getXmppProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -185,7 +185,7 @@ public class AdvertiseSSRCsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         TestConference testConf = new TestConference(harness, roomName);
         MockXmppProvider pps = testConf.getXmppProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
@@ -244,7 +244,7 @@ public class AdvertiseSSRCsTest
         TestConference testConf = new TestConference(harness, roomName);
 
         MockXmppProvider pps = testConf.getXmppProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");

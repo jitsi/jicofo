@@ -98,7 +98,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         return user;
     }
 
-    public void joinInNewThread(final MockMultiUserChat chat)
+    public void joinInNewThread(final MockChatRoom chat)
     {
         new Thread(() -> join(chat)).start();
     }
@@ -121,7 +121,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         }
     }
 
-    public void join(MockMultiUserChat chat)
+    public void join(MockChatRoom chat)
     {
         try
         {

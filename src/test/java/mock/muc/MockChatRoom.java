@@ -42,13 +42,13 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  *
  * @author Pawel Domas
  */
-public class MockMultiUserChat
+public class MockChatRoom
     implements ChatRoom
 {
     /**
      * The logger
      */
-    private static final Logger logger = new LoggerImpl(MockMultiUserChat.class.getName());
+    private static final Logger logger = new LoggerImpl(MockChatRoom.class.getName());
 
     private final EntityBareJid roomName;
 
@@ -71,7 +71,7 @@ public class MockMultiUserChat
     // The nickname to join with
     private final String myNickname;
 
-    public MockMultiUserChat(EntityBareJid roomName, XmppProvider xmppProvider, String myNickname)
+    public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider, String myNickname)
     {
         this.roomName = roomName;
         this.xmppProvider = xmppProvider;

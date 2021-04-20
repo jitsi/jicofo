@@ -33,11 +33,11 @@ public class MockRoomMember
 
     private final EntityFullJid address;
 
-    private final MockMultiUserChat room;
+    private final MockChatRoom room;
 
     private MemberRole role = MemberRole.GUEST;
 
-    public MockRoomMember(EntityFullJid address, MockMultiUserChat chatRoom)
+    public MockRoomMember(EntityFullJid address, MockChatRoom chatRoom)
     {
         this.address = address;
         this.name = address.getResourceOrThrow();

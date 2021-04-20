@@ -56,7 +56,7 @@ public class BundleTest
 
         MockXmppProvider pps = testConference.getXmppProvider();
 
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        MockChatRoom chat = (MockChatRoom) pps.findOrCreateRoom(roomName);
 
         MockParticipant user1 = new MockParticipant("user1");
 
