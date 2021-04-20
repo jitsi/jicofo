@@ -40,17 +40,17 @@ import static org.junit.Assert.assertNull;
 @RunWith(JUnit4.class)
 public class XMPPAuthenticationAuthorityTest
 {
+    private final static String AUTH_DOMAIN = "auth.server.net";
+
     private JicofoHarness harness;
 
-    private final String authDomain = "auth.server.net";
-
-    private MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
+    private final MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
 
     @Before
     public void setUp()
     {
         // Enable XMPP authentication
-        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, "XMPP:" + authDomain);
+        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, "XMPP:" + AUTH_DOMAIN);
         harness = new JicofoHarness();
     }
 
@@ -73,11 +73,11 @@ public class XMPPAuthenticationAuthorityTest
 
         String guestDomain = "guest.server.net";
         Jid user1GuestJid = JidCreate.from("user1@" + guestDomain);
-        Jid user1AuthJid = JidCreate.from("user1@" + authDomain);
+        Jid user1AuthJid = JidCreate.from("user1@" + AUTH_DOMAIN);
         String user1MachineUid="machine1uid";
 
         Jid user2GuestJid = JidCreate.from("user2@" + guestDomain);
-        Jid user2AuthJid = JidCreate.from("user2@" + authDomain);
+        Jid user2AuthJid = JidCreate.from("user2@" + AUTH_DOMAIN);
         String user2MachineUid="machine2uid";
 
         EntityBareJid room1 = JidCreate.entityBareFrom("testroom1@example.com");

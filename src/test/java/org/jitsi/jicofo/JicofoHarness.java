@@ -30,6 +30,10 @@ import org.jitsi.jicofo.xmpp.*;
  *
  * @author Pawel Domas
  */
+@SuppressFBWarnings(
+    value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+    justification = "We assume that only one instance is used at a time!"
+)
 public class JicofoHarness
 {
     public JicofoTestServices jicofoServices;
