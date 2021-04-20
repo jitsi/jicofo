@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class AdvertiseSSRCsTest
 {
-    private final OSGiHandler osgi = OSGiHandler.getInstance();
+    private final OSGiHandler osgi = new OSGiHandler();
 
     @Before
     public void setUpClass()
@@ -62,7 +62,7 @@ public class AdvertiseSSRCsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
 
         MockXmppProvider pps = testConf.getXmppProvider();
 
@@ -144,7 +144,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
@@ -196,7 +196,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
@@ -255,7 +255,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
 
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);

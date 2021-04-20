@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BundleTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass
     public static void setUpClass()
@@ -65,7 +65,7 @@ public class BundleTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
 
         MockXmppProvider pps = testConference.getXmppProvider();
 

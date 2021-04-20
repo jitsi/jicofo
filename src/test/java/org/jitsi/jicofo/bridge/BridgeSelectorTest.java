@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
-    private final OSGiHandler osgi = OSGiHandler.getInstance();
+    private final OSGiHandler osgi = new OSGiHandler();
 
     private Jid jvb1Jid;
     private Jid jvb2Jid;

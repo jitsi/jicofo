@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass
     public static void setUpClass()
@@ -53,7 +53,7 @@ public class LeakingRoomsTest
         EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
         String serverName = "test-server";
 
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 

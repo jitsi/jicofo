@@ -54,7 +54,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ColibriThreadingTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = new OSGiHandler();
 
     private static MockPeerAllocator findCreator(
             AllocThreadingTestColibriConference    colibriConf,

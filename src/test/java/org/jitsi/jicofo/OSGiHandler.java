@@ -31,16 +31,6 @@ import org.jitsi.jicofo.xmpp.*;
  */
 public class OSGiHandler
 {
-    private static OSGiHandler instance = new OSGiHandler();
-
-    private OSGiHandler() { }
-
-    @NonNull
-    public static OSGiHandler getInstance()
-    {
-        return instance;
-    }
-
     public JicofoTestServices jicofoServices;
 
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")

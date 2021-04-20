@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass
     public static void setUpClass()
@@ -58,7 +58,7 @@ public class RolesTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
         MockXmppProvider pps = testConference.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 

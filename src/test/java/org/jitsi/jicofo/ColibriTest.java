@@ -49,7 +49,7 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(JUnit4.class)
 public class ColibriTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = new OSGiHandler();
 
     @BeforeClass
     public static void setUpClass()
@@ -72,7 +72,7 @@ public class ColibriTest
         String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider(), osgi);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
         MockXmppProvider pps = testConference.getXmppProvider();
         ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());

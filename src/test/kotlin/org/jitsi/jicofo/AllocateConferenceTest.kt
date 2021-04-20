@@ -27,7 +27,7 @@ import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
 class AllocateConferenceTest : ShouldSpec() {
-    private val osgi = OSGiHandler.getInstance()
+    private val osgi = OSGiHandler()
     private val from = JidCreate.bareFrom("from@example.com")
     private val xmppConnection = MockXmppConnection(from)
 

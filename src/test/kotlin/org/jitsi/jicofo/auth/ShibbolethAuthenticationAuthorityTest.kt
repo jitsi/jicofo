@@ -41,7 +41,7 @@ import org.jxmpp.jid.impl.JidCreate
 class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
-    private val osgi = OSGiHandler.getInstance()
+    private val osgi = OSGiHandler()
     private val xmppConnection = MockXmppConnectionWrapper()
 
     override fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {

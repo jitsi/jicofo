@@ -36,15 +36,24 @@ public class JigasiSelectorTest
 
     private static int numberOfInstances = 0;
 
+    private static OSGiHandler osgiHandler;
+
     @BeforeClass
     public static void setUpClass()
         throws Exception
     {
-        OSGiHandler.getInstance().init();
+        osgiHandler = new OSGiHandler();
+        osgiHandler.init();
         brewery = new MockBrewery<>(
-            OSGiHandler.getInstance().jicofoServices.getXmppServices().getClientConnection(),
+            osgiHandler.jicofoServices.getXmppServices().getClientConnection(),
             JidCreate.entityBareFrom("roomName@muc-servicename.jabserver.com")
         );
+    }
+
+    @AfterClass
+    public static void tearDownClass()
+    {
+        osgiHandler.shutdown();
     }
 
     private Jid createAndAddInstance()

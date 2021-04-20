@@ -40,7 +40,7 @@ import static org.junit.Assert.assertNull;
 @RunWith(JUnit4.class)
 public class XMPPAuthenticationAuthorityTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    static OSGiHandler osgi = new OSGiHandler();
 
     private String authDomain = "auth.server.net";
     private String guestDomain = "guest.server.net";
