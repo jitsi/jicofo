@@ -54,7 +54,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class ColibriThreadingTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private JicofoHarness harness = new JicofoHarness();
 
     private static MockPeerAllocator findCreator(
             AllocThreadingTestColibriConference    colibriConf,
@@ -72,17 +72,10 @@ public class ColibriThreadingTest
         return null;
     }
 
-    @Before
-    public void setUp()
-        throws Exception
-    {
-        osgi.init();
-    }
-
     @After
     public void tearDown()
     {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     /**
@@ -102,7 +95,7 @@ public class ColibriThreadingTest
 
         AllocThreadingTestColibriConference colibriConf =
                 new AllocThreadingTestColibriConference(
-                        osgi.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
+                        harness.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
@@ -201,7 +194,7 @@ public class ColibriThreadingTest
 
         AllocThreadingTestColibriConference colibriConf =
                 new AllocThreadingTestColibriConference(
-                        osgi.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
+                        harness.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
 
         colibriConf.setJitsiVideobridge(mockBridgeJid);
 

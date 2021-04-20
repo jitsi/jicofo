@@ -32,7 +32,7 @@ public class MockMultiUserChatOpSet
 
     private final MockXmppProvider xmppProvider;
 
-    private final Map<EntityBareJid, MockMultiUserChat> chatRooms = new HashMap<>();
+    private final Map<EntityBareJid, MockChatRoom> chatRooms = new HashMap<>();
 
     public MockMultiUserChatOpSet(MockXmppProvider xmppProvider)
     {
@@ -49,8 +49,8 @@ public class MockMultiUserChatOpSet
                 throw new XmppProvider.RoomExistsException("Room " + roomNameJid + " already exists.");
             }
 
-            MockMultiUserChat chatRoom
-                = new MockMultiUserChat(
+            MockChatRoom chatRoom
+                = new MockChatRoom(
                     roomNameJid,
                     xmppProvider,
                     xmppProvider.config.getUsername().toString());
@@ -80,7 +80,7 @@ public class MockMultiUserChatOpSet
             if (!chatRooms.containsKey(roomJid))
             {
                 ChatRoom room = createChatRoom(roomJid);
-                chatRooms.put(roomJid, (MockMultiUserChat) room);
+                chatRooms.put(roomJid, (MockChatRoom) room);
             }
             return chatRooms.get(roomJid);
         }

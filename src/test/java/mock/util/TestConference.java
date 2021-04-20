@@ -17,14 +17,14 @@
  */
 package mock.util;
 
-import mock.*;
-
 import mock.jvb.*;
 
+import mock.muc.*;
 import mock.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -33,49 +33,47 @@ import java.util.*;
  */
 public class TestConference
 {
-    private EntityBareJid roomName;
-
-    private Jid mockBridgeJid;
-
-    private MockXmppProvider xmppProvider;
+    private static final String DEFAULT_SERVER_NAME = "test-server";
 
     public JitsiMeetConferenceImpl conference;
 
     private MockVideobridge mockBridge;
 
+    private final JicofoHarness harness;
 
-    static public TestConference allocate(String serverName, EntityBareJid roomName, MockXmppProvider xmppProvider)
-        throws Exception
+    public TestConference(JicofoHarness harness, EntityBareJid roomName)
     {
-        TestConference newConf = new TestConference(xmppProvider);
-
-        newConf.createJvbAndConference(serverName, roomName);
-
-        return newConf;
+        this(harness, roomName, DEFAULT_SERVER_NAME);
     }
-
-    private TestConference(MockXmppProvider xmppProvider)
+    public TestConference(JicofoHarness harness, EntityBareJid roomName, String serverName)
     {
-        this.xmppProvider = xmppProvider;
+        this.harness = harness;
+        createJvbAndConference(serverName, roomName);
     }
 
     private FocusManager getFocusManager()
     {
-        return OSGiHandler.getInstance().jicofoServices.getFocusManager();
+        return harness.jicofoServices.getFocusManager();
     }
 
     private void createJvbAndConference(String serverName, EntityBareJid roomName)
-        throws Exception
     {
-        this.mockBridgeJid = JidCreate.from("mockjvb." + serverName);
+        Jid bridgeJid;
+        try
+        {
+            bridgeJid = JidCreate.from("mockjvb." + serverName);
+        }
+        catch (XmppStringprepException e)
+        {
+            throw new RuntimeException(e);
+        }
 
-        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
-
+        mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid), bridgeJid);
         mockBridge.start();
 
-        OSGiHandler.getInstance().jicofoServices.getBridgeSelector().addJvbAddress(mockBridgeJid);
+        harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
 
-        createConferenceRoom(roomName, mockBridge);
+        createConferenceRoom(roomName);
     }
 
     public void stop()
@@ -83,23 +81,20 @@ public class TestConference
         mockBridge.stop();
     }
 
-    private void createConferenceRoom(EntityBareJid roomName, MockVideobridge mockJvb)
-        throws Exception
+    private void createConferenceRoom(EntityBareJid roomName)
     {
-        this.roomName = roomName;
-        this.mockBridge = mockJvb;
-        this.mockBridgeJid = mockJvb.getBridgeJid();
-
         HashMap<String,String> properties = new HashMap<>();
 
-        getFocusManager().conferenceRequest(roomName, properties);
+        try
+        {
+            getFocusManager().conferenceRequest(roomName, properties);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
 
         this.conference = getFocusManager().getConference(roomName);
-    }
-
-    public MockXmppProvider getXmppProvider()
-    {
-        return xmppProvider;
     }
 
     public MockVideobridge getMockVideoBridge()
@@ -112,8 +107,8 @@ public class TestConference
         return conference.getParticipantCount();
     }
 
-    public EntityBareJid getRoomName()
+    public MockChatRoom getChatRoom()
     {
-        return roomName;
+        return (MockChatRoom) conference.getChatRoom();
     }
 }

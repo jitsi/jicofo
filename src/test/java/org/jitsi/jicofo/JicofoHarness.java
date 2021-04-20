@@ -25,27 +25,26 @@ import org.jitsi.config.*;
 import org.jitsi.jicofo.xmpp.*;
 
 /**
- * Helper class takes encapsulates OSGi specifics operations.
+ * Start jicofo services in a test environment. Note that some of the services are still used through static references,
+ * so at most one harness instance should be used at a time.
  *
  * @author Pawel Domas
  */
-public class OSGiHandler
+@SuppressFBWarnings(
+    value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+    justification = "We assume that only one instance is used at a time!"
+)
+public class JicofoHarness
 {
-    private static OSGiHandler instance = new OSGiHandler();
-
-    private OSGiHandler() { }
-
-    @NonNull
-    public static OSGiHandler getInstance()
-    {
-        return instance;
-    }
-
     public JicofoTestServices jicofoServices;
 
+    public JicofoHarness()
+    {
+        init();
+    }
+
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-    public void init()
-        throws Exception
+    private void init()
     {
         System.setProperty("org.jitsi.jicofo.PING_INTERVAL", "0");
         // TODO replace with withLegacyConfig
@@ -73,6 +72,9 @@ public class OSGiHandler
 
     public void shutdown()
     {
+        JicofoServices.jicofoServicesSingleton = null;
+        jicofoServices.stop();
+
         System.clearProperty("org.jitsi.jicofo.PING_INTERVAL");
         System.clearProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName);
         System.clearProperty(XmppClientConnectionConfig.legacyDomainPropertyName);

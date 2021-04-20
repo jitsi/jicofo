@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.Bridge;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -36,6 +35,8 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.stream.*;
+
+import static org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.*;
 
 /**
  * Class handles various Jitsi Meet extensions IQs like {@link MuteIq}.
@@ -201,11 +202,14 @@ public class IqHandler
             return IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
-        IQ result;
+        IQ response;
 
-        if (conference.handleMuteRequest(muteIq.getFrom(), jid, doMute, MediaType.AUDIO))
+        JitsiMeetConferenceImpl.MuteResult result
+                = conference.handleMuteRequest(muteIq.getFrom(), jid, doMute, MediaType.AUDIO);
+
+        if (result == SUCCESS)
         {
-            result = IQ.createResultIQ(muteIq);
+            response = IQ.createResultIQ(muteIq);
 
             if (!muteIq.getFrom().equals(jid))
             {
@@ -219,12 +223,16 @@ public class IqHandler
                 UtilKt.tryToSendStanza(connection, muteStatusUpdate);
             }
         }
+        else if (result == NOT_ALLOWED)
+        {
+            response = IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
+        }
         else
         {
-            result = IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
+            response = IQ.createErrorResponse(muteIq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
-        return result;
+        return response;
     }
 
     private IQ handleMuteVideoIq(MuteVideoIq muteVideoIq)
@@ -245,11 +253,14 @@ public class IqHandler
             return IQ.createErrorResponse(muteVideoIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
-        IQ result;
+        IQ response;
 
-        if (conference.handleMuteRequest(muteVideoIq.getFrom(), jid, doMute, MediaType.VIDEO))
+        JitsiMeetConferenceImpl.MuteResult result
+                = conference.handleMuteRequest(muteVideoIq.getFrom(), jid, doMute, MediaType.VIDEO);
+
+        if (result == SUCCESS)
         {
-            result = IQ.createResultIQ(muteVideoIq);
+            response = IQ.createResultIQ(muteVideoIq);
 
             if (!muteVideoIq.getFrom().equals(jid))
             {
@@ -263,13 +274,17 @@ public class IqHandler
                 UtilKt.tryToSendStanza(connection, muteStatusUpdate);
             }
         }
+        else if (result == NOT_ALLOWED)
+        {
+            response = IQ.createErrorResponse(muteVideoIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
+        }
         else
         {
-            result = IQ.createErrorResponse(
+            response = IQ.createErrorResponse(
                 muteVideoIq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
-        return result;
+        return response;
     }
 
     /**

@@ -37,11 +37,8 @@ import org.jxmpp.jid.impl.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
- * FIXME: include into test suite(problems between OSGi restarts)
- *
  * Tests colibri tools used for channel management.
  *
  * @author Pawel Domas
@@ -49,19 +46,12 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(JUnit4.class)
 public class ColibriTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private final JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test
@@ -69,13 +59,11 @@ public class ColibriTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
-        String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
+        TestConference testConference = new TestConference(harness, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
-        MockXmppProvider pps = testConference.getXmppProvider();
-        ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());
+        ColibriConference colibriConf = new ColibriConferenceImpl(harness.getXmppProvider().getXmppConnection());
 
         colibriConf.setName(JidCreate.entityBareFrom("foo@bar.com/zzz"));
 

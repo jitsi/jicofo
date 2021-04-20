@@ -40,27 +40,25 @@ import static org.junit.Assert.assertNull;
 @RunWith(JUnit4.class)
 public class XMPPAuthenticationAuthorityTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private final static String AUTH_DOMAIN = "auth.server.net";
 
-    private String authDomain = "auth.server.net";
-    private String guestDomain = "guest.server.net";
+    private JicofoHarness harness;
 
-    private MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
+    private final MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
 
     @Before
-    public void setUpClass()
-        throws Exception
+    public void setUp()
     {
         // Enable XMPP authentication
-        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, "XMPP:" + authDomain);
-        osgi.init();
+        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, "XMPP:" + AUTH_DOMAIN);
+        harness = new JicofoHarness();
     }
 
     @After
-    public void tearDownClass()
+    public void tearDown()
     {
         xmppConnection.shutdown();
-        osgi.shutdown();
+        harness.shutdown();
         System.clearProperty(AuthConfig.legacyLoginUrlPropertyName);
     }
 
@@ -68,16 +66,18 @@ public class XMPPAuthenticationAuthorityTest
     public void testXmppDomainAuthentication()
         throws Exception
     {
-        XMPPDomainAuthAuthority xmppAuth = (XMPPDomainAuthAuthority) osgi.jicofoServices.getAuthenticationAuthority();
+        XMPPDomainAuthAuthority xmppAuth
+                = (XMPPDomainAuthAuthority) harness.jicofoServices.getAuthenticationAuthority();
 
         assertNotNull(xmppAuth);
 
+        String guestDomain = "guest.server.net";
         Jid user1GuestJid = JidCreate.from("user1@" + guestDomain);
-        Jid user1AuthJid = JidCreate.from("user1@" + authDomain);
+        Jid user1AuthJid = JidCreate.from("user1@" + AUTH_DOMAIN);
         String user1MachineUid="machine1uid";
 
         Jid user2GuestJid = JidCreate.from("user2@" + guestDomain);
-        Jid user2AuthJid = JidCreate.from("user2@" + authDomain);
+        Jid user2AuthJid = JidCreate.from("user2@" + AUTH_DOMAIN);
         String user2MachineUid="machine2uid";
 
         EntityBareJid room1 = JidCreate.entityBareFrom("testroom1@example.com");
@@ -91,7 +91,7 @@ public class XMPPAuthenticationAuthorityTest
         query.setSessionId(null);
         query.setRoom(room1);
         query.setMachineUID(user1MachineUid);
-        query.setTo(osgi.jicofoServices.getJicofoJid());
+        query.setTo(harness.jicofoServices.getJicofoJid());
         query.setType(IQ.Type.set);
 
         IQ errorResponse = xmppConnection.sendIqAndGetResponse(query);

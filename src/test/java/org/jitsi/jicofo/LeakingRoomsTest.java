@@ -31,19 +31,12 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private final JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test
@@ -51,26 +44,23 @@ public class LeakingRoomsTest
             throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-
-        TestConference testConf = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
-        MockXmppProvider pps = testConf.getXmppProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        TestConference testConf = new TestConference(harness, roomName);
+        MockChatRoom chatRoom = testConf.getChatRoom();
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
-        user1.joinInNewThread(chat);
+        user1.joinInNewThread(chatRoom);
         MockParticipant user2 = new MockParticipant("User2");
-        user2.joinInNewThread(chat);
+        user2.joinInNewThread(chatRoom);
         MockParticipant user3 = new MockParticipant("User3");
-        user3.joinInNewThread(chat);
+        user3.joinInNewThread(chatRoom);
 
         Thread.sleep(30);
 
         MockParticipant user4 = new MockParticipant("User4");
-        user4.joinInNewThread(chat);
+        user4.joinInNewThread(chatRoom);
         MockParticipant user5 = new MockParticipant("User5");
-        user5.joinInNewThread(chat);
+        user5.joinInNewThread(chatRoom);
 
         long joinTimeout = 5000;
         user1.waitForJoinThread(joinTimeout);

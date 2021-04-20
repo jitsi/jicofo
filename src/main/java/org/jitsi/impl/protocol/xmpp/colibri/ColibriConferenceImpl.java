@@ -651,16 +651,23 @@ public class ColibriConferenceImpl
             return false;
         }
 
+        String conferenceId = conferenceState.getID();
+        if (isBlank(conferenceId))
+        {
+            logger.warn("Failed to mute, conferenceId is blank.");
+            return false;
+        }
+
         ColibriConferenceIQ request = new ColibriConferenceIQ();
-        request.setID(conferenceState.getID());
+        request.setID(conferenceId);
         request.setName(conferenceState.getName());
+        request.setType(IQ.Type.set);
+        request.setTo(jitsiVideobridge);
 
         ColibriConferenceIQ.Content content = channelsInfo.getContent(mediaType.toString());
-
-        if (content == null || isBlank(request.getID()))
+        if (content == null)
         {
-            logger.error("Failed to mute - no " + mediaType.toString() + " content." +
-                             " Conf ID: " + request.getID());
+            logger.error("Failed to mute, no 'content' for media type " + mediaType);
             return false;
         }
 
@@ -675,16 +682,11 @@ public class ColibriConferenceImpl
 
         if (requestContent.getChannelCount() == 0)
         {
-            logger.error("Failed to mute - no channels to modify." +
-                             " ConfID:" + request.getID());
+            logger.error("Failed to mute, content has no channels.");
             return false;
         }
 
-        request.setType(IQ.Type.set);
-        request.setTo(jitsiVideobridge);
-
         request.addContent(requestContent);
-
         UtilKt.tryToSendStanza(connection, request);
 
         // FIXME wait for response and set local status

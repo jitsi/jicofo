@@ -31,9 +31,9 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  */
 public class MockMucShare
 {
-    private final List<MockMultiUserChat> groupedChats = new ArrayList<>();
+    private final List<MockChatRoom> groupedChats = new ArrayList<>();
 
-    public void nextRoomCreated(MockMultiUserChat chatRoom)
+    public void nextRoomCreated(MockChatRoom chatRoom)
     {
         groupedChats.add(chatRoom);
 
@@ -49,7 +49,7 @@ public class MockMucShare
 
     private void broadcastMemberJoined(ChatRoom chatRoom, Listener listener, ChatRoomMember chatRoomMember)
     {
-        for (MockMultiUserChat chatToNotify : groupedChats)
+        for (MockChatRoom chatToNotify : groupedChats)
         {
             if (chatToNotify != chatRoom)
             {
@@ -65,7 +65,7 @@ public class MockMucShare
 
     private void broadcastMemberLeft(ChatRoom chatRoom, ChatRoomMember chatRoomMember)
     {
-        for (MockMultiUserChat chatToNotify : groupedChats)
+        for (MockChatRoom chatToNotify : groupedChats)
         {
             if (chatToNotify != chatRoom)
             {

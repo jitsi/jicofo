@@ -33,26 +33,15 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-
-/**
- *
- */
 @RunWith(JUnit4.class)
 public class BundleTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private final JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     /**
@@ -63,21 +52,16 @@ public class BundleTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
-
-        MockXmppProvider pps = testConference.getXmppProvider();
-
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        TestConference testConference = new TestConference(harness, roomName);
+        MockChatRoom chatRoom = testConference.getChatRoom();
 
         MockParticipant user1 = new MockParticipant("user1");
 
-        user1.join(chat);
+        user1.join(chatRoom);
 
         MockParticipant user2 = new MockParticipant("user2");
 
-        user2.join(chat);
+        user2.join(chatRoom);
 
         JingleIQ user1Invite = user1.acceptInvite(6000)[0];
 
@@ -150,12 +134,10 @@ public class BundleTest
             return;
 
         IceUdpTransportPacketExtension firstTransport
-            = firstContent.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
+            = firstContent.getFirstChildOfType(IceUdpTransportPacketExtension.class);
 
         IceUdpTransportPacketExtension transport
-            = content.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
+            = content.getFirstChildOfType(IceUdpTransportPacketExtension.class);
 
         assertTransportTheSame(firstTransport, transport);
     }

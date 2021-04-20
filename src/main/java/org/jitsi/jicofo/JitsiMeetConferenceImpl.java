@@ -2085,57 +2085,57 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles mute request sent from participants.
-     * @param fromJid MUC jid of the participant that requested mute status change.
+     * @param muterJid MUC jid of the participant that requested mute status change.
      * @param toBeMutedJid MUC jid of the participant whose mute status will be changed (eventually).
      * @param doMute the new audio mute status to set.
      * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
      * @return <tt>true</tt> if status has been set successfully.
      */
-    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
+    public MuteResult handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        Participant principal = findParticipantForRoomJid(fromJid);
-        if (principal == null)
+        Participant muter = findParticipantForRoomJid(muterJid);
+        if (muter == null)
         {
-            logger.warn("Failed to perform mute operation - " + fromJid +" not exists in the conference.");
-            return false;
+            logger.warn("Muter participant not found, jid=" + muterJid);
+            return MuteResult.ERROR;
         }
         // Only moderators can mute others
-        if (!fromJid.equals(toBeMutedJid) && !principal.getChatMember().getRole().hasModeratorRights())
+        if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
         {
-            logger.warn("Permission denied for mute operation from " + fromJid);
-            return false;
+            logger.warn("Mute not allowed for non-moderator " + muterJid);
+            return MuteResult.NOT_ALLOWED;
         }
 
         Participant participant = findParticipantForRoomJid(toBeMutedJid);
         if (participant == null)
         {
-            logger.warn("Participant for jid: " + toBeMutedJid + " not found");
-            return false;
+            logger.warn("Participant to be muted not found, jid=" + toBeMutedJid);
+            return MuteResult.ERROR;
         }
 
         // do not allow unmuting other participants even for the moderator
-        if (!doMute && !fromJid.equals(toBeMutedJid))
+        if (!doMute && !muterJid.equals(toBeMutedJid))
         {
-            logger.warn("Blocking an unmute request (jid not the same).");
-            return false;
+            logger.warn("Unmute now allowed, mutedJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
+            return MuteResult.NOT_ALLOWED;
         }
 
         if (doMute
             && participant.isSipGateway()
             && !participant.hasAudioMuteSupport())
         {
-            logger.warn("Blocking mute request to jigasi. Muting SIP participants is disabled.");
-            return false;
+            logger.warn("Mute not allowed, toBeMuted is jigasi.");
+            return MuteResult.NOT_ALLOWED;
         }
 
 
         if (doMute && participant.isJibri())
         {
-            logger.warn("Blocking mute request to jibri. ");
-            return false;
+            logger.warn("Mute not allowed, toBeMuted is jibri.");
+            return MuteResult.NOT_ALLOWED;
         }
 
-        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + fromJid);
+        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid);
 
         BridgeSession bridgeSession = findBridgeSession(participant);
         ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
@@ -2144,7 +2144,12 @@ public class JitsiMeetConferenceImpl
                     && participantChannels != null
                     && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType);
 
-        return succeeded;
+        if (!succeeded)
+        {
+            logger.warn("Failed to mute, bridgeSession=" + bridgeSession + ", pc=" + participantChannels);
+        }
+
+        return succeeded ? MuteResult.SUCCESS : MuteResult.ERROR;
     }
 
     /**
@@ -2901,5 +2906,12 @@ public class JitsiMeetConferenceImpl
         {
             onBridgeUp(bridge.getJid());
         }
+    }
+
+    public enum MuteResult
+    {
+        SUCCESS,
+        NOT_ALLOWED,
+        ERROR
     }
 }

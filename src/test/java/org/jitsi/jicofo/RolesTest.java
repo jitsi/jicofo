@@ -21,7 +21,6 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import org.jitsi.jicofo.xmpp.muc.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -37,19 +36,12 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    static OSGiHandler osgi = OSGiHandler.getInstance();
+    private final JicofoHarness harness = new JicofoHarness();
 
-    @BeforeClass
-    public static void setUpClass()
-        throws Exception
+    @After
+    public void tearDown()
     {
-        osgi.init();
-    }
-
-    @AfterClass
-    public static void tearDownClass()
-    {
-        osgi.shutdown();
+        harness.shutdown();
     }
 
     @Test
@@ -57,10 +49,8 @@ public class RolesTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-        TestConference testConference = TestConference.allocate(serverName, roomName, osgi.getXmppProvider());
-        MockXmppProvider pps = testConference.getXmppProvider();
-        MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
+        TestConference testConference = new TestConference(harness, roomName);
+        MockChatRoom chatRoom = testConference.getChatRoom();
 
         // Join with all users
         MockParticipant[] users = new MockParticipant[4];
@@ -68,7 +58,7 @@ public class RolesTest
         {
             users[i] = new MockParticipant("User" + i);
 
-            users[i].join(chat);
+            users[i].join(chatRoom);
         }
         // Accept invite with all users
         for (MockParticipant user : users)
