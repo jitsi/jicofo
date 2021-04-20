@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class AdvertiseSSRCsTest
 {
-    private final OSGiHandler osgi = new OSGiHandler();
+    private final JicofoHarness osgi = new JicofoHarness();
 
     @Before
     public void setUpClass()

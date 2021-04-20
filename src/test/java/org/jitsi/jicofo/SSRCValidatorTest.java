@@ -45,7 +45,7 @@ public class SSRCValidatorTest
 {
     static private Logger logger = new LoggerImpl(SSRCValidatorTest.class.getName());
 
-    static OSGiHandler osgi = new OSGiHandler();
+    static JicofoHarness osgi = new JicofoHarness();
 
     private List<SourcePacketExtension> audioSources;
 

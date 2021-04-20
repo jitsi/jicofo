@@ -21,7 +21,6 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
-import org.jitsi.jicofo.xmpp.muc.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -37,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class RolesTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static JicofoHarness osgi = new JicofoHarness();
 
     @BeforeClass
     public static void setUpClass()

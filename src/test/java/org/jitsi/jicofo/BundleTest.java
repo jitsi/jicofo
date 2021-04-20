@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class BundleTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static JicofoHarness osgi = new JicofoHarness();
 
     @BeforeClass
     public static void setUpClass()

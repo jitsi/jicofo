@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class LeakingRoomsTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static JicofoHarness osgi = new JicofoHarness();
 
     @BeforeClass
     public static void setUpClass()

@@ -24,7 +24,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import mock.xmpp.MockXmppConnectionWrapper
-import org.jitsi.jicofo.OSGiHandler
+import org.jitsi.jicofo.JicofoHarness
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jitsi.xmpp.extensions.jitsimeet.SessionInvalidPacketExtension
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -41,7 +41,7 @@ import org.jxmpp.jid.impl.JidCreate
 class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
-    private val osgi = OSGiHandler()
+    private val osgi = JicofoHarness()
     private val xmppConnection = MockXmppConnectionWrapper()
 
     override fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {

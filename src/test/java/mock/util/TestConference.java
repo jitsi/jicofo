@@ -43,15 +43,15 @@ public class TestConference
 
     private MockVideobridge mockBridge;
 
-    private OSGiHandler osgiHandler;
+    private JicofoHarness osgiHandler;
 
     static public TestConference allocate(String serverName, EntityBareJid roomName, MockXmppProvider xmppProvider,
-                                          OSGiHandler osGiHandler)
+                                          JicofoHarness jicofoHarness)
         throws Exception
     {
         TestConference newConf = new TestConference(xmppProvider);
 
-        newConf.osgiHandler = osGiHandler;
+        newConf.osgiHandler = jicofoHarness;
         newConf.createJvbAndConference(serverName, roomName);
 
         return newConf;

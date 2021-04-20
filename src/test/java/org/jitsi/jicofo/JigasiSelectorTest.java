@@ -36,13 +36,13 @@ public class JigasiSelectorTest
 
     private static int numberOfInstances = 0;
 
-    private static OSGiHandler osgiHandler;
+    private static JicofoHarness osgiHandler;
 
     @BeforeClass
     public static void setUpClass()
         throws Exception
     {
-        osgiHandler = new OSGiHandler();
+        osgiHandler = new JicofoHarness();
         osgiHandler.init();
         brewery = new MockBrewery<>(
             osgiHandler.jicofoServices.getXmppServices().getClientConnection(),

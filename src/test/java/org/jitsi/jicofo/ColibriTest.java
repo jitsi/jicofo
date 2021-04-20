@@ -49,7 +49,7 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(JUnit4.class)
 public class ColibriTest
 {
-    static OSGiHandler osgi = new OSGiHandler();
+    static JicofoHarness osgi = new JicofoHarness();
 
     @BeforeClass
     public static void setUpClass()
