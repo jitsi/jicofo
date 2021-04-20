@@ -19,6 +19,8 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.matchers.shouldBe
 import mock.MockParticipant
 import mock.util.TestConference
+import org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.NOT_ALLOWED
+import org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.SUCCESS
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
 import org.jxmpp.jid.impl.JidCreate
@@ -44,17 +46,25 @@ class MuteTest : JicofoHarnessTest() {
             testConference.conference.handleMuteRequest(muter.myJid, mutee.myJid, true, MediaType.AUDIO)
         }
 
+        // No one should be allowed to unmute someone else.
+        val unmute = {
+            testConference.conference.handleMuteRequest(muter.myJid, mutee.myJid, false, MediaType.VIDEO)
+        }
+
         context("When the muter is an owner") {
             muter.chatMember.role = MemberRole.OWNER
-            mute() shouldBe true
+            mute() shouldBe SUCCESS
+            unmute() shouldBe NOT_ALLOWED
         }
         context("When the muter is a moderator") {
             muter.chatMember.role = MemberRole.MODERATOR
-            mute() shouldBe true
+            mute() shouldBe SUCCESS
+            unmute() shouldBe NOT_ALLOWED
         }
         context("When the muter is a guest") {
             muter.chatMember.role = MemberRole.GUEST
-            mute() shouldBe false
+            mute() shouldBe NOT_ALLOWED
+            unmute() shouldBe NOT_ALLOWED
         }
     }
 }
