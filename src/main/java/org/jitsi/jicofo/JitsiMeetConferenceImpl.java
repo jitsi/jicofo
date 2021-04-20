@@ -2096,27 +2096,27 @@ public class JitsiMeetConferenceImpl
         Participant muter = findParticipantForRoomJid(muterJid);
         if (muter == null)
         {
-            logger.warn("Failed to perform mute operation - " + muterJid +" not exists in the conference.");
+            logger.warn("Muter participant not found, jid=" + muterJid);
             return MuteResult.ERROR;
         }
         // Only moderators can mute others
         if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
         {
-            logger.warn("Permission denied for mute operation from " + muterJid);
+            logger.warn("Mute not allowed for non-moderator " + muterJid);
             return MuteResult.NOT_ALLOWED;
         }
 
         Participant participant = findParticipantForRoomJid(toBeMutedJid);
         if (participant == null)
         {
-            logger.warn("Participant for jid: " + toBeMutedJid + " not found");
+            logger.warn("Participant to be muted not found, jid=" + toBeMutedJid);
             return MuteResult.ERROR;
         }
 
         // do not allow unmuting other participants even for the moderator
         if (!doMute && !muterJid.equals(toBeMutedJid))
         {
-            logger.warn("Blocking an unmute request (jid not the same).");
+            logger.warn("Unmute now allowed, mutedJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
             return MuteResult.NOT_ALLOWED;
         }
 
@@ -2124,14 +2124,14 @@ public class JitsiMeetConferenceImpl
             && participant.isSipGateway()
             && !participant.hasAudioMuteSupport())
         {
-            logger.warn("Blocking mute request to jigasi. Muting SIP participants is disabled.");
+            logger.warn("Mute not allowed, toBeMuted is jigasi.");
             return MuteResult.NOT_ALLOWED;
         }
 
 
         if (doMute && participant.isJibri())
         {
-            logger.warn("Blocking mute request to jibri. ");
+            logger.warn("Mute not allowed, toBeMuted is jibri.");
             return MuteResult.NOT_ALLOWED;
         }
 
@@ -2143,6 +2143,11 @@ public class JitsiMeetConferenceImpl
             = bridgeSession != null
                     && participantChannels != null
                     && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType);
+
+        if (!succeeded)
+        {
+            logger.warn("Failed to mute, bridgeSession=" + bridgeSession + ", pc=" + participantChannels);
+        }
 
         return succeeded ? MuteResult.SUCCESS : MuteResult.ERROR;
     }
