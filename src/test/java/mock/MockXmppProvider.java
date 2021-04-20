@@ -25,7 +25,6 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jivesoftware.smack.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -100,7 +99,7 @@ public class MockXmppProvider
 
 
     @Override
-    public AbstractXMPPConnection getXmppConnection()
+    public MockXmppConnection getXmppConnection()
     {
         return connection;
     }
