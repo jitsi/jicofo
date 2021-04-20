@@ -32,6 +32,7 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  *
@@ -41,6 +42,13 @@ public class MockXmppProvider
     extends AbstractXmppProvider
 {
     private final MockXmppConnection connection;
+
+    /**
+     * The features returned for any JID. We use default client features, but disable SCTP.
+     */
+    private final List<String> features
+            = DiscoveryUtil.getDefaultParticipantFeatureSet().stream()
+                .filter(f -> !f.equals(DiscoveryUtil.FEATURE_SCTP)).collect(Collectors.toList());
 
     private final AbstractOperationSetJingle jingleOpSet;
 
@@ -134,7 +142,7 @@ public class MockXmppProvider
     @Override
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
-        return DiscoveryUtil.getDefaultParticipantFeatureSet();
+        return features;
     }
 
     @Override

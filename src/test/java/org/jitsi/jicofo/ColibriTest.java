@@ -70,6 +70,7 @@ public class ColibriTest
         colibriConf.setJitsiVideobridge(mockBridge.getBridgeJid());
 
         OfferOptions offerOptions = new OfferOptions();
+        offerOptions.setSctp(false);
         OfferOptionsKt.applyConstraints(offerOptions, config);
         offerOptions.setRtx(false);
 
@@ -86,10 +87,10 @@ public class ColibriTest
 
         assertEquals(2, mockBridge.getEndpointCount());
 
-        assertEquals("Peer 1 should have 3 channels allocated",
-                     3, countChannels(peer1Channels));
-        assertEquals("Peer 2 should have 3 channels allocated",
-                     3, countChannels(peer2Channels));
+        assertEquals("Peer 1 should have 2 channels allocated",
+                     2, countChannels(peer1Channels));
+        assertEquals("Peer 2 should have 2 channels allocated",
+                     2, countChannels(peer2Channels));
 
         assertEquals("Peer 1 should have single bundle allocated !",
                      1, peer1Channels.getChannelBundles().size());

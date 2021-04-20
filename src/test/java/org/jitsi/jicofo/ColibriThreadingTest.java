@@ -284,6 +284,7 @@ public class ColibriThreadingTest
         OfferOptions offerOptions = new OfferOptions();
         OfferOptionsKt.applyConstraints(offerOptions, config);
         offerOptions.setRtx(false);
+        offerOptions.setSctp(false);
 
         return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
     }
