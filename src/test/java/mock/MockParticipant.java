@@ -88,6 +88,8 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
     private final BlockingQueue<JingleIQ> ssrcRemoveQueue = new LinkedBlockingQueue<>();
 
+    private final CountDownLatch sessionInitiateLatch = new CountDownLatch(1);
+
     public MockParticipant(String nick)
     {
         this.nick = nick;
@@ -410,6 +412,8 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
                 logger.info(nick + " received session-initiate: " + ssrcMap  + " groups: " + ssrcGroupMap);
 
                 sourceLock.notifyAll();
+
+                sessionInitiateLatch.countDown();
             }
         }
         else  if (JingleAction.SOURCEADD.equals(action)
@@ -585,6 +589,23 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         throws InterruptedException
     {
         return ssrcAddQueue.poll(timeout, TimeUnit.MILLISECONDS);
+    }
+
+    public void waitForSessionInitiate()
+    {
+        waitForSessionInitiate(3000);
+    }
+
+    public void waitForSessionInitiate(long timeoutMs)
+    {
+        try
+        {
+            sessionInitiateLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public JingleIQ waitForRemoveSource(long timeout)
