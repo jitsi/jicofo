@@ -73,12 +73,7 @@ public class ColibriTest
         String peer2 = "endpoint2";
 
         ColibriConferenceIQ peer1Channels = colibriConf.createColibriChannels(peer1, null, true, contents);
-
-        assertEquals(1, mockBridge.getEndpointCount());
-
         ColibriConferenceIQ peer2Channels = colibriConf.createColibriChannels(peer2, null, true, contents);
-
-        assertEquals(2, mockBridge.getEndpointCount());
 
         assertEquals("Peer 1 should have 2 channels allocated", 2, countChannels(peer1Channels));
         assertEquals("Peer 2 should have 2 channels allocated", 2, countChannels(peer2Channels));
@@ -90,19 +85,8 @@ public class ColibriTest
         assertEquals("Peer 1 has the wrong endpoint id allocated", peer1, peer1Channels.getEndpoints().get(0).getId());
         assertEquals("Peer 2 has the wrong endpoint id allocated", peer2, peer2Channels.getEndpoints().get(0).getId());
 
-        colibriConf.expireChannels(peer2Channels);
-
-        //FIXME: fix unreliable sleep call
-        Thread.sleep(5000);
-
-        assertEquals(1, mockBridge.getEndpointCount());
-
         colibriConf.expireChannels(peer1Channels);
-
-        //FIXME: fix unreliable sleep call
-        Thread.sleep(1000);
-
-        assertEquals(0, mockBridge.getEndpointCount());
+        colibriConf.expireChannels(peer2Channels);
         mockBridge.stop();
     }
 
