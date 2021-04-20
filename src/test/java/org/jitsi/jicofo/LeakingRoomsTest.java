@@ -44,9 +44,7 @@ public class LeakingRoomsTest
             throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testLeaks@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-
-        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConf = new TestConference(harness, roomName);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 

@@ -50,9 +50,7 @@ public class AdvertiseSSRCsTest
         //FIXME: test when there is participant without contents
 
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-
-        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConf = new TestConference(harness, roomName);
 
         MockXmppProvider pps = testConf.getXmppProvider();
 
@@ -134,7 +132,7 @@ public class AdvertiseSSRCsTest
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCremoval@conference.pawel.jitsi.net");
         String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConf = new TestConference(harness, roomName);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
@@ -185,8 +183,7 @@ public class AdvertiseSSRCsTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConf = new TestConference(harness, roomName);
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
@@ -244,8 +241,7 @@ public class AdvertiseSSRCsTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testSSRCs@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-        TestConference testConf = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConf = new TestConference(harness, roomName);
 
         MockXmppProvider pps = testConf.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);

@@ -59,11 +59,9 @@ public class ColibriTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
-        String serverName = "test-server";
         JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
-        TestConference testConference
-                = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConference = new TestConference(harness, roomName);
         MockVideobridge mockBridge = testConference.getMockVideoBridge();
         MockXmppProvider pps = testConference.getXmppProvider();
         ColibriConference colibriConf = new ColibriConferenceImpl(pps.getXmppConnection());

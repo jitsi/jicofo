@@ -49,9 +49,7 @@ public class RolesTest
         throws Exception
     {
         EntityBareJid roomName = JidCreate.entityBareFrom("testroom@conference.pawel.jitsi.net");
-        String serverName = "test-server";
-        TestConference testConference
-                = TestConference.allocate(serverName, roomName, harness.getXmppProvider(), harness);
+        TestConference testConference = new TestConference(harness, roomName);
         MockXmppProvider pps = testConference.getXmppProvider();
         MockMultiUserChat chat = (MockMultiUserChat) pps.findOrCreateRoom(roomName);
 
