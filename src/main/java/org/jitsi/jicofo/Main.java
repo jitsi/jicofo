@@ -79,6 +79,7 @@ public class Main
 
         logger.info("Stopping services.");
         jicofoServices.stop();
+        TaskPools.shutdown();
         JicofoServices.jicofoServicesSingleton = null;
     }
 
