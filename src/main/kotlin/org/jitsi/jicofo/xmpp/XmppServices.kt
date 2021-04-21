@@ -41,6 +41,8 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         clientConnection
     }
 
+    val jibriIqHandler = JibriIqHandler(setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection))
+
     var iqHandler: IqHandler? = null
     fun stop() {
         iqHandler?.stop()

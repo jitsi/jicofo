@@ -320,9 +320,10 @@ public class JitsiMeetConferenceImpl
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            clientXmppProvider,
+                            clientXmppProvider.getXmppConnection(),
                             jibriDetector,
                             logger);
+                jicofoServices.getXmppServices().getJibriIqHandler().addJibri(jibriRecorder);
             }
 
             JibriDetector sipJibriDetector = jicofoServices.getSipJibriDetector();
@@ -331,9 +332,10 @@ public class JitsiMeetConferenceImpl
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            clientXmppProvider,
+                            clientXmppProvider.getXmppConnection(),
                             sipJibriDetector,
                             logger);
+                jicofoServices.getXmppServices().getJibriIqHandler().addJibri(jibriSipGateway);
             }
         }
         catch (Exception e)
@@ -366,6 +368,7 @@ public class JitsiMeetConferenceImpl
         {
             try
             {
+                jicofoServices.getXmppServices().getJibriIqHandler().removeJibri(jibriSipGateway);
                 jibriSipGateway.dispose();
             }
             catch (Exception e)
@@ -379,6 +382,7 @@ public class JitsiMeetConferenceImpl
         {
             try
             {
+                jicofoServices.getXmppServices().getJibriIqHandler().removeJibri(jibriRecorder);
                 jibriRecorder.dispose();
             }
             catch (Exception e)

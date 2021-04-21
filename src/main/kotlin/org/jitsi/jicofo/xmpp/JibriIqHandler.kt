@@ -21,7 +21,7 @@ import org.jitsi.jicofo.jibri.BaseJibri
 import org.jitsi.jicofo.jibri.JibriSessionIqHandler
 import org.jitsi.jicofo.util.ErrorResponse
 import org.jitsi.xmpp.extensions.jibri.JibriIq
-import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
+import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
@@ -32,8 +32,14 @@ import java.util.LinkedList
  * A Smack [IQRequestHandler] for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
  * handling to specific [BaseJibri] instances.
  */
-class JibriIqHandler :
-    AbstractIqRequestHandler(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync) {
+class JibriIqHandler(connections: Set<XMPPConnection>) :
+    AbstractIqHandler<JibriIq>(
+        connections,
+        JibriIq.ELEMENT_NAME,
+        JibriIq.NAMESPACE,
+        setOf(IQ.Type.set),
+        IQRequestHandler.Mode.sync
+    ) {
 
     private val jibris = Collections.synchronizedList(LinkedList<JibriSessionIqHandler>())
 
@@ -52,11 +58,10 @@ class JibriIqHandler :
      * Note that this is synchronized to ensure correct use of the synchronized list (and we want to avoid using a
      * copy on write list for performance reasons).
      */
-    override fun handleIQRequest(iq: IQ): IQ? = synchronized(jibris) {
-        iq as? JibriIq ?: throw IllegalArgumentException("Unexpected IQ type: ${iq::class}")
-        val jibri = jibris.find { it.accept(iq) }
-            ?: return ErrorResponse.create(iq, XMPPError.Condition.item_not_found, null)
-        jibri.handleIQRequest(iq)
+    override fun handleRequest(request: IqRequest<JibriIq>): IQ? = synchronized(jibris) {
+        val jibri = jibris.find { it.accept(request.iq) }
+            ?: return ErrorResponse.create(request.iq, XMPPError.Condition.item_not_found, null)
+        jibri.handleJibriRequest(request)
         null
     }
 }

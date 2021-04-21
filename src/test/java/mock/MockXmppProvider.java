@@ -22,7 +22,6 @@ import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.discovery.*;
-import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.json.simple.*;
@@ -142,18 +141,6 @@ public class MockXmppProvider
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
         return features;
-    }
-
-    @Override
-    public void addJibriIqHandler(@NotNull JibriSessionIqHandler jibriIqHandler)
-    {
-        throw new RuntimeException("Not implemented.");
-    }
-
-    @Override
-    public void removeJibriIqHandler(@NotNull JibriSessionIqHandler jibriIqHandler)
-    {
-        throw new RuntimeException("Not implemented.");
     }
 
     @NotNull

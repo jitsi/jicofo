@@ -17,17 +17,15 @@
  */
 package org.jitsi.jicofo.jibri
 
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
+import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
-import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
-import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
 import org.jitsi.jicofo.util.ErrorResponse.create as error
@@ -40,12 +38,9 @@ import org.jitsi.jicofo.util.ErrorResponse.create as error
  */
 abstract class BaseJibri internal constructor(
     protected val conference: JitsiMeetConferenceImpl,
-    private val xmppProvider: XmppProvider,
     parentLogger: Logger,
     val jibriDetector: JibriDetector
-) : StateListener {
-
-    protected val connection: AbstractXMPPConnection = xmppProvider.xmppConnection
+) : StateListener, JibriSessionIqHandler {
 
     private val incomingIqQueue = PacketQueue<JibriRequest>(
         50,
@@ -66,19 +61,12 @@ abstract class BaseJibri internal constructor(
         TaskPools.ioPool
     )
 
-    private val clientIqHandler: JibriSessionIqHandler = object : JibriSessionIqHandler {
-        override fun accept(iq: JibriIq) = this@BaseJibri.accept(iq)
-        override fun handleIQRequest(iq: JibriIq) = incomingIqQueue.add(JibriRequest(iq, connection))
-    }
-
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
-    init {
-        xmppProvider.addJibriIqHandler(clientIqHandler)
-    }
+    override fun handleJibriRequest(request: JibriRequest) = incomingIqQueue.add(request)
 
     /**
-     * Returns the [JibriSession] associated with a specific [JibriIq] coming from a client in the confernce.
+     * Returns the [JibriSession] associated with a specific [JibriIq] coming from a client in the conference.
      *
      * If the extending class can deal with only one [JibriSession] at a time it should return it. If it's
      * capable of handling multiple sessions then it should try to identify the session based on the information
@@ -108,12 +96,6 @@ abstract class BaseJibri internal constructor(
     protected abstract fun handleStartRequest(iq: JibriIq): IQ
 
     /**
-     * Method called by [JitsiMeetConferenceImpl] when the conference is
-     * being stopped.
-     */
-    open fun dispose() = xmppProvider.removeJibriIqHandler(clientIqHandler)
-
-    /**
      * Checks if the given [JibriIq] should be accepted by this instance. The IQ may originate either from a
      * participant in the conference, or from a Jibri instance. It should be accepted if:
      * 1a. It originates from a participant in the conference AND
@@ -122,7 +104,7 @@ abstract class BaseJibri internal constructor(
      *
      * @return `true` if the IQ is to be accepted.
      */
-    fun accept(iq: JibriIq): Boolean {
+    override fun accept(iq: JibriIq): Boolean {
         // Process if it belongs to an active recording session
         val session = getJibriSessionForMeetIq(iq)
         if (session != null && session.accept(iq)) {
@@ -211,4 +193,4 @@ abstract class BaseJibri internal constructor(
     }
 }
 
-internal data class JibriRequest(val iq: JibriIq, val connection: XMPPConnection)
+typealias JibriRequest = IqRequest<JibriIq>

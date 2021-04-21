@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 
 /**
@@ -24,5 +25,5 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq
  */
 interface JibriSessionIqHandler {
     fun accept(iq: JibriIq): Boolean
-    fun handleIQRequest(iq: JibriIq)
+    fun handleJibriRequest(request: IqRequest<JibriIq>)
 }

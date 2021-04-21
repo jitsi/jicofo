@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
-import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.retry.*;
@@ -61,7 +60,6 @@ public class XmppProviderImpl
      * Jingle operation set.
      */
     private final OperationSetJingleImpl jingleOpSet;
-    private final JibriIqHandler jibriIqHandler;
 
     private final Muc muc = new Muc();
 
@@ -107,8 +105,6 @@ public class XmppProviderImpl
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
-        jibriIqHandler = new JibriIqHandler();
-        connection.registerIQRequestHandler(jibriIqHandler);
     }
 
 
@@ -261,7 +257,6 @@ public class XmppProviderImpl
             logger.info("Disconnected.");
 
             connection.unregisterIQRequestHandler(jingleOpSet);
-            connection.unregisterIQRequestHandler(jibriIqHandler);
             connection.removeConnectionListener(connListener);
         }
 
@@ -337,18 +332,6 @@ public class XmppProviderImpl
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
         return DiscoveryUtil.discoverParticipantFeatures(this, jid);
-    }
-
-    @Override
-    public void addJibriIqHandler(@NotNull JibriSessionIqHandler jibriIqHandler)
-    {
-        this.jibriIqHandler.addJibri(jibriIqHandler);
-    }
-
-    @Override
-    public void removeJibriIqHandler(@NotNull JibriSessionIqHandler jibriIqHandler)
-    {
-        this.jibriIqHandler.removeJibri(jibriIqHandler);
     }
 
     class XmppConnectionListener

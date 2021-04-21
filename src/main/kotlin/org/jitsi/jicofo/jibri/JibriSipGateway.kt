@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.jibri
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
@@ -27,6 +26,7 @@ import org.jitsi.jicofo.jibri.JibriSession.StartException.NotAvailable
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.SipCallState
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
 import kotlin.collections.HashMap
@@ -42,12 +42,11 @@ import org.jitsi.jicofo.util.ErrorResponse.create as error
  */
 class JibriSipGateway(
     conference: JitsiMeetConferenceImpl,
-    xmppProvider: XmppProvider,
+    private val connection: AbstractXMPPConnection,
     jibriDetector: JibriDetector,
     parentLogger: Logger
 ) : BaseJibri(
     conference,
-    xmppProvider,
     parentLogger,
     jibriDetector
 ) {
@@ -64,13 +63,12 @@ class JibriSipGateway(
     /**
      * {@inheritDoc}
      */
-    override fun dispose() {
+    fun dispose() {
         try {
             sipSessions.values.forEach { it.stop(null) }
         } finally {
             sipSessions.clear()
         }
-        super.dispose()
     }
 
     override fun getJibriSessionForMeetIq(iq: JibriIq): JibriSession? = sipSessions[iq.sipAddress]
