@@ -25,7 +25,6 @@ import org.jitsi.videobridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.*;
 
 /**
  *
@@ -40,18 +39,15 @@ public class MockVideobridge
 
     private final MockXmppConnection connection;
 
-    private final Jid bridgeJid;
-
     private Videobridge bridge;
 
     private final ColibriConferenceIqHandler confIqGetHandler = new ColibriConferenceIqHandler(IQ.Type.get);
 
     private final ColibriConferenceIqHandler confIqSetHandler = new ColibriConferenceIqHandler(IQ.Type.set);
 
-    public MockVideobridge(MockXmppConnection connection, Jid bridgeJid)
+    public MockVideobridge(MockXmppConnection connection)
     {
         this.connection = connection;
-        this.bridgeJid = bridgeJid;
     }
 
     public void start()
@@ -101,22 +97,5 @@ public class MockVideobridge
                 return null;
             }
         }
-    }
-
-    public int getEndpointCount()
-    {
-        return bridge.getConferences().stream()
-            .mapToInt(Conference::getEndpointCount)
-            .sum();
-    }
-
-    public Jid getBridgeJid()
-    {
-        return bridgeJid;
-    }
-
-    public int getConferenceCount()
-    {
-        return bridge.getConferences().size();
     }
 }

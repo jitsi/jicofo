@@ -20,16 +20,10 @@ package org.jitsi.jicofo;
 import mock.jvb.*;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
-
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-
 import org.jitsi.protocol.xmpp.colibri.*;
-
-import org.jivesoftware.smack.packet.*;
-
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -89,8 +83,7 @@ public class ColibriThreadingTest
         throws Exception
     {
         Jid mockBridgeJid = JidCreate.from("jvb.example.com");
-
-        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid), mockBridgeJid);
+        MockVideobridge mockBridge = new MockVideobridge(new MockXmppConnection(mockBridgeJid));
         mockBridge.start();
 
         AllocThreadingTestColibriConference colibriConf =
@@ -125,8 +118,6 @@ public class ColibriThreadingTest
 
 
         creator.join();
-        // At this point conference should be created
-        assertEquals(1, mockBridge.getConferenceCount());
 
         // All responses are blocked - here we make sure that all threads have
         // sent their requests
@@ -167,123 +158,20 @@ public class ColibriThreadingTest
             allocator.join();
         }
 
-        assertEquals(1, mockBridge.getConferenceCount());
-        assertEquals(allocators.length, mockBridge.getEndpointCount());
-
-        mockBridge.stop();
-    }
-
-    /**
-     * Here we test two bursts of threads where creator thread fails to allocate
-     * the channels.
-     *
-     * @throws InterruptedException
-     * FIXME this tests fail randomly on ci (works locally on dev machine)
-     */
-    public void testCreateFailure()
-        throws Exception
-    {
-        Jid mockBridgeJid = JidCreate.from("jvb.example.com");
-
-        MockVideobridge mockBridge
-            = new MockVideobridge(
-                    new MockXmppConnection(mockBridgeJid),
-                    mockBridgeJid);
-
-        mockBridge.start();
-
-        AllocThreadingTestColibriConference colibriConf =
-                new AllocThreadingTestColibriConference(
-                        harness.jicofoServices.getXmppServices().getClientConnection().getXmppConnection());
-
-        colibriConf.setJitsiVideobridge(mockBridgeJid);
-
-        colibriConf.setResponseError(XMPPError.Condition.internal_server_error);
-
-        //colibriConf.blockConferenceCreator(true);
-
-        MockPeerAllocator[] allocators = new MockPeerAllocator[20];
-
-        List<String> endpointList = new ArrayList<>(allocators.length);
-
-        for (int i=0; i < allocators.length/2; i++)
-        {
-            String endpointId = "peer" + i;
-            allocators[i] = new MockPeerAllocator(endpointId, colibriConf);
-            endpointList.add(endpointId);
-
-            allocators[i].runChannelAllocation();
-        }
-
-        colibriConf.waitAllOnCreateConfSemaphore(endpointList);
-
-        colibriConf.resumeConferenceCreate();
-
-        // Drain conference creator queue
-        assertNotNull(colibriConf.obtainConferenceCreator());
-
-        // Wait for this series to finish
-        for (int i=0; i < allocators.length/2; i++)
-        {
-            allocators[i].join();
-            // No channels allocated
-            assertNull(allocators[i].channels);
-        }
-
-        // Only 1 request sent by the allocator thread
-        assertEquals(1, colibriConf.allocRequestsSentCount());
-
-        // No conference created
-        assertEquals(0, mockBridge.getConferenceCount());
-
-        // Start 2nd burst
-        endpointList.clear();
-        colibriConf.blockConferenceCreator(true);
-
-        for (int i=allocators.length/2; i < allocators.length; i++)
-        {
-            String endpointId = "peer" + i;
-            allocators[i] = new MockPeerAllocator(endpointId, colibriConf);
-            endpointList.add(endpointId);
-
-            allocators[i].runChannelAllocation();
-        }
-
-        colibriConf.waitAllOnCreateConfSemaphore(endpointList);
-
-        colibriConf.resumeConferenceCreate();
-
-        // Drain conference creator queue
-        assertNotNull(colibriConf.obtainConferenceCreator());
-
-        // Wait for all to finish
-        for (int i=allocators.length/2; i < allocators.length; i++)
-        {
-            allocators[i].join();
-
-            // No channels allocated
-            assertNull(allocators[i].channels);
-        }
-
-        // Only 1 request sent by the allocator thread
-        assertEquals(2, colibriConf.allocRequestsSentCount());
-
-        // No conference created
-        assertEquals(0, mockBridge.getConferenceCount());
-
         mockBridge.stop();
     }
 
     /**
      * Default config.
      */
-    private static JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
+    private static final JitsiMeetConfig config = new JitsiMeetConfig(new HashMap<>());
 
     static List<ContentPacketExtension> createContents()
     {
         OfferOptions offerOptions = new OfferOptions();
         OfferOptionsKt.applyConstraints(offerOptions, config);
         offerOptions.setRtx(false);
+        offerOptions.setSctp(false);
 
         return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
     }
@@ -295,8 +183,6 @@ public class ColibriThreadingTest
         private final ColibriConference colibriConference;
 
         private Thread thread;
-
-        public ColibriConferenceIQ channels;
 
         private boolean working;
 
@@ -318,8 +204,7 @@ public class ColibriThreadingTest
                 {
                     try
                     {
-                        channels = colibriConference.createColibriChannels(
-                            endpointId, null, true, createContents());
+                        colibriConference.createColibriChannels(endpointId, null, true, createContents());
                     }
                     catch (ColibriException e)
                     {
