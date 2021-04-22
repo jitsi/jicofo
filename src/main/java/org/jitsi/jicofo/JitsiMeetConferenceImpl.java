@@ -324,7 +324,6 @@ public class JitsiMeetConferenceImpl
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            clientXmppProvider.getXmppConnection(),
                             jibriDetector,
                             logger);
             }
@@ -335,7 +334,6 @@ public class JitsiMeetConferenceImpl
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            clientXmppProvider.getXmppConnection(),
                             sipJibriDetector,
                             logger);
             }

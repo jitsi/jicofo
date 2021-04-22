@@ -28,7 +28,6 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.RecordingMode
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Status
 import org.jitsi.xmpp.extensions.jibri.RecordingStatus
-import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
 import org.jitsi.jicofo.util.ErrorResponse.create as error
@@ -45,7 +44,6 @@ import org.jitsi.jicofo.util.ErrorResponse.create as error
  */
 class JibriRecorder(
     conference: JitsiMeetConferenceImpl,
-    private val connection: AbstractXMPPConnection,
     jibriDetector: JibriDetector,
     parentLogger: Logger
 ) : BaseJibri(
@@ -110,7 +108,6 @@ class JibriRecorder(
                     iq.from,
                     config.pendingTimeout.seconds,
                     config.numRetries,
-                    connection,
                     jibriDetector,
                     false, null, iq.displayName, iq.streamId, iq.youtubeBroadcastId, sessionId, iq.appData,
                     logger
