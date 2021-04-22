@@ -20,6 +20,8 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.jicofo.jibri.BaseJibri
 import org.jitsi.jicofo.jibri.JibriSessionIqHandler
 import org.jitsi.jicofo.util.ErrorResponse
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
+import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
@@ -58,10 +60,10 @@ class JibriIqHandler(connections: Set<XMPPConnection>) :
      * Note that this is synchronized to ensure correct use of the synchronized list (and we want to avoid using a
      * copy on write list for performance reasons).
      */
-    override fun handleRequest(request: IqRequest<JibriIq>): IQ? = synchronized(jibris) {
+    override fun handleRequest(request: IqRequest<JibriIq>): IqProcessingResult = synchronized(jibris) {
         val jibri = jibris.find { it.accept(request.iq) }
-            ?: return ErrorResponse.create(request.iq, XMPPError.Condition.item_not_found, null)
+            ?: return RejectedWithError(ErrorResponse.create(request.iq, XMPPError.Condition.item_not_found, null))
         jibri.handleJibriRequest(request)
-        null
+        AcceptedWithNoResponse()
     }
 }

@@ -17,10 +17,13 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
+import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.XMPPError
 import java.lang.IllegalArgumentException
 
 /**
@@ -67,7 +70,7 @@ abstract class AbstractIqHandler<T : IQ>(
      * another way, should have the correct properties for an XMPP response (`from` and `to` swapped, matching `id`,
      * and type `result` if the response is an IQ).
      */
-    abstract fun handleRequest(request: IqRequest<T>): IQ?
+    abstract fun handleRequest(request: IqRequest<T>): IqProcessingResult
 
     private inner class IQRequestHandlerImpl(
         val connection: XMPPConnection,
@@ -77,14 +80,37 @@ abstract class AbstractIqHandler<T : IQ>(
         mode: IQRequestHandler.Mode
     ) : AbstractIqRequestHandler(elementName, elementNamespace, iqType, mode) {
 
-        override fun handleIQRequest(iq: IQ): IQ? = handleRequest(
-            IqRequest(
-                iq as? T ?: throw IllegalArgumentException("Unexpected IQ type: ${iq::class}"),
-                connection
+        override fun handleIQRequest(iq: IQ): IQ? {
+            val result = handleRequest(
+                IqRequest(
+                    iq as? T ?: throw IllegalArgumentException("Unexpected IQ type: ${iq::class}"),
+                    connection
+                )
             )
-        )
+            return when (result) {
+                is AcceptedWithResponse -> result.response
+                is IqProcessingResult.AcceptedWithNoResponse -> null
+                is IqProcessingResult.RejectedWithError -> result.response
+                is IqProcessingResult.NotProcessed ->
+                    IQ.createErrorResponse(iq, XMPPError.Condition.feature_not_implemented)
+            }
+        }
     }
 }
 
 /** An IQ received on a specific [XMPPConnection] */
 data class IqRequest<T>(val iq: T, val connection: XMPPConnection)
+
+sealed class IqProcessingResult {
+    /** The IQ was accepted/handled. The given `response` should be sent as a response. */
+    class AcceptedWithResponse(val response: IQ) : IqProcessingResult()
+    /**
+     *  The IQ was accepted/handled, but no response is available (yet). The handler is responsible for eventually
+     *  sending a response by other means.
+     *  */
+    class AcceptedWithNoResponse : IqProcessingResult()
+    /** The IQ was handled, but it resulted in an error. The given error `response` should be sent as a response. */
+    class RejectedWithError(val response: ErrorIQ) : IqProcessingResult()
+    /** The IQ was not handled. */
+    class NotProcessed : IqProcessingResult()
+}
