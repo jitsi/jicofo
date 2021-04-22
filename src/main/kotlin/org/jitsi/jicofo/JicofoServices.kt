@@ -43,6 +43,7 @@ import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
+import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
@@ -82,6 +83,11 @@ open class JicofoServices {
 
     val xmppServices = XmppServices(xmppProviderFactory)
 
+    private fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
+        XmppConnectionEnum.Client -> xmppServices.clientConnection
+        XmppConnectionEnum.Service -> xmppServices.serviceConnection
+    }
+
     val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector, breweryJid).apply { init() }
@@ -90,7 +96,9 @@ open class JicofoServices {
         null
     }
     val jibriDetector = JibriConfig.config.breweryJid?.let { breweryJid ->
-        JibriDetector(xmppServices.clientConnection, breweryJid, false).apply { init() }
+        JibriDetector(getXmppConnectionByName(JibriConfig.config.xmppConnectionName), breweryJid, false).apply {
+            init()
+        }
     } ?: run {
         logger.info("No Jibri detector configured.")
         null

@@ -78,3 +78,5 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         this.iqHandler = iqHandler
     }
 }
+
+enum class XmppConnectionEnum { Client, Service }
