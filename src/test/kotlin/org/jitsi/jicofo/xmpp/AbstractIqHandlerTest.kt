@@ -21,6 +21,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.mockk
 import mock.xmpp.MockXmppConnection
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
@@ -68,11 +69,11 @@ class AbstractIqHandlerTest : ShouldSpec() {
     private class DummyIqHandler(connections: Set<XMPPConnection>) :
         AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
 
-        override fun handleRequest(request: IqRequest<DummyIq>): IQ {
-            return request.iq.apply {
+        override fun handleRequest(request: IqRequest<DummyIq>) = AcceptedWithResponse(
+            request.iq.apply {
                 type = IQ.Type.result
                 to = from.also { from = to }
             }
-        }
+        )
     }
 }

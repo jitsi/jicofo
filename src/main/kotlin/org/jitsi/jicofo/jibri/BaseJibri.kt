@@ -20,6 +20,9 @@ package org.jitsi.jicofo.jibri
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
+import org.jitsi.jicofo.xmpp.IqProcessingResult
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
+import org.jitsi.jicofo.xmpp.IqProcessingResult.NotProcessed
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
@@ -40,7 +43,7 @@ abstract class BaseJibri internal constructor(
     protected val conference: JitsiMeetConferenceImpl,
     parentLogger: Logger,
     val jibriDetector: JibriDetector
-) : StateListener, JibriSessionIqHandler {
+) : StateListener {
 
     private val incomingIqQueue = PacketQueue<JibriRequest>(
         50,
@@ -63,7 +66,13 @@ abstract class BaseJibri internal constructor(
 
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
-    override fun handleJibriRequest(request: JibriRequest) = incomingIqQueue.add(request)
+    fun handleJibriRequest(request: JibriRequest): IqProcessingResult =
+        if (accept(request.iq)) {
+            incomingIqQueue.add(request)
+            AcceptedWithNoResponse()
+        } else {
+            NotProcessed()
+        }
 
     /**
      * Returns the [JibriSession] associated with a specific [JibriIq] coming from a client in the conference.
@@ -104,7 +113,7 @@ abstract class BaseJibri internal constructor(
      *
      * @return `true` if the IQ is to be accepted.
      */
-    override fun accept(iq: JibriIq): Boolean {
+    protected fun accept(iq: JibriIq): Boolean {
         // Process if it belongs to an active recording session
         val session = getJibriSessionForMeetIq(iq)
         if (session != null && session.accept(iq)) {

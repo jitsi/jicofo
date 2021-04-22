@@ -17,24 +17,26 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.jibri.BaseJibri
-import org.jitsi.jicofo.jibri.JibriSessionIqHandler
 import org.jitsi.jicofo.util.ErrorResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
-import java.util.Collections
-import java.util.LinkedList
 
 /**
  * A Smack [IQRequestHandler] for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
  * handling to specific [BaseJibri] instances.
  */
-class JibriIqHandler(connections: Set<XMPPConnection>) :
+class JibriIqHandler(
+    connections: Set<XMPPConnection>
+) :
     AbstractIqHandler<JibriIq>(
         connections,
         JibriIq.ELEMENT_NAME,
@@ -42,16 +44,7 @@ class JibriIqHandler(connections: Set<XMPPConnection>) :
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-
-    private val jibris = Collections.synchronizedList(LinkedList<JibriSessionIqHandler>())
-
-    fun addJibri(jibri: JibriSessionIqHandler) {
-        jibris.add(jibri)
-    }
-
-    fun removeJibri(jibri: JibriSessionIqHandler?) {
-        jibris.remove(jibri)
-    }
+    var conferenceStore: ConferenceStore = EmptyConferenceStore()
 
     /**
      * {@inheritDoc}
@@ -60,10 +53,16 @@ class JibriIqHandler(connections: Set<XMPPConnection>) :
      * Note that this is synchronized to ensure correct use of the synchronized list (and we want to avoid using a
      * copy on write list for performance reasons).
      */
-    override fun handleRequest(request: IqRequest<JibriIq>): IqProcessingResult = synchronized(jibris) {
-        val jibri = jibris.find { it.accept(request.iq) }
-            ?: return RejectedWithError(ErrorResponse.create(request.iq, XMPPError.Condition.item_not_found, null))
-        jibri.handleJibriRequest(request)
-        AcceptedWithNoResponse()
+    override fun handleRequest(request: IqRequest<JibriIq>): IqProcessingResult {
+        // TODO: we should be able to recognize the conference for a jibri IQ simply based on the `to` address.
+        conferenceStore.getAllConferences().forEach { conference ->
+            when (val result = conference.handleJibriRequest(request)) {
+                is AcceptedWithResponse, is AcceptedWithNoResponse, is RejectedWithError -> return result
+                else -> Unit
+            }
+        }
+
+        // No conference accepted the request.
+        return RejectedWithError(ErrorResponse.create(request.iq, XMPPError.Condition.item_not_found, null))
     }
 }
