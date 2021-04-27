@@ -90,7 +90,11 @@ open class JicofoServices {
 
     val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
-        BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector, breweryJid).apply { init() }
+        BridgeMucDetector(
+            getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
+            bridgeSelector,
+            breweryJid
+        ).apply { init() }
     } ?: run {
         logger.error("No bridge detector configured.")
         null
