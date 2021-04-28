@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp
 
-import org.jitsi.jicofo.jibri.JibriSessionIqHandler
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
 import org.jivesoftware.smack.AbstractXMPPConnection
@@ -60,8 +59,6 @@ interface XmppProvider {
     fun findOrCreateRoom(name: EntityBareJid): ChatRoom
 
     fun discoverFeatures(jid: EntityFullJid): List<String>
-    fun addJibriIqHandler(jibriIqHandler: JibriSessionIqHandler)
-    fun removeJibriIqHandler(jibriIqHandler: JibriSessionIqHandler)
     fun getStats(): JSONObject
 
     class RoomExistsException(message: String) : Exception(message)

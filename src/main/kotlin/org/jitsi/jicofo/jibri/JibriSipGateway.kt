@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.jibri
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
@@ -42,12 +41,10 @@ import org.jitsi.jicofo.util.ErrorResponse.create as error
  */
 class JibriSipGateway(
     conference: JitsiMeetConferenceImpl,
-    xmppProvider: XmppProvider,
     jibriDetector: JibriDetector,
     parentLogger: Logger
 ) : BaseJibri(
     conference,
-    xmppProvider,
     parentLogger,
     jibriDetector
 ) {
@@ -64,13 +61,12 @@ class JibriSipGateway(
     /**
      * {@inheritDoc}
      */
-    override fun dispose() {
+    fun dispose() {
         try {
             sipSessions.values.forEach { it.stop(null) }
         } finally {
             sipSessions.clear()
         }
-        super.dispose()
     }
 
     override fun getJibriSessionForMeetIq(iq: JibriIq): JibriSession? = sipSessions[iq.sipAddress]
@@ -86,7 +82,6 @@ class JibriSipGateway(
                 iq.from,
                 config.pendingTimeout.seconds,
                 config.numRetries,
-                connection,
                 jibriDetector,
                 false,
                 iq.sipAddress,

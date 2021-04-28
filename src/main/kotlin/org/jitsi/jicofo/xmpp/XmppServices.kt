@@ -41,6 +41,10 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         clientConnection
     }
 
+    val jibriIqHandler = JibriIqHandler(
+        setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection)
+    )
+
     var iqHandler: IqHandler? = null
     fun stop() {
         iqHandler?.stop()
@@ -66,6 +70,7 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
             reservationSystem = reservationSystem,
             jigasiEnabled = jigasiEnabled
         )
+        jibriIqHandler.conferenceStore = focusManager
 
         val iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
             init(clientConnection.xmppConnection)
@@ -73,3 +78,5 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         this.iqHandler = iqHandler
     }
 }
+
+enum class XmppConnectionEnum { Client, Service }

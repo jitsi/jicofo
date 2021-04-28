@@ -22,11 +22,13 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
@@ -46,6 +48,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
+
+import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
@@ -320,7 +324,6 @@ public class JitsiMeetConferenceImpl
                 jibriRecorder
                     = new JibriRecorder(
                             this,
-                            clientXmppProvider,
                             jibriDetector,
                             logger);
             }
@@ -331,7 +334,6 @@ public class JitsiMeetConferenceImpl
                 jibriSipGateway
                     = new JibriSipGateway(
                             this,
-                            clientXmppProvider,
                             sipJibriDetector,
                             logger);
             }
@@ -2456,6 +2458,24 @@ public class JitsiMeetConferenceImpl
     public boolean includeInStatistics()
     {
         return includeInStatistics;
+    }
+
+    @Override
+    public IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request)
+    {
+        IqProcessingResult result = new NotProcessed();
+        if (started.get())
+        {
+            if (jibriRecorder != null)
+            {
+                result = jibriRecorder.handleJibriRequest(request);
+            }
+            if (!(result instanceof NotProcessed) && jibriSipGateway != null)
+            {
+                result = jibriRecorder.handleJibriRequest(request);
+            }
+        }
+        return result;
     }
 
     private FocusManager getFocusManager()

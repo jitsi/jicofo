@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2021-Present 8x8, Inc.
+ * Copyright @ 2021 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.jibri
+package org.jitsi.jicofo
 
-import org.jitsi.xmpp.extensions.jibri.JibriIq
+import org.jxmpp.jid.EntityBareJid
 
-/**
- * Accepts and handles Jibri IQs for a specific set of Jibri sessions.
- */
-interface JibriSessionIqHandler {
-    fun accept(iq: JibriIq): Boolean
-    fun handleIQRequest(iq: JibriIq)
+interface ConferenceStore {
+    /** Get a list of all conferences. */
+    fun getAllConferences(): List<JitsiMeetConference>
+    /** Get a conference for a specific [Jid] (i.e. name). */
+    fun getConference(jid: EntityBareJid): JitsiMeetConference?
+}
+
+class EmptyConferenceStore : ConferenceStore {
+    override fun getAllConferences() = emptyList<JitsiMeetConference>()
+    override fun getConference(jid: EntityBareJid): JitsiMeetConference? = null
 }

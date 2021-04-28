@@ -46,7 +46,7 @@ class JibriSessionTest : ShouldSpec({
     val maxNumRetries = 2
     // Mock the AbstractXMPPConnection.sendPacketAndGetReply extension function.
     mockkStatic("org.jitsi.jicofo.xmpp.UtilKt")
-    val xmppConnection: AbstractXMPPConnection = mockk()
+    val mockXmppConnection: AbstractXMPPConnection = mockk()
     val jibriList = mutableListOf(
         JidCreate.bareFrom("jibri1@bar.com"),
         JidCreate.bareFrom("jibri2@bar.com"),
@@ -55,6 +55,7 @@ class JibriSessionTest : ShouldSpec({
     val detector: JibriDetector = mockk {
         every { selectJibri() } returnsMany (jibriList)
         every { isAnyInstanceConnected } returns true
+        every { xmppConnection } returns mockXmppConnection
         every { memberHadTransientError(any()) } answers {
             // Simulate the real JibriDetector logic and put the Jibri at the back of the list
             jibriList.remove(arg(0))
@@ -71,7 +72,6 @@ class JibriSessionTest : ShouldSpec({
         initiator,
         pendingTimeout,
         maxNumRetries,
-        xmppConnection,
         detector,
         false /* isSIP */,
         null /* sipAddress */,
@@ -85,7 +85,7 @@ class JibriSessionTest : ShouldSpec({
 
     context("When sending a request to a Jibri to start a session throws an error") {
         val iqRequests = mutableListOf<IQ>()
-        every { xmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
             // First return error
             IQ.createErrorResponse(arg(1), XMPPError.Condition.service_unavailable)
         } andThen {
@@ -98,14 +98,14 @@ class JibriSessionTest : ShouldSpec({
         context("Trying to start a Jibri session") {
             should("retry with another jibri") {
                 jibriSession.start()
-                verify(exactly = 2) { xmppConnection.sendIqAndGetResponse(any()) }
+                verify(exactly = 2) { mockXmppConnection.sendIqAndGetResponse(any()) }
                 iqRequests shouldHaveSize 2
                 iqRequests[0].to shouldNotBe iqRequests[1].to
             }
         }
         context("and that's the only Jibri") {
             every { detector.selectJibri() } returns JidCreate.bareFrom("solo@bar.com")
-            every { xmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
+            every { mockXmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
                 // First return error
                 IQ.createErrorResponse(arg(1), XMPPError.Condition.service_unavailable)
             }
@@ -114,7 +114,7 @@ class JibriSessionTest : ShouldSpec({
                     shouldThrow<JibriSession.StartException> {
                         jibriSession.start()
                     }
-                    verify(exactly = maxNumRetries + 1) { xmppConnection.sendIqAndGetResponse(any()) }
+                    verify(exactly = maxNumRetries + 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
                 }
             }
         }
@@ -122,7 +122,7 @@ class JibriSessionTest : ShouldSpec({
     context("Trying to start a session with a Jibri that is busy") {
         val iq = slot<IQ>()
         // First return busy, then pending
-        every { xmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
             JibriIq().apply {
                 type = IQ.Type.result
                 from = iq.captured.to
@@ -145,7 +145,7 @@ class JibriSessionTest : ShouldSpec({
             verify(exactly = 0) { detector.memberHadTransientError(any()) }
         }
         should("retry with another jibri") {
-            verify(exactly = 2) { xmppConnection.sendIqAndGetResponse(any()) }
+            verify(exactly = 2) { mockXmppConnection.sendIqAndGetResponse(any()) }
         }
     }
 })

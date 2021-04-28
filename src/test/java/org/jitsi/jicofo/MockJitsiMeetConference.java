@@ -19,7 +19,9 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.xmpp.extensions.jibri.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -83,5 +85,11 @@ public class MockJitsiMeetConference
     public boolean includeInStatistics()
     {
         return true;
+    }
+
+    @Override
+    public IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request)
+    {
+        return new IqProcessingResult.NotProcessed();
     }
 }

@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.jibri
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
@@ -45,12 +44,10 @@ import org.jitsi.jicofo.util.ErrorResponse.create as error
  */
 class JibriRecorder(
     conference: JitsiMeetConferenceImpl,
-    xmppProvider: XmppProvider,
     jibriDetector: JibriDetector,
     parentLogger: Logger
 ) : BaseJibri(
     conference,
-    xmppProvider,
     parentLogger,
     jibriDetector
 ) {
@@ -62,10 +59,9 @@ class JibriRecorder(
     /**
      * {@inheritDoc}
      */
-    override fun dispose() {
+    fun dispose() {
         jibriSession?.stop(null)
         jibriSession = null
-        super.dispose()
     }
 
     /**
@@ -112,7 +108,6 @@ class JibriRecorder(
                     iq.from,
                     config.pendingTimeout.seconds,
                     config.numRetries,
-                    connection,
                     jibriDetector,
                     false, null, iq.displayName, iq.streamId, iq.youtubeBroadcastId, sessionId, iq.appData,
                     logger

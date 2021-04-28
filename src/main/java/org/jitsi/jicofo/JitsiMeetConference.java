@@ -20,7 +20,9 @@ package org.jitsi.jicofo;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.xmpp.extensions.jibri.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -97,4 +99,5 @@ public interface JitsiMeetConference
      * Whether this conference should be considered when generating statistics.
      */
     boolean includeInStatistics();
+    IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request);
 }

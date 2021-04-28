@@ -6,16 +6,20 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent
+import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.Presence
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 
 class JibriDetectorTest : ShouldSpec({
-    val detector = JibriDetector(mockk(), JidCreate.entityBareFrom("brewery_name@example.com"), false)
+    val mockXmppConnection = mockk<AbstractXMPPConnection>()
+    val mockXmppProvider = mockk<XmppProvider>().apply { every { xmppConnection } returns mockXmppConnection }
+    val detector = JibriDetector(mockXmppProvider, JidCreate.entityBareFrom("brewery_name@example.com"), false)
     val jibriJids = listOf(
         JidCreate.entityFullFrom("jibri1@bar.com/nick"),
         JidCreate.entityFullFrom("jibri2@bar.com/nick")

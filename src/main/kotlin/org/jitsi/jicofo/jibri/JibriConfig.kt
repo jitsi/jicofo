@@ -19,6 +19,7 @@ package org.jitsi.jicofo.jibri
 
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.EntityBareJid
@@ -52,6 +53,10 @@ class JibriConfig {
     val numRetries: Int by config {
         "org.jitsi.jicofo.NUM_JIBRI_RETRIES".from(legacyConfig)
         "jicofo.jibri.num-retries".from(newConfig)
+    }
+
+    val xmppConnectionName: XmppConnectionEnum by config {
+        "jicofo.jibri.xmpp-connection-name".from(newConfig)
     }
 
     companion object {

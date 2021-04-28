@@ -47,6 +47,7 @@ class JibriDetector(
 ) {
     private val eventEmitter = AsyncEventEmitter<EventHandler>(eventEmitterExecutor)
 
+    val xmppConnection = xmppProvider.xmppConnection
     /**
      * Selects first idle Jibri which can be used to start recording.
      *
