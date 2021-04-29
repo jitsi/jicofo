@@ -34,7 +34,7 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     }
 
     val serviceConnection: XmppProvider = if (XmppConfig.service.enabled) {
-        logger.info("Using dedicated Service XMPP connection for JVB MUC.")
+        logger.info("Using a dedicated Service XMPP connection.")
         xmppProviderFactory.createXmppProvider(XmppConfig.service, logger).apply {
             start()
         }
