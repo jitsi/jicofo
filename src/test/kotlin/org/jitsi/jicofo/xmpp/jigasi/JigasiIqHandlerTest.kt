@@ -70,7 +70,8 @@ class JigasiIqHandlerTest : ShouldSpec() {
     }
 
     init {
-
+        // The XMPPConnection that jicofo uses to send requests to jigasi
+        every { jigasiDetector.xmppConnection } returns jicofo.xmppConnection
 
         context("When the conference doesn't exist") {
             jigasiIqHandler.conferenceStore = EmptyConferenceStore()

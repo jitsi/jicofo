@@ -98,7 +98,7 @@ class JigasiIqHandler(
             stanzaId = StanzaIdUtil.newStanzaId()
         }
         val responseFromJigasi = try {
-            request.connection.sendIqAndGetResponse(requestToJigasi)
+            jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
         } catch (e: SmackException.NotConnectedException) {
             logger.error("Can not invite jigasi, XMPP not connected. Request: ${request.iq.toXML()}")
             return
