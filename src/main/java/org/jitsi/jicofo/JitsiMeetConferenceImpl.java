@@ -459,7 +459,7 @@ public class JitsiMeetConferenceImpl
         transcriberManager = new TranscriberManager(
             clientXmppProvider,
             this,
-            jicofoServices.getJigasiDetector(),
+            jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
         transcriberManager.init();
 
@@ -2476,6 +2476,13 @@ public class JitsiMeetConferenceImpl
             }
         }
         return result;
+    }
+
+    @Override
+    public boolean acceptJigasiRequest(@NotNull Jid from)
+    {
+        MemberRole role = getRoleForMucJid(from);
+        return role != null && role.hasModeratorRights();
     }
 
     private FocusManager getFocusManager()

@@ -21,6 +21,8 @@ import org.apache.commons.lang3.StringUtils
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
+import org.jitsi.jicofo.jigasi.JigasiConfig
+import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
 
@@ -41,9 +43,23 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         clientConnection
     }
 
+    val jigasiDetector = JigasiConfig.config.breweryJid?.let { breweryJid ->
+        JigasiDetector(clientConnection, breweryJid).apply { init() }
+    } ?: run {
+        logger.info("No Jigasi detector configured.")
+        null
+    }
+
     val jibriIqHandler = JibriIqHandler(
         setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection)
     )
+
+    val jigasiIqHandler = if (jigasiDetector != null) {
+        JigasiIqHandler(
+            setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
+            jigasiDetector
+        )
+    } else null
 
     var iqHandler: IqHandler? = null
     fun stop() {
@@ -76,6 +92,10 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
             init(clientConnection.xmppConnection)
         }
         this.iqHandler = iqHandler
+    }
+
+    fun dispose() {
+        jigasiDetector?.dispose()
     }
 }
 

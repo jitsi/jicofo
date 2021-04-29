@@ -19,22 +19,14 @@ package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.bridge.Bridge;
-import org.jitsi.jicofo.xmpp.muc.*;
-import org.jitsi.xmpp.extensions.rayo.*;
 
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.id.*;
 import org.jxmpp.jid.*;
-
-import java.util.*;
-import java.util.stream.*;
 
 import static org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.*;
 
@@ -62,7 +54,6 @@ public class IqHandler
 
     private final MuteIqHandler muteIqHandler = new MuteIqHandler();
     private final MuteVideoIqHandler muteVideoIqHandler = new MuteVideoIqHandler();
-    private final DialIqHandler dialIqHandler = new DialIqHandler();
     @NotNull
     private final ConferenceIqHandler conferenceIqHandler;
     private final AuthenticationIqHandler authenticationIqHandler;
@@ -81,7 +72,6 @@ public class IqHandler
 
         MuteIqProvider.registerMuteIqProvider();
         MuteVideoIqProvider.registerMuteVideoIqProvider();
-        new RayoIqProvider().registerRayoIQs();
         StartMutedProvider.registerStartMutedProvider();
     }
 
@@ -95,7 +85,6 @@ public class IqHandler
         logger.info("Registering IQ handlers with XmppConnection.");
         connection.registerIQRequestHandler(muteIqHandler);
         connection.registerIQRequestHandler(muteVideoIqHandler);
-        connection.registerIQRequestHandler(dialIqHandler);
         connection.registerIQRequestHandler(conferenceIqHandler);
         if (authenticationIqHandler != null)
         {
@@ -140,26 +129,6 @@ public class IqHandler
         }
     }
 
-    private class DialIqHandler extends AbstractIqRequestHandler
-    {
-        DialIqHandler()
-        {
-            super(RayoIqProvider.DialIq.ELEMENT_NAME,
-                RayoIqProvider.NAMESPACE,
-                IQ.Type.set,
-                Mode.sync);
-        }
-
-        @Override
-        public IQ handleIQRequest(IQ iqRequest)
-        {
-            // let's retry 2 times sending the rayo
-            // by default we have 15 seconds timeout waiting for reply
-            // 3 timeouts will give us 45 seconds to reply to user with an error
-            return handleRayoIQ((RayoIqProvider.DialIq) iqRequest, 2, new ArrayList<>());
-        }
-    }
-
     /**
      * Disposes this instance and stop listening for extensions packets.
      */
@@ -169,7 +138,6 @@ public class IqHandler
         {
             connection.unregisterIQRequestHandler(muteIqHandler);
             connection.unregisterIQRequestHandler(muteVideoIqHandler);
-            connection.unregisterIQRequestHandler(dialIqHandler);
             connection = null;
         }
     }
@@ -285,128 +253,5 @@ public class IqHandler
         }
 
         return response;
-    }
-
-    /**
-     * Checks whether sending the rayo message is ok (checks member, moderators)
-     * and sends the message to the selected jigasi (from brewery muc or to the
-     * component service).
-     * @param dialIq the iq to send.
-     * @param retryCount the number of attempts to be made for sending this iq,
-     * if no reply is received from the remote side.
-     * @param exclude <tt>null</tt> or a list of jigasi Jids which
-     * we already tried sending in attempt to retry.
-     *
-     * @return the iq to be sent as a reply.
-     */
-    private IQ handleRayoIQ(RayoIqProvider.DialIq dialIq, int retryCount, @NotNull List<Jid> exclude)
-    {
-        Jid from = dialIq.getFrom();
-
-        JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
-
-        if (conference == null)
-        {
-            logger.debug("Dial error: room not found for JID: " + from);
-            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
-        }
-
-        MemberRole role = conference.getRoleForMucJid(from);
-
-        if (role == null)
-        {
-            // Only room members are allowed to send requests
-            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.forbidden));
-        }
-
-        if (!role.hasModeratorRights())
-        {
-            // Moderator permission is required
-            return IQ.createErrorResponse(dialIq, XMPPError.getBuilder(XMPPError.Condition.not_allowed));
-        }
-
-        Set<String> bridgeRegions = conference.getBridges().keySet().stream()
-            .map(Bridge::getRegion)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-
-        // Check if Jigasi is available
-        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        JigasiDetector detector = jicofoServices.getJigasiDetector();
-        Jid jigasiJid = detector == null ? null : detector.selectSipJigasi(exclude, bridgeRegions);
-
-        if (jigasiJid == null)
-        {
-            // Not available
-            return IQ.createErrorResponse(
-                    dialIq, XMPPError.getBuilder(XMPPError.Condition.service_unavailable).build());
-        }
-
-        // Redirect original request to Jigasi component
-        RayoIqProvider.DialIq forwardDialIq = new RayoIqProvider.DialIq(dialIq);
-        forwardDialIq.setFrom((Jid)null);
-        forwardDialIq.setTo(jigasiJid);
-        forwardDialIq.setStanzaId(StanzaIdUtil.newStanzaId());
-
-        try
-        {
-            connection.sendIqWithResponseCallback(
-                forwardDialIq,
-                reply ->
-                {
-                    // Send Jigasi response back to the client
-                    reply.setFrom((Jid)null);
-                    reply.setTo(from);
-                    reply.setStanzaId(dialIq.getStanzaId());
-
-                    connection.sendStanza(reply);
-                },
-                exception ->
-                {
-                    logger.error("Error sending dialIQ to "+ jigasiJid + " " + exception.getMessage());
-
-                    try
-                    {
-                        if (retryCount > 0)
-                        {
-                            exclude.add(jigasiJid);
-
-                            // let's retry lowering the number of attempts
-                            IQ result = this.handleRayoIQ(dialIq, retryCount - 1, exclude);
-                            if (result != null)
-                            {
-                                connection.sendStanza(result);
-                            }
-
-                            return;
-                        }
-
-                        if (exception instanceof SmackException.NoResponseException)
-                        {
-                            connection.sendStanza(IQ.createErrorResponse(
-                                dialIq, XMPPError.getBuilder(XMPPError.Condition.remote_server_timeout)));
-                        }
-                        else
-                        {
-                            connection.sendStanza(IQ.createErrorResponse(
-                                dialIq, XMPPError.getBuilder(XMPPError.Condition.undefined_condition)));
-                        }
-                    }
-                    catch(InterruptedException | SmackException.NotConnectedException e)
-                    {
-                        logger.error("Cannot send back dialIq error response", e);
-                    }
-                });
-
-            return null;
-        }
-        catch (SmackException.NotConnectedException | InterruptedException e)
-        {
-            logger.error("Failed to send DialIq - XMPP disconnected", e);
-            return IQ.createErrorResponse(
-                dialIq,
-                XMPPError.getBuilder(XMPPError.Condition.internal_server_error)
-                    .setDescriptiveEnText("Failed to forward DialIq"));
-        }
     }
 }

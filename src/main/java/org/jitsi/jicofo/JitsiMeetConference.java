@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
@@ -99,5 +100,10 @@ public interface JitsiMeetConference
      * Whether this conference should be considered when generating statistics.
      */
     boolean includeInStatistics();
-    IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request);
+    @NotNull IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request);
+
+    /**
+     * Return {@code true} if the use with the given JID should be allowed to invite jigasi to this conference.
+     */
+    boolean acceptJigasiRequest(@NotNull Jid from);
 }

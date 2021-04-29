@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -91,5 +92,12 @@ public class MockJitsiMeetConference
     public IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request)
     {
         return new IqProcessingResult.NotProcessed();
+    }
+
+    @Override
+    public boolean acceptJigasiRequest(@NotNull Jid from)
+    {
+        MemberRole role = getRoleForMucJid(from);
+        return role != null && role.hasModeratorRights();
     }
 }

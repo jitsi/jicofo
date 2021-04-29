@@ -22,7 +22,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.mockk
 import mock.xmpp.MockXmppConnection
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
-import org.jivesoftware.smack.XMPPConnection
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
@@ -66,7 +66,7 @@ class AbstractIqHandlerTest : ShouldSpec() {
         }
     }
 
-    private class DummyIqHandler(connections: Set<XMPPConnection>) :
+    private class DummyIqHandler(connections: Set<AbstractXMPPConnection>) :
         AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
 
         override fun handleRequest(request: IqRequest<DummyIq>) = AcceptedWithResponse(
