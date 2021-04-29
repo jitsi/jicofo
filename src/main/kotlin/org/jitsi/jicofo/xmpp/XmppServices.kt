@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
+import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.EmptyConferenceStore
@@ -28,12 +29,15 @@ import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
 import org.jivesoftware.smack.packet.Stanza
+import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.stringprep.XmppStringprepException
 
 class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     private val logger = createLogger()
@@ -70,8 +74,9 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         )
     } else null
 
-    val avModerationHandler = AvModerationHandler().also {
+    private val avModerationHandler = AvModerationHandler(clientConnection.xmppConnection).also {
         clientConnection.xmppConnection.addAsyncStanzaListener(it, MessageTypeFilter.NORMAL)
+        clientConnection.addRegistrationListener(it)
     }
 
     var iqHandler: IqHandler? = null
@@ -117,12 +122,15 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
 
 enum class XmppConnectionEnum { Client, Service }
 
-class AvModerationHandler : StanzaListener {
+class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaListener, RegistrationListener {
     var conferenceStore: ConferenceStore = EmptyConferenceStore()
     private val jsonParser = JSONParser()
+    private var avModerationAddress: String? = null
 
     override fun processStanza(stanza: Stanza) {
-        // TODO verify the `from` field.
+        if (!stanza.from.equals(avModerationAddress)) {
+            return
+        }
 
         val jsonMessage = stanza.getExtension<JsonMessageExtension>(
             JsonMessageExtension.ELEMENT_NAME, JsonMessageExtension.NAMESPACE
@@ -146,6 +154,29 @@ class AvModerationHandler : StanzaListener {
             } else if (lists != null) {
                 conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>);
             }
+        }
+    }
+
+    /**
+     * When the connection is registered we do disco-info query to check for 'av_moderation' component
+     * and we use that address to verify incoming messages.
+     * We do that only once for the life of jicofo and skip it on reconnections.
+     */
+    override fun registrationChanged(registered: Boolean) {
+        if (!registered || avModerationAddress != null) {
+            return;
+        }
+
+        try {
+            val discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection)
+            val info = discoveryManager.discoverInfo(JidCreate.bareFrom(XmppConfig.client.xmppDomain))
+            val avModIdentities = info?.getIdentities("component", "av_moderation")
+
+            if (avModIdentities != null && avModIdentities.size > 0) {
+                avModerationAddress = avModIdentities[0].name
+            }
+        } catch (e: XmppStringprepException) {
+            logger.error("Error checking for av_moderation component", e)
         }
     }
 }
