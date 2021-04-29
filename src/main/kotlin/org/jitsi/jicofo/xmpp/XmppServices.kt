@@ -31,6 +31,8 @@ import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
 import org.jivesoftware.smack.packet.Stanza
+import org.json.simple.JSONObject
+import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.impl.JidCreate
 
 class XmppServices(xmppProviderFactory: XmppProviderFactory) {
@@ -117,6 +119,7 @@ enum class XmppConnectionEnum { Client, Service }
 
 class AvModerationHandler : StanzaListener {
     var conferenceStore: ConferenceStore = EmptyConferenceStore()
+    private val jsonParser = JSONParser()
 
     override fun processStanza(stanza: Stanza) {
         // TODO verify the `from` field.
@@ -124,14 +127,25 @@ class AvModerationHandler : StanzaListener {
         val jsonMessage = stanza.getExtension<JsonMessageExtension>(
             JsonMessageExtension.ELEMENT_NAME, JsonMessageExtension.NAMESPACE
         ) ?: return Unit.also {
-            logger.warn("XXX not processing stanza without JsonMessageExtension")
+            logger.warn("Skip processing stanza without JsonMessageExtension")
         }
 
-        logger.warn("XXX received jsonMessage: ${jsonMessage.json}")
+        val incomingJson = jsonParser.parse(jsonMessage.json) as JSONObject
+        if (incomingJson["type"] == "av_moderation") {
+            val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"] as String)
 
-        val conferenceJid = JidCreate.entityBareFrom("test@example.com") // TODO read from jsonMessage?
-        val conference = conferenceStore.getConference(conferenceJid) ?: return Unit.also {
-            logger.warn("XXX not processing message for invalid conferenceJid=$conferenceJid")
+            val conference = conferenceStore.getConference(conferenceJid) ?: return Unit.also {
+                logger.warn("Not processing message for invalid conferenceJid=$conferenceJid")
+            }
+
+            val enabled = incomingJson["enabled"]
+            val lists = incomingJson["whitelists"] as JSONObject?
+
+            if (enabled != null) {
+                conference.chatRoom.isAvModerationEnabled = (enabled as String).toBoolean();
+            } else if (lists != null) {
+                conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>);
+            }
         }
     }
 }
