@@ -19,12 +19,19 @@ package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
+import org.jivesoftware.smack.StanzaListener
+import org.jivesoftware.smack.filter.MessageTypeFilter
+import org.jivesoftware.smack.packet.Stanza
+import org.jxmpp.jid.impl.JidCreate
 
 class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     private val logger = createLogger()
@@ -61,6 +68,10 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         )
     } else null
 
+    val avModerationHandler = AvModerationHandler().also {
+        clientConnection.xmppConnection.addAsyncStanzaListener(it, MessageTypeFilter.NORMAL)
+    }
+
     var iqHandler: IqHandler? = null
     fun stop() {
         iqHandler?.stop()
@@ -87,6 +98,7 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
             jigasiEnabled = jigasiEnabled
         )
         jibriIqHandler.conferenceStore = focusManager
+        avModerationHandler.conferenceStore = focusManager
 
         val iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
             init(clientConnection.xmppConnection)
@@ -102,3 +114,24 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
 }
 
 enum class XmppConnectionEnum { Client, Service }
+
+class AvModerationHandler : StanzaListener {
+    var conferenceStore: ConferenceStore = EmptyConferenceStore()
+
+    override fun processStanza(stanza: Stanza) {
+        // TODO verify the `from` field.
+
+        val jsonMessage = stanza.getExtension<JsonMessageExtension>(
+            JsonMessageExtension.ELEMENT_NAME, JsonMessageExtension.NAMESPACE
+        ) ?: return Unit.also {
+            logger.warn("XXX not processing stanza without JsonMessageExtension")
+        }
+
+        logger.warn("XXX received jsonMessage: ${jsonMessage.json}")
+
+        val conferenceJid = JidCreate.entityBareFrom("test@example.com") // TODO read from jsonMessage?
+        val conference = conferenceStore.getConference(conferenceJid) ?: return Unit.also {
+            logger.warn("XXX not processing message for invalid conferenceJid=$conferenceJid")
+        }
+    }
+}
