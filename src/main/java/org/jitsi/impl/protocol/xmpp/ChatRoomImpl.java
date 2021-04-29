@@ -145,7 +145,7 @@ public class ChatRoomImpl
      */
     private boolean avModerationEnabled = false;
 
-    private Map<String, List<String>> whitelists;
+    private Map<String, List<String>> whitelists = new HashMap<>();
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
@@ -871,7 +871,7 @@ public class ChatRoomImpl
     /**
      * {@inheritDoc}
      */
-    public void updateAvModerationWhitelists(Map<String, List<String>> whitelists)
+    public void updateAvModerationWhitelists(@NotNull Map<String, List<String>> whitelists)
     {
         this.whitelists = whitelists;
     }
@@ -886,15 +886,9 @@ public class ChatRoomImpl
             return true;
         }
 
-        // there is no whitelists received yet
-        if (this.whitelists == null)
-        {
-            return false;
-        }
-
         List<String> whitelist = this.whitelists.get(mediaType.toString());
 
-        return whitelist == null ? false : this.whitelists.get(mediaType.toString()).contains(jid.toString());
+        return whitelist == null ? false : whitelist.contains(jid.toString());
     }
 
     class MemberListener
