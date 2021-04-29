@@ -150,9 +150,9 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
             val lists = incomingJson["whitelists"] as JSONObject?
 
             if (enabled != null) {
-                conference.chatRoom.isAvModerationEnabled = (enabled as String).toBoolean();
+                conference.chatRoom.isAvModerationEnabled = (enabled as String).toBoolean()
             } else if (lists != null) {
-                conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>);
+                conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
             }
         }
     }
@@ -164,7 +164,7 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
      */
     override fun registrationChanged(registered: Boolean) {
         if (!registered || avModerationAddress != null) {
-            return;
+            return
         }
 
         try {
