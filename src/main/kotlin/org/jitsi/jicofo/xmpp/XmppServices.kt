@@ -50,11 +50,11 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         null
     }
 
-    val jibriIqHandler = JibriIqHandler(
+    private val jibriIqHandler = JibriIqHandler(
         setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection)
     )
 
-    val jigasiIqHandler = if (jigasiDetector != null) {
+    private val jigasiIqHandler = if (jigasiDetector != null) {
         JigasiIqHandler(
             setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
             jigasiDetector
@@ -96,6 +96,8 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
 
     fun dispose() {
         jigasiDetector?.dispose()
+        jibriIqHandler.shutdown()
+        jigasiIqHandler?.shutdown()
     }
 }
 
