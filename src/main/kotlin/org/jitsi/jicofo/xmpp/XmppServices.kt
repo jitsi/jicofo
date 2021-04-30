@@ -36,6 +36,7 @@ import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
+import org.json.simple.parser.ParseException
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 
@@ -128,7 +129,7 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
     private var avModerationAddress: String? = null
 
     override fun processStanza(stanza: Stanza) {
-        if (!stanza.from.equals(avModerationAddress)) {
+        if (stanza == null || stanza.from.equals(avModerationAddress)) {
             return
         }
 
@@ -138,22 +139,26 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
             logger.warn("Skip processing stanza without JsonMessageExtension")
         }
 
-        val incomingJson = jsonParser.parse(jsonMessage.json) as JSONObject
-        if (incomingJson["type"] == "av_moderation") {
-            val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"] as String)
+        try {
+            val incomingJson = jsonParser.parse(jsonMessage.json) as JSONObject
+            if (incomingJson["type"] == "av_moderation") {
+                val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
 
-            val conference = conferenceStore.getConference(conferenceJid) ?: return Unit.also {
-                logger.warn("Not processing message for invalid conferenceJid=$conferenceJid")
+                val conference = conferenceStore.getConference(conferenceJid) ?: return Unit.also {
+                    logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
+                }
+
+                val enabled = incomingJson["enabled"]
+                val lists = incomingJson["whitelists"] as JSONObject?
+
+                if (enabled != null) {
+                    conference.chatRoom.isAvModerationEnabled = (enabled as String).toBoolean()
+                } else if (lists != null) {
+                    conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
+                }
             }
-
-            val enabled = incomingJson["enabled"]
-            val lists = incomingJson["whitelists"] as JSONObject?
-
-            if (enabled != null) {
-                conference.chatRoom.isAvModerationEnabled = (enabled as String).toBoolean()
-            } else if (lists != null) {
-                conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
-            }
+        } catch (e: ParseException) {
+            logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}")
         }
     }
 

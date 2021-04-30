@@ -2123,7 +2123,7 @@ public class JitsiMeetConferenceImpl
             {
                 if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
                 {
-                    logger.warn("Unmute not allowed due to av moderation, mutedJid="
+                    logger.warn("Unmute not allowed due to av moderation, muterJid="
                         + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                     return MuteResult.NOT_ALLOWED;
                 }
@@ -2131,7 +2131,7 @@ public class JitsiMeetConferenceImpl
             // do not allow unmuting other participants even for the moderator
             else if (!muterJid.equals(toBeMutedJid))
             {
-                logger.warn("Unmute not allowed, mutedJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
+                logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
             }
         }
