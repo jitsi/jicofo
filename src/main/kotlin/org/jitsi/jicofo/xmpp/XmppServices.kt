@@ -37,6 +37,7 @@ import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
 import org.json.simple.parser.ParseException
+import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 
@@ -126,10 +127,10 @@ enum class XmppConnectionEnum { Client, Service }
 class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaListener, RegistrationListener {
     var conferenceStore: ConferenceStore = EmptyConferenceStore()
     private val jsonParser = JSONParser()
-    private var avModerationAddress: String? = null
+    private var avModerationAddress: DomainBareJid? = null
 
     override fun processStanza(stanza: Stanza) {
-        if (stanza == null || stanza.from.equals(avModerationAddress)) {
+        if (stanza == null || stanza.from != avModerationAddress) {
             return
         }
 
@@ -178,7 +179,7 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
             val avModIdentities = info?.getIdentities("component", "av_moderation")
 
             if (avModIdentities != null && avModIdentities.size > 0) {
-                avModerationAddress = avModIdentities[0].name
+                avModerationAddress = JidCreate.domainBareFrom(avModIdentities[0].name)
             }
         } catch (e: XmppStringprepException) {
             logger.error("Error checking for av_moderation component", e)
