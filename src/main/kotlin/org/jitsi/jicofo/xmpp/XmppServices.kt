@@ -149,11 +149,11 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
                     logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
                 }
 
-                val enabled = incomingJson["enabled"]
+                val enabled = incomingJson["enabled"] as Boolean?
                 val lists = incomingJson["whitelists"] as JSONObject?
 
                 if (enabled != null) {
-                    conference.chatRoom.isAvModerationEnabled = (enabled as String).toBoolean()
+                    conference.chatRoom.isAvModerationEnabled = enabled
                 } else if (lists != null) {
                     conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
                 }
