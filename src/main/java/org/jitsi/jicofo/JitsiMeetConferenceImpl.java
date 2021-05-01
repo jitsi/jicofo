@@ -2118,21 +2118,21 @@ public class JitsiMeetConferenceImpl
         // process unmuting
         if (!doMute)
         {
-            // when A/V moderation is enabled we need to check the whitelists
-            if (this.chatRoom.isAvModerationEnabled())
+            // do not allow unmuting other participants even for the moderator
+            if (!muterJid.equals(toBeMutedJid))
             {
+                logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
+                return MuteResult.NOT_ALLOWED;
+            }
+            else if (this.chatRoom.isAvModerationEnabled())
+            {
+                // when A/V moderation is enabled we need to check the whitelists
                 if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
                 {
                     logger.warn("Unmute not allowed due to av moderation, muterJid="
                         + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                     return MuteResult.NOT_ALLOWED;
                 }
-            }
-            // do not allow unmuting other participants even for the moderator
-            else if (!muterJid.equals(toBeMutedJid))
-            {
-                logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
-                return MuteResult.NOT_ALLOWED;
             }
         }
 
