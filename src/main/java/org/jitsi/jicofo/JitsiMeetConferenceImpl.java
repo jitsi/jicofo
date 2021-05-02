@@ -2102,7 +2102,8 @@ public class JitsiMeetConferenceImpl
             return MuteResult.ERROR;
         }
         // Only moderators can mute others
-        if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
+        boolean isMuterModerator = muter.getChatMember().getRole().hasModeratorRights();
+        if (!muterJid.equals(toBeMutedJid) && !isMuterModerator)
         {
             logger.warn("Mute not allowed for non-moderator " + muterJid);
             return MuteResult.NOT_ALLOWED;
@@ -2126,11 +2127,11 @@ public class JitsiMeetConferenceImpl
             }
             else if (this.chatRoom.isAvModerationEnabled())
             {
-                // when A/V moderation is enabled we need to check the whitelists
-                if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
+                // when A/V moderation is enabled we need to check the whitelists if participant is not moderator
+                if (!isMuterModerator && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
                 {
-                    logger.warn("Unmute not allowed due to av moderation, muterJid="
-                        + muterJid + ", toBeMutedJid=" + toBeMutedJid);
+                    logger.warn("Unmute not allowed due to av moderation, muterJid=" + muterJid
+                        + ", toBeMutedJid=" + toBeMutedJid);
                     return MuteResult.NOT_ALLOWED;
                 }
             }
