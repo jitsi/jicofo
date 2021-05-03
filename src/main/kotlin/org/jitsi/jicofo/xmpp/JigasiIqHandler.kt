@@ -81,7 +81,7 @@ class JigasiIqHandler(
     ) {
         // Check if Jigasi is available
         val jigasiJid = jigasiDetector.selectSipJigasi(exclude, conferenceRegions) ?: run {
-            logger.warn("Can not invite jigasi, no instances available available. Request: ${request.iq.toXML()}")
+            logger.warn("Can not invite jigasi, no instances available. Request: ${request.iq.toXML()}")
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
                     request.iq,

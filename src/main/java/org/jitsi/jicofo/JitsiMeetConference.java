@@ -100,10 +100,15 @@ public interface JitsiMeetConference
      * Whether this conference should be considered when generating statistics.
      */
     boolean includeInStatistics();
+
+    /**
+     * Process a Jibri-related IQ. This could be a request coming from the client, or from a jibri instance.
+     * If the request is not related to this conference, this should return {@link IqProcessingResult.NotProcessed}.
+     */
     @NotNull IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request);
 
     /**
-     * Return {@code true} if the use with the given JID should be allowed to invite jigasi to this conference.
+     * Return {@code true} if the user with the given JID should be allowed to invite jigasi to this conference.
      */
     boolean acceptJigasiRequest(@NotNull Jid from);
 }
