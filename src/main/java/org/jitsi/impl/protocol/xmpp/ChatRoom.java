@@ -202,15 +202,17 @@ public interface ChatRoom
 
     /**
      * Whether A/V moderation is enabled.
+     * @param mediaType the media type.
      * @return whether A/V moderation is enabled.
      */
-    boolean isAvModerationEnabled();
+    boolean isAvModerationEnabled(MediaType mediaType);
 
     /**
      * Sets new value for A/V moderation.
+     * @param mediaType the media type.
      * @param value the new value.
      */
-    void setAvModerationEnabled(boolean value);
+    void setAvModerationEnabled(MediaType mediaType, boolean value);
 
     /**
      * Updates the list of members that are allowed to unmute audio or video.

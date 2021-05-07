@@ -123,13 +123,13 @@ public class MockChatRoom
     }
 
     @Override
-    public boolean isAvModerationEnabled()
+    public boolean isAvModerationEnabled(MediaType mediaType)
     {
         return false;
     }
 
     @Override
-    public void setAvModerationEnabled(boolean value)
+    public void setAvModerationEnabled(MediaType mediaType, boolean value)
     {}
 
     @Override

@@ -143,7 +143,7 @@ public class ChatRoomImpl
     /**
      * Indicates whether A/V Moderation is enabled for this room.
      */
-    private boolean avModerationEnabled = false;
+    private Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
 
     private Map<String, List<String>> whitelists = new HashMap<>();
 
@@ -855,17 +855,20 @@ public class ChatRoomImpl
     /**
      * {@inheritDoc}
      */
-    public boolean isAvModerationEnabled()
+    public boolean isAvModerationEnabled(MediaType mediaType)
     {
-        return avModerationEnabled;
+        Boolean value = this.avModerationEnabled.get(mediaType);
+
+        // must be non null and true
+        return value != null && value;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void setAvModerationEnabled(boolean value)
+    public void setAvModerationEnabled(MediaType mediaType, boolean value)
     {
-        this.avModerationEnabled = value;
+        this.avModerationEnabled.put(mediaType, value);
     }
 
     /**
@@ -881,7 +884,7 @@ public class ChatRoomImpl
      */
     public boolean isMemberAllowedToUnmute(Jid jid, MediaType mediaType)
     {
-        if (!this.isAvModerationEnabled())
+        if (!this.isAvModerationEnabled(mediaType))
         {
             return true;
         }

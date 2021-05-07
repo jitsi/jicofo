@@ -2125,7 +2125,7 @@ public class JitsiMeetConferenceImpl
                 logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
             }
-            else if (this.chatRoom.isAvModerationEnabled())
+            else if (this.chatRoom.isAvModerationEnabled(mediaType))
             {
                 // when A/V moderation is enabled we need to check the whitelists if participant is not moderator
                 if (!isMuterModerator && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))

@@ -27,6 +27,7 @@ import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.reservation.ReservationSystem
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
@@ -153,7 +154,8 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
                 val lists = incomingJson["whitelists"] as JSONObject?
 
                 if (enabled != null) {
-                    conference.chatRoom.isAvModerationEnabled = enabled
+                    val mediaType = incomingJson["mediaType"] as String
+                    conference.chatRoom.setAvModerationEnabled(MediaType.parseString(mediaType), enabled)
                 } else if (lists != null) {
                     conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
                 }
