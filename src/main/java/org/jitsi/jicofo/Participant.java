@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -96,6 +97,11 @@ public class Participant
      * The list of XMPP features supported by this participant.
      */
     private List<String> supportedFeatures = new ArrayList<>();
+
+    /**
+     * State whether this participant was
+     */
+    private Map<MediaType, Boolean> initialAVModerationApplied = new HashMap<>();
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -496,6 +502,26 @@ public class Participant
         }
 
         return _session;
+    }
+
+    /**
+     * Changes the value for the supplied media type.
+     * @param mediaType the media type to change.
+     */
+    public void setInitialAVModerationApplied(MediaType mediaType)
+    {
+        this.initialAVModerationApplied.put(mediaType, true);
+    }
+
+    /**
+     * Checks whether the initial moderation is applied.
+     * @param mediaType the media type to check.
+     * @return tru if it was applied.
+     */
+    public boolean isInitialAVModerationApplied(MediaType mediaType)
+    {
+        Boolean value = this.initialAVModerationApplied.get(mediaType);
+        return value != null && value;
     }
 
     @Override

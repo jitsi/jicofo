@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
+import static org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.*;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -2167,6 +2168,66 @@ public class JitsiMeetConferenceImpl
         }
 
         return succeeded ? MuteResult.SUCCESS : MuteResult.ERROR;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void muteAllNonModeratorParticipants(MediaType mediaType)
+    {
+        for (Participant participant : participants)
+        {
+            muteParticipant(participant, mediaType);
+        }
+    }
+
+    /**
+     * Mutes a participant.
+     * @param participant the participant to mute and is not moderator and hasn't been already muted.
+     * @param mediaType the media type for the operation.
+     */
+    public void muteParticipant(Participant participant, MediaType mediaType)
+    {
+        boolean isMuterModerator = participant.getChatMember().getRole().hasModeratorRights();
+        if (isMuterModerator || participant.isInitialAVModerationApplied(mediaType))
+        {
+            return;
+        }
+
+        Jid muterJid = this.chatRoom.getAvModerationActor(mediaType);
+
+        MuteResult result = handleMuteRequest(muterJid, participant.getMucJid(), true, mediaType);
+        if (result == SUCCESS)
+        {
+            // let's mark that this participant was muted
+            participant.setInitialAVModerationApplied(mediaType);
+
+            IQ muteIq = null;
+            if (mediaType == MediaType.AUDIO)
+            {
+                MuteIq muteStatusUpdate = new MuteIq();
+                muteStatusUpdate.setActor(muterJid);
+                muteStatusUpdate.setType(IQ.Type.set);
+                muteStatusUpdate.setTo(participant.getMucJid());
+
+                muteStatusUpdate.setMute(true);
+
+                muteIq = muteStatusUpdate;
+            }
+            else if (mediaType == MediaType.VIDEO)
+            {
+                MuteVideoIq muteStatusUpdate = new MuteVideoIq();
+                muteStatusUpdate.setActor(muterJid);
+                muteStatusUpdate.setType(IQ.Type.set);
+                muteStatusUpdate.setTo(participant.getMucJid());
+
+                muteStatusUpdate.setMute(true);
+
+                muteIq = muteStatusUpdate;
+            }
+
+            UtilKt.tryToSendStanza(clientXmppProvider.getXmppConnection(), muteIq);
+        }
     }
 
     /**

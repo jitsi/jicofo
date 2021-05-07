@@ -22,6 +22,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jxmpp.jid.*;
 
@@ -100,4 +101,8 @@ public class MockJitsiMeetConference
         MemberRole role = getRoleForMucJid(from);
         return role != null && role.hasModeratorRights();
     }
+
+    @Override
+    public void muteAllNonModeratorParticipants(MediaType mediaType)
+    {}
 }

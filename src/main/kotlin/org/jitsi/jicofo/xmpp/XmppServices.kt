@@ -154,8 +154,14 @@ class AvModerationHandler(val xmppConnection: AbstractXMPPConnection) : StanzaLi
                 val lists = incomingJson["whitelists"] as JSONObject?
 
                 if (enabled != null) {
-                    val mediaType = incomingJson["mediaType"] as String
-                    conference.chatRoom.setAvModerationEnabled(MediaType.parseString(mediaType), enabled)
+                    val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
+                    val actorJid = JidCreate.entityFrom(incomingJson["actor"] as String)
+                    val oldEnabledValue = conference.chatRoom.isAvModerationEnabled(mediaType);
+                    conference.chatRoom.setAvModerationEnabled(actorJid, mediaType, enabled)
+                    if (oldEnabledValue != enabled && enabled) {
+                        // let's mute everyone
+                        conference.muteAllNonModeratorParticipants(mediaType)
+                    }
                 } else if (lists != null) {
                     conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
                 }

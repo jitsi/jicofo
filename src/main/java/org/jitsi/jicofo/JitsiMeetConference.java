@@ -23,6 +23,7 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jxmpp.jid.*;
 
@@ -106,6 +107,12 @@ public interface JitsiMeetConference
      * If the request is not related to this conference, this should return {@link IqProcessingResult.NotProcessed}.
      */
     @NotNull IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request);
+
+    /**
+     * Used for av moderation, when we want to mute all participants that are not moderators.
+     * @param mediaType the media type we want to mute.
+     */
+    void muteAllNonModeratorParticipants(MediaType mediaType);
 
     /**
      * Return {@code true} if the user with the given JID should be allowed to invite jigasi to this conference.

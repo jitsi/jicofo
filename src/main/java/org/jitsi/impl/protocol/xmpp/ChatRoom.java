@@ -209,10 +209,18 @@ public interface ChatRoom
 
     /**
      * Sets new value for A/V moderation.
+     * @param actorJid the jid of the participant performing the operation.
      * @param mediaType the media type.
      * @param value the new value.
      */
-    void setAvModerationEnabled(MediaType mediaType, boolean value);
+    void setAvModerationEnabled(Jid actorJid, MediaType mediaType, boolean value);
+
+    /**
+     * Returns the actor that performed the last enable/disable action.
+     * @param mediaType the media type.
+     * @return the jid of the actor.
+     */
+    Jid getAvModerationActor(MediaType mediaType);
 
     /**
      * Updates the list of members that are allowed to unmute audio or video.

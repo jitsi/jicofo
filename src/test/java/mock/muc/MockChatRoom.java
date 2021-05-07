@@ -129,8 +129,14 @@ public class MockChatRoom
     }
 
     @Override
-    public void setAvModerationEnabled(MediaType mediaType, boolean value)
+    public void setAvModerationEnabled(Jid actorJid, MediaType mediaType, boolean value)
     {}
+
+    @Override
+    public Jid getAvModerationActor(MediaType mediaType)
+    {
+        return null;
+    }
 
     @Override
     public void updateAvModerationWhitelists(Map<String, List<String>> l)
