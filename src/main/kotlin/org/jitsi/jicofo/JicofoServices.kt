@@ -218,6 +218,7 @@ open class JicofoServices {
         jibriDetector?.let { put("jibri_detector", it.stats) }
         sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
+        put("jigasi", xmppServices.jigasiStats)
         putAll(ColibriConferenceImpl.stats.toJson())
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", AbstractOperationSetJingle.getStats())

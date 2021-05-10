@@ -24,6 +24,7 @@ import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.reservation.ReservationSystem
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
 class XmppServices(xmppProviderFactory: XmppProviderFactory) {
@@ -60,13 +61,15 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
             jigasiDetector
         )
     } else null
+    val jigasiStats: OrderedJsonObject
+        get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
     private val avModerationHandler = AvModerationHandler(clientConnection)
 
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection))
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection))
 
-    var iqHandler: IqHandler? = null
+    private var iqHandler: IqHandler? = null
     fun stop() {
         clientConnection.stop()
         if (serviceConnection != clientConnection) {
