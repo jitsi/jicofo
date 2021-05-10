@@ -38,6 +38,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionRequestExtension
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
+import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
 import org.jivesoftware.smack.SmackConfiguration
 import org.jivesoftware.smack.parsing.ExceptionLoggingCallback
 import org.jivesoftware.smack.provider.ProviderManager
@@ -119,4 +120,5 @@ fun registerXmppExtensions() {
         JingleIQ.NAMESPACE,
         JingleIQProvider()
     )
+    RayoIqProvider().registerRayoIQs()
 }

@@ -19,6 +19,8 @@ package org.jitsi.jicofo.jigasi
 
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.jicofo.xmpp.XmppConnectionEnum
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
@@ -31,6 +33,10 @@ class JigasiConfig {
         "jicofo.jigasi.brewery-jid".from(newConfig).convertFrom<String> {
             JidCreate.entityBareFrom(it)
         }
+    }
+
+    val xmppConnectionName: XmppConnectionEnum by config {
+        "jicofo.jigasi.xmpp-connection-name".from(newConfig)
     }
 
     companion object {

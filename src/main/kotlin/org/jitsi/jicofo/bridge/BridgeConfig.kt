@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge
 
 import org.jitsi.config.JitsiConfig
+import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.EntityBareJid
@@ -111,6 +112,10 @@ class BridgeConfig {
         "$BASE.brewery-jid".from(JitsiConfig.newConfig).convertFrom<String> {
             JidCreate.entityBareFrom(it)
         }
+    }
+
+    val xmppConnectionName: XmppConnectionEnum by config {
+        "jicofo.bridge.xmpp-connection-name".from(JitsiConfig.newConfig)
     }
 
     companion object {

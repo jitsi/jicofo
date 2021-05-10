@@ -41,6 +41,8 @@ class JigasiDetector(
     ColibriStatsExtension.NAMESPACE,
     createLogger().apply { addContext("type", "jigasi") }
 ) {
+    val xmppConnection = xmppProvider.xmppConnection
+
     override fun onInstanceStatusChanged(jid: Jid, status: ColibriStatsExtension) {}
     override fun notifyInstanceOffline(jid: Jid) {}
 

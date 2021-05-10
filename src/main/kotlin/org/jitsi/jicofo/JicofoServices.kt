@@ -37,11 +37,8 @@ import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
-import org.jitsi.jicofo.jigasi.JigasiConfig
-import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.version.CurrentVersionImpl
-import org.jitsi.jicofo.xmpp.IqHandler
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
@@ -90,7 +87,11 @@ open class JicofoServices {
 
     val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
-        BridgeMucDetector(xmppServices.serviceConnection, bridgeSelector, breweryJid).apply { init() }
+        BridgeMucDetector(
+            getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
+            bridgeSelector,
+            breweryJid
+        ).apply { init() }
     } ?: run {
         logger.error("No bridge detector configured.")
         null
@@ -107,12 +108,6 @@ open class JicofoServices {
         JibriDetector(xmppServices.clientConnection, breweryJid, true).apply { init() }
     } ?: run {
         logger.info("No SIP Jibri detector configured.")
-        null
-    }
-    val jigasiDetector = JigasiConfig.config.breweryJid?.let { breweryJid ->
-        JigasiDetector(xmppServices.clientConnection, breweryJid).apply { init() }
-    } ?: run {
-        logger.info("No Jigasi detector configured.")
         null
     }
 
@@ -136,17 +131,13 @@ open class JicofoServices {
     }
     private val jettyServer: Server?
 
-    val iqHandler: IqHandler
-        // This is always non-null after init()
-        get() = xmppServices.iqHandler!!
-
     init {
 
         xmppServices.init(
             authenticationAuthority = authenticationAuthority,
             focusManager = focusManager,
             reservationSystem = reservationSystem,
-            jigasiEnabled = jigasiDetector != null
+            jigasiEnabled = xmppServices.jigasiDetector != null
         )
 
         healthChecker = if (HealthConfig.config.enabled) {
@@ -190,7 +181,7 @@ open class JicofoServices {
         bridgeDetector?.dispose()
         jibriDetector?.dispose()
         sipJibriDetector?.dispose()
-        jigasiDetector?.dispose()
+        xmppServices.dispose()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
@@ -226,7 +217,7 @@ open class JicofoServices {
         put("bridge_selector", bridgeSelector.stats)
         jibriDetector?.let { put("jibri_detector", it.stats) }
         sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
-        jigasiDetector?.let { put("jigasi_detector", it.stats) }
+        xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         putAll(ColibriConferenceImpl.stats.toJson())
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", AbstractOperationSetJingle.getStats())

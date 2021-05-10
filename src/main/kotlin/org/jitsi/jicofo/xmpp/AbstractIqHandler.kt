@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
@@ -35,7 +36,7 @@ abstract class AbstractIqHandler<T : IQ>(
     /**
      * The set of connections to which to register.
      */
-    connections: Set<XMPPConnection>,
+    connections: Set<AbstractXMPPConnection>,
     /**
      * The name of the IQ child element for this handler. It must match the element name returned by [T] instances.
      */
@@ -73,7 +74,7 @@ abstract class AbstractIqHandler<T : IQ>(
     abstract fun handleRequest(request: IqRequest<T>): IqProcessingResult
 
     private inner class IQRequestHandlerImpl(
-        val connection: XMPPConnection,
+        val connection: AbstractXMPPConnection,
         elementName: String,
         elementNamespace: String,
         iqType: IQ.Type,
@@ -99,7 +100,7 @@ abstract class AbstractIqHandler<T : IQ>(
 }
 
 /** An IQ received on a specific [XMPPConnection] */
-data class IqRequest<T>(val iq: T, val connection: XMPPConnection)
+data class IqRequest<T : IQ>(val iq: T, val connection: AbstractXMPPConnection)
 
 sealed class IqProcessingResult {
     /** The IQ was accepted/handled. The given `response` should be sent as a response. */
@@ -110,7 +111,12 @@ sealed class IqProcessingResult {
      *  */
     class AcceptedWithNoResponse : IqProcessingResult()
     /** The IQ was handled, but it resulted in an error. The given error `response` should be sent as a response. */
-    class RejectedWithError(val response: ErrorIQ) : IqProcessingResult()
+    class RejectedWithError(val response: ErrorIQ) : IqProcessingResult() {
+        constructor(
+            request: IqRequest<*>,
+            condition: XMPPError.Condition
+        ) : this(IQ.createErrorResponse(request.iq, XMPPError.getBuilder(condition)))
+    }
     /** The IQ was not handled. */
     class NotProcessed : IqProcessingResult()
 }
