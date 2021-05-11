@@ -2226,7 +2226,10 @@ public class JitsiMeetConferenceImpl
                 muteIq = muteStatusUpdate;
             }
 
-            UtilKt.tryToSendStanza(clientXmppProvider.getXmppConnection(), muteIq);
+            if (muteIq != null)
+            {
+                UtilKt.tryToSendStanza(clientXmppProvider.getXmppConnection(), muteIq);
+            }
         }
     }
 
