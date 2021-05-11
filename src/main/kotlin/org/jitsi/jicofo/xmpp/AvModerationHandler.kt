@@ -44,7 +44,7 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
     private var avModerationAddress: DomainBareJid? = null
 
     init {
-        xmppProvider.xmppConnection.addAsyncStanzaListener(
+        xmppProvider.xmppConnection.addSyncStanzaListener(
             StanzaListener { stanza -> TaskPools.ioPool.submit { processStanza(stanza) } },
             MessageTypeFilter.NORMAL
         )
@@ -83,6 +83,8 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
                     val oldEnabledValue = conference.chatRoom.isAvModerationEnabled(mediaType)
                     conference.chatRoom.setAvModerationEnabled(mediaType, enabled)
                     if (oldEnabledValue != enabled && enabled) {
+                        logger.info("Moderation had been enabled for conferenceJid=$conferenceJid, by=${
+                            incomingJson["actor"] as String}, for mediaType=${mediaType}")
                         // let's mute everyone
                         conference.muteAllNonModeratorParticipants(mediaType)
                     }

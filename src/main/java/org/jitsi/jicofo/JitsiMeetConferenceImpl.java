@@ -2124,7 +2124,7 @@ public class JitsiMeetConferenceImpl
         if (!doMute)
         {
             // do not allow unmuting other participants even for the moderator
-            if (muterJid != null && !muterJid.equals(toBeMutedJid))
+            if (muterJid == null || !muterJid.equals(toBeMutedJid))
             {
                 logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
