@@ -2088,7 +2088,8 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles mute request sent from participants.
-     * @param muterJid MUC jid of the participant that requested mute status change.
+     * @param muterJid MUC jid of the participant that requested mute status change. Can be null when used in
+     * AV Moderation context where there is no muter, then some of the checks will be skipped.
      * @param toBeMutedJid MUC jid of the participant whose mute status will be changed (eventually).
      * @param doMute the new audio mute status to set.
      * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
@@ -2096,18 +2097,20 @@ public class JitsiMeetConferenceImpl
      */
     public MuteResult handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        Participant muter = findParticipantForRoomJid(muterJid);
-        if (muter == null)
+        if (muterJid != null)
         {
-            logger.warn("Muter participant not found, jid=" + muterJid);
-            return MuteResult.ERROR;
-        }
-        // Only moderators can mute others
-        boolean isMuterModerator = muter.getChatMember().getRole().hasModeratorRights();
-        if (!muterJid.equals(toBeMutedJid) && !isMuterModerator)
-        {
-            logger.warn("Mute not allowed for non-moderator " + muterJid);
-            return MuteResult.NOT_ALLOWED;
+            Participant muter = findParticipantForRoomJid(muterJid);
+            if (muter == null)
+            {
+                logger.warn("Muter participant not found, jid=" + muterJid);
+                return MuteResult.ERROR;
+            }
+            // Only moderators can mute others
+            if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
+            {
+                logger.warn("Mute not allowed for non-moderator " + muterJid);
+                return MuteResult.NOT_ALLOWED;
+            }
         }
 
         Participant participant = findParticipantForRoomJid(toBeMutedJid);
@@ -2121,15 +2124,14 @@ public class JitsiMeetConferenceImpl
         if (!doMute)
         {
             // do not allow unmuting other participants even for the moderator
-            if (!muterJid.equals(toBeMutedJid))
+            if (muterJid != null && !muterJid.equals(toBeMutedJid))
             {
                 logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
             }
             else if (this.chatRoom.isAvModerationEnabled(mediaType))
             {
-                // when A/V moderation is enabled we need to check the whitelists if participant is not moderator
-                if (!isMuterModerator && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
+                if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
                 {
                     logger.warn("Unmute not allowed due to av moderation for jid=" + muterJid);
                     return MuteResult.NOT_ALLOWED;
@@ -2200,9 +2202,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        Jid muterJid = this.chatRoom.getAvModerationActor(mediaType);
-
-        MuteResult result = handleMuteRequest(muterJid, participant.getMucJid(), true, mediaType);
+        MuteResult result = handleMuteRequest(null, participant.getMucJid(), true, mediaType);
         if (result == SUCCESS)
         {
             // let's mark that this participant was muted
@@ -2212,7 +2212,6 @@ public class JitsiMeetConferenceImpl
             if (mediaType == MediaType.AUDIO)
             {
                 MuteIq muteStatusUpdate = new MuteIq();
-                muteStatusUpdate.setActor(muterJid);
                 muteStatusUpdate.setType(IQ.Type.set);
                 muteStatusUpdate.setTo(participant.getMucJid());
 
@@ -2223,7 +2222,6 @@ public class JitsiMeetConferenceImpl
             else if (mediaType == MediaType.VIDEO)
             {
                 MuteVideoIq muteStatusUpdate = new MuteVideoIq();
-                muteStatusUpdate.setActor(muterJid);
                 muteStatusUpdate.setType(IQ.Type.set);
                 muteStatusUpdate.setTo(participant.getMucJid());
 

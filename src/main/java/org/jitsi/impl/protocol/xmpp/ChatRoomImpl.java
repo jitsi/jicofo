@@ -145,11 +145,6 @@ public class ChatRoomImpl
      */
     private Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
 
-    /**
-     * The actor that last enabled/disabled the moderation.
-     */
-    private Map<MediaType, Jid> avModerationActor = new HashMap<>();
-
     private Map<String, List<String>> whitelists = new HashMap<>();
 
     /**
@@ -871,18 +866,9 @@ public class ChatRoomImpl
     /**
      * {@inheritDoc}
      */
-    public void setAvModerationEnabled(Jid actorJid, MediaType mediaType, boolean value)
+    public void setAvModerationEnabled(MediaType mediaType, boolean value)
     {
         this.avModerationEnabled.put(mediaType, value);
-        this.avModerationActor.put(mediaType, actorJid);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Jid getAvModerationActor(MediaType mediaType)
-    {
-        return this.avModerationActor.get(mediaType);
     }
 
     /**
