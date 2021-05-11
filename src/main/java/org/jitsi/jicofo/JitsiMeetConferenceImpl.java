@@ -2133,7 +2133,7 @@ public class JitsiMeetConferenceImpl
             {
                 if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
                 {
-                    logger.warn("Unmute not allowed due to av moderation for jid=" + muterJid);
+                    logger.warn("Unmute not allowed due to av moderation for jid=" + toBeMutedJid);
                     return MuteResult.NOT_ALLOWED;
                 }
             }
