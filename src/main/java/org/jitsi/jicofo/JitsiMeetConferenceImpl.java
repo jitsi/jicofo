@@ -464,6 +464,10 @@ public class JitsiMeetConferenceImpl
         transcriberManager.init();
 
         chatRoom.join();
+        if (chatRoom.getMeetingId() != null)
+        {
+            logger.addContext("meeting_id", chatRoom.getMeetingId());
+        }
 
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
