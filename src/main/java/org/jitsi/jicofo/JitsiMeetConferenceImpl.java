@@ -2131,8 +2131,7 @@ public class JitsiMeetConferenceImpl
                 // when A/V moderation is enabled we need to check the whitelists if participant is not moderator
                 if (!isMuterModerator && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
                 {
-                    logger.warn("Unmute not allowed due to av moderation, muterJid=" + muterJid
-                        + ", toBeMutedJid=" + toBeMutedJid);
+                    logger.warn("Unmute not allowed due to av moderation for jid=" + muterJid);
                     return MuteResult.NOT_ALLOWED;
                 }
             }
@@ -2175,7 +2174,13 @@ public class JitsiMeetConferenceImpl
      */
     public void muteAllNonModeratorParticipants(MediaType mediaType)
     {
-        for (Participant participant : participants)
+        Iterable<Participant> participantsToMute;
+        synchronized (participantLock)
+        {
+            participantsToMute = new ArrayList<>(participants);
+        }
+
+        for (Participant participant : participantsToMute)
         {
             muteParticipant(participant, mediaType);
         }
@@ -2183,13 +2188,14 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Mutes a participant.
-     * @param participant the participant to mute and is not moderator and hasn't been already muted.
+     * @param participant the participant to mute. We mute only participants which are not moderators
+     *                    and hasn't been already muted.
      * @param mediaType the media type for the operation.
      */
     public void muteParticipant(Participant participant, MediaType mediaType)
     {
-        boolean isMuterModerator = participant.getChatMember().getRole().hasModeratorRights();
-        if (isMuterModerator || participant.isInitialAVModerationApplied(mediaType))
+        boolean isParticipantModerator = participant.getChatMember().getRole().hasModeratorRights();
+        if (isParticipantModerator || participant.isInitialAVModerationApplied(mediaType))
         {
             return;
         }
