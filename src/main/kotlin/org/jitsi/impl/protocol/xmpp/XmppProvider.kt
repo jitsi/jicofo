@@ -20,9 +20,11 @@ package org.jitsi.impl.protocol.xmpp
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
 import org.jivesoftware.smack.AbstractXMPPConnection
+import org.jivesoftware.smackx.disco.packet.DiscoverInfo
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
+import org.jxmpp.jid.Jid
 
 /**
  * Based on Jitsi's `ProtocolProviderService`, simplified for the needs of jicofo.
@@ -59,6 +61,7 @@ interface XmppProvider {
     fun findOrCreateRoom(name: EntityBareJid): ChatRoom
 
     fun discoverFeatures(jid: EntityFullJid): List<String>
+    fun discoverInfo(jid: Jid): DiscoverInfo
     fun getStats(): JSONObject
 
     class RoomExistsException(message: String) : Exception(message)

@@ -27,12 +27,10 @@ import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
 import org.jivesoftware.smack.packet.Stanza
-import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
-import org.jxmpp.stringprep.XmppStringprepException
 
 /**
  * Adds the A/V moderation handling. Process incoming messages and when audio or video moderation is enabled,
@@ -48,11 +46,8 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
             StanzaListener { stanza -> TaskPools.ioPool.submit { processStanza(stanza) } },
             MessageTypeFilter.NORMAL
         )
-        // If the provider manages to register early our registration listener will not be processed
-        // this seems not to be the case, but calling registrationChanged when already registered break the tests
-        // will leave it commented for now, till we manage to differentiate is this ran by the tests
-        // registrationChanged(xmppProvider.isRegistered)
         xmppProvider.addRegistrationListener(this)
+        registrationChanged(xmppProvider.isRegistered)
     }
 
     private fun processStanza(stanza: Stanza) {
@@ -104,18 +99,18 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
      */
     override fun registrationChanged(registered: Boolean) {
         if (!registered || avModerationAddress != null) {
+            avModerationAddress = null
             return
         }
 
         try {
-            val discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppProvider.xmppConnection)
-            val info = discoveryManager.discoverInfo(JidCreate.bareFrom(XmppConfig.client.xmppDomain))
+            val info = xmppProvider.discoverInfo(JidCreate.bareFrom(XmppConfig.client.xmppDomain))
             val avModIdentities = info?.getIdentities("component", "av_moderation")
 
             if (avModIdentities != null && avModIdentities.size > 0) {
                 avModerationAddress = JidCreate.domainBareFrom(avModIdentities[0].name)
             }
-        } catch (e: XmppStringprepException) {
+        } catch (e: Exception) {
             logger.error("Error checking for av_moderation component", e)
         }
     }

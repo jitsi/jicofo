@@ -24,6 +24,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smackx.disco.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -141,6 +142,13 @@ public class MockXmppProvider
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
         return features;
+    }
+
+    @Nullable
+    @Override
+    public DiscoverInfo discoverInfo(@NotNull Jid jid)
+    {
+        return null;
     }
 
     @NotNull
