@@ -61,9 +61,13 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         )
     } else null
 
+    private val avModerationHandler = AvModerationHandler(clientConnection)
+
+    private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection))
+    private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection))
+
     var iqHandler: IqHandler? = null
     fun stop() {
-        iqHandler?.stop()
         clientConnection.stop()
         if (serviceConnection != clientConnection) {
             serviceConnection.stop()
@@ -87,8 +91,11 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
             jigasiEnabled = jigasiEnabled
         )
         jibriIqHandler.conferenceStore = focusManager
+        avModerationHandler.conferenceStore = focusManager
+        audioMuteHandler.conferenceStore = focusManager
+        videoMuteHandler.conferenceStore = focusManager
 
-        val iqHandler = IqHandler(focusManager, conferenceIqHandler, authenticationIqHandler).apply {
+        val iqHandler = IqHandler(conferenceIqHandler, authenticationIqHandler).apply {
             init(clientConnection.xmppConnection)
         }
         this.iqHandler = iqHandler
@@ -98,6 +105,8 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         jigasiDetector?.dispose()
         jibriIqHandler.shutdown()
         jigasiIqHandler?.shutdown()
+        audioMuteHandler.shutdown()
+        videoMuteHandler.shutdown()
     }
 }
 

@@ -16,6 +16,11 @@
       <Bug pattern="SE_BAD_FIELD_STORE"/>
       <!-- False positives with lazy vals -->
       <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+      <And>
+        <!-- Spotbugs doesn't recognize that a value can't be null, and using @SuppressFBWarnings doesn't work. -->
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+        <Source name="MuteIqHandler.kt"/>
+      </And>
     </Or>
   </And>
 </Match>

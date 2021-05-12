@@ -21,6 +21,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -119,6 +120,26 @@ public class MockChatRoom
     public String getMeetingId()
     {
         return null;
+    }
+
+    @Override
+    public boolean isAvModerationEnabled(MediaType mediaType)
+    {
+        return false;
+    }
+
+    @Override
+    public void setAvModerationEnabled(MediaType mediaType, boolean value)
+    {}
+
+    @Override
+    public void updateAvModerationWhitelists(Map<String, List<String>> l)
+    {}
+
+    @Override
+    public boolean isMemberAllowedToUnmute(Jid jid, MediaType mediaType)
+    {
+        return true;
     }
 
     @Override

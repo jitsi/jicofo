@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -96,6 +97,11 @@ public class Participant
      * The list of XMPP features supported by this participant.
      */
     private List<String> supportedFeatures = new ArrayList<>();
+
+    /**
+     * State whether this participant is muted by media type.
+     */
+    private Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -496,6 +502,37 @@ public class Participant
         }
 
         return _session;
+    }
+
+    /**
+     * Changes participant muted state by media type.
+     * @param mediaType the media type to change.
+     */
+    public void setMuted(MediaType mediaType, boolean value)
+    {
+        this.mutedByMediaType.put(mediaType, value);
+
+        ColibriConferenceIQ colibriChannelsInfo = this.getColibriChannelsInfo();
+        if (colibriChannelsInfo != null)
+        {
+            ColibriConferenceIQ.Content content = colibriChannelsInfo.getContent(mediaType.toString());
+
+            if (content != null)
+            {
+                content.getChannels().forEach(ch -> ch.setDirection(value ? "sendonly" : "sendrecv"));
+            }
+        }
+    }
+
+    /**
+     * Checks whether the participant is muted.
+     * @param mediaType the media type to check.
+     * @return tru if it is muted.
+     */
+    public boolean isMuted(MediaType mediaType)
+    {
+        Boolean value = this.mutedByMediaType.get(mediaType);
+        return value != null && value;
     }
 
     @Override

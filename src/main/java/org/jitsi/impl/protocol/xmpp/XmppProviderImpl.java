@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.NotNull;
 import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
@@ -32,8 +33,10 @@ import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
+import org.jivesoftware.smackx.disco.packet.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 
 import java.lang.*;
@@ -332,6 +335,31 @@ public class XmppProviderImpl
     public List<String> discoverFeatures(@NotNull EntityFullJid jid)
     {
         return DiscoveryUtil.discoverParticipantFeatures(this, jid);
+    }
+
+    @Nullable
+    @Override
+    public DiscoverInfo discoverInfo(@NotNull Jid jid)
+    {
+        ServiceDiscoveryManager discoveryManager = ServiceDiscoveryManager.getInstanceFor(getXmppConnection());
+        if (discoveryManager == null)
+        {
+            logger.info("Can not discover info, no ServiceDiscoveryManager");
+            return null;
+        }
+
+        try
+        {
+            return discoveryManager.discoverInfo(jid);
+        }
+        catch (XMPPException.XMPPErrorException |
+                SmackException.NotConnectedException |
+                SmackException.NoResponseException |
+                InterruptedException e)
+        {
+            logger.warn("Failed to discover info", e);
+            return null;
+        }
     }
 
     class XmppConnectionListener

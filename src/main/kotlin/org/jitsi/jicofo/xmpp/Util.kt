@@ -29,7 +29,7 @@ import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 
-val logger = LoggerImpl("org.jitsi.jicofo.xmpp.Util")
+private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.Util")
 
 /**
  * Reads the original jid as encoded in the resource part by mod_client_proxy, returns the original jid if it format

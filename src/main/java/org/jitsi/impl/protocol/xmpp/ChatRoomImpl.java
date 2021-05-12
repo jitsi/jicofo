@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
@@ -138,6 +139,13 @@ public class ChatRoomImpl
      * The value of thee "meetingId" field from the MUC form, if present.
      */
     private String meetingId = null;
+
+    /**
+     * Indicates whether A/V Moderation is enabled for this room.
+     */
+    private Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
+
+    private Map<String, List<String>> whitelists = new HashMap<>();
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
@@ -842,6 +850,48 @@ public class ChatRoomImpl
         {
             processOtherPresence(presence);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isAvModerationEnabled(MediaType mediaType)
+    {
+        Boolean value = this.avModerationEnabled.get(mediaType);
+
+        // must be non null and true
+        return value != null && value;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setAvModerationEnabled(MediaType mediaType, boolean value)
+    {
+        this.avModerationEnabled.put(mediaType, value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void updateAvModerationWhitelists(@NotNull Map<String, List<String>> whitelists)
+    {
+        this.whitelists = whitelists;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isMemberAllowedToUnmute(Jid jid, MediaType mediaType)
+    {
+        if (!this.isAvModerationEnabled(mediaType))
+        {
+            return true;
+        }
+
+        List<String> whitelist = this.whitelists.get(mediaType.toString());
+
+        return whitelist == null ? false : whitelist.contains(jid.toString());
     }
 
     class MemberListener

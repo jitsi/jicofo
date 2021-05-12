@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
+import static org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.*;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -2086,26 +2087,26 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles mute request sent from participants.
-     * @param muterJid MUC jid of the participant that requested mute status change.
-     * @param toBeMutedJid MUC jid of the participant whose mute status will be changed (eventually).
-     * @param doMute the new audio mute status to set.
-     * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
-     * @return <tt>true</tt> if status has been set successfully.
+     * {@inheritDoc}
      */
+    @Override
+    @NotNull
     public MuteResult handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        Participant muter = findParticipantForRoomJid(muterJid);
-        if (muter == null)
+        if (muterJid != null)
         {
-            logger.warn("Muter participant not found, jid=" + muterJid);
-            return MuteResult.ERROR;
-        }
-        // Only moderators can mute others
-        if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
-        {
-            logger.warn("Mute not allowed for non-moderator " + muterJid);
-            return MuteResult.NOT_ALLOWED;
+            Participant muter = findParticipantForRoomJid(muterJid);
+            if (muter == null)
+            {
+                logger.warn("Muter participant not found, jid=" + muterJid);
+                return MuteResult.ERROR;
+            }
+            // Only moderators can mute others
+            if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
+            {
+                logger.warn("Mute not allowed for non-moderator " + muterJid);
+                return MuteResult.NOT_ALLOWED;
+            }
         }
 
         Participant participant = findParticipantForRoomJid(toBeMutedJid);
@@ -2115,11 +2116,20 @@ public class JitsiMeetConferenceImpl
             return MuteResult.ERROR;
         }
 
-        // do not allow unmuting other participants even for the moderator
-        if (!doMute && !muterJid.equals(toBeMutedJid))
+        // process unmuting
+        if (!doMute)
         {
-            logger.warn("Unmute now allowed, mutedJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
-            return MuteResult.NOT_ALLOWED;
+            // do not allow unmuting other participants even for the moderator
+            if (muterJid == null || !muterJid.equals(toBeMutedJid))
+            {
+                logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
+                return MuteResult.NOT_ALLOWED;
+            }
+            else if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
+            {
+                logger.warn("Unmute not allowed due to av moderation for jid=" + toBeMutedJid);
+                return MuteResult.NOT_ALLOWED;
+            }
         }
 
         if (doMute
@@ -2150,8 +2160,75 @@ public class JitsiMeetConferenceImpl
         {
             logger.warn("Failed to mute, bridgeSession=" + bridgeSession + ", pc=" + participantChannels);
         }
+        else
+        {
+            participant.setMuted(mediaType, doMute);
+        }
 
         return succeeded ? MuteResult.SUCCESS : MuteResult.ERROR;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void muteAllNonModeratorParticipants(MediaType mediaType)
+    {
+        Iterable<Participant> participantsToMute;
+        synchronized (participantLock)
+        {
+            participantsToMute = new ArrayList<>(participants);
+        }
+
+        for (Participant participant : participantsToMute)
+        {
+            muteParticipant(participant, mediaType);
+        }
+    }
+
+    /**
+     * Mutes a participant.
+     * @param participant the participant to mute. We mute only participants which are not moderators
+     *                    and hasn't been already muted.
+     * @param mediaType the media type for the operation.
+     */
+    public void muteParticipant(Participant participant, MediaType mediaType)
+    {
+        boolean isParticipantModerator = participant.getChatMember().getRole().hasModeratorRights();
+        if (isParticipantModerator || participant.isMuted(mediaType))
+        {
+            return;
+        }
+
+        MuteResult result = handleMuteRequest(null, participant.getMucJid(), true, mediaType);
+        if (result == SUCCESS)
+        {
+            IQ muteIq = null;
+            if (mediaType == MediaType.AUDIO)
+            {
+                MuteIq muteStatusUpdate = new MuteIq();
+                muteStatusUpdate.setType(IQ.Type.set);
+                muteStatusUpdate.setTo(participant.getMucJid());
+
+                muteStatusUpdate.setMute(true);
+
+                muteIq = muteStatusUpdate;
+            }
+            else if (mediaType == MediaType.VIDEO)
+            {
+                MuteVideoIq muteStatusUpdate = new MuteVideoIq();
+                muteStatusUpdate.setType(IQ.Type.set);
+                muteStatusUpdate.setTo(participant.getMucJid());
+
+                muteStatusUpdate.setMute(true);
+
+                muteIq = muteStatusUpdate;
+            }
+
+            if (muteIq != null)
+            {
+                UtilKt.tryToSendStanza(clientXmppProvider.getXmppConnection(), muteIq);
+            }
+        }
     }
 
     /**

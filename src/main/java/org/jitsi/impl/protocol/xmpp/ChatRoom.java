@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -198,4 +199,32 @@ public interface ChatRoom
      * Get the unique meeting ID associated by this room (set by the MUC service).
      */
     String getMeetingId();
+
+    /**
+     * Whether A/V moderation is enabled.
+     * @param mediaType the media type.
+     * @return whether A/V moderation is enabled.
+     */
+    boolean isAvModerationEnabled(MediaType mediaType);
+
+    /**
+     * Sets new value for A/V moderation.
+     * @param mediaType the media type.
+     * @param value the new value.
+     */
+    void setAvModerationEnabled(MediaType mediaType, boolean value);
+
+    /**
+     * Updates the list of members that are allowed to unmute audio or video.
+     * @param whitelists a map with string keys (MediaType.AUDIO or MediaType.VIDEO).
+     */
+    void updateAvModerationWhitelists(Map<String, List<String>> whitelists);
+
+    /**
+     * Checks the whitelists whether the supplied jid is allowed from a moderator to unmute.
+     * @param jid the jid to check.
+     * @param mediaType type of media for which we are checking.
+     * @return <tt>true</tt> if the member is allowed to unmute, false otherwise.
+     */
+    boolean isMemberAllowedToUnmute(Jid jid, MediaType mediaType);
 }
