@@ -111,9 +111,7 @@ open class JicofoServices {
         null
     }
 
-    val focusManager: FocusManager = FocusManager().also {
-        it.start(xmppServices.clientConnection, xmppServices.serviceConnection)
-    }
+    val focusManager: FocusManager = FocusManager().apply { start() }
 
     private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
         logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
@@ -214,12 +212,17 @@ open class JicofoServices {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
+        putAll(ColibriConferenceImpl.stats.toJson())
+
+        // XMPP traffic stats
+        put("xmpp", xmppServices.clientConnection.getStats())
+        put("xmpp_service", xmppServices.serviceConnection.getStats())
+
         put("bridge_selector", bridgeSelector.stats)
         jibriDetector?.let { put("jibri_detector", it.stats) }
         sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
-        putAll(ColibriConferenceImpl.stats.toJson())
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", AbstractOperationSetJingle.getStats())
     }
