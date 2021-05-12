@@ -69,7 +69,6 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection))
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection))
 
-    private var iqHandler: IqHandler? = null
     fun stop() {
         clientConnection.stop()
         if (serviceConnection != clientConnection) {
@@ -77,14 +76,16 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         }
     }
 
+    private var conferenceIqHandler: ConferenceIqHandler? = null
+    private var authenticationIqHandler: AuthenticationIqHandler? = null
+
     fun init(
         authenticationAuthority: AbstractAuthAuthority?,
         focusManager: FocusManager,
         reservationSystem: ReservationSystem?,
         jigasiEnabled: Boolean
     ) {
-        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
-        val conferenceIqHandler = ConferenceIqHandler(
+        conferenceIqHandler = ConferenceIqHandler(
             connection = clientConnection.xmppConnection,
             focusManager = focusManager,
             focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
@@ -93,15 +94,19 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
             reservationSystem = reservationSystem,
             jigasiEnabled = jigasiEnabled
         )
+        clientConnection.xmppConnection.registerIQRequestHandler(conferenceIqHandler)
+
+        authenticationAuthority?.let { authAuthority ->
+            authenticationIqHandler = AuthenticationIqHandler(authAuthority).also {
+                clientConnection.xmppConnection.registerIQRequestHandler(it.loginUrlIqHandler)
+                clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)
+            }
+        }
+
         jibriIqHandler.conferenceStore = focusManager
         avModerationHandler.conferenceStore = focusManager
         audioMuteHandler.conferenceStore = focusManager
         videoMuteHandler.conferenceStore = focusManager
-
-        val iqHandler = IqHandler(conferenceIqHandler, authenticationIqHandler).apply {
-            init(clientConnection.xmppConnection)
-        }
-        this.iqHandler = iqHandler
     }
 
     fun dispose() {
@@ -110,7 +115,14 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         jigasiIqHandler?.shutdown()
         audioMuteHandler.shutdown()
         videoMuteHandler.shutdown()
-        iqHandler?.shutdown()
+
+        conferenceIqHandler?.let { clientConnection.xmppConnection.unregisterIQRequestHandler(it) }
+        conferenceIqHandler = null
+        authenticationIqHandler?.let {
+            clientConnection.xmppConnection.unregisterIQRequestHandler(it.loginUrlIqHandler)
+            clientConnection.xmppConnection.unregisterIQRequestHandler(it.logoutIqHandler)
+        }
+        authenticationIqHandler = null
     }
 }
 
