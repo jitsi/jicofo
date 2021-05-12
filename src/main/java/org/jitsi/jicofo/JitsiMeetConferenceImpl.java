@@ -2087,14 +2087,10 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles mute request sent from participants.
-     * @param muterJid MUC jid of the participant that requested mute status change. Can be null when used in
-     * AV Moderation context where there is no muter, then some of the checks will be skipped.
-     * @param toBeMutedJid MUC jid of the participant whose mute status will be changed (eventually).
-     * @param doMute the new audio mute status to set.
-     * @param mediaType optional mediaType of the channel to mute, defaults to AUDIO.
-     * @return <tt>true</tt> if status has been set successfully.
+     * {@inheritDoc}
      */
+    @Override
+    @NotNull
     public MuteResult handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
         if (muterJid != null)

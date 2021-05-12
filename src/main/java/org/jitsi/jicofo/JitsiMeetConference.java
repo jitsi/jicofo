@@ -118,4 +118,22 @@ public interface JitsiMeetConference
      * Return {@code true} if the user with the given JID should be allowed to invite jigasi to this conference.
      */
     boolean acceptJigasiRequest(@NotNull Jid from);
+
+    /**
+     * Handle a request to mute or unmute a participant. May block for a response from jitsi-videobridge.
+     * @param muterJid MUC jid of the participant that requested mute status change, or {@code null}. When {@code null},
+     * no permission checks will be performed.
+     * @param toBeMutedJid MUC jid of the participant whose mute status will be changed.
+     * @param doMute {@code true} to mute, {@code false} to unmute.
+     * @param mediaType the {@link MediaType} of the channel to mute, either AUDIO or VIDEO.
+     * @return {@link JitsiMeetConferenceImpl.MuteResult#NOT_ALLOWED} if {@code muterJid} is not allowed to mute/unmute,
+     * {@link JitsiMeetConferenceImpl.MuteResult#ERROR} if the operation was not successful, and
+     * {@link JitsiMeetConferenceImpl.MuteResult#SUCCESS} if it was successful.
+     */
+    @NotNull
+    JitsiMeetConferenceImpl.MuteResult handleMuteRequest(
+            Jid muterJid,
+            Jid toBeMutedJid,
+            boolean doMute,
+            MediaType mediaType);
 }

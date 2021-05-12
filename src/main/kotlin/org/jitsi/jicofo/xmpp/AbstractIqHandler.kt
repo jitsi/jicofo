@@ -115,7 +115,11 @@ sealed class IqProcessingResult {
         constructor(
             request: IqRequest<*>,
             condition: XMPPError.Condition
-        ) : this(IQ.createErrorResponse(request.iq, XMPPError.getBuilder(condition)))
+        ) : this(request.iq, condition)
+        constructor(
+            iq: IQ,
+            condition: XMPPError.Condition
+        ) : this(IQ.createErrorResponse(iq, XMPPError.getBuilder(condition)))
     }
     /** The IQ was not handled. */
     class NotProcessed : IqProcessingResult()

@@ -34,7 +34,10 @@ import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.LogoutIqProvider
+import org.jitsi.xmpp.extensions.jitsimeet.MuteIqProvider
+import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.RegionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.StartMutedProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionRequestExtension
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
@@ -127,4 +130,7 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(JsonMessageExtension::class.java)
     )
     RayoIqProvider().registerRayoIQs()
+    MuteIqProvider.registerMuteIqProvider()
+    MuteVideoIqProvider.registerMuteVideoIqProvider()
+    StartMutedProvider.registerStartMutedProvider()
 }

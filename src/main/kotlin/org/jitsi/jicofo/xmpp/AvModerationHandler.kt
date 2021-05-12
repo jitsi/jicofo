@@ -23,6 +23,7 @@ import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
@@ -40,6 +41,7 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
     var conferenceStore: ConferenceStore = EmptyConferenceStore()
     private val jsonParser = JSONParser()
     private var avModerationAddress: DomainBareJid? = null
+    private val logger = createLogger()
 
     init {
         xmppProvider.xmppConnection.addSyncStanzaListener(
