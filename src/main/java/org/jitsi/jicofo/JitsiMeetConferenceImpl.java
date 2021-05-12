@@ -2125,13 +2125,10 @@ public class JitsiMeetConferenceImpl
                 logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
             }
-            else if (this.chatRoom.isAvModerationEnabled(mediaType))
+            else if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
             {
-                if (!this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
-                {
-                    logger.warn("Unmute not allowed due to av moderation for jid=" + toBeMutedJid);
-                    return MuteResult.NOT_ALLOWED;
-                }
+                logger.warn("Unmute not allowed due to av moderation for jid=" + toBeMutedJid);
+                return MuteResult.NOT_ALLOWED;
             }
         }
 
