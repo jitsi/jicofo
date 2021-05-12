@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
@@ -27,7 +28,10 @@ import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
-class XmppServices(xmppProviderFactory: XmppProviderFactory) {
+class XmppServices(
+    xmppProviderFactory: XmppProviderFactory,
+    conferenceStore: ConferenceStore
+) {
     private val logger = createLogger()
 
     val clientConnection: XmppProvider = xmppProviderFactory.createXmppProvider(XmppConfig.client, logger).apply {
@@ -52,7 +56,8 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     }
 
     private val jibriIqHandler = JibriIqHandler(
-        setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection)
+        setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
+        conferenceStore
     )
 
     private val jigasiIqHandler = if (jigasiDetector != null) {
@@ -64,10 +69,9 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     val jigasiStats: OrderedJsonObject
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
-    private val avModerationHandler = AvModerationHandler(clientConnection)
-
-    private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection))
-    private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection))
+    private val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
+    private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
+    private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
 
     fun stop() {
         clientConnection.stop()
@@ -102,11 +106,6 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
                 clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)
             }
         }
-
-        jibriIqHandler.conferenceStore = focusManager
-        avModerationHandler.conferenceStore = focusManager
-        audioMuteHandler.conferenceStore = focusManager
-        videoMuteHandler.conferenceStore = focusManager
     }
 
     fun dispose() {
@@ -115,6 +114,7 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         jigasiIqHandler?.shutdown()
         audioMuteHandler.shutdown()
         videoMuteHandler.shutdown()
+        avModerationHandler.shutdown()
 
         conferenceIqHandler?.let { clientConnection.xmppConnection.unregisterIQRequestHandler(it) }
         conferenceIqHandler = null

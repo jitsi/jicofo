@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
@@ -34,7 +33,8 @@ import org.jivesoftware.smack.packet.XMPPError
 import org.jxmpp.jid.Jid
 
 class AudioMuteIqHandler(
-    connections: Set<AbstractXMPPConnection>
+    connections: Set<AbstractXMPPConnection>,
+    private val conferenceStore: ConferenceStore
 ) :
     AbstractIqHandler<MuteIq>(
         connections,
@@ -43,7 +43,6 @@ class AudioMuteIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-    var conferenceStore: ConferenceStore = EmptyConferenceStore()
     override fun handleRequest(request: IqRequest<MuteIq>): IqProcessingResult {
         return handleRequest(
             MuteRequest(
@@ -59,7 +58,8 @@ class AudioMuteIqHandler(
 }
 
 class VideoMuteIqHandler(
-    connections: Set<AbstractXMPPConnection>
+    connections: Set<AbstractXMPPConnection>,
+    private val conferenceStore: ConferenceStore
 ) :
     AbstractIqHandler<MuteVideoIq>(
         connections,
@@ -68,7 +68,6 @@ class VideoMuteIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-    var conferenceStore: ConferenceStore = EmptyConferenceStore()
     override fun handleRequest(request: IqRequest<MuteVideoIq>): IqProcessingResult {
         return handleRequest(
             MuteRequest(

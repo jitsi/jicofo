@@ -78,7 +78,8 @@ open class JicofoServices {
     }
     private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
-    val xmppServices = XmppServices(xmppProviderFactory)
+    val focusManager: FocusManager = FocusManager().apply { start() }
+    val xmppServices = XmppServices(xmppProviderFactory, conferenceStore = focusManager)
 
     private fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
         XmppConnectionEnum.Client -> xmppServices.clientConnection
@@ -110,8 +111,6 @@ open class JicofoServices {
         logger.info("No SIP Jibri detector configured.")
         null
     }
-
-    val focusManager: FocusManager = FocusManager().apply { start() }
 
     private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
         logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
