@@ -61,7 +61,7 @@ interface XmppProvider {
     fun findOrCreateRoom(name: EntityBareJid): ChatRoom
 
     fun discoverFeatures(jid: EntityFullJid): List<String>
-    fun discoverInfo(jid: Jid): DiscoverInfo
+    fun discoverInfo(jid: Jid): DiscoverInfo?
     fun getStats(): JSONObject
 
     class RoomExistsException(message: String) : Exception(message)
