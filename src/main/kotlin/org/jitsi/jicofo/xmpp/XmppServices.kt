@@ -110,6 +110,7 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
         jigasiIqHandler?.shutdown()
         audioMuteHandler.shutdown()
         videoMuteHandler.shutdown()
+        iqHandler?.shutdown()
     }
 }
 
