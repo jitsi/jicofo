@@ -31,7 +31,7 @@ import org.jxmpp.jid.Jid
  */
 interface XmppProvider {
     fun start()
-    fun stop()
+    fun shutdown()
 
     /**
      * @return true if the provider is currently registered and false otherwise.

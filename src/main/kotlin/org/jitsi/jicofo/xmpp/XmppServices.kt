@@ -76,13 +76,6 @@ class XmppServices(
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
 
-    fun stop() {
-        clientConnection.stop()
-        if (serviceConnection != clientConnection) {
-            serviceConnection.stop()
-        }
-    }
-
     private val conferenceIqHandler = ConferenceIqHandler(
         connection = clientConnection.xmppConnection,
         focusManager = focusManager,
@@ -103,7 +96,11 @@ class XmppServices(
     }
 
     fun shutdown() {
-        jigasiDetector?.dispose()
+        clientConnection.shutdown()
+        if (serviceConnection != clientConnection) {
+            serviceConnection.shutdown()
+        }
+        jigasiDetector?.shutdown()
         jibriIqHandler.shutdown()
         jigasiIqHandler?.shutdown()
         audioMuteHandler.shutdown()

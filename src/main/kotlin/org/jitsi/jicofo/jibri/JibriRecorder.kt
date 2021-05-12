@@ -56,10 +56,7 @@ class JibriRecorder(
      */
     private var jibriSession: JibriSession? = null
 
-    /**
-     * {@inheritDoc}
-     */
-    fun dispose() {
+    fun shutdown() {
         jibriSession?.stop(null)
         jibriSession = null
     }

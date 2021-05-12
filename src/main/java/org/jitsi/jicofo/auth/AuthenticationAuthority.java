@@ -118,5 +118,5 @@ public interface AuthenticationAuthority
 
     void start();
 
-    void stop();
+    void shutdown();
 }

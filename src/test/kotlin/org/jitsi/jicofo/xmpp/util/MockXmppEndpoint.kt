@@ -25,7 +25,7 @@ import org.jxmpp.jid.Jid
 
 open class MockXmppEndpoint(val jid: Jid) {
     val xmppConnection = MockXmppConnection(jid)
-    fun dispose() = xmppConnection.disconnect()
+    fun shutdown() = xmppConnection.disconnect()
 }
 
 class MockJigasi(

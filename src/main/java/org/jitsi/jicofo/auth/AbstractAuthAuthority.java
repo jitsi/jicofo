@@ -493,7 +493,7 @@ public abstract class AbstractAuthAuthority
     /**
      * Stops this authentication authority instance.
      */
-    public void stop()
+    public void shutdown()
     {
         if (expireTimer != null)
         {

@@ -350,11 +350,11 @@ public class JitsiMeetConferenceImpl
         {
             try
             {
-                jibriSipGateway.dispose();
+                jibriSipGateway.shutdown();
             }
             catch (Exception e)
             {
-                logger.error("jibriSipGateway.dispose error", e);
+                logger.error("jibriSipGateway.shutdown error", e);
             }
             jibriSipGateway = null;
         }
@@ -363,11 +363,11 @@ public class JitsiMeetConferenceImpl
         {
             try
             {
-                jibriRecorder.dispose();
+                jibriRecorder.shutdown();
             }
             catch (Exception e)
             {
-                logger.error("jibriRecorder.dispose error", e);
+                logger.error("jibriRecorder.shutdown error", e);
             }
             jibriRecorder = null;
         }

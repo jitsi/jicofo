@@ -160,22 +160,21 @@ open class JicofoServices {
         } else null
     }
 
-    fun stop() {
+    fun shutdown() {
         reservationSystem?.let {
             focusManager.removeFocusAllocationListener(it)
-            it.stop()
+            it.shutdown()
         }
         authenticationAuthority?.let {
             focusManager.removeFocusAllocationListener(it)
-            it.stop()
+            it.shutdown()
         }
-        healthChecker?.stop()
+        healthChecker?.shutdown()
         jettyServer?.stop()
-        xmppServices.stop()
-        bridgeSelector.stop()
-        bridgeDetector?.dispose()
-        jibriDetector?.dispose()
-        sipJibriDetector?.dispose()
+        bridgeSelector.shutdown()
+        bridgeDetector?.shutdown()
+        jibriDetector?.shutdown()
+        sipJibriDetector?.shutdown()
         xmppServices.shutdown()
     }
 

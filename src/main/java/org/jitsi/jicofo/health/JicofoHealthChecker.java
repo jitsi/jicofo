@@ -90,7 +90,7 @@ public class JicofoHealthChecker implements HealthCheckService
         healthChecker.start();
     }
 
-    public void stop()
+    public void shutdown()
     {
         focusManager = null;
         try

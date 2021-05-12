@@ -62,10 +62,10 @@ class JigasiIqHandlerTest : ShouldSpec() {
     }
 
     override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
-        jicofo.dispose()
-        participant.dispose()
-        jigasi1.dispose()
-        jigasi2.dispose()
+        jicofo.shutdown()
+        participant.shutdown()
+        jigasi1.shutdown()
+        jigasi2.shutdown()
         jigasiIqHandler.shutdown()
     }
 
