@@ -40,6 +40,8 @@ public class IqHandler
     private final ConferenceIqHandler conferenceIqHandler;
     private final AuthenticationIqHandler authenticationIqHandler;
 
+    private AbstractXMPPConnection connection;
+
     /**
      */
     public IqHandler(
@@ -56,6 +58,7 @@ public class IqHandler
     public void init(AbstractXMPPConnection connection)
     {
         logger.info("Registering IQ handlers with XmppConnection.");
+        this.connection = connection;
         connection.registerIQRequestHandler(conferenceIqHandler);
         if (authenticationIqHandler != null)
         {
@@ -63,4 +66,14 @@ public class IqHandler
             connection.registerIQRequestHandler(authenticationIqHandler.getLogoutIqHandler());
         }
     }
+
+    public void shutdown()
+    {
+        if (connection != null && authenticationIqHandler != null)
+        {
+            connection.unregisterIQRequestHandler(authenticationIqHandler.getLoginUrlIqHandler());
+            connection.unregisterIQRequestHandler(authenticationIqHandler.getLogoutIqHandler());
+        }
+    }
+
 }
