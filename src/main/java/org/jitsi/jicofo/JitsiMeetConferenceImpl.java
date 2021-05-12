@@ -2167,6 +2167,10 @@ public class JitsiMeetConferenceImpl
         {
             logger.warn("Failed to mute, bridgeSession=" + bridgeSession + ", pc=" + participantChannels);
         }
+        else
+        {
+            participant.setMuted(mediaType, doMute);
+        }
 
         return succeeded ? MuteResult.SUCCESS : MuteResult.ERROR;
     }
@@ -2197,7 +2201,7 @@ public class JitsiMeetConferenceImpl
     public void muteParticipant(Participant participant, MediaType mediaType)
     {
         boolean isParticipantModerator = participant.getChatMember().getRole().hasModeratorRights();
-        if (isParticipantModerator || participant.isInitialAVModerationApplied(mediaType))
+        if (isParticipantModerator || participant.isMuted(mediaType))
         {
             return;
         }
@@ -2205,9 +2209,6 @@ public class JitsiMeetConferenceImpl
         MuteResult result = handleMuteRequest(null, participant.getMucJid(), true, mediaType);
         if (result == SUCCESS)
         {
-            // let's mark that this participant was muted
-            participant.setInitialAVModerationApplied(mediaType);
-
             IQ muteIq = null;
             if (mediaType == MediaType.AUDIO)
             {

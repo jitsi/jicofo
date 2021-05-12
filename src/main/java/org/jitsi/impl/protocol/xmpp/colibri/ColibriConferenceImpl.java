@@ -687,11 +687,32 @@ public class ColibriConferenceImpl
         }
 
         request.addContent(requestContent);
-        UtilKt.tryToSendStanza(connection, request);
+        try
+        {
+            IQ response = UtilKt.sendIqAndGetResponse(connection, request);
+            if (response != null && response.getType() == IQ.Type.result
+                && response instanceof ColibriConferenceIQ)
+            {
+                ColibriConferenceIQ responseConfIq = (ColibriConferenceIQ)response;
+                ColibriConferenceIQ.Content responseContent = responseConfIq.getContent(mediaType.toString());
+                if (responseContent != null)
+                {
+                    // check the count of the channels matching the requested direction
+                    long matchingChannelsCount = responseContent.getChannels().stream().filter(
+                        channel -> channel.getDirection().equals(mute ? "sendonly" : "sendrecv")).count();
 
-        // FIXME wait for response and set local status
+                    // mute succeeded if all channels match the criteria
+                    return matchingChannelsCount == content.getChannels().size();
+                }
+            }
+        }
+        catch(SmackException.NotConnectedException e)
+        {
+            logger.error("Error muting for media type " + mediaType, e);
+            return false;
+        }
 
-        return true;
+        return false;
     }
 
     /**

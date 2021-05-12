@@ -99,9 +99,9 @@ public class Participant
     private List<String> supportedFeatures = new ArrayList<>();
 
     /**
-     * State whether this participant was
+     * State whether this participant is muted by media type.
      */
-    private Map<MediaType, Boolean> initialAVModerationApplied = new HashMap<>();
+    private Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
 
     /**
      * Creates new {@link Participant} for given chat room member.
@@ -505,22 +505,22 @@ public class Participant
     }
 
     /**
-     * Changes the value for the supplied media type.
+     * Changes participant muted state by media type.
      * @param mediaType the media type to change.
      */
-    public void setInitialAVModerationApplied(MediaType mediaType)
+    public void setMuted(MediaType mediaType, boolean value)
     {
-        this.initialAVModerationApplied.put(mediaType, true);
+        this.mutedByMediaType.put(mediaType, value);
     }
 
     /**
-     * Checks whether the initial moderation is applied.
+     * Checks whether the participant is muted.
      * @param mediaType the media type to check.
-     * @return tru if it was applied.
+     * @return tru if it is muted.
      */
-    public boolean isInitialAVModerationApplied(MediaType mediaType)
+    public boolean isMuted(MediaType mediaType)
     {
-        Boolean value = this.initialAVModerationApplied.get(mediaType);
+        Boolean value = this.mutedByMediaType.get(mediaType);
         return value != null && value;
     }
 
