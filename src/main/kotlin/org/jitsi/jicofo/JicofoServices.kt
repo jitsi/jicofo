@@ -79,7 +79,27 @@ open class JicofoServices {
     private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
     val focusManager: FocusManager = FocusManager().apply { start() }
-    val xmppServices = XmppServices(xmppProviderFactory, conferenceStore = focusManager)
+    val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
+        start()
+        focusManager.addFocusAllocationListener(this)
+    }
+    private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
+        logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
+        RESTReservations(reservationConfig.baseUrl) { name, reason ->
+            focusManager.destroyConference(name, reason)
+        }.apply {
+            focusManager.addFocusAllocationListener(this)
+            start()
+        }
+    } else null
+
+    val xmppServices = XmppServices(
+        xmppProviderFactory = xmppProviderFactory,
+        conferenceStore = focusManager,
+        focusManager = focusManager, // TODO do not use FocusManager directly
+        authenticationAuthority = authenticationAuthority,
+        reservationSystem = reservationSystem
+    )
 
     private fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
         XmppConnectionEnum.Client -> xmppServices.clientConnection
@@ -112,38 +132,16 @@ open class JicofoServices {
         null
     }
 
-    private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
-        logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
-        RESTReservations(reservationConfig.baseUrl) { name, reason ->
-            focusManager.destroyConference(name, reason)
-        }.apply {
-            focusManager.addFocusAllocationListener(this)
+    private val healthChecker: JicofoHealthChecker? = if (HealthConfig.config.enabled) {
+        JicofoHealthChecker(HealthConfig.config, focusManager).apply {
             start()
+            focusManager.setHealth(this)
         }
     } else null
-    private val healthChecker: JicofoHealthChecker?
-    val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
-        start()
-        focusManager.addFocusAllocationListener(this)
-    }
+
     private val jettyServer: Server?
 
     init {
-
-        xmppServices.init(
-            authenticationAuthority = authenticationAuthority,
-            focusManager = focusManager,
-            reservationSystem = reservationSystem,
-            jigasiEnabled = xmppServices.jigasiDetector != null
-        )
-
-        healthChecker = if (HealthConfig.config.enabled) {
-            JicofoHealthChecker(HealthConfig.config, focusManager).apply {
-                start()
-                focusManager.setHealth(this)
-            }
-        } else null
-
         val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
         jettyServer = if (httpServerConfig.isEnabled()) {
             logger.info("Starting HTTP server with config: $httpServerConfig.")
@@ -178,7 +176,7 @@ open class JicofoServices {
         bridgeDetector?.dispose()
         jibriDetector?.dispose()
         sipJibriDetector?.dispose()
-        xmppServices.dispose()
+        xmppServices.shutdown()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {

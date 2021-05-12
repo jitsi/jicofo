@@ -30,7 +30,10 @@ import org.jitsi.utils.logging2.createLogger
 
 class XmppServices(
     xmppProviderFactory: XmppProviderFactory,
-    conferenceStore: ConferenceStore
+    conferenceStore: ConferenceStore,
+    authenticationAuthority: AbstractAuthAuthority?,
+    focusManager: FocusManager,
+    reservationSystem: ReservationSystem?
 ) {
     private val logger = createLogger()
 
@@ -80,35 +83,26 @@ class XmppServices(
         }
     }
 
-    private var conferenceIqHandler: ConferenceIqHandler? = null
-    private var authenticationIqHandler: AuthenticationIqHandler? = null
+    private val conferenceIqHandler = ConferenceIqHandler(
+        connection = clientConnection.xmppConnection,
+        focusManager = focusManager,
+        focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
+        isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
+        authAuthority = authenticationAuthority,
+        reservationSystem = reservationSystem,
+        jigasiEnabled = jigasiDetector != null
+    ).apply {
+        clientConnection.xmppConnection.registerIQRequestHandler(this)
+    }
 
-    fun init(
-        authenticationAuthority: AbstractAuthAuthority?,
-        focusManager: FocusManager,
-        reservationSystem: ReservationSystem?,
-        jigasiEnabled: Boolean
-    ) {
-        conferenceIqHandler = ConferenceIqHandler(
-            connection = clientConnection.xmppConnection,
-            focusManager = focusManager,
-            focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
-            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
-            authAuthority = authenticationAuthority,
-            reservationSystem = reservationSystem,
-            jigasiEnabled = jigasiEnabled
-        )
-        clientConnection.xmppConnection.registerIQRequestHandler(conferenceIqHandler)
-
-        authenticationAuthority?.let { authAuthority ->
-            authenticationIqHandler = AuthenticationIqHandler(authAuthority).also {
-                clientConnection.xmppConnection.registerIQRequestHandler(it.loginUrlIqHandler)
-                clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)
-            }
+    private val authenticationIqHandler: AuthenticationIqHandler? = if (authenticationAuthority == null) null else {
+        AuthenticationIqHandler(authenticationAuthority).also {
+            clientConnection.xmppConnection.registerIQRequestHandler(it.loginUrlIqHandler)
+            clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)
         }
     }
 
-    fun dispose() {
+    fun shutdown() {
         jigasiDetector?.dispose()
         jibriIqHandler.shutdown()
         jigasiIqHandler?.shutdown()
@@ -116,13 +110,11 @@ class XmppServices(
         videoMuteHandler.shutdown()
         avModerationHandler.shutdown()
 
-        conferenceIqHandler?.let { clientConnection.xmppConnection.unregisterIQRequestHandler(it) }
-        conferenceIqHandler = null
+        clientConnection.xmppConnection.unregisterIQRequestHandler(conferenceIqHandler)
         authenticationIqHandler?.let {
             clientConnection.xmppConnection.unregisterIQRequestHandler(it.loginUrlIqHandler)
             clientConnection.xmppConnection.unregisterIQRequestHandler(it.logoutIqHandler)
         }
-        authenticationIqHandler = null
     }
 }
 
