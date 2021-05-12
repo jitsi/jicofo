@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult
