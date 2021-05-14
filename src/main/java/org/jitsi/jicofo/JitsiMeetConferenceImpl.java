@@ -2581,6 +2581,17 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    public void handleRoomDestroyed(String reason)
+    {
+        logger.info("Room destroyed with reason=" + reason);
+
+        stop();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String toString()
     {
         return String.format("JitsiMeetConferenceImpl[gid=%d, name=%s]", gid, getRoomName());

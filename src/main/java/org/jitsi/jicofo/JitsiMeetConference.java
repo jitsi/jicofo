@@ -136,4 +136,10 @@ public interface JitsiMeetConference
             Jid toBeMutedJid,
             boolean doMute,
             MediaType mediaType);
+
+    /**
+     * Handles used chat room being destroyed.
+     * @param reason the reason for it.
+     */
+    void handleRoomDestroyed(String reason);
 }
