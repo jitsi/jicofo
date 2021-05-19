@@ -254,6 +254,10 @@ public class ChatRoomImpl
         if (meetingIdField != null)
         {
             meetingId = meetingIdField.getValues().stream().findFirst().orElse(null);
+            if (meetingId != null)
+            {
+                logger.addContext("meeting_id", meetingId);
+            }
         }
 
         Form answer = config.createAnswerForm();
