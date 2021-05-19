@@ -110,6 +110,10 @@ public class MockJitsiMeetConference
     }
 
     @Override
+    public void handleRoomDestroyed(String reason)
+    {}
+
+    @Override
     public void muteAllNonModeratorParticipants(MediaType mediaType)
     {}
 }

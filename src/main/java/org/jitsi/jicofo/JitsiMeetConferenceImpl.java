@@ -446,6 +446,10 @@ public class JitsiMeetConferenceImpl
         transcriberManager.init();
 
         chatRoom.join();
+        if (chatRoom.getMeetingId() != null)
+        {
+            logger.addContext("meeting_id", chatRoom.getMeetingId());
+        }
 
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
@@ -2130,7 +2134,8 @@ public class JitsiMeetConferenceImpl
             return MuteResult.NOT_ALLOWED;
         }
 
-        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid);
+        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
+            + " for " + mediaType);
 
         BridgeSession bridgeSession = findBridgeSession(participant);
         ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
@@ -2558,6 +2563,17 @@ public class JitsiMeetConferenceImpl
     public JibriSipGateway getJibriSipGateway()
     {
         return jibriSipGateway;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void handleRoomDestroyed(String reason)
+    {
+        logger.info("Room destroyed with reason=" + reason);
+
+        stop();
     }
 
     /**

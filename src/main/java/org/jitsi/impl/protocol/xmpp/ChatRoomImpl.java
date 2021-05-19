@@ -77,6 +77,11 @@ public class ChatRoomImpl
     private final MemberListener memberListener = new MemberListener();
 
     /**
+     * {@link LocalUserStatusListener} instance.
+     */
+    private final LocalUserStatusListener userListener = new LocalUserStatusListener();
+
+    /**
      * Listener for presence that smack sends on our behalf.
      */
     private PresenceListener presenceInterceptor;
@@ -164,6 +169,7 @@ public class ChatRoomImpl
         muc = manager.getMultiUserChat(this.roomJid);
 
         muc.addParticipantStatusListener(memberListener);
+        muc.addUserStatusListener(userListener);
         muc.addParticipantListener(this);
     }
 
@@ -248,6 +254,10 @@ public class ChatRoomImpl
         if (meetingIdField != null)
         {
             meetingId = meetingIdField.getValues().stream().findFirst().orElse(null);
+            if (meetingId != null)
+            {
+                logger.addContext("meeting_id", meetingId);
+            }
         }
 
         Form answer = config.createAnswerForm();
@@ -306,6 +316,7 @@ public class ChatRoomImpl
             }
 
             muc.removeParticipantStatusListener(memberListener);
+            muc.removeUserStatusListener(userListener);
             muc.removeParticipantListener(this);
 
             if (leaveCallback != null)
@@ -1135,6 +1146,67 @@ public class ChatRoomImpl
 
                 addMember(newNickname);
             }*/
+        }
+    }
+
+    /**
+     * Listens for room destroyed and pass it to the conference.
+     */
+    class LocalUserStatusListener
+        implements UserStatusListener
+    {
+        @Override
+        public void kicked(Jid actor, String reason)
+        {}
+
+        @Override
+        public void voiceGranted()
+        {}
+
+        @Override
+        public void voiceRevoked()
+        {}
+
+        @Override
+        public void banned(Jid actor, String reason)
+        {}
+
+        @Override
+        public void membershipGranted()
+        {}
+
+        @Override
+        public void membershipRevoked()
+        {}
+
+        @Override
+        public void moderatorGranted()
+        {}
+
+        @Override
+        public void moderatorRevoked()
+        {}
+
+        @Override
+        public void ownershipGranted()
+        {}
+
+        @Override
+        public void ownershipRevoked()
+        {}
+
+        @Override
+        public void adminGranted()
+        {}
+
+        @Override
+        public void adminRevoked()
+        {}
+
+        @Override
+        public void roomDestroyed(MultiUserChat alternateMUC, String reason)
+        {
+            ChatRoomImpl.this.conference.handleRoomDestroyed(reason);
         }
     }
 }

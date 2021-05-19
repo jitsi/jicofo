@@ -85,6 +85,7 @@ open class JicofoServices {
     }
     private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
         logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
+        logger.warn("WARNING: The reservation system in Jicofo has been deprecated, use the prosody module instead.")
         RESTReservations(reservationConfig.baseUrl) { name, reason ->
             focusManager.destroyConference(name, reason)
         }.apply {
