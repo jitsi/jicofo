@@ -103,12 +103,20 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                 // If this was a remove mute, notify the participant that was muted.
                 if (request.iq.from != request.jidToMute) {
                     request.connection.tryToSendStanza(
-                        MuteIq().apply {
-                            actor = request.iq.from
-                            type = IQ.Type.set
-                            to = request.jidToMute
-                            mute = request.doMute
-                        }
+                        if (request.mediaType == MediaType.AUDIO)
+                            MuteIq().apply {
+                                actor = request.iq.from
+                                type = IQ.Type.set
+                                to = request.jidToMute
+                                mute = request.doMute
+                            }
+                        else
+                            MuteVideoIq().apply {
+                                actor = request.iq.from
+                                type = IQ.Type.set
+                                to = request.jidToMute
+                                mute = request.doMute
+                            }
                     )
                 }
             }
