@@ -2147,7 +2147,8 @@ public class JitsiMeetConferenceImpl
             return MuteResult.NOT_ALLOWED;
         }
 
-        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid);
+        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
+            + " for " + mediaType);
 
         BridgeSession bridgeSession = findBridgeSession(participant);
         ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
