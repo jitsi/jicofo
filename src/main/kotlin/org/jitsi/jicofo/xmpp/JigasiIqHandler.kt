@@ -75,7 +75,14 @@ class JigasiIqHandler(
         stats.requestAccepted()
 
         TaskPools.ioPool.submit {
-            inviteJigasi(request, conference.bridges.keys.mapNotNull { it.region }.toSet())
+            try {
+                inviteJigasi(request, conference.bridges.keys.mapNotNull { it.region }.toSet())
+            } catch (e: Exception) {
+                logger.warn("Failed to invite jigasi", e)
+                request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(request.iq, XMPPError.Condition.internal_server_error)
+                )
+            }
         }
         return AcceptedWithNoResponse()
     }
