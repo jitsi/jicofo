@@ -76,7 +76,7 @@ public class JicofoHarness
     public void shutdown()
     {
         JicofoServices.jicofoServicesSingleton = null;
-        jicofoServices.stop();
+        jicofoServices.shutdown();
 
         System.clearProperty("org.jitsi.jicofo.PING_INTERVAL");
         System.clearProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName);

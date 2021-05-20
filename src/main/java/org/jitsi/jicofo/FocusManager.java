@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
@@ -90,17 +89,6 @@ public class FocusManager
     private final List<FocusAllocationListener> focusAllocListeners = new ArrayList<>();
 
     /**
-     * The XMPP provider for the connection to clients (endpoints).
-     */
-    private XmppProvider clientXmppProvider;
-
-    /**
-     * The XMPP provider for the service connection (for bridges). This may be the same instance as
-     * {@link #clientXmppProvider}.
-     */
-    private XmppProvider serviceXmppProvider;
-
-    /**
      * A class that holds Jicofo-wide statistics
      */
     private final Statistics statistics = new Statistics();
@@ -119,7 +107,7 @@ public class FocusManager
     /**
      * Starts this manager.
      */
-    public void start(XmppProvider clientXmppProvider, XmppProvider serviceXmppProvider)
+    public void start()
     {
         expireThread.start();
 
@@ -142,9 +130,6 @@ public class FocusManager
             logger.info("Initialized octoId=" + octoId);
             this.octoId = octoId;
         }
-
-        this.clientXmppProvider = clientXmppProvider;
-        this.serviceXmppProvider = serviceXmppProvider;
     }
 
     /**
@@ -285,8 +270,6 @@ public class FocusManager
             conference
                     = new JitsiMeetConferenceImpl(
                         room,
-                        clientXmppProvider,
-                        serviceXmppProvider,
                         this, config, logLevel,
                         id, includeInStatistics);
 
@@ -534,10 +517,6 @@ public class FocusManager
             conferenceSizesJson.add(size);
         }
         stats.put("conference_sizes", conferenceSizesJson);
-
-        // XMPP traffic stats
-        stats.put("xmpp", clientXmppProvider.getStats());
-        stats.put("xmpp_service", serviceXmppProvider.getStats());
 
         if (healthChecker != null)
         {

@@ -58,10 +58,7 @@ class JibriSipGateway(
      */
     override fun acceptType(packet: JibriIq): Boolean = StringUtils.isNotBlank(packet.sipAddress)
 
-    /**
-     * {@inheritDoc}
-     */
-    fun dispose() {
+    fun shutdown() {
         try {
             sipSessions.values.forEach { it.stop(null) }
         } finally {

@@ -135,7 +135,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * Stops and releases allocated resources.
      */
-    public void dispose()
+    public void shutdown()
     {
         xmppProvider.removeRegistrationListener(this);
 

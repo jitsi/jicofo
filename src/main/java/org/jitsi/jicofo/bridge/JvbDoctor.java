@@ -110,7 +110,7 @@ public class JvbDoctor
         }
     }
 
-    synchronized public void stop()
+    synchronized public void shutdown()
     {
         // Remove scheduled tasks
         ArrayList<Jid> bridges = new ArrayList<>(tasks.keySet());

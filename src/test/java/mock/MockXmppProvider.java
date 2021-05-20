@@ -81,7 +81,7 @@ public class MockXmppProvider
     }
 
     @Override
-    public void stop()
+    public void shutdown()
     {
         if (jingleOpSet != null)
         {

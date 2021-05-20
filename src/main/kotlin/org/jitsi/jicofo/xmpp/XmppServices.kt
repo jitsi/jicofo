@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
@@ -27,7 +28,13 @@ import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
-class XmppServices(xmppProviderFactory: XmppProviderFactory) {
+class XmppServices(
+    xmppProviderFactory: XmppProviderFactory,
+    conferenceStore: ConferenceStore,
+    authenticationAuthority: AbstractAuthAuthority?,
+    focusManager: FocusManager,
+    reservationSystem: ReservationSystem?
+) {
     private val logger = createLogger()
 
     val clientConnection: XmppProvider = xmppProviderFactory.createXmppProvider(XmppConfig.client, logger).apply {
@@ -52,7 +59,8 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     }
 
     private val jibriIqHandler = JibriIqHandler(
-        setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection)
+        setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
+        conferenceStore
     )
 
     private val jigasiIqHandler = if (jigasiDetector != null) {
@@ -64,53 +72,46 @@ class XmppServices(xmppProviderFactory: XmppProviderFactory) {
     val jigasiStats: OrderedJsonObject
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
-    private val avModerationHandler = AvModerationHandler(clientConnection)
+    private val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
+    private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
+    private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
 
-    private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection))
-    private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection))
+    private val conferenceIqHandler = ConferenceIqHandler(
+        connection = clientConnection.xmppConnection,
+        focusManager = focusManager,
+        focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
+        isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
+        authAuthority = authenticationAuthority,
+        reservationSystem = reservationSystem,
+        jigasiEnabled = jigasiDetector != null
+    ).apply {
+        clientConnection.xmppConnection.registerIQRequestHandler(this)
+    }
 
-    private var iqHandler: IqHandler? = null
-    fun stop() {
-        clientConnection.stop()
+    private val authenticationIqHandler: AuthenticationIqHandler? = if (authenticationAuthority == null) null else {
+        AuthenticationIqHandler(authenticationAuthority).also {
+            clientConnection.xmppConnection.registerIQRequestHandler(it.loginUrlIqHandler)
+            clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)
+        }
+    }
+
+    fun shutdown() {
+        clientConnection.shutdown()
         if (serviceConnection != clientConnection) {
-            serviceConnection.stop()
+            serviceConnection.shutdown()
         }
-    }
-
-    fun init(
-        authenticationAuthority: AbstractAuthAuthority?,
-        focusManager: FocusManager,
-        reservationSystem: ReservationSystem?,
-        jigasiEnabled: Boolean
-    ) {
-        val authenticationIqHandler = authenticationAuthority?.let { AuthenticationIqHandler(it) }
-        val conferenceIqHandler = ConferenceIqHandler(
-            connection = clientConnection.xmppConnection,
-            focusManager = focusManager,
-            focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
-            isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
-            authAuthority = authenticationAuthority,
-            reservationSystem = reservationSystem,
-            jigasiEnabled = jigasiEnabled
-        )
-        jibriIqHandler.conferenceStore = focusManager
-        avModerationHandler.conferenceStore = focusManager
-        audioMuteHandler.conferenceStore = focusManager
-        videoMuteHandler.conferenceStore = focusManager
-
-        val iqHandler = IqHandler(conferenceIqHandler, authenticationIqHandler).apply {
-            init(clientConnection.xmppConnection)
-        }
-        this.iqHandler = iqHandler
-    }
-
-    fun dispose() {
-        jigasiDetector?.dispose()
+        jigasiDetector?.shutdown()
         jibriIqHandler.shutdown()
         jigasiIqHandler?.shutdown()
         audioMuteHandler.shutdown()
         videoMuteHandler.shutdown()
-        iqHandler?.shutdown()
+        avModerationHandler.shutdown()
+
+        clientConnection.xmppConnection.unregisterIQRequestHandler(conferenceIqHandler)
+        authenticationIqHandler?.let {
+            clientConnection.xmppConnection.unregisterIQRequestHandler(it.loginUrlIqHandler)
+            clientConnection.xmppConnection.unregisterIQRequestHandler(it.logoutIqHandler)
+        }
     }
 }
 

@@ -31,7 +31,7 @@ import org.jxmpp.jid.Jid
  */
 interface XmppProvider {
     fun start()
-    fun stop()
+    fun shutdown()
 
     /**
      * @return true if the provider is currently registered and false otherwise.
@@ -61,7 +61,7 @@ interface XmppProvider {
     fun findOrCreateRoom(name: EntityBareJid): ChatRoom
 
     fun discoverFeatures(jid: EntityFullJid): List<String>
-    fun discoverInfo(jid: Jid): DiscoverInfo
+    fun discoverInfo(jid: Jid): DiscoverInfo?
     fun getStats(): JSONObject
 
     class RoomExistsException(message: String) : Exception(message)

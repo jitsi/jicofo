@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.jibri.BaseJibri
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
@@ -34,7 +33,8 @@ import org.jivesoftware.smack.packet.XMPPError
  * handling to specific [BaseJibri] instances.
  */
 class JibriIqHandler(
-    connections: Set<AbstractXMPPConnection>
+    connections: Set<AbstractXMPPConnection>,
+    private val conferenceStore: ConferenceStore
 ) :
     AbstractIqHandler<JibriIq>(
         connections,
@@ -43,7 +43,6 @@ class JibriIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-    var conferenceStore: ConferenceStore = EmptyConferenceStore()
 
     /**
      * {@inheritDoc}

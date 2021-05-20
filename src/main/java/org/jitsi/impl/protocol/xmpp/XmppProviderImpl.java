@@ -244,7 +244,7 @@ public class XmppProviderImpl
      * {@inheritDoc}
      */
     @Override
-    public void stop()
+    public void shutdown()
     {
         if (!started.compareAndSet(true, false))
         {

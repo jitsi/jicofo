@@ -285,9 +285,9 @@ public class BridgeSelector
         });
     }
 
-    public void stop()
+    public void shutdown()
     {
-        jvbDoctor.stop();
+        jvbDoctor.shutdown();
     }
 
     /**

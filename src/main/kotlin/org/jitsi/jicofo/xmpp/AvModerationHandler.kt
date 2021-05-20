@@ -20,7 +20,6 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
@@ -37,22 +36,21 @@ import org.jxmpp.jid.impl.JidCreate
  * Adds the A/V moderation handling. Process incoming messages and when audio or video moderation is enabled,
  * muted all participants in the meeting (that are not moderators). Moderators are always allowed to unmute.
  */
-class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener {
-    var conferenceStore: ConferenceStore = EmptyConferenceStore()
+class AvModerationHandler(
+    private val xmppProvider: XmppProvider,
+    private val conferenceStore: ConferenceStore
+) : RegistrationListener, StanzaListener {
     private val jsonParser = JSONParser()
     private var avModerationAddress: DomainBareJid? = null
     private val logger = createLogger()
 
     init {
-        xmppProvider.xmppConnection.addSyncStanzaListener(
-            StanzaListener { stanza -> TaskPools.ioPool.submit { processStanza(stanza) } },
-            MessageTypeFilter.NORMAL
-        )
+        xmppProvider.xmppConnection.addSyncStanzaListener(this, MessageTypeFilter.NORMAL)
         xmppProvider.addRegistrationListener(this)
         registrationChanged(xmppProvider.isRegistered)
     }
 
-    private fun processStanza(stanza: Stanza) {
+    override fun processStanza(stanza: Stanza) {
         if (stanza.from != avModerationAddress) {
             return
         }
@@ -63,36 +61,39 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
             logger.warn("Skip processing stanza without JsonMessageExtension")
         }
 
-        try {
-            val incomingJson = jsonParser.parse(jsonMessage.json) as JSONObject
-            if (incomingJson["type"] == "av_moderation") {
-                val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
+        TaskPools.ioPool.submit {
+            try {
+                val incomingJson = jsonParser.parse(jsonMessage.json) as JSONObject
+                if (incomingJson["type"] == "av_moderation") {
+                    val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
 
-                val conference = conferenceStore.getConference(conferenceJid) ?: return Unit.also {
-                    logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
-                }
-
-                val enabled = incomingJson["enabled"] as Boolean?
-                val lists = incomingJson["whitelists"] as JSONObject?
-
-                if (enabled != null) {
-                    val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
-                    val oldEnabledValue = conference.chatRoom.isAvModerationEnabled(mediaType)
-                    conference.chatRoom.setAvModerationEnabled(mediaType, enabled)
-                    if (oldEnabledValue != enabled && enabled) {
-                        logger.info(
-                            "Moderation had been enabled for conferenceJid=$conferenceJid, by=${
-                            incomingJson["actor"] as String}, for mediaType=$mediaType"
-                        )
-                        // let's mute everyone
-                        conference.muteAllNonModeratorParticipants(mediaType)
+                    val conference = conferenceStore.getConference(conferenceJid) ?: return@submit Unit.also {
+                        logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
                     }
-                } else if (lists != null) {
-                    conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
+
+                    val enabled = incomingJson["enabled"] as Boolean?
+                    val lists = incomingJson["whitelists"] as JSONObject?
+
+                    if (enabled != null) {
+                        val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
+                        val oldEnabledValue = conference.chatRoom.isAvModerationEnabled(mediaType)
+                        conference.chatRoom.setAvModerationEnabled(mediaType, enabled)
+                        if (oldEnabledValue != enabled && enabled) {
+                            logger.info(
+                                "Moderation had been enabled for conferenceJid=$conferenceJid, by=${
+                                incomingJson["actor"] as String
+                                }, for mediaType=$mediaType"
+                            )
+                            // let's mute everyone
+                            conference.muteAllNonModeratorParticipants(mediaType)
+                        }
+                    } else if (lists != null) {
+                        conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
+                    }
                 }
+            } catch (e: Exception) {
+                logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}")
             }
-        } catch (e: Exception) {
-            logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}")
         }
     }
 
@@ -117,5 +118,9 @@ class AvModerationHandler(val xmppProvider: XmppProvider) : RegistrationListener
         } catch (e: Exception) {
             logger.error("Error checking for av_moderation component", e)
         }
+    }
+
+    fun shutdown() {
+        xmppProvider.xmppConnection.removeSyncStanzaListener(this)
     }
 }

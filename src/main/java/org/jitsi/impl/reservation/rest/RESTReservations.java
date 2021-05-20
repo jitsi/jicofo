@@ -93,7 +93,7 @@ public class RESTReservations
     /**
      * Stops this instance and all threads created by it.
      */
-    public void stop()
+    public void shutdown()
     {
         if (confDurationGuard != null)
         {
