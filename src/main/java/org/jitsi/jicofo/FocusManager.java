@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.utils.logging2.*;
@@ -92,11 +91,6 @@ public class FocusManager
      * A class that holds Jicofo-wide statistics
      */
     private final Statistics statistics = new Statistics();
-
-    /**
-     * TODO: refactor to avoid the reference.
-     */
-    private JicofoHealthChecker healthChecker;
 
     /**
      * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
@@ -518,19 +512,9 @@ public class FocusManager
         }
         stats.put("conference_sizes", conferenceSizesJson);
 
-        if (healthChecker != null)
-        {
-            stats.put("slow_health_check", healthChecker.getTotalSlowHealthChecks());
-        }
-
         stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
 
         return stats;
-    }
-
-    public void setHealth(JicofoHealthChecker jicofoHealthChecker)
-    {
-        this.healthChecker = jicofoHealthChecker;
     }
 
     public @NotNull Statistics getStatistics()
