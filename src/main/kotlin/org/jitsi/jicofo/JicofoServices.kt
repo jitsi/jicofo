@@ -102,15 +102,10 @@ open class JicofoServices {
         reservationSystem = reservationSystem
     )
 
-    private fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
-        XmppConnectionEnum.Client -> xmppServices.clientConnection
-        XmppConnectionEnum.Service -> xmppServices.serviceConnection
-    }
-
     val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(
-            getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
+            xmppServices.getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
             bridgeSelector,
             breweryJid
         ).apply { init() }
@@ -119,7 +114,11 @@ open class JicofoServices {
         null
     }
     val jibriDetector = JibriConfig.config.breweryJid?.let { breweryJid ->
-        JibriDetector(getXmppConnectionByName(JibriConfig.config.xmppConnectionName), breweryJid, false).apply {
+        JibriDetector(
+            xmppServices.getXmppConnectionByName(JibriConfig.config.xmppConnectionName),
+            breweryJid,
+            false
+        ).apply {
             init()
         }
     } ?: run {
