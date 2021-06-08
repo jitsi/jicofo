@@ -81,7 +81,7 @@ open class JicofoServices {
     val focusManager: FocusManager = FocusManager().apply { start() }
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
-        focusManager.addFocusAllocationListener(this)
+        focusManager.addListener(this)
     }
     private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
         logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
@@ -89,7 +89,7 @@ open class JicofoServices {
         RESTReservations(reservationConfig.baseUrl) { name, reason ->
             focusManager.destroyConference(name, reason)
         }.apply {
-            focusManager.addFocusAllocationListener(this)
+            focusManager.addListener(this)
             start()
         }
     } else null
@@ -162,11 +162,11 @@ open class JicofoServices {
 
     fun shutdown() {
         reservationSystem?.let {
-            focusManager.removeFocusAllocationListener(it)
+            focusManager.removeListener(it)
             it.shutdown()
         }
         authenticationAuthority?.let {
-            focusManager.removeFocusAllocationListener(it)
+            focusManager.removeListener(it)
             it.shutdown()
         }
         healthChecker?.shutdown()

@@ -24,6 +24,13 @@ interface ConferenceStore {
     fun getAllConferences(): List<JitsiMeetConference>
     /** Get a conference for a specific [Jid] (i.e. name). */
     fun getConference(jid: EntityBareJid): JitsiMeetConference?
+
+    fun addListener(listener: Listener) {}
+    fun removeListener(listener: Listener) {}
+
+    interface Listener {
+        fun conferenceEnded(name: EntityBareJid)
+    }
 }
 
 class EmptyConferenceStore : ConferenceStore {

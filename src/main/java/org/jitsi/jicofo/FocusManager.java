@@ -82,10 +82,7 @@ public class FocusManager
      */
     private final Object conferencesSyncRoot = new Object();
 
-    /**
-     * The list of {@link FocusAllocationListener}.
-     */
-    private final List<FocusAllocationListener> focusAllocListeners = new ArrayList<>();
+    private final List<ConferenceStore.Listener> listeners = new ArrayList<>();
 
     /**
      * A class that holds Jicofo-wide statistics
@@ -342,16 +339,16 @@ public class FocusManager
 
             // It is not clear whether the code below necessarily needs to
             // hold the lock or not.
-            Iterable<FocusAllocationListener> listeners;
+            Iterable<ConferenceStore.Listener> listeners;
 
-            synchronized (focusAllocListeners)
+            synchronized (this.listeners)
             {
-                listeners = new ArrayList<>(focusAllocListeners);
+                listeners = new ArrayList<>(this.listeners);
             }
 
-            for (FocusAllocationListener listener : listeners)
+            for (ConferenceStore.Listener listener : listeners)
             {
-                listener.onFocusDestroyed(roomName);
+                listener.conferenceEnded(roomName);
             }
         }
     }
@@ -390,7 +387,7 @@ public class FocusManager
      * {@code roomName} or {@code null} if no conference has been allocated yet
      */
     @Override
-    public JitsiMeetConferenceImpl getConference(EntityBareJid roomName)
+    public JitsiMeetConferenceImpl getConference(@NotNull EntityBareJid roomName)
     {
         synchronized (conferencesSyncRoot)
         {
@@ -399,6 +396,7 @@ public class FocusManager
     }
 
     @Override
+    @NotNull
     public List<JitsiMeetConference> getAllConferences()
     {
         return getConferences();
@@ -427,11 +425,12 @@ public class FocusManager
      * allocation/disposal.
      * @param listener the listener instance to be registered.
      */
-    public void addFocusAllocationListener(FocusAllocationListener listener)
+    @Override
+    public void addListener(@NotNull ConferenceStore.Listener listener)
     {
-        synchronized (focusAllocListeners)
+        synchronized (listeners)
         {
-            focusAllocListeners.add(listener);
+            listeners.add(listener);
         }
     }
 
@@ -440,11 +439,12 @@ public class FocusManager
      * allocation/disposal.
      * @param listener the listener instance to be registered.
      */
-    public void removeFocusAllocationListener(FocusAllocationListener listener)
+    @Override
+    public void removeListener(@NotNull ConferenceStore.Listener listener)
     {
-        synchronized (focusAllocListeners)
+        synchronized (listeners)
         {
-            focusAllocListeners.remove(listener);
+            listeners.remove(listener);
         }
     }
 
@@ -636,20 +636,5 @@ public class FocusManager
                 }
             }
         }
-    }
-
-    /**
-     * Interface used to listen for focus lifecycle events.
-     */
-    public interface FocusAllocationListener
-    {
-        /**
-         * Method fired when focus is destroyed.
-         * @param roomName the name of the conference room for which focus
-         *                 has been destroyed.
-         */
-        void onFocusDestroyed(EntityBareJid roomName);
-
-        // Add focus allocated method if needed
     }
 }
