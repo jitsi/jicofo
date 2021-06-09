@@ -106,6 +106,8 @@ public class JitsiMeetConferenceImpl
     @NotNull
     private final JitsiMeetConfig config;
 
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
+
     /**
      * Conference room chat instance.
      */
@@ -432,7 +434,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Joining " + roomName);
 
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
-        chatRoom.setConference(this);
+        chatRoom.setListener(chatRoomListener);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
 
@@ -527,7 +529,7 @@ public class JitsiMeetConferenceImpl
             chatRoom.leave();
         }
 
-        chatRoom.setConference(null);
+        chatRoom.setListener(null);
         chatRoom = null;
     }
 
@@ -2369,20 +2371,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Sets the value of the <tt>startMuted</tt> property of this instance.
-     *
-     * @param startMuted the new value to set on this instance. The specified
-     * array is copied.
-     * TODO: this shit will go away when "start muted" is moved to the client
-     */
-    @Override
-    @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public void setStartMuted(boolean[] startMuted)
-    {
-        this.startMuted = startMuted;
-    }
-
-    /**
      * Creates the shared document name by either using the conference room name
      * or a random string, depending on configuration.
      *
@@ -2523,7 +2511,8 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request)
+    @NotNull
+    public IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request)
     {
         IqProcessingResult result = new NotProcessed();
         if (started.get())
@@ -2562,16 +2551,6 @@ public class JitsiMeetConferenceImpl
         return jibriSipGateway;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleRoomDestroyed(String reason)
-    {
-        logger.info("Room destroyed with reason=" + reason);
-
-        stop();
-    }
 
     /**
      * {@inheritDoc}
@@ -3013,5 +2992,21 @@ public class JitsiMeetConferenceImpl
         SUCCESS,
         NOT_ALLOWED,
         ERROR
+    }
+
+    private class ChatRoomListenerImpl implements ChatRoomListener
+    {
+        @Override
+        public void roomDestroyed(@NotNull String reason)
+        {
+            logger.info("Room destroyed with reason=" + reason);
+            stop();
+        }
+
+        @Override
+        public void startMutedChanged(boolean startAudioMuted, boolean startVideoMuted)
+        {
+            startMuted = new boolean[] { startAudioMuted, startVideoMuted };
+        }
     }
 }

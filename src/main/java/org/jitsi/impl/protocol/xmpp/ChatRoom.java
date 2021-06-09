@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
@@ -184,9 +183,9 @@ public interface ChatRoom
     void modifyPresence(Collection<ExtensionElement> toRemove, Collection<ExtensionElement> toAdd);
 
     /**
-     * TODO: only needed for startMuted. Remove once startMuted is removed.
+     * Sets the [ChatRoomListener] to notify of events from this [ChatRoom].
      */
-    void setConference(JitsiMeetConference conference);
+    void setListener(ChatRoomListener listener);
 
     void setPresenceExtension(ExtensionElement extension, boolean remove);
 

@@ -18,7 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -137,9 +136,6 @@ public class ChatRoomImpl
      */
     private int memberCount = 0;
 
-    /** The conference that is backed by this MUC room. */
-    private JitsiMeetConference conference;
-
     /**
      * The value of thee "meetingId" field from the MUC form, if present.
      */
@@ -148,16 +144,21 @@ public class ChatRoomImpl
     /**
      * Indicates whether A/V Moderation is enabled for this room.
      */
-    private Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
+    private final Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
 
     private Map<String, List<String>> whitelists = new HashMap<>();
+
+    private ChatRoomListener listener;
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param roomJid the room JID (e.g. "room@service").
      */
-    public ChatRoomImpl(@NotNull XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
+    public ChatRoomImpl(
+            @NotNull XmppProvider xmppProvider,
+            @NotNull EntityBareJid roomJid,
+            Consumer<ChatRoomImpl> leaveCallback)
     {
         logger = new LoggerImpl(getClass().getName());
         logger.addContext("room", roomJid.getResourceOrEmpty().toString());
@@ -184,29 +185,26 @@ public class ChatRoomImpl
         return muc.getNickname().toString();
     }
 
-    /**
-     * Sets the conference that is backed by this MUC. Can only be set once.
-     * @param conference the conference backed by this MUC.
-     */
-    public void setConference(JitsiMeetConference conference)
+    @Override
+    public void setListener(ChatRoomListener listener)
     {
-        if (this.conference != null && conference != null)
+        if (this.listener != null && listener != null)
         {
-            throw new IllegalStateException("Conference is already set!");
+            throw new IllegalStateException("Listener is already set!");
         }
 
-        this.conference = conference;
+        this.listener = listener;
     }
 
     void setStartMuted(boolean[] startMuted)
     {
-        if (conference == null)
+        if (listener == null)
         {
             logger.warn("Can not set 'start muted', conference is null.");
             return;
         }
 
-        conference.setStartMuted(startMuted);
+        listener.startMutedChanged(startMuted[0], startMuted[1]);
     }
 
     @Override
@@ -901,8 +899,7 @@ public class ChatRoomImpl
         }
 
         List<String> whitelist = this.whitelists.get(mediaType.toString());
-
-        return whitelist == null ? false : whitelist.contains(jid.toString());
+        return whitelist != null && whitelist.contains(jid.toString());
     }
 
     class MemberListener
@@ -1206,7 +1203,7 @@ public class ChatRoomImpl
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)
         {
-            ChatRoomImpl.this.conference.handleRoomDestroyed(reason);
+            ChatRoomImpl.this.listener.roomDestroyed(reason);
         }
     }
 }

@@ -18,7 +18,6 @@
 package mock.muc;
 
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.*;
 
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -101,7 +100,7 @@ public class MockChatRoom
     }
 
     @Override
-    public void setConference(JitsiMeetConference conference)
+    public void setListener(ChatRoomListener listener)
     {
     }
 
