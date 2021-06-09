@@ -545,11 +545,7 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Member joined:" + chatRoomMember.getName());
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
-
-            if (!isFocusMember(chatRoomMember))
-            {
-                hasHadAtLeastOneParticipant = true;
-            }
+            hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
             if (!checkMinParticipants())
@@ -615,11 +611,6 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            if (isFocusMember(chatRoomMember))
-            {
-                return;
-            }
-
             // Participant already connected ?
             if (findParticipantForChatMember(chatRoomMember) != null)
             {
@@ -961,31 +952,7 @@ public class JitsiMeetConferenceImpl
     private boolean checkMinParticipants()
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
-        // Subtract one for jicofo's participant
-        if (chatRoom.getMembersCount() - 1 >= minParticipants)
-        {
-            return true;
-        }
-
-        int realCount = 0;
-        for (ChatRoomMember member : chatRoom.getMembers())
-        {
-            if (!isFocusMember(member))
-            {
-                realCount++;
-            }
-        }
-
-        return realCount >= minParticipants;
-    }
-
-    /**
-     * Check whether a {@link ChatRoomMember} is the local member.
-     * TODO: just stop firing events for the local member.
-     */
-    boolean isFocusMember(ChatRoomMember member)
-    {
-        return member.getName().equals(chatRoom.getLocalNickname());
+        return chatRoom.getMembersCount() >= minParticipants;
     }
 
     /**

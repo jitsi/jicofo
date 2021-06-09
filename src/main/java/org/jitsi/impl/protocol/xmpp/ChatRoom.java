@@ -190,11 +190,6 @@ public interface ChatRoom
     void setPresenceExtension(ExtensionElement extension, boolean remove);
 
     /**
-     * Get the nickname of the local occupant.
-     */
-    String getLocalNickname();
-
-    /**
      * Get the unique meeting ID associated by this room (set by the MUC service).
      */
     String getMeetingId();

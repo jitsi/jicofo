@@ -116,9 +116,6 @@ public class ChatRoomImpl
     private final CopyOnWriteArrayList<ChatRoomLocalUserRoleListener> localUserRoleListeners
             = new CopyOnWriteArrayList<>();
 
-    /**
-     * Nickname to member impl class map.
-     */
     private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
 
     /**
@@ -132,12 +129,7 @@ public class ChatRoomImpl
     private Presence lastPresenceSent;
 
     /**
-     * Number of members in the chat room. That excludes the focus member.
-     */
-    private int memberCount = 0;
-
-    /**
-     * The value of thee "meetingId" field from the MUC form, if present.
+     * The value of the "meetingId" field from the MUC form, if present.
      */
     private String meetingId = null;
 
@@ -177,12 +169,6 @@ public class ChatRoomImpl
     public String getMeetingId()
     {
         return meetingId;
-    }
-
-    @Override
-    public String getLocalNickname()
-    {
-        return muc.getNickname().toString();
     }
 
     @Override
@@ -445,7 +431,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatRoomMember findChatMember(Jid occupantJid)
+    public ChatMemberImpl findChatMember(Jid occupantJid)
     {
         if (occupantJid == null)
         {
@@ -678,12 +664,7 @@ public class ChatRoomImpl
                 return members.get(jid);
             }
 
-            if (!jid.equals(myOccupantJid))
-            {
-                memberCount++;
-            }
-
-            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, memberCount);
+            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, members.size() + 1);
 
             members.put(jid, newMember);
 
@@ -772,7 +753,7 @@ public class ChatRoomImpl
 
         synchronized (members)
         {
-            chatMember = (ChatMemberImpl) findChatMember(jid);
+            chatMember = findChatMember(jid);
             if (chatMember == null)
             {
                 if (presence.getType().equals(Presence.Type.available))
@@ -935,8 +916,6 @@ public class ChatRoomImpl
                 {
                     logger.error(occupantJid + " not in " + roomJid);
                 }
-
-                memberCount--;
 
                 return removed;
             }
