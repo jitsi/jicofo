@@ -91,11 +91,6 @@ public class ChatRoomImpl
     private final MultiUserChat muc;
 
     /**
-     * The resource part of our occupant JID.
-     */
-    private Resourcepart myResourcepart;
-
-    /**
      * Our full Multi User Chat XMPP address.
      */
     private EntityFullJid myOccupantJid;
@@ -209,9 +204,7 @@ public class ChatRoomImpl
 
     private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
-        this.myResourcepart = nickname;
-        this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
-                                                          myResourcepart);
+        this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
 
         this.presenceInterceptor = new PresenceListener()
         {
@@ -223,7 +216,7 @@ public class ChatRoomImpl
         };
         muc.addPresenceInterceptor(presenceInterceptor);
 
-        muc.createOrJoin(myResourcepart);
+        muc.createOrJoin(nickname);
 
         // Make the room non-anonymous, so that others can recognize focus JID
         Form config = muc.getConfigurationForm();
@@ -340,7 +333,7 @@ public class ChatRoomImpl
      */
     private void resetRoleForOccupant(EntityFullJid occupantJid)
     {
-        if (occupantJid.getResourcepart().equals(myResourcepart))
+        if (occupantJid.getResourcepart().equals(myOccupantJid.getResourcepart()))
         {
             resetCachedUserRole();
         }
