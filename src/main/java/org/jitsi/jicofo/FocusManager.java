@@ -233,7 +233,7 @@ public class FocusManager
         }
 
 
-        return conference.isInTheRoom();
+        return conference.isStarted();
     }
 
     /**

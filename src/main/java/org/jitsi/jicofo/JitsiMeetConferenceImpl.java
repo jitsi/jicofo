@@ -415,11 +415,11 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns <tt>true</tt> if focus has joined the conference room.
+     * Returns <tt>true</tt> if the conference has been successfully started.
      */
-    public boolean isInTheRoom()
+    public boolean isStarted()
     {
-        return chatRoom != null && chatRoom.isJoined();
+        return started.get();
     }
 
     /**
