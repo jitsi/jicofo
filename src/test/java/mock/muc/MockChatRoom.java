@@ -130,12 +130,6 @@ public class MockChatRoom
     }
 
     @Override
-    public String getName()
-    {
-        return roomName.toString();
-    }
-
-    @Override
     public EntityBareJid getRoomJid()
     {
         return roomName;

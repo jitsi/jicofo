@@ -136,7 +136,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
         try
         {
-            myJid = JidCreate.entityFullFrom(chat.getName() + "/" + user.getName());
+            myJid = JidCreate.entityFullFrom(chat.getRoomJid() + "/" + user.getName());
         }
         catch (XmppStringprepException e)
         {

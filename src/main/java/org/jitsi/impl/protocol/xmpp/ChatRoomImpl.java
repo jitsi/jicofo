@@ -194,12 +194,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public String getName()
-    {
-        return roomJid.toString();
-    }
-
-    @Override
     public EntityBareJid getRoomJid()
     {
         return roomJid;

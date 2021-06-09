@@ -36,13 +36,6 @@ import java.util.*;
 public interface ChatRoom
 {
     /**
-     * Returns the name of this <tt>ChatRoom</tt>.
-     *
-     * @return a <tt>String</tt> containing the name of this <tt>ChatRoom</tt>.
-     */
-    String getName();
-
-    /**
      * Joins this chat room with the nickname of the local user so that the
      * user would start receiving events and messages for it.
      */

@@ -210,7 +210,7 @@ public class TranscriberManager
         dialIq.setDestination("jitsi_meet_transcribe");
         dialIq.setTo(jigasiJid);
         dialIq.setType(IQ.Type.set);
-        dialIq.setHeader("JvbRoomName", chatRoom.getName());
+        dialIq.setHeader("JvbRoomName", chatRoom.getRoomJid().toString());
 
         try
         {
