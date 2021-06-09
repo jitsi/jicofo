@@ -245,8 +245,7 @@ public class JitsiMeetConferenceImpl
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
 
-        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        this.jicofoServices = jicofoServices;
+        this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
 
         logger.info("Created new conference, roomJid=" + roomName);
     }
@@ -519,7 +518,7 @@ public class JitsiMeetConferenceImpl
             rolesAndPresence.dispose();
             rolesAndPresence = null;
         }
-        if(transcriberManager != null)
+        if (transcriberManager != null)
         {
             transcriberManager.dispose();
             transcriberManager = null;
