@@ -435,14 +435,12 @@ public class JitsiMeetConferenceImpl
         chatRoom.setConference(this);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
-        rolesAndPresence.init();
 
         transcriberManager = new TranscriberManager(
             getClientXmppProvider(),
             this,
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
-        transcriberManager.init();
 
         chatRoom.join();
         if (chatRoom.getMeetingId() != null)

@@ -44,11 +44,13 @@ public class ChatRoomRoleAndPresence
      * The {@link JitsiMeetConferenceImpl} for which this instance is handling
      * MUC related stuff.
      */
+    @NotNull
     private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
      */
+    @NotNull
     private final ChatRoom chatRoom;
 
     /**
@@ -75,24 +77,16 @@ public class ChatRoomRoleAndPresence
      */
     private ChatRoomMember owner;
 
-    public ChatRoomRoleAndPresence(JitsiMeetConferenceImpl conference,
-                                   ChatRoom chatRoom,
+    public ChatRoomRoleAndPresence(@NotNull JitsiMeetConferenceImpl conference,
+                                   @NotNull ChatRoom chatRoom,
                                    @NotNull Logger parentLogger)
     {
-        this.conference = Objects.requireNonNull(conference, "conference");
-        this.chatRoom = Objects.requireNonNull(chatRoom, "chatRoom");
-
+        this.conference = conference;
+        this.chatRoom = chatRoom;
         this.logger = parentLogger.createChildLogger(getClass().getName());
-    }
 
-    /**
-     * Initializes this instance, so that it starts doing it's job.
-     */
-    public void init()
-    {
         authAuthority = JicofoServices.jicofoServicesSingleton == null
                 ? null : JicofoServices.jicofoServicesSingleton.getAuthenticationAuthority();
-
         if (authAuthority != null)
         {
             authAuthority.addAuthenticationListener(this);

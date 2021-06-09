@@ -47,12 +47,15 @@ public class TranscriberManager
     /**
      * The logger of this class.
      */
+    @NotNull
     private final Logger logger;
 
     /**
      * The {@link ChatRoom} of the conference this class is managing
      */
+    @NotNull
     private final ChatRoom chatRoom;
+    @NotNull
     private final JitsiMeetConferenceImpl conference;
 
     /**
@@ -64,6 +67,7 @@ public class TranscriberManager
     /**
      * The {@link XMPPConnection} used to Dial Jigasi.
      */
+    @NotNull
     private final AbstractXMPPConnection connection;
 
     /**
@@ -75,7 +79,7 @@ public class TranscriberManager
      * A single-threaded {@link ExecutorService} to offload inviting the
      * Transcriber from the smack thread updating presence.
      */
-    private ExecutorService executorService;
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     /**
      * Create a {@link TranscriberManager} responsible for inviting Jigasi as
@@ -84,10 +88,10 @@ public class TranscriberManager
      * @param jigasiDetector detector for Jigasi instances which can be dialed
      * to invite a transcriber
      */
-    public TranscriberManager(XmppProvider xmppProvider,
-                              JitsiMeetConferenceImpl conference,
+    public TranscriberManager(@NotNull XmppProvider xmppProvider,
+                              @NotNull JitsiMeetConferenceImpl conference,
                               JigasiDetector jigasiDetector,
-                              Logger parentLogger)
+                              @NotNull Logger parentLogger)
     {
         this.logger = parentLogger.createChildLogger(getClass().getName());
         // TODO: handle the connection changing (reconnect)
@@ -95,27 +99,13 @@ public class TranscriberManager
 
         this.conference = conference;
         this.chatRoom = conference.getChatRoom();
-        this.jigasiDetector = jigasiDetector;
-    }
-
-    public void init()
-    {
-        if (executorService != null)
-        {
-            executorService.shutdown();
-            executorService = null;
-        }
-
-        executorService = Executors.newSingleThreadExecutor();
         chatRoom.addMemberPresenceListener(this);
-
-        logger.debug("initialised transcriber manager");
+        this.jigasiDetector = jigasiDetector;
     }
 
     public void dispose()
     {
         executorService.shutdown();
-        executorService = null;
         chatRoom.removeMemberPresenceListener(this);
 
         logger.debug("disposed transcriber manager");
