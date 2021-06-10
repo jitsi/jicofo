@@ -61,11 +61,6 @@ public class ChatRoomRoleAndPresence
     private AuthenticationAuthority authAuthority;
 
     /**
-     * The {@link MemberRole} of our local user in the MUC.
-     */
-    private MemberRole focusRole;
-
-    /**
      * Flag indicates whether auto owner feature is active. First participant to
      * join the room will become conference owner. When the owner leaves the
      * room next participant will be selected as new owner.
@@ -167,34 +162,19 @@ public class ChatRoomRoleAndPresence
     private void electNewOwner()
     {
         if (!autoOwner)
-            return;
-
-        if (focusRole == null)
         {
-            // We don't know if we have permissions yet
-            logger.warn("Focus role unknown");
+            return;
+        }
 
-            MemberRole userRole = chatRoom.getUserRole();
-
-            logger.info("Obtained focus role: " + userRole);
-
-            if (userRole == null)
-            {
-                return;
-            }
-
-            focusRole = userRole;
-
-            if (!verifyFocusRole())
-            {
-                return;
-            }
+        if (chatRoom.getUserRole() != MemberRole.OWNER)
+        {
+            return;
         }
 
         if (authAuthority != null)
         {
-            // If we have authentication authority we do not grant owner
-            // role based on who enters first, but who is an authenticated user
+            // If we have authentication authority we do not grant owner role based on who enters first, but who is an
+            // authenticated user.
             return;
         }
 
@@ -227,17 +207,6 @@ public class ChatRoomRoleAndPresence
         }
     }
 
-    private boolean verifyFocusRole()
-    {
-        if (focusRole != MemberRole.OWNER)
-        {
-            logger.error("Focus must be an owner!");
-            conference.stop();
-            return false;
-        }
-        return true;
-    }
-
     /**
      * Waits for initial focus role and refuses to join if owner is
      * not granted. Elects the first owner of the conference.
@@ -245,14 +214,13 @@ public class ChatRoomRoleAndPresence
     @Override
     public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
     {
+        MemberRole role = evt.getNewRole();
         if (logger.isDebugEnabled())
         {
-            logger.debug("Local role: " + evt.getNewRole() + " init: " + evt.isInitial()
-                        + " room: " + conference.getRoomName());
+            logger.debug("Local role: " + role + " init: " + evt.isInitial());
         }
 
-        focusRole = evt.getNewRole();
-        if (!verifyFocusRole())
+        if (role != MemberRole.OWNER)
         {
             return;
         }

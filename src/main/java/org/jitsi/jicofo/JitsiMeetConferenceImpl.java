@@ -2993,5 +2993,16 @@ public class JitsiMeetConferenceImpl
         {
             onMemberLeft(member);
         }
+
+        @Override
+        public void localRoleChanged(@NotNull MemberRole newRole)
+        {
+            if (newRole != MemberRole.OWNER)
+            {
+                logger.warn(
+                    "Stopping, because the local role changed to " + newRole + " (owner privileges are required).");
+                stop();
+            }
+        }
     }
 }

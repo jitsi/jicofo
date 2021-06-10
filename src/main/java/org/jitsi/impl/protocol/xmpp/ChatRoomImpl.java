@@ -381,6 +381,10 @@ public class ChatRoomImpl
     public void setLocalUserRole(MemberRole role, boolean isInitial)
     {
         fireLocalUserRoleEvent(role, isInitial);
+        if (this.role != role && listener != null)
+        {
+            listener.localRoleChanged(role);
+        }
         this.role = role;
     }
 

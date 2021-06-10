@@ -26,4 +26,5 @@ interface ChatRoomListener {
     fun memberJoined(member: ChatRoomMember)
     fun memberKicked(member: ChatRoomMember)
     fun memberLeft(member: ChatRoomMember)
+    fun localRoleChanged(newRole: MemberRole)
 }
