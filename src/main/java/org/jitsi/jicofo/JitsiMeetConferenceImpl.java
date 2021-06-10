@@ -1024,7 +1024,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember kicked chat room member.
      */
-    protected void onMemberKicked(ChatRoomMember chatRoomMember)
+    private void onMemberKicked(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -1040,7 +1040,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the member that has left the room.
      */
-    protected void onMemberLeft(ChatRoomMember chatRoomMember)
+    private void onMemberLeft(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -2980,6 +2980,18 @@ public class JitsiMeetConferenceImpl
         public void memberJoined(@NotNull ChatRoomMember member)
         {
             onMemberJoined(member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            onMemberKicked(member);
+        }
+
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            onMemberLeft(member);
         }
     }
 }

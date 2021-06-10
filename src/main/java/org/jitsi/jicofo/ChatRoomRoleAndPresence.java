@@ -24,7 +24,6 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
-import java.util.*;
 import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
@@ -152,11 +151,11 @@ public class ChatRoomRoleAndPresence
             }
             if (evt instanceof Kicked)
             {
-                conference.onMemberKicked(sourceMember);
+                listener.memberKicked(sourceMember);
             }
             else
             {
-                conference.onMemberLeft(sourceMember);
+                listener.memberLeft(sourceMember);
             }
         }
     }

@@ -24,4 +24,6 @@ interface ChatRoomListener {
     fun roomDestroyed(reason: String)
     fun startMutedChanged(startAudioMuted: Boolean, startVideoMuted: Boolean)
     fun memberJoined(member: ChatRoomMember)
+    fun memberKicked(member: ChatRoomMember)
+    fun memberLeft(member: ChatRoomMember)
 }
