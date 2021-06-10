@@ -436,7 +436,7 @@ public class JitsiMeetConferenceImpl
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
         chatRoom.setListener(chatRoomListener);
 
-        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
+        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger, chatRoomListener);
 
         transcriberManager = new TranscriberManager(
             getClientXmppProvider(),
@@ -539,7 +539,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the new member that has just joined the room.
      */
-    protected void onMemberJoined(final ChatRoomMember chatRoomMember)
+    private void onMemberJoined(final ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -2974,6 +2974,12 @@ public class JitsiMeetConferenceImpl
         public void startMutedChanged(boolean startAudioMuted, boolean startVideoMuted)
         {
             startMuted = new boolean[] { startAudioMuted, startVideoMuted };
+        }
+
+        @Override
+        public void memberJoined(@NotNull ChatRoomMember member)
+        {
+            onMemberJoined(member);
         }
     }
 }

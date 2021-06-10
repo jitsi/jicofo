@@ -933,9 +933,7 @@ public class ChatRoomImpl
             }
             else
             {
-                logger.info(
-                    "Member left event for non-existing member: "
-                                + occupantJid);
+                logger.info("Member left event for non-existing member: " + occupantJid);
             }
         }
 
