@@ -27,11 +27,7 @@ class JibriDetectorTest : ShouldSpec({
 
     jibriJids
         .map { createJibriMember(it) }
-        .forEach {
-            detector.memberPresenceChanged(
-                ChatRoomMemberPresenceChangeEvent.Joined(it)
-            )
-        }
+        .forEach { detector.processMemberPresence(it) }
 
     context("When selecting a Jibri, JibriDetector") {
         should("pick the first one from the list") {

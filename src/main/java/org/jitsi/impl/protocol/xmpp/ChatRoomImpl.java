@@ -534,6 +534,10 @@ public class ChatRoomImpl
         {
             chatRoomListeners.forEach(listener -> listener.memberKicked(event.getChatRoomMember()));
         }
+        else if (event instanceof PresenceUpdated)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberPresenceChanged(event.getChatRoomMember()));
+        }
     }
 
     Occupant getOccupant(ChatMemberImpl chatMember)

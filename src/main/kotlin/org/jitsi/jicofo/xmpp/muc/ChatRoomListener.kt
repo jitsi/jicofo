@@ -21,10 +21,15 @@ import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 
 /** Listener for events fired from a [org.jitsi.impl.protocol.xmpp.ChatRoom] **/
 interface ChatRoomListener {
-    fun roomDestroyed(reason: String)
-    fun startMutedChanged(startAudioMuted: Boolean, startVideoMuted: Boolean)
-    fun memberJoined(member: ChatRoomMember)
-    fun memberKicked(member: ChatRoomMember)
-    fun memberLeft(member: ChatRoomMember)
-    fun localRoleChanged(newRole: MemberRole)
+    fun memberJoined(member: ChatRoomMember) {}
+    fun memberKicked(member: ChatRoomMember) {}
+    fun memberLeft(member: ChatRoomMember) {}
+    fun memberPresenceChanged(member: ChatRoomMember) {}
+
+    fun roomDestroyed(reason: String) {}
+    fun startMutedChanged(startAudioMuted: Boolean, startVideoMuted: Boolean) {}
+    fun localRoleChanged(newRole: MemberRole) {}
 }
+
+/** A class with the default kotlin method implementations (to avoid using @JvmDefault) **/
+open class ChatRoomListenerStub : ChatRoomListener

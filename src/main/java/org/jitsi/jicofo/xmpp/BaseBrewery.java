@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -28,12 +29,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
-
 /**
  * <tt>BaseBrewery</tt> manages the pool of service instances which
  * exist in the current session. Does that by joining "brewery" room where
- * instances connect to and publish their's status in MUC presence.
+ * instances connect to and publish their status in MUC presence.
  * <tt>PacketExtension</tt> is the packet extension that will be used
  * from that service to publish its presence.
  *
@@ -41,14 +40,14 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  * @author Damian Minkov
  */
 public abstract class BaseBrewery<T extends ExtensionElement>
-    implements ChatRoomMemberPresenceListener,
-                RegistrationListener
+    implements RegistrationListener
 {
     /**
      * The logger
      */
     private final Logger logger;
 
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
     /**
      * The MUC JID of the room which this detector will join.
      */
@@ -166,7 +165,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         try
         {
             chatRoom = xmppProvider.createRoom(breweryJid);
-            chatRoom.addMemberPresenceListener(this);
+            chatRoom.addListener(chatRoomListener);
             chatRoom.join();
 
             logger.info("Joined the room.");
@@ -178,7 +177,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             // cleanup on failure so we can retry
             if (chatRoom != null)
             {
-                chatRoom.removeMemberPresenceListener(this);
+                chatRoom.removeListener(chatRoomListener);
                 chatRoom = null;
             }
         }
@@ -191,9 +190,9 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         try
         {
-            if(chatRoom != null)
+            if (chatRoom != null)
             {
-                chatRoom.removeMemberPresenceListener(this);
+                chatRoom.removeListener(chatRoomListener);
                 chatRoom.leave();
 
                 logger.info("Left the room.");
@@ -209,19 +208,38 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         }
     }
 
-    @Override
-    synchronized public void memberPresenceChanged(@NotNull ChatRoomMemberPresenceChangeEvent presenceEvent)
+    private class ChatRoomListenerImpl extends ChatRoomListenerStub
     {
-        ChatRoomMember chatMember = presenceEvent.getChatRoomMember();
-        if (presenceEvent instanceof Joined || presenceEvent instanceof PresenceUpdated)
+        @Override
+        public void memberJoined(@NotNull ChatRoomMember member)
         {
             // Process idle or busy
-            processMemberPresence(chatMember);
+            processMemberPresence(member);
         }
-        else if (presenceEvent instanceof Left || presenceEvent instanceof Kicked)
+
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            removeInstanceForMember(member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            removeInstanceForMember(member);
+        }
+
+        @Override
+        public void memberPresenceChanged(@NotNull ChatRoomMember member)
+        {
+            // Process idle or busy
+            processMemberPresence(member);
+        }
+
+        private void removeInstanceForMember(@NotNull ChatRoomMember member)
         {
             // Process offline status
-            BrewInstance instance = find(chatMember.getOccupantJid());
+            BrewInstance instance = find(member.getOccupantJid());
 
             if (instance != null)
             {
@@ -252,8 +270,10 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * Process chat room member status changed. Extract the appropriate
      * presence extension and use it to process it further.
      * @param member the chat member to process
+     *
+     * Temporarily exposed for testing.
      */
-    private void processMemberPresence(ChatRoomMember member)
+    public void processMemberPresence(@NotNull ChatRoomMember member)
     {
         Presence presence = member.getPresence();
 

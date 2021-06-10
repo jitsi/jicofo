@@ -3004,5 +3004,10 @@ public class JitsiMeetConferenceImpl
                 stop();
             }
         }
+
+        @Override
+        public void memberPresenceChanged(@NotNull ChatRoomMember member)
+        {
+        }
     }
 }
