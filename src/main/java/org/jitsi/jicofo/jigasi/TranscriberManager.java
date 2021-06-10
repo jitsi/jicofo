@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.xmpp.extensions.rayo.*;
@@ -42,7 +43,6 @@ import java.util.stream.*;
  * @author Nik Vaessen
  */
 public class TranscriberManager
-    implements ChatRoomMemberPresenceListener
 {
     /**
      * The logger of this class.
@@ -57,6 +57,9 @@ public class TranscriberManager
     private final ChatRoom chatRoom;
     @NotNull
     private final JitsiMeetConferenceImpl conference;
+
+    @NotNull
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
 
     /**
      * The {@link JigasiDetector} responsible for determining which Jigasi
@@ -99,43 +102,39 @@ public class TranscriberManager
 
         this.conference = conference;
         this.chatRoom = conference.getChatRoom();
-        chatRoom.addMemberPresenceListener(this);
+        chatRoom.addListener(chatRoomListener);
         this.jigasiDetector = jigasiDetector;
     }
 
     public void dispose()
     {
         executorService.shutdown();
-        chatRoom.removeMemberPresenceListener(this);
+        chatRoom.removeListener(chatRoomListener);
 
         logger.debug("disposed transcriber manager");
     }
 
-    @Override
-    public void memberPresenceChanged(@Nullable ChatRoomMemberPresenceChangeEvent evt)
+    private void memberPresenceChanged(@NotNull ChatRoomMember member)
     {
-        if (evt instanceof ChatRoomMemberPresenceChangeEvent.PresenceUpdated)
+        Presence presence = member.getPresence();
+
+        if (presence == null)
         {
-            Presence presence = evt.getChatRoomMember().getPresence();
+            return;
+        }
 
-            if (presence == null)
-            {
-                return;
-            }
-
-            TranscriptionStatusExtension transcriptionStatusExtension = getTranscriptionStatus(presence);
-            if (transcriptionStatusExtension != null
-                    && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
-            {
-                // puts the stopping in the single threaded executor
-                // so we can order the events and avoid indicating active = false
-                // while we are starting due to concurrent presences processed
-                executorService.submit(this::stopTranscribing);
-            }
-            if (isRequestingTranscriber(presence) && !active)
-            {
-                executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
-            }
+        TranscriptionStatusExtension transcriptionStatusExtension = getTranscriptionStatus(presence);
+        if (transcriptionStatusExtension != null
+                && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
+        {
+            // puts the stopping in the single threaded executor
+            // so we can order the events and avoid indicating active = false
+            // while we are starting due to concurrent presences processed
+            executorService.submit(this::stopTranscribing);
+        }
+        if (isRequestingTranscriber(presence) && !active)
+        {
+            executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
         }
     }
 
@@ -283,5 +282,14 @@ public class TranscriberManager
         }
 
         return Boolean.parseBoolean(ext.getText());
+    }
+
+    private class ChatRoomListenerImpl extends ChatRoomListenerStub
+    {
+        @Override
+        public void memberPresenceChanged(@NotNull ChatRoomMember member)
+        {
+            TranscriberManager.this.memberPresenceChanged(member);
+        }
     }
 }
