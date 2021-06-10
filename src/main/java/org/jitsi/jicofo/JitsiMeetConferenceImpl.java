@@ -434,7 +434,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Joining " + roomName);
 
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
-        chatRoom.setListener(chatRoomListener);
+        chatRoom.addListener(chatRoomListener);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
 
@@ -529,7 +529,7 @@ public class JitsiMeetConferenceImpl
             chatRoom.leave();
         }
 
-        chatRoom.setListener(null);
+        chatRoom.removeListener(null);
         chatRoom = null;
     }
 

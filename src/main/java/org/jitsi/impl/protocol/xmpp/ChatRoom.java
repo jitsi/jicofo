@@ -176,9 +176,14 @@ public interface ChatRoom
     void modifyPresence(Collection<ExtensionElement> toRemove, Collection<ExtensionElement> toAdd);
 
     /**
-     * Sets the [ChatRoomListener] to notify of events from this [ChatRoom].
+     * Add a [ChatRoomListener] to the list of listeners to be notified of events from this [ChatRoom].
      */
-    void setListener(ChatRoomListener listener);
+    void addListener(ChatRoomListener listener);
+
+    /**
+     * Removes a [ChatRoomListener] from the list of listeners to be notified of events from this [ChatRoom].
+     */
+    void removeListener(ChatRoomListener listener);
 
     void setPresenceExtension(ExtensionElement extension, boolean remove);
 

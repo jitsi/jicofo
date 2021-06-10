@@ -135,7 +135,7 @@ public class ChatRoomImpl
 
     private Map<String, List<String>> whitelists = new HashMap<>();
 
-    private ChatRoomListener listener;
+    private List<ChatRoomListener> chatRoomListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
@@ -167,25 +167,20 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void setListener(ChatRoomListener listener)
+    public void addListener(@NotNull ChatRoomListener listener)
     {
-        if (this.listener != null && listener != null)
-        {
-            throw new IllegalStateException("Listener is already set!");
-        }
+        chatRoomListeners.add(listener);
+    }
 
-        this.listener = listener;
+    @Override
+    public void removeListener(@NotNull ChatRoomListener listener)
+    {
+        chatRoomListeners.remove(listener);
     }
 
     void setStartMuted(boolean[] startMuted)
     {
-        if (listener == null)
-        {
-            logger.warn("Can not set 'start muted', conference is null.");
-            return;
-        }
-
-        listener.startMutedChanged(startMuted[0], startMuted[1]);
+        chatRoomListeners.forEach(listener -> listener.startMutedChanged(startMuted[0], startMuted[1]));
     }
 
     @Override
@@ -381,9 +376,9 @@ public class ChatRoomImpl
     public void setLocalUserRole(MemberRole role, boolean isInitial)
     {
         fireLocalUserRoleEvent(role, isInitial);
-        if (this.role != role && listener != null)
+        if (this.role != role)
         {
-            listener.localRoleChanged(role);
+            chatRoomListeners.forEach(listener -> listener.localRoleChanged(role));
         }
         this.role = role;
     }
@@ -527,20 +522,17 @@ public class ChatRoomImpl
     private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent event)
     {
         listeners.forEach(l -> l.memberPresenceChanged(event));
-        if (listener != null)
+        if (event instanceof Joined)
         {
-            if (event instanceof Joined)
-            {
-                listener.memberJoined(event.getChatRoomMember());
-            }
-            else if (event instanceof Left)
-            {
-                listener.memberLeft(event.getChatRoomMember());
-            }
-            else if (event instanceof Kicked)
-            {
-                listener.memberKicked(event.getChatRoomMember());
-            }
+            chatRoomListeners.forEach(listener -> listener.memberJoined(event.getChatRoomMember()));
+        }
+        else if (event instanceof Left)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberLeft(event.getChatRoomMember()));
+        }
+        else if (event instanceof Kicked)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberKicked(event.getChatRoomMember()));
         }
     }
 
@@ -1186,7 +1178,7 @@ public class ChatRoomImpl
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)
         {
-            ChatRoomImpl.this.listener.roomDestroyed(reason);
+            chatRoomListeners.forEach(listener -> listener.roomDestroyed(reason));
         }
     }
 }

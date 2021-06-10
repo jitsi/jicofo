@@ -56,7 +56,7 @@ public class MockChatRoom
 
     private volatile boolean isJoined;
 
-    private ChatRoomListener listener;
+    private List<ChatRoomListener> listeners = new CopyOnWriteArrayList<>();
 
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
@@ -96,9 +96,15 @@ public class MockChatRoom
     }
 
     @Override
-    public void setListener(ChatRoomListener listener)
+    public void addListener(ChatRoomListener listener)
     {
-        this.listener = listener;
+        listeners.add(listener);
+    }
+
+    @Override
+    public void removeListener(ChatRoomListener listener)
+    {
+        listeners.remove(listener);
     }
 
     @Override
@@ -341,20 +347,18 @@ public class MockChatRoom
         {
             listener.memberPresenceChanged(evt);
         }
-        if (listener != null)
+
+        if (evt instanceof Joined)
         {
-            if (evt instanceof Joined)
-            {
-                listener.memberJoined(evt.getChatRoomMember());
-            }
-            else if (evt instanceof Left)
-            {
-                listener.memberLeft(evt.getChatRoomMember());
-            }
-            else if (evt instanceof Kicked)
-            {
-                listener.memberKicked(evt.getChatRoomMember());
-            }
+            this.listeners.forEach(listener -> listener.memberJoined(evt.getChatRoomMember()));
+        }
+        else if (evt instanceof Left)
+        {
+            this.listeners.forEach(listener -> listener.memberLeft(evt.getChatRoomMember()));
+        }
+        else if (evt instanceof Kicked)
+        {
+            this.listeners.forEach(listener -> listener.memberKicked(evt.getChatRoomMember()));
         }
     }
 
