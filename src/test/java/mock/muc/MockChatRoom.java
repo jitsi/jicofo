@@ -56,6 +56,8 @@ public class MockChatRoom
 
     private volatile boolean isJoined;
 
+    private ChatRoomListener listener;
+
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
     /**
@@ -96,6 +98,7 @@ public class MockChatRoom
     @Override
     public void setListener(ChatRoomListener listener)
     {
+        this.listener = listener;
     }
 
     @Override
@@ -159,8 +162,7 @@ public class MockChatRoom
     public MockRoomMember createMockRoomMember(String nickname)
             throws XmppStringprepException
     {
-        return new MockRoomMember(
-            createAddressForName(nickname), this);
+        return new MockRoomMember(createAddressForName(nickname), this);
     }
 
     public MockRoomMember mockJoin(MockRoomMember member)
@@ -174,15 +176,12 @@ public class MockChatRoom
             }
             catch (XmppStringprepException e)
             {
-                throw new IllegalArgumentException(
-                        "The member name " + member.getName() + " is invalid");
+                throw new IllegalArgumentException("The member name " + member.getName() + " is invalid");
             }
 
             if (findMember(name) != null)
             {
-                throw new IllegalArgumentException(
-                        "The member with name: " + name
-                            + " is in the room already");
+                throw new IllegalArgumentException("The member with name: " + name + " is in the room already");
             }
 
             members.add(member);
@@ -339,7 +338,24 @@ public class MockChatRoom
         }
 
         for (ChatRoomMemberPresenceListener listener : listeners)
+        {
             listener.memberPresenceChanged(evt);
+        }
+        if (listener != null)
+        {
+            if (evt instanceof Joined)
+            {
+                listener.memberJoined(evt.getChatRoomMember());
+            }
+            else if (evt instanceof Left)
+            {
+                listener.memberLeft(evt.getChatRoomMember());
+            }
+            else if (evt instanceof Kicked)
+            {
+                listener.memberKicked(evt.getChatRoomMember());
+            }
+        }
     }
 
     private void fireLocalUserRoleEvent(MemberRole role)

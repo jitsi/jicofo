@@ -436,7 +436,7 @@ public class JitsiMeetConferenceImpl
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
         chatRoom.setListener(chatRoomListener);
 
-        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger, chatRoomListener);
+        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
 
         transcriberManager = new TranscriberManager(
             getClientXmppProvider(),

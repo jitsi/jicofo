@@ -527,6 +527,21 @@ public class ChatRoomImpl
     private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent event)
     {
         listeners.forEach(l -> l.memberPresenceChanged(event));
+        if (listener != null)
+        {
+            if (event instanceof Joined)
+            {
+                listener.memberJoined(event.getChatRoomMember());
+            }
+            else if (event instanceof Left)
+            {
+                listener.memberLeft(event.getChatRoomMember());
+            }
+            else if (event instanceof Kicked)
+            {
+                listener.memberKicked(event.getChatRoomMember());
+            }
+        }
     }
 
     Occupant getOccupant(ChatMemberImpl chatMember)

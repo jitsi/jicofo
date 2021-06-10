@@ -46,9 +46,6 @@ public class ChatRoomRoleAndPresence
     @NotNull
     private final JitsiMeetConferenceImpl conference;
 
-    @NotNull
-    private final ChatRoomListener listener;
-
     /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
      */
@@ -76,11 +73,9 @@ public class ChatRoomRoleAndPresence
 
     public ChatRoomRoleAndPresence(@NotNull JitsiMeetConferenceImpl conference,
                                    @NotNull ChatRoom chatRoom,
-                                   @NotNull Logger parentLogger,
-                                   @NotNull ChatRoomListener listener)
+                                   @NotNull Logger parentLogger)
     {
         this.conference = conference;
-        this.listener = listener;
         this.chatRoom = chatRoom;
         this.logger = parentLogger.createChildLogger(getClass().getName());
 
@@ -134,7 +129,6 @@ public class ChatRoomRoleAndPresence
             {
                 checkGrantOwnerToAuthUser(sourceMember);
             }
-            listener.memberJoined(sourceMember);
         }
         else if (evt instanceof Left || evt instanceof Kicked)
         {
@@ -143,14 +137,6 @@ public class ChatRoomRoleAndPresence
                 logger.info("Owner has left the room !");
                 owner = null;
                 electNewOwner();
-            }
-            if (evt instanceof Kicked)
-            {
-                listener.memberKicked(sourceMember);
-            }
-            else
-            {
-                listener.memberLeft(sourceMember);
             }
         }
     }
