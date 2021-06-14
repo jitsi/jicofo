@@ -539,7 +539,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the new member that has just joined the room.
      */
-    private void onMemberJoined(final ChatRoomMember chatRoomMember)
+    private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
