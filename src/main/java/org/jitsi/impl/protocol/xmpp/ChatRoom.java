@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
@@ -178,12 +179,12 @@ public interface ChatRoom
     /**
      * Add a [ChatRoomListener] to the list of listeners to be notified of events from this [ChatRoom].
      */
-    void addListener(ChatRoomListener listener);
+    void addListener(@NotNull ChatRoomListener listener);
 
     /**
      * Removes a [ChatRoomListener] from the list of listeners to be notified of events from this [ChatRoom].
      */
-    void removeListener(ChatRoomListener listener);
+    void removeListener(@NotNull ChatRoomListener listener);
 
     void setPresenceExtension(ExtensionElement extension, boolean remove);
 

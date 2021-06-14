@@ -17,6 +17,7 @@
  */
 package mock.muc;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -96,13 +97,13 @@ public class MockChatRoom
     }
 
     @Override
-    public void addListener(ChatRoomListener listener)
+    public void addListener(@NotNull ChatRoomListener listener)
     {
         listeners.add(listener);
     }
 
     @Override
-    public void removeListener(ChatRoomListener listener)
+    public void removeListener(@NotNull ChatRoomListener listener)
     {
         listeners.remove(listener);
     }

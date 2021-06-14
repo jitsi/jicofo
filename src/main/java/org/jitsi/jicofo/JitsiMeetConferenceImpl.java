@@ -529,7 +529,7 @@ public class JitsiMeetConferenceImpl
             chatRoom.leave();
         }
 
-        chatRoom.removeListener(null);
+        chatRoom.removeListener(chatRoomListener);
         chatRoom = null;
     }
 
