@@ -61,7 +61,6 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
 }
 
 fun OfferOptions.applyConstraints(participant: Participant) {
-    ice = ice && participant.hasIceSupport()
     dtls = dtls && participant.hasDtlsSupport()
     audio = audio && participant.hasAudioSupport()
     video = video && participant.hasVideoSupport()

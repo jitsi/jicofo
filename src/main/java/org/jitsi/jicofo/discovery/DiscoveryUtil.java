@@ -52,11 +52,6 @@ public class DiscoveryUtil
     public final static String FEATURE_VIDEO = "urn:xmpp:jingle:apps:rtp:video";
 
     /**
-     * ICE feature name.
-     */
-    public final static String FEATURE_ICE = "urn:xmpp:jingle:transports:ice-udp:1";
-
-    /**
      * DTLS/SCTP feature name.
      */
     public final static String FEATURE_SCTP = "urn:xmpp:jingle:transports:dtls-sctp:1";
@@ -119,7 +114,6 @@ public class DiscoveryUtil
     private static final List<String> defaultFeatures = Arrays.asList(
             FEATURE_AUDIO,
             FEATURE_VIDEO,
-            FEATURE_ICE,
             FEATURE_SCTP,
             FEATURE_DTLS,
             FEATURE_RTCP_MUX,

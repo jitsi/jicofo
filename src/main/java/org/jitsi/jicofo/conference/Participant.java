@@ -357,14 +357,6 @@ public class Participant
     }
 
     /**
-     * Returns <tt>true</tt> if this peer supports ICE transport.
-     */
-    public boolean hasIceSupport()
-    {
-        return supportedFeatures.contains(DiscoveryUtil.FEATURE_ICE);
-    }
-
-    /**
      * Returns <tt>true</tt> if this peer supports DTLS/SCTP.
      */
     public boolean hasSctpSupport()
