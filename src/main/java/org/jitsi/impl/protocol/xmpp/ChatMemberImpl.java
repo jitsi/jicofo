@@ -185,6 +185,12 @@ public class ChatMemberImpl
         return robot || isJigasi;
     }
 
+    @Override
+    public boolean isJigasi()
+    {
+        return isJigasi;
+    }
+
     /**
      * Does presence processing.
      *

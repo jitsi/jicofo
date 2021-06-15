@@ -956,21 +956,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Check if given member represent SIP gateway participant.
-
-     * @param member the chat member to be checked.
-     *
-     * @return <tt>true</tt> if given <tt>member</tt> represents the SIP gateway
-     */
-    // FIXME remove once Jigasi is a "robot"
-    boolean isSipGateway(ChatRoomMember member)
-    {
-        Participant participant = findParticipantForChatMember(member);
-
-        return participant != null && participant.isSipGateway();
-    }
-
-    /**
      * Destroys the MUC room and deletes the conference which results in all
      * participant being removed from the XMPP chat room.
      * @param reason the reason text that will be advertised to all
@@ -2086,7 +2071,7 @@ public class JitsiMeetConferenceImpl
         }
 
         if (doMute
-            && participant.isSipGateway()
+            && participant.getChatMember().isJigasi()
             && !participant.hasAudioMuteSupport())
         {
             logger.warn("Mute not allowed, toBeMuted is jigasi.");

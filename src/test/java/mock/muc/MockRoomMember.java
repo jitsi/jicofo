@@ -99,6 +99,12 @@ public class MockRoomMember
     }
 
     @Override
+    public boolean isJigasi()
+    {
+        return false;
+    }
+
+    @Override
     public Presence getPresence()
     {
         // FIXME: not implemented
