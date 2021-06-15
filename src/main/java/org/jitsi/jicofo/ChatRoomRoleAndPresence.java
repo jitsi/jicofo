@@ -166,9 +166,7 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (member.isRobot()
-                // FIXME make Jigasi advertise itself as a robot
-                || conference.isSipGateway(member))
+            if (member.isRobot())
             {
                 continue;
             }
