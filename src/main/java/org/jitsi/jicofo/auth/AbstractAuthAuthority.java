@@ -38,7 +38,7 @@ import static org.apache.commons.lang3.StringUtils.*;
  * @author Pawel Domas
  */
 public abstract class AbstractAuthAuthority
-    implements AuthenticationAuthority, FocusManager.FocusAllocationListener
+    implements AuthenticationAuthority, ConferenceStore.Listener
 {
     /**
      * The logger.
@@ -282,7 +282,7 @@ public abstract class AbstractAuthAuthority
      * {@inheritDoc}
      */
     @Override
-    public void onFocusDestroyed(EntityBareJid roomName)
+    public void conferenceEnded(EntityBareJid roomName)
     {
         if (enableAutoLogin)
         {

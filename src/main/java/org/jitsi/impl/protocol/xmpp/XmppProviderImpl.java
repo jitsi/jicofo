@@ -468,7 +468,7 @@ public class XmppProviderImpl
 
                 ChatRoomImpl newRoom = new ChatRoomImpl(XmppProviderImpl.this, roomJid, this::removeRoom);
 
-                rooms.put(newRoom.getName(), newRoom);
+                rooms.put(newRoom.getRoomJid().toString(), newRoom);
 
                 return newRoom;
             }
@@ -501,7 +501,7 @@ public class XmppProviderImpl
         {
             synchronized (rooms)
             {
-                rooms.remove(chatRoom.getName());
+                rooms.remove(chatRoom.getRoomJid().toString());
             }
         }
     }

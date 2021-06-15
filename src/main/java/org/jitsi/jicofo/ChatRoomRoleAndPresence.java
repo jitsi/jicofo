@@ -24,7 +24,6 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
-import java.util.*;
 import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
@@ -44,22 +43,19 @@ public class ChatRoomRoleAndPresence
      * The {@link JitsiMeetConferenceImpl} for which this instance is handling
      * MUC related stuff.
      */
+    @NotNull
     private final JitsiMeetConferenceImpl conference;
 
     /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
      */
+    @NotNull
     private final ChatRoom chatRoom;
 
     /**
      * Authentication authority used to verify users.
      */
     private AuthenticationAuthority authAuthority;
-
-    /**
-     * The {@link MemberRole} of our local user in the MUC.
-     */
-    private MemberRole focusRole;
 
     /**
      * Flag indicates whether auto owner feature is active. First participant to
@@ -75,24 +71,16 @@ public class ChatRoomRoleAndPresence
      */
     private ChatRoomMember owner;
 
-    public ChatRoomRoleAndPresence(JitsiMeetConferenceImpl conference,
-                                   ChatRoom chatRoom,
+    public ChatRoomRoleAndPresence(@NotNull JitsiMeetConferenceImpl conference,
+                                   @NotNull ChatRoom chatRoom,
                                    @NotNull Logger parentLogger)
     {
-        this.conference = Objects.requireNonNull(conference, "conference");
-        this.chatRoom = Objects.requireNonNull(chatRoom, "chatRoom");
-
+        this.conference = conference;
+        this.chatRoom = chatRoom;
         this.logger = parentLogger.createChildLogger(getClass().getName());
-    }
 
-    /**
-     * Initializes this instance, so that it starts doing it's job.
-     */
-    public void init()
-    {
         authAuthority = JicofoServices.jicofoServicesSingleton == null
                 ? null : JicofoServices.jicofoServicesSingleton.getAuthenticationAuthority();
-
         if (authAuthority != null)
         {
             authAuthority.addAuthenticationListener(this);
@@ -141,7 +129,6 @@ public class ChatRoomRoleAndPresence
             {
                 checkGrantOwnerToAuthUser(sourceMember);
             }
-            conference.onMemberJoined(sourceMember);
         }
         else if (evt instanceof Left || evt instanceof Kicked)
         {
@@ -150,14 +137,6 @@ public class ChatRoomRoleAndPresence
                 logger.info("Owner has left the room !");
                 owner = null;
                 electNewOwner();
-            }
-            if (evt instanceof Kicked)
-            {
-                conference.onMemberKicked(sourceMember);
-            }
-            else
-            {
-                conference.onMemberLeft(sourceMember);
             }
         }
     }
@@ -169,41 +148,25 @@ public class ChatRoomRoleAndPresence
     private void electNewOwner()
     {
         if (!autoOwner)
-            return;
-
-        if (focusRole == null)
         {
-            // We don't know if we have permissions yet
-            logger.warn("Focus role unknown");
+            return;
+        }
 
-            MemberRole userRole = chatRoom.getUserRole();
-
-            logger.info("Obtained focus role: " + userRole);
-
-            if (userRole == null)
-            {
-                return;
-            }
-
-            focusRole = userRole;
-
-            if (!verifyFocusRole())
-            {
-                return;
-            }
+        if (chatRoom.getUserRole() != MemberRole.OWNER)
+        {
+            return;
         }
 
         if (authAuthority != null)
         {
-            // If we have authentication authority we do not grant owner
-            // role based on who enters first, but who is an authenticated user
+            // If we have authentication authority we do not grant owner role based on who enters first, but who is an
+            // authenticated user.
             return;
         }
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (conference.isFocusMember(member)
-                || member.isRobot()
+            if (member.isRobot()
                 // FIXME make Jigasi advertise itself as a robot
                 || conference.isSipGateway(member))
             {
@@ -230,17 +193,6 @@ public class ChatRoomRoleAndPresence
         }
     }
 
-    private boolean verifyFocusRole()
-    {
-        if (focusRole != MemberRole.OWNER)
-        {
-            logger.error("Focus must be an owner!");
-            conference.stop();
-            return false;
-        }
-        return true;
-    }
-
     /**
      * Waits for initial focus role and refuses to join if owner is
      * not granted. Elects the first owner of the conference.
@@ -248,14 +200,13 @@ public class ChatRoomRoleAndPresence
     @Override
     public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
     {
+        MemberRole role = evt.getNewRole();
         if (logger.isDebugEnabled())
         {
-            logger.debug("Local role: " + evt.getNewRole() + " init: " + evt.isInitial()
-                        + " room: " + conference.getRoomName());
+            logger.debug("Local role: " + role + " init: " + evt.isInitial());
         }
 
-        focusRole = evt.getNewRole();
-        if (!verifyFocusRole())
+        if (role != MemberRole.OWNER)
         {
             return;
         }

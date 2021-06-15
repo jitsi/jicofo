@@ -18,7 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -92,11 +91,6 @@ public class ChatRoomImpl
     private final MultiUserChat muc;
 
     /**
-     * The resource part of our occupant JID.
-     */
-    private Resourcepart myResourcepart;
-
-    /**
      * Our full Multi User Chat XMPP address.
      */
     private EntityFullJid myOccupantJid;
@@ -117,9 +111,6 @@ public class ChatRoomImpl
     private final CopyOnWriteArrayList<ChatRoomLocalUserRoleListener> localUserRoleListeners
             = new CopyOnWriteArrayList<>();
 
-    /**
-     * Nickname to member impl class map.
-     */
     private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
 
     /**
@@ -133,31 +124,28 @@ public class ChatRoomImpl
     private Presence lastPresenceSent;
 
     /**
-     * Number of members in the chat room. That excludes the focus member.
-     */
-    private int memberCount = 0;
-
-    /** The conference that is backed by this MUC room. */
-    private JitsiMeetConference conference;
-
-    /**
-     * The value of thee "meetingId" field from the MUC form, if present.
+     * The value of the "meetingId" field from the MUC form, if present.
      */
     private String meetingId = null;
 
     /**
      * Indicates whether A/V Moderation is enabled for this room.
      */
-    private Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
+    private final Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
 
     private Map<String, List<String>> whitelists = new HashMap<>();
+
+    private List<ChatRoomListener> chatRoomListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param roomJid the room JID (e.g. "room@service").
      */
-    public ChatRoomImpl(@NotNull XmppProvider xmppProvider, EntityBareJid roomJid, Consumer<ChatRoomImpl> leaveCallback)
+    public ChatRoomImpl(
+            @NotNull XmppProvider xmppProvider,
+            @NotNull EntityBareJid roomJid,
+            Consumer<ChatRoomImpl> leaveCallback)
     {
         logger = new LoggerImpl(getClass().getName());
         logger.addContext("room", roomJid.getResourceOrEmpty().toString());
@@ -179,40 +167,20 @@ public class ChatRoomImpl
     }
 
     @Override
-    public String getLocalNickname()
+    public void addListener(@NotNull ChatRoomListener listener)
     {
-        return muc.getNickname().toString();
+        chatRoomListeners.add(listener);
     }
 
-    /**
-     * Sets the conference that is backed by this MUC. Can only be set once.
-     * @param conference the conference backed by this MUC.
-     */
-    public void setConference(JitsiMeetConference conference)
+    @Override
+    public void removeListener(@NotNull ChatRoomListener listener)
     {
-        if (this.conference != null && conference != null)
-        {
-            throw new IllegalStateException("Conference is already set!");
-        }
-
-        this.conference = conference;
+        chatRoomListeners.remove(listener);
     }
 
     void setStartMuted(boolean[] startMuted)
     {
-        if (conference == null)
-        {
-            logger.warn("Can not set 'start muted', conference is null.");
-            return;
-        }
-
-        conference.setStartMuted(startMuted);
-    }
-
-    @Override
-    public String getName()
-    {
-        return roomJid.toString();
+        chatRoomListeners.forEach(listener -> listener.startMutedChanged(startMuted[0], startMuted[1]));
     }
 
     @Override
@@ -231,9 +199,7 @@ public class ChatRoomImpl
 
     private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
-        this.myResourcepart = nickname;
-        this.myOccupantJid = JidCreate.entityFullFrom(roomJid,
-                                                          myResourcepart);
+        this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
 
         this.presenceInterceptor = new PresenceListener()
         {
@@ -245,7 +211,7 @@ public class ChatRoomImpl
         };
         muc.addPresenceInterceptor(presenceInterceptor);
 
-        muc.createOrJoin(myResourcepart);
+        muc.createOrJoin(nickname);
 
         // Make the room non-anonymous, so that others can recognize focus JID
         Form config = muc.getConfigurationForm();
@@ -362,7 +328,7 @@ public class ChatRoomImpl
      */
     private void resetRoleForOccupant(EntityFullJid occupantJid)
     {
-        if (occupantJid.getResourcepart().equals(myResourcepart))
+        if (occupantJid.getResourcepart().equals(myOccupantJid.getResourcepart()))
         {
             resetCachedUserRole();
         }
@@ -410,6 +376,10 @@ public class ChatRoomImpl
     public void setLocalUserRole(MemberRole role, boolean isInitial)
     {
         fireLocalUserRoleEvent(role, isInitial);
+        if (this.role != role)
+        {
+            chatRoomListeners.forEach(listener -> listener.localRoleChanged(role));
+        }
         this.role = role;
     }
 
@@ -447,7 +417,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatRoomMember findChatMember(Jid occupantJid)
+    public ChatMemberImpl findChatMember(Jid occupantJid)
     {
         if (occupantJid == null)
         {
@@ -552,6 +522,22 @@ public class ChatRoomImpl
     private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent event)
     {
         listeners.forEach(l -> l.memberPresenceChanged(event));
+        if (event instanceof Joined)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberJoined(event.getChatRoomMember()));
+        }
+        else if (event instanceof Left)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberLeft(event.getChatRoomMember()));
+        }
+        else if (event instanceof Kicked)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberKicked(event.getChatRoomMember()));
+        }
+        else if (event instanceof PresenceUpdated)
+        {
+            chatRoomListeners.forEach(listener -> listener.memberPresenceChanged(event.getChatRoomMember()));
+        }
     }
 
     Occupant getOccupant(ChatMemberImpl chatMember)
@@ -680,12 +666,7 @@ public class ChatRoomImpl
                 return members.get(jid);
             }
 
-            if (!jid.equals(myOccupantJid))
-            {
-                memberCount++;
-            }
-
-            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, memberCount);
+            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, members.size() + 1);
 
             members.put(jid, newMember);
 
@@ -774,7 +755,7 @@ public class ChatRoomImpl
 
         synchronized (members)
         {
-            chatMember = (ChatMemberImpl) findChatMember(jid);
+            chatMember = findChatMember(jid);
             if (chatMember == null)
             {
                 if (presence.getType().equals(Presence.Type.available))
@@ -901,8 +882,7 @@ public class ChatRoomImpl
         }
 
         List<String> whitelist = this.whitelists.get(mediaType.toString());
-
-        return whitelist == null ? false : whitelist.contains(jid.toString());
+        return whitelist != null && whitelist.contains(jid.toString());
     }
 
     class MemberListener
@@ -939,8 +919,6 @@ public class ChatRoomImpl
                     logger.error(occupantJid + " not in " + roomJid);
                 }
 
-                memberCount--;
-
                 return removed;
             }
         }
@@ -970,9 +948,7 @@ public class ChatRoomImpl
             }
             else
             {
-                logger.info(
-                    "Member left event for non-existing member: "
-                                + occupantJid);
+                logger.info("Member left event for non-existing member: " + occupantJid);
             }
         }
 
@@ -1206,7 +1182,7 @@ public class ChatRoomImpl
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)
         {
-            ChatRoomImpl.this.conference.handleRoomDestroyed(reason);
+            chatRoomListeners.forEach(listener -> listener.roomDestroyed(reason));
         }
     }
 }

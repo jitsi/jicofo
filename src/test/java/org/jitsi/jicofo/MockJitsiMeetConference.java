@@ -64,11 +64,6 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public void setStartMuted(boolean[] startMuted)
-    {
-    }
-
-    @Override
     public MemberRole getRoleForMucJid(Jid jid)
     {
         return null;
@@ -90,7 +85,7 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request)
+    public IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request)
     {
         return new IqProcessingResult.NotProcessed();
     }
@@ -108,10 +103,6 @@ public class MockJitsiMeetConference
     {
         return JitsiMeetConferenceImpl.MuteResult.SUCCESS;
     }
-
-    @Override
-    public void handleRoomDestroyed(String reason)
-    {}
 
     @Override
     public void muteAllNonModeratorParticipants(MediaType mediaType)

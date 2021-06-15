@@ -71,14 +71,6 @@ public interface JitsiMeetConference
      */
     ChatRoom getChatRoom();
 
-    /**
-     * Sets the value of the <tt>startMuted</tt> property of this instance.
-     *
-     * @param startMuted the new value to set on this instance. The specified
-     * array is copied.
-     */
-    void setStartMuted(boolean[] startMuted);
-
     default JibriRecorder getJibriRecorder()
     {
         return null;
@@ -88,7 +80,6 @@ public interface JitsiMeetConference
     {
         return null;
     }
-
 
     /**
      * Gets the role of a member in the conference.
@@ -136,10 +127,4 @@ public interface JitsiMeetConference
             Jid toBeMutedJid,
             boolean doMute,
             MediaType mediaType);
-
-    /**
-     * Handles used chat room being destroyed.
-     * @param reason the reason for it.
-     */
-    void handleRoomDestroyed(String reason);
 }

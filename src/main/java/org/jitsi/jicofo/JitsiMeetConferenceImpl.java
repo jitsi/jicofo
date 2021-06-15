@@ -106,6 +106,8 @@ public class JitsiMeetConferenceImpl
     @NotNull
     private final JitsiMeetConfig config;
 
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
+
     /**
      * Conference room chat instance.
      */
@@ -245,8 +247,7 @@ public class JitsiMeetConferenceImpl
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
 
-        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        this.jicofoServices = jicofoServices;
+        this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
 
         logger.info("Created new conference, roomJid=" + roomName);
     }
@@ -415,11 +416,11 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns <tt>true</tt> if focus has joined the conference room.
+     * Returns <tt>true</tt> if the conference has been successfully started.
      */
-    public boolean isInTheRoom()
+    public boolean isStarted()
     {
-        return chatRoom != null && chatRoom.isJoined();
+        return started.get();
     }
 
     /**
@@ -433,17 +434,15 @@ public class JitsiMeetConferenceImpl
         logger.info("Joining " + roomName);
 
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
-        chatRoom.setConference(this);
+        chatRoom.addListener(chatRoomListener);
 
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
-        rolesAndPresence.init();
 
         transcriberManager = new TranscriberManager(
             getClientXmppProvider(),
             this,
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
-        transcriberManager.init();
 
         chatRoom.join();
         if (chatRoom.getMeetingId() != null)
@@ -519,7 +518,7 @@ public class JitsiMeetConferenceImpl
             rolesAndPresence.dispose();
             rolesAndPresence = null;
         }
-        if(transcriberManager != null)
+        if (transcriberManager != null)
         {
             transcriberManager.dispose();
             transcriberManager = null;
@@ -530,7 +529,7 @@ public class JitsiMeetConferenceImpl
             chatRoom.leave();
         }
 
-        chatRoom.setConference(null);
+        chatRoom.removeListener(chatRoomListener);
         chatRoom = null;
     }
 
@@ -540,17 +539,13 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the new member that has just joined the room.
      */
-    protected void onMemberJoined(final ChatRoomMember chatRoomMember)
+    private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
             logger.info("Member joined:" + chatRoomMember.getName());
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
-
-            if (!isFocusMember(chatRoomMember))
-            {
-                hasHadAtLeastOneParticipant = true;
-            }
+            hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
             if (!checkMinParticipants())
@@ -616,11 +611,6 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            if (isFocusMember(chatRoomMember))
-            {
-                return;
-            }
-
             // Participant already connected ?
             if (findParticipantForChatMember(chatRoomMember) != null)
             {
@@ -962,31 +952,7 @@ public class JitsiMeetConferenceImpl
     private boolean checkMinParticipants()
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
-        // Subtract one for jicofo's participant
-        if (chatRoom.getMembersCount() - 1 >= minParticipants)
-        {
-            return true;
-        }
-
-        int realCount = 0;
-        for (ChatRoomMember member : chatRoom.getMembers())
-        {
-            if (!isFocusMember(member))
-            {
-                realCount++;
-            }
-        }
-
-        return realCount >= minParticipants;
-    }
-
-    /**
-     * Check whether a {@link ChatRoomMember} is the local member.
-     * TODO: just stop firing events for the local member.
-     */
-    boolean isFocusMember(ChatRoomMember member)
-    {
-        return member.getName().equals(chatRoom.getLocalNickname());
+        return chatRoom.getMembersCount() >= minParticipants;
     }
 
     /**
@@ -1058,7 +1024,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember kicked chat room member.
      */
-    protected void onMemberKicked(ChatRoomMember chatRoomMember)
+    private void onMemberKicked(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -1074,7 +1040,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param chatRoomMember the member that has left the room.
      */
-    protected void onMemberLeft(ChatRoomMember chatRoomMember)
+    private void onMemberLeft(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -2372,20 +2338,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Sets the value of the <tt>startMuted</tt> property of this instance.
-     *
-     * @param startMuted the new value to set on this instance. The specified
-     * array is copied.
-     * TODO: this shit will go away when "start muted" is moved to the client
-     */
-    @Override
-    @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public void setStartMuted(boolean[] startMuted)
-    {
-        this.startMuted = startMuted;
-    }
-
-    /**
      * Creates the shared document name by either using the conference room name
      * or a random string, depending on configuration.
      *
@@ -2526,7 +2478,8 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public IqProcessingResult handleJibriRequest(IqRequest<JibriIq> request)
+    @NotNull
+    public IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request)
     {
         IqProcessingResult result = new NotProcessed();
         if (started.get())
@@ -2565,16 +2518,6 @@ public class JitsiMeetConferenceImpl
         return jibriSipGateway;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleRoomDestroyed(String reason)
-    {
-        logger.info("Room destroyed with reason=" + reason);
-
-        stop();
-    }
 
     /**
      * {@inheritDoc}
@@ -3016,5 +2959,55 @@ public class JitsiMeetConferenceImpl
         SUCCESS,
         NOT_ALLOWED,
         ERROR
+    }
+
+    private class ChatRoomListenerImpl implements ChatRoomListener
+    {
+        @Override
+        public void roomDestroyed(@NotNull String reason)
+        {
+            logger.info("Room destroyed with reason=" + reason);
+            stop();
+        }
+
+        @Override
+        public void startMutedChanged(boolean startAudioMuted, boolean startVideoMuted)
+        {
+            startMuted = new boolean[] { startAudioMuted, startVideoMuted };
+        }
+
+        @Override
+        public void memberJoined(@NotNull ChatRoomMember member)
+        {
+            onMemberJoined(member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            onMemberKicked(member);
+        }
+
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            onMemberLeft(member);
+        }
+
+        @Override
+        public void localRoleChanged(@NotNull MemberRole newRole)
+        {
+            if (newRole != MemberRole.OWNER)
+            {
+                logger.warn(
+                    "Stopping, because the local role changed to " + newRole + " (owner privileges are required).");
+                stop();
+            }
+        }
+
+        @Override
+        public void memberPresenceChanged(@NotNull ChatRoomMember member)
+        {
+        }
     }
 }

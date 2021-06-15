@@ -92,6 +92,7 @@ public class MockXmppProvider
     }
 
     @Override
+    @NotNull
     public XmppConnectionConfig getConfig()
     {
         return config;
@@ -99,12 +100,14 @@ public class MockXmppProvider
 
 
     @Override
+    @NotNull
     public MockXmppConnection getXmppConnection()
     {
         return connection;
     }
 
     @Override
+    @NotNull
     public OperationSetJingle getJingleApi()
     {
         return jingleOpSet;

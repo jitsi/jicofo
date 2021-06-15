@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.jicofo.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
@@ -36,13 +36,6 @@ import java.util.*;
  */
 public interface ChatRoom
 {
-    /**
-     * Returns the name of this <tt>ChatRoom</tt>.
-     *
-     * @return a <tt>String</tt> containing the name of this <tt>ChatRoom</tt>.
-     */
-    String getName();
-
     /**
      * Joins this chat room with the nickname of the local user so that the
      * user would start receiving events and messages for it.
@@ -184,16 +177,16 @@ public interface ChatRoom
     void modifyPresence(Collection<ExtensionElement> toRemove, Collection<ExtensionElement> toAdd);
 
     /**
-     * TODO: only needed for startMuted. Remove once startMuted is removed.
+     * Add a [ChatRoomListener] to the list of listeners to be notified of events from this [ChatRoom].
      */
-    void setConference(JitsiMeetConference conference);
-
-    void setPresenceExtension(ExtensionElement extension, boolean remove);
+    void addListener(@NotNull ChatRoomListener listener);
 
     /**
-     * Get the nickname of the local occupant.
+     * Removes a [ChatRoomListener] from the list of listeners to be notified of events from this [ChatRoom].
      */
-    String getLocalNickname();
+    void removeListener(@NotNull ChatRoomListener listener);
+
+    void setPresenceExtension(ExtensionElement extension, boolean remove);
 
     /**
      * Get the unique meeting ID associated by this room (set by the MUC service).

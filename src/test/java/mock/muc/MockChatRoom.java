@@ -17,8 +17,8 @@
  */
 package mock.muc;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.*;
 
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -57,9 +57,9 @@ public class MockChatRoom
 
     private volatile boolean isJoined;
 
-    private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
+    private List<ChatRoomListener> listeners = new CopyOnWriteArrayList<>();
 
-    private ChatRoomMember me;
+    private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
     /**
      * Listeners that will be notified of changes in member status in the
@@ -69,14 +69,10 @@ public class MockChatRoom
 
     private final Vector<ChatRoomLocalUserRoleListener> localUserRoleListeners = new Vector<>();
 
-    // The nickname to join with
-    private final String myNickname;
-
-    public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider, String myNickname)
+    public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider)
     {
         this.roomName = roomName;
         this.xmppProvider = xmppProvider;
-        this.myNickname = myNickname;
     }
 
     @Override
@@ -101,19 +97,20 @@ public class MockChatRoom
     }
 
     @Override
-    public void setConference(JitsiMeetConference conference)
+    public void addListener(@NotNull ChatRoomListener listener)
     {
+        listeners.add(listener);
+    }
+
+    @Override
+    public void removeListener(@NotNull ChatRoomListener listener)
+    {
+        listeners.remove(listener);
     }
 
     @Override
     public void setPresenceExtension(ExtensionElement extension, boolean remove)
     {
-    }
-
-    @Override
-    public String getLocalNickname()
-    {
-        return myNickname;
     }
 
     @Override
@@ -143,22 +140,9 @@ public class MockChatRoom
     }
 
     @Override
-    public String getName()
-    {
-        return roomName.toString();
-    }
-
-    @Override
     public EntityBareJid getRoomJid()
     {
         return roomName;
-    }
-
-    @Override
-    public void join()
-            throws SmackException
-    {
-        joinAs(myNickname);
     }
 
     private EntityFullJid createAddressForName(String nickname)
@@ -167,47 +151,25 @@ public class MockChatRoom
         return JidCreate.entityFullFrom(roomName, Resourcepart.from(nickname));
     }
 
-    private void joinAs(String nickname)
+    @Override
+    public void join()
             throws SmackException
     {
         if (isJoined)
+        {
             throw new MultiUserChatException.MucAlreadyJoinedException();
+        }
 
         isJoined = true;
 
-        MockRoomMember member;
-        try
-        {
-            member = new MockRoomMember(createAddressForName(nickname), this);
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new RuntimeException("Invalid mock room member JID", e);
-        }
-
         // FIXME: for mock purposes we are always the owner on join()
-        boolean isOwner = true;//= members.size() == 0;
-
-        synchronized (members)
-        {
-            members.add(member);
-            me = member;
-            fireMemberPresenceEvent(new Joined(me));
-        }
-
-        if (isOwner)
-        {
-            me.setRole(MemberRole.OWNER);
-        }
-
-        fireLocalUserRoleEvent(me, true);
+        fireLocalUserRoleEvent(MemberRole.OWNER);
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
             throws XmppStringprepException
     {
-        return new MockRoomMember(
-            createAddressForName(nickname), this);
+        return new MockRoomMember(createAddressForName(nickname), this);
     }
 
     public MockRoomMember mockJoin(MockRoomMember member)
@@ -221,15 +183,12 @@ public class MockChatRoom
             }
             catch (XmppStringprepException e)
             {
-                throw new IllegalArgumentException(
-                        "The member name " + member.getName() + " is invalid");
+                throw new IllegalArgumentException("The member name " + member.getName() + " is invalid");
             }
 
             if (findMember(name) != null)
             {
-                throw new IllegalArgumentException(
-                        "The member with name: " + name
-                            + " is in the room already");
+                throw new IllegalArgumentException("The member with name: " + name + " is in the room already");
             }
 
             members.add(member);
@@ -276,15 +235,6 @@ public class MockChatRoom
             return;
 
         isJoined = false;
-
-        synchronized (members)
-        {
-            members.remove(me);
-
-            fireMemberPresenceEvent(new Left(me));
-        }
-
-        me = null;
     }
 
     @Override
@@ -395,12 +345,27 @@ public class MockChatRoom
         }
 
         for (ChatRoomMemberPresenceListener listener : listeners)
+        {
             listener.memberPresenceChanged(evt);
+        }
+
+        if (evt instanceof Joined)
+        {
+            this.listeners.forEach(listener -> listener.memberJoined(evt.getChatRoomMember()));
+        }
+        else if (evt instanceof Left)
+        {
+            this.listeners.forEach(listener -> listener.memberLeft(evt.getChatRoomMember()));
+        }
+        else if (evt instanceof Kicked)
+        {
+            this.listeners.forEach(listener -> listener.memberKicked(evt.getChatRoomMember()));
+        }
     }
 
-    private void fireLocalUserRoleEvent(ChatRoomMember member, boolean isInitial)
+    private void fireLocalUserRoleEvent(MemberRole role)
     {
-        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(member.getRole(), isInitial);
+        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(role, true);
 
         Iterable<ChatRoomLocalUserRoleListener> listeners;
         synchronized (localUserRoleListeners)
