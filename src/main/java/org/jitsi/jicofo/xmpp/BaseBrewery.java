@@ -208,7 +208,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         }
     }
 
-    private class ChatRoomListenerImpl extends ChatRoomListenerStub
+    private class ChatRoomListenerImpl extends DefaultChatRoomListener
     {
         @Override
         public void memberJoined(@NotNull ChatRoomMember member)
