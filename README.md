@@ -84,6 +84,12 @@ NB: SECRET and PASSWORD can alternatively be set via the environment variables J
 
 This section has been moved to [The Handbook](https://jitsi.github.io/handbook/docs/devops-guide/secure-domain).
 
+6 Restart services:
+```
+sudo systemctl restart jicofo.service
+sudo systemctl restart prosody.service
+```
+
 
 ## Certificates
 Jicofo uses an XMPP user connection (on port 5222 by default), and since the
