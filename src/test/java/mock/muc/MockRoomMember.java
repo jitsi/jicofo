@@ -105,6 +105,12 @@ public class MockRoomMember
     }
 
     @Override
+    public boolean isJibri()
+    {
+        return false;
+    }
+
+    @Override
     public Presence getPresence()
     {
         // FIXME: not implemented

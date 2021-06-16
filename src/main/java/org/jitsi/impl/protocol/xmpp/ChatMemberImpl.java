@@ -84,6 +84,7 @@ public class ChatMemberImpl
     private boolean robot = false;
 
     private boolean isJigasi = false;
+    private boolean isJibri = false;
 
     private MemberRole role;
 
@@ -181,14 +182,20 @@ public class ChatMemberImpl
     @Override
     public boolean isRobot()
     {
-        // Jigasi does not use the "robot" signaling, but semantically it should be considered a robot.
-        return robot || isJigasi;
+        // Jigasi and Jibri do not use the "robot" signaling, but semantically they should be considered "robots".
+        return robot || isJigasi || isJibri;
     }
 
     @Override
     public boolean isJigasi()
     {
         return isJigasi;
+    }
+
+    @Override
+    public boolean isJibri()
+    {
+        return isJibri;
     }
 
     /**
@@ -230,10 +237,13 @@ public class ChatMemberImpl
         {
             isJigasi = features.getFeatureExtensions().stream().anyMatch(
                     feature -> "http://jitsi.org/protocol/jigasi".equals(feature.getVar()));
+            isJibri = features.getFeatureExtensions().stream().anyMatch(
+                    feature -> "http://jitsi.org/protocol/jibri".equals(feature.getVar()));
         }
         else
         {
             isJigasi = false;
+            isJibri = false;
         }
 
         RegionPacketExtension regionPE

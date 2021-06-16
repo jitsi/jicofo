@@ -2079,7 +2079,7 @@ public class JitsiMeetConferenceImpl
         }
 
 
-        if (doMute && participant.isJibri())
+        if (doMute && participant.getChatMember().isJibri())
         {
             logger.warn("Mute not allowed, toBeMuted is jibri.");
             return MuteResult.NOT_ALLOWED;
