@@ -100,11 +100,6 @@ public class DiscoveryUtil
     public final static String FEATURE_LIPSYNC = "http://jitsi.org/meet/lipsync";
 
     /**
-     * A namespace for detecting participants as jigasi users.
-     */
-    public final static String FEATURE_JIGASI = "http://jitsi.org/protocol/jigasi";
-
-    /**
      * A namespace for detecting whether a participant (jigasi users) can be
      * muted.
      */

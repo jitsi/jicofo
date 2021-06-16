@@ -436,7 +436,7 @@ public class JitsiMeetConferenceImpl
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
         chatRoom.addListener(chatRoomListener);
 
-        rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom, logger);
+        rolesAndPresence = new ChatRoomRoleAndPresence(chatRoom, logger);
 
         transcriberManager = new TranscriberManager(
             getClientXmppProvider(),
@@ -953,21 +953,6 @@ public class JitsiMeetConferenceImpl
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         return chatRoom.getMembersCount() >= minParticipants;
-    }
-
-    /**
-     * Check if given member represent SIP gateway participant.
-
-     * @param member the chat member to be checked.
-     *
-     * @return <tt>true</tt> if given <tt>member</tt> represents the SIP gateway
-     */
-    // FIXME remove once Jigasi is a "robot"
-    boolean isSipGateway(ChatRoomMember member)
-    {
-        Participant participant = findParticipantForChatMember(member);
-
-        return participant != null && participant.isSipGateway();
     }
 
     /**
@@ -2086,7 +2071,7 @@ public class JitsiMeetConferenceImpl
         }
 
         if (doMute
-            && participant.isSipGateway()
+            && participant.getChatMember().isJigasi()
             && !participant.hasAudioMuteSupport())
         {
             logger.warn("Mute not allowed, toBeMuted is jigasi.");

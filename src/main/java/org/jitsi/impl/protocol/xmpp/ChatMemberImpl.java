@@ -83,6 +83,8 @@ public class ChatMemberImpl
      */
     private boolean robot = false;
 
+    private boolean isJigasi = false;
+
     private MemberRole role;
 
     /**
@@ -179,7 +181,14 @@ public class ChatMemberImpl
     @Override
     public boolean isRobot()
     {
-        return robot;
+        // Jigasi does not use the "robot" signaling, but semantically it should be considered a robot.
+        return robot || isJigasi;
+    }
+
+    @Override
+    public boolean isJigasi()
+    {
+        return isJigasi;
     }
 
     /**
@@ -213,6 +222,18 @@ public class ChatMemberImpl
 
                 this.robot = newStatus;
             }
+        }
+
+        // We recognize jigasi by the existence of a "feature" extension in its presence.
+        FeaturesExtension features = presence.getExtension("features", "jabber:client");
+        if (features != null)
+        {
+            isJigasi = features.getFeatureExtensions().stream().anyMatch(
+                    feature -> "http://jitsi.org/protocol/jigasi".equals(feature.getVar()));
+        }
+        else
+        {
+            isJigasi = false;
         }
 
         RegionPacketExtension regionPE

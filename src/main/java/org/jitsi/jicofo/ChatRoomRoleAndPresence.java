@@ -40,13 +40,6 @@ public class ChatRoomRoleAndPresence
                AuthenticationListener
 {
     /**
-     * The {@link JitsiMeetConferenceImpl} for which this instance is handling
-     * MUC related stuff.
-     */
-    @NotNull
-    private final JitsiMeetConferenceImpl conference;
-
-    /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
      */
     @NotNull
@@ -71,11 +64,8 @@ public class ChatRoomRoleAndPresence
      */
     private ChatRoomMember owner;
 
-    public ChatRoomRoleAndPresence(@NotNull JitsiMeetConferenceImpl conference,
-                                   @NotNull ChatRoom chatRoom,
-                                   @NotNull Logger parentLogger)
+    public ChatRoomRoleAndPresence(@NotNull ChatRoom chatRoom, @NotNull Logger parentLogger)
     {
-        this.conference = conference;
         this.chatRoom = chatRoom;
         this.logger = parentLogger.createChildLogger(getClass().getName());
 
@@ -166,9 +156,7 @@ public class ChatRoomRoleAndPresence
 
         for (ChatRoomMember member : chatRoom.getMembers())
         {
-            if (member.isRobot()
-                // FIXME make Jigasi advertise itself as a robot
-                || conference.isSipGateway(member))
+            if (member.isRobot())
             {
                 continue;
             }
