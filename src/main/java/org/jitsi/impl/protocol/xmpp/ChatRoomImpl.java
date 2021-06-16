@@ -1129,56 +1129,8 @@ public class ChatRoomImpl
      * Listens for room destroyed and pass it to the conference.
      */
     class LocalUserStatusListener
-        implements UserStatusListener
+        extends DefaultUserStatusListener
     {
-        @Override
-        public void kicked(Jid actor, String reason)
-        {}
-
-        @Override
-        public void voiceGranted()
-        {}
-
-        @Override
-        public void voiceRevoked()
-        {}
-
-        @Override
-        public void banned(Jid actor, String reason)
-        {}
-
-        @Override
-        public void membershipGranted()
-        {}
-
-        @Override
-        public void membershipRevoked()
-        {}
-
-        @Override
-        public void moderatorGranted()
-        {}
-
-        @Override
-        public void moderatorRevoked()
-        {}
-
-        @Override
-        public void ownershipGranted()
-        {}
-
-        @Override
-        public void ownershipRevoked()
-        {}
-
-        @Override
-        public void adminGranted()
-        {}
-
-        @Override
-        public void adminRevoked()
-        {}
-
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)
         {
