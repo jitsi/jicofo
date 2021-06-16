@@ -27,6 +27,11 @@ import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 
 class XmppConfig {
+    val trustedDomains: List<DomainBareJid> by config {
+        "jicofo.xmpp.trusted-domains".from(newConfig)
+            .convertFrom<List<String>> { l -> l.map { JidCreate.domainBareFrom(it) } }
+    }
+
     companion object {
         @JvmField
         val service = XmppServiceConnectionConfig()
