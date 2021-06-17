@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -153,10 +154,7 @@ public class JitsiMeetConferenceImpl
      */
     private TranscriberManager transcriberManager;
 
-    /**
-     * Chat room roles and presence handler.
-     */
-    private ChatRoomRoleAndPresence rolesAndPresence;
+    private ChatRoomRoleManager chatRoomRoleManager;
 
     /**
      * Indicates if this instance has been started (initialized).
@@ -437,7 +435,17 @@ public class JitsiMeetConferenceImpl
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
         chatRoom.addListener(chatRoomListener);
 
-        rolesAndPresence = new ChatRoomRoleAndPresence(chatRoom, logger);
+        AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
+        if (authenticationAuthority != null)
+        {
+            chatRoomRoleManager = new AuthenticationRoleManager(chatRoom, authenticationAuthority);
+            chatRoom.addListener(chatRoomRoleManager);
+        }
+        else if (ConferenceConfig.config.enableAutoOwner())
+        {
+            chatRoomRoleManager = new AutoOwnerRoleManager(chatRoom);
+            chatRoom.addListener(chatRoomRoleManager);
+        }
 
         transcriberManager = new TranscriberManager(
             getClientXmppProvider(),
@@ -514,10 +522,10 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        if (rolesAndPresence != null)
+        if (chatRoomRoleManager != null)
         {
-            rolesAndPresence.dispose();
-            rolesAndPresence = null;
+            chatRoom.removeListener(chatRoomRoleManager);
+            chatRoomRoleManager.stop();
         }
         if (transcriberManager != null)
         {
@@ -2023,7 +2031,7 @@ public class JitsiMeetConferenceImpl
                 return MuteResult.ERROR;
             }
             // Only moderators can mute others
-            if (!muterJid.equals(toBeMutedJid) && !muter.getChatMember().getRole().hasModeratorRights())
+            if (!muterJid.equals(toBeMutedJid) && !MemberRoleKt.hasModeratorRights(muter.getChatMember().getRole()))
             {
                 logger.warn("Mute not allowed for non-moderator " + muterJid);
                 return MuteResult.NOT_ALLOWED;
@@ -2115,7 +2123,7 @@ public class JitsiMeetConferenceImpl
      */
     public void muteParticipant(Participant participant, MediaType mediaType)
     {
-        boolean isParticipantModerator = participant.getChatMember().getRole().hasModeratorRights();
+        boolean isParticipantModerator = MemberRoleKt.hasModeratorRights(participant.getChatMember().getRole());
         if (isParticipantModerator || participant.isMuted(mediaType))
         {
             return;
@@ -2467,8 +2475,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public boolean acceptJigasiRequest(@NotNull Jid from)
     {
-        MemberRole role = getRoleForMucJid(from);
-        return role != null && role.hasModeratorRights();
+        return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
     }
 
     private FocusManager getFocusManager()

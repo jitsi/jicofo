@@ -93,8 +93,7 @@ public class MockJitsiMeetConference
     @Override
     public boolean acceptJigasiRequest(@NotNull Jid from)
     {
-        MemberRole role = getRoleForMucJid(from);
-        return role != null && role.hasModeratorRights();
+        return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
     }
 
     @Override

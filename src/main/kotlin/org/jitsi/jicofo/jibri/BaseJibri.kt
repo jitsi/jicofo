@@ -24,6 +24,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.NotProcessed
 import org.jitsi.jicofo.xmpp.IqRequest
+import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
