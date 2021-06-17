@@ -24,8 +24,6 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
-
 /**
  * Class handled MUC roles and presence for the focus in particular:
  * - ensures that focus has owner role after MUC room is joined
@@ -35,8 +33,7 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  * @author Pawel Domas
  */
 public class ChatRoomRoleAndPresence
-    implements ChatRoomMemberPresenceListener,
-               AuthenticationListener
+    implements AuthenticationListener
 {
     /**
      * The {@link ChatRoom} that is hosting Jitsi Meet conference.
@@ -78,7 +75,6 @@ public class ChatRoomRoleAndPresence
         }
 
         chatRoom.addListener(chatRoomListener);
-        chatRoom.addMemberPresenceListener(this);
     }
 
     /**
@@ -88,7 +84,6 @@ public class ChatRoomRoleAndPresence
     public void dispose()
     {
         chatRoom.removeListener(chatRoomListener);
-        chatRoom.removeMemberPresenceListener(this);
 
         if (authAuthority != null)
         {
@@ -97,38 +92,25 @@ public class ChatRoomRoleAndPresence
         }
     }
 
-    /**
-     * Analyzes chat room events and simplifies them into 'member joined',
-     * 'member left' and 'member kicked' events.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
+    private void memberJoined(@NotNull ChatRoomMember member)
     {
-        logger.info("Chat room event " + evt);
-
-        ChatRoomMember sourceMember = evt.getChatRoomMember();
-
-        if (evt instanceof Joined)
+        if (owner == null)
         {
-            if (owner == null)
-            {
-                electNewOwner();
-            }
-            if (authAuthority != null)
-            {
-                checkGrantOwnerToAuthUser(sourceMember);
-            }
+            electNewOwner();
         }
-        else if (evt instanceof Left || evt instanceof Kicked)
+        if (authAuthority != null)
         {
-            if (owner == sourceMember)
-            {
-                logger.info("Owner has left the room !");
-                owner = null;
-                electNewOwner();
-            }
+            checkGrantOwnerToAuthUser(member);
+        }
+    }
+
+    private void memberLeft(@NotNull ChatRoomMember member)
+    {
+        if (owner == member)
+        {
+            logger.info("Owner has left the room !");
+            owner = null;
+            electNewOwner();
         }
     }
 
@@ -271,6 +253,24 @@ public class ChatRoomRoleAndPresence
         public void localRoleChanged(@NotNull MemberRole newRole, MemberRole oldRole)
         {
             ChatRoomRoleAndPresence.this.localRoleChanged(newRole, oldRole);
+        }
+
+        @Override
+        public void memberJoined(@NotNull ChatRoomMember member)
+        {
+            ChatRoomRoleAndPresence.this.memberJoined(member);
+        }
+
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            ChatRoomRoleAndPresence.this.memberLeft(member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            ChatRoomRoleAndPresence.this.memberLeft(member);
         }
     }
 }

@@ -36,8 +36,6 @@ import java.lang.String;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
-
 /**
  * Mock {@link ChatRoom} implementation.
  *
@@ -60,12 +58,6 @@ public class MockChatRoom
     private List<ChatRoomListener> listeners = new CopyOnWriteArrayList<>();
 
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
-
-    /**
-     * Listeners that will be notified of changes in member status in the
-     * room such as member joined, left or being kicked or dropped.
-     */
-    private final Vector<ChatRoomMemberPresenceListener> memberListeners = new Vector<>();
 
     public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider)
     {
@@ -187,7 +179,7 @@ public class MockChatRoom
             }
 
             members.add(member);
-            fireMemberPresenceEvent(new Joined(member));
+            listeners.forEach(listener -> listener.memberJoined(member));
             return member;
         }
     }
@@ -213,7 +205,7 @@ public class MockChatRoom
                 throw new RuntimeException("Member is not in the room " + member);
             }
 
-            fireMemberPresenceEvent(new Left(member));
+            listeners.forEach(listener -> listener.memberLeft(member));
         }
     }
 
@@ -236,24 +228,6 @@ public class MockChatRoom
     public MemberRole getUserRole()
     {
         return MemberRole.OWNER;
-    }
-
-    @Override
-    public void addMemberPresenceListener(ChatRoomMemberPresenceListener listener)
-    {
-        synchronized (memberListeners)
-        {
-            memberListeners.add(listener);
-        }
-    }
-
-    @Override
-    public void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener)
-    {
-        synchronized (memberListeners)
-        {
-            memberListeners.remove(listener);
-        }
     }
 
     @Override
@@ -312,38 +286,6 @@ public class MockChatRoom
     public boolean destroy(String reason, String alternateAddress)
     {
         return false;
-    }
-
-    /**
-     * Creates the corresponding ChatRoomMemberPresenceChangeEvent and notifies
-     * all <tt>ChatRoomMemberPresenceListener</tt>s that a ChatRoomMember has
-     * joined or left this <tt>ChatRoom</tt>.
-     */
-    private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent evt)
-    {
-        Iterable<ChatRoomMemberPresenceListener> listeners;
-        synchronized (memberListeners)
-        {
-            listeners = new ArrayList<>(memberListeners);
-        }
-
-        for (ChatRoomMemberPresenceListener listener : listeners)
-        {
-            listener.memberPresenceChanged(evt);
-        }
-
-        if (evt instanceof Joined)
-        {
-            this.listeners.forEach(listener -> listener.memberJoined(evt.getChatRoomMember()));
-        }
-        else if (evt instanceof Left)
-        {
-            this.listeners.forEach(listener -> listener.memberLeft(evt.getChatRoomMember()));
-        }
-        else if (evt instanceof Kicked)
-        {
-            this.listeners.forEach(listener -> listener.memberKicked(evt.getChatRoomMember()));
-        }
     }
 
     @Override

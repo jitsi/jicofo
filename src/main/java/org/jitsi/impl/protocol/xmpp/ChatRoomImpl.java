@@ -39,8 +39,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
-
 /**
  * Stripped implementation of <tt>ChatRoom</tt> using Smack library.
  *
@@ -99,11 +97,6 @@ public class ChatRoomImpl
      * Callback to call when the room is left.
      */
     private final Consumer<ChatRoomImpl> leaveCallback;
-
-    /**
-     * Member presence listeners.
-     */
-    private final CopyOnWriteArrayList<ChatRoomMemberPresenceListener> listeners = new CopyOnWriteArrayList<>();
 
     private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
 
@@ -355,18 +348,6 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void addMemberPresenceListener(ChatRoomMemberPresenceListener listener)
-    {
-        listeners.add(listener);
-    }
-
-    @Override
-    public void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener)
-    {
-        listeners.remove(listener);
-    }
-
-    @Override
     public List<ChatRoomMember> getMembers()
     {
         synchronized (members)
@@ -476,27 +457,6 @@ public class ChatRoomImpl
             throw new RuntimeException(e);
         }
         return false;
-    }
-
-    private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent event)
-    {
-        listeners.forEach(l -> l.memberPresenceChanged(event));
-        if (event instanceof Joined)
-        {
-            chatRoomListeners.forEach(listener -> listener.memberJoined(event.getChatRoomMember()));
-        }
-        else if (event instanceof Left)
-        {
-            chatRoomListeners.forEach(listener -> listener.memberLeft(event.getChatRoomMember()));
-        }
-        else if (event instanceof Kicked)
-        {
-            chatRoomListeners.forEach(listener -> listener.memberKicked(event.getChatRoomMember()));
-        }
-        else if (event instanceof PresenceUpdated)
-        {
-            chatRoomListeners.forEach(listener -> listener.memberPresenceChanged(event.getChatRoomMember()));
-        }
     }
 
     Occupant getOccupant(ChatMemberImpl chatMember)
@@ -750,7 +710,8 @@ public class ChatRoomImpl
             if (memberJoined)
             {
                 // Trigger member "joined"
-                fireMemberPresenceEvent(new Joined(chatMember));
+                ChatRoomMember finalMember = chatMember;
+                chatRoomListeners.forEach(listener -> listener.memberJoined(finalMember));
             }
             else if (memberLeft)
             {
@@ -761,7 +722,8 @@ public class ChatRoomImpl
 
             if (!memberLeft)
             {
-                fireMemberPresenceEvent(new PresenceUpdated(chatMember));
+                ChatRoomMember finalMember = chatMember;
+                chatRoomListeners.forEach(listener -> listener.memberPresenceChanged(finalMember));
             }
         }
     }
@@ -903,7 +865,7 @@ public class ChatRoomImpl
 
             if (member != null)
             {
-                fireMemberPresenceEvent(new Left(member));
+                chatRoomListeners.forEach(listener -> listener.memberLeft(member));
             }
             else
             {
@@ -935,7 +897,7 @@ public class ChatRoomImpl
                 return;
             }
 
-            fireMemberPresenceEvent(new Kicked(member));
+            chatRoomListeners.forEach(listener -> listener.memberKicked(member));
         }
 
         @Override
