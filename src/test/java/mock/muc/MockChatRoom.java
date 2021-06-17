@@ -67,8 +67,6 @@ public class MockChatRoom
      */
     private final Vector<ChatRoomMemberPresenceListener> memberListeners = new Vector<>();
 
-    private final Vector<ChatRoomLocalUserRoleListener> localUserRoleListeners = new Vector<>();
-
     public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider)
     {
         this.roomName = roomName;
@@ -161,9 +159,6 @@ public class MockChatRoom
         }
 
         isJoined = true;
-
-        // FIXME: for mock purposes we are always the owner on join()
-        fireLocalUserRoleEvent(MemberRole.OWNER);
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
@@ -262,18 +257,6 @@ public class MockChatRoom
     }
 
     @Override
-    public void addLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
-    {
-        localUserRoleListeners.add(listener);
-    }
-
-    @Override
-    public void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
-    {
-        localUserRoleListeners.remove(listener);
-    }
-
-    @Override
     public List<ChatRoomMember> getMembers()
     {
         return members;
@@ -361,20 +344,6 @@ public class MockChatRoom
         {
             this.listeners.forEach(listener -> listener.memberKicked(evt.getChatRoomMember()));
         }
-    }
-
-    private void fireLocalUserRoleEvent(MemberRole role)
-    {
-        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(role, true);
-
-        Iterable<ChatRoomLocalUserRoleListener> listeners;
-        synchronized (localUserRoleListeners)
-        {
-            listeners = new ArrayList<>(localUserRoleListeners);
-        }
-
-        for (ChatRoomLocalUserRoleListener listener : listeners)
-            listener.localUserRoleChanged(evt);
     }
 
     @Override

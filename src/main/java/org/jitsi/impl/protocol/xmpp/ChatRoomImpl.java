@@ -105,12 +105,6 @@ public class ChatRoomImpl
      */
     private final CopyOnWriteArrayList<ChatRoomMemberPresenceListener> listeners = new CopyOnWriteArrayList<>();
 
-    /**
-     * Local user role listeners.
-     */
-    private final CopyOnWriteArrayList<ChatRoomLocalUserRoleListener> localUserRoleListeners
-            = new CopyOnWriteArrayList<>();
-
     private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
 
     /**
@@ -135,7 +129,7 @@ public class ChatRoomImpl
 
     private Map<String, List<String>> whitelists = new HashMap<>();
 
-    private List<ChatRoomListener> chatRoomListeners = new CopyOnWriteArrayList<>();
+    private final List<ChatRoomListener> chatRoomListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
@@ -271,7 +265,7 @@ public class ChatRoomImpl
             // we get NotConnectedException, this is expected (skip log)
             if (connection.isConnected() || e instanceof InterruptedException)
             {
-                logger.error("Failed to properly leave " + muc.toString(), e);
+                logger.error("Failed to properly leave " + muc, e);
             }
         }
         finally
@@ -348,39 +342,16 @@ public class ChatRoomImpl
     }
 
     /**
-     * Creates the corresponding ChatRoomLocalUserRoleChangeEvent and notifies
-     * all <tt>ChatRoomLocalUserRoleListener</tt>s that local user's role has
-     * been changed in this <tt>ChatRoom</tt>.
-     *
-     * @param newRole the new role the local user gets
-     * @param isInitial if <tt>true</tt> this is initial role set.
-     */
-    private void fireLocalUserRoleEvent(MemberRole newRole, boolean isInitial)
-    {
-        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(newRole, isInitial);
-
-        if (logger.isTraceEnabled())
-        {
-            logger.trace("Will dispatch the following ChatRoom event: " + evt);
-        }
-
-        localUserRoleListeners.forEach(listener -> listener.localUserRoleChanged(evt));
-    }
-
-    /**
      * Sets the new role for the local user in the context of this chat room.
-     *
-     * @param role the new role to be set for the local user
-     * @param isInitial if <tt>true</tt> this is initial role set.
      */
-    public void setLocalUserRole(MemberRole role, boolean isInitial)
+    private void setLocalUserRole(@NotNull MemberRole newRole)
     {
-        fireLocalUserRoleEvent(role, isInitial);
-        if (this.role != role)
+        MemberRole oldRole = role;
+        this.role = newRole;
+        if (oldRole != newRole)
         {
-            chatRoomListeners.forEach(listener -> listener.localRoleChanged(role));
+            chatRoomListeners.forEach(listener -> listener.localRoleChanged(newRole, this.role));
         }
-        this.role = role;
     }
 
     @Override
@@ -393,18 +364,6 @@ public class ChatRoomImpl
     public void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener)
     {
         listeners.remove(listener);
-    }
-
-    @Override
-    public void addLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
-    {
-        localUserRoleListeners.add(listener);
-    }
-
-    @Override
-    public void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
-    {
-        localUserRoleListeners.remove(listener);
     }
 
     @Override
@@ -728,7 +687,7 @@ public class ChatRoomImpl
             }
             else
             {
-                setLocalUserRole(jitsiRole, ChatRoomImpl.this.role == null);
+                setLocalUserRole(jitsiRole);
             }
         }
     }

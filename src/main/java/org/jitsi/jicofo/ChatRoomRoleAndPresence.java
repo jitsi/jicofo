@@ -36,7 +36,6 @@ import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
  */
 public class ChatRoomRoleAndPresence
     implements ChatRoomMemberPresenceListener,
-               ChatRoomLocalUserRoleListener,
                AuthenticationListener
 {
     /**
@@ -49,6 +48,8 @@ public class ChatRoomRoleAndPresence
      * Authentication authority used to verify users.
      */
     private AuthenticationAuthority authAuthority;
+
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
 
     /**
      * Flag indicates whether auto owner feature is active. First participant to
@@ -76,7 +77,7 @@ public class ChatRoomRoleAndPresence
             authAuthority.addAuthenticationListener(this);
         }
 
-        chatRoom.addLocalUserRoleListener(this);
+        chatRoom.addListener(chatRoomListener);
         chatRoom.addMemberPresenceListener(this);
     }
 
@@ -86,7 +87,7 @@ public class ChatRoomRoleAndPresence
      */
     public void dispose()
     {
-        chatRoom.removeLocalUserRoleListener(this);
+        chatRoom.removeListener(chatRoomListener);
         chatRoom.removeMemberPresenceListener(this);
 
         if (authAuthority != null)
@@ -185,21 +186,20 @@ public class ChatRoomRoleAndPresence
      * Waits for initial focus role and refuses to join if owner is
      * not granted. Elects the first owner of the conference.
      */
-    @Override
-    public void localUserRoleChanged(ChatRoomLocalUserRoleChangeEvent evt)
+    private void localRoleChanged(MemberRole newRole, MemberRole oldRole)
     {
-        MemberRole role = evt.getNewRole();
         if (logger.isDebugEnabled())
         {
-            logger.debug("Local role: " + role + " init: " + evt.isInitial());
+            logger.debug("Local role changed, old= " + oldRole + " new=" + newRole);
         }
 
-        if (role != MemberRole.OWNER)
+        if (newRole != MemberRole.OWNER)
         {
             return;
         }
 
-        if (evt.isInitial() && owner == null)
+        // Recognize the initial setting of the role.
+        if (oldRole == null && owner == null)
         {
             if (authAuthority != null)
             {
@@ -262,6 +262,15 @@ public class ChatRoomRoleAndPresence
             {
                 checkGrantOwnerToAuthUser(member);
             }
+        }
+    }
+
+    private class ChatRoomListenerImpl extends DefaultChatRoomListener
+    {
+        @Override
+        public void localRoleChanged(@NotNull MemberRole newRole, MemberRole oldRole)
+        {
+            ChatRoomRoleAndPresence.this.localRoleChanged(newRole, oldRole);
         }
     }
 }

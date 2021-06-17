@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.version.*;
@@ -2980,7 +2981,7 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
-        public void localRoleChanged(@NotNull MemberRole newRole)
+        public void localRoleChanged(@NotNull MemberRole newRole, @Nullable MemberRole oldRole)
         {
             if (newRole != MemberRole.OWNER)
             {

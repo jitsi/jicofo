@@ -86,22 +86,6 @@ public interface ChatRoom
     void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener);
 
     /**
-     * Adds a listener that will be notified of changes in our role in the room
-     * such as us being granded operator.
-     *
-     * @param listener a local user role listener.
-     */
-    void addLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
-
-    /**
-     * Removes a listener that was being notified of changes in our role in this
-     * chat room such as us being granded operator.
-     *
-     * @param listener a local user role listener.
-     */
-    void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
-
-    /**
      * Returns a <tt>List</tt> of <tt>ChatRoomMember</tt>s corresponding to all
      * members currently participating in this room.
      *
