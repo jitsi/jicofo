@@ -534,12 +534,6 @@ public class JitsiMeetConferenceImpl
         chatRoom = null;
     }
 
-    /**
-     * Method called by {@link #rolesAndPresence} when new member joins
-     * the conference room.
-     *
-     * @param chatRoomMember the new member that has just joined the room.
-     */
     private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
@@ -1004,12 +998,6 @@ public class JitsiMeetConferenceImpl
         // session?
     }
 
-    /**
-     * Method called by {@link #rolesAndPresence} when one of the members has
-     * been kicked out of the conference room.
-     *
-     * @param chatRoomMember kicked chat room member.
-     */
     private void onMemberKicked(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
@@ -1020,12 +1008,6 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    /**
-     * Method called by {@link #rolesAndPresence} when someone leave conference
-     * chat room.
-     *
-     * @param chatRoomMember the member that has left the room.
-     */
     private void onMemberLeft(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)

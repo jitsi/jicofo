@@ -25,19 +25,16 @@ import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
 
 /**
- * Class handled MUC roles and presence for the focus in particular:
- * - ensures that focus has owner role after MUC room is joined
- * - elects owner and makes sure that there is one during the conference
- * - simplifies chat room events to 'member left', 'member joined'
+ * Manages the roles of members in a chat room:
+ * - If authentication is used, grants the OWNER role to authenticated users.
+ * - Otherwise, if the the {@link #autoOwner} feature is enabled, ensures that one of the room members always has the
+ * OWNER role.
  *
  * @author Pawel Domas
  */
 public class ChatRoomRoleAndPresence
     implements AuthenticationListener
 {
-    /**
-     * The {@link ChatRoom} that is hosting Jitsi Meet conference.
-     */
     @NotNull
     private final ChatRoom chatRoom;
 
@@ -49,7 +46,7 @@ public class ChatRoomRoleAndPresence
     private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
 
     /**
-     * Flag indicates whether auto owner feature is active. First participant to
+     * A flag which indicates whether the auto owner feature is enabled. The first participant to
      * join the room will become conference owner. When the owner leaves the
      * room next participant will be selected as new owner.
      */
@@ -58,7 +55,7 @@ public class ChatRoomRoleAndPresence
     private final Logger logger;
 
     /**
-     * Current owner(other than the focus itself) of Jitsi Meet conference.
+     * The current member chosen to be granted the OWNER role.
      */
     private ChatRoomMember owner;
 
@@ -108,9 +105,12 @@ public class ChatRoomRoleAndPresence
     {
         if (owner == member)
         {
-            logger.info("Owner has left the room !");
+            logger.debug("Owner has left the room.");
             owner = null;
-            electNewOwner();
+            if (autoOwner)
+            {
+                electNewOwner();
+            }
         }
     }
 
@@ -120,11 +120,6 @@ public class ChatRoomRoleAndPresence
      */
     private void electNewOwner()
     {
-        if (!autoOwner)
-        {
-            return;
-        }
-
         if (chatRoom.getUserRole() != MemberRole.OWNER)
         {
             return;
@@ -235,8 +230,7 @@ public class ChatRoomRoleAndPresence
     }
 
     @Override
-    public void jidAuthenticated(Jid realJid, String identity,
-                                 String sessionId)
+    public void jidAuthenticated(Jid realJid, String identity, String sessionId)
     {
         for (ChatRoomMember member : chatRoom.getMembers())
         {
