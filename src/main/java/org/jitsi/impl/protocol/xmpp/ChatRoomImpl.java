@@ -441,7 +441,7 @@ public class ChatRoomImpl
     @Override
     public int getMembersCount()
     {
-        return muc.getOccupantsCount();
+        return members.size();
     }
 
     /**

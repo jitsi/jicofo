@@ -111,9 +111,8 @@ public interface ChatRoom
     List<ChatRoomMember> getMembers();
 
     /**
-     * Returns the number of participants that are currently in this chat room.
-     * @return the number of <tt>Contact</tt>s, currently participating in
-     * this room.
+     * Returns the number of members that are currently in this chat room. Note that this does not include the MUC
+     * occupant of the local participant.
      */
     int getMembersCount();
 
