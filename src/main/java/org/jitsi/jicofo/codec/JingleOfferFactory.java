@@ -157,6 +157,14 @@ public class JingleOfferFactory
             rtpDesc.addExtmap(toOffset);
         }
 
+        if (config.mid.enabled()) {
+            // a=extmap:10 rn:ietf:params:rtp-hdrext:sdes:mid
+            RTPHdrExtPacketExtension mid = new RTPHdrExtPacketExtension();
+            mid.setID(String.valueOf(config.mid.id()));
+            mid.setURI(URI.create("urn:ietf:params:rtp-hdrext:sdes:mid"));
+            rtpDesc.addExtmap(mid);
+        }
+
         if (config.absSendTime.enabled())
         {
             // a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
@@ -408,6 +416,14 @@ public class JingleOfferFactory
             ssrcAudioLevel.setID(String.valueOf(config.audioLevel.id()));
             ssrcAudioLevel.setURI(URI.create("urn:ietf:params:rtp-hdrext:ssrc-audio-level"));
             rtpDesc.addExtmap(ssrcAudioLevel);
+        }
+
+        if (config.mid.enabled()) {
+            // a=extmap:10 rn:ietf:params:rtp-hdrext:sdes:mid
+            RTPHdrExtPacketExtension mid = new RTPHdrExtPacketExtension();
+            mid.setID(String.valueOf(config.mid.id()));
+            mid.setURI(URI.create("urn:ietf:params:rtp-hdrext:sdes:mid"));
+            rtpDesc.addExtmap(mid);
         }
 
         if (config.opus.enabled())
