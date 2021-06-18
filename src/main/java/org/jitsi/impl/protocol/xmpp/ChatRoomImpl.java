@@ -53,12 +53,6 @@ public class ChatRoomImpl
     private final Logger logger;
 
     /**
-     * Constant used to return empty presence list from
-     * {@link #getPresenceExtensions()} in case there's no presence available.
-     */
-    private final static Collection<ExtensionElement> EMPTY_PRESENCE_LIST = Collections.emptyList();
-
-    /**
      * Parent MUC operation set.
      */
     @NotNull private final XmppProvider xmppProvider;
@@ -521,7 +515,7 @@ public class ChatRoomImpl
     {
         return lastPresenceSent != null
             ? new ArrayList<>(lastPresenceSent.getExtensions())
-            : EMPTY_PRESENCE_LIST;
+            : Collections.emptyList();
     }
 
     /**
