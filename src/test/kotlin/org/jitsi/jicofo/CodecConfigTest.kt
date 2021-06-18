@@ -70,6 +70,9 @@ class CodecConfigTest : ConfigTest() {
 
             config.audioLevel.enabled shouldBe true
             config.audioLevel.id shouldBe 1
+
+            config.mid.enabled shouldBe false
+            config.mid.id shouldBe 10
         }
         context("Legacy config") {
             context("Disabling a codec") {
@@ -225,6 +228,12 @@ class CodecConfigTest : ConfigTest() {
                 }
                 withNewConfig("jicofo.codec.rtp-extensions.tcc.enabled=true") {
                     config.tcc.enabled shouldBe true
+                }
+                withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=false") {
+                    config.mid.enabled shouldBe false
+                }
+                withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=true") {
+                    config.mid.enabled shouldBe true
                 }
             }
             context("Changing extension IDs") {
