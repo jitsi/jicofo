@@ -144,6 +144,8 @@ class Config {
     @JvmField
     val tcc = RtpExtensionConfig("jicofo.codec.rtp-extensions.tcc")
     @JvmField
+    val mid = RtpExtensionConfig("jicofo.codec.rtp-extensions.mid")
+    @JvmField
     val videoContentType: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy(
             "$LEGACY_BASE.ENABLE_VIDEO_CONTENT_TYPE",
