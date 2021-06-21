@@ -653,12 +653,10 @@ public class ChatRoomImpl
      */
     private void processOtherPresence(Presence presence)
     {
-        EntityFullJid jid
-            = presence.getFrom().asEntityFullJidIfPossible();
+        EntityFullJid jid = presence.getFrom().asEntityFullJidIfPossible();
         if (jid == null)
         {
-            logger.warn("Presence without a valid jid: "
-                            + presence.getFrom());
+            logger.warn("Presence without a valid jid: " + presence.getFrom());
             return;
         }
 
@@ -732,8 +730,7 @@ public class ChatRoomImpl
     {
         if (presence == null || presence.getError() != null)
         {
-            logger.warn("Unable to handle packet: " +
-                            (presence == null ? "null" : presence.toXML()));
+            logger.warn("Unable to handle packet: " + (presence == null ? "null" : presence.toXML()));
             return;
         }
 
@@ -745,8 +742,7 @@ public class ChatRoomImpl
         // Should never happen, but log if something is broken
         if (myOccupantJid == null)
         {
-            logger.error(
-                "Processing presence when we're not aware of our address");
+            logger.error("Processing presence when we're not aware of our address");
         }
 
         if (myOccupantJid != null && myOccupantJid.equals(presence.getFrom()))
