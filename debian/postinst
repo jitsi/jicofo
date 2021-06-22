@@ -117,6 +117,12 @@ jicofo {
         # Make sure the client-proxy is set correctly.
         hocon -f $HOCON_CONFIG set jicofo.xmpp.client.client-proxy "focus.$JVB_HOSTNAME"
 
+        # Mark the jibri domain as trusted unless the trusted-domains have been set.
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.trusted-domains" > /dev/null 2>&1 ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.trusted-domains" "recorder.$JVB_HOSTNAME"
+
+        fi
+
         # we don't want to start the daemon as root
         if ! getent group jitsi > /dev/null ; then
             groupadd jitsi
