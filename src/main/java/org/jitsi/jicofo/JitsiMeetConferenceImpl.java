@@ -542,6 +542,10 @@ public class JitsiMeetConferenceImpl
         chatRoom = null;
     }
 
+    /**
+     * Handles a new {@link ChatRoomMember} joining the {@link ChatRoom}: invites it as a {@link Participant} to the
+     * conference if there are enough members.
+     */
     private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
