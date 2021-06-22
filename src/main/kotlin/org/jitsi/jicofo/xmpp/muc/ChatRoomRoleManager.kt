@@ -23,11 +23,15 @@ import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
 import org.jitsi.utils.logging2.createLogger
 
+/**
+ * Manages to XMPP roles of occupants in a chat room, i.e. grants ownership to certain users.
+ */
 sealed class ChatRoomRoleManager(
     protected val chatRoom: ChatRoom
 ) : ChatRoomListener {
     protected val logger = createLogger()
 
+    /** Grants ownership to [member], blocks for a response from the MUC service. */
     protected fun grantOwner(member: ChatRoomMember): Boolean {
         if (!chatRoom.userRole.hasOwnerRights()) {
             logger.warn("Can not grant owner, lacking privileges.")
@@ -51,6 +55,10 @@ sealed class ChatRoomRoleManager(
     open fun stop() {}
 }
 
+/**
+ * A [ChatRoomRoleManager] which grants ownership to a single occupant in the room (if the room is left without an
+ * owner, it elects a new one).
+ */
 class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     private var owner: ChatRoomMember? = null
 
@@ -94,8 +102,10 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     }
 }
 
+/** A [ChatRoomRoleManager] which grants ownership to all authenticated users. */
 class AuthenticationRoleManager(
     chatRoom: ChatRoom,
+    /** Used to check whether a user is authenticated, and subscribe to authentication events. */
     private val authenticationAuthority: AuthenticationAuthority
 ) : ChatRoomRoleManager(chatRoom) {
 
