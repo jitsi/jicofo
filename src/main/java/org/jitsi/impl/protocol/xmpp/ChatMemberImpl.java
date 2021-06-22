@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -237,8 +238,22 @@ public class ChatMemberImpl
         {
             isJigasi = features.getFeatureExtensions().stream().anyMatch(
                     feature -> "http://jitsi.org/protocol/jigasi".equals(feature.getVar()));
-            isJibri = features.getFeatureExtensions().stream().anyMatch(
-                    feature -> "http://jitsi.org/protocol/jibri".equals(feature.getVar()));
+
+            if (features.getFeatureExtensions().stream().anyMatch(
+                    feature -> "http://jitsi.org/protocol/jibri".equals(feature.getVar())))
+            {
+                if (isJidTrusted())
+                {
+                    isJibri = true;
+                }
+                else
+                {
+                    Jid domain = getJid() == null ? null : getJid().asDomainBareJid();
+                    logger.warn("Jibri signaled from a non-trusted domain: " + domain +
+                            ". The domain can be configured as trusted with the jicofo.xmpp.trusted-domains property.");
+                    isJibri = false;
+                }
+            }
         }
         else
         {
@@ -272,6 +287,15 @@ public class ChatMemberImpl
         {
             statsId = statsIdPacketExt.getStatsId();
         }
+    }
+
+    /**
+     * Whether this member is a trusted entity (logged in to one of the pre-configured trusted domains).
+     */
+    private boolean isJidTrusted()
+    {
+        Jid jid = getJid();
+        return jid != null && XmppConfig.config.getTrustedDomains().contains(jid.asDomainBareJid());
     }
 
     /**
