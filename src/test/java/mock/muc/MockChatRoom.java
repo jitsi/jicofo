@@ -17,11 +17,13 @@
  */
 package mock.muc;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -55,7 +57,7 @@ public class MockChatRoom
 
     private volatile boolean isJoined;
 
-    private List<ChatRoomListener> listeners = new CopyOnWriteArrayList<>();
+    private final EventEmitter<ChatRoomListener> eventEmitter= new SyncEventEmitter<>();
 
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
@@ -89,13 +91,13 @@ public class MockChatRoom
     @Override
     public void addListener(@NotNull ChatRoomListener listener)
     {
-        listeners.add(listener);
+        eventEmitter.addHandler(listener);
     }
 
     @Override
     public void removeListener(@NotNull ChatRoomListener listener)
     {
-        listeners.remove(listener);
+        eventEmitter.addHandler(listener);
     }
 
     @Override
@@ -179,7 +181,10 @@ public class MockChatRoom
             }
 
             members.add(member);
-            listeners.forEach(listener -> listener.memberJoined(member));
+            eventEmitter.fireEvent(handler -> {
+                handler.memberJoined(member);
+                return Unit.INSTANCE;
+            });
             return member;
         }
     }
@@ -205,7 +210,10 @@ public class MockChatRoom
                 throw new RuntimeException("Member is not in the room " + member);
             }
 
-            listeners.forEach(listener -> listener.memberLeft(member));
+            eventEmitter.fireEvent(handler -> {
+                handler.memberLeft(member);
+                return Unit.INSTANCE;
+            });
         }
     }
 
@@ -213,6 +221,11 @@ public class MockChatRoom
     public boolean isJoined()
     {
         return isJoined;
+    }
+
+    @Override
+    public void setEventExecutor(@NotNull Executor executor)
+    {
     }
 
     @Override

@@ -17,10 +17,12 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging2.*;
 
 import org.jivesoftware.smack.*;
@@ -116,7 +118,11 @@ public class ChatRoomImpl
 
     private Map<String, List<String>> whitelists = new HashMap<>();
 
-    private final List<ChatRoomListener> chatRoomListeners = new CopyOnWriteArrayList<>();
+    /**
+     * The emitter used to fire events. By default we fire them synchronously, unless an executor is set via
+     * {@link #setEventExecutor(Executor)}
+     */
+    private EventEmitter<ChatRoomListener> eventEmitter = new SyncEventEmitter<>();
 
     /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
@@ -150,18 +156,21 @@ public class ChatRoomImpl
     @Override
     public void addListener(@NotNull ChatRoomListener listener)
     {
-        chatRoomListeners.add(listener);
+        eventEmitter.addHandler(listener);
     }
 
     @Override
     public void removeListener(@NotNull ChatRoomListener listener)
     {
-        chatRoomListeners.remove(listener);
+        eventEmitter.removeHandler(listener);
     }
 
     void setStartMuted(boolean[] startMuted)
     {
-        chatRoomListeners.forEach(listener -> listener.startMutedChanged(startMuted[0], startMuted[1]));
+        eventEmitter.fireEvent(handler -> {
+            handler.startMutedChanged(startMuted[0], startMuted[1]);
+            return Unit.INSTANCE;
+        });
     }
 
     @Override
@@ -337,7 +346,10 @@ public class ChatRoomImpl
         this.role = newRole;
         if (oldRole != newRole)
         {
-            chatRoomListeners.forEach(listener -> listener.localRoleChanged(newRole, this.role));
+            eventEmitter.fireEvent(handler -> {
+                handler.localRoleChanged(newRole, this.role);
+                return Unit.INSTANCE;
+            });
         }
     }
 
@@ -703,7 +715,10 @@ public class ChatRoomImpl
             {
                 // Trigger member "joined"
                 ChatRoomMember finalMember = chatMember;
-                chatRoomListeners.forEach(listener -> listener.memberJoined(finalMember));
+                eventEmitter.fireEvent(handler -> {
+                    handler.memberJoined(finalMember);
+                    return Unit.INSTANCE;
+                });
             }
             else if (memberLeft)
             {
@@ -715,7 +730,10 @@ public class ChatRoomImpl
             if (!memberLeft)
             {
                 ChatRoomMember finalMember = chatMember;
-                chatRoomListeners.forEach(listener -> listener.memberPresenceChanged(finalMember));
+                eventEmitter.fireEvent(handler -> {
+                    handler.memberPresenceChanged(finalMember);
+                    return Unit.INSTANCE;
+                });
             }
         }
     }
@@ -796,8 +814,16 @@ public class ChatRoomImpl
         return whitelist != null && whitelist.contains(jid.toString());
     }
 
-    class MemberListener
-        implements ParticipantStatusListener
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setEventExecutor(@NotNull Executor executor)
+    {
+        this.eventEmitter = new AsyncEventEmitter<>(executor, eventEmitter.getEventHandlers());
+    }
+
+    class MemberListener implements ParticipantStatusListener
     {
         @Override
         public void joined(EntityFullJid mucJid)
@@ -855,7 +881,10 @@ public class ChatRoomImpl
 
             if (member != null)
             {
-                chatRoomListeners.forEach(listener -> listener.memberLeft(member));
+                eventEmitter.fireEvent(handler -> {
+                    handler.memberLeft(member);
+                    return Unit.INSTANCE;
+                });
             }
             else
             {
@@ -872,9 +901,7 @@ public class ChatRoomImpl
             {
                 if (logger.isDebugEnabled())
                 {
-                    logger.debug(
-                        "Kicked: " + occupantJid + ", "
-                            + actor + ", " + reason);
+                    logger.debug("Kicked: " + occupantJid + ", " + actor + ", " + reason);
                 }
 
                 member = removeMember(occupantJid);
@@ -882,12 +909,14 @@ public class ChatRoomImpl
 
             if (member == null)
             {
-                logger.error(
-                    "Kicked member does not exist: " + occupantJid);
+                logger.error("Kicked member does not exist: " + occupantJid);
                 return;
             }
 
-            chatRoomListeners.forEach(listener -> listener.memberKicked(member));
+            eventEmitter.fireEvent(handler -> {
+                handler.memberKicked(member);
+                return Unit.INSTANCE;
+            });
         }
 
         @Override
@@ -1045,7 +1074,10 @@ public class ChatRoomImpl
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)
         {
-            chatRoomListeners.forEach(listener -> listener.roomDestroyed(reason));
+            eventEmitter.fireEvent(handler -> {
+                handler.roomDestroyed(reason);
+                return Unit.INSTANCE;
+            });
         }
     }
 }
