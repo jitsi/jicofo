@@ -284,7 +284,7 @@ public class TranscriberManager
         return Boolean.parseBoolean(ext.getText());
     }
 
-    private class ChatRoomListenerImpl extends ChatRoomListenerStub
+    private class ChatRoomListenerImpl extends DefaultChatRoomListener
     {
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)

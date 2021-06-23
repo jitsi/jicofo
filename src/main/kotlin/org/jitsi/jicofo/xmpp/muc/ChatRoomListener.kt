@@ -28,8 +28,8 @@ interface ChatRoomListener {
 
     fun roomDestroyed(reason: String) {}
     fun startMutedChanged(startAudioMuted: Boolean, startVideoMuted: Boolean) {}
-    fun localRoleChanged(newRole: MemberRole) {}
+    fun localRoleChanged(newRole: MemberRole, oldRole: MemberRole? = null) {}
 }
 
 /** A class with the default kotlin method implementations (to avoid using @JvmDefault) **/
-open class ChatRoomListenerStub : ChatRoomListener
+open class DefaultChatRoomListener : ChatRoomListener

@@ -69,39 +69,6 @@ public interface ChatRoom
     MemberRole getUserRole();
 
     /**
-     * Adds a listener that will be notified of changes in our participation in
-     * the room such as us being kicked, join, left...
-     *
-     * @param listener a member participation listener.
-     */
-    void addMemberPresenceListener(ChatRoomMemberPresenceListener listener);
-
-    /**
-     * Removes a listener that was being notified of changes in the
-     * participation of other chat room participants such as users being kicked,
-     * join, left.
-     *
-     * @param listener a member participation listener.
-     */
-    void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener);
-
-    /**
-     * Adds a listener that will be notified of changes in our role in the room
-     * such as us being granded operator.
-     *
-     * @param listener a local user role listener.
-     */
-    void addLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
-
-    /**
-     * Removes a listener that was being notified of changes in our role in this
-     * chat room such as us being granded operator.
-     *
-     * @param listener a local user role listener.
-     */
-    void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
-
-    /**
      * Returns a <tt>List</tt> of <tt>ChatRoomMember</tt>s corresponding to all
      * members currently participating in this room.
      *

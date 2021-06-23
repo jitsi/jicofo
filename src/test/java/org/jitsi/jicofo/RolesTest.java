@@ -21,6 +21,7 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -71,7 +72,7 @@ public class RolesTest
             // FIXME: wait for role change otherwise we might randomly fail here
             assertTrue(
                 i + " user should have moderator role(" + users[i].getNickname() + ")",
-                users[i].getChatMember().getRole().hasModeratorRights());
+                    MemberRoleKt.hasModeratorRights(users[i].getChatMember().getRole()));
 
             users[i].leave();
         }
