@@ -39,6 +39,8 @@ class JigasiConfig {
         "jicofo.jigasi.xmpp-connection-name".from(newConfig)
     }
 
+    fun xmppConnectionName() = xmppConnectionName
+
     companion object {
         @JvmField
         val config = JigasiConfig()

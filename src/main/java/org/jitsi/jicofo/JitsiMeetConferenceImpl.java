@@ -456,7 +456,9 @@ public class JitsiMeetConferenceImpl
         }
 
         transcriberManager = new TranscriberManager(
-            getClientXmppProvider(),
+            jicofoServices.getXmppServices().getXmppConnectionByName(
+                JigasiConfig.config.xmppConnectionName()
+            ),
             this,
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
