@@ -117,12 +117,12 @@ public interface JitsiMeetConference
      * @param toBeMutedJid MUC jid of the participant whose mute status will be changed.
      * @param doMute {@code true} to mute, {@code false} to unmute.
      * @param mediaType the {@link MediaType} of the channel to mute, either AUDIO or VIDEO.
-     * @return {@link JitsiMeetConferenceImpl.MuteResult#NOT_ALLOWED} if {@code muterJid} is not allowed to mute/unmute,
-     * {@link JitsiMeetConferenceImpl.MuteResult#ERROR} if the operation was not successful, and
-     * {@link JitsiMeetConferenceImpl.MuteResult#SUCCESS} if it was successful.
+     * @return {@link MuteResult#NOT_ALLOWED} if {@code muterJid} is not allowed to mute/unmute,
+     * {@link MuteResult#ERROR} if the operation was not successful, and
+     * {@link MuteResult#SUCCESS} if it was successful.
      */
     @NotNull
-    JitsiMeetConferenceImpl.MuteResult handleMuteRequest(
+    MuteResult handleMuteRequest(
             Jid muterJid,
             Jid toBeMutedJid,
             boolean doMute,

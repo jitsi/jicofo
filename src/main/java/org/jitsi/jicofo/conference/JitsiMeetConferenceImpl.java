@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
-import static org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.MuteResult.*;
+import static org.jitsi.jicofo.conference.MuteResult.*;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -2770,13 +2770,6 @@ public class JitsiMeetConferenceImpl
         {
             onBridgeUp(bridge.getJid());
         }
-    }
-
-    public enum MuteResult
-    {
-        SUCCESS,
-        NOT_ALLOWED,
-        ERROR
     }
 
     private class ChatRoomListenerImpl implements ChatRoomListener

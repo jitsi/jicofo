@@ -99,10 +99,10 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public @NotNull JitsiMeetConferenceImpl.MuteResult
+    public @NotNull MuteResult
     handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        return JitsiMeetConferenceImpl.MuteResult.SUCCESS;
+        return MuteResult.SUCCESS;
     }
 
     @Override

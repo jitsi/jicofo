@@ -19,7 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
-import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.MuteResult
+import org.jitsi.jicofo.conference.MuteResult
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.MediaType
