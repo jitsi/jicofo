@@ -100,16 +100,7 @@ public class ColibriConferenceImpl
     /**
      * Utility used for building Colibri queries.
      */
-    private final ColibriBuilder colibriBuilder
-        = new ColibriBuilder(conferenceState);
-
-    /**
-     * Flag used to figure out if Colibri conference has been
-     * allocated during last
-     * {@link #createColibriChannels(String, String, boolean, List)}
-     * call.
-     */
-    private boolean justAllocated = false;
+    private final ColibriBuilder colibriBuilder = new ColibriBuilder(conferenceState);
 
     /**
      * Flag indicates that this instance has been disposed and should not be
@@ -262,11 +253,6 @@ public class ColibriConferenceImpl
                 ColibriAnalyser analyser = new ColibriAnalyser(conferenceState);
 
                 analyser.processChannelAllocResp((ColibriConferenceIQ) response);
-
-                if (!conferenceExisted && getConferenceId() != null)
-                {
-                    justAllocated = true;
-                }
             }
 
             /*
@@ -275,8 +261,7 @@ public class ColibriConferenceImpl
              * includes the remote channels explicitly requested by the method
              * caller and their respective local channels.
              */
-            return ColibriAnalyser.getResponseContents(
-                        (ColibriConferenceIQ) response, contents);
+            return ColibriAnalyser.getResponseContents((ColibriConferenceIQ) response, contents);
 
         }
         finally
@@ -428,23 +413,6 @@ public class ColibriConferenceImpl
         catch (SmackException.NotConnectedException e)
         {
             throw new ColibriException(e.getMessage());
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasJustAllocated()
-    {
-        synchronized (syncRoot)
-        {
-            if (justAllocated)
-            {
-                justAllocated = false;
-                return true;
-            }
-            return false;
         }
     }
 

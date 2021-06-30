@@ -248,8 +248,7 @@ public abstract class AbstractChannelAllocator implements Runnable
                 "Using " + jvb + " to allocate channels for: "
                  + (participant == null ? "null" : participant.toString()));
 
-            ColibriConferenceIQ colibriChannels
-                = doAllocateChannels(contents);
+            ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
 
             // null means canceled, because colibriConference has been
             // disposed by another thread
@@ -260,11 +259,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             }
 
             bridgeSession.bridge.setIsOperational(true);
-
-            if (bridgeSession.colibriConference.hasJustAllocated())
-            {
-                meetConference.onColibriConferenceAllocated();
-            }
+            meetConference.colibriRequestSucceeded();
             return colibriChannels;
         }
         catch (ConferenceNotFoundException e)
@@ -274,8 +269,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             // faulty.
             restartConference = true;
             faulty = false;
-            logger.error(
-                jvb + " - conference ID not found (expired?):" + e.getMessage());
+            logger.error(jvb + " - conference ID not found (expired?):" + e.getMessage());
         }
         catch (BadRequestException e)
         {

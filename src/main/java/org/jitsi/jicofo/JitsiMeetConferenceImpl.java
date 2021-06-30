@@ -2148,13 +2148,11 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * A method to be called by {@link AbstractChannelAllocator} just after it
-     * has created a new Colibri conference on the JVB.
+     * Notifies this conference that a COLIBRI request sent to one of the bridges has succeeded.
      */
-    void onColibriConferenceAllocated()
+    void colibriRequestSucceeded()
     {
         // Remove "bridge not available" from Jicofo's presence
-        // There is no check if it was ever added, but should be harmless
         ChatRoom chatRoom = this.chatRoom;
         if (chatRoom != null)
         {

@@ -67,17 +67,6 @@ public interface ColibriConference
     EntityBareJid getName();
 
     /**
-     * Returns <tt>true</tt> if conference has been allocated during last
-     * allocate channels request. Method is synchronized and will return
-     * <tt>true</tt> only for the first time is called, so that only one thread
-     * will get positive value. That is because there are multiple threads
-     * allocating channels on conference start and all of them will have
-     * conference ID == null before operation, so it can't be used to detect
-     * conference created event.
-     */
-    boolean hasJustAllocated();
-
-    /**
      * Creates channels on the videobridge for given parameters.
      *
      * @param endpointId the ID of the Colibri endpoint.
