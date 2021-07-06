@@ -55,7 +55,7 @@ class XmppServices(
         XmppConnectionEnum.Client -> clientConnection
         XmppConnectionEnum.Service -> serviceConnection
     }
-    
+
     val jigasiDetector = JigasiConfig.config.breweryJid?.let { breweryJid ->
         JigasiDetector(
             getXmppConnectionByName(JigasiConfig.config.xmppConnectionName),
