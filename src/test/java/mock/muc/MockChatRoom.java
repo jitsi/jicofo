@@ -17,11 +17,13 @@
  */
 package mock.muc;
 
+import kotlin.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.*;
 
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.event.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -35,8 +37,6 @@ import java.lang.*;
 import java.lang.String;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
  * Mock {@link ChatRoom} implementation.
@@ -57,26 +57,14 @@ public class MockChatRoom
 
     private volatile boolean isJoined;
 
+    private final EventEmitter<ChatRoomListener> eventEmitter= new SyncEventEmitter<>();
+
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
-    private ChatRoomMember me;
-
-    /**
-     * Listeners that will be notified of changes in member status in the
-     * room such as member joined, left or being kicked or dropped.
-     */
-    private final Vector<ChatRoomMemberPresenceListener> memberListeners = new Vector<>();
-
-    private final Vector<ChatRoomLocalUserRoleListener> localUserRoleListeners = new Vector<>();
-
-    // The nickname to join with
-    private final String myNickname;
-
-    public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider, String myNickname)
+    public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider)
     {
         this.roomName = roomName;
         this.xmppProvider = xmppProvider;
-        this.myNickname = myNickname;
     }
 
     @Override
@@ -101,19 +89,20 @@ public class MockChatRoom
     }
 
     @Override
-    public void setConference(JitsiMeetConference conference)
+    public void addListener(@NotNull ChatRoomListener listener)
     {
+        eventEmitter.addHandler(listener);
+    }
+
+    @Override
+    public void removeListener(@NotNull ChatRoomListener listener)
+    {
+        eventEmitter.addHandler(listener);
     }
 
     @Override
     public void setPresenceExtension(ExtensionElement extension, boolean remove)
     {
-    }
-
-    @Override
-    public String getLocalNickname()
-    {
-        return myNickname;
     }
 
     @Override
@@ -143,22 +132,9 @@ public class MockChatRoom
     }
 
     @Override
-    public String getName()
-    {
-        return roomName.toString();
-    }
-
-    @Override
     public EntityBareJid getRoomJid()
     {
         return roomName;
-    }
-
-    @Override
-    public void join()
-            throws SmackException
-    {
-        joinAs(myNickname);
     }
 
     private EntityFullJid createAddressForName(String nickname)
@@ -167,47 +143,22 @@ public class MockChatRoom
         return JidCreate.entityFullFrom(roomName, Resourcepart.from(nickname));
     }
 
-    private void joinAs(String nickname)
+    @Override
+    public void join()
             throws SmackException
     {
         if (isJoined)
+        {
             throw new MultiUserChatException.MucAlreadyJoinedException();
+        }
 
         isJoined = true;
-
-        MockRoomMember member;
-        try
-        {
-            member = new MockRoomMember(createAddressForName(nickname), this);
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new RuntimeException("Invalid mock room member JID", e);
-        }
-
-        // FIXME: for mock purposes we are always the owner on join()
-        boolean isOwner = true;//= members.size() == 0;
-
-        synchronized (members)
-        {
-            members.add(member);
-            me = member;
-            fireMemberPresenceEvent(new Joined(me));
-        }
-
-        if (isOwner)
-        {
-            me.setRole(MemberRole.OWNER);
-        }
-
-        fireLocalUserRoleEvent(me, true);
     }
 
     public MockRoomMember createMockRoomMember(String nickname)
             throws XmppStringprepException
     {
-        return new MockRoomMember(
-            createAddressForName(nickname), this);
+        return new MockRoomMember(createAddressForName(nickname), this);
     }
 
     public MockRoomMember mockJoin(MockRoomMember member)
@@ -221,19 +172,19 @@ public class MockChatRoom
             }
             catch (XmppStringprepException e)
             {
-                throw new IllegalArgumentException(
-                        "The member name " + member.getName() + " is invalid");
+                throw new IllegalArgumentException("The member name " + member.getName() + " is invalid");
             }
 
             if (findMember(name) != null)
             {
-                throw new IllegalArgumentException(
-                        "The member with name: " + name
-                            + " is in the room already");
+                throw new IllegalArgumentException("The member with name: " + name + " is in the room already");
             }
 
             members.add(member);
-            fireMemberPresenceEvent(new Joined(member));
+            eventEmitter.fireEvent(handler -> {
+                handler.memberJoined(member);
+                return Unit.INSTANCE;
+            });
             return member;
         }
     }
@@ -259,7 +210,10 @@ public class MockChatRoom
                 throw new RuntimeException("Member is not in the room " + member);
             }
 
-            fireMemberPresenceEvent(new Left(member));
+            eventEmitter.fireEvent(handler -> {
+                handler.memberLeft(member);
+                return Unit.INSTANCE;
+            });
         }
     }
 
@@ -270,57 +224,23 @@ public class MockChatRoom
     }
 
     @Override
+    public void setEventExecutor(@NotNull Executor executor)
+    {
+    }
+
+    @Override
     public void leave()
     {
         if (!isJoined)
             return;
 
         isJoined = false;
-
-        synchronized (members)
-        {
-            members.remove(me);
-
-            fireMemberPresenceEvent(new Left(me));
-        }
-
-        me = null;
     }
 
     @Override
     public MemberRole getUserRole()
     {
         return MemberRole.OWNER;
-    }
-
-    @Override
-    public void addMemberPresenceListener(ChatRoomMemberPresenceListener listener)
-    {
-        synchronized (memberListeners)
-        {
-            memberListeners.add(listener);
-        }
-    }
-
-    @Override
-    public void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener)
-    {
-        synchronized (memberListeners)
-        {
-            memberListeners.remove(listener);
-        }
-    }
-
-    @Override
-    public void addLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
-    {
-        localUserRoleListeners.add(listener);
-    }
-
-    @Override
-    public void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener)
-    {
-        localUserRoleListeners.remove(listener);
     }
 
     @Override
@@ -379,37 +299,6 @@ public class MockChatRoom
     public boolean destroy(String reason, String alternateAddress)
     {
         return false;
-    }
-
-    /**
-     * Creates the corresponding ChatRoomMemberPresenceChangeEvent and notifies
-     * all <tt>ChatRoomMemberPresenceListener</tt>s that a ChatRoomMember has
-     * joined or left this <tt>ChatRoom</tt>.
-     */
-    private void fireMemberPresenceEvent(ChatRoomMemberPresenceChangeEvent evt)
-    {
-        Iterable<ChatRoomMemberPresenceListener> listeners;
-        synchronized (memberListeners)
-        {
-            listeners = new ArrayList<>(memberListeners);
-        }
-
-        for (ChatRoomMemberPresenceListener listener : listeners)
-            listener.memberPresenceChanged(evt);
-    }
-
-    private void fireLocalUserRoleEvent(ChatRoomMember member, boolean isInitial)
-    {
-        ChatRoomLocalUserRoleChangeEvent evt = new ChatRoomLocalUserRoleChangeEvent(member.getRole(), isInitial);
-
-        Iterable<ChatRoomLocalUserRoleListener> listeners;
-        synchronized (localUserRoleListeners)
-        {
-            listeners = new ArrayList<>(localUserRoleListeners);
-        }
-
-        for (ChatRoomLocalUserRoleListener listener : listeners)
-            listener.localUserRoleChanged(evt);
     }
 
     @Override

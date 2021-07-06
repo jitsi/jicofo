@@ -30,6 +30,8 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JingleIQProvider
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
+import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
+import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIqProvider
@@ -128,6 +130,16 @@ fun registerXmppExtensions() {
         JsonMessageExtension.ELEMENT_NAME,
         JsonMessageExtension.NAMESPACE,
         DefaultPacketExtensionProvider(JsonMessageExtension::class.java)
+    )
+    ProviderManager.addExtensionProvider(
+        FeaturesExtension.ELEMENT_NAME,
+        FeaturesExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(FeaturesExtension::class.java)
+    )
+    ProviderManager.addExtensionProvider(
+        FeatureExtension.ELEMENT_NAME,
+        FeatureExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(FeatureExtension::class.java)
     )
     RayoIqProvider().registerRayoIQs()
     MuteIqProvider.registerMuteIqProvider()

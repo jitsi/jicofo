@@ -26,7 +26,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.JitsiMeetConference
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.util.ListConferenceStore
@@ -53,7 +52,8 @@ class JigasiIqHandlerTest : ShouldSpec() {
     private val jigasi2 = MockJigasi(JidCreate.from("jigasi2@example.com"))
     private val jigasiDetector: JigasiDetector = mockk()
 
-    private val jigasiIqHandler = JigasiIqHandler(setOf(jicofo.xmppConnection), jigasiDetector)
+    private val conferenceStore = ListConferenceStore()
+    private val jigasiIqHandler = JigasiIqHandler(setOf(jicofo.xmppConnection), conferenceStore, jigasiDetector)
 
     private val dialRequest = DialIq().apply {
         from = participant.jid
@@ -74,8 +74,6 @@ class JigasiIqHandlerTest : ShouldSpec() {
         every { jigasiDetector.xmppConnection } returns jicofo.xmppConnection
 
         context("When the conference doesn't exist") {
-            jigasiIqHandler.conferenceStore = EmptyConferenceStore()
-
             val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
             response.shouldBeError(Condition.item_not_found)
         }
@@ -83,7 +81,7 @@ class JigasiIqHandlerTest : ShouldSpec() {
             val conference: JitsiMeetConference = mockk()
             every { conference.roomName } returns conferenceJid
             every { conference.bridges } returns emptyMap()
-            jigasiIqHandler.conferenceStore = ListConferenceStore().apply { add(conference) }
+            conferenceStore.apply { add(conference) }
 
             context("And rejects the request") {
                 every { conference.acceptJigasiRequest(any()) } returns false

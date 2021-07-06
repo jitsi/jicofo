@@ -49,11 +49,7 @@ public class MockMultiUserChatOpSet
                 throw new XmppProvider.RoomExistsException("Room " + roomNameJid + " already exists.");
             }
 
-            MockChatRoom chatRoom
-                = new MockChatRoom(
-                    roomNameJid,
-                    xmppProvider,
-                    xmppProvider.config.getUsername().toString());
+            MockChatRoom chatRoom = new MockChatRoom(roomNameJid, xmppProvider);
 
             chatRooms.put(roomNameJid, chatRoom);
 

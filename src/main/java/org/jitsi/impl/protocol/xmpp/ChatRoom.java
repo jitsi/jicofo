@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.jicofo.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
@@ -25,6 +25,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Represents a chat channel/room/rendez-vous point/ where multiple chat users
@@ -36,13 +37,6 @@ import java.util.*;
  */
 public interface ChatRoom
 {
-    /**
-     * Returns the name of this <tt>ChatRoom</tt>.
-     *
-     * @return a <tt>String</tt> containing the name of this <tt>ChatRoom</tt>.
-     */
-    String getName();
-
     /**
      * Joins this chat room with the nickname of the local user so that the
      * user would start receiving events and messages for it.
@@ -58,6 +52,11 @@ public interface ChatRoom
      * otherwise.
      */
     boolean isJoined();
+
+    /**
+     * Set the executor to use to fire events to {@link ChatRoomListener}s.
+     */
+    void setEventExecutor(@NotNull Executor executor);
 
     /**
      * Leave this chat room. Once this method is called, the user won't be
@@ -76,39 +75,6 @@ public interface ChatRoom
     MemberRole getUserRole();
 
     /**
-     * Adds a listener that will be notified of changes in our participation in
-     * the room such as us being kicked, join, left...
-     *
-     * @param listener a member participation listener.
-     */
-    void addMemberPresenceListener(ChatRoomMemberPresenceListener listener);
-
-    /**
-     * Removes a listener that was being notified of changes in the
-     * participation of other chat room participants such as users being kicked,
-     * join, left.
-     *
-     * @param listener a member participation listener.
-     */
-    void removeMemberPresenceListener(ChatRoomMemberPresenceListener listener);
-
-    /**
-     * Adds a listener that will be notified of changes in our role in the room
-     * such as us being granded operator.
-     *
-     * @param listener a local user role listener.
-     */
-    void addLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
-
-    /**
-     * Removes a listener that was being notified of changes in our role in this
-     * chat room such as us being granded operator.
-     *
-     * @param listener a local user role listener.
-     */
-    void removeLocalUserRoleListener(ChatRoomLocalUserRoleListener listener);
-
-    /**
      * Returns a <tt>List</tt> of <tt>ChatRoomMember</tt>s corresponding to all
      * members currently participating in this room.
      *
@@ -118,9 +84,8 @@ public interface ChatRoom
     List<ChatRoomMember> getMembers();
 
     /**
-     * Returns the number of participants that are currently in this chat room.
-     * @return the number of <tt>Contact</tt>s, currently participating in
-     * this room.
+     * Returns the number of members that are currently in this chat room. Note that this does not include the MUC
+     * occupant of the local participant.
      */
     int getMembersCount();
 
@@ -184,16 +149,16 @@ public interface ChatRoom
     void modifyPresence(Collection<ExtensionElement> toRemove, Collection<ExtensionElement> toAdd);
 
     /**
-     * TODO: only needed for startMuted. Remove once startMuted is removed.
+     * Add a [ChatRoomListener] to the list of listeners to be notified of events from this [ChatRoom].
      */
-    void setConference(JitsiMeetConference conference);
-
-    void setPresenceExtension(ExtensionElement extension, boolean remove);
+    void addListener(@NotNull ChatRoomListener listener);
 
     /**
-     * Get the nickname of the local occupant.
+     * Removes a [ChatRoomListener] from the list of listeners to be notified of events from this [ChatRoom].
      */
-    String getLocalNickname();
+    void removeListener(@NotNull ChatRoomListener listener);
+
+    void setPresenceExtension(ExtensionElement extension, boolean remove);
 
     /**
      * Get the unique meeting ID associated by this room (set by the MUC service).

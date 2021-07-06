@@ -51,8 +51,16 @@ class XmppServices(
         clientConnection
     }
 
+    fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
+        XmppConnectionEnum.Client -> clientConnection
+        XmppConnectionEnum.Service -> serviceConnection
+    }
+    
     val jigasiDetector = JigasiConfig.config.breweryJid?.let { breweryJid ->
-        JigasiDetector(clientConnection, breweryJid).apply { init() }
+        JigasiDetector(
+            getXmppConnectionByName(JigasiConfig.config.xmppConnectionName),
+            breweryJid
+        ).apply { init() }
     } ?: run {
         logger.info("No Jigasi detector configured.")
         null
@@ -66,6 +74,7 @@ class XmppServices(
     private val jigasiIqHandler = if (jigasiDetector != null) {
         JigasiIqHandler(
             setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
+            conferenceStore,
             jigasiDetector
         )
     } else null

@@ -24,6 +24,7 @@ import mock.xmpp.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -40,9 +41,7 @@ import org.jxmpp.stringprep.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
-
-public class MockParticipant implements ChatRoomMemberPresenceListener
+public class MockParticipant
 {
     private final static Logger logger = new LoggerImpl(MockParticipant.class.getName());
 
@@ -90,6 +89,8 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
     private final CountDownLatch sessionInitiateLatch = new CountDownLatch(1);
 
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
+
     public MockParticipant(String nick)
     {
         this.nick = nick;
@@ -136,7 +137,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
 
         try
         {
-            myJid = JidCreate.entityFullFrom(chat.getName() + "/" + user.getName());
+            myJid = JidCreate.entityFullFrom(chat.getRoomJid() + "/" + user.getName());
         }
         catch (XmppStringprepException e)
         {
@@ -155,7 +156,7 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
             xmppPeer.start();
             joinLock.notifyAll();
         }
-        chat.addMemberPresenceListener(this);
+        chat.addListener(chatRoomListener);
     }
 
     public static long nextSSRC()
@@ -619,16 +620,6 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
         return addLocalSSRC("audio", ssrc, null);
     }
 
-    @Override
-    public void memberPresenceChanged(@NotNull ChatRoomMemberPresenceChangeEvent evt)
-    {
-        if (evt instanceof Left || evt instanceof Kicked)
-        {
-            ChatRoomMember memberWhoLeft = evt.getChatRoomMember();
-            removeSsrcs(memberWhoLeft);
-        }
-    }
-
     private void removeSsrcs(ChatRoomMember member)
     {
         SourcePacketExtension audioSsrc = remoteSSRCs.findSsrcForOwner("audio", member.getJid());
@@ -718,6 +709,21 @@ public class MockParticipant implements ChatRoomMemberPresenceListener
             JingleIQ      rejectIQ)
         {
             logger.warn("Ignored Jingle 'transport-reject'");
+        }
+    }
+
+    private class ChatRoomListenerImpl extends DefaultChatRoomListener
+    {
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            removeSsrcs(member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            removeSsrcs(member);
         }
     }
 }

@@ -278,27 +278,6 @@ public class Participant
     }
 
     /**
-     * FIXME: we need to remove "is SIP gateway code", but there are still
-     * situations where we need to know whether given peer is a human or not.
-     * For example when we close browser window and only SIP gateway stays
-     * we should destroy the conference and close SIP connection.
-     *
-     * Returns <tt>true</tt> if this participant belongs to SIP gateway service.
-     */
-    public boolean isSipGateway()
-    {
-        return supportedFeatures.contains(DiscoveryUtil.FEATURE_JIGASI);
-    }
-
-    /**
-     * Returns <tt>true</tt> if this participant is a Jibri instance.
-    */
-    public boolean isJibri()
-    {
-        return supportedFeatures.contains("http://jitsi.org/protocol/jibri");
-    }
-
-    /**
      * Returns <tt>true</tt> if RTP audio is supported by this peer.
      */
     public boolean hasAudioSupport()

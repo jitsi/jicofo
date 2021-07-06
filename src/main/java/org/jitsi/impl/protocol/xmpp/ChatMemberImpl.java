@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -82,6 +83,9 @@ public class ChatMemberImpl
      * Indicates whether or not this MUC member is a robot.
      */
     private boolean robot = false;
+
+    private boolean isJigasi = false;
+    private boolean isJibri = false;
 
     private MemberRole role;
 
@@ -179,7 +183,20 @@ public class ChatMemberImpl
     @Override
     public boolean isRobot()
     {
-        return robot;
+        // Jigasi and Jibri do not use the "robot" signaling, but semantically they should be considered "robots".
+        return robot || isJigasi || isJibri;
+    }
+
+    @Override
+    public boolean isJigasi()
+    {
+        return isJigasi;
+    }
+
+    @Override
+    public boolean isJibri()
+    {
+        return isJibri;
     }
 
     /**
@@ -215,6 +232,35 @@ public class ChatMemberImpl
             }
         }
 
+        // We recognize jigasi by the existence of a "feature" extension in its presence.
+        FeaturesExtension features = presence.getExtension("features", "jabber:client");
+        if (features != null)
+        {
+            isJigasi = features.getFeatureExtensions().stream().anyMatch(
+                    feature -> "http://jitsi.org/protocol/jigasi".equals(feature.getVar()));
+
+            if (features.getFeatureExtensions().stream().anyMatch(
+                    feature -> "http://jitsi.org/protocol/jibri".equals(feature.getVar())))
+            {
+                if (isJidTrusted())
+                {
+                    isJibri = true;
+                }
+                else
+                {
+                    Jid domain = getJid() == null ? null : getJid().asDomainBareJid();
+                    logger.warn("Jibri signaled from a non-trusted domain: " + domain +
+                            ". The domain can be configured as trusted with the jicofo.xmpp.trusted-domains property.");
+                    isJibri = false;
+                }
+            }
+        }
+        else
+        {
+            isJigasi = false;
+            isJibri = false;
+        }
+
         RegionPacketExtension regionPE
             = presence.getExtension(RegionPacketExtension.ELEMENT_NAME, RegionPacketExtension.NAMESPACE);
         if (regionPE != null)
@@ -230,7 +276,7 @@ public class ChatMemberImpl
             boolean[] startMuted = { ext.getAudioMuted(), ext.getVideoMuted() };
 
             // XXX Is this intended to be allowed for moderators or not?
-            if (getRole().hasAdministratorRights())
+            if (MemberRoleKt.hasAdministratorRights(getRole()))
             {
                 chatRoom.setStartMuted(startMuted);
             }
@@ -241,6 +287,15 @@ public class ChatMemberImpl
         {
             statsId = statsIdPacketExt.getStatsId();
         }
+    }
+
+    /**
+     * Whether this member is a trusted entity (logged in to one of the pre-configured trusted domains).
+     */
+    private boolean isJidTrusted()
+    {
+        Jid jid = getJid();
+        return jid != null && XmppConfig.config.getTrustedDomains().contains(jid.asDomainBareJid());
     }
 
     /**

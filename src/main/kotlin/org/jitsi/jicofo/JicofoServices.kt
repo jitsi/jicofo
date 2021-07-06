@@ -81,7 +81,7 @@ open class JicofoServices {
     val focusManager: FocusManager = FocusManager().apply { start() }
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
-        focusManager.addFocusAllocationListener(this)
+        focusManager.addListener(this)
     }
     private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
         logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
@@ -89,7 +89,7 @@ open class JicofoServices {
         RESTReservations(reservationConfig.baseUrl) { name, reason ->
             focusManager.destroyConference(name, reason)
         }.apply {
-            focusManager.addFocusAllocationListener(this)
+            focusManager.addListener(this)
             start()
         }
     } else null
@@ -102,15 +102,10 @@ open class JicofoServices {
         reservationSystem = reservationSystem
     )
 
-    private fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
-        XmppConnectionEnum.Client -> xmppServices.clientConnection
-        XmppConnectionEnum.Service -> xmppServices.serviceConnection
-    }
-
     val bridgeSelector = BridgeSelector()
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(
-            getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
+            xmppServices.getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
             bridgeSelector,
             breweryJid
         ).apply { init() }
@@ -119,7 +114,11 @@ open class JicofoServices {
         null
     }
     val jibriDetector = JibriConfig.config.breweryJid?.let { breweryJid ->
-        JibriDetector(getXmppConnectionByName(JibriConfig.config.xmppConnectionName), breweryJid, false).apply {
+        JibriDetector(
+            xmppServices.getXmppConnectionByName(JibriConfig.config.xmppConnectionName),
+            breweryJid,
+            false
+        ).apply {
             init()
         }
     } ?: run {
@@ -136,7 +135,6 @@ open class JicofoServices {
     private val healthChecker: JicofoHealthChecker? = if (HealthConfig.config.enabled) {
         JicofoHealthChecker(HealthConfig.config, focusManager).apply {
             start()
-            focusManager.setHealth(this)
         }
     } else null
 
@@ -163,11 +161,11 @@ open class JicofoServices {
 
     fun shutdown() {
         reservationSystem?.let {
-            focusManager.removeFocusAllocationListener(it)
+            focusManager.removeListener(it)
             it.shutdown()
         }
         authenticationAuthority?.let {
-            focusManager.removeFocusAllocationListener(it)
+            focusManager.removeListener(it)
             it.shutdown()
         }
         healthChecker?.shutdown()
@@ -222,6 +220,7 @@ open class JicofoServices {
         put("jigasi", xmppServices.jigasiStats)
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", AbstractOperationSetJingle.getStats())
+        healthChecker?.let { put("slow_health_check", it.totalSlowHealthChecks) }
     }
 
     companion object {

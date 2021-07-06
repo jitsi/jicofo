@@ -92,6 +92,10 @@ public interface ChatRoomMember
      */
     boolean isRobot();
 
+    boolean isJigasi();
+
+    boolean isJibri();
+
     /**
      * Gets the region (e.g. "us-east") of this {@link ChatRoomMember}.
      */

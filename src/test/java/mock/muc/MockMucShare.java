@@ -17,11 +17,11 @@
  */
 package mock.muc;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 
 import java.util.*;
-
-import static org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent.*;
 
 /**
  * The purpose of this class is to simulate mock room joined by all {@link mock.MockXmppProvider}s only if they share
@@ -37,8 +37,8 @@ public class MockMucShare
     {
         groupedChats.add(chatRoom);
 
-        Listener listener = new Listener(chatRoom);
-        chatRoom.addMemberPresenceListener(listener);
+        ChatRoomListener listener = new ChatRoomListenerImpl(chatRoom);
+        chatRoom.addListener(listener);
 
         // Copy existing members if any
         for (ChatRoomMember member : chatRoom.getMembers())
@@ -47,18 +47,18 @@ public class MockMucShare
         }
     }
 
-    private void broadcastMemberJoined(ChatRoom chatRoom, Listener listener, ChatRoomMember chatRoomMember)
+    private void broadcastMemberJoined(ChatRoom chatRoom, ChatRoomListener listener, ChatRoomMember chatRoomMember)
     {
         for (MockChatRoom chatToNotify : groupedChats)
         {
             if (chatToNotify != chatRoom)
             {
                 // ???
-                chatToNotify.removeMemberPresenceListener(listener);
+                chatToNotify.removeListener(listener);
 
                 chatToNotify.mockJoin((MockRoomMember) chatRoomMember);
 
-                chatToNotify.addMemberPresenceListener(listener);
+                chatToNotify.addListener(listener);
             }
         }
     }
@@ -79,27 +79,30 @@ public class MockMucShare
         }
     }
 
-    private class Listener
-            implements ChatRoomMemberPresenceListener
+    private class ChatRoomListenerImpl extends DefaultChatRoomListener
     {
         private final ChatRoom chatRoom;
-        private Listener(ChatRoom chatRoom)
+        private ChatRoomListenerImpl(ChatRoom chatRoom)
         {
             this.chatRoom = chatRoom;
         }
 
         @Override
-        public void memberPresenceChanged(ChatRoomMemberPresenceChangeEvent evt)
+        public void memberJoined(@NotNull ChatRoomMember member)
         {
+            broadcastMemberJoined(chatRoom, this, member);
+        }
 
-            if (evt instanceof Joined)
-            {
-                broadcastMemberJoined(chatRoom, this, evt.getChatRoomMember());
-            }
-            else if(evt instanceof Kicked || evt instanceof Left)
-            {
-                broadcastMemberLeft(chatRoom, evt.getChatRoomMember());
-            }
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            broadcastMemberLeft(chatRoom, member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            broadcastMemberLeft(chatRoom, member);
         }
     }
 

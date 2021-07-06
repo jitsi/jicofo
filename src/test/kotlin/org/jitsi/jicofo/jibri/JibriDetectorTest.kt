@@ -5,7 +5,6 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
-import org.jitsi.impl.protocol.xmpp.ChatRoomMemberPresenceChangeEvent
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
@@ -27,11 +26,7 @@ class JibriDetectorTest : ShouldSpec({
 
     jibriJids
         .map { createJibriMember(it) }
-        .forEach {
-            detector.memberPresenceChanged(
-                ChatRoomMemberPresenceChangeEvent.Joined(it)
-            )
-        }
+        .forEach { detector.processMemberPresence(it) }
 
     context("When selecting a Jibri, JibriDetector") {
         should("pick the first one from the list") {

@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.EmptyConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
@@ -37,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class JigasiIqHandler(
     connections: Set<AbstractXMPPConnection>,
+    private val conferenceStore: ConferenceStore,
     private val jigasiDetector: JigasiDetector
 ) : AbstractIqHandler<RayoIqProvider.DialIq>(
     connections,
@@ -44,8 +44,6 @@ class JigasiIqHandler(
     RayoIqProvider.NAMESPACE,
     setOf(IQ.Type.set)
 ) {
-    var conferenceStore: ConferenceStore = EmptyConferenceStore()
-
     private val logger = createLogger()
 
     private val stats = Stats()
