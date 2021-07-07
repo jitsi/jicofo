@@ -25,13 +25,14 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.NotProcessed
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
+import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
-import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.XMPPError
+import java.lang.Exception
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
 /**
@@ -51,16 +52,18 @@ abstract class BaseJibri internal constructor(
         true,
         "jibri-iq-queue-${conference.roomName.localpart}",
         { jibriRequest ->
-            val response = doHandleIQRequest(jibriRequest.iq)
-            try {
-                jibriRequest.connection.sendStanza(response)
-            } catch (e: SmackException.NotConnectedException) {
-                logger.warn("Failed to send response, smack is not connected.")
-            } catch (e: InterruptedException) {
-                logger.warn("Failed to send response, interrupted.")
+            val response = try {
+                doHandleIQRequest(jibriRequest.iq)
+            } catch (e: Exception) {
+                logger.warn("Failed to handle request: ${jibriRequest.iq}", e)
+                jibriRequest.connection.tryToSendStanza(
+                    IQ.createErrorResponse(jibriRequest.iq, XMPPError.Condition.internal_server_error)
+                )
+                return@PacketQueue true
             }
+            jibriRequest.connection.tryToSendStanza(response)
 
-            true
+            return@PacketQueue true
         },
         TaskPools.ioPool
     )

@@ -40,7 +40,6 @@ import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
-import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack

@@ -96,34 +96,41 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
         }
 
     TaskPools.ioPool.submit {
-        when (conference.handleMuteRequest(request.iq.from, request.jidToMute, request.doMute, request.mediaType)) {
-            MuteResult.SUCCESS -> {
-                request.connection.tryToSendStanza(IQ.createResultIQ(request.iq))
-                // If this was a remove mute, notify the participant that was muted.
-                if (request.iq.from != request.jidToMute) {
-                    request.connection.tryToSendStanza(
-                        if (request.mediaType == MediaType.AUDIO)
-                            MuteIq().apply {
-                                actor = request.iq.from
-                                type = IQ.Type.set
-                                to = request.jidToMute
-                                mute = request.doMute
-                            }
-                        else
-                            MuteVideoIq().apply {
-                                actor = request.iq.from
-                                type = IQ.Type.set
-                                to = request.jidToMute
-                                mute = request.doMute
-                            }
-                    )
+        try {
+            when (conference.handleMuteRequest(request.iq.from, request.jidToMute, request.doMute, request.mediaType)) {
+                MuteResult.SUCCESS -> {
+                    request.connection.tryToSendStanza(IQ.createResultIQ(request.iq))
+                    // If this was a remote mute, notify the participant that was muted.
+                    if (request.iq.from != request.jidToMute) {
+                        request.connection.tryToSendStanza(
+                            if (request.mediaType == MediaType.AUDIO)
+                                MuteIq().apply {
+                                    actor = request.iq.from
+                                    type = IQ.Type.set
+                                    to = request.jidToMute
+                                    mute = request.doMute
+                                }
+                            else
+                                MuteVideoIq().apply {
+                                    actor = request.iq.from
+                                    type = IQ.Type.set
+                                    to = request.jidToMute
+                                    mute = request.doMute
+                                }
+                        )
+                    }
                 }
+                MuteResult.NOT_ALLOWED -> request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(request.iq, XMPPError.getBuilder(XMPPError.Condition.not_allowed))
+                )
+                MuteResult.ERROR -> request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(request.iq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+                )
             }
-            MuteResult.NOT_ALLOWED -> request.connection.tryToSendStanza(
-                IQ.createErrorResponse(request.iq, XMPPError.getBuilder(XMPPError.Condition.not_allowed))
-            )
-            MuteResult.ERROR -> request.connection.tryToSendStanza(
-                IQ.createErrorResponse(request.iq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+        } catch (e: Exception) {
+            logger.warn("Failed to handle mute request: ${request.iq.toXML()}", e)
+            request.connection.tryToSendStanza(
+                IQ.createErrorResponse(request.iq, XMPPError.Condition.internal_server_error)
             )
         }
     }
