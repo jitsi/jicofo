@@ -566,6 +566,19 @@ public class JibriSession
     }
 
     /**
+     * Cancel the pending timeout task and set it to null.
+     */
+    private void cancelPendingTimeout()
+    {
+        if (pendingTimeoutTask != null)
+        {
+            logger.info("Jibri is no longer pending, cancelling pending timeout task");
+            pendingTimeoutTask.cancel(false);
+            pendingTimeoutTask = null;
+        }
+    }
+
+    /**
      * Check whether or not we should retry the current request to another Jibri
      * @return true if we've not exceeded the max amount of retries,
      * false otherwise
@@ -622,14 +635,13 @@ public class JibriSession
                     " but the current Jibri is " + currentJibriJid + ", ignoring");
             return;
         }
-        // First: if we're no longer pending (regardless of the Jibri's
-        // new state), make sure we stop the pending timeout task
-        if (pendingTimeoutTask != null && !Status.PENDING.equals(newStatus))
+        // First: if we're no longer pending (regardless of the Jibri's new state), make sure we stop the pending
+        // timeout task.
+        if (!Status.PENDING.equals(newStatus))
         {
-            logger.info("Jibri is no longer pending, cancelling pending timeout task");
-            pendingTimeoutTask.cancel(false);
-            pendingTimeoutTask = null;
+            cancelPendingTimeout();
         }
+
         // Now, if there was a failure of any kind we'll try and find another
         // Jibri to keep things going
         if (failureReason != null)
