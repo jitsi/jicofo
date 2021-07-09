@@ -30,6 +30,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -102,7 +103,8 @@ public class JibriSession
     /**
      * Reference to scheduled {@link PendingStatusTimeout}
      */
-    private ScheduledFuture<?> pendingTimeoutTask;
+    @NotNull
+    private final AtomicReference<ScheduledFuture<?>> pendingTimeoutTask = new AtomicReference<>();
 
     /**
      * How long this session can stay in "pending" status, before retry is made
@@ -549,19 +551,35 @@ public class JibriSession
      */
     private void reschedulePendingTimeout()
     {
-        if (pendingTimeoutTask != null)
-        {
-            logger.info(
-                "Rescheduling pending timeout task for room: " + roomName);
-            pendingTimeoutTask.cancel(false);
-        }
-
+        // If pendingTimeout <= 0, no tasks are ever scheduled, so there is nothing to cancel.
         if (pendingTimeout > 0)
         {
-            pendingTimeoutTask
-                = TaskPools.getScheduledPool().schedule(
-                        new PendingStatusTimeout(),
-                        pendingTimeout, TimeUnit.SECONDS);
+            ScheduledFuture<?> newTask
+                = TaskPools.getScheduledPool().schedule(new PendingStatusTimeout(), pendingTimeout, TimeUnit.SECONDS);
+            ScheduledFuture<?> oldTask = pendingTimeoutTask.getAndSet(newTask);
+            if (oldTask != null)
+            {
+                logger.info("Rescheduling pending timeout task for room: " + roomName);
+                oldTask.cancel(false);
+            }
+        }
+    }
+
+    /**
+     * Clear the pending timeout task.
+     *
+     * @param cancel whether to cancel the previous task if it exists.
+     */
+    private void clearPendingTimeout(boolean cancel)
+    {
+        ScheduledFuture<?> oldTask = pendingTimeoutTask.getAndSet(null);
+        if (cancel)
+        {
+            if (oldTask != null)
+            {
+                logger.info("Jibri is no longer pending, cancelling pending timeout task");
+                oldTask.cancel(false);
+            }
         }
     }
 
@@ -622,14 +640,13 @@ public class JibriSession
                     " but the current Jibri is " + currentJibriJid + ", ignoring");
             return;
         }
-        // First: if we're no longer pending (regardless of the Jibri's
-        // new state), make sure we stop the pending timeout task
-        if (pendingTimeoutTask != null && !Status.PENDING.equals(newStatus))
+        // First: if we're no longer pending (regardless of the Jibri's new state), make sure we stop the pending
+        // timeout task.
+        if (!Status.PENDING.equals(newStatus))
         {
-            logger.info("Jibri is no longer pending, cancelling pending timeout task");
-            pendingTimeoutTask.cancel(false);
-            pendingTimeoutTask = null;
+            clearPendingTimeout(true);
         }
+
         // Now, if there was a failure of any kind we'll try and find another
         // Jibri to keep things going
         if (failureReason != null)
@@ -732,12 +749,11 @@ public class JibriSession
             {
                 // Clear this task reference, so it won't be
                 // cancelling itself on status change from PENDING
-                pendingTimeoutTask = null;
+                clearPendingTimeout(false);
 
                 if (isStartingStatus(jibriStatus))
                 {
-                    logger.error(
-                        nickname() + " pending timeout! " + roomName);
+                    logger.error(nickname() + " pending timeout! " + roomName);
                     // If a Jibri times out during the pending phase, it's
                     // likely hung or having some issue.  We'll send a stop (so
                     // if/when it does 'recover', it knows to stop) and simulate
@@ -745,8 +761,7 @@ public class JibriSession
                     // JibriEventHandler#handleEvent when a Jibri goes offline)
                     // to trigger the fallback logic.
                     stop(null);
-                    handleJibriStatusUpdate(
-                        currentJibriJid, Status.OFF, FailureReason.ERROR, true);
+                    handleJibriStatusUpdate(currentJibriJid, Status.OFF, FailureReason.ERROR, true);
                 }
             }
         }
