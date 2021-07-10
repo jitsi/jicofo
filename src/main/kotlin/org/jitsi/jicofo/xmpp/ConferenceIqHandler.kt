@@ -104,9 +104,11 @@ class ConferenceIqHandler(
     private fun processExtensions(query: ConferenceIq, response: ConferenceIq?, roomExists: Boolean): IQ? {
         val peerJid = query.from
         var identity: String? = null
+        val room = query.room
+        val isBreakoutRoom = room.toString().endsWith("@breakout.${XmppConfig.client.xmppDomain}")
 
         // Authentication
-        if (authAuthority != null) {
+        if (!isBreakoutRoom && authAuthority != null) {
             val authErrorOrResponse = authAuthority.processAuthentication(query, response)
 
             // Checks if authentication module wants to cancel further
@@ -126,7 +128,6 @@ class ConferenceIqHandler(
 
         // Check room reservation?
         if (!roomExists && reservationSystem != null) {
-            val room = query.room
             val result: ReservationSystem.Result = reservationSystem.createConference(identity, room)
             logger.info("Create room result: $result for $room")
             if (result.code != ReservationSystem.RESULT_OK) {
