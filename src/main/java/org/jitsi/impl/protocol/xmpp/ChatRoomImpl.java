@@ -114,6 +114,16 @@ public class ChatRoomImpl
     private String meetingId = null;
 
     /**
+     * The value of the "isbreakout" field from the MUC form, if present.
+     */
+    private boolean isBreakoutRoom = false;
+
+    /**
+     * The value of "breakout_main_room" field from the MUC form, if present.
+     */
+    private String mainRoom = null;
+
+    /**
      * Indicates whether A/V Moderation is enabled for this room.
      */
     private final Map<MediaType, Boolean> avModerationEnabled = Collections.synchronizedMap(new HashMap<>());
@@ -125,6 +135,13 @@ public class ChatRoomImpl
      * {@link #setEventExecutor(Executor)}
      */
     private EventEmitter<ChatRoomListener> eventEmitter = new SyncEventEmitter<>();
+
+    private static class MucConfigFields {
+        static final String IS_BREAKOUT_ROOM =  "muc#roominfo_isbreakout";
+        static final String MAIN_ROOM = "muc#roominfo_breakout_main_room";
+        static final String MEETING_ID = "muc#roominfo_meetingId";
+        static final String WHOIS = "muc#roomconfig_whois";
+    }
 
     /**
      * The number of members that currently have their video sources unmuted.
@@ -194,6 +211,16 @@ public class ChatRoomImpl
         joinAs(xmppProvider.getConfig().getUsername());
     }
 
+    @Override
+    public boolean isBreakoutRoom() {
+        return isBreakoutRoom;
+    }
+
+    @Override
+    public String getMainRoom() {
+        return mainRoom;
+    }
+
     private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
         this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
@@ -214,23 +241,37 @@ public class ChatRoomImpl
             muc.createOrJoin(nickname);
         }
 
-        // Make the room non-anonymous, so that others can recognize focus JID
         Form config = muc.getConfigurationForm();
-        String meetingIdFieldName = "muc#roominfo_meetingId";
-        FormField meetingIdField = config.getField(meetingIdFieldName);
+
+        // Read breakout rooms options
+        FormField isBreakoutRoomField = config.getField(MucConfigFields.IS_BREAKOUT_ROOM);
+        if (isBreakoutRoomField != null)
+        {
+            isBreakoutRoom = Boolean.parseBoolean(isBreakoutRoomField.getFirstValue());
+            if (isBreakoutRoom)
+            {
+                FormField mainRoomField = config.getField(MucConfigFields.MAIN_ROOM);
+                if (mainRoomField != null)
+                {
+                    mainRoom = mainRoomField.getFirstValue();
+                }
+            }
+        }
+
+        // Read meetingId
+        FormField meetingIdField = config.getField(MucConfigFields.MEETING_ID);
         if (meetingIdField != null)
         {
-            meetingId = meetingIdField.getValuesAsString().stream().findFirst().orElse(null);
+            meetingId = meetingIdField.getFirstValue();
             if (meetingId != null)
             {
                 logger.addContext("meeting_id", meetingId);
             }
         }
 
+        // Make the room non-anonymous, so that others can recognize focus JID
         FillableForm answer = config.getFillableForm();
-        // Room non-anonymous
-        String whoisFieldName = "muc#roomconfig_whois";
-        answer.setAnswer(whoisFieldName, "anyone");
+        answer.setAnswer(MucConfigFields.WHOIS, "anyone");
 
         muc.sendConfigurationForm(answer);
     }

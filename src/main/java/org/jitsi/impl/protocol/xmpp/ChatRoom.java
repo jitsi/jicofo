@@ -197,4 +197,16 @@ public interface ChatRoom
      * @return <tt>true</tt> if the member is allowed to unmute, false otherwise.
      */
     boolean isMemberAllowedToUnmute(Jid jid, MediaType mediaType);
+
+    /**
+     * Checks whether this is a breakout room or not.
+     * @return <tt>true</tt> if it is, <tt>false</tt> otherwise.
+     */
+    boolean isBreakoutRoom();
+
+    /**
+     * Gets the main room name (JID) when in a breakout room.
+     * @return The main room JID as a string.
+     */
+    String getMainRoom();
 }
