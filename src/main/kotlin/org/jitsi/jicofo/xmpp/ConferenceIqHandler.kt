@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import org.jitsi.impl.protocol.xmpp.RegistrationListener
+import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
@@ -24,31 +26,38 @@ import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
-import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
+import org.jxmpp.jid.DomainBareJid
+import org.jxmpp.jid.impl.JidCreate
 
 /**
  * Handles XMPP requests for a new conference ([ConferenceIq]).
  */
 class ConferenceIqHandler(
-    val connection: AbstractXMPPConnection,
+    val xmppProvider: XmppProvider,
     val focusManager: FocusManager,
     val focusAuthJid: String,
     val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
     val reservationSystem: ReservationSystem?,
     val jigasiEnabled: Boolean
-) : AbstractIqRequestHandler(
+) : RegistrationListener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
     ConferenceIq.NAMESPACE,
     IQ.Type.set,
     IQRequestHandler.Mode.sync
 ) {
-
+    private val connection = xmppProvider.xmppConnection
+    private var breakoutAddress: DomainBareJid? = null
     private val logger = createLogger()
+
+    init {
+        xmppProvider.addRegistrationListener(this)
+        registrationChanged(xmppProvider.isRegistered)
+    }
 
     private fun handleConferenceIq(query: ConferenceIq): IQ {
         val response = ConferenceIq()
@@ -104,9 +113,12 @@ class ConferenceIqHandler(
     private fun processExtensions(query: ConferenceIq, response: ConferenceIq?, roomExists: Boolean): IQ? {
         val peerJid = query.from
         var identity: String? = null
+        val room = query.room
+        val isBreakoutRoom = breakoutAddress != null && room.domain == breakoutAddress
 
-        // Authentication
-        if (authAuthority != null) {
+        // Authentication. We do not perform authentication for breakout rooms, expecting the breakout room prosody
+        // module to handle it.
+        if (!isBreakoutRoom && authAuthority != null) {
             val authErrorOrResponse = authAuthority.processAuthentication(query, response)
 
             // Checks if authentication module wants to cancel further
@@ -116,17 +128,27 @@ class ConferenceIqHandler(
             }
             // Only authenticated users are allowed to create new rooms
             if (!roomExists) {
-                identity = authAuthority.getUserIdentity(peerJid)
-                if (identity == null) {
-                    // Error not authorized
-                    return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
+                // If a breakout room exists and all members had left the main room, skip
+                // authentication for the main room so users can go back to it.
+                var breakoutRoomExists: Boolean = false
+                for (conference in focusManager.getConferences()) {
+                    if (conference.chatRoom.isBreakoutRoom && room.toString() == conference.chatRoom.mainRoom) {
+                        breakoutRoomExists = true
+                        break
+                    }
+                }
+                if (!breakoutRoomExists) {
+                    identity = authAuthority.getUserIdentity(peerJid)
+                    if (identity == null) {
+                        // Error not authorized
+                        return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
+                    }
                 }
             }
         }
 
         // Check room reservation?
         if (!roomExists && reservationSystem != null) {
-            val room = query.room
             val result: ReservationSystem.Result = reservationSystem.createConference(identity, room)
             logger.info("Create room result: $result for $room")
             if (result.code != ReservationSystem.RESULT_OK) {
@@ -160,5 +182,27 @@ class ConferenceIqHandler(
         }
 
         return null
+    }
+
+    override fun registrationChanged(registered: Boolean) {
+        if (!registered) {
+            breakoutAddress = null
+            return
+        }
+
+        try {
+            val info = xmppProvider.discoverInfo(JidCreate.bareFrom(XmppConfig.client.xmppDomain))
+            val breakoutAddressStr = info?.getIdentities("component", "breakout_rooms")?.firstOrNull()?.name
+
+            if (breakoutAddressStr == null) {
+                breakoutAddress = null
+                logger.info("No breakout room component address configured.")
+            } else {
+                breakoutAddress = JidCreate.domainBareFrom(breakoutAddressStr)
+                logger.info("Using breakout room component address: $breakoutAddress")
+            }
+        } catch (e: Exception) {
+            logger.error("Could not discover breakout rooms component address.", e)
+        }
     }
 }

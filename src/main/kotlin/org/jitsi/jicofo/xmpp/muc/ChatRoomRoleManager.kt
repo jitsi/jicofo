@@ -88,6 +88,11 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
             return
         }
 
+        // Skip if this is a breakout room.
+        if (chatRoom.isBreakoutRoom) {
+            return
+        }
+
         owner = chatRoom.members.find { !it.isRobot && it.role.hasOwnerRights() }
         if (owner != null) {
             return
