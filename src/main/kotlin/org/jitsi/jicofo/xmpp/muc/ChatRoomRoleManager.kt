@@ -134,5 +134,14 @@ class AuthenticationRoleManager(
         grantOwnerToAuthenticatedUsers()
     }
 
+    /**
+     * Handles cases where moderators(already authenticated users) reload and join again.
+     */
+    override fun memberJoined(member: ChatRoomMember) {
+        if (member.role != MemberRole.OWNER && authenticationAuthority.getSessionForJid(member.jid) != null) {
+            grantOwner(member)
+        }
+    }
+
     override fun stop() = authenticationAuthority.removeAuthenticationListener(authenticationListener)
 }
