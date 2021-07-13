@@ -114,7 +114,7 @@ public class ChatRoomImpl
     /**
      * Indicates whether A/V Moderation is enabled for this room.
      */
-    private final Map<MediaType, Boolean> avModerationEnabled = new HashMap<>();
+    private final Map<MediaType, Boolean> avModerationEnabled = Collections.synchronizedMap(new HashMap<>());
 
     private Map<String, List<String>> whitelists = new HashMap<>();
 
