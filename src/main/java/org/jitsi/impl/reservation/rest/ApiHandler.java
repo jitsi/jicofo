@@ -60,11 +60,6 @@ public class ApiHandler
     private final CloseableHttpClient client = HttpClientBuilder.create().build();
 
     /**
-     * <tt>JSONParser</tt> instance used for parsing JSON.
-     */
-    private final JSONParser jsonParser = new JSONParser();
-
-    /**
      * JSON handler for <tt>Conference</tt> objects.
      */
     private final ConferenceJsonHandler conferenceJson = new ConferenceJsonHandler();
@@ -266,7 +261,7 @@ public class ApiHandler
             = new BufferedReader(
                 new InputStreamReader(response.getEntity().getContent()));
 
-        jsonParser.parse(rd, errorJson);
+        new JSONParser().parse(rd, errorJson);
 
         return errorJson.getResult();
     }
@@ -298,7 +293,7 @@ public class ApiHandler
             conferenceJson.setForUpdate(conference);
         }
 
-        jsonParser.parse(rd, conferenceJson);
+        new JSONParser().parse(rd, conferenceJson);
 
         if (conference == null)
         {

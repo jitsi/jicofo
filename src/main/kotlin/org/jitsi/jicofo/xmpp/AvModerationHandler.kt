@@ -40,7 +40,6 @@ class AvModerationHandler(
     private val xmppProvider: XmppProvider,
     private val conferenceStore: ConferenceStore
 ) : RegistrationListener, StanzaListener {
-    private val jsonParser = JSONParser()
     private var avModerationAddress: DomainBareJid? = null
     private val logger = createLogger()
 
@@ -63,7 +62,7 @@ class AvModerationHandler(
 
         TaskPools.ioPool.submit {
             try {
-                val incomingJson = jsonParser.parse(jsonMessage.json) as JSONObject
+                val incomingJson = JSONParser().parse(jsonMessage.json) as JSONObject
                 if (incomingJson["type"] == "av_moderation") {
                     val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
 
