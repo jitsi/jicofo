@@ -145,10 +145,10 @@ public class ShibbolethLogin
                 " console.info('settings :' + settings);\n" +
                 " if (settings){\n" +
                 "     try {\n" +
-                "	        var settingsObj = JSON.parse(settings);\n" +
-                "	        if ( settingsObj && !settingsObj.displayName ) {\n" +
-                "	            settingsObj.displayName = displayName;\n" +
-                "	            localStorage.setItem('features/base/settings', JSON.stringify(settingsObj));\n" +
+                "            var settingsObj = JSON.parse(settings);\n" +
+                "            if ( settingsObj && !settingsObj.displayName ) {\n" +
+                "                settingsObj.displayName = displayName;\n" +
+                "                localStorage.setItem('features/base/settings', JSON.stringify(settingsObj));\n" +
                 "         }\n" +
                 "     }\n" +
                 "   catch(e){\n" +
