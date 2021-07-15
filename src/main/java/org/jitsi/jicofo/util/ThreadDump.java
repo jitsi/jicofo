@@ -76,7 +76,8 @@ public class ThreadDump
                 for (MonitorInfo mi
                         : threadInfo.getLockedMonitors())
                 {
-                    if (mi.getLockedStackDepth() == i) {
+                    if (mi.getLockedStackDepth() == i)
+                    {
                         dbg.append("\t-  locked ")
                             .append(mi)
                             .append('\n');
