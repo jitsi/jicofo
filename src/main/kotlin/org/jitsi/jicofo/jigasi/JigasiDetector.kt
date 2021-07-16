@@ -115,4 +115,5 @@ private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.isInRegion(vararg re
     regions.contains(status.getValueAsString(ColibriStatsExtension.REGION))
 private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.getParticipantCount(): Int =
     status.getValueAsInt(ColibriStatsExtension.PARTICIPANTS) ?: 0
-private fun List<BaseBrewery<ColibriStatsExtension>.BrewInstance>.leastLoaded() = minBy { it.getParticipantCount() }
+private fun List<BaseBrewery<ColibriStatsExtension>.BrewInstance>.leastLoaded() =
+    minByOrNull { it.getParticipantCount() }
