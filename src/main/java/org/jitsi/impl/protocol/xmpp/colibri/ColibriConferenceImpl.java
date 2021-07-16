@@ -454,7 +454,7 @@ public class ColibriConferenceImpl
         }
 
         String stanzaStr = stanza == null ? "null" : stanza.toXML().toString();
-        stanzaStr = stanzaStr.replace(">",">\n");
+        stanzaStr = stanzaStr.replace(">", ">\n");
 
         logger.debug(message + "\n" + stanzaStr);
     }

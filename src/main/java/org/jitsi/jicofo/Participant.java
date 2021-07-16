@@ -326,7 +326,8 @@ public class Participant
         throws UnsupportedFeatureConfigurationException
     {
         this.supportedFeatures = supportedFeatures;
-        if (!hasBundleSupport()) {
+        if (!hasBundleSupport())
+        {
             throw new UnsupportedFeatureConfigurationException("Participant doesn't support bundle, which is required");
         }
     }

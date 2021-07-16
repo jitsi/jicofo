@@ -303,10 +303,12 @@ public class JibriSession
     {
         final Jid jibriJid = jibriDetector.selectJibri();
 
-        if (jibriJid == null) {
+        if (jibriJid == null)
+        {
             logger.error("Unable to find an available Jibri, can't start");
 
-            if (jibriDetector.isAnyInstanceConnected()) {
+            if (jibriDetector.isAnyInstanceConnected())
+            {
                 throw new StartException.AllBusy();
             }
 
@@ -365,10 +367,14 @@ public class JibriSession
         {
             jibriDetector.getXmppConnection().sendIqWithResponseCallback(
                     stopRequest,
-                    stanza -> {
-                        if (stanza instanceof JibriIq) {
+                    stanza ->
+                    {
+                        if (stanza instanceof JibriIq)
+                        {
                             processJibriIqFromJibri((JibriIq) stanza);
-                        } else {
+                        }
+                        else
+                        {
                             logger.error(
                                 "Unexpected response to stop iq: "
                                 + (stanza != null ? stanza.toXML() : "null"));
@@ -385,7 +391,8 @@ public class JibriSession
                     exception -> logger.error(
                         "Error sending stop iq: " + exception.toString()),
                     60000);
-        } catch (SmackException.NotConnectedException | InterruptedException e)
+        }
+        catch (SmackException.NotConnectedException | InterruptedException e)
         {
             logger.error("Error sending stop iq: " + e, e);
         }
@@ -497,7 +504,8 @@ public class JibriSession
         {
             startIq.setStreamId(streamID);
             startIq.setRecordingMode(RecordingMode.STREAM);
-            if (youTubeBroadcastId != null) {
+            if (youTubeBroadcastId != null)
+            {
                 startIq.setYouTubeBroadcastId(youTubeBroadcastId);
             }
         }

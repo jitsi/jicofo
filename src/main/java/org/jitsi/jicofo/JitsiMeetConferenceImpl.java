@@ -954,7 +954,7 @@ public class JitsiMeetConferenceImpl
         if (!startMuted[1])
         {
             Integer startVideoMuted = config.getStartVideoMuted();
-            if(startVideoMuted != null)
+            if (startVideoMuted != null)
             {
                 startMuted[1] = (participantNumber > startVideoMuted);
             }

@@ -239,7 +239,7 @@ public class SSRCSignaling
     private static ParameterPacketExtension getParam(SourcePacketExtension ssrc,
                                                      String                name)
     {
-        for(ParameterPacketExtension param : ssrc.getParameters())
+        for (ParameterPacketExtension param : ssrc.getParameters())
         {
             if (name.equals(param.getName()))
                 return param;
@@ -278,9 +278,11 @@ public class SSRCSignaling
 
         String[] streamAndTrack = msid.split(" ");
         String streamId = streamAndTrack.length == 2 ? streamAndTrack[0] : null;
-        if (streamId != null) {
+        if (streamId != null)
+        {
             streamId = streamId.trim();
-            if (streamId.isEmpty()) {
+            if (streamId.isEmpty())
+            {
                 streamId = null;
             }
         }
@@ -302,9 +304,11 @@ public class SSRCSignaling
 
         String[] streamAndTrack = msid.split(" ");
         String trackId = streamAndTrack.length == 2 ? streamAndTrack[1] : null;
-        if (trackId != null) {
+        if (trackId != null)
+        {
             trackId = trackId.trim();
-            if (trackId.isEmpty()) {
+            if (trackId.isEmpty())
+            {
                 trackId = null;
             }
         }

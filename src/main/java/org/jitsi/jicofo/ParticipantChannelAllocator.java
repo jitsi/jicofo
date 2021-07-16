@@ -382,7 +382,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
                         // FIXME: not all parameters are used currently
                         ssrcCopy.addParameter(
-                                new ParameterPacketExtension("cname","mixed"));
+                                new ParameterPacketExtension("cname", "mixed"));
                         ssrcCopy.addParameter(
                                 new ParameterPacketExtension(
                                         "label",
@@ -430,7 +430,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 List<SourceGroup> sourceGroups
                     = conferenceSSRCGroups.getSourceGroupsForMedia(contentName);
 
-                for(SourceGroup sourceGroup : sourceGroups)
+                for (SourceGroup sourceGroup : sourceGroups)
                 {
                     rtpDescPe.addChildExtension(sourceGroup.getPacketExtension());
                 }
