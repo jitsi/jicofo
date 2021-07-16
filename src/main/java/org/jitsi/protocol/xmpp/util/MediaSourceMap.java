@@ -142,7 +142,7 @@ public class MediaSourceMap
         Map<String, CopyOnWriteArrayList<SourcePacketExtension>> mapCopy
             = new HashMap<>();
 
-        for(Map.Entry<String, CopyOnWriteArrayList<SourcePacketExtension>> entry : sources.entrySet())
+        for (Map.Entry<String, CopyOnWriteArrayList<SourcePacketExtension>> entry : sources.entrySet())
         {
             CopyOnWriteArrayList<SourcePacketExtension> sourcesCopy
                 = entry.getValue().stream()

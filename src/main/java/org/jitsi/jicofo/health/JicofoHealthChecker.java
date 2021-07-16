@@ -55,7 +55,7 @@ public class JicofoHealthChecker implements HealthCheckService
      * The {@code JitsiMeetConfig} properties to be utilized for the purposes of
      * checking the health (status) of Jicofo.
      */
-    private static final Map<String,String> JITSI_MEET_CONFIG = Collections.emptyMap();
+    private static final Map<String, String> JITSI_MEET_CONFIG = Collections.emptyMap();
 
     /**
      * The pseudo-random generator used to generate random input for

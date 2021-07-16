@@ -200,7 +200,7 @@ public abstract class AbstractJsonHandler<T>
                                            String key)
         throws ParseException
     {
-        if(isNotBlank(oldValue) && !oldValue.equals(newValue))
+        if (isNotBlank(oldValue) && !oldValue.equals(newValue))
         {
             throw new ParseException(
                 ParseException.ERROR_UNEXPECTED_EXCEPTION,

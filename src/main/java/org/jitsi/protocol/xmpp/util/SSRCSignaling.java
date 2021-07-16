@@ -239,7 +239,7 @@ public class SSRCSignaling
     private static ParameterPacketExtension getParam(SourcePacketExtension ssrc,
                                                      String                name)
     {
-        for(ParameterPacketExtension param : ssrc.getParameters())
+        for (ParameterPacketExtension param : ssrc.getParameters())
         {
             if (name.equals(param.getName()))
                 return param;

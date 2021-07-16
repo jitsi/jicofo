@@ -83,7 +83,7 @@ public class CurrentVersionImpl
     /**
      * The version prerelease ID of the current application version.
      */
-    public static final String PRE_RELEASE_ID = null;// "beta1";
+    public static final String PRE_RELEASE_ID = null; // "beta1";
 
     /**
      * The nightly build ID. This file is auto-updated by build.xml.
