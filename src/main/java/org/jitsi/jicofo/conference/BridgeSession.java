@@ -194,11 +194,7 @@ class BridgeSession
 
         if (channelsInfo != null && !hasFailed)
         {
-            String id
-                    = (participant instanceof Participant)
-                    ? ((Participant) participant).getMucJid().toString()
-                    : "octo";
-            logger.info("Expiring channels for: " + id + " on: " + bridge);
+            logger.info("Expiring channels for: " + participant + " on: " + bridge);
             colibriConference.expireChannels(channelsInfo);
         }
 
