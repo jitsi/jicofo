@@ -1079,24 +1079,29 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            if (participant.isSessionEstablished())
+            try
             {
-                JingleSession jingleSession = participant.getJingleSession();
+                if (participant.isSessionEstablished())
+                {
+                    JingleSession jingleSession = participant.getJingleSession();
 
-                jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
+                    jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
 
-                removeSources(
-                    jingleSession,
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
-                    false /* no JVB update - will expire */,
-                    sendSourceRemove);
+                    removeSources(
+                        jingleSession,
+                        participant.getSourcesCopy(),
+                        participant.getSourceGroupsCopy(),
+                        false /* no JVB update - will expire */,
+                        sendSourceRemove);
 
-                participant.setJingleSession(null);
+                    participant.setJingleSession(null);
+                }
             }
-
-            boolean removed = participants.remove(participant);
-            logger.info("Removed participant " + participant.getChatMember().getName() + " removed=" + removed);
+            finally
+            {
+                boolean removed = participants.remove(participant);
+                logger.info("Removed participant " + participant.getChatMember().getName() + " removed=" + removed);
+            }
         }
 
         BridgeSession bridgeSession = terminateParticipantBridgeSession(participant);
