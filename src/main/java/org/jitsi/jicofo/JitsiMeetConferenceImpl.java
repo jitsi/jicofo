@@ -1077,6 +1077,8 @@ public class JitsiMeetConferenceImpl
                 reason,
                 sendSessionTerminate));
 
+        List<Throwable> suppressedThrowables = new ArrayList<>();
+
         synchronized (participantLock)
         {
             try
@@ -1097,6 +1099,12 @@ public class JitsiMeetConferenceImpl
                     participant.setJingleSession(null);
                 }
             }
+            catch (Throwable throwable)
+            {
+                // XXX suppress the error and attempt to terminate the bridge session.
+                suppressedThrowables.add(throwable);
+                logger.error("Suppressing", throwable);
+            }
             finally
             {
                 boolean removed = participants.remove(participant);
@@ -1104,10 +1112,39 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        BridgeSession bridgeSession = terminateParticipantBridgeSession(participant);
-        if (bridgeSession != null)
+        try
         {
-            maybeExpireBridgeSession(bridgeSession);
+            terminateParticipantBridgeSession(participant);
+        }
+        catch (Throwable throwable)
+        {
+            // XXX suppress the error and attempt to expire the bridge session.
+            suppressedThrowables.add(throwable);
+            logger.error("Suppressing", throwable);
+        }
+
+        try
+        {
+            BridgeSession bridgeSession = participant.getBridgeSession();
+            if (bridgeSession != null)
+            {
+                maybeExpireBridgeSession(bridgeSession);
+            }
+        }
+        catch (Throwable throwable)
+        {
+            suppressedThrowables.forEach(throwable::addSuppressed);
+            throw throwable;
+        }
+
+        if (suppressedThrowables.size() != 0)
+        {
+            // We may have accumulated up to 2 suppressed throwables that need to be bubbled up.
+            RuntimeException runtimeException = new RuntimeException();
+
+            suppressedThrowables.forEach(runtimeException::addSuppressed);
+
+            throw runtimeException;
         }
     }
 
