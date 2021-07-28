@@ -81,7 +81,7 @@ case "$1" in
         # and we're done with debconf
         db_stop
 
-        NEW_JITSI_CONFIG="/etc/jitsi/jicofo/sip-communicator.properties"
+        OLD_JITSI_CONFIG="/etc/jitsi/jicofo/sip-communicator.properties"
         HOCON_CONFIG="/etc/jitsi/jicofo/jicofo.conf"
 
         # Updates config so new and old installs will start using the new config file
@@ -102,7 +102,7 @@ jicofo {
         hocon -f $HOCON_CONFIG set jicofo.xmpp.client.client-proxy "focus.$JVB_HOSTNAME"
 
         # Add the JvbBrewery config if missing
-        if ! grep -q "org.jitsi.jicofo.BRIDGE_MUC" "$NEW_JITSI_CONFIG" ;then
+        if ! grep -q "org.jitsi.jicofo.BRIDGE_MUC" "$OLD_JITSI_CONFIG" ;then
             if ! hocon -f $HOCON_CONFIG get "jicofo.bridge.brewery-jid" > /dev/null 2>&1 ; then
                 hocon -f $HOCON_CONFIG set "jicofo.bridge.brewery-jid" "JvbBrewery@internal.auth.${JVB_HOSTNAME}"
             fi
