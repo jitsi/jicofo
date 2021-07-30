@@ -22,13 +22,14 @@ import org.jitsi.protocol.xmpp.util.SourceGroup
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jxmpp.jid.Jid
+import java.lang.UnsupportedOperationException
 
 /**
  * A container for sources from multiple endpoints, mapped by the ID of the endpoint. This could contain sources for
  * an entire conference, or a subset.
  * This map is not thread safe.
  */
-data class ConferenceSourceMap(
+open class ConferenceSourceMap(
     /**
      * The sources mapped by endpoint ID.
      */
@@ -43,15 +44,21 @@ data class ConferenceSourceMap(
         }
     )
 
+    /**
+     * An unmodifiable view of this [ConferenceSourceMap].
+     */
+    val unmodifiable by lazy { UnmodifiableConferenceSourceMap(endpointSourceSets) }
+    fun unmodifiable() = unmodifiable
+
     /** Adds the sources of another [ConferenceSourceMap] to this. */
-    fun add(other: ConferenceSourceMap) {
+    open fun add(other: ConferenceSourceMap) {
         other.endpointSourceSets.forEach { (owner, endpointSourceSet) ->
             endpointSourceSets[owner] += endpointSourceSet
         }
     }
 
     /** Removes the sources of another [ConferenceSourceMap] from this one. */
-    fun remove(other: ConferenceSourceMap) {
+    open fun remove(other: ConferenceSourceMap) {
         other.endpointSourceSets.forEach { (owner, endpointSourceSet) ->
             val existing = endpointSourceSets[owner]
             if (existing != null) {
@@ -167,6 +174,19 @@ data class ConferenceSourceMap(
             return ConferenceSourceMap(endpointSourceSets)
         }
     }
+}
+
+/**
+ * A read-only version of [ConferenceSourceMap]. Attempts to modify the map will via [add], [remove] or any of the
+ * standard [java.lang.Map] mutating methods will result in an exception.
+ */
+class UnmodifiableConferenceSourceMap(
+    endpointSourceSets: MutableMap<Jid?, EndpointSourceSet>
+) : ConferenceSourceMap(endpointSourceSets) {
+    override fun add(other: ConferenceSourceMap) =
+        throw UnsupportedOperationException("add() not supported in unmodifiable view")
+    override fun remove(other: ConferenceSourceMap) =
+        throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 }
 
 data class SourceMapAndGroupMap(val sources: MediaSourceMap, val groups: MediaSourceGroupMap)

@@ -12,6 +12,7 @@ import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.jxmpp.jid.impl.JidCreate
+import java.lang.UnsupportedOperationException
 
 class SourcesTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
@@ -326,6 +327,26 @@ class SourcesTest : ShouldSpec() {
                             )
                         ).removeInjected()
                         conferenceSourceMap.isEmpty() shouldBe true
+                    }
+                }
+                context("unmodifiable") {
+                    val conferenceSourceMap = ConferenceSourceMap(
+                        endpoint1Jid to endpoint1SourceSet,
+                        endpoint2Jid to endpoint2SourceSet
+                    )
+
+                    val unmodifiable = conferenceSourceMap.unmodifiable
+                    unmodifiable[endpoint1Jid] shouldBe endpoint1SourceSet
+
+                    conferenceSourceMap.add(ConferenceSourceMap(endpoint1Jid to endpoint1AdditionalSourceSet))
+                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
+                    unmodifiable[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
+
+                    shouldThrow <UnsupportedOperationException> {
+                        unmodifiable.add(ConferenceSourceMap())
+                    }
+                    shouldThrow <UnsupportedOperationException> {
+                        unmodifiable.remove(ConferenceSourceMap())
                     }
                 }
             }
