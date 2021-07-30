@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
@@ -256,11 +257,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             List<ContentPacketExtension> offer,
             ColibriConferenceIQ colibriChannels)
     {
-        MediaSourceMap conferenceSSRCs
-            = meetConference.getAllSources(reInvite ? participant : null);
-
-        MediaSourceGroupMap conferenceSSRCGroups
-            = meetConference.getAllSourceGroups(reInvite ? participant : null);
+        ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
+        // Remove the participant's own sources (if they're present)
+        conferenceSources.remove(participant.getMucJid());
 
         for (ContentPacketExtension cpe : offer)
         {
@@ -410,10 +409,10 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 }
 
                 // Include all peers SSRCs
-                List<SourcePacketExtension> mediaSources
-                    = conferenceSSRCs.getSourcesForMedia(contentName);
+                List<SourcePacketExtension> sourceExtensions
+                    = conferenceSources.createSourcePacketExtensions(MediaType.parseString(contentName));
 
-                for (SourcePacketExtension ssrc : mediaSources)
+                for (SourcePacketExtension ssrc : sourceExtensions)
                 {
                     try
                     {
@@ -426,12 +425,12 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 }
 
                 // Include SSRC groups
-                List<SourceGroup> sourceGroups
-                    = conferenceSSRCGroups.getSourceGroupsForMedia(contentName);
+                List<SourceGroupPacketExtension> sourceGroups
+                    = conferenceSources.createSourceGroupPacketExtensions(MediaType.parseString(contentName));
 
-                for (SourceGroup sourceGroup : sourceGroups)
+                for (SourceGroupPacketExtension sourceGroupPacketExtension : sourceGroups)
                 {
-                    rtpDescPe.addChildExtension(sourceGroup.getPacketExtension());
+                    rtpDescPe.addChildExtension(sourceGroupPacketExtension);
                 }
             }
         }

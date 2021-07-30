@@ -20,7 +20,9 @@ import org.jitsi.protocol.xmpp.util.MediaSourceMap
 import org.jitsi.protocol.xmpp.util.SSRCSignaling
 import org.jitsi.protocol.xmpp.util.SourceGroup
 import org.jitsi.utils.MediaType
+import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jxmpp.jid.Jid
 import java.lang.UnsupportedOperationException
 
@@ -50,6 +52,8 @@ open class ConferenceSourceMap(
         contents: List<ContentPacketExtension>
     ) : this(owner, EndpointSourceSet.fromJingle(contents))
     constructor(owner: Jid?, source: Source) : this(owner, EndpointSourceSet(setOf(source), emptySet()))
+
+    open fun remove(owner: Jid?) = endpointSourceSets.remove(owner)
 
     /**
      * An unmodifiable view of this [ConferenceSourceMap].
@@ -88,6 +92,26 @@ open class ConferenceSourceMap(
         val contents = mutableMapOf<MediaType, ContentPacketExtension>()
         forEach { (owner, sourceSet) -> sourceSet.toJingle(contents, owner) }
         return contents.values.toList()
+    }
+
+    fun createSourcePacketExtensions(mediaType: MediaType): List<SourcePacketExtension> {
+        val extensions = mutableListOf<SourcePacketExtension>()
+        forEach { (owner, endpointSourceSet) ->
+            endpointSourceSet.sources.filter { it.mediaType == mediaType }.forEach { source ->
+                extensions.add(source.toPacketExtension(owner))
+            }
+        }
+        return extensions
+    }
+
+    fun createSourceGroupPacketExtensions(mediaType: MediaType): List<SourceGroupPacketExtension> {
+        val extensions = mutableListOf<SourceGroupPacketExtension>()
+        forEach { (_, endpointSourceSet) ->
+            endpointSourceSet.ssrcGroups.filter { it.mediaType == mediaType }.forEach { ssrcGroup ->
+                extensions.add(ssrcGroup.toPacketExtension())
+            }
+        }
+        return extensions
     }
 
     /** This is temporary until we fully transition to [ConferenceSourceMap], etc. */
@@ -193,6 +217,8 @@ class UnmodifiableConferenceSourceMap(
     override fun add(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
     override fun remove(other: ConferenceSourceMap) =
+        throw UnsupportedOperationException("remove() not supported in unmodifiable view")
+    override fun remove(owner: Jid?) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 }
 

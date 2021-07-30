@@ -1772,16 +1772,13 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Gathers the list of all sources that exist in the current conference state.
-     *
-     * @param except optional <tt>Participant</tt> instance whose sources will be excluded from the list.
-     *
-     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
-     * in the current conference state.
+     * Get all sources in the conference.
+     * @return
      */
-    MediaSourceMap getAllSources(Participant except)
+    @NotNull
+    public ConferenceSourceMap getSources()
     {
-        return getAllSources(Collections.singletonList(except), false);
+        return conferenceSources.unmodifiable();
     }
 
     /**
@@ -1793,18 +1790,12 @@ public class JitsiMeetConferenceImpl
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
-    private MediaSourceMap getAllSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
+    private ConferenceSourceMap getSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
-        MediaSourceMap mediaSources = new MediaSourceMap();
+        ConferenceSourceMap allSources = getSources().copy();
 
         for (Participant participant : participants)
         {
-            // We want to exclude this one
-            if (except.contains(participant))
-            {
-                continue;
-            }
-
             // If the return value is used to create a new octo participant then
             // we skip participants without a bridge session (which happens when
             // a bridge fails & participant are re-invited). The reason why we
@@ -1812,65 +1803,14 @@ public class JitsiMeetConferenceImpl
             // participant from soon to be re-invited (and hence soon to be local)
             // participants, causing a weird transition from octo participant to
             // local participant in the new bridge.
-            if (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null)
+            if (except.contains(participant) ||
+                    (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null))
             {
-                continue;
+                allSources.remove(participant.getMucJid());
             }
-
-            mediaSources.add(participant.getSourcesCopy());
         }
 
-        return mediaSources;
-    }
-
-    /**
-     * Gathers the list of all source groups that exist in the current conference
-     * state.
-     *
-     * @param except optional <tt>Participant</tt> instance whose source groups will be excluded from the list.
-     * @return the list of all source groups of given media type that exist in current conference state.
-     */
-    MediaSourceGroupMap getAllSourceGroups(Participant except)
-    {
-        return getAllSourceGroups(Collections.singletonList(except), false);
-    }
-
-    /**
-     * Gathers the list of all source groups that exist in the current conference state.
-     *
-     * @param except a list of participants whose sources will not be included in the result.
-     * @param skipParticipantsWithoutBridgeSession skip source groups from participants without a bridge session.
-     * @return the list of all source groups of given media type that exist in current conference state.
-     */
-    private MediaSourceGroupMap getAllSourceGroups(
-        List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
-    {
-        MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
-
-        for (Participant participant : participants)
-        {
-            // Excluded this participant groups
-            if (except.contains(participant))
-            {
-                continue;
-            }
-
-            // If the return value is used to create a new octo participant then
-            // we skip participants without a bridge session (which happens when
-            // a bridge fails & participant are re-invited). The reason why we
-            // do this is to avoid adding sources to the (newly created) octo
-            // participant from soon to be re-invited (and hence soon to be local)
-            // participants, causing a weird transition from octo participant to
-            // local participant in the new bridge.
-            if (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null)
-            {
-                continue;
-            }
-
-            sourceGroups.add(participant.getSourceGroupsCopy());
-        }
-
-        return sourceGroups;
+        return allSources;
     }
 
     /**
@@ -2742,10 +2682,9 @@ public class JitsiMeetConferenceImpl
 
             OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays, logger);
 
-            MediaSourceMap remoteSources = getAllSources(participants, true);
-            MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants, true);
+            ConferenceSourceMap remoteSources = getSources(participants, true);
 
-            octoParticipant.addSources(ConferenceSourceMap.fromMediaSourceMap(remoteSources, remoteGroups));
+            octoParticipant.addSources(remoteSources);
 
             OctoChannelAllocator channelAllocator
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant, logger);

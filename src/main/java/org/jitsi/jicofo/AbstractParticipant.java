@@ -135,14 +135,6 @@ public abstract class AbstractParticipant
     }
 
     /**
-     * Returns deep copy of this peer's media source group map.
-     */
-    public MediaSourceGroupMap getSourceGroupsCopy()
-    {
-        return getSources().toMediaSourceMap().getGroups();
-    }
-
-    /**
      * Clear the pending remote sources, indicating that they have now been signaled.
      */
     public void clearPendingRemoteSources()
