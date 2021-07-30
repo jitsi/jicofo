@@ -37,6 +37,11 @@ data class Source(
      * to endpoints.
      */
     val injected: Boolean = false,
+    /**
+     * Optional video type (camera, desktop) for this source.
+     * TODO: do we need this here? Do clients actually use this?
+     */
+    val videoType: String? = null
 ) {
     /** Create a [Source] from an XML extension. */
     constructor(mediaType: MediaType, sourcePacketExtension: SourcePacketExtension) : this(
@@ -46,7 +51,9 @@ data class Source(
             .filter { it.name == "msid" }.map { it.value }.firstOrNull(),
         sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             .filter { it.name == "cname" }.map { it.value }.firstOrNull(),
-        sourcePacketExtension.isInjected
+        sourcePacketExtension.isInjected,
+        sourcePacketExtension.getChildExtensionsOfType(SSRCInfoPacketExtension::class.java)
+            .firstOrNull()?.videoType
     )
 
     /** Serializes this [SsrcGroup] to XML */
@@ -55,9 +62,14 @@ data class Source(
         owner: Jid? = null
     ) = SourcePacketExtension().apply {
         ssrc = this@Source.ssrc
-        if (owner != null) {
+        if (owner != null || videoType != null) {
             SSRCInfoPacketExtension().also {
-                it.owner = owner
+                if (owner != null) {
+                    it.owner = owner
+                }
+                if (videoType != null) {
+                    it.videoType = videoType
+                }
                 addChildExtension(it)
             }
         }
