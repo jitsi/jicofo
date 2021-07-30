@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 
 import java.util.*;
@@ -102,42 +101,36 @@ public class OctoParticipant
     /**
      * Updates the sources and source groups of this participant with the
      * sources and source groups scheduled to be added or removed via
-     * {@link #scheduleSourcesToAdd(MediaSourceMap)},
-     * {@link #scheduleSourceGroupsToAdd(MediaSourceGroupMap)},
-     * {@link #scheduleSourcesToRemove(MediaSourceMap)},
-     * {@link #scheduleSourceGroupsToRemove(MediaSourceGroupMap)}
+     * {@link #addPendingRemoteSourcesToAdd(ConferenceSourceMap)} and
+     * {@link #addPendingRemoteSourcesToRemove(ConferenceSourceMap)} and
      *
-     * @return {@code true} if the call resulted in this participant's sources
-     * or source groups to change, and {@code false} otherwise.
+     * @return {@code true} if the call resulted in this participant's sources to change, and {@code false} otherwise.
      */
     synchronized boolean updateSources()
     {
         boolean changed = false;
 
-        MediaSourceMap sourcesToAdd = getSourcesToAdd();
-        MediaSourceGroupMap sourceGroupsToAdd = getSourceGroupsToAdd();
-        MediaSourceMap sourcesToRemove = getSourcesToRemove();
-        MediaSourceGroupMap sourceGroupsToRemove = getSourceGroupsToRemove();
+        ConferenceSourceMap sourcesToAdd = getPendingRemoteSourcesToAdd();
+        //MediaSourceGroupMap sourceGroupsToAdd = getSourceGroupsToAdd();
+        ConferenceSourceMap sourcesToRemove = getPendingRemoteSourcesToRemove();
 
-        clearSourcesToAdd();
-        clearSourcesToRemove();
+        clearPendingRemoteSources();
 
         // We don't have any information about the order in which the add/remove
         // operations were requested. If an SSRC is present in both
         // sourcesToAdd and sourcesToRemove we choose to include it. That is,
         // we err on the side of signaling more sources than necessary.
         sourcesToRemove.remove(sourcesToAdd);
-        sourceGroupsToRemove.remove(sourceGroupsToAdd);
 
-        if (!sourcesToAdd.isEmpty() || !sourceGroupsToAdd.isEmpty())
+        if (!sourcesToAdd.isEmpty())
         {
-            addSources(ConferenceSourceMap.fromMediaSourceMap(sourcesToAdd, sourceGroupsToAdd));
+            addSources(sourcesToAdd);
             changed = true;
         }
 
-        if (!sourcesToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty())
+        if (!sourcesToRemove.isEmpty())
         {
-            removeSources(ConferenceSourceMap.fromMediaSourceMap(sourcesToRemove, sourceGroupsToRemove));
+            removeSources(sourcesToRemove);
             changed = true;
         }
 
