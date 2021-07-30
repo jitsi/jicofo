@@ -354,19 +354,6 @@ public class MediaSourceMap
         return str.toString();
     }
 
-    /**
-     * Returns a map of Colibri content's names to lists of
-     * <tt>SourcePacketExtension</tt> which reflect the state of this
-     * <tt>MediaSourceMap</tt>.
-     *
-     * @return <tt>Map<String, List<SourcePacketExtension></tt> which reflects
-     *         the state of this <tt>MediaSourceMap</tt>.
-     */
-    public Map<String, List<SourcePacketExtension>> toMap()
-    {
-        return Collections.unmodifiableMap(sources);
-    }
-
     @Override
     public String toString()
     {

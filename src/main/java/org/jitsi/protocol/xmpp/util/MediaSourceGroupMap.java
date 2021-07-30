@@ -319,32 +319,6 @@ public class MediaSourceGroupMap
         return str.toString();
     }
 
-    /**
-     * Converts to a map of <tt>SourceGroupPacketExtension</tt>.
-     * @return a map of Colibri content's names to the lists of
-     *         <tt>SourceGroupPacketExtension</tt> which reflects current state
-     *         of this <tt>MediaSourceGroupMap</tt>.
-     */
-    public Map<String, List<SourceGroupPacketExtension>> toMap()
-    {
-        Map<String, List<SourceGroupPacketExtension>> map = new HashMap<>();
-
-        for (Map.Entry<String, List<SourceGroup>> entry : groupMap.entrySet())
-        {
-            List<SourceGroupPacketExtension> peGroups
-                = new ArrayList<>(entry.getValue().size());
-
-            for (SourceGroup group : entry.getValue())
-            {
-                peGroups.add(group.getExtensionCopy());
-            }
-
-            map.put(entry.getKey(), peGroups);
-        }
-
-        return map;
-    }
-
     @Override
     public String toString()
     {

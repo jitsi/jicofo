@@ -20,8 +20,6 @@ package org.jitsi.protocol.xmpp.util;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.jicofo.*;
-
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;

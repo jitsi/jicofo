@@ -140,37 +140,6 @@ public class SSRCSignaling
     }
 
     /**
-     * Call will remove all {@link ParameterPacketExtension}s from all
-     * <tt>SourcePacketExtension</tt>s stored in given <tt>MediaSourceMap</tt>.
-     *
-     * @param ssrcMap the <tt>MediaSourceMap</tt> which contains the SSRC packet
-     * extensions to be stripped out of their parameters.
-     */
-    public static void deleteSSRCParams(MediaSourceMap ssrcMap)
-    {
-        for (String media : ssrcMap.getMediaTypes())
-        {
-            for (SourcePacketExtension ssrc : ssrcMap.getSourcesForMedia(media))
-            {
-                deleteSSRCParams(ssrc);
-            }
-        }
-    }
-
-    /**
-     * Removes all child <tt>ParameterPacketExtension</tt>s from given
-     * <tt>SourcePacketExtension</tt>.
-     *
-     * @param ssrcPe the instance of <tt>SourcePacketExtension</tt> which will
-     * be stripped off all parameters.
-     */
-    private static void deleteSSRCParams(SourcePacketExtension ssrcPe)
-    {
-        List<? extends ExtensionElement> peList = ssrcPe.getChildExtensions();
-        peList.removeAll(ssrcPe.getParameters());
-    }
-
-    /**
      * Finds the first SSRC in the list with a valid stream ID('msid').
      * The 'default' stream id is not considered a valid one.
      *
