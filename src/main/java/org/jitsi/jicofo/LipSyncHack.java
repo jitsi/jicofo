@@ -269,11 +269,11 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void sendAddSourceIQ(
-            MediaSourceMap ssrcMap,
-            MediaSourceGroupMap ssrcGroupMap,
-            JingleSession session)
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
     {
+        SourceMapAndGroupMap sourceMapAndGroupMap = sources.toMediaSourceMap();
+        MediaSourceMap ssrcMap = sourceMapAndGroupMap.getSources();
+
         Jid mucJid = session.getAddress();
         // If this is source add for video only then add audio for merge process
         for (SourcePacketExtension videoSsrc
@@ -303,7 +303,11 @@ public class LipSyncHack implements OperationSetJingle
                             + " 'source-add' to: " + mucJid);
             }
         }
-        jingleImpl.sendAddSourceIQ(ssrcMap, ssrcGroupMap, session);
+        jingleImpl.sendAddSourceIQ(
+                ConferenceSourceMap.fromMediaSourceMap(
+                        ssrcMap,
+                        sourceMapAndGroupMap.getGroups()),
+                session);
     }
 
     /**

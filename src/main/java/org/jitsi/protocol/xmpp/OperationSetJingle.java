@@ -20,7 +20,6 @@ package org.jitsi.protocol.xmpp;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
@@ -67,15 +66,10 @@ public interface OperationSetJingle
     /**
      * Sends 'source-add' proprietary notification.
      *
-     * @param ssrcMap the media SSRCs map which will be included in
-     *                the notification.
-     * @param ssrcGroupMap the map of media SSRC groups that will be included in
-     *                     the notification.
+     * @param sources the sources to be included in the source-add message.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendAddSourceIQ(MediaSourceMap ssrcMap,
-                         MediaSourceGroupMap ssrcGroupMap,
-                         JingleSession session);
+    void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session);
 
     /**
      * Sends a 'source-remove' stanza to the remote Jingle peer.

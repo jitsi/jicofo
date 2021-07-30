@@ -1393,8 +1393,7 @@ public class JitsiMeetConferenceImpl
                 {
                     if (participant.isSessionEstablished())
                     {
-                        SourceMapAndGroupMap s = sources.toMediaSourceMap();
-                        jingle.sendAddSourceIQ(s.getSources(), s.getGroups(), participant.getJingleSession());
+                        jingle.sendAddSourceIQ(sources, participant.getJingleSession());
                     }
                     else
                     {
@@ -1671,11 +1670,7 @@ public class JitsiMeetConferenceImpl
         ConferenceSourceMap remoteSourcesToRemove = participant.getPendingRemoteSourcesToRemove();
         if (!remoteSourcesToAdd.isEmpty())
         {
-            SourceMapAndGroupMap s = remoteSourcesToAdd.toMediaSourceMap();
-            jingle.sendAddSourceIQ(
-                s.getSources(),
-                s.getGroups(),
-                jingleSession);
+            jingle.sendAddSourceIQ(remoteSourcesToAdd, jingleSession);
         }
         if (!remoteSourcesToRemove.isEmpty())
         {

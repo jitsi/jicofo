@@ -247,21 +247,14 @@ public abstract class AbstractOperationSetJingle
      * Sends 'source-add' notification to the peer of given
      * <tt>JingleSession</tt>.
      *
-     * @param ssrcs the map of media SSRCs that will be included in
-     *              the notification.
-     * @param ssrcGroupMap the map of media SSRC groups that will be included in
-     *                     the notification.
+     * @param sources the sources to be included in the source-add message.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendAddSourceIQ(MediaSourceMap ssrcs,
-                                MediaSourceGroupMap ssrcGroupMap,
-                                JingleSession        session)
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
     {
-        boolean onlyInjected =
-                ssrcs.getSourcesForMedia("video").isEmpty() &&
-                        ssrcs.getSourcesForMedia("audio").stream().allMatch(SourcePacketExtension::isInjected);
-        if (onlyInjected)
+        sources = sources.copy().removeInjected();
+        if (sources.isEmpty())
         {
             logger.debug("Suppressing source-add for injected SSRC.");
             return;
@@ -270,91 +263,12 @@ public abstract class AbstractOperationSetJingle
         JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
         addSourceIq.setFrom(getOurJID());
         addSourceIq.setType(IQ.Type.set);
-
-        for (String media : ssrcs.getMediaTypes())
-        {
-            List<SourcePacketExtension> sources = ssrcs.getSourcesForMedia(media);
-
-            if (sources.size() == 0)
-            {
-                continue;
-            }
-
-            ContentPacketExtension content = new ContentPacketExtension();
-
-            content.setName(media);
-
-            RtpDescriptionPacketExtension rtpDesc = new RtpDescriptionPacketExtension();
-
-            rtpDesc.setMedia(media);
-
-            content.addChildExtension(rtpDesc);
-
-            for (SourcePacketExtension ssrc : sources)
-            {
-                try
-                {
-                    rtpDesc.addChildExtension(ssrc.copy());
-                }
-                catch (Exception e)
-                {
-                    logger.error("Copy SSRC error", e);
-                }
-            }
-
-            addSourceIq.addContent(content);
-        }
-
-        if (ssrcGroupMap != null)
-        {
-            for (String media : ssrcGroupMap.getMediaTypes())
-            {
-                ContentPacketExtension content
-                    = addSourceIq.getContentByName(media);
-                RtpDescriptionPacketExtension rtpDesc;
-
-                if (content == null)
-                {
-                    // It means content was not created when adding SSRCs...
-                    logger.warn(
-                        "No SSRCs to be added when group exists for media: "
-                            + media);
-
-                    content = new ContentPacketExtension();
-                    content.setName(media);
-                    addSourceIq.addContent(content);
-
-                    rtpDesc = new RtpDescriptionPacketExtension();
-                    rtpDesc.setMedia(media);
-                    content.addChildExtension(rtpDesc);
-                }
-                else
-                {
-                    rtpDesc = content.getFirstChildOfType(
-                        RtpDescriptionPacketExtension.class);
-                }
-
-                for (SourceGroup sourceGroup
-                    : ssrcGroupMap.getSourceGroupsForMedia(media))
-                {
-                    try
-                    {
-                        rtpDesc.addChildExtension(sourceGroup.getExtensionCopy());
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Copy SSRC GROUP error", e);
-                    }
-                }
-            }
-        }
-
         addSourceIq.setTo(session.getAddress());
+        List<ContentPacketExtension> contents = sources.toJingle();
+        contents.forEach(addSourceIq::addContent);
 
-        logger.debug(
-            "Notify add SSRC " + session.getAddress()
-                + " SID: " + session.getSessionID() + " "
-                + ssrcs + " " + ssrcGroupMap);
+        logger.debug("Sending source-add to " + session.getAddress()
+                + ", SID=" + session.getSessionID() + ", sources= " + sources);
 
         UtilKt.tryToSendStanza(getConnection(), addSourceIq);
         stats.stanzaSent(JingleAction.SOURCEADD);

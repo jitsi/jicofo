@@ -520,7 +520,9 @@ public class MockParticipant
         }
 
         // Send source-add
-        jingle.sendAddSourceIQ(toAdd, localSSRCGroups, jingleSession);
+        jingle.sendAddSourceIQ(
+                ConferenceSourceMap.fromMediaSourceMap(toAdd, localSSRCGroups),
+                jingleSession);
 
         return addedSSRCs;
     }
