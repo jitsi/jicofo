@@ -299,6 +299,35 @@ class SourcesTest : ShouldSpec() {
                         it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe endpoint1Jid
                     }
                 }
+                context("removeInjected") {
+                    context("With remaining") {
+                        val conferenceSourceMap = ConferenceSourceMap(
+                            endpoint1Jid to endpoint1SourceSet,
+                            endpoint2Jid to endpoint2SourceSet
+                        ).removeInjected()
+
+                        conferenceSourceMap.size shouldBe 2
+                        conferenceSourceMap[endpoint1Jid] shouldBe EndpointSourceSet(
+                            setOf(
+                                Source(1, MediaType.VIDEO),
+                                Source(2, MediaType.VIDEO),
+                            ),
+                            setOf(
+                                SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
+                            )
+                        )
+                        conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    }
+                    context("Without remaining") {
+                        val conferenceSourceMap = ConferenceSourceMap(
+                            endpoint1Jid to EndpointSourceSet(
+                                setOf(Source(1, MediaType.AUDIO, injected = true)),
+                                emptySet()
+                            )
+                        ).removeInjected()
+                        conferenceSourceMap.isEmpty() shouldBe true
+                    }
+                }
             }
         }
     }

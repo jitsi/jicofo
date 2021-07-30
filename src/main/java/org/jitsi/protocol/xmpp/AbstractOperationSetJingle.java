@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -363,21 +364,14 @@ public abstract class AbstractOperationSetJingle
      * Sends 'source-remove' notification to the peer of given
      * <tt>JingleSession</tt>.
      *
-     * @param ssrcs the map of media SSRCs that will be included in
-     *              the notification.
-     * @param ssrcGroupMap the map of media SSRC groups that will be included in
-     *                     the notification.
+     * @param sourcesToRemove the sources to remove.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
     @Override
-    public void sendRemoveSourceIQ(MediaSourceMap ssrcs,
-                                   MediaSourceGroupMap ssrcGroupMap,
-                                   JingleSession session)
+    public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
     {
-        boolean onlyInjected =
-                ssrcs.getSourcesForMedia("video").isEmpty() &&
-                        ssrcs.getSourcesForMedia("audio").stream().allMatch(SourcePacketExtension::isInjected);
-        if (onlyInjected)
+        sourcesToRemove = sourcesToRemove.copy().removeInjected();
+        if (sourcesToRemove.isEmpty())
         {
             logger.debug("Suppressing source-remove for injected SSRC.");
             return;
@@ -387,85 +381,12 @@ public abstract class AbstractOperationSetJingle
 
         removeSourceIq.setFrom(getOurJID());
         removeSourceIq.setType(IQ.Type.set);
-
-        for (String media : ssrcs.getMediaTypes())
-        {
-            ContentPacketExtension content
-                = new ContentPacketExtension();
-
-            content.setName(media);
-
-            RtpDescriptionPacketExtension rtpDesc
-                = new RtpDescriptionPacketExtension();
-            rtpDesc.setMedia(media);
-
-            content.addChildExtension(rtpDesc);
-
-            for (SourcePacketExtension ssrc : ssrcs.getSourcesForMedia(media))
-            {
-                try
-                {
-                    rtpDesc.addChildExtension(ssrc.copy());
-                }
-                catch (Exception e)
-                {
-                    logger.error("Copy SSRC error", e);
-                }
-            }
-
-            removeSourceIq.addContent(content);
-        }
-
-        if (ssrcGroupMap != null)
-        {
-            for (String media : ssrcGroupMap.getMediaTypes())
-            {
-                ContentPacketExtension content
-                    = removeSourceIq.getContentByName(media);
-                RtpDescriptionPacketExtension rtpDesc;
-
-                if (content == null)
-                {
-                    // It means content was not created when adding SSRCs...
-                    logger.warn(
-                        "No SSRCs to be removed when group exists for media: "
-                            + media);
-
-                    content = new ContentPacketExtension();
-                    content.setName(media);
-                    removeSourceIq.addContent(content);
-
-                    rtpDesc = new RtpDescriptionPacketExtension();
-                    rtpDesc.setMedia(media);
-                    content.addChildExtension(rtpDesc);
-                }
-                else
-                {
-                    rtpDesc = content.getFirstChildOfType(
-                        RtpDescriptionPacketExtension.class);
-                }
-
-                for (SourceGroup sourceGroup
-                    : ssrcGroupMap.getSourceGroupsForMedia(media))
-                {
-                    try
-                    {
-                        rtpDesc.addChildExtension(sourceGroup.getExtensionCopy());
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Copy SSRC GROUP error", e);
-                    }
-                }
-            }
-        }
-
         removeSourceIq.setTo(session.getAddress());
+        sourcesToRemove.toJingle().forEach(removeSourceIq::addContent);
 
         logger.debug(
-            "Notify remove SSRC " + session.getAddress()
-                + " SID: " + session.getSessionID() + " "
-                + ssrcs + " " + ssrcGroupMap);
+            "Sending source-remove to " + session.getAddress() + ", SID=" + session.getSessionID()
+                    + ", sources=" + sourcesToRemove);
 
         UtilKt.tryToSendStanza(getConnection(), removeSourceIq);
         stats.stanzaSent(JingleAction.SOURCEREMOVE);

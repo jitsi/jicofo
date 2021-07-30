@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -1678,8 +1679,9 @@ public class JitsiMeetConferenceImpl
         if (participant.hasSourcesToRemove())
         {
             jingle.sendRemoveSourceIQ(
-                participant.getSourcesToRemove(),
-                participant.getSourceGroupsToRemove(),
+                ConferenceSourceMap.fromMediaSourceMap(
+                        participant.getSourcesToRemove(),
+                        participant.getSourceGroupsToRemove()),
                 jingleSession);
 
             participant.clearSourcesToRemove();
@@ -1788,8 +1790,9 @@ public class JitsiMeetConferenceImpl
                                 if (otherParticipant.isSessionEstablished())
                                 {
                                     jingle.sendRemoveSourceIQ(
-                                            removedSources,
-                                            removedGroups,
+                                            ConferenceSourceMap.fromMediaSourceMap(
+                                                removedSources,
+                                                removedGroups),
                                             otherParticipant.getJingleSession());
                                 }
                                 else

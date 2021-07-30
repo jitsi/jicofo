@@ -23,6 +23,7 @@ import mock.xmpp.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
@@ -470,7 +471,10 @@ public class MockParticipant
 
         removeMap.addSources("audio", toRemove);
 
-        jingle.sendRemoveSourceIQ(removeMap, null, jingleSession);
+        ConferenceSourceMap sourcesToRemove
+                = ConferenceSourceMap.fromMediaSourceMap(removeMap, new MediaSourceGroupMap());
+
+        jingle.sendRemoveSourceIQ(sourcesToRemove, jingleSession);
     }
 
     private List<SourcePacketExtension> sourceAdd(String media, int count, boolean useGroups, String[] videoTypes)

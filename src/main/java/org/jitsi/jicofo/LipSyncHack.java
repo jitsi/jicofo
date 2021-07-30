@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -322,12 +323,9 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void sendRemoveSourceIQ(
-            MediaSourceMap ssrcMap,
-            MediaSourceGroupMap ssrcGroupMap,
-            JingleSession       session)
+    public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
     {
-        jingleImpl.sendRemoveSourceIQ(ssrcMap, ssrcGroupMap, session);
+        jingleImpl.sendRemoveSourceIQ(sourcesToRemove, session);
     }
 
     /**

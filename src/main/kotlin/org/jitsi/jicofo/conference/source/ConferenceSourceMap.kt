@@ -32,7 +32,7 @@ data class ConferenceSourceMap(
     /**
      * The sources mapped by endpoint ID.
      */
-    val endpointSourceSets: MutableMap<Jid?, EndpointSourceSet> = mutableMapOf()
+    private val endpointSourceSets: MutableMap<Jid?, EndpointSourceSet> = mutableMapOf()
 ) : Map<Jid?, EndpointSourceSet> by endpointSourceSets {
 
     constructor(vararg entries: Pair<Jid?, EndpointSourceSet>) : this(
@@ -77,7 +77,7 @@ data class ConferenceSourceMap(
     }
 
     /** This is temporary until we fully transition to [ConferenceSourceMap], etc. */
-    fun toMediaSourceGroup(): SourceMapAndGroupMap {
+    fun toMediaSourceMap(): SourceMapAndGroupMap {
         val sources = MediaSourceMap()
         val groups = MediaSourceGroupMap()
 
@@ -90,6 +90,19 @@ data class ConferenceSourceMap(
             }
         }
         return SourceMapAndGroupMap(sources, groups)
+    }
+
+    fun copy(): ConferenceSourceMap = ConferenceSourceMap(endpointSourceSets.toMutableMap())
+
+    fun removeInjected() = this.apply {
+        endpointSourceSets.forEach { (owner, endpointSourceSet) ->
+            val withoutInjected = endpointSourceSet.withoutInjected()
+            if (withoutInjected.isEmpty()) {
+                endpointSourceSets.remove(owner)
+            } else {
+                endpointSourceSets[owner] = withoutInjected
+            }
+        }
     }
 
     companion object {
@@ -157,3 +170,9 @@ data class ConferenceSourceMap(
 }
 
 data class SourceMapAndGroupMap(val sources: MediaSourceMap, val groups: MediaSourceGroupMap)
+
+fun EndpointSourceSet.withoutInjected() = EndpointSourceSet(
+    sources.filter { !it.injected }.toSet(),
+    // Just maintain the groups. We never use groups with injected SSRCs, and "injected" should go away at some point.
+    ssrcGroups
+)
