@@ -18,7 +18,6 @@
 package org.jitsi.jicofo;
 
 import edu.umd.cs.findbugs.annotations.*;
-import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
@@ -224,6 +223,11 @@ public class JitsiMeetConferenceImpl
     private final BridgeSelectorEventHandler bridgeSelectorEventHandler = new BridgeSelectorEventHandler();
 
     @NotNull private final JicofoServices jicofoServices;
+
+    /**
+     * Stores the sources advertised by all participants in the conference, mapped by their JID.
+     */
+    private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -1506,16 +1510,14 @@ public class JitsiMeetConferenceImpl
         try
         {
             sourcesAdvertised = new ConferenceSourceMap(address, contents);
-            Object[] added = tryAddSourcesToParticipant(participant, sourcesAdvertised);
-            sourcesAccepted = ConferenceSourceMap.fromMediaSourceMap(
-                    (MediaSourceMap) added[0],
-                    (MediaSourceGroupMap) added[1]);
+            sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
         }
-        catch (InvalidSSRCsException e)
+        catch (ValidationFailedException e)
         {
             logger.error("Error adding SSRCs from: " + address + ": " + e.getMessage());
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
+        participant.addSources(sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
         {
@@ -1612,18 +1614,15 @@ public class JitsiMeetConferenceImpl
         ConferenceSourceMap sourcesAccepted;
         try
         {
-            Object[] sourcesAndGroupsAdded
-                = tryAddSourcesToParticipant(participant, sourcesAdvertised);
-            sourcesAccepted = ConferenceSourceMap.fromMediaSourceMap(
-                    (MediaSourceMap) sourcesAndGroupsAdded[0],
-                    (MediaSourceGroupMap) sourcesAndGroupsAdded[1]);
+            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
         }
-        catch (InvalidSSRCsException e)
+        catch (ValidationFailedException e)
         {
-            logger.error("Error processing session accept from: " + participantJid +": " + e.getMessage());
+            logger.error("Error processing session-accept from: " + participantJid +": " + e.getMessage());
 
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
+        participant.addSources(sourcesAccepted);
 
         logger.info(
                 "Received session-accept from " + participant.getChatMember().getName()
@@ -1699,30 +1698,12 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        final MediaSourceMap conferenceSources = getAllSources();
-        final MediaSourceGroupMap conferenceSourceGroups = getAllSourceGroups();
-
-        SSRCValidator validator
-                = new SSRCValidator(
-                        participant.getEndpointId(),
-                        conferenceSources,
-                        conferenceSourceGroups,
-                        ConferenceConfig.config.getMaxSsrcsPerUser(),
-                        this.logger);
-
-        Object[] removed;
-
         ConferenceSourceMap sourcesAcceptedToBeRemoved;
         try
         {
-            SourceMapAndGroupMap s = sourcesRequestedToBeRemoved.toMediaSourceMap();
-            removed = validator.tryRemoveSourcesAndGroups(s.getSources(), s.getGroups());
-            sourcesAcceptedToBeRemoved = ConferenceSourceMap.fromMediaSourceMap(
-                    (MediaSourceMap) removed[0],
-                    (MediaSourceGroupMap) removed[1]
-            );
+            sourcesAcceptedToBeRemoved = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
         }
-        catch (InvalidSSRCsException e)
+        catch (ValidationFailedException e)
         {
             logger.error("Error removing SSRCs from: " + participantJid + ": " + e.getMessage());
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
@@ -1782,52 +1763,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Adds the given sources and groups to the given participant.
-     *
-     * @param participant - The {@link Participant} instance to which sources and groups will be added.
-     * @param newSources - The new media sources to add.
-     *
-     * @return See returns description of
-     *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
-     * @throws InvalidSSRCsException See throws description of
-     *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
-     */
-    private Object[] tryAddSourcesToParticipant(
-            Participant participant,
-            ConferenceSourceMap newSources)
-        throws InvalidSSRCsException
-    {
-        MediaSourceMap conferenceSources = getAllSources();
-        MediaSourceGroupMap conferenceSourceGroups = getAllSourceGroups();
-
-        SSRCValidator validator
-            = new SSRCValidator(
-                    participant.getEndpointId(),
-                    conferenceSources,
-                    conferenceSourceGroups,
-                    ConferenceConfig.config.getMaxSsrcsPerUser(),
-                    this.logger);
-
-        SourceMapAndGroupMap s = newSources.toMediaSourceMap();
-        Object[] added = validator.tryAddSourcesAndGroups(s.getSources(), s.getGroups());
-
-        participant.addSources(
-                ConferenceSourceMap.fromMediaSourceMap((MediaSourceMap) added[0], (MediaSourceGroupMap) added[1]));
-
-        return added;
-    }
-
-    /**
-     * Gathers the list of all sources that exist in the current conference state.
-     *
-     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist in the current conference state.
-     */
-    private MediaSourceMap getAllSources()
-    {
-        return getAllSources(Collections.emptyList(), false);
-    }
-
-    /**
      * Gathers the list of all sources that exist in the current conference state.
      *
      * @param except optional <tt>Participant</tt> instance whose sources will be excluded from the list.
@@ -1877,16 +1812,6 @@ public class JitsiMeetConferenceImpl
         }
 
         return mediaSources;
-    }
-
-    /**
-     * Gathers the list of all source groups that exist in the current conference state.
-     *
-     * @return the list of all source groups of given media type that exist in current conference state.
-     */
-    private MediaSourceGroupMap getAllSourceGroups()
-    {
-        return getAllSourceGroups(Collections.emptyList(), false);
     }
 
     /**
