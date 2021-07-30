@@ -100,8 +100,7 @@ public interface ColibriConference
             statsId,
             peerIsInitiator,
             contents,
-            null /* sources */,
-            null /* source groups */,
+            new ConferenceSourceMap() /* sources */,
             null /* relays */);
     }
 
@@ -115,8 +114,6 @@ public interface ColibriConference
      * @param contents content list that describes peer media.
      * @param sources the sources to include with the channel creation request,
      * if any.
-     * @param sourceGroups the source groups to include with the channel
-     * creation request, if any.
      * @param relays the Octo relay IDs to include in the channel creation
      * request, if any.
      * @return <tt>ColibriConferenceIQ</tt> that describes allocated channels.
@@ -128,8 +125,7 @@ public interface ColibriConference
             String statsId,
             boolean peerIsInitiator,
             List<ContentPacketExtension> contents,
-            Map<String, List<SourcePacketExtension>> sources,
-            Map<String, List<SourceGroupPacketExtension>> sourceGroups,
+            @NotNull ConferenceSourceMap sources,
             List<String> relays)
         throws ColibriException;
 
@@ -147,26 +143,17 @@ public interface ColibriConference
      * <tt>RtpDescriptionPacketExtension</tt> which will be used to update
      * the RTP description of the channel in corresponding content described by
      * <tt>localChannelsInfo</tt>.
-     * @param sources (optional) the <tt>MediaSourceMap</tt> which maps Colibri
-     * content name to a list of <tt>SourcePacketExtension</tt> which will be
-     * used to update SSRCs of the channel in corresponding content described by
-     * <tt>localChannelsInfo</tt>.
-     * @param sourceGroups (optional) the <tt>MediaSourceGroupMap</tt> which maps
-     * Colibri content name to a list of <tt>SourceGroupPacketExtension</tt>
-     * which will be used to update SSRCs of the channel in corresponding
-     * content described by <tt>localChannelsInfo</tt>.
+     * @param sources the set of sources to be included in the Colibri channel update.
      */
     default void updateChannelsInfo(
         ColibriConferenceIQ localChannelsInfo,
         Map<String, RtpDescriptionPacketExtension> rtpInfoMap,
-        MediaSourceMap sources,
-        MediaSourceGroupMap sourceGroups)
+        @NotNull ConferenceSourceMap sources)
     {
         updateChannelsInfo(
             localChannelsInfo,
             rtpInfoMap,
             sources,
-            sourceGroups,
             null, null, null);
     }
 
@@ -184,14 +171,7 @@ public interface ColibriConference
      * <tt>RtpDescriptionPacketExtension</tt> which will be used to update
      * the RTP description of the channel in corresponding content described by
      * <tt>localChannelsInfo</tt>.
-     * @param sources (optional) the <tt>MediaSourceMap</tt> which maps Colibri
-     * content name to a list of <tt>SourcePacketExtension</tt> which will be
-     * used to update SSRCs of the channel in corresponding content described by
-     * <tt>localChannelsInfo</tt>.
-     * @param sourceGroups (optional) the <tt>MediaSourceGroupMap</tt> which maps
-     * Colibri content name to a list of <tt>SourceGroupPacketExtension</tt>
-     * which will be used to update SSRCs of the channel in corresponding
-     * content described by <tt>localChannelsInfo</tt>.
+     * @param sources the sett of sources to include in the Colibri channel update request.
      * @param bundleTransport (mandatory) the
      * <tt>IceUdpTransportPacketExtension</tt> which will be used to set
      * "bundle" transport of the first channel bundle from
@@ -204,8 +184,7 @@ public interface ColibriConference
     void updateChannelsInfo(
             ColibriConferenceIQ localChannelsInfo,
             Map<String, RtpDescriptionPacketExtension> rtpInfoMap,
-            MediaSourceMap sources,
-            MediaSourceGroupMap sourceGroups,
+            @NotNull ConferenceSourceMap sources,
             IceUdpTransportPacketExtension bundleTransport,
             String endpointId,
             List<String> relays);

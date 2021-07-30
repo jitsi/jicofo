@@ -163,8 +163,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy());
+                    participant.getSources());
         }
 
         // if participant is not av moderated but we need to let's do it

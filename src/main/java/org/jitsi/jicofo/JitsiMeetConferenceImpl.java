@@ -2662,8 +2662,7 @@ public class JitsiMeetConferenceImpl
             colibriConference.updateChannelsInfo(
                 participant.getColibriChannelsInfo(),
                 participant.getRtpDescriptionMap(),
-                participant.getSourcesCopy(),
-                participant.getSourceGroupsCopy(),
+                participant.getSources(),
                 participant.getBundleTransport(),
                 participant.getEndpointId(),
                 null);
@@ -2680,8 +2679,7 @@ public class JitsiMeetConferenceImpl
                 colibriConference.updateChannelsInfo(
                     octoParticipant.getColibriChannelsInfo(),
                     octoParticipant.getRtpDescriptionMap(),
-                    octoParticipant.getSourcesCopy(),
-                    octoParticipant.getSourceGroupsCopy(),
+                    octoParticipant.getSources(),
                     null,
                     null,
                     octoParticipant.getRelays());

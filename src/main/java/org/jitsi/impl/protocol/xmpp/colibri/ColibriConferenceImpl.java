@@ -23,7 +23,6 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
@@ -231,12 +230,14 @@ public class ColibriConferenceImpl
             String statsId,
             boolean peerIsInitiator,
             List<ContentPacketExtension> contents,
-            Map<String, List<SourcePacketExtension>> sourceMap,
-            Map<String, List<SourceGroupPacketExtension>> sourceGroupsMap,
+            @NotNull ConferenceSourceMap sources,
             List<String> octoRelayIds)
         throws ColibriException
     {
         ColibriConferenceIQ allocateRequest;
+
+        Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
+            extensions = extractPacketExtensions(sources);
 
         boolean conferenceExisted;
         try
@@ -260,8 +261,8 @@ public class ColibriConferenceImpl
                     statsId,
                     peerIsInitiator,
                     contents,
-                    sourceMap,
-                    sourceGroupsMap,
+                    extensions.getFirst(),
+                    extensions.getSecond(),
                     octoRelayIds);
 
                 allocateRequest = colibriBuilder.getRequest(jitsiVideobridge);
@@ -777,8 +778,7 @@ public class ColibriConferenceImpl
     public void updateChannelsInfo(
             ColibriConferenceIQ localChannelsInfo,
             Map<String, RtpDescriptionPacketExtension> descriptionMap,
-            MediaSourceMap sources,
-            MediaSourceGroupMap sourceGroups,
+            @NotNull ConferenceSourceMap sources,
             IceUdpTransportPacketExtension bundleTransport,
             String endpointId,
             List<String> relays)
@@ -815,17 +815,15 @@ public class ColibriConferenceImpl
                             channel);
                 }
             }
+            Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
+                    extensions = extractPacketExtensions(sources);
             // SSRCs
-            if (sources != null
-                    && colibriBuilder.addSourceInfo(
-                            sources.toMap(), localChannelsInfo))
+            if (colibriBuilder.addSourceInfo(extensions.getFirst(), localChannelsInfo))
             {
                 send = true;
             }
             // SSRC groups
-            if (sourceGroups != null
-                    && colibriBuilder.addSourceGroupsInfo(
-                            sourceGroups.toMap(), localChannelsInfo))
+            if (colibriBuilder.addSourceGroupsInfo(extensions.getSecond(), localChannelsInfo))
             {
                 send = true;
             }
