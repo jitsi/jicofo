@@ -1,5 +1,6 @@
 package org.jitsi.jicofo.conference.source
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
@@ -14,6 +15,10 @@ import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.UnsupportedOperationException
 
+@SuppressFBWarnings(
+    value = ["RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"],
+    justification = "False positives."
+)
 class SourcesTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
