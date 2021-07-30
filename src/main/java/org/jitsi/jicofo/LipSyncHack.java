@@ -123,6 +123,12 @@ public class LipSyncHack implements OperationSetJingle
     private boolean isOkToMergeParticipantAV(Jid participantJid,
                                              Jid ownerJid)
     {
+        // Do not merge JVBs streams (they are only used for RTCP if anything).
+        if (SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
+        {
+            return false;
+        }
+
         Participant participant = conference.findParticipantForRoomJid(participantJid);
         if (participant == null)
         {
@@ -133,20 +139,11 @@ public class LipSyncHack implements OperationSetJingle
         Participant streamsOwner = conference.findParticipantForRoomJid(ownerJid);
         if (streamsOwner == null)
         {
-            // Do not log that error for the JVB
-            if (!SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
-            {
-                logger.error("Stream owner not a participant or not found for jid: " + ownerJid);
-            }
+            logger.error("Stream owner not a participant or not found for jid: " + ownerJid);
             return false;
         }
 
-        // FIXME: we do not know if the JVBs to which the SSRCs belong should
-        // be merged, as the 'streamsOwner' will always be null. This could be
-        // detected based on JVB version if we need to merge them at any point
-        // in the future.
         boolean supportsLipSync = participant.hasLipSyncSupport();
-
         logger.debug(String.format(
                 "Lips-sync From %s to %s, lip-sync: %s",
                 ownerJid, participantJid, supportsLipSync));
@@ -154,9 +151,7 @@ public class LipSyncHack implements OperationSetJingle
         return supportsLipSync;
     }
 
-    private void doMerge(Jid            participant,
-                         Jid            owner,
-                         MediaSourceMap ssrcs)
+    private void doMerge(Jid participant, Jid owner, MediaSourceMap ssrcs)
     {
         boolean merged = false;
         if (isOkToMergeParticipantAV(participant, owner))
@@ -170,8 +165,7 @@ public class LipSyncHack implements OperationSetJingle
                     + " A/V streams from " + owner +" to " + participant;
 
         // The stream is merged most of the time and it's not that interesting.
-        // FIXME JVBs SSRCs are not merged currently, but maybe should be ?
-        if (merged || SSRCSignaling.SSRC_OWNER_JVB.equals(owner))
+        if (merged)
         {
             logger.debug(logMsg);
         }
@@ -193,8 +187,8 @@ public class LipSyncHack implements OperationSetJingle
      *        will be sent.
      */
     private void processAllParticipantsSSRCs(
-            List<ContentPacketExtension>    contents,
-            Jid                             mucJid)
+            List<ContentPacketExtension> contents,
+            Jid mucJid)
     {
         // Split into maps on per owner basis
         Map<Jid, MediaSourceMap> perOwnerMapping
@@ -278,7 +272,7 @@ public class LipSyncHack implements OperationSetJingle
     public void sendAddSourceIQ(
             MediaSourceMap ssrcMap,
             MediaSourceGroupMap ssrcGroupMap,
-            JingleSession       session)
+            JingleSession session)
     {
         Jid mucJid = session.getAddress();
         // If this is source add for video only then add audio for merge process
@@ -332,10 +326,10 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void terminateSession(JingleSession    session,
-                                 Reason           reason,
-                                 String           msg,
-                                 boolean          sendTerminate)
+    public void terminateSession(JingleSession session,
+                                 Reason reason,
+                                 String msg,
+                                 boolean sendTerminate)
     {
         jingleImpl.terminateSession(session, reason, msg, sendTerminate);
     }
