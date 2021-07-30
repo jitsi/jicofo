@@ -52,6 +52,11 @@ open class ConferenceSourceMap(
         contents: List<ContentPacketExtension>
     ) : this(owner, EndpointSourceSet.fromJingle(contents))
     constructor(owner: Jid?, source: Source) : this(owner, EndpointSourceSet(setOf(source), emptySet()))
+    constructor(
+        owner: Jid?,
+        sources: Set<Source>,
+        groups: Set<SsrcGroup>
+    ) : this(owner, EndpointSourceSet(sources, groups))
 
     open fun remove(owner: Jid?) = endpointSourceSets.remove(owner)
 
