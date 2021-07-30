@@ -52,6 +52,12 @@ public class OctoParticipant
     private List<String> relays;
 
     /**
+     * The sources associated with this octo participant, i.e. the sources of all endpoints on different bridges.
+     */
+    private final ConferenceSourceMap sources = new ConferenceSourceMap();
+
+
+    /**
      * Initializes a new {@link OctoParticipant} instance.
      * @param conference the {@link JitsiMeetConference} which this participant
      * will be a part of.
@@ -62,6 +68,21 @@ public class OctoParticipant
         super(parentLogger);
         this.relays = relays;
     }
+
+    /**
+     * Removes a set of sources from this participant.
+     */
+    public void removeSources(ConferenceSourceMap sourcesToRemove)
+    {
+        sources.remove(sourcesToRemove);
+    }
+
+    public void addSources(ConferenceSourceMap sourcesToAdd)
+    {
+        this.sources.add(sourcesToAdd);
+    }
+
+
 
     /**
      * Sets the list of Octo relay IDs for this {@link OctoParticipant}.
@@ -78,6 +99,12 @@ public class OctoParticipant
     List<String> getRelays()
     {
         return relays;
+    }
+
+    @Override
+    public ConferenceSourceMap getSources()
+    {
+        return sources.unmodifiable();
     }
 
     /**

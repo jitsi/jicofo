@@ -38,7 +38,8 @@ public class ParticipantTest
     {
         Participant p = new Participant(
                 new MockRoomMember(JidCreate.entityFullFrom("something@server.com/1234"), null),
-                new LoggerImpl(getClass().getName()));
+                new LoggerImpl(getClass().getName()),
+                null);
 
         p.setClock(Clock.fixed(Instant.now(), ZoneId.systemDefault()));
 

@@ -50,13 +50,6 @@ public abstract class AbstractParticipant
     private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
 
     /**
-     * The sources associated with this participant. This is a {@link ConferenceSourceMap} rather than just a
-     * {@link EndpointSourceSet} because with Octo an {@link AbstractParticipant} holds sources for all remote
-     * endpoints.
-     */
-    private final ConferenceSourceMap sources = new ConferenceSourceMap();
-
-    /**
      * Remote sources that have been added to the conference, but not yet been signaled to this participant. They are to
      * be signaled once the Jingle session is initiated.
      */
@@ -129,27 +122,16 @@ public abstract class AbstractParticipant
     }
 
     /**
-     * Removes a set of sources from this participant.
-     */
-    public void removeSources(ConferenceSourceMap sourcesToRemove)
-    {
-        sources.remove(sourcesToRemove);
-    }
-
-    /**
      * Gets a read-only view of the sources advertised by this participant.
      */
-    public ConferenceSourceMap getSources()
-    {
-        return sources.unmodifiable();
-    }
+    public abstract ConferenceSourceMap getSources();
 
     /**
      * Returns deep copy of this peer's media source map.
      */
     public MediaSourceMap getSourcesCopy()
     {
-        return sources.toMediaSourceMap().getSources();
+        return getSources().toMediaSourceMap().getSources();
     }
 
     /**
@@ -157,7 +139,7 @@ public abstract class AbstractParticipant
      */
     public MediaSourceGroupMap getSourceGroupsCopy()
     {
-        return sources.toMediaSourceMap().getGroups();
+        return getSources().toMediaSourceMap().getGroups();
     }
 
     /**
@@ -265,11 +247,6 @@ public abstract class AbstractParticipant
                 this.channelAllocator = null;
             }
         }
-    }
-
-    public void addSources(ConferenceSourceMap sourcesToAdd)
-    {
-        this.sources.add(sourcesToAdd);
     }
 
     /**

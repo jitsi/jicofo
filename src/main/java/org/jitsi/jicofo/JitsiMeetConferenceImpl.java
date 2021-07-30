@@ -640,7 +640,7 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            final Participant participant = new Participant(chatRoomMember, logger);
+            final Participant participant = new Participant(chatRoomMember, logger, this);
 
             participants.add(participant);
             inviteParticipant(participant, false, hasToStartMuted(participant, justJoined));
@@ -802,6 +802,19 @@ public class JitsiMeetConferenceImpl
             {
                 propagateNewSourcesToOcto(participant.getBridgeSession(), participant.getSources());
             }
+        }
+    }
+
+    ConferenceSourceMap getSourcesForParticipant(@NotNull Participant participant)
+    {
+        EndpointSourceSet e = conferenceSources.get(participant.getMucJid());
+        if (e == null)
+        {
+            return new ConferenceSourceMap();
+        }
+        else
+        {
+            return new ConferenceSourceMap(participant.getMucJid(), e).unmodifiable();
         }
     }
 
@@ -1517,7 +1530,6 @@ public class JitsiMeetConferenceImpl
             logger.error("Error adding SSRCs from: " + address + ": " + e.getMessage());
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
-        participant.addSources(sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
         {
@@ -1622,7 +1634,6 @@ public class JitsiMeetConferenceImpl
 
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
-        participant.addSources(sourcesAccepted);
 
         logger.info(
                 "Received session-accept from " + participant.getChatMember().getName()
@@ -1714,8 +1725,6 @@ public class JitsiMeetConferenceImpl
             logger.warn("No sources or groups to be removed from: " + participantJid);
             return null;
         }
-
-        participant.removeSources(sourcesAcceptedToBeRemoved);
 
         // Updates source Groups on the bridge
         BridgeSession bridgeSession = findBridgeSession(participant);

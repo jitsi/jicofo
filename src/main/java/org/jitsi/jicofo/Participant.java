@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -104,15 +105,24 @@ public class Participant
     private Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
 
     /**
+     * The conference in which this participant participates.
+     */
+    private final JitsiMeetConferenceImpl conference;
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
      *                   participant in MUC conference room.
      */
-    public Participant(@NotNull ChatRoomMember roomMember, Logger parentLogger)
+    public Participant(
+            @NotNull ChatRoomMember roomMember,
+            Logger parentLogger,
+            JitsiMeetConferenceImpl conference)
     {
         super(parentLogger);
 
+        this.conference = conference;
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
     }
@@ -433,6 +443,16 @@ public class Participant
     public EntityFullJid getMucJid()
     {
         return roomMember.getOccupantJid();
+    }
+
+    /**
+     * Gets the sources advertised by this participant. They are stored in a common map by the conference.
+     * @return
+     */
+    @Override
+    public ConferenceSourceMap getSources()
+    {
+        return conference == null ? new ConferenceSourceMap() : conference.getSourcesForParticipant(this);
     }
 
     /**
