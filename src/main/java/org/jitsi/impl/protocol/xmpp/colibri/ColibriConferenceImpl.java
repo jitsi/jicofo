@@ -17,7 +17,9 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
@@ -51,6 +53,37 @@ public class ColibriConferenceImpl
     public final static Stats stats = new Stats();
 
     private final static Logger logger = new LoggerImpl(ColibriConferenceImpl.class.getName());
+
+    private static Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
+        extractPacketExtensions(ConferenceSourceMap sources)
+    {
+        Map<String, List<SourcePacketExtension>> sourcePacketExtensions = new HashMap<>();
+        Map<String, List<SourceGroupPacketExtension>> sourceGroupPacketExtensions = new HashMap<>();
+
+        sources.forEach((owner, endpointSourceSet) ->
+        {
+            for (Source source : endpointSourceSet.getSources())
+            {
+                List<SourcePacketExtension> l
+                        = sourcePacketExtensions.computeIfAbsent(
+                        source.getMediaType().toString(),
+                        (k) -> new ArrayList<>());
+                l.add(source.toPacketExtension(owner));
+            }
+
+            if (!endpointSourceSet.getSsrcGroups().isEmpty())
+            {
+                List<SourceGroupPacketExtension> l
+                        = sourceGroupPacketExtensions.computeIfAbsent("video", (k) -> new ArrayList<>());
+                for (SsrcGroup ssrcGroup : endpointSourceSet.getSsrcGroups())
+                {
+                    l.add(ssrcGroup.toPacketExtension());
+                }
+            }
+        });
+
+        return new Pair<>(sourcePacketExtensions, sourceGroupPacketExtensions);
+    }
 
     /**
      * The instance of XMPP connection.
@@ -499,9 +532,7 @@ public class ColibriConferenceImpl
      * Does not block or wait for a response.
      */
     @Override
-    public void updateSourcesInfo(MediaSourceMap sources,
-                                  MediaSourceGroupMap sourceGroups,
-                                  ColibriConferenceIQ localChannelsInfo)
+    public void updateSourcesInfo(ConferenceSourceMap sources, ColibriConferenceIQ localChannelsInfo)
     {
         ColibriConferenceIQ request;
 
@@ -524,17 +555,16 @@ public class ColibriConferenceImpl
 
             boolean send = false;
 
-            // sources
-            if (sources != null
-                    && colibriBuilder.addSourceInfo(
-                            sources.toMap(), localChannelsInfo))
+            Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
+                extensions = extractPacketExtensions(sources);
+            if (!extensions.getFirst().isEmpty()
+                    && colibriBuilder.addSourceInfo(extensions.getFirst(), localChannelsInfo))
             {
                 send = true;
             }
             // ssrcGroups
-            if (sourceGroups != null
-                    && colibriBuilder.addSourceGroupsInfo(
-                            sourceGroups.toMap(), localChannelsInfo))
+            if (!extensions.getSecond().isEmpty()
+                    && colibriBuilder.addSourceGroupsInfo(extensions.getSecond(), localChannelsInfo))
             {
                 send = true;
             }

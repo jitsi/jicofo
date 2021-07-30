@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp.colibri;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -211,16 +212,11 @@ public interface ColibriConference
 
     /**
      * Updates simulcast layers on the bridge.
-     * @param ssrcGroups the map of media SSRC groups that will be updated on
-     * the bridge.
      * @param localChannelsInfo <tt>ColibriConferenceIQ</tt> that contains
      * the description of the channel for which SSRC groups information will be
      * updated on the bridge.
      */
-    void updateSourcesInfo(
-            MediaSourceMap ssrcs,
-            MediaSourceGroupMap ssrcGroups,
-            ColibriConferenceIQ localChannelsInfo);
+    void updateSourcesInfo(ConferenceSourceMap sources, ColibriConferenceIQ localChannelsInfo);
 
     /**
      * Updates the transport of a specific channel bundle.

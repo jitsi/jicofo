@@ -1532,8 +1532,7 @@ public class JitsiMeetConferenceImpl
             if (bridgeSession != null)
             {
                 bridgeSession.colibriConference.updateSourcesInfo(
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
+                    participant.getSources(),
                     participant.getColibriChannelsInfo());
 
                 propagateNewSourcesToOcto(bridgeSession, sourcesAccepted);
@@ -1746,8 +1745,7 @@ public class JitsiMeetConferenceImpl
         if (updateChannels && bridgeSession != null)
         {
             bridgeSession.colibriConference.updateSourcesInfo(
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
+                    participant.getSources(),
                     participant.getColibriChannelsInfo());
         }
 
