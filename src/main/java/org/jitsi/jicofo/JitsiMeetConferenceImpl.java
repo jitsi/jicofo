@@ -1747,8 +1747,7 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        participant.removeSources(removedSources);
-        participant.removeSourceGroups(removedGroups);
+        participant.removeSources(ConferenceSourceMap.fromMediaSourceMap(removedSources, removedGroups));
 
         // We remove all ssrc params from SourcePacketExtension as we want
         // the client to simply remove all lines corresponding to given SSRC and
@@ -1863,7 +1862,8 @@ public class JitsiMeetConferenceImpl
 
         Object[] added = validator.tryAddSourcesAndGroups(newSources, newGroups);
 
-        participant.addSourcesAndGroups((MediaSourceMap) added[0], (MediaSourceGroupMap) added[1]);
+        participant.addSources(
+                ConferenceSourceMap.fromMediaSourceMap((MediaSourceMap) added[0], (MediaSourceGroupMap) added[1]));
 
         return added;
     }
@@ -2795,7 +2795,7 @@ public class JitsiMeetConferenceImpl
            {
                if (octoParticipant.isSessionEstablished())
                {
-                   octoParticipant.addSourcesAndGroups(sources, sourceGroups);
+                   octoParticipant.addSources(ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
                    updateColibriOctoChannels(octoParticipant);
                }
                else
@@ -2820,8 +2820,7 @@ public class JitsiMeetConferenceImpl
                 {
                     if (octoParticipant.isSessionEstablished())
                     {
-                        octoParticipant.removeSources(sources);
-                        octoParticipant.removeSourceGroups(sourceGroups);
+                        octoParticipant.removeSources(ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
 
                         updateColibriOctoChannels(octoParticipant);
                     }
@@ -2871,7 +2870,7 @@ public class JitsiMeetConferenceImpl
             MediaSourceMap remoteSources = getAllSources(participants, true);
             MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants, true);
 
-            octoParticipant.addSourcesAndGroups(remoteSources, remoteGroups);
+            octoParticipant.addSources(ConferenceSourceMap.fromMediaSourceMap(remoteSources, remoteGroups));
 
             OctoChannelAllocator channelAllocator
                 = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant, logger);

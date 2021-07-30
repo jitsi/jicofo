@@ -18,6 +18,8 @@
 package org.jitsi.jicofo;
 
 import java.util.*;
+
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.protocol.xmpp.util.*;
@@ -47,14 +49,11 @@ public abstract class AbstractParticipant
     private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
 
     /**
-     * Peer's media sources.
+     * The sources associated with this participant. This is a {@link ConferenceSourceMap} rather than just a
+     * {@link EndpointSourceSet} because with Octo an {@link AbstractParticipant} holds sources for all remote
+     * endpoints.
      */
-    protected final MediaSourceMap sources = new MediaSourceMap();
-
-    /**
-     * Peer's media source groups.
-     */
-    protected final MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
+    private final ConferenceSourceMap sources = new ConferenceSourceMap();
 
     /**
      * sources received from other peers scheduled for later addition, because
@@ -137,13 +136,11 @@ public abstract class AbstractParticipant
     }
 
     /**
-     * Removes given media sources from this peer state.
-     * @param sourceMap the source map that contains the sources to be removed.
-     * @return <tt>MediaSourceMap</tt> which contains sources removed from this map.
+     * Removes a set of sources from this participant.
      */
-    public MediaSourceMap removeSources(MediaSourceMap sourceMap)
+    public void removeSources(ConferenceSourceMap sourcesToRemove)
     {
-        return sources.remove(sourceMap);
+        sources.remove(sourcesToRemove);
     }
 
     /**
@@ -151,7 +148,7 @@ public abstract class AbstractParticipant
      */
     public MediaSourceMap getSourcesCopy()
     {
-        return sources.copyDeep();
+        return sources.toMediaSourceMap().getSources();
     }
 
     /**
@@ -159,7 +156,7 @@ public abstract class AbstractParticipant
      */
     public MediaSourceGroupMap getSourceGroupsCopy()
     {
-        return sourceGroups.copy();
+        return sources.toMediaSourceMap().getGroups();
     }
 
     /**
@@ -262,26 +259,6 @@ public abstract class AbstractParticipant
     }
 
     /**
-     * Returns the list of source groups of given media type that belong ot this
-     * participant.
-     * @param media the name of media type("audio","video", ...)
-     * @return the list of {@link SourceGroup} for given media type.
-     */
-    public List<SourceGroup> getSourceGroupsForMedia(String media)
-    {
-        return sourceGroups.getSourceGroupsForMedia(media);
-    }
-
-    /**
-     * Returns <tt>MediaSourceGroupMap</tt> that contains the mapping of media
-     * source groups that describe media of this participant.
-     */
-    public MediaSourceGroupMap getSourceGroups()
-    {
-        return sourceGroups;
-    }
-
-    /**
      * Schedules given media source groups for later addition.
      * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
      *                   later addition.
@@ -316,18 +293,6 @@ public abstract class AbstractParticipant
     public MediaSourceGroupMap getSourceGroupsToRemove()
     {
         return sourceGroupsToRemove;
-    }
-
-    /**
-     * Removes source groups from this participant state.
-     * @param groupsToRemove the map of source groups that will be removed
-     *                       from this participant media state description.
-     * @return <tt>MediaSourceGroupMap</tt> which contains source groups removed
-     *         from this map.
-     */
-    public MediaSourceGroupMap removeSourceGroups(MediaSourceGroupMap groupsToRemove)
-    {
-        return sourceGroups.remove(groupsToRemove);
     }
 
     /**
@@ -373,11 +338,9 @@ public abstract class AbstractParticipant
         }
     }
 
-    public void addSourcesAndGroups(MediaSourceMap         addedSources,
-                                    MediaSourceGroupMap    addedGroups)
+    public void addSources(ConferenceSourceMap sourcesToAdd)
     {
-        this.sources.add(addedSources);
-        this.sourceGroups.add(addedGroups);
+        this.sources.add(sourcesToAdd);
     }
 
     /**

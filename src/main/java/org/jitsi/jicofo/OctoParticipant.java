@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 
@@ -130,14 +131,13 @@ public class OctoParticipant
 
         if (!sourcesToAdd.isEmpty() || !sourceGroupsToAdd.isEmpty())
         {
-            addSourcesAndGroups(sourcesToAdd, sourceGroupsToAdd);
+            addSources(ConferenceSourceMap.fromMediaSourceMap(sourcesToAdd, sourceGroupsToAdd));
             changed = true;
         }
 
         if (!sourcesToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty())
         {
-            removeSources(sourcesToRemove);
-            removeSourceGroups(sourceGroupsToRemove);
+            removeSources(ConferenceSourceMap.fromMediaSourceMap(sourcesToRemove, sourceGroupsToRemove));
             changed = true;
         }
 
