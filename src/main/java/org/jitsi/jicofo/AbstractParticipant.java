@@ -137,6 +137,14 @@ public abstract class AbstractParticipant
     }
 
     /**
+     * Gets a read-only view of the sources advertised by this participant.
+     */
+    public ConferenceSourceMap getSources()
+    {
+        return sources.unmodifiable();
+    }
+
+    /**
      * Returns deep copy of this peer's media source map.
      */
     public MediaSourceMap getSourcesCopy()

@@ -44,6 +44,12 @@ open class ConferenceSourceMap(
         }
     )
 
+    constructor(owner: Jid?, endpointSourceSet: EndpointSourceSet) : this(owner to endpointSourceSet)
+    constructor(
+        owner: Jid?,
+        contents: List<ContentPacketExtension>
+    ) : this(owner, EndpointSourceSet.fromJingle(contents))
+
     /**
      * An unmodifiable view of this [ConferenceSourceMap].
      */

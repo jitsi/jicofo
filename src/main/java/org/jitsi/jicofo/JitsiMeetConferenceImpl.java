@@ -795,8 +795,7 @@ public class JitsiMeetConferenceImpl
 
             if (reInvite)
             {
-                propagateNewSourcesToOcto(
-                    participant.getBridgeSession(), participant.getSourcesCopy(), participant.getSourceGroupsCopy());
+                propagateNewSourcesToOcto(participant.getBridgeSession(), participant.getSources());
             }
         }
     }
@@ -1088,8 +1087,7 @@ public class JitsiMeetConferenceImpl
 
                 removeSources(
                     jingleSession,
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
+                    participant.getSources(),
                     false /* no JVB update - will expire */,
                     sendSourceRemove);
 
@@ -1366,14 +1364,9 @@ public class JitsiMeetConferenceImpl
      * 'source-add' Jingle notification.
      *
      * @param sourceOwner the <tt>Participant</tt> who owns the sources.
-     * @param sources the <tt>MediaSourceMap</tt> with the sources to advertise.
-     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> with source groups
-     *        to advertise.
+     * @param sources the sources to propagate.
      */
-    private void propagateNewSources(
-        Participant sourceOwner,
-        MediaSourceMap sources,
-        MediaSourceGroupMap sourceGroups)
+    private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
         participants.stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
@@ -1382,14 +1375,14 @@ public class JitsiMeetConferenceImpl
                 {
                     if (participant.isSessionEstablished())
                     {
-                        jingle.sendAddSourceIQ(sources, sourceGroups, participant.getJingleSession());
+                        SourceMapAndGroupMap s = sources.toMediaSourceMap();
+                        jingle.sendAddSourceIQ(s.getSources(), s.getGroups(), participant.getJingleSession());
                     }
                     else
                     {
                         logger.warn("No jingle session yet for " + participant.getChatMember().getName());
 
-                        participant.addPendingRemoteSourcesToAdd(
-                                ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
+                        participant.addPendingRemoteSourcesToAdd(sources);
                     }
                 });
     }
@@ -1401,18 +1394,14 @@ public class JitsiMeetConferenceImpl
      * bridge to which the participant whose sources we are adding is
      * connected).
      * @param sources the sources to add.
-     * @param sourceGroups the source groups to add.
      */
-    private void propagateNewSourcesToOcto(
-        BridgeSession exclude,
-        MediaSourceMap sources,
-        MediaSourceGroupMap sourceGroups)
+    private void propagateNewSourcesToOcto(BridgeSession exclude, ConferenceSourceMap sources)
     {
         synchronized (bridges)
         {
             operationalBridges()
                 .filter(bridge -> !bridge.equals(exclude))
-                .forEach(bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
+                .forEach(bridge -> bridge.addSourcesToOcto(sources));
         }
     }
 
@@ -1511,10 +1500,16 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
-        Object[] added;
+        ConferenceSourceMap sourcesAdvertised;
+        ConferenceSourceMap sourcesAccepted;
         try
         {
-            added = tryAddSourcesToParticipant(participant, contents);
+            sourcesAdvertised = new ConferenceSourceMap(address, contents);
+            SourceMapAndGroupMap s = sourcesAdvertised.toMediaSourceMap();
+            Object[] added = tryAddSourcesToParticipant(participant, s.getSources(), s.getGroups());
+            sourcesAccepted = ConferenceSourceMap.fromMediaSourceMap(
+                    (MediaSourceMap) added[0],
+                    (MediaSourceGroupMap) added[1]);
         }
         catch (InvalidSSRCsException e)
         {
@@ -1522,10 +1517,7 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
-        MediaSourceMap sourcesToAdd = (MediaSourceMap) added[0];
-        MediaSourceGroupMap sourceGroupsToAdd = (MediaSourceGroupMap) added[1];
-
-        if (sourcesToAdd.isEmpty() && sourceGroupsToAdd.isEmpty())
+        if (sourcesAccepted.isEmpty())
         {
             logger.warn("Stop processing source-add, no new sources added: " + participant.getChatMember().getName());
             return null;
@@ -1544,7 +1536,7 @@ public class JitsiMeetConferenceImpl
                     participant.getSourceGroupsCopy(),
                     participant.getColibriChannelsInfo());
 
-                propagateNewSourcesToOcto(bridgeSession, sourcesToAdd, sourceGroupsToAdd);
+                propagateNewSourcesToOcto(bridgeSession, sourcesAccepted);
             }
             else
             {
@@ -1553,7 +1545,7 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        propagateNewSources(participant, sourcesToAdd, sourceGroupsToAdd);
+        propagateNewSources(participant, sourcesAccepted);
 
         return null;
     }
@@ -1569,10 +1561,10 @@ public class JitsiMeetConferenceImpl
     @Override
     public XMPPError onRemoveSource(@NotNull JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
     {
-        MediaSourceMap sourcesToRemove = MediaSourceMap.getSourcesFromContent(contents);
-        MediaSourceGroupMap sourceGroupsToRemove = MediaSourceGroupMap.getSourceGroupsForContents(contents);
+        ConferenceSourceMap sourcesRequestedToBeRemoved
+                = new ConferenceSourceMap(sourceJingleSession.getAddress(), contents);
 
-        return removeSources(sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true, true);
+        return removeSources(sourceJingleSession, sourcesRequestedToBeRemoved, true, true);
     }
 
     /**
@@ -1619,14 +1611,14 @@ public class JitsiMeetConferenceImpl
             sourcePacketExtension.setInjected(true);
             sourcesAdvertised.addSource(MediaType.AUDIO.toString(), sourcePacketExtension);
         }
-        MediaSourceMap sourcesAdded;
-        MediaSourceGroupMap sourceGroupsAdded;
+        ConferenceSourceMap sourcesAdded;
         try
         {
             Object[] sourcesAndGroupsAdded
                 = tryAddSourcesToParticipant(participant, sourcesAdvertised, sourceGroupsAdvertised);
-            sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
-            sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
+            sourcesAdded = ConferenceSourceMap.fromMediaSourceMap(
+                    (MediaSourceMap) sourcesAndGroupsAdded[0],
+                    (MediaSourceGroupMap) sourcesAndGroupsAdded[1]);
         }
         catch (InvalidSSRCsException e)
         {
@@ -1657,14 +1649,14 @@ public class JitsiMeetConferenceImpl
 
             // If we accepted any new sources from the participant, update
             // the state of all remote bridges.
-            if ((!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty()) && participantBridge != null)
+            if ((!sourcesAdded.isEmpty() && participantBridge != null))
             {
-                propagateNewSourcesToOcto(participantBridge, sourcesAdded, sourceGroupsAdded);
+                propagateNewSourcesToOcto(participantBridge, sourcesAdded);
             }
         }
 
         // Loop over current participant and send 'source-add' notification
-        propagateNewSources(participant, sourcesAdded.copyDeep(), sourceGroupsAdded.copy());
+        propagateNewSources(participant, sourcesAdded);
 
         // Signal sources which have been added or removed to the conference since the Jingle session was initiated.
         ConferenceSourceMap remoteSourcesToAdd = participant.getPendingRemoteSourcesToAdd();
@@ -1691,14 +1683,13 @@ public class JitsiMeetConferenceImpl
      * Removes sources from the conference.
      *
      * @param sourceJingleSession source Jingle session from which sources are being removed.
-     * @param sourcesToRemove the {@link MediaSourceMap} of sources to be removed from the conference.
+     * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
      * @param updateChannels tells whether or not sources update request should be sent to the bridge.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
     private XMPPError removeSources(
             JingleSession sourceJingleSession,
-            MediaSourceMap sourcesToRemove,
-            MediaSourceGroupMap sourceGroupsToRemove,
+            ConferenceSourceMap sourcesRequestedToBeRemoved,
             boolean updateChannels,
             boolean sendSourceRemove)
     {
@@ -1723,9 +1714,15 @@ public class JitsiMeetConferenceImpl
 
         Object[] removed;
 
+        ConferenceSourceMap sourcesAcceptedToBeRemoved;
         try
         {
-            removed = validator.tryRemoveSourcesAndGroups(sourcesToRemove, sourceGroupsToRemove);
+            SourceMapAndGroupMap s = sourcesRequestedToBeRemoved.toMediaSourceMap();
+            removed = validator.tryRemoveSourcesAndGroups(s.getSources(), s.getGroups());
+            sourcesAcceptedToBeRemoved = ConferenceSourceMap.fromMediaSourceMap(
+                    (MediaSourceMap) removed[0],
+                    (MediaSourceGroupMap) removed[1]
+            );
         }
         catch (InvalidSSRCsException e)
         {
@@ -1733,25 +1730,13 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
-        // Only sources owned by this participant end up in "removed" set
-        final MediaSourceMap removedSources = (MediaSourceMap) removed[0];
-        final MediaSourceGroupMap removedGroups = (MediaSourceGroupMap) removed[1];
-
-        if (removedSources.isEmpty() && removedGroups.isEmpty())
+        if (sourcesAcceptedToBeRemoved.isEmpty())
         {
             logger.warn("No sources or groups to be removed from: " + participantJid);
             return null;
         }
 
-        participant.removeSources(ConferenceSourceMap.fromMediaSourceMap(removedSources, removedGroups));
-
-        // We remove all ssrc params from SourcePacketExtension as we want
-        // the client to simply remove all lines corresponding to given SSRC and
-        // not care about parameter's values we send.
-        // Some params might get out of sync for various reasons like for
-        // example Chrome coming up with 'default' value for missing 'mslabel'
-        // or when we'll be doing lip-sync stream merge
-        SSRCSignaling.deleteSSRCParams(removedSources);
+        participant.removeSources(sourcesAcceptedToBeRemoved);
 
         // Updates source Groups on the bridge
         BridgeSession bridgeSession = findBridgeSession(participant);
@@ -1770,10 +1755,10 @@ public class JitsiMeetConferenceImpl
         {
             operationalBridges()
                 .filter(bridge -> !bridge.equals(bridgeSession))
-                .forEach(bridge -> bridge.removeSourcesFromOcto(removedSources, removedGroups));
+                .forEach(bridge -> bridge.removeSourcesFromOcto(sourcesAcceptedToBeRemoved));
         }
 
-        logger.info("Removing sources from " + participantJid + ": " + removedSources);
+        logger.info("Removing sources from " + participantJid + ": " + sourcesAcceptedToBeRemoved);
 
         if (sendSourceRemove)
         {
@@ -1785,42 +1770,18 @@ public class JitsiMeetConferenceImpl
                                 if (otherParticipant.isSessionEstablished())
                                 {
                                     jingle.sendRemoveSourceIQ(
-                                            ConferenceSourceMap.fromMediaSourceMap(
-                                                removedSources,
-                                                removedGroups),
+                                            sourcesAcceptedToBeRemoved,
                                             otherParticipant.getJingleSession());
                                 }
                                 else
                                 {
                                     logger.warn("Remove source: no jingle session for " + participantJid);
-                                    otherParticipant.addPendingRemoteSourcesToRemove(
-                                            ConferenceSourceMap.fromMediaSourceMap(removedSources, removedGroups));
+                                    otherParticipant.addPendingRemoteSourcesToRemove(sourcesAcceptedToBeRemoved);
                                 }
                             });
         }
 
         return null;
-    }
-
-    /**
-     * Adds the sources and groups described by the given list of Jingle
-     * {@link ContentPacketExtension} to the given participant.
-     *
-     * @param participant - The {@link Participant} instance to which sources and groups will be added.
-     * @param contents - The list of Jingle 'content' packet extensions which describe media sources and groups.
-     *
-     * @return See returns description of
-     *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
-     * @throws InvalidSSRCsException See throws description of
-     *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
-     */
-    private Object[] tryAddSourcesToParticipant(Participant participant, List<ContentPacketExtension> contents)
-        throws InvalidSSRCsException
-    {
-        return tryAddSourcesToParticipant(
-                participant,
-                MediaSourceMap.getSourcesFromContent(contents),
-                MediaSourceGroupMap.getSourceGroupsForContents(contents));
     }
 
     /**
@@ -2391,8 +2352,7 @@ public class JitsiMeetConferenceImpl
         // bridges.
         if (session != null)
         {
-            MediaSourceMap removedSources = participant.getSourcesCopy();
-            MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
+            ConferenceSourceMap removedSources = participant.getSources();
 
             // Locking participantLock and the bridges is okay (or at
             // least used elsewhere).
@@ -2400,9 +2360,7 @@ public class JitsiMeetConferenceImpl
             {
                 operationalBridges()
                     .filter(bridge -> !bridge.equals(session))
-                    .forEach(
-                        bridge -> bridge.removeSourcesFromOcto(
-                            removedSources, removedGroups));
+                    .forEach(bridge -> bridge.removeSourcesFromOcto(removedSources));
             }
         }
 
@@ -2776,9 +2734,8 @@ public class JitsiMeetConferenceImpl
          * sent to the bridge. Otherwise, they are scheduled to be added once
          * the session is established.
          * @param sources the sources to add.
-         * @param sourceGroups the source groups to add.
          */
-        private void addSourcesToOcto(MediaSourceMap sources, MediaSourceGroupMap sourceGroups)
+        private void addSourcesToOcto(ConferenceSourceMap sources)
         {
             if (!OctoConfig.config.getEnabled())
             {
@@ -2791,15 +2748,14 @@ public class JitsiMeetConferenceImpl
            {
                if (octoParticipant.isSessionEstablished())
                {
-                   octoParticipant.addSources(ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
+                   octoParticipant.addSources(sources);
                    updateColibriOctoChannels(octoParticipant);
                }
                else
                {
                    // The allocator will take care of updating these when the
                    // session is established.
-                   octoParticipant.addPendingRemoteSourcesToAdd(
-                           ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
+                   octoParticipant.addPendingRemoteSourcesToAdd(sources);
                }
            }
         }
@@ -2807,7 +2763,7 @@ public class JitsiMeetConferenceImpl
         /**
          * Removes sources and source groups
          */
-        private void removeSourcesFromOcto(MediaSourceMap sources, MediaSourceGroupMap sourceGroups)
+        private void removeSourcesFromOcto(ConferenceSourceMap sourcesToRemove)
         {
             OctoParticipant octoParticipant = this.octoParticipant;
             if (octoParticipant != null)
@@ -2816,14 +2772,13 @@ public class JitsiMeetConferenceImpl
                 {
                     if (octoParticipant.isSessionEstablished())
                     {
-                        octoParticipant.removeSources(ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
+                        octoParticipant.removeSources(sourcesToRemove);
 
                         updateColibriOctoChannels(octoParticipant);
                     }
                     else
                     {
-                        octoParticipant.addPendingRemoteSourcesToRemove(
-                                ConferenceSourceMap.fromMediaSourceMap(sources, sourceGroups));
+                        octoParticipant.addPendingRemoteSourcesToRemove(sourcesToRemove);
                     }
                 }
             }
