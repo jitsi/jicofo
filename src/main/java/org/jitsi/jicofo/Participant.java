@@ -435,20 +435,6 @@ public class Participant
         return roomMember.getOccupantJid();
     }
 
-    public void claimSources(MediaSourceMap sourceMap)
-    {
-        // Mark as source owner
-        Jid roomJid = roomMember.getOccupantJid();
-
-        sourceMap
-            .getMediaTypes()
-            .forEach(
-                mediaType -> sourceMap
-                    .getSourcesForMedia(mediaType)
-                    .forEach(
-                        source -> SSRCSignaling.setSSRCOwner(source, roomJid)));
-    }
-
     /**
      * @return {@code true} if the Jingle session with this participant has
      * been established.

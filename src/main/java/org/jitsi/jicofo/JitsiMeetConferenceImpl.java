@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import edu.umd.cs.findbugs.annotations.*;
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
@@ -1505,8 +1506,7 @@ public class JitsiMeetConferenceImpl
         try
         {
             sourcesAdvertised = new ConferenceSourceMap(address, contents);
-            SourceMapAndGroupMap s = sourcesAdvertised.toMediaSourceMap();
-            Object[] added = tryAddSourcesToParticipant(participant, s.getSources(), s.getGroups());
+            Object[] added = tryAddSourcesToParticipant(participant, sourcesAdvertised);
             sourcesAccepted = ConferenceSourceMap.fromMediaSourceMap(
                     (MediaSourceMap) added[0],
                     (MediaSourceGroupMap) added[1]);
@@ -1596,26 +1596,25 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(contents);
         participant.addTransportFromJingle(contents);
 
-        MediaSourceMap sourcesAdvertised = MediaSourceMap.getSourcesFromContent(contents);
-        MediaSourceGroupMap sourceGroupsAdvertised = MediaSourceGroupMap.getSourceGroupsForContents(contents);
+        ConferenceSourceMap sourcesAdvertised = new ConferenceSourceMap(participantJid, contents);
         if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
             // conference will not be aware of the participant.
-            SourcePacketExtension sourcePacketExtension = new SourcePacketExtension();
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcePacketExtension.setSSRC(ssrc);
-            sourcePacketExtension.setInjected(true);
-            sourcesAdvertised.addSource(MediaType.AUDIO.toString(), sourcePacketExtension);
+            sourcesAdvertised.add(
+                    new ConferenceSourceMap(
+                            participantJid,
+                            new Source(ssrc, MediaType.AUDIO, null, null, true, null)));
         }
-        ConferenceSourceMap sourcesAdded;
+        ConferenceSourceMap sourcesAccepted;
         try
         {
             Object[] sourcesAndGroupsAdded
-                = tryAddSourcesToParticipant(participant, sourcesAdvertised, sourceGroupsAdvertised);
-            sourcesAdded = ConferenceSourceMap.fromMediaSourceMap(
+                = tryAddSourcesToParticipant(participant, sourcesAdvertised);
+            sourcesAccepted = ConferenceSourceMap.fromMediaSourceMap(
                     (MediaSourceMap) sourcesAndGroupsAdded[0],
                     (MediaSourceGroupMap) sourcesAndGroupsAdded[1]);
         }
@@ -1628,7 +1627,7 @@ public class JitsiMeetConferenceImpl
 
         logger.info(
                 "Received session-accept from " + participant.getChatMember().getName()
-                        + " with accepted sources:" + sourcesAdded);
+                        + " with accepted sources:" + sourcesAccepted);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
@@ -1648,14 +1647,14 @@ public class JitsiMeetConferenceImpl
 
             // If we accepted any new sources from the participant, update
             // the state of all remote bridges.
-            if ((!sourcesAdded.isEmpty() && participantBridge != null))
+            if ((!sourcesAccepted.isEmpty() && participantBridge != null))
             {
-                propagateNewSourcesToOcto(participantBridge, sourcesAdded);
+                propagateNewSourcesToOcto(participantBridge, sourcesAccepted);
             }
         }
 
         // Loop over current participant and send 'source-add' notification
-        propagateNewSources(participant, sourcesAdded);
+        propagateNewSources(participant, sourcesAccepted);
 
         // Signal sources which have been added or removed to the conference since the Jingle session was initiated.
         ConferenceSourceMap remoteSourcesToAdd = participant.getPendingRemoteSourcesToAdd();
@@ -1787,7 +1786,6 @@ public class JitsiMeetConferenceImpl
      *
      * @param participant - The {@link Participant} instance to which sources and groups will be added.
      * @param newSources - The new media sources to add.
-     * @param newGroups - The new media group sources to add.
      *
      * @return See returns description of
      *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
@@ -1796,8 +1794,7 @@ public class JitsiMeetConferenceImpl
      */
     private Object[] tryAddSourcesToParticipant(
             Participant participant,
-            MediaSourceMap newSources,
-            MediaSourceGroupMap newGroups)
+            ConferenceSourceMap newSources)
         throws InvalidSSRCsException
     {
         MediaSourceMap conferenceSources = getAllSources();
@@ -1811,11 +1808,8 @@ public class JitsiMeetConferenceImpl
                     ConferenceConfig.config.getMaxSsrcsPerUser(),
                     this.logger);
 
-        // Claim the new sources by injecting owner tag into packet extensions,
-        // so that the validator will be able to tell who owns which sources.
-        participant.claimSources(newSources);
-
-        Object[] added = validator.tryAddSourcesAndGroups(newSources, newGroups);
+        SourceMapAndGroupMap s = newSources.toMediaSourceMap();
+        Object[] added = validator.tryAddSourcesAndGroups(s.getSources(), s.getGroups());
 
         participant.addSources(
                 ConferenceSourceMap.fromMediaSourceMap((MediaSourceMap) added[0], (MediaSourceGroupMap) added[1]));
