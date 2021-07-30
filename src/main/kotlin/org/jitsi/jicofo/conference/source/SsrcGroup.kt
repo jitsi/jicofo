@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import java.lang.IllegalArgumentException
@@ -23,7 +24,8 @@ import kotlin.jvm.Throws
 /** The description of an SSRC grouping (i.e. an ssrc-group line in SDP) */
 data class SsrcGroup(
     val semantics: SsrcGroupSemantics,
-    val ssrcs: List<Long>
+    val ssrcs: List<Long>,
+    val mediaType: MediaType = MediaType.VIDEO
 ) {
 
     /** Serializes this [SsrcGroup] to XML */
@@ -36,20 +38,23 @@ data class SsrcGroup(
 
     companion object {
         /**
-         * Creates an [SsrcGroup] from an XML extension. The semantics is encoded as a sting, so needs to be parsed
+         * Creates an [SsrcGroup] from an XML extension. The semantics is encoded as a string, so needs to be parsed
          * into a [SsrcGroupSemantics] (which may fail).
          *
          * @throws IllegalArgumentException if the XML extension does not have a valid "semantics" field.
          */
         @Throws(IllegalArgumentException::class)
-        fun fromPacketExtension(sgpe: SourceGroupPacketExtension): SsrcGroup {
+        fun fromPacketExtension(
+            sgpe: SourceGroupPacketExtension,
+            mediaType: MediaType = MediaType.VIDEO
+        ): SsrcGroup {
             val semantics = try {
                 SsrcGroupSemantics.fromString(sgpe.semantics)
             } catch (e: NoSuchElementException) {
                 throw IllegalArgumentException("Invalid ssrc-group semantics: ${sgpe.semantics}")
             }
 
-            return SsrcGroup(semantics, sgpe.sources.map { it.ssrc }.toList())
+            return SsrcGroup(semantics, sgpe.sources.map { it.ssrc }.toList(), mediaType)
         }
     }
 }

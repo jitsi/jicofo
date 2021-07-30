@@ -157,7 +157,7 @@ open class ConferenceSourceMap(
                     }
 
                     val ownerSsrcGroups = ssrcGroupsByEndpoint.computeIfAbsent(owner) { mutableSetOf() }
-                    ownerSsrcGroups.add(SsrcGroup(semantics, sources))
+                    ownerSsrcGroups.add(SsrcGroup(semantics, sources, MediaType.parseString(mediaType)))
                 }
             }
 

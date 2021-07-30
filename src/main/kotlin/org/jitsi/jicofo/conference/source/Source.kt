@@ -56,7 +56,7 @@ data class Source(
             .firstOrNull()?.videoType
     )
 
-    /** Serializes this [SsrcGroup] to XML */
+    /** Serializes this [Source] to XML */
     fun toPacketExtension(
         /** An optional JID for the owner of this source to encode in the XML extension. */
         owner: Jid? = null

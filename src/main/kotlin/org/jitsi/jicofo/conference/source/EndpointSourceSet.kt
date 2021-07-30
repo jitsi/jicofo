@@ -72,7 +72,7 @@ data class EndpointSourceSet(
                         sources.add(Source(mediaType, spe))
                     }
                     rtpDesc.getChildExtensionsOfType(SourceGroupPacketExtension::class.java).forEach { sgpe ->
-                        ssrcGroups.add(SsrcGroup.fromPacketExtension(sgpe))
+                        ssrcGroups.add(SsrcGroup.fromPacketExtension(sgpe, mediaType))
                     }
                 }
                 content.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
@@ -103,16 +103,12 @@ fun EndpointSourceSet.toJingle(
         rtpDesc.addChildExtension(source.toPacketExtension(owner))
     }
 
-    if (ssrcGroups.isNotEmpty()) {
-        // For now we just assume all ssrc-groups are for video. To avoid that we would need to either encode the
-        // media type in the SsrcGroup, or search for the group's SSRCs in [sources] (assuming they are present).
-        val videoContent = contentMap.computeIfAbsent(MediaType.VIDEO) {
-            ContentPacketExtension().apply { name = MediaType.VIDEO.toString() }
+    ssrcGroups.forEach { ssrcGroup ->
+        val content = contentMap.computeIfAbsent(ssrcGroup.mediaType) {
+            ContentPacketExtension().apply { name = ssrcGroup.mediaType.toString() }
         }
-        val videoRtpDesc = videoContent.getOrCreateRtpDescription()
-        ssrcGroups.forEach {
-            videoRtpDesc.addChildExtension(it.toPacketExtension())
-        }
+        val rtpDesc = content.getOrCreateRtpDescription()
+        rtpDesc.addChildExtension(ssrcGroup.toPacketExtension())
     }
 
     return contentMap.values.toList()

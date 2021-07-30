@@ -71,14 +71,13 @@ public class ColibriConferenceImpl
                 l.add(source.toPacketExtension(owner));
             }
 
-            if (!endpointSourceSet.getSsrcGroups().isEmpty())
+            for (SsrcGroup ssrcGroup : endpointSourceSet.getSsrcGroups())
             {
                 List<SourceGroupPacketExtension> l
-                        = sourceGroupPacketExtensions.computeIfAbsent("video", (k) -> new ArrayList<>());
-                for (SsrcGroup ssrcGroup : endpointSourceSet.getSsrcGroups())
-                {
-                    l.add(ssrcGroup.toPacketExtension());
-                }
+                        = sourceGroupPacketExtensions.computeIfAbsent(
+                                ssrcGroup.getMediaType().toString(),
+                                (k) -> new ArrayList<>());
+                l.add(ssrcGroup.toPacketExtension());
             }
         });
 
