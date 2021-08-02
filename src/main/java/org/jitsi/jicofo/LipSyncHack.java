@@ -105,7 +105,7 @@ public class LipSyncHack implements OperationSetJingle
             // Return empty to avoid null checks
             return new MediaSourceMap();
         }
-        return p.getSourcesCopy();
+        return p.getSources().toMediaSourceMap().getSources();
     }
 
     /**

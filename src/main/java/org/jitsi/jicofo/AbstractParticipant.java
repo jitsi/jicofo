@@ -23,7 +23,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 
 /**
@@ -125,14 +124,6 @@ public abstract class AbstractParticipant
      * Gets a read-only view of the sources advertised by this participant.
      */
     public abstract ConferenceSourceMap getSources();
-
-    /**
-     * Returns deep copy of this peer's media source map.
-     */
-    public MediaSourceMap getSourcesCopy()
-    {
-        return getSources().toMediaSourceMap().getSources();
-    }
 
     /**
      * Clear the pending remote sources, indicating that they have now been signaled.

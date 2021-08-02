@@ -26,10 +26,10 @@ import kotlin.jvm.Throws
 
 /** A set [Source]s and [SsrcGroup]s (optionally) associated with a specific endpoint (identified by [owner]). */
 data class EndpointSourceSet(
-    val sources: Set<Source>,
-    val ssrcGroups: Set<SsrcGroup>,
+    val sources: Set<Source> = emptySet(),
+    val ssrcGroups: Set<SsrcGroup> = emptySet(),
 ) {
-    // val mediaTypes: Set<MediaType> by lazy { sources.map { it.mediaType }.toSet() }
+    constructor(source: Source) : this(setOf(source))
 
     /**
      * Whether this set of sources is empty.

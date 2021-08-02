@@ -41,7 +41,6 @@ import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -805,6 +804,7 @@ public class JitsiMeetConferenceImpl
         }
     }
 
+    @NotNull
     ConferenceSourceMap getSourcesForParticipant(@NotNull Participant participant)
     {
         EndpointSourceSet e = conferenceSources.get(participant.getMucJid());
@@ -1103,11 +1103,15 @@ public class JitsiMeetConferenceImpl
 
                 jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
 
-                removeSources(
-                    jingleSession,
-                    participant.getSources(),
-                    false /* no JVB update - will expire */,
-                    sendSourceRemove);
+                EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
+                if (participantSources != null)
+                {
+                    removeSources(
+                            jingleSession,
+                            participantSources,
+                            false /* no JVB update - will expire */,
+                            sendSourceRemove);
+                }
 
                 participant.setJingleSession(null);
             }
@@ -1517,11 +1521,11 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
-        ConferenceSourceMap sourcesAdvertised;
+        EndpointSourceSet sourcesAdvertised;
         ConferenceSourceMap sourcesAccepted;
         try
         {
-            sourcesAdvertised = new ConferenceSourceMap(address, contents);
+            sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
             sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
         }
         catch (ValidationFailedException e)
@@ -1573,8 +1577,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public XMPPError onRemoveSource(@NotNull JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
     {
-        ConferenceSourceMap sourcesRequestedToBeRemoved
-                = new ConferenceSourceMap(sourceJingleSession.getAddress(), contents);
+        EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
 
         return removeSources(sourceJingleSession, sourcesRequestedToBeRemoved, true, true);
     }
@@ -1609,7 +1612,7 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(contents);
         participant.addTransportFromJingle(contents);
 
-        ConferenceSourceMap sourcesAdvertised = new ConferenceSourceMap(participantJid, contents);
+        EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
         if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
@@ -1617,10 +1620,9 @@ public class JitsiMeetConferenceImpl
             // conference will not be aware of the participant.
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcesAdvertised.add(
-                    new ConferenceSourceMap(
-                            participantJid,
-                            new Source(ssrc, MediaType.AUDIO, null, null, true, null)));
+            sourcesAdvertised
+                    = new EndpointSourceSet(
+                            new Source(ssrc, MediaType.AUDIO, null, null, true, null));
         }
         ConferenceSourceMap sourcesAccepted;
         try
@@ -1692,7 +1694,7 @@ public class JitsiMeetConferenceImpl
      */
     private XMPPError removeSources(
             JingleSession sourceJingleSession,
-            ConferenceSourceMap sourcesRequestedToBeRemoved,
+            EndpointSourceSet sourcesRequestedToBeRemoved,
             boolean updateChannels,
             boolean sendSourceRemove)
     {

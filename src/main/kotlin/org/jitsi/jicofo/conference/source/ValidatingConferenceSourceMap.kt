@@ -29,7 +29,7 @@ class ValidatingConferenceSourceMap : ConferenceSourceMap() {
     val logger = createLogger()
 
     @Throws(ValidationFailedException::class)
-    fun tryToAdd(owner: Jid?, sourcesToAdd: ConferenceSourceMap): ConferenceSourceMap {
+    fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): ConferenceSourceMap {
 
         val (allSources, allGroups) = this.toMediaSourceMap()
         val validator = SSRCValidator(
@@ -40,7 +40,7 @@ class ValidatingConferenceSourceMap : ConferenceSourceMap() {
             this.logger
         )
 
-        val (sourcesToRemove2, groupsToRemove) = sourcesToAdd.toMediaSourceMap()
+        val (sourcesToRemove2, groupsToRemove) = ConferenceSourceMap(owner, sourcesToAdd).toMediaSourceMap()
         try {
             val added = validator.tryAddSourcesAndGroups(sourcesToRemove2, groupsToRemove)
             val addedConferenceSourceMap = fromMediaSourceMap(
@@ -55,7 +55,7 @@ class ValidatingConferenceSourceMap : ConferenceSourceMap() {
     }
 
     @Throws(ValidationFailedException::class)
-    fun tryToRemove(owner: Jid?, sourcesToRemove: ConferenceSourceMap): ConferenceSourceMap {
+    fun tryToRemove(owner: Jid?, sourcesToRemove: EndpointSourceSet): ConferenceSourceMap {
 
         val (allSources, allGroups) = this.toMediaSourceMap()
         val validator = SSRCValidator(
@@ -66,7 +66,7 @@ class ValidatingConferenceSourceMap : ConferenceSourceMap() {
             this.logger
         )
 
-        val (sourcesToRemove2, groupsToRemove) = sourcesToRemove.toMediaSourceMap()
+        val (sourcesToRemove2, groupsToRemove) = ConferenceSourceMap(owner, sourcesToRemove).toMediaSourceMap()
         try {
             val removed = validator.tryRemoveSourcesAndGroups(sourcesToRemove2, groupsToRemove)
             val removedConferenceSourceMap = fromMediaSourceMap(

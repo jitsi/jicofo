@@ -18,6 +18,8 @@
       <Bug pattern="NP_NULL_ON_SOME_PATH"/>
       <!-- False positives with kotlin 1.5 -->
       <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+      <!-- False positive -->
+      <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
       <And>
         <!-- Spotbugs doesn't recognize that a value can't be null, and using @SuppressFBWarnings doesn't work. -->
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>

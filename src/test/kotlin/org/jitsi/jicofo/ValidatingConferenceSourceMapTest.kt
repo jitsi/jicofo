@@ -29,16 +29,13 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 val endpoint1Sources = createSourcesForEndpoint(jid1, 1)
                 val endpoint2Sources = createSourcesForEndpoint(jid2, 111)
 
-                conferenceSources.tryToAdd(jid1, endpoint1Sources) shouldBe endpoint1Sources
-                conferenceSources.tryToAdd(jid2, endpoint2Sources) shouldBe endpoint2Sources
+                conferenceSources.tryToAdd(jid1, endpoint1Sources[jid1]!!) shouldBe endpoint1Sources
+                conferenceSources.tryToAdd(jid2, endpoint2Sources[jid2]!!) shouldBe endpoint2Sources
             }
             context("testNegative") {
-                val sourcesWithInvalidSsrc = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(-1, AUDIO)),
-                        emptySet()
-                    )
+                val sourcesWithInvalidSsrc = EndpointSourceSet(
+                    setOf(Source(-1, AUDIO)),
+                    emptySet()
                 )
 
                 shouldThrow<ValidationFailedException> {
@@ -47,12 +44,9 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             }
             context("testZero") {
                 // TODO why is 0 invalid?
-                val sourcesWithInvalidSsrc = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(0, AUDIO)),
-                        emptySet()
-                    )
+                val sourcesWithInvalidSsrc = EndpointSourceSet(
+                    setOf(Source(0, AUDIO)),
+                    emptySet()
                 )
 
                 shouldThrow<ValidationFailedException> {
@@ -60,12 +54,9 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("testInvalidNumber") {
-                val sourcesWithInvalidSsrc = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(0x1_0000_0000, AUDIO)),
-                        emptySet()
-                    )
+                val sourcesWithInvalidSsrc = EndpointSourceSet(
+                    setOf(Source(0x1_0000_0000, AUDIO)),
+                    emptySet()
                 )
 
                 shouldThrow<ValidationFailedException> {
@@ -73,29 +64,20 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("testDuplicate") {
-                val source = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(1, AUDIO)),
-                        emptySet()
-                    )
+                val source = EndpointSourceSet(
+                    setOf(Source(1, AUDIO)),
+                    emptySet()
                 )
-                val duplicateJid1 = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(1, AUDIO, msid = "differentMsid")),
-                        emptySet()
-                    )
+                val duplicateJid1 = EndpointSourceSet(
+                    setOf(Source(1, AUDIO, msid = "differentMsid")),
+                    emptySet()
                 )
-                val duplicateJid2 = ConferenceSourceMap(
-                    jid2,
-                    EndpointSourceSet(
-                        setOf(Source(1, AUDIO, msid = "differentMsid")),
-                        emptySet()
-                    )
+                val duplicateJid2 = EndpointSourceSet(
+                    setOf(Source(1, AUDIO, msid = "differentMsid")),
+                    emptySet()
                 )
 
-                conferenceSources.tryToAdd(jid1, source) shouldBe source
+                conferenceSources.tryToAdd(jid1, source)[jid1] shouldBe source
                 shouldThrow<ValidationFailedException> {
                     conferenceSources.tryToAdd(jid1, duplicateJid1)
                 }
@@ -104,29 +86,20 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("testDuplicateDifferentMediaType") {
-                val source = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(1, AUDIO)),
-                        emptySet()
-                    )
+                val source = EndpointSourceSet(
+                    setOf(Source(1, AUDIO)),
+                    emptySet()
                 )
-                val duplicateJid1 = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(1, VIDEO, msid = "differentMsid")),
-                        emptySet()
-                    )
+                val duplicateJid1 = EndpointSourceSet(
+                    setOf(Source(1, VIDEO, msid = "differentMsid")),
+                    emptySet()
                 )
-                val duplicateJid2 = ConferenceSourceMap(
-                    jid2,
-                    EndpointSourceSet(
-                        setOf(Source(1, VIDEO, msid = "differentMsid")),
-                        emptySet()
-                    )
+                val duplicateJid2 = EndpointSourceSet(
+                    setOf(Source(1, VIDEO, msid = "differentMsid")),
+                    emptySet()
                 )
 
-                conferenceSources.tryToAdd(jid1, source) shouldBe source
+                conferenceSources.tryToAdd(jid1, source)[jid1] shouldBe source
                 shouldThrow<ValidationFailedException> {
                     conferenceSources.tryToAdd(jid1, duplicateJid1)
                 }
@@ -135,19 +108,13 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("testMSIDDuplicate") {
-                val source1 = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(1, AUDIO, cname = "cname1", msid = "stream1 track1")),
-                        emptySet()
-                    )
+                val source1 = EndpointSourceSet(
+                    setOf(Source(1, AUDIO, cname = "cname1", msid = "stream1 track1")),
+                    emptySet()
                 )
-                val source2 = ConferenceSourceMap(
-                    jid1,
-                    EndpointSourceSet(
-                        setOf(Source(2, AUDIO, cname = "cname1", msid = "stream1 track1")),
-                        emptySet()
-                    )
+                val source2 = EndpointSourceSet(
+                    setOf(Source(2, AUDIO, cname = "cname1", msid = "stream1 track1")),
+                    emptySet()
                 )
 //                Assert.assertEquals(
 //                    "Not grouped SSRC 3 has conflicting"
@@ -156,15 +123,14 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                )
 
                 context("Separate adds") {
-                    conferenceSources.tryToAdd(jid1, source1) shouldBe source1
+                    conferenceSources.tryToAdd(jid1, source1)[jid1] shouldBe source1
                     shouldThrow<ValidationFailedException> {
                         conferenceSources.tryToAdd(jid1, source2)
                     }
                 }
                 context("Single add") {
-                    source1.add(source2)
                     shouldThrow<ValidationFailedException> {
-                        conferenceSources.tryToAdd(jid1, source1)
+                        conferenceSources.tryToAdd(jid1, EndpointSourceSet(source1.sources + source2.sources))
                     }
                 }
             }
@@ -186,12 +152,12 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
                 shouldThrow<ValidationFailedException> {
                     conferenceSources.tryToAdd(
-                        jid1, ConferenceSourceMap(jid1, replacedSources, sources[jid1]!!.ssrcGroups)
+                        jid1, EndpointSourceSet(replacedSources, sources[jid1]!!.ssrcGroups)
                     )
                 }
             }
 
-            context("testMSIDMismatchInTheSameGroup") {
+            context("testMSIDMismatchInTheSameGroup2?") {
                 val cname = "cname"
                 val msid = "msid"
                 val sources = setOf(
@@ -215,7 +181,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                        " conflicts with group SourceGroup"
 //                            + "[FID, ssrc=10, ssrc=20, ]@"));
                 shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, sources, groups))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 }
             }
             context("testMsidConflictFidGroups") {
@@ -239,7 +205,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                    "MSID mismatch detected in group "
 //                        + "SourceGroup[FID, ssrc=30, ssrc=40, ]"));
                 shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, sources, groups))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 }
             }
             context("testMsidConflictSimGroups") {
@@ -262,7 +228,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                    "MSID conflict across SIM groups: vstream vtrack, ssrc=30"
 //                        + " conflicts with group Simulcast[ssrc=10,ssrc=20,]"));
                 shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, sources, groups))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 }
             }
             context("testNoMsidSimGroup") {
@@ -281,7 +247,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                    errorMsg.startsWith(
 //                            "Grouped ssrc=10 has no 'msid'"));
                 shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, sources, groups))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 }
             }
             context("testTrackMismatchInTheSameGroup") {
@@ -302,7 +268,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
                 shouldThrow<ValidationFailedException> {
                     conferenceSources.tryToAdd(
-                        jid1, ConferenceSourceMap(jid1, replacedSources, sources[jid1]!!.ssrcGroups)
+                        jid1, EndpointSourceSet(replacedSources, sources[jid1]!!.ssrcGroups)
                     )
                 }
             }
@@ -330,8 +296,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 
                 val added = conferenceSources.tryToAdd(
                     jid1,
-                    ConferenceSourceMap(
-                        jid1,
+                    EndpointSourceSet(
                         endpointSourceSet.sources,
                         setOf(
                             *(endpointSourceSet.ssrcGroups.toTypedArray()),
@@ -360,7 +325,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 //                        "Source ssrc=2 not found in 'video' for group:"
 //                            + " SourceGroup[FID, ssrc=1, ssrc=2, ]"));
                 shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, sources, groups))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 }
             }
             context("testDuplicatedGroups") {
@@ -375,7 +340,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
                 )
 
-                val added = conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, sources, groups))
+                val added = conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 added[jid1]!!.sources shouldBe sources
                 added[jid1]!!.ssrcGroups shouldBe setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)))
             }
@@ -398,7 +363,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5)),
                     SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6)),
                 )
-                conferenceSources.tryToAdd(jid1, ConferenceSourceMap(jid1, videoSources.toSet(), ssrcGroups.toSet()))
+                conferenceSources.tryToAdd(jid1, EndpointSourceSet(videoSources.toSet(), ssrcGroups.toSet()))
 
                 val sourcesToRemove = setOf(
                     videoSources[0], videoSources[1]
@@ -409,7 +374,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 )
 
                 shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToRemove(jid1, ConferenceSourceMap(jid1, sourcesToRemove, groupsToRemove))
+                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sourcesToRemove, groupsToRemove))
                 }
             }
         }

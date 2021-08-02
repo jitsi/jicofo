@@ -450,6 +450,7 @@ public class Participant
      * @return
      */
     @Override
+    @NotNull
     public ConferenceSourceMap getSources()
     {
         return conference == null ? new ConferenceSourceMap() : conference.getSourcesForParticipant(this);
