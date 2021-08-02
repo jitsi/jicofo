@@ -1107,7 +1107,7 @@ public class JitsiMeetConferenceImpl
                 if (participantSources != null)
                 {
                     removeSources(
-                            jingleSession,
+                            participant,
                             participantSources,
                             false /* no JVB update - will expire */,
                             sendSourceRemove);
@@ -1579,7 +1579,16 @@ public class JitsiMeetConferenceImpl
     {
         EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
 
-        return removeSources(sourceJingleSession, sourcesRequestedToBeRemoved, true, true);
+        Participant participant = findParticipantForJingleSession(sourceJingleSession);
+        if (participant == null)
+        {
+            logger.warn("No participant for jingle-session: " + sourceJingleSession);
+            return XMPPError.from(XMPPError.Condition.bad_request, "No associated participant").build();
+        }
+        else
+        {
+            return removeSources(participant, sourcesRequestedToBeRemoved, true, true);
+        }
     }
 
     /**
@@ -1687,25 +1696,18 @@ public class JitsiMeetConferenceImpl
     /**
      * Removes sources from the conference.
      *
-     * @param sourceJingleSession source Jingle session from which sources are being removed.
+     * @param participant the participant that owns the sources to be removed.
      * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
      * @param updateChannels tells whether or not sources update request should be sent to the bridge.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
     private XMPPError removeSources(
-            JingleSession sourceJingleSession,
+            @NotNull Participant participant,
             EndpointSourceSet sourcesRequestedToBeRemoved,
             boolean updateChannels,
             boolean sendSourceRemove)
     {
-        Participant participant = findParticipantForJingleSession(sourceJingleSession);
-        Jid participantJid = sourceJingleSession.getAddress();
-        if (participant == null)
-        {
-            logger.warn("Remove-source: no session for " + participantJid);
-            return null;
-        }
-
+        Jid participantJid = participant.getMucJid();
         ConferenceSourceMap sourcesAcceptedToBeRemoved;
         try
         {
