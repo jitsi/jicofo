@@ -21,9 +21,10 @@ import mock.*;
 import mock.muc.*;
 import mock.util.*;
 
+import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
-import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -69,31 +70,30 @@ public class AdvertiseSSRCsTest
         user1.waitForAddSource(2000);
         user2.waitForAddSource(2000);
 
-        assertEquals(2, user1.getRemoteSSRCs("audio").size());
-        // No groups
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
+        ConferenceSourceMap user1RemoteSources = user1.getRemoteSources();
+        assertEquals(2, user1.numRemoteSourcesOfType(MediaType.AUDIO));
+        assertEquals(0, user1.numRemoteSourceGroupsOfType(MediaType.AUDIO));
 
         // Verify SSRC owners and video types
         // From user 1 perspective
-        assertEquals(
-            user2.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("audio").get(1)));
-        assertEquals(
-            user2.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user1.getRemoteSSRCs("video").get(1)));
+        EndpointSourceSet user1User2Sources = user1RemoteSources.get(user2.getMyJid());
+        Source user1User2AudioSource = ExtensionsKt.getFirstSourceOfType(user1User2Sources, MediaType.AUDIO);
+        assertNotNull(user1User2AudioSource);
+        Source user1User2VideoSource = ExtensionsKt.getFirstSourceOfType(user1User2Sources, MediaType.VIDEO);
+        assertNotNull(user1User2VideoSource);
         assertEquals(
             user2.getSsrcVideoType(),
-            SSRCSignaling.getVideoType(user1.getRemoteSSRCs("video").get(1)));
+            user1User2VideoSource.getVideoType());
+
         // From user 2 perspective
-        assertEquals(
-            user1.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("audio").get(1)));
-        assertEquals(
-            user1.getMyJid(),
-            SSRCSignaling.getSSRCOwner(user2.getRemoteSSRCs("video").get(1)));
+        EndpointSourceSet user2User1Sources = user2.getRemoteSources().get(user1.getMyJid());
+        Source user2User1AudioSource = ExtensionsKt.getFirstSourceOfType(user2User1Sources, MediaType.AUDIO);
+        assertNotNull(user2User1AudioSource);
+        Source user2User1VideoSource = ExtensionsKt.getFirstSourceOfType(user2User1Sources, MediaType.VIDEO);
+        assertNotNull(user2User1VideoSource);
         assertEquals(
             user1.getSsrcVideoType(),
-            SSRCSignaling.getVideoType(user2.getRemoteSSRCs("video").get(1)));
+            user2User1VideoSource.getVideoType());
 
         user2.leave();
 
@@ -101,9 +101,8 @@ public class AdvertiseSSRCsTest
         // sources when it leaves.
         // assertNotNull(user1.waitForRemoveSource(500));
 
-        assertEquals(1, user1.getRemoteSSRCs("audio").size());
-        // No groups
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
+        assertEquals(1, user1.numRemoteSourcesOfType(MediaType.AUDIO));
+        assertEquals(0, user1.numRemoteSourceGroupsOfType(MediaType.AUDIO));
 
         MockParticipant user3 = new MockParticipant("User3");
         user3.join(chatRoom);
@@ -111,11 +110,11 @@ public class AdvertiseSSRCsTest
 
         user1.waitForAddSource(2000);
 
-        assertEquals(2, user1.getRemoteSSRCs("audio").size());
-        assertEquals(2, user3.getRemoteSSRCs("audio").size());
-        // No groups
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
-        assertEquals(0, user3.getRemoteSSRCGroups("audio").size());
+        assertEquals(2, user1.numRemoteSourcesOfType(MediaType.AUDIO));
+        assertEquals(0, user1.numRemoteSourceGroupsOfType(MediaType.AUDIO));
+
+        assertEquals(2, user3.numRemoteSourcesOfType(MediaType.AUDIO));
+        assertEquals(0, user3.numRemoteSourceGroupsOfType(MediaType.AUDIO));
 
         user3.leave();
         user1.leave();
@@ -147,12 +146,12 @@ public class AdvertiseSSRCsTest
         user1.waitForAddSource(2000);
         user2.waitForAddSource(2000);
 
-        user2.audioSourceRemove(1);
+        user2.audioSourceRemove();
 
         assertNotNull(user1.waitForRemoveSource(500));
 
-        assertEquals(1, user1.getRemoteSSRCs("audio").size());
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
+        assertEquals(1, user1.numRemoteSourcesOfType(MediaType.AUDIO));
+        assertEquals(0, user1.numRemoteSourceGroupsOfType(MediaType.AUDIO));
 
         MockParticipant user3 = new MockParticipant("User3");
         user3.join(chat);
@@ -160,11 +159,11 @@ public class AdvertiseSSRCsTest
 
         user1.waitForAddSource(2000);
 
-        assertEquals(2, user1.getRemoteSSRCs("audio").size());
-        assertEquals(2, user3.getRemoteSSRCs("audio").size());
+        assertEquals(2, user1.numRemoteSourcesOfType(MediaType.AUDIO));
+        assertEquals(2, user3.numRemoteSourcesOfType(MediaType.AUDIO));
         // No groups
-        assertEquals(0, user1.getRemoteSSRCGroups("audio").size());
-        assertEquals(0, user3.getRemoteSSRCGroups("audio").size());
+        assertEquals(0, user1.numRemoteSourceGroupsOfType(MediaType.AUDIO));
+        assertEquals(0, user3.numRemoteSourceGroupsOfType(MediaType.AUDIO));
 
         user3.leave();
         user2.leave();
@@ -203,26 +202,26 @@ public class AdvertiseSSRCsTest
         assertNotNull(user2.waitForAddSource(1000));
 
         // There is 1 + 2 extra we've created here in the test
-        assertEquals(1 /* jvb */ + 3, user2.getRemoteSSRCs("video").size());
+        assertEquals(1 /* jvb */ + 3, user2.numRemoteSourcesOfType(MediaType.VIDEO));
         // No groups
-        assertEquals(0, user2.getRemoteSSRCGroups("video").size());
+        assertEquals(0, user2.numRemoteSourceGroupsOfType(MediaType.VIDEO));
 
-        user1.videoSourceAdd(new long[]{ u1VideoSSRC }, false);
+        user1.videoSourceAdd(new long[]{ u1VideoSSRC });
 
         user1.videoSourceAdd(
             new long[]{
                 u1VideoSSRC, u1VideoSSRC2, u1VideoSSRC,
                 u1VideoSSRC, u1VideoSSRC, u1VideoSSRC2
-            }, false);
+            });
 
-        user1.videoSourceAdd(new long[]{ u1VideoSSRC2, u1VideoSSRC }, false);
+        user1.videoSourceAdd(new long[]{ u1VideoSSRC2, u1VideoSSRC });
 
         // There should be no source-add notifications sent
         assertNull(user2.waitForAddSource(500));
 
-        assertEquals(1 + /* jvb */ + 1, user2.getRemoteSSRCs("audio").size());
+        assertEquals(1 + /* jvb */ + 1, user2.numRemoteSourcesOfType(MediaType.AUDIO));
         // There is 1 + 2 extra we've created here in the test
-        assertEquals(1 + /* jvb */ + 3, user2.getRemoteSSRCs("video").size());
+        assertEquals(1 + /* jvb */ + 3, user2.numRemoteSourcesOfType(MediaType.VIDEO));
 
         user2.leave();
         user1.leave();
