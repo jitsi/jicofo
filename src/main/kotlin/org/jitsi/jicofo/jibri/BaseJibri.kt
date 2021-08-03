@@ -50,7 +50,7 @@ abstract class BaseJibri internal constructor(
     private val incomingIqQueue = PacketQueue<JibriRequest>(
         Integer.MAX_VALUE,
         true,
-        "jibri-iq-queue-${conference.roomName.localpart}",
+        "jibri-iq-queue",
         { jibriRequest ->
             val response = try {
                 doHandleIQRequest(jibriRequest.iq)

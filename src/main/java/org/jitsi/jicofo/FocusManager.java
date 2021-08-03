@@ -22,6 +22,7 @@ import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
+import org.jitsi.utils.queue.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
@@ -513,6 +514,8 @@ public class FocusManager
         stats.put("conference_sizes", conferenceSizesJson);
 
         stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
+
+        stats.put("queues", QueueStatistics.Companion.getStatistics());
 
         return stats;
     }
