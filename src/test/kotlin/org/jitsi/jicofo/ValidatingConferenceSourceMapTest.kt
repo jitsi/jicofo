@@ -6,403 +6,321 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.GroupMsidMismatchException
+import org.jitsi.jicofo.conference.source.InvalidFidGroupException
+import org.jitsi.jicofo.conference.source.InvalidSsrcException
+import org.jitsi.jicofo.conference.source.MsidConflictException
+import org.jitsi.jicofo.conference.source.RequiredParameterMissingException
 import org.jitsi.jicofo.conference.source.Source
+import org.jitsi.jicofo.conference.source.SourceDoesNotExistException
+import org.jitsi.jicofo.conference.source.SourceGroupDoesNotExistException
+import org.jitsi.jicofo.conference.source.SsrcAlreadyUsedException
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
+import org.jitsi.jicofo.conference.source.SsrcLimitExceededException
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
-import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 
 class ValidatingConferenceSourceMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 
     init {
+        val jid1 = JidCreate.from("jid1")
+        val jid2 = JidCreate.from("jid2")
+        val cname = "cname"
+        val msid = "msid"
+
+        val s1 = Source(1, VIDEO, cname = cname, msid = msid)
+        val s2 = Source(2, VIDEO, cname = cname, msid = msid)
+        val s3 = Source(3, VIDEO, cname = cname, msid = msid)
+        val s4 = Source(4, VIDEO, cname = cname, msid = msid)
+        val s5 = Source(5, VIDEO, cname = cname, msid = msid)
+        val s6 = Source(6, VIDEO, cname = cname, msid = msid)
+        val s7 = Source(7, AUDIO)
+        val s8 = Source(8, AUDIO, msid = "differentMsid")
+        val sources = setOf(s1, s2, s3, s4, s5, s6, s7)
+
+        val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
+        val fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4))
+        val fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5))
+        val fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6))
+        val groups = setOf(sim, fid1, fid2, fid3)
+
+        val sourceSet = EndpointSourceSet(sources, groups)
+
         val conferenceSources = ValidatingConferenceSourceMap()
 
-        context("Port of SSRCValidatorTest") {
-            val jid1 = JidCreate.from("jid1")
-            val jid2 = JidCreate.from("jid2")
-            context("test2ParticipantsWithSimAndRtx") {
-                val endpoint1Sources = createSourcesForEndpoint(jid1, 1)
-                val endpoint2Sources = createSourcesForEndpoint(jid2, 111)
+        context("Adding sources.") {
+            context("Standard VP8 signaling with simulcast and RTX") {
+                val sourceSet2 = EndpointSourceSet(
+                    setOf(
+                        Source(101, VIDEO, cname = cname, msid = "msid2"),
+                        Source(102, VIDEO, cname = cname, msid = "msid2"),
+                        Source(103, AUDIO)
+                    ),
+                    setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(101, 102)))
+                )
 
-                conferenceSources.tryToAdd(jid1, endpoint1Sources[jid1]!!) shouldBe endpoint1Sources
-                conferenceSources.tryToAdd(jid2, endpoint2Sources[jid2]!!) shouldBe endpoint2Sources
+                conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                conferenceSources.tryToAdd(jid2, sourceSet2) shouldBe ConferenceSourceMap(jid2 to sourceSet2)
             }
-            context("testNegative") {
-                val sourcesWithInvalidSsrc = EndpointSourceSet(
-                    setOf(Source(-1, AUDIO)),
-                    emptySet()
-                )
+            context("Invalid SSRCs") {
+                val invalidSsrcs = listOf(-1, 0, 0x1_0000_0000)
+                invalidSsrcs.forEach {
+                    val sourcesWithInvalidSsrc = EndpointSourceSet(setOf(Source(it, AUDIO)))
 
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, sourcesWithInvalidSsrc)
-                }
-            }
-            context("testZero") {
-                // TODO why is 0 invalid?
-                val sourcesWithInvalidSsrc = EndpointSourceSet(
-                    setOf(Source(0, AUDIO)),
-                    emptySet()
-                )
-
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, sourcesWithInvalidSsrc)
-                }
-            }
-            context("testInvalidNumber") {
-                val sourcesWithInvalidSsrc = EndpointSourceSet(
-                    setOf(Source(0x1_0000_0000, AUDIO)),
-                    emptySet()
-                )
-
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, sourcesWithInvalidSsrc)
-                }
-            }
-            context("testDuplicate") {
-                val source = EndpointSourceSet(
-                    setOf(Source(1, AUDIO)),
-                    emptySet()
-                )
-                val duplicateJid1 = EndpointSourceSet(
-                    setOf(Source(1, AUDIO, msid = "differentMsid")),
-                    emptySet()
-                )
-                val duplicateJid2 = EndpointSourceSet(
-                    setOf(Source(1, AUDIO, msid = "differentMsid")),
-                    emptySet()
-                )
-
-                conferenceSources.tryToAdd(jid1, source)[jid1] shouldBe source
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, duplicateJid1)
-                }
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid2, duplicateJid2)
-                }
-            }
-            context("testDuplicateDifferentMediaType") {
-                val source = EndpointSourceSet(
-                    setOf(Source(1, AUDIO)),
-                    emptySet()
-                )
-                val duplicateJid1 = EndpointSourceSet(
-                    setOf(Source(1, VIDEO, msid = "differentMsid")),
-                    emptySet()
-                )
-                val duplicateJid2 = EndpointSourceSet(
-                    setOf(Source(1, VIDEO, msid = "differentMsid")),
-                    emptySet()
-                )
-
-                conferenceSources.tryToAdd(jid1, source)[jid1] shouldBe source
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, duplicateJid1)
-                }
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid2, duplicateJid2)
-                }
-            }
-            context("testMSIDDuplicate") {
-                val source1 = EndpointSourceSet(
-                    setOf(Source(1, AUDIO, cname = "cname1", msid = "stream1 track1")),
-                    emptySet()
-                )
-                val source2 = EndpointSourceSet(
-                    setOf(Source(2, AUDIO, cname = "cname1", msid = "stream1 track1")),
-                    emptySet()
-                )
-//                Assert.assertEquals(
-//                    "Not grouped SSRC 3 has conflicting"
-//                            + " MSID 'stream2 track2' with 2",
-//                    exc.message
-//                )
-
-                context("Separate adds") {
-                    conferenceSources.tryToAdd(jid1, source1)[jid1] shouldBe source1
-                    shouldThrow<ValidationFailedException> {
-                        conferenceSources.tryToAdd(jid1, source2)
-                    }
-                }
-                context("Single add") {
-                    shouldThrow<ValidationFailedException> {
-                        conferenceSources.tryToAdd(jid1, EndpointSourceSet(source1.sources + source2.sources))
+                    shouldThrow<InvalidSsrcException> {
+                        conferenceSources.tryToAdd(jid1, sourcesWithInvalidSsrc)
                     }
                 }
             }
-            context("testMSIDMismatchInTheSameGroup") {
-                val sources = createSourcesForEndpoint(jid1)
-                val replacedSources = sources[jid1]!!.sources.map {
-                    // Replace the source with SSRC=1 with one with different cname and msid
-                    if (it.ssrc == 1L)
-                        Source(1, VIDEO, cname = "differentCname", msid = "different msid")
-                    else
-                        it
-                }.toSet()
-
-//            String errorMsg = exc.getMessage();
-//            assertTrue(
-//                "Invalid message (constant needs update ?): " + errorMsg,
-//                errorMsg.startsWith(
-//                    "MSID mismatch detected "
-//                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(
-                        jid1, EndpointSourceSet(replacedSources, sources[jid1]!!.ssrcGroups)
+            context("Max SSRC count limit") {
+                val conferenceSources = ValidatingConferenceSourceMap(4)
+                context("At once") {
+                    shouldThrow<SsrcLimitExceededException> {
+                        conferenceSources.tryToAdd(jid1, sourceSet)
+                    }
+                }
+                context("With multiple adds") {
+                    val sourceSet1 = EndpointSourceSet(
+                        setOf(s1, s2, s3),
+                        setOf(sim)
                     )
-                }
-            }
+                    val sourceSet2 = EndpointSourceSet(
+                        setOf(s4, s5, s6),
+                        setOf(fid1, fid2, fid3)
+                    )
 
-            context("testMSIDMismatchInTheSameGroup2?") {
-                val cname = "cname"
-                val msid = "msid"
-                val sources = setOf(
-                    Source(1, VIDEO, cname = cname, msid = msid),
-                    Source(2, VIDEO, cname = cname, msid = msid),
-                    Source(3, VIDEO, cname = cname, msid = msid),
-                    Source(4, VIDEO, cname = cname, msid = "different-msid")
+                    conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe ConferenceSourceMap(jid1 to sourceSet1)
+                    shouldThrow<SsrcLimitExceededException> {
+                        conferenceSources.tryToAdd(jid1, sourceSet2)
+                    }
+                }
+            }
+            context("Duplicate SSRCs") {
+                val source = EndpointSourceSet(setOf(Source(1, AUDIO)))
+                val duplicateSourceAudio = EndpointSourceSet(
+                    setOf(Source(1, AUDIO, msid = "differentMsid"))
                 )
-                val groups = setOf(
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4))
+                val duplicateSourceVideo = EndpointSourceSet(
+                    setOf(Source(1, VIDEO, msid = "differentMsid"))
                 )
 
-//            String errorMsg = exc.getMessage();
-//            assertTrue(
-//                "Invalid message (constant needs update ?): " + errorMsg,
-//                errorMsg.startsWith(
-//                    "MSID conflict across FID groups: vstream vtrack,"
-//                        + " SourceGroup[FID, ssrc=30, ssrc=40, ]@")
-//                    && errorMsg.contains(
-//                        " conflicts with group SourceGroup"
-//                            + "[FID, ssrc=10, ssrc=20, ]@"));
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
+                conferenceSources.tryToAdd(jid1, source) shouldBe ConferenceSourceMap(jid1 to source)
+                context("Advertised by the same endpoint.") {
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToAdd(jid1, duplicateSourceAudio)
+                    }
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToAdd(jid1, duplicateSourceVideo)
+                    }
+                }
+                context("Advertised by another endpoint.") {
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToAdd(jid2, duplicateSourceAudio)
+                    }
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToAdd(jid2, duplicateSourceVideo)
+                    }
                 }
             }
-            context("testMsidConflictFidGroups") {
-                val cname = "cname"
-                val msid = "msid"
-                val sources = setOf(
-                    Source(1, VIDEO, cname = cname, msid = msid),
-                    Source(2, VIDEO, cname = cname, msid = msid),
-                    Source(3, VIDEO, cname = cname, msid = msid),
-                    Source(4, VIDEO, cname = cname, msid = "different-msid")
-                )
-                val groups = setOf(
-                    SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 3)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4))
-                )
-//            String errorMsg = exc.getMessage();
-//            assertTrue(
-//                "Invalid message (constant needs update ?): " + errorMsg,
-//                errorMsg.startsWith(
-//                    "MSID mismatch detected in group "
-//                        + "SourceGroup[FID, ssrc=30, ssrc=40, ]"));
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
-                }
-            }
-            context("testMsidConflictSimGroups") {
-                val cname = "cname"
-                val msid = "msid"
-                val sources = setOf(
-                    Source(1, VIDEO, cname = cname, msid = msid),
-                    Source(2, VIDEO, cname = cname, msid = msid),
-                    Source(3, VIDEO, cname = cname, msid = msid),
-                    Source(4, VIDEO, cname = cname, msid = msid)
-                )
-                val groups = setOf(
-                    SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2)),
-                    SsrcGroup(SsrcGroupSemantics.Sim, listOf(3, 4))
-                )
-//            String errorMsg = exc.getMessage();
-//            assertTrue(
-//                "Invalid message (constant needs update ?): " + errorMsg,
-//                errorMsg.startsWith(
-//                    "MSID conflict across SIM groups: vstream vtrack, ssrc=30"
-//                        + " conflicts with group Simulcast[ssrc=10,ssrc=20,]"));
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
-                }
-            }
-            context("testNoMsidSimGroup") {
-                val cname = "cname"
+            context("SSRC group with missing MSID") {
                 val sources = setOf(
                     Source(1, VIDEO, cname = cname, msid = null),
                     Source(2, VIDEO, cname = cname, msid = null),
                     Source(3, VIDEO, cname = cname, msid = null)
                 )
-                val groups = setOf(
-                    SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)),
-                )
-//            String errorMsg = exc.getMessage();
-//            assertTrue(
-//                    "Invalid message (constant needs update ?): " + errorMsg,
-//                    errorMsg.startsWith(
-//                            "Grouped ssrc=10 has no 'msid'"));
-                shouldThrow<ValidationFailedException> {
+                val groups = setOf(SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)))
+                shouldThrow<RequiredParameterMissingException> {
                     conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
                 }
             }
-            context("testTrackMismatchInTheSameGroup") {
-                val sources = createSourcesForEndpoint(jid1)
-                val replacedSources = sources[jid1]!!.sources.map {
-                    // Replace the source with SSRC=1 with one with different cname and msid
-                    if (it.ssrc == 1L)
-                        Source(1, VIDEO, cname = "differentCname", msid = "different msid")
-                    else
-                        it
-                }.toSet()
+            context("SSRC group with different MSID values") {
+                val sources = setOf(
+                    Source(1, VIDEO, cname = cname, msid = msid),
+                    Source(2, VIDEO, cname = cname, msid = msid),
+                    Source(3, VIDEO, cname = cname, msid = "differentMsid")
+                )
+                val groups = setOf(SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)))
 
-//            String errorMsg = exc.getMessage();
-//            assertTrue(
-//                "Invalid message (constant needs update ?): " + errorMsg,
-//                errorMsg.startsWith(
-//                    "MSID mismatch detected "
-//                        + "in group SourceGroup[FID, ssrc=10, ssrc=20, ]"));
+                shouldThrow<GroupMsidMismatchException> {
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
+                }
+            }
+            context("Group with an SSRC that has no source signaled.") {
                 shouldThrow<ValidationFailedException> {
                     conferenceSources.tryToAdd(
-                        jid1, EndpointSourceSet(replacedSources, sources[jid1]!!.ssrcGroups)
+                        jid1,
+                        EndpointSourceSet(
+                            // No source for ssrc 2
+                            setOf(Source(1, VIDEO, cname = "cname", msid = "msid")),
+                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)))
+                        )
                     )
                 }
             }
-            context("testSSRCLimit") {
-                val sources = setOf(
-                    Source(1, AUDIO),
-                    Source(2, AUDIO),
-                    Source(3, AUDIO),
-                    Source(4, AUDIO),
-                    Source(5, AUDIO),
-                    Source(6, AUDIO)
-                )
-
-                // TODO set limit to 4
-                // val added = conferenceSources.add(sources)
-                // TODO: should we fail with an exception?
-                // added.sources.size shouldBe 4
+            context("FID groups") {
+                // Fid groups must have exactly 2 ssrcs
+                shouldThrow<InvalidFidGroupException> {
+                    conferenceSources.tryToAdd(
+                        jid1,
+                        EndpointSourceSet(
+                            setOf(s1, s2, s3),
+                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2, 3)))))
+                }
+                shouldThrow<InvalidFidGroupException> {
+                    conferenceSources.tryToAdd(
+                        jid1,
+                        EndpointSourceSet(
+                            setOf(s1),
+                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1)))))
+                }
             }
-            context("testEmptyGroup") {
-                val endpointSources = createSourcesForEndpoint(jid1)
-                val emptySimGroup = SsrcGroup(SsrcGroupSemantics.Sim, emptyList())
-                val emptyFidGroup = SsrcGroup(SsrcGroupSemantics.Fid, emptyList())
+            context("MSID Conflicts") {
+                val sourceSet1 = EndpointSourceSet(setOf(s1))
+                val sourceSet2 = EndpointSourceSet(setOf(s2))
+                val combinedSourceSet = EndpointSourceSet(setOf(s1, s2))
 
-                val endpointSourceSet = endpointSources[jid1]!!
-
-                val added = conferenceSources.tryToAdd(
+                context("With another endpoint") {
+                    conferenceSources.tryToAdd(jid1, sourceSet1)
+                    shouldThrow<MsidConflictException> {
+                        // jid2 tries to use an MSID already used by jid1
+                        conferenceSources.tryToAdd(jid2, sourceSet2)
+                    }
+                }
+                context("Within the sources of the same endpoint.") {
+                    context("Ungrouped") {
+                        context("Added separately") {
+                            conferenceSources.tryToAdd(jid1, sourceSet1)
+                            // s1 and s2 have the same MSID
+                            shouldThrow<MsidConflictException> {
+                                conferenceSources.tryToAdd(jid1, sourceSet2)
+                            }
+                        }
+                        context("Added together") {
+                            shouldThrow<MsidConflictException> {
+                                conferenceSources.tryToAdd(jid1, combinedSourceSet)
+                            }
+                        }
+                    }
+                    context("In independent FID groups") {
+                        val endpointSourceSet = EndpointSourceSet(
+                            setOf(s1, s2, s4, s5),
+                            setOf(fid1, fid2)
+                        )
+                        shouldThrow<MsidConflictException> {
+                            conferenceSources.tryToAdd(jid1, endpointSourceSet)
+                        }
+                    }
+                    context("In independent SIM groups") {
+                        val endpointSourceSet = EndpointSourceSet(
+                            setOf(s1, s2, s3, s4),
+                            setOf(
+                                SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2)),
+                                SsrcGroup(SsrcGroupSemantics.Sim, listOf(3, 4))
+                            )
+                        )
+                        shouldThrow<MsidConflictException> {
+                            conferenceSources.tryToAdd(jid1, endpointSourceSet)
+                        }
+                    }
+                }
+            }
+            context("Adding an empty group") {
+                val accepted = conferenceSources.tryToAdd(
                     jid1,
                     EndpointSourceSet(
-                        endpointSourceSet.sources,
+                        setOf(s1, s2, s3),
                         setOf(
-                            *(endpointSourceSet.ssrcGroups.toTypedArray()),
-                            emptyFidGroup,
-                            emptySimGroup
+                            sim,
+                            SsrcGroup(SsrcGroupSemantics.Sim, emptyList()),
+                            SsrcGroup(SsrcGroupSemantics.Fid, emptyList()),
                         )
                     )
                 )
 
-                // Empty groups should be ignored
-                added[jid1]!!.ssrcGroups shouldBe endpointSourceSet.ssrcGroups
-            }
-            context("testGroupedSSRCNotFound") {
-                val cname = "cname"
-                val msid = "msid"
-                val sources = setOf(
-                    Source(1, VIDEO, cname = cname, msid = msid)
+                // The empty groups should be silently ignored.
+                accepted[jid1] shouldBe EndpointSourceSet(
+                    setOf(s1, s2, s3),
+                    setOf(sim)
                 )
-                val groups = setOf(
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
-                )
-//            String errorMsg = e.getMessage();
-//            assertTrue(
-//                    "Invalid message (constant needs update ?): " + errorMsg,
-//                    errorMsg.startsWith(
-//                        "Source ssrc=2 not found in 'video' for group:"
-//                            + " SourceGroup[FID, ssrc=1, ssrc=2, ]"));
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
-                }
-            }
-            context("testDuplicatedGroups") {
-                val cname = "cname"
-                val msid = "msid"
-                val sources = setOf(
-                    Source(1, VIDEO, cname = cname, msid = msid),
-                    Source(2, VIDEO, cname = cname, msid = msid)
-                )
-                val groups = setOf(
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
-                )
-
-                val added = conferenceSources.tryToAdd(jid1, EndpointSourceSet(sources, groups))
-                added[jid1]!!.sources shouldBe sources
-                added[jid1]!!.ssrcGroups shouldBe setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)))
-            }
-            context("testStateBrokenByRemoval") {
-                val cname = "videocname"
-                val msid = "vstream vtarck"
-
-                val videoSources = listOf(
-                    Source(1, VIDEO, cname = cname, msid = msid),
-                    Source(2, VIDEO, cname = cname, msid = msid),
-                    Source(3, VIDEO, cname = cname, msid = msid),
-                    Source(4, VIDEO, cname = cname, msid = msid),
-                    Source(5, VIDEO, cname = cname, msid = msid),
-                    Source(6, VIDEO, cname = cname, msid = msid)
-                )
-
-                val ssrcGroups = listOf(
-                    SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5)),
-                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6)),
-                )
-                conferenceSources.tryToAdd(jid1, EndpointSourceSet(videoSources.toSet(), ssrcGroups.toSet()))
-
-                val sourcesToRemove = setOf(
-                    videoSources[0], videoSources[1]
-                )
-                val groupsToRemove = setOf(
-                    ssrcGroups[0],
-                    ssrcGroups[1]
-                )
-
-                shouldThrow<ValidationFailedException> {
-                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sourcesToRemove, groupsToRemove))
-                }
             }
         }
+        context("Removing sources") {
+
+            conferenceSources.tryToAdd(jid1, sourceSet)
+
+            context("Successful removal") {
+                context("Of all sources and groups") {
+                    conferenceSources.tryToRemove(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                }
+                context("Of all sources, groups assumed") {
+                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sources, emptySet())) shouldBe
+                            ConferenceSourceMap(jid1 to sourceSet)
+                }
+                context("Of a subset of sources") {
+                    // s1 remains, with no associated groups.
+                    val toRemove = EndpointSourceSet(sources - s1, groups)
+                    conferenceSources.tryToRemove(jid1, toRemove) shouldBe ConferenceSourceMap(jid1 to toRemove)
+                }
+            }
+            context("Removing non-signaled sources") {
+                context("Another endpoint's sources") {
+                    shouldThrow<SourceDoesNotExistException> {
+                        conferenceSources.tryToRemove(jid2, sourceSet)
+                    }
+                }
+                context("A non-signaled source") {
+                    shouldThrow<SourceDoesNotExistException> {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(setOf(Source(1111, AUDIO))))
+                    }
+                }
+                context("A non-signaled ssrc-group") {
+                    shouldThrow<SourceGroupDoesNotExistException> {
+                        conferenceSources.tryToRemove(
+                            jid1,
+                            EndpointSourceSet(
+                                sources,
+                                groups + SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
+                            )
+                        )
+                    }
+                }
+            }
+            context("Removing a subset of sources") {
+                context("Leaving two FID groups") {
+                    shouldThrow<MsidConflictException> {
+                        conferenceSources.tryToRemove(
+                            jid1,
+                            EndpointSourceSet(
+                                setOf(s1, s4),
+                                setOf(sim, fid1)
+                            )
+                        )
+                    }
+                }
+                context("Removing only part of a simulcast group's sources") {
+                    // This matches multiple failure conditions (MSIF conflict, missing source from a group)
+                    shouldThrow<ValidationFailedException> {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(setOf(s1)))
+                    }
+                }
+                context("Removing a group, but not its sources")  {
+                    shouldThrow<MsidConflictException> {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), setOf(sim)))
+                    }
+                    shouldThrow<MsidConflictException> {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), setOf(fid1)))
+                    }
+                    shouldThrow<MsidConflictException> {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), groups))
+                    }
+                }
+            }
+
+        }
     }
-}
-
-private fun createSourcesForEndpoint(owner: Jid, ssrcBase: Long = 1): ConferenceSourceMap {
-    val cname = "videocname-$owner"
-    val msid = "vstream-$owner vtarck"
-
-    val videoSources = listOf(
-        Source(ssrcBase, VIDEO, cname = cname, msid = msid),
-        Source(ssrcBase + 1, VIDEO, cname = cname, msid = msid),
-        Source(ssrcBase + 2, VIDEO, cname = cname, msid = msid),
-        Source(ssrcBase + 3, VIDEO, cname = cname, msid = msid),
-        Source(ssrcBase + 4, VIDEO, cname = cname, msid = msid),
-        Source(ssrcBase + 5, VIDEO, cname = cname, msid = msid)
-    )
-
-    return ConferenceSourceMap(
-        owner to EndpointSourceSet(
-            videoSources.toSet(),
-            setOf(
-                SsrcGroup(SsrcGroupSemantics.Sim, listOf(ssrcBase, ssrcBase + 1, ssrcBase + 2)),
-                SsrcGroup(SsrcGroupSemantics.Fid, listOf(ssrcBase, ssrcBase + 3)),
-                SsrcGroup(SsrcGroupSemantics.Fid, listOf(ssrcBase + 1, ssrcBase + 4)),
-                SsrcGroup(SsrcGroupSemantics.Fid, listOf(ssrcBase + 2, ssrcBase + 5))
-            )
-        )
-    )
 }
