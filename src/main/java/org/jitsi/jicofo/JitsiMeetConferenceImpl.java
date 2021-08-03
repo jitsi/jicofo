@@ -2120,7 +2120,8 @@ public class JitsiMeetConferenceImpl
         Iterable<Participant> participantsToMute;
         synchronized (participantLock)
         {
-            participantsToMute = new ArrayList<>(participants);
+            participantsToMute
+                    = participants.stream().filter(p -> !p.hasModeratorRights()).collect(Collectors.toList());
         }
 
         for (Participant participant : participantsToMute)
@@ -2130,15 +2131,13 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Mutes a participant.
-     * @param participant the participant to mute. We mute only participants which are not moderators
-     *                    and hasn't been already muted.
+     * Mutes a participant (no-op if the participant is already muted).
+     * @param participant the participant to mute.
      * @param mediaType the media type for the operation.
      */
     public void muteParticipant(Participant participant, MediaType mediaType)
     {
-        boolean isParticipantModerator = MemberRoleKt.hasModeratorRights(participant.getChatMember().getRole());
-        if (isParticipantModerator || participant.isMuted(mediaType))
+        if (participant.isMuted(mediaType))
         {
             return;
         }
