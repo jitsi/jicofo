@@ -262,7 +262,7 @@ class ValidatingConferenceSourceMap(
                 // practice both s and g are very small (at most 20 and 4 respectively).
                 val grouped: Map<SsrcGroup, List<Source>> =
                     endpointSourceSet.sources
-                        .filter { it.mediaType == mediaType }
+                        .filter { it.mediaType == mediaType && it.msid != null }
                         .groupBy { groupBySimulcastGroup(it.ssrc, endpointSourceSet.ssrcGroups) }
 
                 // Here we check for MSID conflicts, i.e. we make sure that each group has a unique MSID.

@@ -190,6 +190,20 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         conferenceSources.tryToAdd(jid2, sourceSet2)
                     }
                 }
+                context("Multiple non-grouped SSRCs can have MSID=null") {
+                    // I don't know if this is actually desired and/or used by clients. It is existing behavior that
+                    // AdvertiseSSRCsTest depends upon.
+                    val sourceSet = EndpointSourceSet(
+                        setOf(
+                            Source(1, VIDEO),
+                            Source(2, VIDEO),
+                            Source(3, VIDEO),
+                            Source(4, AUDIO),
+                            Source(5, AUDIO)
+                        )
+                    )
+                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                }
                 context("Within the sources of the same endpoint.") {
                     context("Ungrouped") {
                         context("Added separately") {
