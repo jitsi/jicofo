@@ -35,7 +35,7 @@ class QueueExecutor(
 ) : Executor, PacketQueue<Runnable>(
     Integer.MAX_VALUE,
     true,
-    "QueueExecutor",
+    id,
     object : PacketHandler<Runnable> {
         private val logger = parentLogger.createChildLogger(QueueExecutor.javaClass.simpleName).apply {
             addContext("id", id)
