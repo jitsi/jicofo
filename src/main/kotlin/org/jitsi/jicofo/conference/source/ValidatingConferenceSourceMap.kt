@@ -74,7 +74,7 @@ class ValidatingConferenceSourceMap(
 
         // Check for validity of the new SSRCs, and conflicts with other endpoints.
         sourcesToAdd.sources.forEach { source ->
-            if (source.ssrc <= 0 || source.ssrc >= 0x1_0000_0000 ) {
+            if (source.ssrc <= 0 || source.ssrc >= 0x1_0000_0000) {
                 throw InvalidSsrcException(source.ssrc)
             }
             if (ssrcToOwnerMap.containsKey(source.ssrc)) {
@@ -196,7 +196,8 @@ class ValidatingConferenceSourceMap(
                 ssrcToOwnerMap.remove(source.ssrc)
                 source.msid?.let { sourceMsid ->
                     if (ownerRemainingSourceSet == null ||
-                        ownerRemainingSourceSet.sources.none { it.msid == sourceMsid } ) {
+                        ownerRemainingSourceSet.sources.none { it.msid == sourceMsid }
+                    ) {
                         msidToOwnerMap.remove(sourceMsid)
                     }
                 }
@@ -307,7 +308,7 @@ class ValidatingConferenceSourceMap(
 sealed class ValidationFailedException(message: String?) : Exception(message)
 class InvalidSsrcException(ssrc: Long) : ValidationFailedException("Invalid SSRC: $ssrc.")
 class SsrcLimitExceededException(limit: Int) : ValidationFailedException("SSRC limit ($limit) exceeded.")
-class SsrcAlreadyUsedException(ssrc: Long): ValidationFailedException("SSRC is already used: $ssrc.")
+class SsrcAlreadyUsedException(ssrc: Long) : ValidationFailedException("SSRC is already used: $ssrc.")
 class RequiredParameterMissingException(name: String) : ValidationFailedException(
     "Required source parameter '$name' is not present."
 )

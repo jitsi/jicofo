@@ -168,14 +168,18 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         jid1,
                         EndpointSourceSet(
                             setOf(s1, s2, s3),
-                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2, 3)))))
+                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2, 3)))
+                        )
+                    )
                 }
                 shouldThrow<InvalidFidGroupException> {
                     conferenceSources.tryToAdd(
                         jid1,
                         EndpointSourceSet(
                             setOf(s1),
-                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1)))))
+                            setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1)))
+                        )
+                    )
                 }
             }
             context("MSID Conflicts") {
@@ -252,7 +256,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
                     }
                     context("With MSID and no groups") {
-                        val sourceSet = EndpointSourceSet(setOf(s1,  Source(111, AUDIO, msid = msid)))
+                        val sourceSet = EndpointSourceSet(setOf(s1, Source(111, AUDIO, msid = msid)))
 
                         conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
                     }
@@ -296,7 +300,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
                 context("Of all sources, groups assumed") {
                     conferenceSources.tryToRemove(jid1, EndpointSourceSet(sources, emptySet())) shouldBe
-                            ConferenceSourceMap(jid1 to sourceSet)
+                        ConferenceSourceMap(jid1 to sourceSet)
                 }
                 context("Of a subset of sources") {
                     // s1 remains, with no associated groups.
@@ -345,7 +349,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         conferenceSources.tryToRemove(jid1, EndpointSourceSet(setOf(s1)))
                     }
                 }
-                context("Removing a group, but not its sources")  {
+                context("Removing a group, but not its sources") {
                     shouldThrow<MsidConflictException> {
                         conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), setOf(sim)))
                     }
@@ -357,7 +361,6 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     }
                 }
             }
-
         }
     }
 }
