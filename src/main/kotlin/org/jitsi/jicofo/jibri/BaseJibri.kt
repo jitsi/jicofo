@@ -48,7 +48,7 @@ abstract class BaseJibri internal constructor(
 ) : StateListener {
 
     private val incomingIqQueue = PacketQueue<JibriRequest>(
-        50,
+        Integer.MAX_VALUE,
         true,
         "jibri-iq-queue-${conference.roomName.localpart}",
         { jibriRequest ->
