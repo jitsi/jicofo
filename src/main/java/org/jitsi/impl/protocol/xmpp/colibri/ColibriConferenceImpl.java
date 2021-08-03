@@ -17,7 +17,6 @@
  */
 package org.jitsi.impl.protocol.xmpp.colibri;
 
-import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -52,36 +51,6 @@ public class ColibriConferenceImpl
     public final static Stats stats = new Stats();
 
     private final static Logger logger = new LoggerImpl(ColibriConferenceImpl.class.getName());
-
-    private static Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
-        extractPacketExtensions(ConferenceSourceMap sources)
-    {
-        Map<String, List<SourcePacketExtension>> sourcePacketExtensions = new HashMap<>();
-        Map<String, List<SourceGroupPacketExtension>> sourceGroupPacketExtensions = new HashMap<>();
-
-        sources.forEach((owner, endpointSourceSet) ->
-        {
-            for (Source source : endpointSourceSet.getSources())
-            {
-                List<SourcePacketExtension> l
-                        = sourcePacketExtensions.computeIfAbsent(
-                        source.getMediaType().toString(),
-                        (k) -> new ArrayList<>());
-                l.add(source.toPacketExtension(owner));
-            }
-
-            for (SsrcGroup ssrcGroup : endpointSourceSet.getSsrcGroups())
-            {
-                List<SourceGroupPacketExtension> l
-                        = sourceGroupPacketExtensions.computeIfAbsent(
-                                ssrcGroup.getMediaType().toString(),
-                                (k) -> new ArrayList<>());
-                l.add(ssrcGroup.toPacketExtension());
-            }
-        });
-
-        return new Pair<>(sourcePacketExtensions, sourceGroupPacketExtensions);
-    }
 
     /**
      * The instance of XMPP connection.
@@ -236,8 +205,7 @@ public class ColibriConferenceImpl
     {
         ColibriConferenceIQ allocateRequest;
 
-        Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
-            extensions = extractPacketExtensions(sources);
+        MapsOfExtensions extensions = new MapsOfExtensions(sources);
 
         boolean conferenceExisted;
         try
@@ -261,8 +229,8 @@ public class ColibriConferenceImpl
                     statsId,
                     peerIsInitiator,
                     contents,
-                    extensions.getFirst(),
-                    extensions.getSecond(),
+                    extensions.sourcePacketExtensions,
+                    extensions.sourceGroupPacketExtensions,
                     octoRelayIds);
 
                 allocateRequest = colibriBuilder.getRequest(jitsiVideobridge);
@@ -555,16 +523,15 @@ public class ColibriConferenceImpl
 
             boolean send = false;
 
-            Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
-                extensions = extractPacketExtensions(sources);
-            if (!extensions.getFirst().isEmpty()
-                    && colibriBuilder.addSourceInfo(extensions.getFirst(), localChannelsInfo))
+            MapsOfExtensions extensions = new MapsOfExtensions(sources);
+            if (!extensions.sourcePacketExtensions.isEmpty()
+                    && colibriBuilder.addSourceInfo(extensions.sourcePacketExtensions, localChannelsInfo))
             {
                 send = true;
             }
             // ssrcGroups
-            if (!extensions.getSecond().isEmpty()
-                    && colibriBuilder.addSourceGroupsInfo(extensions.getSecond(), localChannelsInfo))
+            if (!extensions.sourceGroupPacketExtensions.isEmpty()
+                    && colibriBuilder.addSourceGroupsInfo(extensions.sourceGroupPacketExtensions, localChannelsInfo))
             {
                 send = true;
             }
@@ -815,15 +782,14 @@ public class ColibriConferenceImpl
                             channel);
                 }
             }
-            Pair<Map<String, List<SourcePacketExtension>>, Map<String, List<SourceGroupPacketExtension>>>
-                    extensions = extractPacketExtensions(sources);
+            MapsOfExtensions extensions = new MapsOfExtensions(sources);
             // SSRCs
-            if (colibriBuilder.addSourceInfo(extensions.getFirst(), localChannelsInfo))
+            if (colibriBuilder.addSourceInfo(extensions.sourcePacketExtensions, localChannelsInfo))
             {
                 send = true;
             }
             // SSRC groups
-            if (colibriBuilder.addSourceGroupsInfo(extensions.getSecond(), localChannelsInfo))
+            if (colibriBuilder.addSourceGroupsInfo(extensions.sourceGroupPacketExtensions, localChannelsInfo))
             {
                 send = true;
             }
@@ -986,6 +952,40 @@ public class ColibriConferenceImpl
             json.put("avg_allocate_channels_req_time_nanos", allocateChannelsReqTimes.get());
 
             return json;
+        }
+    }
+
+    /**
+     * A helper class to convert a {@link ConferenceSourceMap} into a set of {@link SourcePacketExtension}s and
+     * {@link SourceGroupPacketExtension}s organized by media type.
+     */
+    private static class MapsOfExtensions
+    {
+        private final Map<String, List<SourcePacketExtension>> sourcePacketExtensions = new HashMap<>();
+        private final Map<String, List<SourceGroupPacketExtension>> sourceGroupPacketExtensions = new HashMap<>();
+
+        private MapsOfExtensions(ConferenceSourceMap sources)
+        {
+            sources.forEach((owner, endpointSourceSet) ->
+            {
+                for (Source source : endpointSourceSet.getSources())
+                {
+                    List<SourcePacketExtension> l
+                            = sourcePacketExtensions.computeIfAbsent(
+                            source.getMediaType().toString(),
+                            (k) -> new ArrayList<>());
+                    l.add(source.toPacketExtension(owner));
+                }
+
+                for (SsrcGroup ssrcGroup : endpointSourceSet.getSsrcGroups())
+                {
+                    List<SourceGroupPacketExtension> l
+                            = sourceGroupPacketExtensions.computeIfAbsent(
+                            ssrcGroup.getMediaType().toString(),
+                            (k) -> new ArrayList<>());
+                    l.add(ssrcGroup.toPacketExtension());
+                }
+            });
         }
     }
 }
