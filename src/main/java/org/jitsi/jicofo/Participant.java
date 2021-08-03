@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -513,6 +514,14 @@ public class Participant
     {
         Boolean value = this.mutedByMediaType.get(mediaType);
         return value != null && value;
+    }
+
+    /**
+     * Checks whether this {@link Participant}'s role has moderator rights.
+     */
+    public boolean hasModeratorRights()
+    {
+        return MemberRoleKt.hasModeratorRights(roomMember.getRole());
     }
 
     @Override

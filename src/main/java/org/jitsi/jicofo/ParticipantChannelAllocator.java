@@ -167,15 +167,18 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                     participant.getSourceGroupsCopy());
         }
 
-        // if participant is not av moderated but we need to let's do it
-        if (meetConference.getChatRoom().isAvModerationEnabled(MediaType.AUDIO))
+        if (chatRoom != null && !participant.hasModeratorRights())
         {
-            meetConference.muteParticipant(participant, MediaType.AUDIO);
-        }
+            // if participant is not muted, but needs to be
+            if (chatRoom.isAvModerationEnabled(MediaType.AUDIO))
+            {
+                meetConference.muteParticipant(participant, MediaType.AUDIO);
+            }
 
-        if (meetConference.getChatRoom().isAvModerationEnabled(MediaType.VIDEO))
-        {
-            meetConference.muteParticipant(participant, MediaType.VIDEO);
+            if (chatRoom.isAvModerationEnabled(MediaType.VIDEO))
+            {
+                meetConference.muteParticipant(participant, MediaType.VIDEO);
+            }
         }
     }
 
