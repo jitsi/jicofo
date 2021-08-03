@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference.source
 
 import org.jitsi.jicofo.ConferenceConfig
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.Jid
 import java.lang.IllegalStateException
@@ -206,7 +207,7 @@ class ValidatingConferenceSourceMap(
     companion object {
 
         /**
-         * Checks if a give [EndpointSourceSet] is internally valid. The checks include:
+         * Checks if a given [EndpointSourceSet] is internally valid. The checks include:
          * -- FID groups have exactly 2 SSRCs
          * -- Grouped sources have an MSID
          * -- Sources within a group have the same MSID
@@ -244,27 +245,32 @@ class ValidatingConferenceSourceMap(
                 }
             }
 
-            // This groups all sources according to the extended group that they belong to, i.e. a SIM group gets
-            // associated with all of its sources plus the sources in FID groups associated with the SIM group's
-            // sources. For example given these groups:
-            // SIM(1, 2, 3)
-            // FID(1, 4)
-            // FID(2, 5)
-            // FID(3, 6)
-            // FID(111, 222)
-            // And non-grouped source 333 this will associate the SIM group with sources 1..6, the lonely FID group
-            // with sources 111 and 222, and a dummy single-source group with source 333.
-            //
-            // This is technically O(s*g^2) where s is the number of sources and g is the number of groups. But in
-            // practice both s and g are very small (at most 20 and 4 respectively).
-            val grouped: Map<SsrcGroup, List<Source>> =
-                endpointSourceSet.sources.groupBy { groupBySimulcastGroup(it.ssrc, endpointSourceSet.ssrcGroups) }
+            // Audio and video sources can have the same MSID.
+            listOf(MediaType.AUDIO, MediaType.VIDEO).forEach { mediaType ->
+                // This groups all sources according to the extended group that they belong to, i.e. a SIM group gets
+                // associated with all of its sources plus the sources in FID groups associated with the SIM group's
+                // sources. For example given these groups:
+                // SIM(1, 2, 3)
+                // FID(1, 4)
+                // FID(2, 5)
+                // FID(3, 6)
+                // FID(111, 222)
+                // And non-grouped source 333 this will associate the SIM group with sources 1..6, the lonely FID group
+                // with sources 111 and 222, and a dummy single-source group with source 333.
+                //
+                // This is technically O(s*g^2) where s is the number of sources and g is the number of groups. But in
+                // practice both s and g are very small (at most 20 and 4 respectively).
+                val grouped: Map<SsrcGroup, List<Source>> =
+                    endpointSourceSet.sources
+                        .filter { it.mediaType == mediaType }
+                        .groupBy { groupBySimulcastGroup(it.ssrc, endpointSourceSet.ssrcGroups) }
 
-            // Here we check for MSID conflicts, i.e. we make sure that each group has a unique MSID.
-            val msidsSeen = mutableSetOf<String?>()
-            grouped.values.map { it[0] }.forEach { source ->
-                if (msidsSeen.contains(source.msid)) throw MsidConflictException(source.msid ?: "NONE")
-                msidsSeen.add(source.msid)
+                // Here we check for MSID conflicts, i.e. we make sure that each group has a unique MSID.
+                val msidsSeen = mutableSetOf<String?>()
+                grouped.values.map { it[0] }.forEach { source ->
+                    if (msidsSeen.contains(source.msid)) throw MsidConflictException(source.msid ?: "NONE")
+                    msidsSeen.add(source.msid)
+                }
             }
         }
 

@@ -40,7 +40,6 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
         val s5 = Source(5, VIDEO, cname = cname, msid = msid)
         val s6 = Source(6, VIDEO, cname = cname, msid = msid)
         val s7 = Source(7, AUDIO)
-        val s8 = Source(8, AUDIO, msid = "differentMsid")
         val sources = setOf(s1, s2, s3, s4, s5, s6, s7)
 
         val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
@@ -226,6 +225,30 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         shouldThrow<MsidConflictException> {
                             conferenceSources.tryToAdd(jid1, endpointSourceSet)
                         }
+                    }
+                }
+                context("Audio and video can have the same MSID") {
+                    context("With no MSID") {
+                        val sourceSet = EndpointSourceSet(
+                            setOf(
+                                Source(1, AUDIO),
+                                Source(2, VIDEO)
+                            )
+                        )
+                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                    }
+                    context("With MSID and no groups") {
+                        val sourceSet = EndpointSourceSet(setOf(s1,  Source(111, AUDIO, msid = msid)))
+
+                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                    }
+                    context("With MSID and groups") {
+                        val sourceSet = EndpointSourceSet(
+                            sources + Source(111, AUDIO, msid = msid),
+                            groups
+                        )
+
+                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
                     }
                 }
             }
