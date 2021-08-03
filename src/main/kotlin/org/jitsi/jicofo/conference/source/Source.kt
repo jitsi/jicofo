@@ -63,15 +63,16 @@ data class Source(
     ) = SourcePacketExtension().apply {
         ssrc = this@Source.ssrc
         if (owner != null || videoType != null) {
-            SSRCInfoPacketExtension().also {
-                if (owner != null) {
-                    it.owner = owner
+            addChildExtension(
+                SSRCInfoPacketExtension().apply {
+                    if (owner != null) {
+                        this.owner = owner
+                    }
+                    if (videoType != null) {
+                        this.videoType = videoType
+                    }
                 }
-                if (videoType != null) {
-                    it.videoType = videoType
-                }
-                addChildExtension(it)
-            }
+            )
         }
 
         msid?.let {

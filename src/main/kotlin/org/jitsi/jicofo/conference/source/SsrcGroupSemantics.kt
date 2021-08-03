@@ -17,6 +17,7 @@ package org.jitsi.jicofo.conference.source
 
 import kotlin.jvm.Throws
 
+/** The supported semantics for [SsrcGroup] */
 enum class SsrcGroupSemantics {
     /** Simulcast. */
     Sim,

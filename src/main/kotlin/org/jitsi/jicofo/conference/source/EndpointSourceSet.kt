@@ -24,7 +24,7 @@ import org.jxmpp.jid.Jid
 import java.lang.IllegalArgumentException
 import kotlin.jvm.Throws
 
-/** A set [Source]s and [SsrcGroup]s (optionally) associated with a specific endpoint (identified by [owner]). */
+/** A set of [Source]s and [SsrcGroup]s, usually associated with an endpoint. */
 data class EndpointSourceSet(
     val sources: Set<Source> = emptySet(),
     val ssrcGroups: Set<SsrcGroup> = emptySet(),
