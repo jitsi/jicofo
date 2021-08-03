@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp.util;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -40,25 +40,6 @@ import static org.apache.commons.lang3.StringUtils.*;
  */
 public class SSRCSignaling
 {
-    /**
-     * The constant value used as owner attribute value of
-     * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
-     */
-    public static final Jid SSRC_OWNER_JVB;
-
-    static
-    {
-        try
-        {
-            SSRC_OWNER_JVB = JidCreate.from("jvb");
-        }
-        catch (XmppStringprepException e)
-        {
-            // cannot happen
-            throw new RuntimeException(e);
-        }
-    }
-
     /**
      * Copies value of "<parameter>" SSRC child element. The parameter to be
      * copied must exist in both source and destination SSRCs.
@@ -225,14 +206,6 @@ public class SSRCSignaling
         return trackId;
     }
 
-    public static String getVideoType(SourcePacketExtension ssrcPe)
-    {
-        SSRCInfoPacketExtension ssrcInfo
-            = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
-
-        return ssrcInfo != null ? ssrcInfo.getVideoType() : null;
-    }
-
     /**
      * Merges the first valid video stream into the first valid audio stream
      * described in <tt>MediaSourceMap</tt>. A valid media stream is the one that
@@ -330,21 +303,5 @@ public class SSRCSignaling
             }
         }
         return ownerMapping;
-    }
-
-
-    public static void setSSRCVideoType( SourcePacketExtension     ssrcPe,
-                                         String                 videoType)
-    {
-        SSRCInfoPacketExtension ssrcInfo
-            = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
-
-        if (ssrcInfo == null)
-        {
-            ssrcInfo = new SSRCInfoPacketExtension();
-            ssrcPe.addChildExtension(ssrcInfo);
-        }
-
-        ssrcInfo.setVideoType(videoType);
     }
 }

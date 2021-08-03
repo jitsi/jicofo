@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.lipsynchack;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
@@ -105,7 +105,7 @@ public class LipSyncHack implements OperationSetJingle
             // Return empty to avoid null checks
             return new MediaSourceMap();
         }
-        return p.getSources().toMediaSourceMap().getSources();
+        return LipSyncHackUtilsKt.toMediaSourceMap(p.getSources()).getSources();
     }
 
     /**
@@ -124,7 +124,7 @@ public class LipSyncHack implements OperationSetJingle
                                              Jid ownerJid)
     {
         // Do not merge JVBs streams (they are only used for RTCP if anything).
-        if (SSRCSignaling.SSRC_OWNER_JVB.equals(ownerJid))
+        if (ParticipantChannelAllocator.SSRC_OWNER_JVB.equals(ownerJid))
         {
             return false;
         }
@@ -271,7 +271,7 @@ public class LipSyncHack implements OperationSetJingle
     @Override
     public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
     {
-        SourceMapAndGroupMap sourceMapAndGroupMap = sources.toMediaSourceMap();
+        SourceMapAndGroupMap sourceMapAndGroupMap = LipSyncHackUtilsKt.toMediaSourceMap(sources);
         MediaSourceMap ssrcMap = sourceMapAndGroupMap.getSources();
 
         Jid mucJid = session.getAddress();
@@ -304,7 +304,7 @@ public class LipSyncHack implements OperationSetJingle
             }
         }
         jingleImpl.sendAddSourceIQ(
-                ConferenceSourceMap.fromMediaSourceMap(
+                LipSyncHackUtilsKt.fromMediaSourceMap(
                         ssrcMap,
                         sourceMapAndGroupMap.getGroups()),
                 session);

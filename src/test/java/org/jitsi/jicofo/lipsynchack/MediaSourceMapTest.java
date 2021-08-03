@@ -15,12 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-
-import org.jitsi.protocol.xmpp.util.*;
 
 import org.junit.*;
 import org.junit.runner.*;

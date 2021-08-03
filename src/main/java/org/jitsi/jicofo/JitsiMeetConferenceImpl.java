@@ -24,6 +24,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;

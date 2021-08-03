@@ -15,10 +15,6 @@
  */
 package org.jitsi.jicofo.conference.source
 
-import org.jitsi.protocol.xmpp.util.MediaSourceGroupMap
-import org.jitsi.protocol.xmpp.util.MediaSourceMap
-import org.jitsi.protocol.xmpp.util.SSRCSignaling
-import org.jitsi.protocol.xmpp.util.SourceGroup
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
@@ -119,22 +115,6 @@ open class ConferenceSourceMap(
         return extensions
     }
 
-    /** This is temporary until we fully transition to [ConferenceSourceMap], etc. */
-    fun toMediaSourceMap(): SourceMapAndGroupMap {
-        val sources = MediaSourceMap()
-        val groups = MediaSourceGroupMap()
-
-        forEach { (owner, endpointSourceSet) ->
-            endpointSourceSet.sources.forEach { source ->
-                sources.addSource(source.mediaType.toString(), source.toPacketExtension(owner))
-            }
-            endpointSourceSet.ssrcGroups.forEach { group ->
-                groups.addSourceGroup("video", SourceGroup(group.toPacketExtension()))
-            }
-        }
-        return SourceMapAndGroupMap(sources, groups)
-    }
-
     fun copy(): ConferenceSourceMap = ConferenceSourceMap(endpointSourceSets.toMutableMap())
 
     fun removeInjected() = this.apply {
@@ -145,69 +125,6 @@ open class ConferenceSourceMap(
             } else {
                 endpointSourceSets[owner] = withoutInjected
             }
-        }
-    }
-
-    companion object {
-
-        /** This is temporary until we fully transition to [ConferenceSourceMap], etc. */
-        @JvmStatic
-        fun fromMediaSourceMap(
-            mediaSourceMap: MediaSourceMap,
-            mediaSourceGroupMap: MediaSourceGroupMap
-        ): ConferenceSourceMap {
-            val sourcesByEndpoint = mutableMapOf<Jid?, MutableSet<Source>>()
-            val ssrcGroupsByEndpoint = mutableMapOf<Jid?, MutableSet<SsrcGroup>>()
-
-            mediaSourceMap.mediaTypes.forEach { mediaType ->
-                val sourcePacketExtensions = mediaSourceMap.getSourcesForMedia(mediaType)
-                sourcePacketExtensions.forEach { sourcePacketExtension ->
-                    val owner = SSRCSignaling.getSSRCOwner(sourcePacketExtension)
-                    val ownerSources = sourcesByEndpoint.computeIfAbsent(owner) { mutableSetOf() }
-                    ownerSources.add(Source(MediaType.parseString(mediaType), sourcePacketExtension))
-                }
-            }
-
-            mediaSourceGroupMap.mediaTypes.forEach { mediaType ->
-                mediaSourceGroupMap.getSourceGroupsForMedia(mediaType).forEach { sourceGroup ->
-                    val semantics = SsrcGroupSemantics.fromString(sourceGroup.semantics)
-                    val sources = sourceGroup.sources.map { it.ssrc }.toList()
-                    // Try to find the owner encoded in XML in the SourceGroup
-                    var owner = sourceGroup.sources.map { SSRCSignaling.getSSRCOwner(it) }.filterNotNull().firstOrNull()
-                    if (owner == null) {
-                        // Otherwise try to find it based on the sources from the other map.
-                        sourcesByEndpoint.forEach { (endpoint, endpointSources) ->
-                            sources.forEach { groupSource ->
-                                if (endpointSources.map { it.ssrc }.contains(groupSource)) {
-                                    owner = endpoint
-                                }
-                            }
-                        }
-                    }
-
-                    val ownerSsrcGroups = ssrcGroupsByEndpoint.computeIfAbsent(owner) { mutableSetOf() }
-                    ownerSsrcGroups.add(SsrcGroup(semantics, sources, MediaType.parseString(mediaType)))
-                }
-            }
-
-            val endpointSourceSets = mutableMapOf<Jid?, EndpointSourceSet>()
-            sourcesByEndpoint.forEach { (owner, sources) ->
-                endpointSourceSets[owner] = EndpointSourceSet(
-                    sources,
-                    ssrcGroupsByEndpoint[owner] ?: emptySet()
-                )
-            }
-            ssrcGroupsByEndpoint.forEach { (owner, ssrcGroup) ->
-                // If the owner had sources this group would have already been added above.
-                if (endpointSourceSets.none { it.key == owner }) {
-                    endpointSourceSets[owner] = EndpointSourceSet(
-                        emptySet(),
-                        ssrcGroup,
-                    )
-                }
-            }
-
-            return ConferenceSourceMap(endpointSourceSets)
         }
     }
 }
@@ -226,8 +143,6 @@ class UnmodifiableConferenceSourceMap(
     override fun remove(owner: Jid?) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 }
-
-data class SourceMapAndGroupMap(val sources: MediaSourceMap, val groups: MediaSourceGroupMap)
 
 fun EndpointSourceSet.withoutInjected() = EndpointSourceSet(
     sources.filter { !it.injected }.toSet(),

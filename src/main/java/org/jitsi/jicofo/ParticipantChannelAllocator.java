@@ -32,6 +32,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -46,6 +48,25 @@ import java.util.*;
  */
 public class ParticipantChannelAllocator extends AbstractChannelAllocator
 {
+    /**
+     * The constant value used as owner attribute value of
+     * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
+     */
+    public static final Jid SSRC_OWNER_JVB;
+
+    static
+    {
+        try
+        {
+            SSRC_OWNER_JVB = JidCreate.from("jvb");
+        }
+        catch (XmppStringprepException e)
+        {
+            // cannot happen
+            throw new RuntimeException(e);
+        }
+    }
+
     private final Logger logger;
 
     /**
@@ -395,9 +416,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                                         "mslabel", "mixedmslabel"));
 
                         // Mark 'jvb' as SSRC owner
-                        SSRCInfoPacketExtension ssrcInfo
-                            = new SSRCInfoPacketExtension();
-                        ssrcInfo.setOwner(SSRCSignaling.SSRC_OWNER_JVB);
+                        SSRCInfoPacketExtension ssrcInfo = new SSRCInfoPacketExtension();
+                        ssrcInfo.setOwner(SSRC_OWNER_JVB);
                         ssrcCopy.addChildExtension(ssrcInfo);
 
                         rtpDescPe.addChildExtension(ssrcCopy);

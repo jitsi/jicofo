@@ -17,12 +17,12 @@
  */
 package org.jitsi.jicofo.conference.source
 
-import org.jitsi.protocol.xmpp.util.SSRCSignaling
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.jxmpp.jid.Jid
 
 fun ConferenceSourceMap.numSourcesOfType(mediaType: MediaType) =
@@ -31,6 +31,7 @@ fun ConferenceSourceMap.numSourceGroupsOfype(mediaType: MediaType) =
     values.flatMap { it.ssrcGroups }.count { it.mediaType == mediaType }
 fun EndpointSourceSet.getFirstSourceOfType(mediaType: MediaType) = sources.firstOrNull { it.mediaType == mediaType }
 
+fun SourcePacketExtension.getOwner() = getFirstChildOfType(SSRCInfoPacketExtension::class.java)?.owner
 
 /** Parse a [ConferenceSourceMap] from a list of Jingle contents, trusting the "owner" field encoded in the
  * sources. We only need this for testing, because normally we do not trust the "owner" field and assign the
@@ -50,7 +51,7 @@ fun parseConferenceSourceMap(contents: List<ContentPacketExtension>): Conference
         // "description" elements, so this is reproduced here. I don't know which one is correct and/or used.
         rtpDesc?.let {
             rtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
-                val owner = SSRCSignaling.getSSRCOwner(spe)
+                val owner = spe.getOwner()
                 val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet() }
                 sourceSets[owner] =
                     EndpointSourceSet(ownerSourceSet.sources + Source(mediaType, spe), ownerSourceSet.ssrcGroups)
@@ -64,7 +65,7 @@ fun parseConferenceSourceMap(contents: List<ContentPacketExtension>): Conference
             }
         }
         content.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
-            val owner = SSRCSignaling.getSSRCOwner(spe)
+            val owner = spe.getOwner()
             val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet() }
             sourceSets[owner] =
                 EndpointSourceSet(ownerSourceSet.sources + Source(mediaType, spe), ownerSourceSet.ssrcGroups)

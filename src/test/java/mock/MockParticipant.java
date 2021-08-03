@@ -17,6 +17,7 @@
  */
 package mock;
 
+import edu.umd.cs.findbugs.annotations.*;
 import mock.muc.*;
 import mock.util.*;
 import mock.xmpp.*;
@@ -382,6 +383,7 @@ public class MockParticipant
         }
     }
 
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public void audioSourceRemove()
     {
         // Remove 1 audio source.
