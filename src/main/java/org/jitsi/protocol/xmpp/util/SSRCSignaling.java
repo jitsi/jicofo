@@ -22,9 +22,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
-import org.jitsi.jicofo.*;
-
-import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -80,62 +77,6 @@ public class SSRCSignaling
         if (srcParam != null && (dstParam = getParam(dst, name)) != null)
         {
             dstParam.setValue(srcParam.getValue());
-        }
-    }
-
-    /**
-     * Replaces all instances of {@link SourcePacketExtension}s held by
-     * {@link SourceGroupPacketExtension}s in the given
-     * {@link MediaSourceGroupMap} with the corresponding ones from the given
-     * {@link MediaSourceMap}<tt></tt>.
-     *
-     * @param groups <tt>MediaSourceGroupMap</tt>
-     * @param sources <tt>MediaSourceMap</tt>
-     *
-     * @throws InvalidSSRCsException if there's no corresponding
-     * {@link SourcePacketExtension} found in the <tt>sources</tt> for any
-     * source in the <tt>groups</tt>.
-     */
-    static public void copySourceParamsToGroups(
-            MediaSourceGroupMap    groups,
-            MediaSourceMap         sources)
-        throws InvalidSSRCsException
-    {
-        for (String mediaType : groups.getMediaTypes())
-        {
-            List<SourceGroup> mediaGroups
-                = groups.getSourceGroupsForMedia(mediaType);
-            List<SourceGroup> newMediaGroups
-                = new ArrayList<>(mediaGroups.size());
-
-            for (SourceGroup group : mediaGroups)
-            {
-                List<SourcePacketExtension> groupSources = group.getSources();
-                List<SourcePacketExtension> newSources
-                    = new ArrayList<>(groupSources.size());
-
-                for (SourcePacketExtension srcInGroup : groupSources)
-                {
-                    SourcePacketExtension sourceInMedia
-                        = sources.findSource(mediaType, srcInGroup);
-
-                    if (sourceInMedia == null)
-                    {
-                        throw new InvalidSSRCsException(
-                                "Source " + srcInGroup
-                                    + " not found in '" + mediaType
-                                    + "' for group: " + group);
-                    }
-
-                    newSources.add(sourceInMedia);
-                }
-
-                newMediaGroups.add(
-                        new SourceGroup(group.getSemantics(), newSources));
-            }
-
-            mediaGroups.clear();
-            mediaGroups.addAll(newMediaGroups);
         }
     }
 
@@ -391,56 +332,6 @@ public class SSRCSignaling
         return ownerMapping;
     }
 
-    /**
-     * From the given list of {@link SourceGroup}s select those that share
-     * the given MSID value.
-     *
-     * @param groups a {@link List} of {@link SourceGroup} to be filtered out.
-     * @param groupMsid a {@link String} with the MSID value to be used as
-     *        selector.
-     *
-     * @return a {@link List} of {@link SourceGroup}.
-     */
-    public static List<SourceGroup> selectWithMsid(
-        List<SourceGroup>    groups,
-        String               groupMsid)
-    {
-        if (isBlank(groupMsid))
-        {
-            throw new IllegalArgumentException("Null or empty 'groupMsid'");
-        }
-
-        // FIXME change once migrated to Java 8
-        // return groups.stream()
-        //     .filter(group -> group.getGroupMsid().equalsIgnoreCase(groupMsid)
-        //     .collect(Collectors.toList());
-
-        List<SourceGroup> result = new LinkedList<>();
-
-        for (SourceGroup group : groups)
-        {
-            if (groupMsid.equalsIgnoreCase(group.getGroupMsid()))
-            {
-                result.add(group);
-            }
-        }
-
-        return result;
-    }
-
-    public static void setSSRCOwner(SourcePacketExtension ssrcPe, Jid owner)
-    {
-        SSRCInfoPacketExtension ssrcInfo
-            = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
-
-        if (ssrcInfo == null)
-        {
-            ssrcInfo = new SSRCInfoPacketExtension();
-            ssrcPe.addChildExtension(ssrcInfo);
-        }
-
-        ssrcInfo.setOwner(owner);
-    }
 
     public static void setSSRCVideoType( SourcePacketExtension     ssrcPe,
                                          String                 videoType)

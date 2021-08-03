@@ -23,9 +23,6 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.*;
-
-import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * The map of media <tt>SourcePacketExtension</tt> encapsulates various
@@ -132,31 +129,6 @@ public class MediaSourceMap
     }
 
     /**
-     * Creates a deep copy of this <tt>MediaSourceMap</tt>.
-     *
-     * @return a new instance of <tt>MediaSourceMap</tt> which contains copies of
-     *         <tt>SourcePacketExtension</tt> stored in this map.
-     */
-    public MediaSourceMap copyDeep()
-    {
-        Map<String, CopyOnWriteArrayList<SourcePacketExtension>> mapCopy
-            = new HashMap<>();
-
-        for (Map.Entry<String, CopyOnWriteArrayList<SourcePacketExtension>> entry : sources.entrySet())
-        {
-            CopyOnWriteArrayList<SourcePacketExtension> sourcesCopy
-                = entry.getValue().stream()
-                    .map(SourcePacketExtension::copy)
-                    .collect(
-                        Collectors.toCollection(CopyOnWriteArrayList::new));
-
-            mapCopy.put(entry.getKey(), sourcesCopy);
-        }
-
-        return new MediaSourceMap(mapCopy);
-    }
-
-    /**
      * Looks for SSRC in this map.
      *
      * @param mediaType the media type of the SSRC we're looking for.
@@ -172,57 +144,6 @@ public class MediaSourceMap
     {
         return getSourcesForMedia(mediaType).stream()
             .filter(source -> source.sourceEquals(sourceToFind))
-            .findFirst()
-            .orElse(null);
-    }
-
-    public SourcePacketExtension findSourceViaSsrc(String mediaType, long ssrc)
-    {
-        return getSourcesForMedia(mediaType).stream()
-            .filter(source -> source.hasSSRC() && source.getSSRC() == ssrc)
-            .findFirst()
-            .orElse(null);
-    }
-
-    /**
-     * Finds {@link SourcePacketExtension} that have the given MSID.
-     *
-     * @param mediaType the type of the media to be searched.
-     * @param groupMsid the MSID to be found.
-     *
-     * @return a {@link List} of {@link SourcePacketExtension} that matches
-     * the given MSID.
-     */
-    public List<SourcePacketExtension> findSourcesWithMsid(
-            String mediaType, String groupMsid)
-    {
-        if (isBlank(groupMsid))
-        {
-            throw new IllegalArgumentException("Null or empty 'groupMsid'");
-        }
-
-        List<SourcePacketExtension> mediaSources
-            = getSourcesForMedia(mediaType);
-
-        return mediaSources.stream()
-            .filter(
-                source -> groupMsid.equalsIgnoreCase(
-                    SSRCSignaling.getMsid(source)))
-            .collect(Collectors.toCollection(LinkedList::new));
-    }
-
-    /**
-     * Looks for given source and returns type of the media for the first
-     * match found.
-     * @param source the source to be found
-     * @return type of the media of the SSRC identified by the given number or
-     * <tt>null</tt> if not found.
-     */
-    public String getMediaTypeForSource(SourcePacketExtension source)
-    {
-        Set<String> mediaTypes = getMediaTypes();
-        return mediaTypes.stream()
-            .filter(mediaType -> findSource(mediaType, source) != null)
             .findFirst()
             .orElse(null);
     }
