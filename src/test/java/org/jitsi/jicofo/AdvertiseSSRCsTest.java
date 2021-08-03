@@ -23,7 +23,6 @@ import mock.util.*;
 
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.*;
-import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.junit.*;
 import org.junit.runner.*;
@@ -56,11 +55,9 @@ public class AdvertiseSSRCsTest
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
-        user1.setSsrcVideoType(SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE);
         user1.join(chatRoom);
 
         MockParticipant user2 = new MockParticipant("User2");
-        user2.setSsrcVideoType(SSRCInfoPacketExtension.SCREEN_VIDEO_TYPE);
         user2.join(chatRoom);
 
         // Accept invite with all users
@@ -81,9 +78,6 @@ public class AdvertiseSSRCsTest
         assertNotNull(user1User2AudioSource);
         Source user1User2VideoSource = ExtensionsKt.getFirstSourceOfType(user1User2Sources, MediaType.VIDEO);
         assertNotNull(user1User2VideoSource);
-        assertEquals(
-            user2.getSsrcVideoType(),
-            user1User2VideoSource.getVideoType());
 
         // From user 2 perspective
         EndpointSourceSet user2User1Sources = user2.getRemoteSources().get(user1.getMyJid());
@@ -91,9 +85,6 @@ public class AdvertiseSSRCsTest
         assertNotNull(user2User1AudioSource);
         Source user2User1VideoSource = ExtensionsKt.getFirstSourceOfType(user2User1Sources, MediaType.VIDEO);
         assertNotNull(user2User1VideoSource);
-        assertEquals(
-            user1.getSsrcVideoType(),
-            user2User1VideoSource.getVideoType());
 
         user2.leave();
 
@@ -132,11 +123,9 @@ public class AdvertiseSSRCsTest
 
         // Join with all users
         MockParticipant user1 = new MockParticipant("User1");
-        user1.setSsrcVideoType(SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE);
         user1.join(chat);
 
         MockParticipant user2 = new MockParticipant("User2");
-        user2.setSsrcVideoType(SSRCInfoPacketExtension.SCREEN_VIDEO_TYPE);
         user2.join(chat);
 
         // Accept invite with all users
@@ -189,10 +178,10 @@ public class AdvertiseSSRCsTest
 
         // Accept invite with all users
         long u1VideoSSRC = MockParticipant.nextSSRC();
-        user1.addLocalVideoSSRC(u1VideoSSRC, null);
+        user1.addLocalVideoSSRC(u1VideoSSRC);
 
         long u1VideoSSRC2 = MockParticipant.nextSSRC();
-        user1.addLocalVideoSSRC(u1VideoSSRC2, null);
+        user1.addLocalVideoSSRC(u1VideoSSRC2);
 
         assertNotNull(user1.acceptInvite(4000));
 

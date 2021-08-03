@@ -30,7 +30,6 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.packet.*;
@@ -75,8 +74,6 @@ public class MockParticipant
     private Jid myJid;
 
     private final ConferenceSourceMap localSSRCs = new ConferenceSourceMap();
-
-    private String ssrcVideoType = SSRCInfoPacketExtension.CAMERA_VIDEO_TYPE;
 
     private final BlockingQueue<JingleIQ> ssrcAddQueue = new LinkedBlockingQueue<>();
 
@@ -184,7 +181,7 @@ public class MockParticipant
         video.addChildExtension(videoRtpDesc);
 
         // Add video SSRC
-        addLocalVideoSSRC(nextSSRC(), ssrcVideoType);
+        addLocalVideoSSRC(nextSSRC());
 
         localSSRCs.values().forEach(endpointSourceSet -> {
             endpointSourceSet.getSources().forEach(source -> {
@@ -407,7 +404,7 @@ public class MockParticipant
         // Create new SSRCs
         for (int i=0; i<newSSRCs.length; i++)
         {
-            Source ssrcPe = addLocalSSRC("video", newSSRCs[i], null);
+            Source ssrcPe = addLocalSSRC("video", newSSRCs[i]);
 
             toAdd.add(new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(ssrcPe)));
         }
@@ -465,34 +462,23 @@ public class MockParticipant
         return myJid;
     }
 
-    public String getSsrcVideoType()
+    public Source addLocalSSRC(String media, long ssrc)
     {
-        return ssrcVideoType;
-    }
-
-    public void setSsrcVideoType(String ssrcVideoType)
-    {
-        this.ssrcVideoType = ssrcVideoType;
-    }
-
-    public Source addLocalSSRC(
-        String media, long ssrc, String videoType)
-    {
-        Source source = new Source(ssrc, MediaType.parseString(media), null, null, false, videoType);
+        Source source = new Source(ssrc, MediaType.parseString(media), null, null, false);
 
         localSSRCs.add(new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(source)));
 
         return source;
     }
 
-    public void addLocalVideoSSRC(long ssrc, String videoType)
+    public void addLocalVideoSSRC(long ssrc)
     {
-        addLocalSSRC("video", ssrc, videoType);
+        addLocalSSRC("video", ssrc);
     }
 
     public void addLocalAudioSSRC(long ssrc)
     {
-        addLocalSSRC("audio", ssrc, null);
+        addLocalSSRC("audio", ssrc);
     }
 
     private void removeSsrcs(ChatRoomMember member)
