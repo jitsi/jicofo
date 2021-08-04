@@ -30,6 +30,7 @@ data class EndpointSourceSet(
     val ssrcGroups: Set<SsrcGroup> = emptySet(),
 ) {
     constructor(source: Source) : this(setOf(source))
+    constructor(ssrcGroup: SsrcGroup) : this(ssrcGroups = setOf(ssrcGroup))
 
     /**
      * Whether this set of sources is empty.
@@ -44,6 +45,9 @@ data class EndpointSourceSet(
     fun toJingle(owner: Jid? = null): List<ContentPacketExtension> = toJingle(mutableMapOf(), owner)
 
     companion object {
+        /** An [EndpointSourceSet] instance with no sources or source groups */
+        val EMPTY = EndpointSourceSet()
+
         /**
          * Parses a list of Jingle [ContentPacketExtension]s into an [EndpointSourceSet].
          *
@@ -126,7 +130,7 @@ private fun ContentPacketExtension.getOrCreateRtpDescription() =
 
 operator fun EndpointSourceSet?.plus(other: EndpointSourceSet?): EndpointSourceSet =
     when {
-        this == null && other == null -> EndpointSourceSet(emptySet(), emptySet())
+        this == null && other == null -> EndpointSourceSet.EMPTY
         this == null -> other!!
         other == null -> this
         else -> EndpointSourceSet(
@@ -137,3 +141,12 @@ operator fun EndpointSourceSet?.plus(other: EndpointSourceSet?): EndpointSourceS
 
 operator fun EndpointSourceSet.minus(other: EndpointSourceSet): EndpointSourceSet =
     EndpointSourceSet(sources - other.sources, ssrcGroups - other.ssrcGroups)
+
+operator fun EndpointSourceSet.plus(sources: Set<Source>) =
+    EndpointSourceSet(this.sources + sources, this.ssrcGroups)
+
+operator fun EndpointSourceSet.plus(source: Source) =
+    EndpointSourceSet(this.sources + source, this.ssrcGroups)
+
+operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) =
+    EndpointSourceSet(this.sources, this.ssrcGroups + ssrcGroup)

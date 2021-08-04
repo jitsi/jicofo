@@ -344,8 +344,7 @@ class SourcesTest : ShouldSpec() {
                     context("Without remaining") {
                         val conferenceSourceMap = ConferenceSourceMap(
                             endpoint1Jid to EndpointSourceSet(
-                                setOf(Source(1, MediaType.AUDIO, injected = true)),
-                                emptySet()
+                                setOf(Source(1, MediaType.AUDIO, injected = true))
                             )
                         ).removeInjected()
                         conferenceSourceMap.isEmpty() shouldBe true

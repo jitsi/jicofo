@@ -52,23 +52,20 @@ fun parseConferenceSourceMap(contents: List<ContentPacketExtension>): Conference
         rtpDesc?.let {
             rtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
                 val owner = spe.getOwner()
-                val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet() }
-                sourceSets[owner] =
-                    EndpointSourceSet(ownerSourceSet.sources + Source(mediaType, spe), ownerSourceSet.ssrcGroups)
+                val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet.EMPTY }
+                sourceSets[owner] = ownerSourceSet + Source(mediaType, spe)
             }
             rtpDesc.getChildExtensionsOfType(SourceGroupPacketExtension::class.java).forEach { sgpe ->
                 val ssrcGroup = SsrcGroup.fromPacketExtension(sgpe, mediaType)
                 val owner = findOwner(ssrcGroup.ssrcs[0])
-                val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet() }
-                sourceSets[owner] =
-                    EndpointSourceSet(ownerSourceSet.sources, ownerSourceSet.ssrcGroups + ssrcGroup)
+                val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet.EMPTY }
+                sourceSets[owner] = ownerSourceSet + ssrcGroup
             }
         }
         content.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
             val owner = spe.getOwner()
-            val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet() }
-            sourceSets[owner] =
-                EndpointSourceSet(ownerSourceSet.sources + Source(mediaType, spe), ownerSourceSet.ssrcGroups)
+            val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet.EMPTY }
+            sourceSets[owner] = ownerSourceSet + Source(mediaType, spe)
         }
     }
     return ConferenceSourceMap(sourceSets)

@@ -299,7 +299,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     conferenceSources.tryToRemove(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
                 }
                 context("Of all sources, groups assumed") {
-                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sources, emptySet())) shouldBe
+                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sources)) shouldBe
                         ConferenceSourceMap(jid1 to sourceSet)
                 }
                 context("Of a subset of sources") {
@@ -316,7 +316,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
                 context("A non-signaled source") {
                     shouldThrow<SourceDoesNotExistException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(setOf(Source(1111, AUDIO))))
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(Source(1111, AUDIO)))
                     }
                 }
                 context("A non-signaled ssrc-group") {
@@ -346,18 +346,18 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 context("Removing only part of a simulcast group's sources") {
                     // This matches multiple failure conditions (MSIF conflict, missing source from a group)
                     shouldThrow<ValidationFailedException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(setOf(s1)))
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(s1))
                     }
                 }
                 context("Removing a group, but not its sources") {
                     shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), setOf(sim)))
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(sim))
                     }
                     shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), setOf(fid1)))
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(fid1))
                     }
                     shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(emptySet(), groups))
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(ssrcGroups = groups))
                     }
                 }
             }

@@ -70,7 +70,7 @@ class ValidatingConferenceSourceMap(
      */
     @Throws(ValidationFailedException::class)
     fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): ConferenceSourceMap {
-        val existingSourceSet = this[owner] ?: EndpointSourceSet()
+        val existingSourceSet = this[owner] ?: EndpointSourceSet.EMPTY
 
         // Check for validity of the new SSRCs, and conflicts with other endpoints.
         sourcesToAdd.sources.forEach { source ->
