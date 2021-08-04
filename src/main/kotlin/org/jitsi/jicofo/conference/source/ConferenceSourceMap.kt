@@ -125,7 +125,10 @@ open class ConferenceSourceMap(
         return extensions
     }
 
-    fun removeInjected() = this.apply {
+    /**
+     * Removes all [Source]s that have the [Source.injected] flag from this map.
+     */
+    open fun removeInjected() = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, endpointSourceSet) ->
             val withoutInjected = endpointSourceSet.withoutInjected()
             if (withoutInjected.isEmpty()) {
@@ -139,20 +142,27 @@ open class ConferenceSourceMap(
 
 /**
  * A read-only version of [ConferenceSourceMap]. Attempts to modify the map will via [add], [remove] or any of the
- * standard [java.lang.Map] mutating methods will result in an exception.
+ * standard [java.util.Map] mutating methods will result in an exception.
  */
 class UnmodifiableConferenceSourceMap(
     endpointSourceSets: ConcurrentHashMap<Jid?, EndpointSourceSet>
 ) : ConferenceSourceMap(endpointSourceSets) {
     constructor(map: Map<Jid?, EndpointSourceSet>) : this(ConcurrentHashMap(map))
+
     override fun add(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
+
     override fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
+
     override fun remove(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
+
     override fun remove(owner: Jid?) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
+
+    override fun removeInjected() =
+        throw UnsupportedOperationException("removeInjected() not supported in unmodifiable view")
 }
 
 fun EndpointSourceSet.withoutInjected() = EndpointSourceSet(
