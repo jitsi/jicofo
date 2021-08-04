@@ -43,14 +43,14 @@ class ValidatingConferenceSourceMap(
     /**
      * Maps an SSRC to the JID of the endpoint that owns it. Used to detect cross-endpoint conflicts efficiently.
      *
-     * Note that since the owner is nullable [Map.containsKey] must be used when checking for.
+     * Note that since the value is nullable [Map.containsKey] must be used when checking for the existence of an entry.
      */
     private val ssrcToOwnerMap = mutableMapOf<Long, Jid?>()
 
     /**
      * Maps an MSID to the JID of the endpoint that owns it. Used to detect cross-endpoint conflicts efficiently.
      *
-     * Note that since the owner is nullable [Map.containsKey] must be used when checking for.
+     * Note that since the value is nullable [Map.containsKey] must be used when checking for the existence of an entry.
      */
     private val msidToOwnerMap = mutableMapOf<String, Jid?>()
 
