@@ -16,6 +16,7 @@ import org.jitsi.jicofo.conference.source.SourceDoesNotExistException
 import org.jitsi.jicofo.conference.source.SourceGroupDoesNotExistException
 import org.jitsi.jicofo.conference.source.SsrcAlreadyUsedException
 import org.jitsi.jicofo.conference.source.SsrcGroup
+import org.jitsi.jicofo.conference.source.SsrcGroupLimitExceededException
 import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
 import org.jitsi.jicofo.conference.source.SsrcLimitExceededException
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
@@ -77,7 +78,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("Max SSRC count limit") {
-                val conferenceSources = ValidatingConferenceSourceMap(4)
+                val conferenceSources = ValidatingConferenceSourceMap(maxSsrcsPerUser = 4)
                 context("At once") {
                     shouldThrow<SsrcLimitExceededException> {
                         conferenceSources.tryToAdd(jid1, sourceSet)
@@ -95,6 +96,28 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 
                     conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe ConferenceSourceMap(jid1 to sourceSet1)
                     shouldThrow<SsrcLimitExceededException> {
+                        conferenceSources.tryToAdd(jid1, sourceSet2)
+                    }
+                }
+            }
+            context("Max ssrc-group count limit") {
+                val conferenceSources = ValidatingConferenceSourceMap(maxSsrcGroupsPerUser = 2)
+                context("At once") {
+                    shouldThrow<SsrcGroupLimitExceededException> {
+                        conferenceSources.tryToAdd(jid1, sourceSet)
+                    }
+                }
+                context("With multiple adds") {
+                    val sourceSet1 = EndpointSourceSet(
+                        setOf(s1, s2, s3),
+                        setOf(sim)
+                    )
+                    val sourceSet2 = EndpointSourceSet(
+                        setOf(s4, s5, s6),
+                        setOf(fid1, fid2, fid3)
+                    )
+                    conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe ConferenceSourceMap(jid1 to sourceSet1)
+                    shouldThrow<SsrcGroupLimitExceededException> {
                         conferenceSources.tryToAdd(jid1, sourceSet2)
                     }
                 }

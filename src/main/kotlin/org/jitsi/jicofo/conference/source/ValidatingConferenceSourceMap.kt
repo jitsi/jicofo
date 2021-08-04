@@ -36,7 +36,8 @@ import java.lang.IllegalStateException
  * This implementation inherits the thread safety characteristics of [ConferenceSourceMap].
  */
 class ValidatingConferenceSourceMap(
-    private val maxSsrcsPerUser: Int = ConferenceConfig.config.maxSsrcsPerUser
+    private val maxSsrcsPerUser: Int = ConferenceConfig.config.maxSsrcsPerUser,
+    private val maxSsrcGroupsPerUser: Int = ConferenceConfig.config.maxSsrcGroupsPerUser
 ) : ConferenceSourceMap() {
     val logger = createLogger()
 
@@ -106,6 +107,9 @@ class ValidatingConferenceSourceMap(
                 !resultingSsrcs.containsAll(it.ssrcs) -> throw GroupContainsUnknownSourceException(it.ssrcs)
                 else -> acceptedGroups.add(it)
             }
+        }
+        if (existingSourceSet.ssrcGroups.size + acceptedGroups.size > maxSsrcGroupsPerUser) {
+            throw SsrcGroupLimitExceededException(maxSsrcGroupsPerUser)
         }
 
         val resultingSourceSet = EndpointSourceSet(resultingSources, existingSourceSet.ssrcGroups + acceptedGroups)
@@ -339,6 +343,7 @@ class ValidatingConferenceSourceMap(
 sealed class ValidationFailedException(message: String?) : Exception(message)
 class InvalidSsrcException(ssrc: Long) : ValidationFailedException("Invalid SSRC: $ssrc.")
 class SsrcLimitExceededException(limit: Int) : ValidationFailedException("SSRC limit ($limit) exceeded.")
+class SsrcGroupLimitExceededException(limit: Int) : ValidationFailedException("ssrc-group limit ($limit) exceeded.")
 class SsrcAlreadyUsedException(ssrc: Long) : ValidationFailedException("SSRC is already used: $ssrc.")
 class RequiredParameterMissingException(name: String) : ValidationFailedException(
     "Required source parameter '$name' is not present."

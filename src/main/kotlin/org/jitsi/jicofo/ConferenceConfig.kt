@@ -45,6 +45,10 @@ class ConferenceConfig {
         "jicofo.conference.max-ssrcs-per-user".from(newConfig)
     }
 
+    val maxSsrcGroupsPerUser: Int by config {
+        "jicofo.conference.max-ssrc-groups-per-user".from(newConfig)
+    }
+
     val singleParticipantTimeout: Duration by config {
         "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT".from(legacyConfig)
         "jicofo.conference.single-participant-timeout".from(newConfig)
