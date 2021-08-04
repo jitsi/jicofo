@@ -24,7 +24,6 @@ import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.protocol.xmpp.util.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;

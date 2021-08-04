@@ -224,7 +224,7 @@ class SourcesTest : ShouldSpec() {
                     val conferenceSourceMap = ConferenceSourceMap(endpoint1Jid to endpoint1SourceSet)
 
                     context("Without overlap in endpoints") {
-                        conferenceSourceMap.add(ConferenceSourceMap(endpoint2Jid to endpoint2SourceSet))
+                        conferenceSourceMap.add(endpoint2Jid, endpoint2SourceSet)
                         conferenceSourceMap.size shouldBe 2
                         conferenceSourceMap[endpoint1Jid] shouldBe endpoint1SourceSet
                         conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
@@ -359,7 +359,7 @@ class SourcesTest : ShouldSpec() {
                     val unmodifiable = conferenceSourceMap.unmodifiable
                     unmodifiable[endpoint1Jid] shouldBe endpoint1SourceSet
 
-                    conferenceSourceMap.add(ConferenceSourceMap(endpoint1Jid to endpoint1AdditionalSourceSet))
+                    conferenceSourceMap.add(endpoint1Jid, endpoint1AdditionalSourceSet)
                     conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
                     unmodifiable[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
 

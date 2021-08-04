@@ -406,7 +406,7 @@ public class MockParticipant
         {
             Source ssrcPe = addLocalSSRC("video", newSSRCs[i]);
 
-            toAdd.add(new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(ssrcPe)));
+            toAdd.add(getMyJid(), new EndpointSourceSet(ssrcPe));
         }
 
         // Send source-add
@@ -466,7 +466,7 @@ public class MockParticipant
     {
         Source source = new Source(ssrc, MediaType.parseString(media), null, null, false);
 
-        localSSRCs.add(new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(source)));
+        localSSRCs.add(getMyJid(), new EndpointSourceSet(source));
 
         return source;
     }
