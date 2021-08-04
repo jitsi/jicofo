@@ -56,8 +56,8 @@ public abstract class AbstractParticipant
     private ConferenceSourceMap pendingRemoteSourcesToAdd = new ConferenceSourceMap();
 
     /**
-     * Remote sources that have been removed to the conference, but been signaled to this participant. Their removal is
-     * to be signaled once the Jingle session is initiated.
+     * Remote sources that have been removed from the conference, but have already been signaled to this participant.
+     * Their removal is to be signaled once the Jingle session is initiated.
      *
      * Note that if a source is added and then removed while the jingle session is initiating it will be present in both
      * {@link #pendingRemoteSourcesToAdd} and {@link #pendingRemoteSourcesToRemove}. As a result we'll unnecessarily
