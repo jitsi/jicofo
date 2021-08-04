@@ -69,6 +69,11 @@ open class ConferenceSourceMap(
         }
     }
 
+    /** Adds [endpointSourceSet] as sources owned by [owner]. */
+    open fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) {
+        endpointSourceSets[owner] += endpointSourceSet
+    }
+
     /** Removes the sources of another [ConferenceSourceMap] from this one. */
     open fun remove(other: ConferenceSourceMap) {
         other.endpointSourceSets.forEach { (owner, endpointSourceSet) ->
@@ -137,6 +142,8 @@ class UnmodifiableConferenceSourceMap(
     endpointSourceSets: MutableMap<Jid?, EndpointSourceSet>
 ) : ConferenceSourceMap(endpointSourceSets) {
     override fun add(other: ConferenceSourceMap) =
+        throw UnsupportedOperationException("add() not supported in unmodifiable view")
+    override fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
     override fun remove(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")

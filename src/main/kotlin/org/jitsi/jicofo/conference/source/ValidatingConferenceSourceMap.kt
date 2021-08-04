@@ -178,12 +178,19 @@ class ValidatingConferenceSourceMap(
 
     /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
     override fun add(other: ConferenceSourceMap) = super.add(other).also {
-        other.forEach { (owner, endpointSourceSet) ->
-            endpointSourceSet.sources.forEach { source ->
-                ssrcToOwnerMap[source.ssrc] = owner
-                source.msid?.let {
-                    msidToOwnerMap[it] = owner
-                }
+        other.forEach { (owner, endpointSourceSet) -> sourceSetAdded(owner, endpointSourceSet) }
+    }
+
+    /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
+    override fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) = super.add(owner, endpointSourceSet).also {
+        sourceSetAdded(owner, endpointSourceSet)
+    }
+
+    private fun sourceSetAdded(owner: Jid?, endpointSourceSet: EndpointSourceSet) {
+        endpointSourceSet.sources.forEach { source ->
+            ssrcToOwnerMap[source.ssrc] = owner
+            source.msid?.let {
+                msidToOwnerMap[it] = owner
             }
         }
     }
