@@ -190,16 +190,32 @@ class ValidatingConferenceSourceMap(
 
     /** Override [remove] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
     override fun remove(other: ConferenceSourceMap) = super.remove(other).also {
-        other.forEach { (owner, ownerRemovedSourceSet) ->
-            val ownerRemainingSourceSet = this[owner]
-            ownerRemovedSourceSet.sources.forEach { source ->
-                ssrcToOwnerMap.remove(source.ssrc)
-                source.msid?.let { sourceMsid ->
-                    if (ownerRemainingSourceSet == null ||
-                        ownerRemainingSourceSet.sources.none { it.msid == sourceMsid }
-                    ) {
-                        msidToOwnerMap.remove(sourceMsid)
-                    }
+        other.forEach { (owner, ownerRemovedSourceSet) -> sourceSetRemoved(owner, ownerRemovedSourceSet) }
+    }
+
+    /** Override [remove] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
+    override fun remove(owner: Jid?): EndpointSourceSet? {
+        val ownerRemovedSourceSet = super.remove(owner)
+        ownerRemovedSourceSet?.let {
+            sourceSetRemoved(owner, it)
+        }
+        return ownerRemovedSourceSet
+    }
+
+    /**
+     * Update the local maps ([ssrcToOwnerMap] and [msidToOwnerMap] after the removal of a source set.
+     * @param owner the owner of the removed source set.
+     * @param endpointSourceSet the source set which has already been removed.
+     */
+    private fun sourceSetRemoved(owner: Jid?, endpointSourceSet: EndpointSourceSet) {
+        val ownerRemainingSourceSet = this[owner]
+        endpointSourceSet.sources.forEach { source ->
+            ssrcToOwnerMap.remove(source.ssrc)
+            source.msid?.let { sourceMsid ->
+                if (ownerRemainingSourceSet == null ||
+                    ownerRemainingSourceSet.sources.none { it.msid == sourceMsid }
+                ) {
+                    msidToOwnerMap.remove(sourceMsid)
                 }
             }
         }
