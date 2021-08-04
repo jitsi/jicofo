@@ -808,15 +808,12 @@ public class JitsiMeetConferenceImpl
     @NotNull
     ConferenceSourceMap getSourcesForParticipant(@NotNull Participant participant)
     {
-        EndpointSourceSet e = conferenceSources.get(participant.getMucJid());
-        if (e == null)
-        {
-            return new ConferenceSourceMap();
-        }
-        else
-        {
-            return new ConferenceSourceMap(participant.getMucJid(), e).unmodifiable();
-        }
+        EndpointSourceSet participantSourcesSet = conferenceSources.get(participant.getMucJid());
+        ConferenceSourceMap participantSourceMap
+                = participantSourcesSet == null
+                    ? new ConferenceSourceMap()
+                    : new ConferenceSourceMap(participant.getMucJid(), participantSourcesSet);
+        return participantSourceMap.unmodifiable();
     }
 
     /**
@@ -1810,7 +1807,7 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        return allSources;
+        return allSources.unmodifiable();
     }
 
     /**

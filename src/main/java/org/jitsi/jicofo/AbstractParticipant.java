@@ -139,7 +139,7 @@ public abstract class AbstractParticipant
      */
     public ConferenceSourceMap getPendingRemoteSourcesToAdd()
     {
-        return pendingRemoteSourcesToAdd;
+        return pendingRemoteSourcesToAdd.unmodifiable();
     }
 
     /**
@@ -147,7 +147,7 @@ public abstract class AbstractParticipant
      */
     public ConferenceSourceMap getPendingRemoteSourcesToRemove()
     {
-        return pendingRemoteSourcesToRemove;
+        return pendingRemoteSourcesToRemove.unmodifiable();
     }
 
     /**

@@ -21,27 +21,29 @@ import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jxmpp.jid.Jid
 import java.lang.UnsupportedOperationException
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A container for sources from multiple endpoints, mapped by the ID of the endpoint. This could contain sources for
  * an entire conference, or a subset.
- * This map is not thread safe.
+ *
+ * This map is thread safe. Reading and iteration are safe because the underlying map is a [ConcurrentHashMap]. The
+ * only mutating operations that are exposed require a lock on [syncRoot].
+ *
+ * Note that the [java.util.Map] mutating operations (e.g. [java.util.Map.put]) are still visible in Java, but they
+ * are not meant to be used and will result in an exception.
  */
 open class ConferenceSourceMap(
     /**
      * The sources mapped by endpoint ID.
+     * Note that this primary constructor uses the provided [ConcurrentHashMap] as the underlying map.
      */
-    private val endpointSourceSets: MutableMap<Jid?, EndpointSourceSet> = mutableMapOf()
+    private val endpointSourceSets: ConcurrentHashMap<Jid?, EndpointSourceSet> = ConcurrentHashMap()
 ) : Map<Jid?, EndpointSourceSet> by endpointSourceSets {
 
-    constructor(vararg entries: Pair<Jid?, EndpointSourceSet>) : this(
-        mutableMapOf<Jid?, EndpointSourceSet>().apply {
-            entries.forEach { (k, v) ->
-                this[k] = v
-            }
-        }
-    )
-
+    /** C */
+    constructor(map: Map<Jid?, EndpointSourceSet>) : this(ConcurrentHashMap(map))
+    constructor(vararg entries: Pair<Jid?, EndpointSourceSet>) : this(entries.toMap())
     constructor(owner: Jid?, endpointSourceSet: EndpointSourceSet) : this(owner to endpointSourceSet)
     constructor(
         owner: Jid?,
@@ -54,28 +56,34 @@ open class ConferenceSourceMap(
         groups: Set<SsrcGroup>
     ) : this(owner, EndpointSourceSet(sources, groups))
 
-    open fun remove(owner: Jid?) = endpointSourceSets.remove(owner)
+    protected val syncRoot = Any()
 
-    /**
-     * An unmodifiable view of this [ConferenceSourceMap].
-     */
+    /** Remove the entry associated with [owner]. */
+    open fun remove(owner: Jid?) = synchronized(syncRoot) {
+        endpointSourceSets.remove(owner)
+    }
+
+    /** An unmodifiable view of this [ConferenceSourceMap]. */
     val unmodifiable by lazy { UnmodifiableConferenceSourceMap(endpointSourceSets) }
     fun unmodifiable() = unmodifiable
 
-    /** Adds the sources of another [ConferenceSourceMap] to this. */
-    open fun add(other: ConferenceSourceMap) {
+    /** Create a new [ConferenceSourceMap] instance with the same entries as this one. */
+    fun copy(): ConferenceSourceMap = ConferenceSourceMap(ConcurrentHashMap(endpointSourceSets))
+
+    /** Adds the sources of another [ConferenceSourceMap] to this one. */
+    open fun add(other: ConferenceSourceMap) = synchronized(syncRoot) {
         other.endpointSourceSets.forEach { (owner, endpointSourceSet) ->
             endpointSourceSets[owner] += endpointSourceSet
         }
     }
 
     /** Adds [endpointSourceSet] as sources owned by [owner]. */
-    open fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) {
+    open fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         endpointSourceSets[owner] += endpointSourceSet
     }
 
     /** Removes the sources of another [ConferenceSourceMap] from this one. */
-    open fun remove(other: ConferenceSourceMap) {
+    open fun remove(other: ConferenceSourceMap) = synchronized(syncRoot) {
         other.endpointSourceSets.forEach { (owner, endpointSourceSet) ->
             val existing = endpointSourceSets[owner]
             if (existing != null) {
@@ -120,8 +128,6 @@ open class ConferenceSourceMap(
         return extensions
     }
 
-    fun copy(): ConferenceSourceMap = ConferenceSourceMap(endpointSourceSets.toMutableMap())
-
     fun removeInjected() = this.apply {
         endpointSourceSets.forEach { (owner, endpointSourceSet) ->
             val withoutInjected = endpointSourceSet.withoutInjected()
@@ -139,8 +145,9 @@ open class ConferenceSourceMap(
  * standard [java.lang.Map] mutating methods will result in an exception.
  */
 class UnmodifiableConferenceSourceMap(
-    endpointSourceSets: MutableMap<Jid?, EndpointSourceSet>
+    endpointSourceSets: ConcurrentHashMap<Jid?, EndpointSourceSet>
 ) : ConferenceSourceMap(endpointSourceSets) {
+    constructor(map: Map<Jid?, EndpointSourceSet>) : this(ConcurrentHashMap(map))
     override fun add(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
     override fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) =
