@@ -111,7 +111,7 @@ class SsrcValidationPerfTest : ShouldSpec() {
         for (i in 0 until numEndpoints) {
             val endpointSourceSet = createEndpointSourceSet(i.toString(), ssrcCount)
             ssrcCount += endpointSourceSet.sources.size
-            add(JidCreate.fullFrom("$jidPrefix/endpoint$i"),  endpointSourceSet)
+            add(JidCreate.fullFrom("$jidPrefix/endpoint$i"), endpointSourceSet)
         }
     }
 
