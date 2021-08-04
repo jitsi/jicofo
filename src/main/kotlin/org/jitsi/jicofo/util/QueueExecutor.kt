@@ -33,7 +33,7 @@ class QueueExecutor(
     id: String,
     parentLogger: Logger = createLogger()
 ) : Executor, PacketQueue<Runnable>(
-    50,
+    Integer.MAX_VALUE,
     true,
     id,
     object : PacketHandler<Runnable> {
