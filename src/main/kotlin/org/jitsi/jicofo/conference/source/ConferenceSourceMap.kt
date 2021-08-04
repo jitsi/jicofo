@@ -36,26 +36,23 @@ import java.util.concurrent.ConcurrentHashMap
 open class ConferenceSourceMap(
     /**
      * The sources mapped by endpoint ID.
-     * Note that this primary constructor uses the provided [ConcurrentHashMap] as the underlying map.
+     * Note that this primary constructor uses the provided [ConcurrentHashMap], and not a copy, as the underlying map.
      */
     private val endpointSourceSets: ConcurrentHashMap<Jid?, EndpointSourceSet> = ConcurrentHashMap()
 ) : Map<Jid?, EndpointSourceSet> by endpointSourceSets {
 
-    /** C */
+    /** Constructs a new [ConferenceSourceMap] from the entries in [map] ([map] itself is not reused). */
     constructor(map: Map<Jid?, EndpointSourceSet>) : this(ConcurrentHashMap(map))
     constructor(vararg entries: Pair<Jid?, EndpointSourceSet>) : this(entries.toMap())
     constructor(owner: Jid?, endpointSourceSet: EndpointSourceSet) : this(owner to endpointSourceSet)
-    constructor(
-        owner: Jid?,
-        contents: List<ContentPacketExtension>
-    ) : this(owner, EndpointSourceSet.fromJingle(contents))
     constructor(owner: Jid?, source: Source) : this(owner, EndpointSourceSet(source))
-    constructor(
-        owner: Jid?,
-        sources: Set<Source>,
-        groups: Set<SsrcGroup>
-    ) : this(owner, EndpointSourceSet(sources, groups))
+    constructor(owner: Jid?, contents: List<ContentPacketExtension>)
+            : this(owner, EndpointSourceSet.fromJingle(contents))
 
+    constructor(owner: Jid?, sources: Set<Source>, groups: Set<SsrcGroup>)
+            : this(owner, EndpointSourceSet(sources, groups))
+
+    /** The lock used for write operations to the map. Can and should be used by extending classes. */
     protected val syncRoot = Any()
 
     /** Remove the entry associated with [owner]. */
