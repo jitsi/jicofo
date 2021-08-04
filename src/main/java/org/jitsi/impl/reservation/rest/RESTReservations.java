@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.reservation.rest;
 
-import org.jitsi.assertions.*;
+import org.apache.commons.lang3.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.reservation.*;
 import org.jitsi.utils.logging2.*;
@@ -74,7 +74,10 @@ public class RESTReservations
      */
     public RESTReservations(String baseUrl, BiConsumer<EntityBareJid, String> destroyConferenceCallback)
     {
-        Assert.notNullNorEmpty(baseUrl, "baseUrl: " + baseUrl);
+        if (StringUtils.isBlank(baseUrl))
+        {
+            throw new IllegalArgumentException("baseUrl is null or empty.");
+        }
 
         this.destroyConferenceCallback = destroyConferenceCallback;
         this.api = new ApiHandler(baseUrl);
