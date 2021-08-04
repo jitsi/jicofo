@@ -46,11 +46,11 @@ open class ConferenceSourceMap(
     constructor(vararg entries: Pair<Jid?, EndpointSourceSet>) : this(entries.toMap())
     constructor(owner: Jid?, endpointSourceSet: EndpointSourceSet) : this(owner to endpointSourceSet)
     constructor(owner: Jid?, source: Source) : this(owner, EndpointSourceSet(source))
-    constructor(owner: Jid?, contents: List<ContentPacketExtension>)
-            : this(owner, EndpointSourceSet.fromJingle(contents))
+    constructor(owner: Jid?, contents: List<ContentPacketExtension>) :
+        this(owner, EndpointSourceSet.fromJingle(contents))
 
-    constructor(owner: Jid?, sources: Set<Source>, groups: Set<SsrcGroup>)
-            : this(owner, EndpointSourceSet(sources, groups))
+    constructor(owner: Jid?, sources: Set<Source>, groups: Set<SsrcGroup>) :
+        this(owner, EndpointSourceSet(sources, groups))
 
     /** The lock used for write operations to the map. Can and should be used by extending classes. */
     protected val syncRoot = Any()
@@ -127,6 +127,7 @@ open class ConferenceSourceMap(
 
     /**
      * Removes all [Source]s that have the [Source.injected] flag from this map.
+     * @returns the map
      */
     open fun removeInjected() = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, endpointSourceSet) ->
@@ -137,6 +138,7 @@ open class ConferenceSourceMap(
                 endpointSourceSets[owner] = withoutInjected
             }
         }
+        this
     }
 }
 
