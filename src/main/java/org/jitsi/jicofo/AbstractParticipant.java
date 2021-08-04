@@ -18,9 +18,11 @@
 package org.jitsi.jicofo;
 
 import java.util.*;
+
+import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 
 /**
@@ -47,41 +49,23 @@ public abstract class AbstractParticipant
     private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
 
     /**
-     * Peer's media sources.
+     * Remote sources that have been added to the conference, but not yet been signaled to this participant. They are to
+     * be signaled once the Jingle session is initiated.
      */
-    protected final MediaSourceMap sources = new MediaSourceMap();
+    @NotNull
+    private ConferenceSourceMap pendingRemoteSourcesToAdd = new ConferenceSourceMap();
 
     /**
-     * Peer's media source groups.
+     * Remote sources that have been removed from the conference, but have already been signaled to this participant.
+     * Their removal is to be signaled once the Jingle session is initiated.
+     *
+     * Note that if a source is added and then removed while the jingle session is initiating it will be present in both
+     * {@link #pendingRemoteSourcesToAdd} and {@link #pendingRemoteSourcesToRemove}. As a result we'll unnecessarily
+     * send a source-add followed by a source-remove for this source. This is a rare case, so the inefficiency is
+     * acceptable.
      */
-    protected final MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
-
-    /**
-     * sources received from other peers scheduled for later addition, because
-     * of the Jingle session not being ready at the point when sources appeared in
-     * the conference.
-     */
-    private MediaSourceMap sourcesToAdd = new MediaSourceMap();
-
-    /**
-     * source groups received from other peers scheduled for later addition.
-     * @see #sourcesToAdd
-     */
-    private MediaSourceGroupMap sourceGroupsToAdd = new MediaSourceGroupMap();
-
-    /**
-     * sources received from other peers scheduled for later removal, because
-     * of the Jingle session not being ready at the point when sources appeared in
-     * the conference.
-     * FIXME: do we need that since these were never added ? - check
-     */
-    private MediaSourceMap sourcesToRemove = new MediaSourceMap();
-
-    /**
-     * source groups received from other peers scheduled for later removal.
-     * @see #sourcesToRemove
-     */
-    private MediaSourceGroupMap sourceGroupsToRemove = new MediaSourceGroupMap();
+    @NotNull
+    private ConferenceSourceMap pendingRemoteSourcesToRemove = new ConferenceSourceMap();
 
     /**
      * Returns currently stored map of RTP description to Colibri content name.
@@ -137,109 +121,53 @@ public abstract class AbstractParticipant
     }
 
     /**
-     * Removes given media sources from this peer state.
-     * @param sourceMap the source map that contains the sources to be removed.
-     * @return <tt>MediaSourceMap</tt> which contains sources removed from this map.
+     * Gets a read-only view of the sources advertised by this participant.
      */
-    public MediaSourceMap removeSources(MediaSourceMap sourceMap)
+    public abstract ConferenceSourceMap getSources();
+
+    /**
+     * Clear the pending remote sources, indicating that they have now been signaled.
+     */
+    public void clearPendingRemoteSources()
     {
-        return sources.remove(sourceMap);
+        pendingRemoteSourcesToAdd = new ConferenceSourceMap();
+        pendingRemoteSourcesToRemove = new ConferenceSourceMap();
     }
 
     /**
-     * Returns deep copy of this peer's media source map.
+     * Returns the set of remote sources which are yet to be signaled to this participant.
      */
-    public MediaSourceMap getSourcesCopy()
+    public ConferenceSourceMap getPendingRemoteSourcesToAdd()
     {
-        return sources.copyDeep();
+        return pendingRemoteSourcesToAdd.unmodifiable();
     }
 
     /**
-     * Returns deep copy of this peer's media source group map.
+     * Returns set of remote sources whose removal has yet to be signaled to this participant.
      */
-    public MediaSourceGroupMap getSourceGroupsCopy()
+    public ConferenceSourceMap getPendingRemoteSourcesToRemove()
     {
-        return sourceGroups.copy();
+        return pendingRemoteSourcesToRemove.unmodifiable();
     }
 
     /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for addition.
-     */
-    public boolean hasSourcesToAdd()
-    {
-        return !sourcesToAdd.isEmpty() || !sourceGroupsToAdd.isEmpty();
-    }
-
-    /**
-     * Reset the queue that holds not synchronized sources scheduled for future
-     * addition.
-     */
-    public void clearSourcesToAdd()
-    {
-        sourcesToAdd = new MediaSourceMap();
-        sourceGroupsToAdd = new MediaSourceGroupMap();
-    }
-
-    /**
-     * Reset the queue that holds not synchronized sources scheduled for future
-     * removal.
-     */
-    public void clearSourcesToRemove()
-    {
-        sourcesToRemove = new MediaSourceMap();
-        sourceGroupsToRemove = new MediaSourceGroupMap();
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for removal.
-     */
-    public boolean hasSourcesToRemove()
-    {
-        return !sourcesToRemove.isEmpty() || !sourceGroupsToRemove.isEmpty();
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for addition.
-     */
-    public MediaSourceMap getSourcesToAdd()
-    {
-        return sourcesToAdd;
-    }
-
-    /**
-     * Returns <tt>true</tt> if this peer has any not synchronized sources
-     * scheduled for removal.
-     */
-    public MediaSourceMap getSourcesToRemove()
-    {
-        return sourcesToRemove;
-    }
-
-    /**
-     * Schedules sources received from other peer for future 'source-add'
-     * update.
+     * Adds sources to the set of remote sources which haven't been signaled yet.
      *
-     * @param sourceMap the media source map that contains sources for future
-     * updates.
+     * @param sourcesToAdd the remote sources to add to the set of sources which are yet to be signaled.
      */
-    public void scheduleSourcesToAdd(MediaSourceMap sourceMap)
+    public void addPendingRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
     {
-        sourcesToAdd.add(sourceMap);
+        pendingRemoteSourcesToAdd.add(sourcesToAdd);
     }
 
     /**
-     * Schedules sources received from other peer for future 'source-remove'
-     * update.
+     * Adds sources to the set of remote sources whose removal hasn't been signaled yet.
      *
-     * @param sourceMap the media source map that contains sources for future
-     * updates.
+     * @param sourcesToAdd the remote sources to add to the set of sources whose removal is yet to be signaled.
      */
-    public void scheduleSourcesToRemove(MediaSourceMap sourceMap)
+    public void addPendingRemoteSourcesToRemove(ConferenceSourceMap sourcesToAdd)
     {
-        sourcesToRemove.add(sourceMap);
+        pendingRemoteSourcesToRemove.add(sourcesToAdd);
     }
 
     /**
@@ -259,75 +187,6 @@ public abstract class AbstractParticipant
     public ColibriConferenceIQ getColibriChannelsInfo()
     {
         return colibriChannelsInfo;
-    }
-
-    /**
-     * Returns the list of source groups of given media type that belong ot this
-     * participant.
-     * @param media the name of media type("audio","video", ...)
-     * @return the list of {@link SourceGroup} for given media type.
-     */
-    public List<SourceGroup> getSourceGroupsForMedia(String media)
-    {
-        return sourceGroups.getSourceGroupsForMedia(media);
-    }
-
-    /**
-     * Returns <tt>MediaSourceGroupMap</tt> that contains the mapping of media
-     * source groups that describe media of this participant.
-     */
-    public MediaSourceGroupMap getSourceGroups()
-    {
-        return sourceGroups;
-    }
-
-    /**
-     * Schedules given media source groups for later addition.
-     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
-     *                   later addition.
-     */
-    public void scheduleSourceGroupsToAdd(MediaSourceGroupMap sourceGroups)
-    {
-        sourceGroupsToAdd.add(sourceGroups);
-    }
-
-    /**
-     * Schedules given media source groups for later removal.
-     * @param sourceGroups the <tt>MediaSourceGroupMap</tt> to be scheduled for
-     *                   later removal.
-     */
-    public void scheduleSourceGroupsToRemove(MediaSourceGroupMap sourceGroups)
-    {
-        sourceGroupsToRemove.add(sourceGroups);
-    }
-
-    /**
-     * Returns the map of source groups that are waiting for synchronization.
-     */
-    public MediaSourceGroupMap getSourceGroupsToAdd()
-    {
-        return sourceGroupsToAdd;
-    }
-
-    /**
-     * Returns the map of source groups that are waiting for being removed from
-     * peer session.
-     */
-    public MediaSourceGroupMap getSourceGroupsToRemove()
-    {
-        return sourceGroupsToRemove;
-    }
-
-    /**
-     * Removes source groups from this participant state.
-     * @param groupsToRemove the map of source groups that will be removed
-     *                       from this participant media state description.
-     * @return <tt>MediaSourceGroupMap</tt> which contains source groups removed
-     *         from this map.
-     */
-    public MediaSourceGroupMap removeSourceGroups(MediaSourceGroupMap groupsToRemove)
-    {
-        return sourceGroups.remove(groupsToRemove);
     }
 
     /**
@@ -371,13 +230,6 @@ public abstract class AbstractParticipant
                 this.channelAllocator = null;
             }
         }
-    }
-
-    public void addSourcesAndGroups(MediaSourceMap         addedSources,
-                                    MediaSourceGroupMap    addedGroups)
-    {
-        this.sources.add(addedSources);
-        this.sourceGroups.add(addedGroups);
     }
 
     /**

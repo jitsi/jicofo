@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -35,16 +35,6 @@ public class SourceUtil
         SourcePacketExtension ssrcPE = new SourcePacketExtension();
 
         ssrcPE.setSSRC(ssrc);
-        setSourceParams(ssrcPE, params);
-
-        return ssrcPE;
-    }
-
-    static public SourcePacketExtension createSourceWithRid(String rid, String[][] params)
-    {
-        SourcePacketExtension ssrcPE = new SourcePacketExtension();
-
-        ssrcPE.setRid(rid);
         setSourceParams(ssrcPE, params);
 
         return ssrcPE;

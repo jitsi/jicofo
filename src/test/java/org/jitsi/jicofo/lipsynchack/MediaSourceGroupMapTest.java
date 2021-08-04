@@ -15,12 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.protocol.xmpp.util.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -37,37 +36,6 @@ import static org.junit.Assert.*;
 @RunWith(JUnit4.class)
 public class MediaSourceGroupMapTest
 {
-    @Test
-    public void testContainsGroup()
-    {
-        /**
-         * Make sure that groups with the same semantic but different source
-         * types (RID vs SSRC) don't collide
-         */
-        MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
-        // First add an ssrc SIM group
-        SourceGroup ssrcSimGroup = SourceUtil.createSourceGroup(
-                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
-                new SourcePacketExtension[] {
-                        SourceUtil.createSourceWithSsrc(123123L, new String[][]{}),
-                        SourceUtil.createSourceWithSsrc(456456L, new String[][]{}),
-                        SourceUtil.createSourceWithSsrc(789789L, new String[][]{})
-
-                }
-        );
-        sourceGroups.addSourceGroup("video", ssrcSimGroup);
-        // Now create an RID group
-        SourceGroup ridSimGroup = SourceUtil.createSourceGroup(
-                SourceGroupPacketExtension.SEMANTICS_SIMULCAST,
-                new SourcePacketExtension[] {
-                        SourceUtil.createSourceWithRid("1", new String[][]{}),
-                        SourceUtil.createSourceWithRid("2", new String[][]{}),
-                        SourceUtil.createSourceWithRid("3", new String[][]{})
-                }
-        );
-
-        assertFalse(sourceGroups.containsGroup("video", ridSimGroup));
-    }
     /**
      * Basic test scenario for remove operation
      */

@@ -15,15 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp.util;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.utils.*;
-
 import java.util.*;
-import java.util.stream.*;
 
 /**
  * Class maps lists of source groups to media types and encapsulates various
@@ -57,73 +54,6 @@ public class MediaSourceGroupMap
     }
 
     /**
-     * Finds and extracts video {@link SimulcastGrouping}s.
-     *
-     * @return a {@link List} of {@link SimulcastGrouping}s.
-     */
-    public List<SimulcastGrouping> findSimulcastGroupings()
-    {
-        List<SourceGroup> simGroups = getSimulcastGroups();
-        List<SimulcastGrouping> simulcastGroupings = new LinkedList<>();
-
-        for (SourceGroup simGroup : simGroups)
-        {
-            if (!simGroup.getSemantics().equals(
-                    SourceGroupPacketExtension.SEMANTICS_SIMULCAST))
-            {
-                continue;
-            }
-
-            // The simulcast grouping will consist of the main SIM group and
-            // eventual FID subgroups
-            List<SourceGroup> fidGroups = getRtxGroups();
-            List<SourceGroup> relatedFidGroups = new LinkedList<>();
-
-            for (SourcePacketExtension source : simGroup.getSources())
-            {
-                for (SourceGroup group : fidGroups)
-                {
-                    if (group.belongsToGroup(source))
-                    {
-                        relatedFidGroups.add(group);
-                    }
-                }
-            }
-
-            SimulcastGrouping simGrouping
-                = new SimulcastGrouping(simGroup, relatedFidGroups);
-
-            simulcastGroupings.add(simGrouping);
-        }
-
-        return simulcastGroupings;
-    }
-
-    /**
-     * Gets video RTX (FID) groups.
-     *
-     * @return a {@link List} of {@link SourceGroup}.
-     */
-    public List<SourceGroup> getRtxGroups()
-    {
-        return findSourceGroups(
-                MediaType.VIDEO.toString(),
-                SourceGroupPacketExtension.SEMANTICS_FID);
-    }
-
-    /**
-     * Finds video Simulcast groups.
-     *
-     * @return a {@link List} of {@link SourceGroup}.
-     */
-    public List<SourceGroup> getSimulcastGroups()
-    {
-        return findSourceGroups(
-                MediaType.VIDEO.toString(),
-                SourceGroupPacketExtension.SEMANTICS_SIMULCAST);
-    }
-
-    /**
      * Returns the list of {@link SourceGroup} for given media type.
      * @param mediaType the name of media type for which list of source groups
      * will be returned.
@@ -131,26 +61,6 @@ public class MediaSourceGroupMap
     public List<SourceGroup> getSourceGroupsForMedia(String mediaType)
     {
         return groupMap.computeIfAbsent(mediaType, k -> new ArrayList<>());
-    }
-
-    /**
-     * Finds groups that match given media type and semantics.
-     *
-     * @param mediaType eg. 'audio', 'video', etc.
-     * @param semantics a group semantics eg. 'SIM' or 'FID'
-     *
-     * @return a {@link List} of {@link SourceGroup}
-     */
-    private List<SourceGroup> findSourceGroups(
-        String mediaType, String semantics)
-    {
-        Objects.requireNonNull(semantics, "semantics");
-
-        List<SourceGroup> mediaGroups = groupMap.get(mediaType);
-
-        return mediaGroups.stream()
-            .filter(mg -> semantics.equalsIgnoreCase(mg.getSemantics()))
-            .collect(Collectors.toList());
     }
 
     /**
@@ -208,21 +118,6 @@ public class MediaSourceGroupMap
             mediaType -> sourceGroups.getSourceGroupsForMedia(mediaType)
                 .forEach(
                     group -> addSourceGroup(mediaType, group)));
-    }
-
-    /**
-     * Checks whether or not this map contains a given {@link SourceGroup}.
-     * @param mediaType the type of the media for the group to be found.
-     * @param toFind the <tt>SourceGroup</tt> to be found.
-     * @return <tt>true</tt> if the given <tt>SourceGroup</tt> exists in the map
-     * already or <tt>false</tt> otherwise. A group is considered equal when it
-     * has the same semantics and sources stored. The order of sources appearing
-     * in the group is important as well.
-     */
-    public boolean containsGroup(String mediaType, SourceGroup toFind)
-    {
-        return getSourceGroupsForMedia(mediaType).stream()
-            .anyMatch(group -> group.equals(toFind));
     }
 
     /**
@@ -317,32 +212,6 @@ public class MediaSourceGroupMap
             str.append("]");
         }
         return str.toString();
-    }
-
-    /**
-     * Converts to a map of <tt>SourceGroupPacketExtension</tt>.
-     * @return a map of Colibri content's names to the lists of
-     *         <tt>SourceGroupPacketExtension</tt> which reflects current state
-     *         of this <tt>MediaSourceGroupMap</tt>.
-     */
-    public Map<String, List<SourceGroupPacketExtension>> toMap()
-    {
-        Map<String, List<SourceGroupPacketExtension>> map = new HashMap<>();
-
-        for (Map.Entry<String, List<SourceGroup>> entry : groupMap.entrySet())
-        {
-            List<SourceGroupPacketExtension> peGroups
-                = new ArrayList<>(entry.getValue().size());
-
-            for (SourceGroup group : entry.getValue())
-            {
-                peGroups.add(group.getExtensionCopy());
-            }
-
-            map.put(entry.getKey(), peGroups);
-        }
-
-        return map;
     }
 
     @Override

@@ -15,16 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp.util;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
-import org.jitsi.jicofo.*;
-
-import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -44,25 +41,6 @@ import static org.apache.commons.lang3.StringUtils.*;
 public class SSRCSignaling
 {
     /**
-     * The constant value used as owner attribute value of
-     * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
-     */
-    public static final Jid SSRC_OWNER_JVB;
-
-    static
-    {
-        try
-        {
-            SSRC_OWNER_JVB = JidCreate.from("jvb");
-        }
-        catch (XmppStringprepException e)
-        {
-            // cannot happen
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * Copies value of "<parameter>" SSRC child element. The parameter to be
      * copied must exist in both source and destination SSRCs.
      * @param dst target <tt>SourcePacketExtension</tt> to which we want copy
@@ -81,93 +59,6 @@ public class SSRCSignaling
         {
             dstParam.setValue(srcParam.getValue());
         }
-    }
-
-    /**
-     * Replaces all instances of {@link SourcePacketExtension}s held by
-     * {@link SourceGroupPacketExtension}s in the given
-     * {@link MediaSourceGroupMap} with the corresponding ones from the given
-     * {@link MediaSourceMap}<tt></tt>.
-     *
-     * @param groups <tt>MediaSourceGroupMap</tt>
-     * @param sources <tt>MediaSourceMap</tt>
-     *
-     * @throws InvalidSSRCsException if there's no corresponding
-     * {@link SourcePacketExtension} found in the <tt>sources</tt> for any
-     * source in the <tt>groups</tt>.
-     */
-    static public void copySourceParamsToGroups(
-            MediaSourceGroupMap    groups,
-            MediaSourceMap         sources)
-        throws InvalidSSRCsException
-    {
-        for (String mediaType : groups.getMediaTypes())
-        {
-            List<SourceGroup> mediaGroups
-                = groups.getSourceGroupsForMedia(mediaType);
-            List<SourceGroup> newMediaGroups
-                = new ArrayList<>(mediaGroups.size());
-
-            for (SourceGroup group : mediaGroups)
-            {
-                List<SourcePacketExtension> groupSources = group.getSources();
-                List<SourcePacketExtension> newSources
-                    = new ArrayList<>(groupSources.size());
-
-                for (SourcePacketExtension srcInGroup : groupSources)
-                {
-                    SourcePacketExtension sourceInMedia
-                        = sources.findSource(mediaType, srcInGroup);
-
-                    if (sourceInMedia == null)
-                    {
-                        throw new InvalidSSRCsException(
-                                "Source " + srcInGroup
-                                    + " not found in '" + mediaType
-                                    + "' for group: " + group);
-                    }
-
-                    newSources.add(sourceInMedia);
-                }
-
-                newMediaGroups.add(
-                        new SourceGroup(group.getSemantics(), newSources));
-            }
-
-            mediaGroups.clear();
-            mediaGroups.addAll(newMediaGroups);
-        }
-    }
-
-    /**
-     * Call will remove all {@link ParameterPacketExtension}s from all
-     * <tt>SourcePacketExtension</tt>s stored in given <tt>MediaSourceMap</tt>.
-     *
-     * @param ssrcMap the <tt>MediaSourceMap</tt> which contains the SSRC packet
-     * extensions to be stripped out of their parameters.
-     */
-    public static void deleteSSRCParams(MediaSourceMap ssrcMap)
-    {
-        for (String media : ssrcMap.getMediaTypes())
-        {
-            for (SourcePacketExtension ssrc : ssrcMap.getSourcesForMedia(media))
-            {
-                deleteSSRCParams(ssrc);
-            }
-        }
-    }
-
-    /**
-     * Removes all child <tt>ParameterPacketExtension</tt>s from given
-     * <tt>SourcePacketExtension</tt>.
-     *
-     * @param ssrcPe the instance of <tt>SourcePacketExtension</tt> which will
-     * be stripped off all parameters.
-     */
-    private static void deleteSSRCParams(SourcePacketExtension ssrcPe)
-    {
-        List<? extends ExtensionElement> peList = ssrcPe.getChildExtensions();
-        peList.removeAll(ssrcPe.getParameters());
     }
 
     /**
@@ -315,14 +206,6 @@ public class SSRCSignaling
         return trackId;
     }
 
-    public static String getVideoType(SourcePacketExtension ssrcPe)
-    {
-        SSRCInfoPacketExtension ssrcInfo
-            = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
-
-        return ssrcInfo != null ? ssrcInfo.getVideoType() : null;
-    }
-
     /**
      * Merges the first valid video stream into the first valid audio stream
      * described in <tt>MediaSourceMap</tt>. A valid media stream is the one that
@@ -420,71 +303,5 @@ public class SSRCSignaling
             }
         }
         return ownerMapping;
-    }
-
-    /**
-     * From the given list of {@link SourceGroup}s select those that share
-     * the given MSID value.
-     *
-     * @param groups a {@link List} of {@link SourceGroup} to be filtered out.
-     * @param groupMsid a {@link String} with the MSID value to be used as
-     *        selector.
-     *
-     * @return a {@link List} of {@link SourceGroup}.
-     */
-    public static List<SourceGroup> selectWithMsid(
-        List<SourceGroup>    groups,
-        String               groupMsid)
-    {
-        if (isBlank(groupMsid))
-        {
-            throw new IllegalArgumentException("Null or empty 'groupMsid'");
-        }
-
-        // FIXME change once migrated to Java 8
-        // return groups.stream()
-        //     .filter(group -> group.getGroupMsid().equalsIgnoreCase(groupMsid)
-        //     .collect(Collectors.toList());
-
-        List<SourceGroup> result = new LinkedList<>();
-
-        for (SourceGroup group : groups)
-        {
-            if (groupMsid.equalsIgnoreCase(group.getGroupMsid()))
-            {
-                result.add(group);
-            }
-        }
-
-        return result;
-    }
-
-    public static void setSSRCOwner(SourcePacketExtension ssrcPe, Jid owner)
-    {
-        SSRCInfoPacketExtension ssrcInfo
-            = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
-
-        if (ssrcInfo == null)
-        {
-            ssrcInfo = new SSRCInfoPacketExtension();
-            ssrcPe.addChildExtension(ssrcInfo);
-        }
-
-        ssrcInfo.setOwner(owner);
-    }
-
-    public static void setSSRCVideoType( SourcePacketExtension     ssrcPe,
-                                         String                 videoType)
-    {
-        SSRCInfoPacketExtension ssrcInfo
-            = ssrcPe.getFirstChildOfType(SSRCInfoPacketExtension.class);
-
-        if (ssrcInfo == null)
-        {
-            ssrcInfo = new SSRCInfoPacketExtension();
-            ssrcPe.addChildExtension(ssrcInfo);
-        }
-
-        ssrcInfo.setVideoType(videoType);
     }
 }

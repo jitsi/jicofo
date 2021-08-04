@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
@@ -31,6 +32,8 @@ import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -45,6 +48,25 @@ import java.util.*;
  */
 public class ParticipantChannelAllocator extends AbstractChannelAllocator
 {
+    /**
+     * The constant value used as owner attribute value of
+     * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
+     */
+    public static final Jid SSRC_OWNER_JVB;
+
+    static
+    {
+        try
+        {
+            SSRC_OWNER_JVB = JidCreate.from("jvb");
+        }
+        catch (XmppStringprepException e)
+        {
+            // cannot happen
+            throw new RuntimeException(e);
+        }
+    }
+
     private final Logger logger;
 
     /**
@@ -163,8 +185,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     participant.getRtpDescriptionMap(),
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy());
+                    participant.getSources());
         }
 
         if (chatRoom != null && !participant.hasModeratorRights())
@@ -260,11 +281,9 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             List<ContentPacketExtension> offer,
             ColibriConferenceIQ colibriChannels)
     {
-        MediaSourceMap conferenceSSRCs
-            = meetConference.getAllSources(reInvite ? participant : null);
-
-        MediaSourceGroupMap conferenceSSRCGroups
-            = meetConference.getAllSourceGroups(reInvite ? participant : null);
+        ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
+        // Remove the participant's own sources (if they're present)
+        conferenceSources.remove(participant.getMucJid());
 
         for (ContentPacketExtension cpe : offer)
         {
@@ -400,9 +419,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                                         "mslabel", "mixedmslabel"));
 
                         // Mark 'jvb' as SSRC owner
-                        SSRCInfoPacketExtension ssrcInfo
-                            = new SSRCInfoPacketExtension();
-                        ssrcInfo.setOwner(SSRCSignaling.SSRC_OWNER_JVB);
+                        SSRCInfoPacketExtension ssrcInfo = new SSRCInfoPacketExtension();
+                        ssrcInfo.setOwner(SSRC_OWNER_JVB);
                         ssrcCopy.addChildExtension(ssrcInfo);
 
                         rtpDescPe.addChildExtension(ssrcCopy);
@@ -414,10 +432,10 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 }
 
                 // Include all peers SSRCs
-                List<SourcePacketExtension> mediaSources
-                    = conferenceSSRCs.getSourcesForMedia(contentName);
+                List<SourcePacketExtension> sourceExtensions
+                    = conferenceSources.createSourcePacketExtensions(MediaType.parseString(contentName));
 
-                for (SourcePacketExtension ssrc : mediaSources)
+                for (SourcePacketExtension ssrc : sourceExtensions)
                 {
                     try
                     {
@@ -430,12 +448,12 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 }
 
                 // Include SSRC groups
-                List<SourceGroup> sourceGroups
-                    = conferenceSSRCGroups.getSourceGroupsForMedia(contentName);
+                List<SourceGroupPacketExtension> sourceGroups
+                    = conferenceSources.createSourceGroupPacketExtensions(MediaType.parseString(contentName));
 
-                for (SourceGroup sourceGroup : sourceGroups)
+                for (SourceGroupPacketExtension sourceGroupPacketExtension : sourceGroups)
                 {
-                    rtpDescPe.addChildExtension(sourceGroup.getPacketExtension());
+                    rtpDescPe.addChildExtension(sourceGroupPacketExtension);
                 }
             }
         }

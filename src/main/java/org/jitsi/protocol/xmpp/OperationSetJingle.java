@@ -17,9 +17,9 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.protocol.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
@@ -66,29 +66,18 @@ public interface OperationSetJingle
     /**
      * Sends 'source-add' proprietary notification.
      *
-     * @param ssrcMap the media SSRCs map which will be included in
-     *                the notification.
-     * @param ssrcGroupMap the map of media SSRC groups that will be included in
-     *                     the notification.
+     * @param sources the sources to be included in the source-add message.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendAddSourceIQ(MediaSourceMap ssrcMap,
-                         MediaSourceGroupMap ssrcGroupMap,
-                         JingleSession session);
+    void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session);
 
     /**
-     * Sends 'source-remove' notification to the peer of given
-     * <tt>JingleSession</tt>.
+     * Sends a 'source-remove' stanza to the remote Jingle peer.
      *
-     * @param ssrcMap the map of media SSRCs that will be included in
-     *                the notification.
-     * @param ssrcGroupMap the map of media SSRC groups that will be included in
-     *                     the notification.
+     * @param sourcesToRemove the sources to be included in the 'source-remove' stanza.
      * @param session the <tt>JingleSession</tt> used to send the notification.
      */
-    void sendRemoveSourceIQ(MediaSourceMap ssrcMap,
-                            MediaSourceGroupMap ssrcGroupMap,
-                            JingleSession session);
+    void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session);
 
     /**
      * Terminates given Jingle session. This method is to be called either to send 'session-terminate' or to inform

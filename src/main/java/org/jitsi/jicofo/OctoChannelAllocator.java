@@ -90,8 +90,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
                 null /* statsId */,
                 false/* initiator */,
                 offer,
-                participant.getSourcesCopy().toMap(),
-                participant.getSourceGroupsCopy().toMap(),
+                participant.getSources(),
                 participant.getRelays());
 
         // The colibri channels have now been allocated and we know their IDs.
@@ -136,8 +135,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
                 bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
                     null,
-                    participant.getSourcesCopy(),
-                    participant.getSourceGroupsCopy(),
+                    participant.getSources(),
                     null,
                     null,
                     participant.getRelays());

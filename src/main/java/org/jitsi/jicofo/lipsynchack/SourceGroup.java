@@ -15,12 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp.util;
+package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-
-import org.jitsi.jicofo.*;
 
 import java.util.*;
 
@@ -79,19 +77,6 @@ public class SourceGroup
     }
 
     /**
-     * Creates new instance of <tt>SourceGroup</tt>.
-     * @param semantics the group's semantics
-     * @param sources a {@link List} of the group's
-     *        {@link SourcePacketExtension}s
-     */
-    public SourceGroup(String semantics, List<SourcePacketExtension> sources)
-    {
-        group = new SourceGroupPacketExtension();
-        group.setSemantics(semantics);
-        group.addSources(sources);
-    }
-
-    /**
      * Adds source to this group.
      *
      * @param source the <tt>SourcePacketExtension</tt> to be added to this
@@ -114,38 +99,6 @@ public class SourceGroup
     }
 
     /**
-     * Checks if given {@link SourcePacketExtension} is part of this group.
-     *
-     * @param source {@link SourcePacketExtension} to be checked.
-     *
-     * @return <tt>true</tt> or <tt>false</tt>
-     */
-    public boolean belongsToGroup(SourcePacketExtension source)
-    {
-        return getSources().stream().anyMatch(groupSources -> groupSources.equals(source));
-    }
-
-    /**
-     * Obtains group's MSID.
-     *
-     * NOTE it makes sense only once the attributes have been copied from
-     * the media section {@link SourcePacketExtension}s, as normally
-     * {@link SourcePacketExtension}s signalled inside of
-     * {@link SourceGroupPacketExtension} do not contain any parameters
-     * including MSID. See {@code SSRCValidator#copySourceParamsToGroups()}.
-     *
-     * @return a {@link String}
-     */
-    public String getGroupMsid()
-    {
-        List<SourcePacketExtension> sources = this.group.getSources();
-
-        return sources.size() > 0
-            ? SSRCSignaling.getMsid(sources.get(0))
-            : null;
-    }
-
-    /**
      * Returns the sources contained in this group.
      * @return the internal list that stores <tt>SourcePacketExtension</tt>
      */
@@ -160,15 +113,6 @@ public class SourceGroup
     public SourceGroupPacketExtension getExtensionCopy()
     {
         return group.copy();
-    }
-
-    /**
-     * Returns the underlying <tt>SourceGroupPacketExtension</tt> wrapped by
-     * this <tt>SourceGroup</tt> instance.
-     */
-    public SourceGroupPacketExtension getPacketExtension()
-    {
-        return group;
     }
 
     /**
