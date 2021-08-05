@@ -985,7 +985,8 @@ public class JitsiMeetConferenceImpl
     private boolean checkMinParticipants()
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
-        return chatRoom.getMembersCount() >= minParticipants;
+        ChatRoom chatRoom = getChatRoom();
+        return chatRoom != null && chatRoom.getMembersCount() >= minParticipants;
     }
 
     /**
