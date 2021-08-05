@@ -104,7 +104,7 @@ jicofo {
         # Add the JvbBrewery config if missing
         if ! grep -sq "org.jitsi.jicofo.BRIDGE_MUC" "$OLD_JITSI_CONFIG" ;then
             if ! hocon -f $HOCON_CONFIG get "jicofo.bridge.brewery-jid" > /dev/null 2>&1 ; then
-                hocon -f $HOCON_CONFIG set "jicofo.bridge.brewery-jid" "JvbBrewery@internal.auth.${JVB_HOSTNAME}"
+                hocon -f $HOCON_CONFIG set "jicofo.bridge.brewery-jid" \"JvbBrewery@internal.auth.${JVB_HOSTNAME}\"
             fi
         fi
 
