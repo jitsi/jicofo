@@ -37,7 +37,7 @@ class QueueExecutor(
     true,
     id,
     object : PacketHandler<Runnable> {
-        private val logger = parentLogger.createChildLogger(QueueExecutor.javaClass.simpleName).apply {
+        private val logger = parentLogger.createChildLogger(QueueExecutor::class.java.simpleName).apply {
             addContext("id", id)
         }
 

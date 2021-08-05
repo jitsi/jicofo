@@ -81,6 +81,11 @@ abstract class AbstractIqHandler<T : IQ>(
         mode: IQRequestHandler.Mode
     ) : AbstractIqRequestHandler(elementName, elementNamespace, iqType, mode) {
 
+        /**
+         * Handle a request. The cast can not be checked because the type is erased, but we perform the cast here, so
+         * any exceptions will occur early and not cause further problems.
+         */
+        @Suppress("UNCHECKED_CAST")
         override fun handleIQRequest(iq: IQ): IQ? {
             val result = handleRequest(
                 IqRequest(

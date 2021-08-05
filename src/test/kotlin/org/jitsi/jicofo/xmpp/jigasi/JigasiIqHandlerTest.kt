@@ -138,7 +138,6 @@ class JigasiIqHandlerTest : ShouldSpec() {
 
 private fun IQ?.shouldBeError(condition: Condition? = null) {
     this.shouldBeInstanceOf<ErrorIQ>()
-    this as ErrorIQ
     if (condition != null)
         error.condition shouldBe condition
 }
