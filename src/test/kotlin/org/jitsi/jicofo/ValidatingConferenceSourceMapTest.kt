@@ -25,6 +25,7 @@ import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
 import org.jxmpp.jid.impl.JidCreate
 
+@Suppress("NAME_SHADOWING")
 class ValidatingConferenceSourceMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 
@@ -231,43 +232,6 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     )
                     conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
                 }
-                context("Within the sources of the same endpoint.") {
-                    context("Ungrouped") {
-                        context("Added separately") {
-                            conferenceSources.tryToAdd(jid1, sourceSet1)
-                            // s1 and s2 have the same MSID
-                            shouldThrow<MsidConflictException> {
-                                conferenceSources.tryToAdd(jid1, sourceSet2)
-                            }
-                        }
-                        context("Added together") {
-                            shouldThrow<MsidConflictException> {
-                                conferenceSources.tryToAdd(jid1, combinedSourceSet)
-                            }
-                        }
-                    }
-                    context("In independent FID groups") {
-                        val endpointSourceSet = EndpointSourceSet(
-                            setOf(s1, s2, s4, s5),
-                            setOf(fid1, fid2)
-                        )
-                        shouldThrow<MsidConflictException> {
-                            conferenceSources.tryToAdd(jid1, endpointSourceSet)
-                        }
-                    }
-                    context("In independent SIM groups") {
-                        val endpointSourceSet = EndpointSourceSet(
-                            setOf(s1, s2, s3, s4),
-                            setOf(
-                                SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2)),
-                                SsrcGroup(SsrcGroupSemantics.Sim, listOf(3, 4))
-                            )
-                        )
-                        shouldThrow<MsidConflictException> {
-                            conferenceSources.tryToAdd(jid1, endpointSourceSet)
-                        }
-                    }
-                }
                 context("Audio and video can have the same MSID") {
                     context("With no MSID") {
                         val sourceSet = EndpointSourceSet(
@@ -356,31 +320,50 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             }
             context("Removing a subset of sources") {
                 context("Leaving two FID groups") {
-                    shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(
-                            jid1,
-                            EndpointSourceSet(
-                                setOf(s1, s4),
-                                setOf(sim, fid1)
-                            )
+                    conferenceSources.tryToRemove(
+                        jid1,
+                        EndpointSourceSet(
+                            setOf(s1, s4),
+                            setOf(sim, fid1)
                         )
-                    }
+                    ) shouldBe ConferenceSourceMap(
+                        jid1,
+                        EndpointSourceSet(
+                            setOf(s1, s4),
+                            setOf(sim, fid1)
+                        )
+                    )
                 }
                 context("Removing only part of a simulcast group's sources") {
-                    // This matches multiple failure conditions (MSIF conflict, missing source from a group)
-                    shouldThrow<ValidationFailedException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(s1))
-                    }
+                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(s1)) shouldBe ConferenceSourceMap(
+                        jid1,
+                        EndpointSourceSet(
+                            setOf(s1),
+                            setOf(sim, fid1) // Automatically removed because they reference s1
+                        )
+                    )
                 }
                 context("Removing a group, but not its sources") {
-                    shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(sim))
+                    context("A SIM group") {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(sim)) shouldBe ConferenceSourceMap(
+                            jid1,
+                            EndpointSourceSet(sim)
+                        )
                     }
-                    shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(fid1))
+
+                    context("A FID group") {
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(fid1)) shouldBe ConferenceSourceMap(
+                            jid1,
+                            EndpointSourceSet(fid1)
+                        )
                     }
-                    shouldThrow<MsidConflictException> {
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(ssrcGroups = groups))
+
+                    context("All groups") {
+                        conferenceSources.tryToRemove(
+                            jid1, EndpointSourceSet(ssrcGroups = groups)
+                        ) shouldBe ConferenceSourceMap(
+                            jid1, EndpointSourceSet(ssrcGroups = groups)
+                        )
                     }
                 }
             }
