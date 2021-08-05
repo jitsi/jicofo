@@ -138,8 +138,7 @@ public class OctoParticipant
         boolean changed = false;
 
         ConferenceSourceMap sourcesToAdd = getPendingRemoteSourcesToAdd();
-        //MediaSourceGroupMap sourceGroupsToAdd = getSourceGroupsToAdd();
-        ConferenceSourceMap sourcesToRemove = getPendingRemoteSourcesToRemove();
+        ConferenceSourceMap sourcesToRemove = getPendingRemoteSourcesToRemove().copy();
 
         clearPendingRemoteSources();
 
