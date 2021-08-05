@@ -1544,18 +1544,20 @@ public class JitsiMeetConferenceImpl
         // after conference has been relocated to the new bridge
         synchronized (bridges)
         {
+            ColibriConferenceIQ colibriChannelsInfo = participant.getColibriChannelsInfo();
             BridgeSession bridgeSession = findBridgeSession(participant);
-            if (bridgeSession != null)
+            if (bridgeSession != null && colibriChannelsInfo != null)
             {
                 bridgeSession.colibriConference.updateSourcesInfo(
                     participant.getSources(),
-                    participant.getColibriChannelsInfo());
+                    colibriChannelsInfo);
 
                 propagateNewSourcesToOcto(bridgeSession, sourcesAccepted);
             }
             else
             {
-                logger.warn("No bridge for a participant: " + participant.getChatMember().getName());
+                logger.warn("No bridge or no colibri channels for a participant: "
+                        + participant.getChatMember().getName());
                 // TODO: how do we handle this? Re-invite?
             }
         }
