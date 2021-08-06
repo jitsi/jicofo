@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -56,16 +57,18 @@ public class OctoParticipant
      */
     private final ConferenceSourceMap sources = new ConferenceSourceMap();
 
+    private final Logger logger;
 
     /**
      * Initializes a new {@link OctoParticipant} instance.
-     * @param conference the {@link JitsiMeetConference} which this participant
-     * will be a part of.
      * @param relays the list of Octo relays
+     * @param bridgeJid the JID of the bridge that this participant
      */
-    OctoParticipant(JitsiMeetConference conference, List<String> relays, Logger parentLogger)
+    OctoParticipant(List<String> relays, Logger parentLogger, Jid bridgeJid)
     {
         super(parentLogger);
+        logger = parentLogger.createChildLogger(getClass().getName());
+        logger.addContext("bridge", bridgeJid.getResourceOrEmpty().toString());
         this.relays = relays;
     }
 
@@ -74,12 +77,16 @@ public class OctoParticipant
      */
     public void removeSources(ConferenceSourceMap sourcesToRemove)
     {
+        logger.debug(() -> "Removing sources: " + sourcesToRemove);
         sources.remove(sourcesToRemove);
+        logger.debug(() -> "Remaining sources: " + sources);
     }
 
     public void addSources(ConferenceSourceMap sourcesToAdd)
     {
+        logger.debug(() -> "Adding sources: " + sourcesToAdd);
         this.sources.add(sourcesToAdd);
+        logger.debug(() -> "Resulting sources: " + sources);
     }
 
 

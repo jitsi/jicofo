@@ -92,7 +92,7 @@ public abstract class AbstractParticipant
 
     protected AbstractParticipant(Logger conferenceLogger)
     {
-        this.logger = new LoggerImpl(getClass().getName(), conferenceLogger.getLevel());
+        this.logger = conferenceLogger.createChildLogger(getClass().getName());
     }
 
     /**

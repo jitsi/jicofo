@@ -2689,7 +2689,7 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Creating an Octo participant for " + bridge);
 
-            OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays, logger);
+            OctoParticipant octoParticipant = new OctoParticipant(relays, logger, bridge.getJid());
 
             ConferenceSourceMap remoteSources = getSources(participants, true);
 
