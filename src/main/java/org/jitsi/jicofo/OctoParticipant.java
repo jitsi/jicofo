@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jxmpp.jid.*;
@@ -135,8 +136,8 @@ public class OctoParticipant
     /**
      * Updates the sources and source groups of this participant with the
      * sources and source groups scheduled to be added or removed via
-     * {@link #addPendingRemoteSourcesToAdd(ConferenceSourceMap)} and
-     * {@link #addPendingRemoteSourcesToRemove(ConferenceSourceMap)} and
+     * {@link #queueRemoteSourcesToAdd(ConferenceSourceMap)} and
+     * {@link #queueRemoteSourcesToRemove(ConferenceSourceMap)}.
      *
      * @return {@code true} if the call resulted in this participant's sources to change, and {@code false} otherwise.
      */
@@ -144,27 +145,21 @@ public class OctoParticipant
     {
         boolean changed = false;
 
-        ConferenceSourceMap sourcesToAdd = getPendingRemoteSourcesToAdd();
-        ConferenceSourceMap sourcesToRemove = getPendingRemoteSourcesToRemove().copy();
-
-        clearPendingRemoteSources();
-
-        // We don't have any information about the order in which the add/remove
-        // operations were requested. If an SSRC is present in both
-        // sourcesToAdd and sourcesToRemove we choose to include it. That is,
-        // we err on the side of signaling more sources than necessary.
-        sourcesToRemove.remove(sourcesToAdd);
-
-        if (!sourcesToAdd.isEmpty())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
         {
-            addSources(sourcesToAdd);
             changed = true;
-        }
 
-        if (!sourcesToRemove.isEmpty())
-        {
-            removeSources(sourcesToRemove);
-            changed = true;
+            AddOrRemove action = sourcesToAddOrRemove.getAction();
+            ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
+
+            if (action == AddOrRemove.Add)
+            {
+                addSources(sources);
+            }
+            else if (action == AddOrRemove.Remove)
+            {
+                removeSources(sources);
+            }
         }
 
         return changed;

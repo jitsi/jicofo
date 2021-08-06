@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.util.*;
@@ -1402,7 +1403,7 @@ public class JitsiMeetConferenceImpl
                     {
                         logger.warn("No jingle session yet for " + participant.getChatMember().getName());
 
-                        participant.addPendingRemoteSourcesToAdd(sources);
+                        participant.queueRemoteSourcesToAdd(sources);
                     }
                 });
     }
@@ -1682,18 +1683,20 @@ public class JitsiMeetConferenceImpl
         // Loop over current participant and send 'source-add' notification
         propagateNewSources(participant, sourcesAccepted);
 
-        // Signal sources which have been added or removed to the conference since the Jingle session was initiated.
-        ConferenceSourceMap remoteSourcesToAdd = participant.getPendingRemoteSourcesToAdd();
-        ConferenceSourceMap remoteSourcesToRemove = participant.getPendingRemoteSourcesToRemove();
-        if (!remoteSourcesToAdd.isEmpty())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : participant.clearQueuedRemoteSourceChanges())
         {
-            jingle.sendAddSourceIQ(remoteSourcesToAdd, jingleSession);
+            AddOrRemove action = sourcesToAddOrRemove.getAction();
+            ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
+            logger.info("Sending a queued source-" + action + " to " + participantId + ", sources:" + sources);
+            if (action == AddOrRemove.Add)
+            {
+                jingle.sendAddSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession);
+            }
+            else if (action == AddOrRemove.Remove)
+            {
+                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession);
+            }
         }
-        if (!remoteSourcesToRemove.isEmpty())
-        {
-            jingle.sendRemoveSourceIQ(remoteSourcesToRemove, jingleSession);
-        }
-        participant.clearPendingRemoteSources();
 
         return null;
     }
@@ -1773,7 +1776,7 @@ public class JitsiMeetConferenceImpl
                                 else
                                 {
                                     logger.warn("Remove source: no jingle session for " + participantJid);
-                                    otherParticipant.addPendingRemoteSourcesToRemove(sourcesAcceptedToBeRemoved);
+                                    otherParticipant.queueRemoteSourcesToRemove(sourcesAcceptedToBeRemoved);
                                 }
                             });
         }
@@ -2628,7 +2631,7 @@ public class JitsiMeetConferenceImpl
                {
                    // The allocator will take care of updating these when the
                    // session is established.
-                   octoParticipant.addPendingRemoteSourcesToAdd(sources);
+                   octoParticipant.queueRemoteSourcesToAdd(sources);
                }
            }
         }
@@ -2651,7 +2654,7 @@ public class JitsiMeetConferenceImpl
                     }
                     else
                     {
-                        octoParticipant.addPendingRemoteSourcesToRemove(sourcesToRemove);
+                        octoParticipant.queueRemoteSourcesToRemove(sourcesToRemove);
                     }
                 }
             }
