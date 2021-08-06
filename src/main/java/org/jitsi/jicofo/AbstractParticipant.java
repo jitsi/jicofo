@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import java.util.*;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -49,23 +50,9 @@ public abstract class AbstractParticipant
     private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
 
     /**
-     * Remote sources that have been added to the conference, but not yet been signaled to this participant. They are to
-     * be signaled once the Jingle session is initiated.
+     * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
-    @NotNull
-    private ConferenceSourceMap pendingRemoteSourcesToAdd = new ConferenceSourceMap();
-
-    /**
-     * Remote sources that have been removed from the conference, but have already been signaled to this participant.
-     * Their removal is to be signaled once the Jingle session is initiated.
-     *
-     * Note that if a source is added and then removed while the jingle session is initiating it will be present in both
-     * {@link #pendingRemoteSourcesToAdd} and {@link #pendingRemoteSourcesToRemove}. As a result we'll unnecessarily
-     * send a source-add followed by a source-remove for this source. This is a rare case, so the inefficiency is
-     * acceptable.
-     */
-    @NotNull
-    private ConferenceSourceMap pendingRemoteSourcesToRemove = new ConferenceSourceMap();
+    private List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
 
     /**
      * Returns currently stored map of RTP description to Colibri content name.
@@ -127,47 +114,33 @@ public abstract class AbstractParticipant
 
     /**
      * Clear the pending remote sources, indicating that they have now been signaled.
+     * @return the list of source addition or removal which have been queueed and not signaled to this participant.
      */
-    public void clearPendingRemoteSources()
+    public List<SourcesToAddOrRemove> clearQueuedRemoteSourceChanges()
     {
-        pendingRemoteSourcesToAdd = new ConferenceSourceMap();
-        pendingRemoteSourcesToRemove = new ConferenceSourceMap();
+        List<SourcesToAddOrRemove> ret = queuedRemoteSourceChanges;
+        queuedRemoteSourceChanges = new ArrayList<>();
+        return ret;
     }
 
     /**
-     * Returns the set of remote sources which are yet to be signaled to this participant.
-     */
-    public ConferenceSourceMap getPendingRemoteSourcesToAdd()
-    {
-        return pendingRemoteSourcesToAdd.unmodifiable();
-    }
-
-    /**
-     * Returns set of remote sources whose removal has yet to be signaled to this participant.
-     */
-    public ConferenceSourceMap getPendingRemoteSourcesToRemove()
-    {
-        return pendingRemoteSourcesToRemove.unmodifiable();
-    }
-
-    /**
-     * Adds sources to the set of remote sources which haven't been signaled yet.
+     * Queue a "source-add" for remote sources, to be signaled once the session is established.
      *
-     * @param sourcesToAdd the remote sources to add to the set of sources which are yet to be signaled.
+     * @param sourcesToAdd the remote sources for the "source-add".
      */
-    public void addPendingRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
+    public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
     {
-        pendingRemoteSourcesToAdd.add(sourcesToAdd);
+        queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
     }
 
     /**
-     * Adds sources to the set of remote sources whose removal hasn't been signaled yet.
+     * Queue a "source-remove" for remote sources, to be signaled once the session is established.
      *
-     * @param sourcesToAdd the remote sources to add to the set of sources whose removal is yet to be signaled.
+     * @param sourcesToRemove the remote sources for the "source-remove".
      */
-    public void addPendingRemoteSourcesToRemove(ConferenceSourceMap sourcesToAdd)
+    public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
     {
-        pendingRemoteSourcesToRemove.add(sourcesToAdd);
+        queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
     }
 
     /**
