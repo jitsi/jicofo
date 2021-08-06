@@ -1687,7 +1687,9 @@ public class JitsiMeetConferenceImpl
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
             ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
-            logger.info("Sending a queued source-" + action + " to " + participantId + ", sources:" + sources);
+            logger.info(
+                    "Sending a queued source-" + action.toString().toLowerCase()
+                            + " to " + participantId + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
                 jingle.sendAddSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession);
