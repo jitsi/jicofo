@@ -1520,6 +1520,7 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
+        String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised;
         ConferenceSourceMap sourcesAccepted;
         try
@@ -1533,9 +1534,12 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
+        logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
+        logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAdvertised);
+
         if (sourcesAccepted.isEmpty())
         {
-            logger.warn("Stop processing source-add, no new sources added: " + participant.getChatMember().getName());
+            logger.warn("Stop processing source-add, no new sources added: " + participantId);
             return null;
         }
 
@@ -1556,8 +1560,7 @@ public class JitsiMeetConferenceImpl
             }
             else
             {
-                logger.warn("No bridge or no colibri channels for a participant: "
-                        + participant.getChatMember().getName());
+                logger.warn("No bridge or no colibri channels for a participant: " + participantId);
                 // TODO: how do we handle this? Re-invite?
             }
         }
@@ -1622,7 +1625,12 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(contents);
         participant.addTransportFromJingle(contents);
 
+        String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
+        }
         if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
@@ -1645,10 +1653,7 @@ public class JitsiMeetConferenceImpl
 
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
-
-        logger.info(
-                "Received session-accept from " + participant.getChatMember().getName()
-                        + " with accepted sources:" + sourcesAccepted);
+        logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
@@ -1720,9 +1725,16 @@ public class JitsiMeetConferenceImpl
             return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
+        String participantId = participant.getEndpointId();
+        logger.debug(
+                () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
+        logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
+
         if (sourcesAcceptedToBeRemoved.isEmpty())
         {
-            logger.warn("No sources or groups to be removed from: " + participantJid);
+            logger.warn(
+                    "No sources or groups to be removed from " + participantId
+                            + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
             return null;
         }
 
@@ -1744,8 +1756,6 @@ public class JitsiMeetConferenceImpl
                 .filter(bridge -> !bridge.equals(bridgeSession))
                 .forEach(bridge -> bridge.removeSourcesFromOcto(sourcesAcceptedToBeRemoved));
         }
-
-        logger.info("Removing sources from " + participantJid + ": " + sourcesAcceptedToBeRemoved);
 
         if (sendSourceRemove)
         {
@@ -2679,7 +2689,7 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Creating an Octo participant for " + bridge);
 
-            OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays, logger);
+            OctoParticipant octoParticipant = new OctoParticipant(relays, logger, bridge.getJid());
 
             ConferenceSourceMap remoteSources = getSources(participants, true);
 

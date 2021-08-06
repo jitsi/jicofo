@@ -36,6 +36,9 @@ data class SsrcGroup(
         )
     }
 
+    /** A concise string more suitable for logging. */
+    override fun toString(): String = "${semantics.toString().uppercase()}$ssrcs"
+
     companion object {
         /**
          * Creates an [SsrcGroup] from an XML extension. The semantics is encoded as a string, so needs to be parsed
