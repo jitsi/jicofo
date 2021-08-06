@@ -44,6 +44,16 @@ data class EndpointSourceSet(
      */
     fun toJingle(owner: Jid? = null): List<ContentPacketExtension> = toJingle(mutableMapOf(), owner)
 
+    val audioSsrcs: Set<Long> by lazy { getSsrcs(MediaType.AUDIO) }
+    val videoSsrcs: Set<Long> by lazy { getSsrcs(MediaType.VIDEO) }
+
+    private fun getSsrcs(mediaType: MediaType) = sources.filter { it.mediaType == mediaType }.map { it.ssrc }.toSet()
+
+    /**
+     * A concise string more suitable for logging. This may be slow for large sets.
+     */
+    override fun toString() = "[audio=$audioSsrcs, video=$videoSsrcs, groups=$ssrcGroups]"
+
     companion object {
         /** An [EndpointSourceSet] instance with no sources or source groups */
         val EMPTY = EndpointSourceSet()

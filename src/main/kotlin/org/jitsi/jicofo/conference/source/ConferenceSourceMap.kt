@@ -140,6 +140,9 @@ open class ConferenceSourceMap(
         }
         this
     }
+
+    /** Use a kotlin map for easy pretty printing. Inefficient. */
+    override fun toString(): String = endpointSourceSets.toMap().toString()
 }
 
 /**
