@@ -95,7 +95,8 @@ class ValidatingConferenceSourceMap(
         }
 
         // If we rejected any of the SSRCs we'd throw above. We accepted them all.
-        val resultingSources = existingSourceSet.sources + sourcesToAdd.sources
+        val acceptedSources = sourcesToAdd.sources
+        val resultingSources = existingSourceSet.sources + acceptedSources
         val resultingSsrcs = resultingSources.map { it.ssrc }.toSet()
 
         val acceptedGroups = mutableSetOf<SsrcGroup>()
@@ -116,7 +117,7 @@ class ValidatingConferenceSourceMap(
         validateEndpointSourceSet(resultingSourceSet)
 
         val acceptedSourceMap = ConferenceSourceMap(
-            owner to EndpointSourceSet(existingSourceSet.sources + sourcesToAdd.sources, acceptedGroups)
+            owner to EndpointSourceSet(acceptedSources, acceptedGroups)
         )
         add(acceptedSourceMap)
         return acceptedSourceMap
