@@ -1536,7 +1536,7 @@ public class JitsiMeetConferenceImpl
         }
 
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
-        logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAdvertised);
+        logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
         {
