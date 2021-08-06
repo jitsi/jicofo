@@ -41,6 +41,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
         val s5 = Source(5, VIDEO, cname = cname, msid = msid)
         val s6 = Source(6, VIDEO, cname = cname, msid = msid)
         val s7 = Source(7, AUDIO)
+        val videoSources = setOf(s1, s2, s3, s4, s5, s6)
         val sources = setOf(s1, s2, s3, s4, s5, s6, s7)
 
         val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
@@ -55,17 +56,34 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 
         context("Adding sources.") {
             context("Standard VP8 signaling with simulcast and RTX") {
-                val sourceSet2 = EndpointSourceSet(
-                    setOf(
-                        Source(101, VIDEO, cname = cname, msid = "msid2"),
-                        Source(102, VIDEO, cname = cname, msid = "msid2"),
-                        Source(103, AUDIO)
-                    ),
-                    setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(101, 102)))
-                )
+                context("Signaled all together") {
+                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                }
+                context("Signaled with video first") {
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(videoSources, groups)) shouldBe
+                        ConferenceSourceMap(jid1 to EndpointSourceSet(videoSources, groups))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(s7)) shouldBe
+                        ConferenceSourceMap(jid1 to EndpointSourceSet(s7))
+                }
+                context("Signaled with audio first") {
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(s7)) shouldBe
+                        ConferenceSourceMap(jid1 to EndpointSourceSet(s7))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(videoSources, groups)) shouldBe
+                        ConferenceSourceMap(jid1 to EndpointSourceSet(videoSources, groups))
+                }
+                context("Adding a second endpoint") {
+                    val sourceSet2 = EndpointSourceSet(
+                        setOf(
+                            Source(101, VIDEO, cname = cname, msid = "msid2"),
+                            Source(102, VIDEO, cname = cname, msid = "msid2"),
+                            Source(103, AUDIO)
+                        ),
+                        setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(101, 102)))
+                    )
 
-                conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
-                conferenceSources.tryToAdd(jid2, sourceSet2) shouldBe ConferenceSourceMap(jid2 to sourceSet2)
+                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                    conferenceSources.tryToAdd(jid2, sourceSet2) shouldBe ConferenceSourceMap(jid2 to sourceSet2)
+                }
             }
             context("Invalid SSRCs") {
                 val invalidSsrcs = listOf(-1, 0, 0x1_0000_0000)
