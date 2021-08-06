@@ -284,6 +284,8 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
+        // Remove the injected sources, they need to be between the bridge and jicofo only.
+        conferenceSources.removeInjected();
 
         for (ContentPacketExtension cpe : offer)
         {
