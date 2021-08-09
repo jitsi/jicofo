@@ -1120,7 +1120,7 @@ public class JitsiMeetConferenceImpl
             logger.info("Removed participant " + participant.getChatMember().getName() + " removed=" + removed);
         }
 
-        BridgeSession bridgeSession = terminateParticipantBridgeSession(participant);
+        BridgeSession bridgeSession = terminateParticipantBridgeSession(participant, false);
         if (bridgeSession != null)
         {
             maybeExpireBridgeSession(bridgeSession);
@@ -2211,7 +2211,7 @@ public class JitsiMeetConferenceImpl
         {
             for (Participant participant : participants)
             {
-                terminateParticipantBridgeSession(participant);
+                terminateParticipantBridgeSession(participant, true);
             }
             for (Participant participant : participants)
             {
@@ -2223,14 +2223,14 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private BridgeSession terminateParticipantBridgeSession(@NotNull Participant participant)
+    private BridgeSession terminateParticipantBridgeSession(@NotNull Participant participant, boolean removeSources)
     {
         BridgeSession session = participant.getBridgeSession();
         participant.terminateBridgeSession();
 
         // Expire the OctoEndpoints for this participant on other
         // bridges.
-        if (session != null)
+        if (session != null && removeSources)
         {
             ConferenceSourceMap removedSources = participant.getSources();
 
