@@ -24,7 +24,8 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.jitsi.utils.MediaType
+import org.jitsi.utils.MediaType.AUDIO
+import org.jitsi.utils.MediaType.VIDEO
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -41,6 +42,40 @@ class SourcesTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
+        val jid1 = JidCreate.from("jid1")
+        val jid2 = JidCreate.from("jid2")
+        val s1 = Source(1, VIDEO)
+        val s2 = Source(2, VIDEO)
+        val s3 = Source(3, VIDEO)
+        val s4 = Source(4, VIDEO)
+        val s5 = Source(5, VIDEO)
+        val s6 = Source(6, VIDEO)
+        val s7 = Source(7, AUDIO)
+        val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
+        val fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4))
+        val fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5))
+        val fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6))
+        val sourceSet = EndpointSourceSet(
+            setOf(s1, s2, s3, s4, s5, s6, s7),
+            setOf(sim, fid1, fid2, fid3)
+        )
+
+        val e2s1 = Source(11, VIDEO)
+        val e2s2 = Source(12, VIDEO)
+        val e2s3 = Source(13, VIDEO)
+        val e2s4 = Source(14, VIDEO)
+        val e2s5 = Source(15, VIDEO)
+        val e2s6 = Source(16, VIDEO)
+        val e2s7 = Source(17, AUDIO)
+        val e2sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(11, 12, 13))
+        val e2fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(11, 14))
+        val e2fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(12, 15))
+        val e2fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(13, 16))
+        val e2sourceSet = EndpointSourceSet(
+            setOf(e2s1, e2s2, e2s3, e2s4, e2s5, e2s6, e2s7),
+            setOf(e2sim, e2fid1, e2fid2, e2fid3)
+        )
+
         context("Source") {
             context("From XML") {
                 val packetExtension = SourcePacketExtension().apply {
@@ -50,13 +85,13 @@ class SourcesTest : ShouldSpec() {
                     isInjected = true
                 }
 
-                Source(MediaType.VIDEO, packetExtension) shouldBe
-                    Source(1, MediaType.VIDEO, msid = "msid", cname = "cname", injected = true)
+                Source(VIDEO, packetExtension) shouldBe
+                    Source(1, VIDEO, msid = "msid", cname = "cname", injected = true)
             }
             context("To XML") {
                 val msidValue = "msid-value"
                 val cnameValue = "cname-value"
-                val source = Source(1, MediaType.VIDEO, msid = msidValue, cname = cnameValue, injected = true)
+                val source = Source(1, VIDEO, msid = msidValue, cname = cnameValue, injected = true)
                 val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
                 val extension = source.toPacketExtension(owner = ownerJid)
 
@@ -108,74 +143,45 @@ class SourcesTest : ShouldSpec() {
                 val packetExtension = ssrcGroup.toPacketExtension()
                 packetExtension.semantics shouldBe "SIM"
                 packetExtension.sources.size shouldBe 3
-                packetExtension.sources.map { Source(MediaType.VIDEO, it) }.toList() shouldBe listOf(
-                    Source(1, MediaType.VIDEO),
-                    Source(2, MediaType.VIDEO),
-                    Source(3, MediaType.VIDEO)
+                packetExtension.sources.map { Source(VIDEO, it) }.toList() shouldBe listOf(
+                    Source(1, VIDEO),
+                    Source(2, VIDEO),
+                    Source(3, VIDEO)
                 )
             }
         }
         context("EndpointSourceSet") {
             context("From XML") {
                 // Assume serializing works correctly -- it's tested below.
-                val ownerJid = JidCreate.from("confname@conference.example.com/abcdabcd")
-
-                val sources = setOf(Source(1, MediaType.VIDEO), Source(2, MediaType.VIDEO), Source(3, MediaType.AUDIO))
-                val ssrcGroups = setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)))
-
-                val contents = EndpointSourceSet(sources, ssrcGroups).toJingle(ownerJid)
+                val contents = sourceSet.toJingle(jid1)
                 val parsed = EndpointSourceSet.fromJingle(contents)
                 // Use the provided ownerJid, not the one encoded in XML.
-                parsed.sources shouldBe sources
-                parsed.ssrcGroups shouldBe ssrcGroups
+                parsed shouldBe sourceSet
             }
             context("To XML") {
-                val endpointSourceSet = EndpointSourceSet(
-                    setOf(Source(1, MediaType.VIDEO), Source(2, MediaType.VIDEO), Source(3, MediaType.AUDIO)),
-                    setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)))
-                )
-
-                val contents = endpointSourceSet.toJingle()
+                val contents = sourceSet.toJingle()
                 contents.size shouldBe 2
 
                 val videoContent = contents.find { it.name == "video" }!!
                 val videoRtpDesc = videoContent.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)!!
                 val videoSources = videoRtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java)
-                    .map { Source(MediaType.VIDEO, it) }
-                videoSources.toSet() shouldBe setOf(
-                    Source(1, MediaType.VIDEO),
-                    Source(2, MediaType.VIDEO)
-                )
-                val sourceGroupPacketExtension =
-                    videoRtpDesc.getFirstChildOfType(SourceGroupPacketExtension::class.java)!!
-                SsrcGroup.fromPacketExtension(sourceGroupPacketExtension) shouldBe
-                        SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
+                    .map { Source(VIDEO, it) }.toSet()
+                videoSources shouldBe sourceSet.sources.filter { it.mediaType == VIDEO }.toSet()
+
+                val sourceGroupPacketExtensions =
+                    videoRtpDesc.getChildExtensionsOfType(SourceGroupPacketExtension::class.java)
+                sourceGroupPacketExtensions.map { SsrcGroup.fromPacketExtension(it) }.toSet() shouldBe
+                    sourceSet.ssrcGroups
 
                 val audioContent = contents.find { it.name == "audio" }!!
                 val audioRtpDesc = audioContent.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)!!
                 val audioSources = audioRtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java)
-                    .map { Source(MediaType.AUDIO, it) }
-                audioSources shouldBe listOf(Source(3, MediaType.AUDIO))
+                    .map { Source(AUDIO, it) }.toSet()
+                audioSources shouldBe sourceSet.sources.filter { it.mediaType == AUDIO }.toSet()
             }
             context("Strip simulcast") {
-                val s1 = Source(1, MediaType.VIDEO)
-                val s2 = Source(2, MediaType.VIDEO)
-                val s3 = Source(3, MediaType.VIDEO)
-                val s4 = Source(4, MediaType.VIDEO)
-                val s5 = Source(5, MediaType.VIDEO)
-                val s6 = Source(6, MediaType.VIDEO)
-
-                val s7 = Source(7, MediaType.AUDIO)
-                val s8 = Source(8, MediaType.VIDEO)
-                val allSources = setOf(s1, s2, s3, s4, s5, s6, s7, s8)
-
-                val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
-                val fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4))
-                val fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5))
-                val fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6))
-                val allGroups = setOf(sim, fid1, fid2, fid3)
-                val sourceSet = EndpointSourceSet(allSources, allGroups)
-
+                val s8 = Source(8, VIDEO)
+                val allSources = sourceSet.sources + s8
 
                 context("Without RTX") {
                     val stripped = EndpointSourceSet(
@@ -185,11 +191,11 @@ class SourcesTest : ShouldSpec() {
                     stripped.sources shouldBe setOf(s1, s7, s8)
                     stripped.ssrcGroups.shouldBeEmpty()
                 }
-                context("With multiple SIM groups"){
+                context("With multiple SIM groups") {
                     val stripped = EndpointSourceSet(
-                        setOf(s1, s2, s3, s4, s5, s6, s7, s8),
+                        sourceSet.sources + s8,
                         setOf(
-                            SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)),
+                            sim,
                             SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
                         )
                     ).stripSimulcast()
@@ -197,20 +203,19 @@ class SourcesTest : ShouldSpec() {
                     stripped.ssrcGroups.shouldBeEmpty()
                 }
                 context("With RTX") {
-                    val stripped = sourceSet.stripSimulcast()
+                    val stripped = EndpointSourceSet(
+                        sourceSet.sources + s8,
+                        sourceSet.ssrcGroups
+                    ).stripSimulcast()
                     stripped.sources shouldBe setOf(s1, s4, s7, s8)
                     stripped.ssrcGroups shouldBe setOf(fid1)
                 }
             }
         }
         context("ConferenceSourceMap") {
-            val endpoint1Jid = JidCreate.from("jid1")
+            val s7 = Source(7, AUDIO, injected = true)
             val endpoint1SourceSet = EndpointSourceSet(
-                setOf(
-                    Source(1, MediaType.VIDEO),
-                    Source(2, MediaType.VIDEO),
-                    Source(3, MediaType.AUDIO, injected = true)
-                ),
+                setOf(s1, s2, s7),
                 setOf(
                     SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
                 )
@@ -219,23 +224,17 @@ class SourcesTest : ShouldSpec() {
             val endpoint1AdditionalSourceSet = EndpointSourceSet(
                 setOf(
                     // The duplicates should be removed
-                    Source(1, MediaType.VIDEO),
-                    Source(2, MediaType.VIDEO),
-                    Source(3, MediaType.AUDIO, injected = true),
-                    Source(4, MediaType.VIDEO),
-                    Source(5, MediaType.VIDEO),
-                    Source(6, MediaType.AUDIO),
+                    s1, s2, s3, s4, s7
                 ),
-                setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(4, 5)))
+                setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4)))
             )
             val endpoint1CombinedSourceSet = endpoint1SourceSet + endpoint1AdditionalSourceSet
 
-            val endpoint2Jid = JidCreate.from("jid2")
             val endpoint2SourceSet = EndpointSourceSet(
                 setOf(
-                    Source(101, MediaType.VIDEO),
-                    Source(102, MediaType.VIDEO),
-                    Source(103, MediaType.AUDIO)
+                    Source(101, VIDEO),
+                    Source(102, VIDEO),
+                    Source(103, AUDIO)
                 ),
                 setOf(
                     SsrcGroup(SsrcGroupSemantics.Fid, listOf(101, 102))
@@ -244,87 +243,79 @@ class SourcesTest : ShouldSpec() {
 
             context("Constructors") {
                 context("Default") {
-                    val conferenceSourceMap = ConferenceSourceMap(
-                        mutableMapOf(
-                            endpoint1Jid to endpoint1SourceSet
-                        )
-                    )
+                    val conferenceSourceMap = ConferenceSourceMap(mutableMapOf(jid1 to endpoint1SourceSet))
                     conferenceSourceMap.size shouldBe 1
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
                 }
                 context("With a single EndpointSourceSet") {
-                    val conferenceSourceMap = ConferenceSourceMap(endpoint1Jid to endpoint1SourceSet)
+                    val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
                     conferenceSourceMap.size shouldBe 1
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
                 }
                 context("With multiple EndpointSourceSets") {
                     val conferenceSourceMap = ConferenceSourceMap(
-                        endpoint1Jid to endpoint1SourceSet,
-                        endpoint2Jid to endpoint2SourceSet
+                        jid1 to endpoint1SourceSet,
+                        jid2 to endpoint2SourceSet
                     )
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1SourceSet
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
             }
             context("Add") {
-                val conferenceSourceMap = ConferenceSourceMap(endpoint1Jid to endpoint1SourceSet)
+                val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
 
                 context("Without overlap in endpoints") {
-                    conferenceSourceMap.add(endpoint2Jid, endpoint2SourceSet)
+                    conferenceSourceMap.add(jid2, endpoint2SourceSet)
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1SourceSet
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
                 context("With overlap in endpoints") {
                     conferenceSourceMap.add(
                         ConferenceSourceMap(
-                            endpoint1Jid to endpoint1AdditionalSourceSet,
-                            endpoint2Jid to endpoint2SourceSet
+                            jid1 to endpoint1AdditionalSourceSet,
+                            jid2 to endpoint2SourceSet
                         )
                     )
 
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
             }
             context("Remove") {
                 val conferenceSourceMap = ConferenceSourceMap(
-                    endpoint1Jid to endpoint1CombinedSourceSet,
-                    endpoint2Jid to endpoint2SourceSet
+                    jid1 to endpoint1CombinedSourceSet,
+                    jid2 to endpoint2SourceSet
                 )
                 context("All of an endpoint's sources") {
-                    conferenceSourceMap.remove(ConferenceSourceMap(endpoint2Jid to endpoint2SourceSet))
+                    conferenceSourceMap.remove(ConferenceSourceMap(jid2 to endpoint2SourceSet))
                     conferenceSourceMap.size shouldBe 1
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
-                    conferenceSourceMap[endpoint2Jid] shouldBe null
+                    conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
+                    conferenceSourceMap[jid2] shouldBe null
                 }
                 context("Some of an endpoint's sources") {
-                    conferenceSourceMap.remove(ConferenceSourceMap(endpoint1Jid to endpoint1SourceSet))
+                    conferenceSourceMap.remove(ConferenceSourceMap(jid1 to endpoint1SourceSet))
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe EndpointSourceSet(
-                        setOf(
-                            Source(4, MediaType.VIDEO),
-                            Source(5, MediaType.VIDEO),
-                            Source(6, MediaType.AUDIO),
-                        ),
-                        setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(4, 5)))
+                    conferenceSourceMap[jid1] shouldBe EndpointSourceSet(
+                        setOf(s3, s4),
+                        setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4)))
                     )
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
                 context("Nonexistent endpoint sources") {
                     conferenceSourceMap.remove(
                         ConferenceSourceMap(
-                            endpoint1Jid to EndpointSourceSet(
-                                setOf(Source(12345, MediaType.VIDEO)),
+                            jid1 to EndpointSourceSet(
+                                setOf(Source(12345, VIDEO)),
                                 setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(12345)))
                             )
                         )
                     )
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
                 context("Nonexistent endpoint") {
                     conferenceSourceMap.remove(
@@ -333,12 +324,12 @@ class SourcesTest : ShouldSpec() {
                         )
                     )
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
             }
             context("To Jingle") {
-                val conferenceSourceMap = ConferenceSourceMap(endpoint1Jid to endpoint1SourceSet)
+                val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
                 val contents = conferenceSourceMap.toJingle()
 
                 contents.size shouldBe 2
@@ -347,51 +338,50 @@ class SourcesTest : ShouldSpec() {
                 val videoRtpDesc = videoContent.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)!!
                 val videoSources =
                     videoRtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java)
-                videoSources.map { Source(MediaType.VIDEO, it) }.toSet() shouldBe setOf(
-                    Source(1, MediaType.VIDEO),
-                    Source(2, MediaType.VIDEO)
+                videoSources.map { Source(VIDEO, it) }.toSet() shouldBe setOf(
+                    Source(1, VIDEO),
+                    Source(2, VIDEO)
                 )
                 videoSources.forEach {
-                    it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe endpoint1Jid
+                    it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe jid1
                 }
 
                 val sourceGroupPacketExtension =
                     videoRtpDesc.getFirstChildOfType(SourceGroupPacketExtension::class.java)!!
                 SsrcGroup.fromPacketExtension(sourceGroupPacketExtension) shouldBe
-                        SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
+                    SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
 
                 val audioContent = contents.find { it.name == "audio" }!!
                 val audioRtpDesc = audioContent.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)!!
                 val audioSources = audioRtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java)
-                audioSources.map { Source(MediaType.AUDIO, it) } shouldBe
-                        listOf(Source(3, MediaType.AUDIO, injected = true))
+                audioSources.map { Source(AUDIO, it) } shouldBe listOf(s7)
                 audioSources.forEach {
-                    it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe endpoint1Jid
+                    it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe jid1
                 }
             }
             context("removeInjected") {
                 context("With remaining") {
                     val conferenceSourceMap = ConferenceSourceMap(
-                        endpoint1Jid to endpoint1SourceSet,
-                        endpoint2Jid to endpoint2SourceSet
+                        jid1 to endpoint1SourceSet,
+                        jid2 to endpoint2SourceSet
                     ).removeInjected()
 
                     conferenceSourceMap.size shouldBe 2
-                    conferenceSourceMap[endpoint1Jid] shouldBe EndpointSourceSet(
+                    conferenceSourceMap[jid1] shouldBe EndpointSourceSet(
                         setOf(
-                            Source(1, MediaType.VIDEO),
-                            Source(2, MediaType.VIDEO),
+                            Source(1, VIDEO),
+                            Source(2, VIDEO),
                         ),
                         setOf(
                             SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
                         )
                     )
-                    conferenceSourceMap[endpoint2Jid] shouldBe endpoint2SourceSet
+                    conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
                 }
                 context("Without remaining") {
                     val conferenceSourceMap = ConferenceSourceMap(
-                        endpoint1Jid to EndpointSourceSet(
-                            setOf(Source(1, MediaType.AUDIO, injected = true))
+                        jid1 to EndpointSourceSet(
+                            setOf(Source(1, AUDIO, injected = true))
                         )
                     ).removeInjected()
                     conferenceSourceMap.isEmpty() shouldBe true
@@ -399,16 +389,16 @@ class SourcesTest : ShouldSpec() {
             }
             context("unmodifiable") {
                 val conferenceSourceMap = ConferenceSourceMap(
-                    endpoint1Jid to endpoint1SourceSet,
-                    endpoint2Jid to endpoint2SourceSet
+                    jid1 to endpoint1SourceSet,
+                    jid2 to endpoint2SourceSet
                 )
 
                 val unmodifiable = conferenceSourceMap.unmodifiable
-                unmodifiable[endpoint1Jid] shouldBe endpoint1SourceSet
+                unmodifiable[jid1] shouldBe endpoint1SourceSet
 
-                conferenceSourceMap.add(endpoint1Jid, endpoint1AdditionalSourceSet)
-                conferenceSourceMap[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
-                unmodifiable[endpoint1Jid] shouldBe endpoint1CombinedSourceSet
+                conferenceSourceMap.add(jid1, endpoint1AdditionalSourceSet)
+                conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
+                unmodifiable[jid1] shouldBe endpoint1CombinedSourceSet
 
                 shouldThrow<UnsupportedOperationException> {
                     unmodifiable.add(ConferenceSourceMap())
@@ -418,39 +408,6 @@ class SourcesTest : ShouldSpec() {
                 }
             }
             context("Strip simulcast") {
-                val jid1 = JidCreate.from("jid1")
-                val jid2 = JidCreate.from("jid2")
-                val s1 = Source(1, MediaType.VIDEO)
-                val s2 = Source(2, MediaType.VIDEO)
-                val s3 = Source(3, MediaType.VIDEO)
-                val s4 = Source(4, MediaType.VIDEO)
-                val s5 = Source(5, MediaType.VIDEO)
-                val s6 = Source(6, MediaType.VIDEO)
-                val s7 = Source(7, MediaType.AUDIO)
-                val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
-                val fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4))
-                val fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5))
-                val fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6))
-                val sourceSet = EndpointSourceSet(
-                    setOf(s1, s2, s3, s4, s5, s6, s7),
-                    setOf(sim, fid1, fid2, fid3)
-                )
-
-                val e2s1 = Source(11, MediaType.VIDEO)
-                val e2s2 = Source(12, MediaType.VIDEO)
-                val e2s3 = Source(13, MediaType.VIDEO)
-                val e2s4 = Source(14, MediaType.VIDEO)
-                val e2s5 = Source(15, MediaType.VIDEO)
-                val e2s6 = Source(16, MediaType.VIDEO)
-                val e2s7 = Source(17, MediaType.AUDIO)
-                val e2sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(11, 12, 13))
-                val e2fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(11, 14))
-                val e2fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(12, 15))
-                val e2fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(13, 16))
-                val e2sourceSet = EndpointSourceSet(
-                    setOf(e2s1, e2s2, e2s3, e2s4, e2s5, e2s6, e2s7),
-                    setOf(e2sim, e2fid1, e2fid2, e2fid3)
-                )
 
                 val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
                 conferenceSourceMap.stripSimulcast()
@@ -458,7 +415,6 @@ class SourcesTest : ShouldSpec() {
                 // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
                 conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
                 conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
-
             }
         }
     }
