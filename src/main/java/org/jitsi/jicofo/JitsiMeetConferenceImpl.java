@@ -1390,6 +1390,12 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
+        if (ConferenceConfig.config.stripSimulcast())
+        {
+            sources = sources.copy();
+            sources.stripSimulcast();
+        }
+        ConferenceSourceMap finalSources = sources;
         participants.stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
             .forEach(
@@ -1397,13 +1403,13 @@ public class JitsiMeetConferenceImpl
                 {
                     if (participant.isSessionEstablished())
                     {
-                        jingle.sendAddSourceIQ(sources, participant.getJingleSession());
+                        jingle.sendAddSourceIQ(finalSources, participant.getJingleSession());
                     }
                     else
                     {
                         logger.warn("No jingle session yet for " + participant.getChatMember().getName());
 
-                        participant.queueRemoteSourcesToAdd(sources);
+                        participant.queueRemoteSourcesToAdd(finalSources);
                     }
                 });
     }
@@ -1755,35 +1761,59 @@ public class JitsiMeetConferenceImpl
                     participant.getColibriChannelsInfo());
         }
 
-        synchronized (bridges)
-        {
-            operationalBridges()
-                .filter(bridge -> !bridge.equals(bridgeSession))
-                .forEach(bridge -> bridge.removeSourcesFromOcto(sourcesAcceptedToBeRemoved));
-        }
-
+        removeSourcesFromOcto(sourcesAcceptedToBeRemoved, bridgeSession);
         if (sendSourceRemove)
         {
-            participants.stream()
-                    .filter(otherParticipant -> otherParticipant != participant)
-                    .forEach(
-                            otherParticipant ->
-                            {
-                                if (otherParticipant.isSessionEstablished())
-                                {
-                                    jingle.sendRemoveSourceIQ(
-                                            sourcesAcceptedToBeRemoved,
-                                            otherParticipant.getJingleSession());
-                                }
-                                else
-                                {
-                                    logger.warn("Remove source: no jingle session for " + participantJid);
-                                    otherParticipant.queueRemoteSourcesToRemove(sourcesAcceptedToBeRemoved);
-                                }
-                            });
+            sendSourceRemove(sourcesAcceptedToBeRemoved, participant);
         }
 
         return null;
+    }
+
+    /**
+     * Update octo channels on all bridges except {@code except}, removing the specified set of {@code sources}.
+     * @param sources the sources to remove.
+     * @param except the bridge session which is not to be updated.
+     */
+    private void removeSourcesFromOcto(final ConferenceSourceMap sources, BridgeSession except)
+    {
+        synchronized (bridges)
+        {
+            operationalBridges()
+                    .filter(bridge -> !bridge.equals(except))
+                    .forEach(bridge -> bridge.removeSourcesFromOcto(sources));
+        }
+    }
+
+    /**
+     * Send a source-remove message to all participant except for {@code except}.
+     * @param sources the sources to be contained in the source-remove message.
+     * @param except a participant to not send a source-remove to.
+     */
+    private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
+    {
+        if (ConferenceConfig.config.stripSimulcast())
+        {
+            sources = sources.copy();
+            sources.stripSimulcast();
+        }
+
+        final ConferenceSourceMap finalSources = sources;
+        participants.stream()
+                .filter(participant -> participant != except)
+                .forEach(
+                        participant ->
+                        {
+                            if (participant.isSessionEstablished())
+                            {
+                                jingle.sendRemoveSourceIQ(finalSources, participant.getJingleSession());
+                            }
+                            else
+                            {
+                                logger.warn("Remove source: no jingle session for " + participant.getEndpointId());
+                                participant.queueRemoteSourcesToRemove(finalSources);
+                            }
+                        });
     }
 
     /**
