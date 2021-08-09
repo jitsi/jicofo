@@ -68,6 +68,11 @@ class ConferenceConfig {
     }
     fun useRandomSharedDocumentName(): Boolean = useRandomSharedDocumentName
 
+    val stripSimulcast: Boolean by config {
+        "jicofo.conference.strip-simulcast".from(newConfig)
+    }
+    fun stripSimulcast() = stripSimulcast
+
     companion object {
         @JvmField
         val config = ConferenceConfig()

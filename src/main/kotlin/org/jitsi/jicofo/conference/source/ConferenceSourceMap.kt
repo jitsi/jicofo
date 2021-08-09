@@ -143,6 +143,14 @@ open class ConferenceSourceMap(
 
     /** Use a kotlin map for easy pretty printing. Inefficient. */
     override fun toString(): String = endpointSourceSets.toMap().toString()
+
+    /**
+     * Strip simulcast SSRCs from each entry in the map. Modifies the map in place.
+     * See also [EndpointSourceSet.stripSimulcast].
+     */
+    open fun stripSimulcast() = synchronized(syncRoot) {
+        endpointSourceSets.forEach { (owner, sources) -> endpointSourceSets[owner] = sources.stripSimulcast() }
+    }
 }
 
 /**
@@ -168,6 +176,9 @@ class UnmodifiableConferenceSourceMap(
 
     override fun removeInjected() =
         throw UnsupportedOperationException("removeInjected() not supported in unmodifiable view")
+
+    override fun stripSimulcast() =
+        throw UnsupportedOperationException("stripSimulcast() not supported in unmodifiable view")
 }
 
 fun EndpointSourceSet.withoutInjected() = EndpointSourceSet(

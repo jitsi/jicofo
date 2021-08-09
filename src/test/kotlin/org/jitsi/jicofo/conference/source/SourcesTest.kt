@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.jitsi.utils.MediaType
@@ -155,6 +156,51 @@ class SourcesTest : ShouldSpec() {
                 val audioSources = audioRtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java)
                     .map { Source(MediaType.AUDIO, it) }
                 audioSources shouldBe listOf(Source(3, MediaType.AUDIO))
+            }
+            context("Strip simulcast") {
+                val s1 = Source(1, MediaType.VIDEO)
+                val s2 = Source(2, MediaType.VIDEO)
+                val s3 = Source(3, MediaType.VIDEO)
+                val s4 = Source(4, MediaType.VIDEO)
+                val s5 = Source(5, MediaType.VIDEO)
+                val s6 = Source(6, MediaType.VIDEO)
+
+                val s7 = Source(7, MediaType.AUDIO)
+                val s8 = Source(8, MediaType.VIDEO)
+                val allSources = setOf(s1, s2, s3, s4, s5, s6, s7, s8)
+
+                val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
+                val fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4))
+                val fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5))
+                val fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6))
+                val allGroups = setOf(sim, fid1, fid2, fid3)
+                val sourceSet = EndpointSourceSet(allSources, allGroups)
+
+
+                context("Without RTX") {
+                    val stripped = EndpointSourceSet(
+                        setOf(s1, s2, s3, s7, s8),
+                        setOf(sim)
+                    ).stripSimulcast()
+                    stripped.sources shouldBe setOf(s1, s7, s8)
+                    stripped.ssrcGroups.shouldBeEmpty()
+                }
+                context("With multiple SIM groups"){
+                    val stripped = EndpointSourceSet(
+                        setOf(s1, s2, s3, s4, s5, s6, s7, s8),
+                        setOf(
+                            SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)),
+                            SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
+                        )
+                    ).stripSimulcast()
+                    stripped.sources shouldBe setOf(s1, s4, s7, s8)
+                    stripped.ssrcGroups.shouldBeEmpty()
+                }
+                context("With RTX") {
+                    val stripped = sourceSet.stripSimulcast()
+                    stripped.sources shouldBe setOf(s1, s4, s7, s8)
+                    stripped.ssrcGroups shouldBe setOf(fid1)
+                }
             }
         }
         context("ConferenceSourceMap") {
@@ -370,6 +416,49 @@ class SourcesTest : ShouldSpec() {
                 shouldThrow<UnsupportedOperationException> {
                     unmodifiable.remove(ConferenceSourceMap())
                 }
+            }
+            context("Strip simulcast") {
+                val jid1 = JidCreate.from("jid1")
+                val jid2 = JidCreate.from("jid2")
+                val s1 = Source(1, MediaType.VIDEO)
+                val s2 = Source(2, MediaType.VIDEO)
+                val s3 = Source(3, MediaType.VIDEO)
+                val s4 = Source(4, MediaType.VIDEO)
+                val s5 = Source(5, MediaType.VIDEO)
+                val s6 = Source(6, MediaType.VIDEO)
+                val s7 = Source(7, MediaType.AUDIO)
+                val sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
+                val fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 4))
+                val fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(2, 5))
+                val fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 6))
+                val sourceSet = EndpointSourceSet(
+                    setOf(s1, s2, s3, s4, s5, s6, s7),
+                    setOf(sim, fid1, fid2, fid3)
+                )
+
+                val e2s1 = Source(11, MediaType.VIDEO)
+                val e2s2 = Source(12, MediaType.VIDEO)
+                val e2s3 = Source(13, MediaType.VIDEO)
+                val e2s4 = Source(14, MediaType.VIDEO)
+                val e2s5 = Source(15, MediaType.VIDEO)
+                val e2s6 = Source(16, MediaType.VIDEO)
+                val e2s7 = Source(17, MediaType.AUDIO)
+                val e2sim = SsrcGroup(SsrcGroupSemantics.Sim, listOf(11, 12, 13))
+                val e2fid1 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(11, 14))
+                val e2fid2 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(12, 15))
+                val e2fid3 = SsrcGroup(SsrcGroupSemantics.Fid, listOf(13, 16))
+                val e2sourceSet = EndpointSourceSet(
+                    setOf(e2s1, e2s2, e2s3, e2s4, e2s5, e2s6, e2s7),
+                    setOf(e2sim, e2fid1, e2fid2, e2fid3)
+                )
+
+                val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
+                conferenceSourceMap.stripSimulcast()
+
+                // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
+                conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
+                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
+
             }
         }
     }

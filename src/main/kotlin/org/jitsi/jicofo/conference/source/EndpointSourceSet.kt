@@ -160,3 +160,33 @@ operator fun EndpointSourceSet.plus(source: Source) =
 
 operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) =
     EndpointSourceSet(this.sources, this.ssrcGroups + ssrcGroup)
+
+/**
+ * Create a new [EndpointSourceSet] by stripping all simulcast-related SSRCs and groups except for the first SSRC in
+ * a simulcast group. This assumes that the first SSRC in the simulcast group and its associated RTX SSRC are the only
+ * SSRCs that receivers of simulcast streams need to know about.
+ */
+fun EndpointSourceSet.stripSimulcast(): EndpointSourceSet {
+    val groupsToRemove = mutableSetOf<SsrcGroup>()
+    val ssrcsToRemove = mutableSetOf<Long>()
+
+    ssrcGroups.filter { it.semantics == SsrcGroupSemantics.Sim }.forEach { simGroup ->
+        groupsToRemove.add(simGroup)
+        simGroup.ssrcs.forEachIndexed { index: Int, ssrc: Long ->
+            if (index > 0) ssrcsToRemove.add(ssrc)
+        }
+    }
+    ssrcGroups.filter { it.semantics == SsrcGroupSemantics.Fid }.forEach { fidGroup ->
+        if (fidGroup.ssrcs.size != 2) {
+            throw IllegalArgumentException("Invalid FID group, has ${fidGroup.ssrcs.size} ssrcs.")
+        }
+        if (ssrcsToRemove.contains(fidGroup.ssrcs[0])) {
+            ssrcsToRemove.add(fidGroup.ssrcs[1])
+            groupsToRemove.add(fidGroup)
+        }
+    }
+    return EndpointSourceSet(
+        sources.filter { !ssrcsToRemove.contains(it.ssrc) }.toSet(),
+        ssrcGroups - groupsToRemove
+    )
+}
