@@ -297,24 +297,20 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         for (ContentPacketExtension cpe : offer)
         {
             String contentName = cpe.getName();
-            ColibriConferenceIQ.Content colibriContent
-                = colibriChannels.getContent(contentName);
+            ColibriConferenceIQ.Content colibriContent = colibriChannels.getContent(contentName);
 
             if (colibriContent == null)
                 continue;
 
             // Channels
-            for (ColibriConferenceIQ.Channel channel
-                    : colibriContent.getChannels())
+            for (ColibriConferenceIQ.Channel channel : colibriContent.getChannels())
             {
                 ColibriConferenceIQ.ChannelBundle bundle
-                    = colibriChannels.getChannelBundle(
-                    channel.getChannelBundleId());
+                    = colibriChannels.getChannelBundle(channel.getChannelBundleId());
 
                 if (bundle == null)
                 {
-                    logger.error(
-                        "No bundle for " + channel.getChannelBundleId());
+                    logger.error("No bundle for " + channel.getChannelBundleId());
                     continue;
                 }
 
@@ -322,21 +318,17 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
                 if (!transport.isRtcpMux())
                 {
-                    transport.addChildExtension(
-                            new RtcpmuxPacketExtension());
+                    transport.addChildExtension(new RtcpmuxPacketExtension());
                 }
 
                 try
                 {
                     // Remove empty transport PE
                     IceUdpTransportPacketExtension empty
-                        = cpe.getFirstChildOfType(
-                                IceUdpTransportPacketExtension.class);
+                        = cpe.getFirstChildOfType(IceUdpTransportPacketExtension.class);
                     cpe.getChildExtensions().remove(empty);
 
-                    cpe.addChildExtension(
-                            IceUdpTransportPacketExtension
-                                .cloneTransportAndCandidates(transport, true));
+                    cpe.addChildExtension(IceUdpTransportPacketExtension.cloneTransportAndCandidates(transport, true));
                 }
                 catch (Exception e)
                 {
@@ -344,17 +336,14 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 }
             }
             // SCTP connections
-            for (ColibriConferenceIQ.SctpConnection sctpConn
-                    : colibriContent.getSctpConnections())
+            for (ColibriConferenceIQ.SctpConnection sctpConn : colibriContent.getSctpConnections())
             {
                 ColibriConferenceIQ.ChannelBundle bundle
-                    = colibriChannels.getChannelBundle(
-                            sctpConn.getChannelBundleId());
+                    = colibriChannels.getChannelBundle(sctpConn.getChannelBundleId());
 
                 if (bundle == null)
                 {
-                    logger.error(
-                        "No bundle for " + sctpConn.getChannelBundleId());
+                    logger.error("No bundle for " + sctpConn.getChannelBundleId());
                     continue;
                 }
 
@@ -364,19 +353,16 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 {
                     // Remove empty transport
                     IceUdpTransportPacketExtension empty
-                        = cpe.getFirstChildOfType(
-                                IceUdpTransportPacketExtension.class);
+                        = cpe.getFirstChildOfType(IceUdpTransportPacketExtension.class);
                     cpe.getChildExtensions().remove(empty);
 
                     IceUdpTransportPacketExtension copy
-                        = IceUdpTransportPacketExtension
-                            .cloneTransportAndCandidates(transport, true);
+                        = IceUdpTransportPacketExtension.cloneTransportAndCandidates(transport, true);
 
                     // FIXME: hardcoded
                     SctpMapExtension sctpMap = new SctpMapExtension();
                     sctpMap.setPort(5000);
-                    sctpMap.setProtocol(
-                            SctpMapExtension.Protocol.WEBRTC_CHANNEL);
+                    sctpMap.setProtocol(SctpMapExtension.Protocol.WEBRTC_CHANNEL);
                     sctpMap.setStreams(1024);
 
                     copy.addChildExtension(sctpMap);
@@ -389,43 +375,33 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 }
             }
             // Existing peers SSRCs
-            RtpDescriptionPacketExtension rtpDescPe
-                = JingleUtils.getRtpDescription(cpe);
+            RtpDescriptionPacketExtension rtpDescPe = JingleUtils.getRtpDescription(cpe);
             if (rtpDescPe != null)
             {
                 // rtcp-mux is always used
-                rtpDescPe.addChildExtension(
-                        new RtcpmuxPacketExtension());
+                rtpDescPe.addChildExtension(new RtcpmuxPacketExtension());
 
                 // Copy SSRC sent from the bridge(only the first one)
-                for (ColibriConferenceIQ.Channel channel
-                        : colibriContent.getChannels())
+                for (ColibriConferenceIQ.Channel channel : colibriContent.getChannels())
                 {
                     SourcePacketExtension ssrcPe
-                        = channel.getSources().size() > 0
-                            ? channel.getSources().get(0) : null;
+                        = channel.getSources().size() > 0 ? channel.getSources().get(0) : null;
                     if (ssrcPe == null)
+                    {
                         continue;
+                    }
 
                     try
                     {
                         SourcePacketExtension ssrcCopy = ssrcPe.copy();
 
                         // FIXME: not all parameters are used currently
-                        ssrcCopy.addParameter(
-                                new ParameterPacketExtension("cname", "mixed"));
-                        ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
-                                        "label",
-                                        "mixedlabel" + contentName + "0"));
-                        ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
+                        ssrcCopy.addParameter(new ParameterPacketExtension("cname", "mixed"));
+                        ssrcCopy.addParameter(new ParameterPacketExtension("label", "mixedlabel" + contentName + "0"));
+                        ssrcCopy.addParameter(new ParameterPacketExtension(
                                         "msid",
-                                        "mixedmslabel mixedlabel"
-                                            + contentName + "0"));
-                        ssrcCopy.addParameter(
-                                new ParameterPacketExtension(
-                                        "mslabel", "mixedmslabel"));
+                                        "mixedmslabel mixedlabel" + contentName + "0"));
+                        ssrcCopy.addParameter(new ParameterPacketExtension("mslabel", "mixedmslabel"));
 
                         // Mark 'jvb' as SSRC owner
                         SSRCInfoPacketExtension ssrcInfo = new SSRCInfoPacketExtension();
