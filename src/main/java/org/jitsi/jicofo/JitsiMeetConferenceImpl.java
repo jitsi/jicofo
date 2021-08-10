@@ -1797,13 +1797,17 @@ public class JitsiMeetConferenceImpl
      */
     private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
     {
+        sources = sources.copy();
         if (ConferenceConfig.config.stripSimulcast())
         {
-            sources = sources.copy();
-            sources.stripSimulcast();
+            sources.stripSimulcastAndInjected();
+        }
+        else
+        {
+            sources.removeInjected();
         }
 
-        final ConferenceSourceMap finalSources = sources;
+        final ConferenceSourceMap finalSources = sources.unmodifiable();
         participants.stream()
                 .filter(participant -> participant != except)
                 .forEach(

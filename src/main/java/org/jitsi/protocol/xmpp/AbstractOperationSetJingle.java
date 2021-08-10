@@ -277,13 +277,6 @@ public abstract class AbstractOperationSetJingle
     @Override
     public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
     {
-        sourcesToRemove = sourcesToRemove.copy().removeInjected();
-        if (sourcesToRemove.isEmpty())
-        {
-            logger.debug("Suppressing source-remove for injected SSRC.");
-            return;
-        }
-
         JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE, session.getSessionID());
 
         removeSourceIq.setFrom(getOurJID());
