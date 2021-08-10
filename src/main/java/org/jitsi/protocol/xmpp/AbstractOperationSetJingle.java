@@ -253,13 +253,6 @@ public abstract class AbstractOperationSetJingle
     @Override
     public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
     {
-        sources = sources.copy().removeInjected();
-        if (sources.isEmpty())
-        {
-            logger.debug("Suppressing source-add for injected SSRC.");
-            return;
-        }
-
         JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
         addSourceIq.setFrom(getOurJID());
         addSourceIq.setType(IQ.Type.set);
@@ -284,13 +277,6 @@ public abstract class AbstractOperationSetJingle
     @Override
     public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
     {
-        sourcesToRemove = sourcesToRemove.copy().removeInjected();
-        if (sourcesToRemove.isEmpty())
-        {
-            logger.debug("Suppressing source-remove for injected SSRC.");
-            return;
-        }
-
         JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE, session.getSessionID());
 
         removeSourceIq.setFrom(getOurJID());
