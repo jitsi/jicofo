@@ -285,10 +285,13 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
         // Remove the injected sources, they need to be between the bridge and jicofo only.
-        conferenceSources.removeInjected();
         if (ConferenceConfig.config.stripSimulcast())
         {
-            conferenceSources.stripSimulcast();
+            conferenceSources.stripSimulcastAndInjected();
+        }
+        else
+        {
+            conferenceSources.removeInjected();
         }
 
         for (ContentPacketExtension cpe : offer)
