@@ -164,7 +164,8 @@ operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) =
 /**
  * Create a new [EndpointSourceSet] by stripping all simulcast-related SSRCs and groups except for the first SSRC in
  * a simulcast group. This assumes that the first SSRC in the simulcast group and its associated RTX SSRC are the only
- * SSRCs that receivers of simulcast streams need to know about.
+ * SSRCs that receivers of simulcast streams need to know about, i.e. that jitsi-videobridge uses that SSRC as the
+ * target SSRC when rewriting streams.
  */
 fun EndpointSourceSet.stripSimulcast(removeInjected: Boolean = false): EndpointSourceSet {
     val groupsToRemove = mutableSetOf<SsrcGroup>()
