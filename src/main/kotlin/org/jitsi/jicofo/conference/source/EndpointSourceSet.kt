@@ -166,7 +166,7 @@ operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) =
  * a simulcast group. This assumes that the first SSRC in the simulcast group and its associated RTX SSRC are the only
  * SSRCs that receivers of simulcast streams need to know about.
  */
-fun EndpointSourceSet.stripSimulcast(): EndpointSourceSet {
+fun EndpointSourceSet.stripSimulcast(removeInjected: Boolean = false): EndpointSourceSet {
     val groupsToRemove = mutableSetOf<SsrcGroup>()
     val ssrcsToRemove = mutableSetOf<Long>()
 
@@ -186,7 +186,7 @@ fun EndpointSourceSet.stripSimulcast(): EndpointSourceSet {
         }
     }
     return EndpointSourceSet(
-        sources.filter { !ssrcsToRemove.contains(it.ssrc) }.toSet(),
+        sources.filter { !ssrcsToRemove.contains(it.ssrc) && !(removeInjected && it.injected) }.toSet(),
         ssrcGroups - groupsToRemove
     )
 }

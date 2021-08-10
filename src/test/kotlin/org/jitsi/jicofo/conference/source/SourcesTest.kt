@@ -34,6 +34,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.UnsupportedOperationException
 
+@Suppress("NAME_SHADOWING")
 @SuppressFBWarnings(
     value = ["RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"],
     justification = "False positives."
@@ -180,35 +181,61 @@ class SourcesTest : ShouldSpec() {
                 audioSources shouldBe sourceSet.sources.filter { it.mediaType == AUDIO }.toSet()
             }
             context("Strip simulcast") {
-                val s8 = Source(8, VIDEO)
-                val allSources = sourceSet.sources + s8
+                val s8 = Source(8, VIDEO, injected = true)
 
                 context("Without RTX") {
-                    val stripped = EndpointSourceSet(
-                        setOf(s1, s2, s3, s7, s8),
-                        setOf(sim)
-                    ).stripSimulcast()
-                    stripped.sources shouldBe setOf(s1, s7, s8)
-                    stripped.ssrcGroups.shouldBeEmpty()
+                    context("stripSimulcast") {
+                        EndpointSourceSet(
+                            setOf(s1, s2, s3, s7, s8),
+                            setOf(sim)
+                        ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s7, s8))
+                    }
+                    context("stripSimulcast and remove injected") {
+                        EndpointSourceSet(
+                            setOf(s1, s2, s3, s7, s8),
+                            setOf(sim)
+                        ).stripSimulcast(removeInjected = true) shouldBe EndpointSourceSet(setOf(s1, s7))
+                    }
                 }
                 context("With multiple SIM groups") {
-                    val stripped = EndpointSourceSet(
-                        sourceSet.sources + s8,
-                        setOf(
-                            sim,
-                            SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
-                        )
-                    ).stripSimulcast()
-                    stripped.sources shouldBe setOf(s1, s4, s7, s8)
-                    stripped.ssrcGroups.shouldBeEmpty()
+                    context("stripSimulcast") {
+                        EndpointSourceSet(
+                            sourceSet.sources + s8,
+                            setOf(
+                                sim,
+                                SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
+                            )
+                        ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s4, s7, s8))
+                    }
+                    context("stripSimulcast and remove injected") {
+                        EndpointSourceSet(
+                            sourceSet.sources + s8,
+                            setOf(
+                                sim,
+                                SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
+                            )
+                        ).stripSimulcast(removeInjected = true) shouldBe EndpointSourceSet(setOf(s1, s4, s7))
+                    }
                 }
                 context("With RTX") {
-                    val stripped = EndpointSourceSet(
-                        sourceSet.sources + s8,
-                        sourceSet.ssrcGroups
-                    ).stripSimulcast()
-                    stripped.sources shouldBe setOf(s1, s4, s7, s8)
-                    stripped.ssrcGroups shouldBe setOf(fid1)
+                    context("stripSimulcast") {
+                        EndpointSourceSet(
+                            sourceSet.sources + s8,
+                            sourceSet.ssrcGroups
+                        ).stripSimulcast() shouldBe EndpointSourceSet(
+                            setOf(s1, s4, s7, s8),
+                            setOf(fid1)
+                        )
+                    }
+                    context("stripSimulcast and remove injected") {
+                        EndpointSourceSet(
+                            sourceSet.sources + s8,
+                            sourceSet.ssrcGroups
+                        ).stripSimulcast(removeInjected = true) shouldBe EndpointSourceSet(
+                            setOf(s1, s4, s7),
+                            setOf(fid1)
+                        )
+                    }
                 }
             }
         }
@@ -408,13 +435,24 @@ class SourcesTest : ShouldSpec() {
                 }
             }
             context("Strip simulcast") {
-
+                val s7 = Source(7, AUDIO, injected = true)
+                val sourceSet = EndpointSourceSet(
+                    setOf(s1, s2, s3, s4, s5, s6, s7),
+                    setOf(sim, fid1, fid2, fid3)
+                )
                 val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
-                conferenceSourceMap.stripSimulcast()
 
                 // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
-                conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
-                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
+                context("stripSimulcast") {
+                    conferenceSourceMap.stripSimulcast()
+                    conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
+                    conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
+                }
+                context("stripSimulcastAndInjected") {
+                    conferenceSourceMap.stripSimulcastAndInjected()
+                    conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast(removeInjected = true)
+                    conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast(removeInjected = true)
+                }
             }
         }
     }

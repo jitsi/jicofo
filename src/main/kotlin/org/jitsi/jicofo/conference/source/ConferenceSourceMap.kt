@@ -150,6 +150,20 @@ open class ConferenceSourceMap(
      */
     open fun stripSimulcast() = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, sources) -> endpointSourceSets[owner] = sources.stripSimulcast() }
+        this
+    }
+
+    /**
+     * Strip simulcast SSRCs from each entry in the map, and also remove all injected sources.
+     * Modifies the map in place.
+     *
+     * This is defined separately to improve performance because the two operations are often performed together.
+     */
+    open fun stripSimulcastAndInjected() = synchronized(syncRoot) {
+        endpointSourceSets.forEach {
+                (owner, sources) -> endpointSourceSets[owner] = sources.stripSimulcast(removeInjected = true)
+        }
+        this
     }
 }
 
@@ -179,6 +193,9 @@ class UnmodifiableConferenceSourceMap(
 
     override fun stripSimulcast() =
         throw UnsupportedOperationException("stripSimulcast() not supported in unmodifiable view")
+
+    override fun stripSimulcastAndInjected() =
+        throw UnsupportedOperationException("stripSimulcastAndInjected() not supported in unmodifiable view")
 }
 
 fun EndpointSourceSet.withoutInjected() = EndpointSourceSet(
