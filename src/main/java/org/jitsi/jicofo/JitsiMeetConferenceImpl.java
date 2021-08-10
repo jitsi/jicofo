@@ -2223,6 +2223,12 @@ public class JitsiMeetConferenceImpl
         }
     }
 
+    /**
+     * Terminate the bridge session for a participant.
+     * @param participant the participant for which to terminate the bridge session.
+     * @param removeSources whether to remove the participant's sources from other bridges.
+     * @return the participant's bridge session or null.
+     */
     private BridgeSession terminateParticipantBridgeSession(@NotNull Participant participant, boolean removeSources)
     {
         BridgeSession session = participant.getBridgeSession();
