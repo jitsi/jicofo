@@ -1390,12 +1390,17 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
+        sources = sources.copy();
         if (ConferenceConfig.config.stripSimulcast())
         {
-            sources = sources.copy();
-            sources.stripSimulcast();
+            sources.stripSimulcastAndInjected();
         }
-        ConferenceSourceMap finalSources = sources;
+        else
+        {
+            sources.removeInjected();
+        }
+
+        final ConferenceSourceMap finalSources = sources.unmodifiable();
         participants.stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
             .forEach(
