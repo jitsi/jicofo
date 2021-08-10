@@ -52,7 +52,7 @@ public abstract class AbstractParticipant
     /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
-    private List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
+    private final List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
 
     /**
      * Returns currently stored map of RTP description to Colibri content name.
@@ -118,9 +118,12 @@ public abstract class AbstractParticipant
      */
     public List<SourcesToAddOrRemove> clearQueuedRemoteSourceChanges()
     {
-        List<SourcesToAddOrRemove> ret = queuedRemoteSourceChanges;
-        queuedRemoteSourceChanges = new ArrayList<>();
-        return ret;
+        synchronized (queuedRemoteSourceChanges)
+        {
+            List<SourcesToAddOrRemove> ret = new ArrayList<>(queuedRemoteSourceChanges);
+            queuedRemoteSourceChanges.clear();
+            return ret;
+        }
     }
 
     /**
@@ -130,7 +133,10 @@ public abstract class AbstractParticipant
      */
     public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
     {
-        queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
+        synchronized (queuedRemoteSourceChanges)
+        {
+            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
+        }
     }
 
     /**
@@ -140,7 +146,10 @@ public abstract class AbstractParticipant
      */
     public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
     {
-        queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
+        synchronized (queuedRemoteSourceChanges)
+        {
+            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
+        }
     }
 
     /**
