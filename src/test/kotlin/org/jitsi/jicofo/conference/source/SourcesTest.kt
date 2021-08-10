@@ -442,6 +442,10 @@ class SourcesTest : ShouldSpec() {
                 val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
 
                 // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
+                context("Nothing") {
+                    conferenceSourceMap.strip(stripSimulcast = false, stripInjected = false) shouldBe
+                        ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
+                }
                 context("Simulcast") {
                     conferenceSourceMap.stripSimulcast()
                     conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()

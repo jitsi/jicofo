@@ -147,11 +147,14 @@ open class ConferenceSourceMap(
      */
     @JvmOverloads
     open fun strip(stripSimulcast: Boolean = false, stripInjected: Boolean = false) = synchronized(syncRoot) {
+        // Nothing to strip
+        if (!stripSimulcast && !stripInjected) return this
+
         endpointSourceSets.forEach { (owner, sources) ->
-            val stripped = if (stripSimulcast) {
-                sources.stripSimulcast(stripInjected = stripInjected)
-            } else {
-                sources.stripInjected()
+            val stripped = when {
+                stripSimulcast -> sources.stripSimulcast(stripInjected = stripInjected)
+                stripInjected -> sources.stripInjected()
+                else -> sources
             }
             if (stripped.isEmpty()) {
                 endpointSourceSets.remove(owner)
