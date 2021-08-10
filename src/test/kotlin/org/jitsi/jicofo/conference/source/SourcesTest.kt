@@ -193,7 +193,7 @@ class SourcesTest : ShouldSpec() {
                         EndpointSourceSet(
                             setOf(s1, s2, s3, s7, s8),
                             setOf(sim)
-                        ).stripSimulcast(removeInjected = true) shouldBe EndpointSourceSet(setOf(s1, s7))
+                        ).stripSimulcast(stripInjected = true) shouldBe EndpointSourceSet(setOf(s1, s7))
                     }
                 }
                 context("With multiple SIM groups") {
@@ -213,7 +213,7 @@ class SourcesTest : ShouldSpec() {
                                 sim,
                                 SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
                             )
-                        ).stripSimulcast(removeInjected = true) shouldBe EndpointSourceSet(setOf(s1, s4, s7))
+                        ).stripSimulcast(stripInjected = true) shouldBe EndpointSourceSet(setOf(s1, s4, s7))
                     }
                 }
                 context("With RTX") {
@@ -230,7 +230,7 @@ class SourcesTest : ShouldSpec() {
                         EndpointSourceSet(
                             sourceSet.sources + s8,
                             sourceSet.ssrcGroups
-                        ).stripSimulcast(removeInjected = true) shouldBe EndpointSourceSet(
+                        ).stripSimulcast(stripInjected = true) shouldBe EndpointSourceSet(
                             setOf(s1, s4, s7),
                             setOf(fid1)
                         )
@@ -390,7 +390,7 @@ class SourcesTest : ShouldSpec() {
                     val conferenceSourceMap = ConferenceSourceMap(
                         jid1 to endpoint1SourceSet,
                         jid2 to endpoint2SourceSet
-                    ).removeInjected()
+                    ).stripInjected()
 
                     conferenceSourceMap.size shouldBe 2
                     conferenceSourceMap[jid1] shouldBe EndpointSourceSet(
@@ -409,7 +409,7 @@ class SourcesTest : ShouldSpec() {
                         jid1 to EndpointSourceSet(
                             setOf(Source(1, AUDIO, injected = true))
                         )
-                    ).removeInjected()
+                    ).stripInjected()
                     conferenceSourceMap.isEmpty() shouldBe true
                 }
             }
@@ -433,7 +433,7 @@ class SourcesTest : ShouldSpec() {
                     unmodifiable.remove(ConferenceSourceMap())
                 }
             }
-            context("Strip simulcast") {
+            context("Strip") {
                 val s7 = Source(7, AUDIO, injected = true)
                 val sourceSet = EndpointSourceSet(
                     setOf(s1, s2, s3, s4, s5, s6, s7),
@@ -442,15 +442,20 @@ class SourcesTest : ShouldSpec() {
                 val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
 
                 // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
-                context("stripSimulcast") {
+                context("Simulcast") {
                     conferenceSourceMap.stripSimulcast()
                     conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
                     conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
                 }
-                context("stripSimulcastAndInjected") {
-                    conferenceSourceMap.stripSimulcastAndInjected()
-                    conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast(removeInjected = true)
-                    conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast(removeInjected = true)
+                context("Injected") {
+                    conferenceSourceMap.stripInjected()
+                    conferenceSourceMap[jid1] shouldBe sourceSet.stripInjected()
+                    conferenceSourceMap[jid2] shouldBe e2sourceSet.stripInjected()
+                }
+                context("Simulcast and injected") {
+                    conferenceSourceMap.strip(stripSimulcast = true, stripInjected = true)
+                    conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast(stripInjected = true)
+                    conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast(stripInjected = true)
                 }
             }
         }

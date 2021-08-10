@@ -129,17 +129,7 @@ open class ConferenceSourceMap(
      * Removes all [Source]s that have the [Source.injected] flag from this map.
      * @returns the map
      */
-    open fun removeInjected() = synchronized(syncRoot) {
-        endpointSourceSets.forEach { (owner, endpointSourceSet) ->
-            val withoutInjected = endpointSourceSet.withoutInjected()
-            if (withoutInjected.isEmpty()) {
-                endpointSourceSets.remove(owner)
-            } else {
-                endpointSourceSets[owner] = withoutInjected
-            }
-        }
-        this
-    }
+    open fun stripInjected() = synchronized(syncRoot) { strip(stripInjected = true) }
 
     /** Use a kotlin map for easy pretty printing. Inefficient. */
     override fun toString(): String = endpointSourceSets.toMap().toString()
@@ -148,20 +138,26 @@ open class ConferenceSourceMap(
      * Strip simulcast SSRCs from each entry in the map. Modifies the map in place.
      * See also [EndpointSourceSet.stripSimulcast].
      */
-    open fun stripSimulcast() = synchronized(syncRoot) {
-        endpointSourceSets.forEach { (owner, sources) -> endpointSourceSets[owner] = sources.stripSimulcast() }
-        this
-    }
+    open fun stripSimulcast() = synchronized(syncRoot) { strip(stripSimulcast = true) }
 
     /**
-     * Strip simulcast SSRCs from each entry in the map, and also remove all injected sources.
-     * Modifies the map in place.
+     * Strip simulcast and/or injected SSRCs from each entry in the map. Modifies the map in place.
      *
      * This is defined separately to improve performance because the two operations are often performed together.
      */
-    open fun stripSimulcastAndInjected() = synchronized(syncRoot) {
+    @JvmOverloads
+    open fun strip(stripSimulcast: Boolean = false, stripInjected: Boolean = false) = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, sources) ->
-            endpointSourceSets[owner] = sources.stripSimulcast(removeInjected = true)
+            val stripped = if (stripSimulcast) {
+                sources.stripSimulcast(stripInjected = stripInjected)
+            } else {
+                sources.stripInjected()
+            }
+            if (stripped.isEmpty()) {
+                endpointSourceSets.remove(owner)
+            } else {
+                endpointSourceSets[owner] = stripped
+            }
         }
         this
     }
@@ -188,17 +184,17 @@ class UnmodifiableConferenceSourceMap(
     override fun remove(owner: Jid?) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 
-    override fun removeInjected() =
+    override fun stripInjected() =
         throw UnsupportedOperationException("removeInjected() not supported in unmodifiable view")
 
     override fun stripSimulcast() =
         throw UnsupportedOperationException("stripSimulcast() not supported in unmodifiable view")
 
-    override fun stripSimulcastAndInjected() =
-        throw UnsupportedOperationException("stripSimulcastAndInjected() not supported in unmodifiable view")
+    override fun strip(stripSimulcast: Boolean, stripInjected: Boolean) =
+        throw UnsupportedOperationException("strip() not supported in unmodifiable view")
 }
 
-fun EndpointSourceSet.withoutInjected() = EndpointSourceSet(
+fun EndpointSourceSet.stripInjected() = EndpointSourceSet(
     sources.filter { !it.injected }.toSet(),
     // Just maintain the groups. We never use groups with injected SSRCs, and "injected" should go away at some point.
     ssrcGroups

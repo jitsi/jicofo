@@ -281,18 +281,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             List<ContentPacketExtension> offer,
             ColibriConferenceIQ colibriChannels)
     {
-        ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
+        ConferenceSourceMap conferenceSources = meetConference.getSources()
+                .copy()
+                .strip(ConferenceConfig.config.stripSimulcast(), true);
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
-        // Remove the injected sources, they need to be between the bridge and jicofo only.
-        if (ConferenceConfig.config.stripSimulcast())
-        {
-            conferenceSources.stripSimulcastAndInjected();
-        }
-        else
-        {
-            conferenceSources.removeInjected();
-        }
 
         for (ContentPacketExtension cpe : offer)
         {

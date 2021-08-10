@@ -1390,17 +1390,16 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
-        sources = sources.copy();
-        if (ConferenceConfig.config.stripSimulcast())
+        final ConferenceSourceMap finalSources = sources
+                .copy()
+                .strip(ConferenceConfig.config.stripSimulcast(), true)
+                .unmodifiable();
+        if (finalSources.isEmpty())
         {
-            sources.stripSimulcastAndInjected();
-        }
-        else
-        {
-            sources.removeInjected();
+            logger.debug("No new sources to propagate.");
+            return;
         }
 
-        final ConferenceSourceMap finalSources = sources.unmodifiable();
         participants.stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
             .forEach(
@@ -1797,17 +1796,16 @@ public class JitsiMeetConferenceImpl
      */
     private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
     {
-        sources = sources.copy();
-        if (ConferenceConfig.config.stripSimulcast())
+        final ConferenceSourceMap finalSources = sources
+                .copy()
+                .strip(ConferenceConfig.config.stripSimulcast(), true)
+                .unmodifiable();
+        if (finalSources.isEmpty())
         {
-            sources.stripSimulcastAndInjected();
-        }
-        else
-        {
-            sources.removeInjected();
+            logger.debug("No sources to remove.");
+            return;
         }
 
-        final ConferenceSourceMap finalSources = sources.unmodifiable();
         participants.stream()
                 .filter(participant -> participant != except)
                 .forEach(
