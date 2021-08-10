@@ -160,8 +160,8 @@ open class ConferenceSourceMap(
      * This is defined separately to improve performance because the two operations are often performed together.
      */
     open fun stripSimulcastAndInjected() = synchronized(syncRoot) {
-        endpointSourceSets.forEach {
-                (owner, sources) -> endpointSourceSets[owner] = sources.stripSimulcast(removeInjected = true)
+        endpointSourceSets.forEach { (owner, sources) ->
+            endpointSourceSets[owner] = sources.stripSimulcast(removeInjected = true)
         }
         this
     }
