@@ -19,7 +19,7 @@ package org.jitsi.jicofo;
 
 import java.util.*;
 
-import org.jetbrains.annotations.*;
+import com.google.common.collect.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -52,7 +52,7 @@ public abstract class AbstractParticipant
     /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
-    private List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
+    private final List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
 
     /**
      * Returns currently stored map of RTP description to Colibri content name.
@@ -118,9 +118,23 @@ public abstract class AbstractParticipant
      */
     public List<SourcesToAddOrRemove> clearQueuedRemoteSourceChanges()
     {
-        List<SourcesToAddOrRemove> ret = queuedRemoteSourceChanges;
-        queuedRemoteSourceChanges = new ArrayList<>();
-        return ret;
+        synchronized (queuedRemoteSourceChanges)
+        {
+            List<SourcesToAddOrRemove> ret = new ArrayList<>(queuedRemoteSourceChanges);
+            queuedRemoteSourceChanges.clear();
+            return ret;
+        }
+    }
+
+    /**
+     * Gets the list of pending remote sources, without clearing them. For testing.
+     */
+    public List<SourcesToAddOrRemove> getQueuedRemoteSourceChanges()
+    {
+        synchronized (queuedRemoteSourceChanges)
+        {
+            return new ArrayList<>(queuedRemoteSourceChanges);
+        }
     }
 
     /**
@@ -130,7 +144,20 @@ public abstract class AbstractParticipant
      */
     public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
     {
-        queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
+        synchronized (queuedRemoteSourceChanges)
+        {
+            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
+            if (previous != null && previous.getAction() == AddOrRemove.Add)
+            {
+                // We merge sourcesToAdd with the previous sources queued to be added to reduce the number of
+                // source-add messages that need to be sent.
+                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
+                sourcesToAdd = sourcesToAdd.copy();
+                sourcesToAdd.add(previous.getSources());
+            }
+
+            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
+        }
     }
 
     /**
@@ -140,7 +167,20 @@ public abstract class AbstractParticipant
      */
     public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
     {
-        queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
+        synchronized (queuedRemoteSourceChanges)
+        {
+            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
+            if (previous != null && previous.getAction() == AddOrRemove.Remove)
+            {
+                // We merge sourcesToRemove with the previous sources queued to be remove to reduce the number of
+                // source-remove messages that need to be sent.
+                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
+                sourcesToRemove = sourcesToRemove.copy();
+                sourcesToRemove.add(previous.getSources());
+            }
+
+            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
+        }
     }
 
     /**
