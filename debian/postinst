@@ -109,9 +109,8 @@ jicofo {
         fi
 
         # Mark the jibri domain as trusted unless the trusted-domains have been set.
-        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.trusted-domains" > /dev/null 2>&1 ;then
-            hocon -f $HOCON_CONFIG set "jicofo.xmpp.trusted-domains" "recorder.$JVB_HOSTNAME"
-
+        if  [[ $(hocon -j -f $HOCON_CONFIG get "jicofo.xmpp.trusted-domains" 2> /dev/null | jq -r "type") != "array" ]] ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.trusted-domains" "[ \"recorder.$JVB_HOSTNAME\" ]"
         fi
 
         # we don't want to start the daemon as root
