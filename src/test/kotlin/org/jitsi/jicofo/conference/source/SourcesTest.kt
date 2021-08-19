@@ -22,11 +22,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
-import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
@@ -76,36 +74,6 @@ class SourcesTest : ShouldSpec() {
             setOf(e2sim, e2fid1, e2fid2, e2fid3)
         )
 
-        context("Source") {
-            context("From XML") {
-                val packetExtension = SourcePacketExtension().apply {
-                    ssrc = 1
-                    addChildExtension(ParameterPacketExtension("msid", "msid"))
-                    addChildExtension(ParameterPacketExtension("cname", "cname"))
-                    isInjected = true
-                }
-
-                Source(VIDEO, packetExtension) shouldBe
-                    Source(1, VIDEO, msid = "msid", cname = "cname", injected = true)
-            }
-            context("To XML") {
-                val msidValue = "msid-value"
-                val cnameValue = "cname-value"
-                val source = Source(1, VIDEO, msid = msidValue, cname = cnameValue, injected = true)
-                val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
-                val extension = source.toPacketExtension(owner = ownerJid)
-
-                extension.ssrc shouldBe 1
-                extension.isInjected shouldBe true
-                val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
-                parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
-                parameters.filter { it.name == "cname" && it.value == cnameValue }.size shouldBe 1
-
-                val ssrcInfo = extension.getFirstChildOfType(SSRCInfoPacketExtension::class.java)
-                ssrcInfo shouldNotBe null
-                ssrcInfo.owner shouldBe ownerJid
-            }
-        }
         context("SsrcGroupSemantics") {
             context("Parsing") {
                 SsrcGroupSemantics.fromString("sim") shouldBe SsrcGroupSemantics.Sim
