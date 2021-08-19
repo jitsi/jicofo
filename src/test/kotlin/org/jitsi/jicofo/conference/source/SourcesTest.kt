@@ -74,50 +74,6 @@ class SourcesTest : ShouldSpec() {
             setOf(e2sim, e2fid1, e2fid2, e2fid3)
         )
 
-        context("SsrcGroupSemantics") {
-            context("Parsing") {
-                SsrcGroupSemantics.fromString("sim") shouldBe SsrcGroupSemantics.Sim
-                SsrcGroupSemantics.fromString("SIM") shouldBe SsrcGroupSemantics.Sim
-                SsrcGroupSemantics.fromString("sIM") shouldBe SsrcGroupSemantics.Sim
-                SsrcGroupSemantics.fromString("fiD") shouldBe SsrcGroupSemantics.Fid
-
-                shouldThrow<NoSuchElementException> {
-                    SsrcGroupSemantics.fromString("invalid")
-                }
-            }
-            context("To string") {
-                SsrcGroupSemantics.Sim.toString() shouldBe "SIM"
-                SsrcGroupSemantics.Fid.toString() shouldBe "FID"
-            }
-        }
-        context("SsrcGroup") {
-            context("From XML") {
-                val packetExtension = SourceGroupPacketExtension().apply {
-                    semantics = "sim"
-                    addSources(
-                        listOf(
-                            SourcePacketExtension().apply { ssrc = 1 },
-                            SourcePacketExtension().apply { ssrc = 2 },
-                            SourcePacketExtension().apply { ssrc = 3 }
-                        )
-                    )
-                }
-
-                val ssrcGroup = SsrcGroup.fromPacketExtension(packetExtension)
-                ssrcGroup shouldBe SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
-            }
-            context("To XML") {
-                val ssrcGroup = SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3))
-                val packetExtension = ssrcGroup.toPacketExtension()
-                packetExtension.semantics shouldBe "SIM"
-                packetExtension.sources.size shouldBe 3
-                packetExtension.sources.map { Source(VIDEO, it) }.toList() shouldBe listOf(
-                    Source(1, VIDEO),
-                    Source(2, VIDEO),
-                    Source(3, VIDEO)
-                )
-            }
-        }
         context("EndpointSourceSet") {
             context("From XML") {
                 // Assume serializing works correctly -- it's tested below.
