@@ -104,7 +104,7 @@ data class EndpointSourceSet(
                 append(source.compactJson)
             }
             append("]")
-            if (ssrcGroups.any { it.mediaType == AUDIO}) {
+            if (ssrcGroups.any { it.mediaType == AUDIO }) {
                 append(",[")
                 ssrcGroups.filter { it.mediaType == AUDIO }.forEachIndexed { i, ssrcGroup ->
                     if (i > 0) append(",")

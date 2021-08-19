@@ -22,11 +22,14 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
+import org.json.simple.JSONObject
+import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.UnsupportedOperationException
 
@@ -261,6 +264,26 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast(stripInjected = true)
                 conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast(stripInjected = true)
             }
+        }
+        context("Compact JSON") {
+            val endpointId1 = "bebebebe"
+            val endpointId2 = "dadadada"
+            val jid1 = JidCreate.from("confname@conference.exmaple.com/$endpointId1")
+            val jid2 = JidCreate.from("confname@conference.exmaple.com/$endpointId2")
+            val jvbJid = JidCreate.from("jvb")
+            val jvbEndpointSourceSet = EndpointSourceSet(Source(12345, MediaType.VIDEO))
+
+            val conferenceSourceMap = ConferenceSourceMap(
+                jid1 to sourceSet,
+                jid2 to e2sourceSet,
+                jvbJid to jvbEndpointSourceSet
+            )
+            val jsonString = conferenceSourceMap.compactJson()
+            println("xxx $jsonString")
+            val json = JSONParser().parse(jsonString)
+            json.shouldBeInstanceOf<JSONObject>()
+            json.size shouldBe 3
+            json.keys shouldBe setOf(endpointId1, endpointId2, "jvb")
         }
     }
 }
