@@ -138,7 +138,7 @@ public class JingleOfferFactory
     }
 
     /**
-     * Adds the audio-related extensions for an offer to a
+     * Adds the video-related extensions for an offer to a
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
@@ -401,7 +401,7 @@ public class JingleOfferFactory
     }
 
     /**
-     * Adds the video-related extensions for an offer to a
+     * Adds the audio-related extensions for an offer to a
      * {@link ContentPacketExtension}.
      * @param content the {@link ContentPacketExtension} to add extensions to.
      */
