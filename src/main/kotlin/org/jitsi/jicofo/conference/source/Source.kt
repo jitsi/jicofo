@@ -67,4 +67,22 @@ data class Source(
         }
         isInjected = injected
     }
+
+    /**
+     * A compact JSON representation of this [Source] (optimized for size). This is done ad-hoc instead of using e.g.
+     * jackson because we only need serialization support (no parsing) and to keep it separated from the main code.
+     * Note that we don't encode the media type.
+     */
+    val compactJson: String by lazy {
+        buildString {
+            append("""{"s":$ssrc""")
+            msid?.let {
+                append(""","m":"$it"""")
+            }
+            cname?.let {
+                append(""","c":"$it"""")
+            }
+            append("}")
+        }
+    }
 }

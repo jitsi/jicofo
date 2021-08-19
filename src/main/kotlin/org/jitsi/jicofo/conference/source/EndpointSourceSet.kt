@@ -16,6 +16,8 @@
 package org.jitsi.jicofo.conference.source
 
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.MediaType.AUDIO
+import org.jitsi.utils.MediaType.VIDEO
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -44,8 +46,8 @@ data class EndpointSourceSet(
      */
     fun toJingle(owner: Jid? = null): List<ContentPacketExtension> = toJingle(mutableMapOf(), owner)
 
-    val audioSsrcs: Set<Long> by lazy { getSsrcs(MediaType.AUDIO) }
-    val videoSsrcs: Set<Long> by lazy { getSsrcs(MediaType.VIDEO) }
+    val audioSsrcs: Set<Long> by lazy { getSsrcs(AUDIO) }
+    val videoSsrcs: Set<Long> by lazy { getSsrcs(VIDEO) }
 
     private fun getSsrcs(mediaType: MediaType) = sources.filter { it.mediaType == mediaType }.map { it.ssrc }.toSet()
 
@@ -53,6 +55,66 @@ data class EndpointSourceSet(
      * A concise string more suitable for logging. This may be slow for large sets.
      */
     override fun toString() = "[audio=$audioSsrcs, video=$videoSsrcs, groups=$ssrcGroups]"
+
+    /**
+     * A compact JSON representation of this [EndpointSourceSet] (optimized for size). This is done ad-hoc instead of
+     * using e.g. jackson because the format is substantially different than the natural representation of
+     * [EndpointSourceSet], we only need serialization support (no parsing) and to keep it separated from the main code.
+     *
+     * The JSON is an array of up to four elements, with index 0 encoding the video sources, index 1 encoding the video
+     * source groups, index 2 encoding the audio sources, and index 3 encoding the audio source groups. Trailing empty
+     * elements may be skipped, e.g. if there are no audio source groups the list will only have 3 elements.
+     *
+     * Each element is itself a JSON array of the `compactJson` representation of the sources or SSRC groups.
+     *
+     * For example, an [EndpointSourceSet] with video sources 1, 2 grouped in a Fid group and an audio source 3 may be
+     * encoded as:
+     * [
+     *   // Array of video sources
+     *   [
+     *     {"s": 1},
+     *     {"s": 2}
+     *   ],
+     *   // Array of video SSRC groups
+     *   [
+     *     ["f", 1, 2]
+     *   ],
+     *   // Array of audio sources
+     *   [
+     *     {"s": 3}
+     *   ]
+     *   // Empty array of audio SSRC groups not present.
+     * ]
+     */
+    val compactJson: String by lazy {
+        buildString {
+            append("[[")
+            sources.filter { it.mediaType == VIDEO }.forEachIndexed { i, source ->
+                if (i > 0) append(",")
+                append(source.compactJson)
+            }
+            append("],[")
+            ssrcGroups.filter { it.mediaType == VIDEO }.forEachIndexed { i, ssrcGroup ->
+                if (i > 0) append(",")
+                append(ssrcGroup.compactJson)
+            }
+            append("],[")
+            sources.filter { it.mediaType == AUDIO }.forEachIndexed { i, source ->
+                if (i > 0) append(",")
+                append(source.compactJson)
+            }
+            append("]")
+            if (ssrcGroups.any { it.mediaType == AUDIO}) {
+                append(",[")
+                ssrcGroups.filter { it.mediaType == AUDIO }.forEachIndexed { i, ssrcGroup ->
+                    if (i > 0) append(",")
+                    append(ssrcGroup.compactJson)
+                }
+                append("]")
+            }
+            append("]")
+        }
+    }
 
     companion object {
         /** An [EndpointSourceSet] instance with no sources or source groups */
