@@ -229,6 +229,7 @@ public abstract class AbstractOperationSetJingle
             error = requestHandler.onRemoveSource(session, iq.getContentList());
             break;
         default:
+            error = XMPPError.getBuilder(XMPPError.Condition.feature_not_implemented).build();
             logger.warn("unsupported action " + action);
         }
 
