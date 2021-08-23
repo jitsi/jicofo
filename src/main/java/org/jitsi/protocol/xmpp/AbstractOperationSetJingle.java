@@ -117,6 +117,7 @@ public abstract class AbstractOperationSetJingle
 
         sessions.put(sid, session);
 
+        inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
         stats.stanzaSent(inviteIQ.getAction());
 
@@ -147,6 +148,8 @@ public abstract class AbstractOperationSetJingle
         {
             throw new IllegalStateException("Session does not exist for: " + address);
         }
+
+        jingleIQ.addExtension(GroupPacketExtension.createBundleGroup(jingleIQ.getContentList()));
 
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
         stats.stanzaSent(jingleIQ.getAction());

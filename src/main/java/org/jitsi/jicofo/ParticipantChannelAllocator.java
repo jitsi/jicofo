@@ -237,7 +237,6 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             jingleIQ = JingleUtilsKt.createTransportReplace(jingle.getOurJID(), jingleSession, contents);
         }
 
-        JicofoJingleUtils.addBundleExtensions(jingleIQ);
         if (startMuted[0] || startMuted[1])
         {
             JicofoJingleUtils.addStartMutedExtension(jingleIQ, startMuted[0], startMuted[1]);
