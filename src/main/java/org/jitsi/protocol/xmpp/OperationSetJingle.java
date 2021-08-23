@@ -21,7 +21,10 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+
+import java.util.*;
 
 /**
  * Operation set allows to establish and control Jingle sessions. Exposed
@@ -37,30 +40,37 @@ public interface OperationSetJingle
      * {@code session-initiate} IQ. Blocks until a response is received or
      * until a timeout is reached.
      *
-     * @param jingleIQ the IQ to send.
+     * @param to the JID of the remote peer.
+     * @param contents the list of {@link ContentPacketExtension} to include.
+     * @param additionalExtensions additional extensions to add to the session-initiate stanza.
      * @param requestHandler <tt>JingleRequestHandler</tt> that will be bound
      * to new Jingle session instance.
      *
      * @return {@code true} the client didn't come back with en error response.
      */
     boolean initiateSession(
-        JingleIQ jingleIQ,
+        Jid to,
+        List<ContentPacketExtension> contents,
+        List<ExtensionElement> additionalExtensions,
         JingleRequestHandler requestHandler)
         throws SmackException.NotConnectedException;
 
     Jid getOurJID();
 
     /**
-     * Sends a 'transport-replace' IQ to the client. Blocks waiting for a
-     * response and returns {@code true} if a response with type {@code result}
-     * is received before a certain timeout.
+     * Sends a 'transport-replace' IQ to the client. Blocks waiting for a response and returns {@code true} if a
+     * response with type {@code result} is received before a certain timeout.
      *
-     * @param jingleIQ the IQ which to be sent.
      * @param session the <tt>JingleSession</tt> for which the IQ will be sent.
+     * @param contents the list of {@link ContentPacketExtension} to include.
+     * @param additionalExtensions additional extensions to add to the session-initiate stanza.
      *
      * @return {@code true} the client didn't come back with an error response.
      */
-    boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
+    boolean replaceTransport(
+            JingleSession session,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions)
         throws SmackException.NotConnectedException;
 
     /**

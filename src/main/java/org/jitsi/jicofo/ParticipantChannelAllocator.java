@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -28,9 +27,9 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -217,46 +216,36 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.
      */
-    private boolean doInviteOrReinvite(
-        Jid address, List<ContentPacketExtension> contents)
+    private boolean doInviteOrReinvite(Jid address, List<ContentPacketExtension> contents)
         throws SmackException.NotConnectedException
     {
         OperationSetJingle jingle = meetConference.getJingle();
         JingleSession jingleSession = participant.getJingleSession();
         boolean initiateSession = !reInvite || jingleSession == null;
         boolean ack;
-        JingleIQ jingleIQ;
-
-        if (initiateSession)
-        {
-            // will throw OperationFailedExc if XMPP connection is broken
-            jingleIQ = JingleUtilsKt.createSessionInitiate(jingle.getOurJID(), address, contents);
-        }
-        else
-        {
-            jingleIQ = JingleUtilsKt.createTransportReplace(jingle.getOurJID(), jingleSession, contents);
-        }
+        List<ExtensionElement> additionalExtensions = new ArrayList<>();
 
         if (startMuted[0] || startMuted[1])
         {
-            JicofoJingleUtils.addStartMutedExtension(jingleIQ, startMuted[0], startMuted[1]);
+            StartMutedPacketExtension startMutedExt = new StartMutedPacketExtension();
+            startMutedExt.setAudioMute(startMuted[0]);
+            startMutedExt.setVideoMute(startMuted[1]);
+            additionalExtensions.add(startMutedExt);
         }
 
         // Include info about the BridgeSession which provides the transport
-        jingleIQ.addExtension(
-            new BridgeSessionPacketExtension(
-                    bridgeSession.id, bridgeSession.bridge.getRegion()));
+        additionalExtensions.add(new BridgeSessionPacketExtension(bridgeSession.id, bridgeSession.bridge.getRegion()));
 
         if (initiateSession)
         {
             logger.info("Sending session-initiate to: " + address);
-            ack = jingle.initiateSession(jingleIQ, meetConference);
+            ack = jingle.initiateSession(address, contents, additionalExtensions, meetConference);
         }
         else
         {
             logger.info("Sending transport-replace to: " + address);
             // will throw OperationFailedExc if XMPP connection is broken
-            ack = jingle.replaceTransport(jingleIQ, jingleSession);
+            ack = jingle.replaceTransport(jingleSession, contents, additionalExtensions);
         }
 
         if (!ack)

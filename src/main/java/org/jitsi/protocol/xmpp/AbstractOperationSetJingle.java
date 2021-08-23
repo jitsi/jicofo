@@ -17,13 +17,12 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.protocol.xmpp.util.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
@@ -109,15 +108,21 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean initiateSession(JingleIQ inviteIQ, JingleRequestHandler requestHandler)
+    public boolean initiateSession(
+            Jid to,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions,
+            JingleRequestHandler requestHandler)
         throws SmackException.NotConnectedException
     {
+        JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
         JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
 
-        sessions.put(sid, session);
-
         inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
+        additionalExtensions.forEach(inviteIQ::addExtension);
+
+        sessions.put(sid, session);
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
         stats.stanzaSent(inviteIQ.getAction());
 
@@ -137,19 +142,22 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
+    public boolean replaceTransport(
+            @NotNull JingleSession session,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions)
         throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
-
-        logger.info("RE-INVITE PEER: " + address);
-
         if (!sessions.containsValue(session))
         {
             throw new IllegalStateException("Session does not exist for: " + address);
         }
+        logger.info("RE-INVITE PEER: " + address);
 
+        JingleIQ jingleIQ = JingleUtilsKt.createTransportReplace(getOurJID(), session, contents);
         jingleIQ.addExtension(GroupPacketExtension.createBundleGroup(jingleIQ.getContentList()));
+        additionalExtensions.forEach(jingleIQ::addExtension);
 
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
         stats.stanzaSent(jingleIQ.getAction());

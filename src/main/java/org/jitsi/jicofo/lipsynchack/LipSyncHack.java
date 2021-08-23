@@ -26,6 +26,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import javax.validation.constraints.*;
@@ -225,13 +226,15 @@ public class LipSyncHack implements OperationSetJingle
      */
     @Override
     public boolean initiateSession(
-        JingleIQ jingleIQ,
-        JingleRequestHandler requestHandler)
+            Jid to,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions,
+            JingleRequestHandler requestHandler)
         throws SmackException.NotConnectedException
     {
-        processAllParticipantsSSRCs(jingleIQ.getContentList(), jingleIQ.getTo());
+        processAllParticipantsSSRCs(contents, to);
 
-        return jingleImpl.initiateSession(jingleIQ, requestHandler);
+        return jingleImpl.initiateSession(to, contents, additionalExtensions, requestHandler);
     }
 
     @Override
@@ -247,14 +250,15 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
+    public boolean replaceTransport(
+            @NotNull JingleSession session,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions)
         throws SmackException.NotConnectedException
     {
-        processAllParticipantsSSRCs(
-            jingleIQ.getContentList(),
-            session.getAddress());
+        processAllParticipantsSSRCs(contents, session.getAddress());
 
-        return jingleImpl.replaceTransport(jingleIQ, session);
+        return jingleImpl.replaceTransport(session, contents, additionalExtensions);
     }
 
     /**
