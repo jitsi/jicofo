@@ -63,6 +63,10 @@ class ConferenceConfig {
     }
     fun enableLipSync(): Boolean = enableLipSync
 
+    val useJsonEncodedSources: Boolean by config {
+        "jicofo.conference.use-json-encoded-sources".from(newConfig)
+    }
+
     val useRandomSharedDocumentName: Boolean by config {
         "jicofo.conference.shared-document.use-random-name".from(newConfig)
     }
