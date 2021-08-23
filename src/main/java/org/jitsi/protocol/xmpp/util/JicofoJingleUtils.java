@@ -28,8 +28,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 public class JicofoJingleUtils
 {
     /**
-     * Adds a group packet extension to a {@link JingleIQ} which is
-     * necessary to enable {@code bundle} in an offer.
+     * Adds a group packet extension to a {@link JingleIQ} which is necessary to enable {@code bundle} in an offer.
      *
      * @param jingleIQ the IQ to add extensions to.
      */

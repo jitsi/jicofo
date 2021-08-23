@@ -74,10 +74,7 @@ public abstract class AbstractOperationSetJingle
         if (session == null)
         {
             logger.warn("No session found for SID " + packet.getSID());
-            return
-                IQ.createErrorResponse(
-                    packet,
-                    XMPPError.getBuilder(XMPPError.Condition.bad_request));
+            return IQ.createErrorResponse(packet, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
 
         return processJingleIQ(packet);
@@ -130,9 +127,7 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Unexpected response to 'session-initiate' from "
-                            + session.getAddress() + ": "
-                            + reply.toXML());
+                    "Unexpected response to 'session-initiate' from " + session.getAddress() + ": " + reply.toXML());
             return false;
         }
     }
@@ -150,8 +145,7 @@ public abstract class AbstractOperationSetJingle
 
         if (!sessions.containsValue(session))
         {
-            throw new IllegalStateException(
-                    "Session does not exist for: " + address);
+            throw new IllegalStateException("Session does not exist for: " + address);
         }
 
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
@@ -164,9 +158,7 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Unexpected response to 'transport-replace' from "
-                            + session.getAddress() + ": "
-                            + reply.toXML());
+                    "Unexpected response to 'transport-replace' from " + session.getAddress() + ": " + reply.toXML());
             return false;
         }
     }
@@ -184,18 +176,14 @@ public abstract class AbstractOperationSetJingle
         if (action == null)
         {
             // bad-request
-            return IQ.createErrorResponse(
-                iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
+            return IQ.createErrorResponse(iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
         stats.stanzaReceived(action);
 
         if (session == null)
         {
-            logger.warn(
-                "Action: " + action
-                    + ", no session found for SID " + iq.getSID());
-            return IQ.createErrorResponse(
-                iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
+            logger.warn("Action: " + action + ", no session found for SID " + iq.getSID());
+            return IQ.createErrorResponse(iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
@@ -323,10 +311,11 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void terminateSession(JingleSession    session,
-                                 Reason           reason,
-                                 String           message,
-                                 boolean          sendTerminate)
+    public void terminateSession(
+            JingleSession session,
+            Reason reason,
+            String message,
+            boolean sendTerminate)
     {
         logger.info(String.format(
                 "Terminate session: %s, reason: %s, send terminate: %s",
