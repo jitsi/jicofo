@@ -274,6 +274,18 @@ public class JingleOfferFactory
 
                 // a=fmtp:97 apt=101
                 addParameterExtension(rtxVP9, "apt", String.valueOf(config.vp9.pt()));
+
+                // Chrome doesn't have these when it creates an offer, but they were
+                // observed in a hangouts conference. Not sure whether they have any
+                // effect.
+                // a=rtcp-fb:96 ccm fir
+                rtxVP9.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"));
+
+                // a=rtcp-fb:96 nack
+                rtxVP9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null));
+
+                // a=rtcp-fb:96 nack pli
+                rtxVP9.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"));
             }
 
             if (config.h264.rtxEnabled())
