@@ -250,7 +250,7 @@ public class ColibriConferenceImpl
 
             // Verify the response and throw OperationFailedException
             // if it's not a success
-            maybeThrowOperationFailed(response);
+            maybeThrowOperationFailed(allocateRequest, response);
 
             /*
              * Update the complete ColibriConferenceIQ representation maintained by
@@ -302,7 +302,7 @@ public class ColibriConferenceImpl
      * @throws ColibriException in case the response contained an XMPP error
      * not listed above.
      */
-    private void maybeThrowOperationFailed(Stanza response)
+    private void maybeThrowOperationFailed(Stanza request, Stanza response)
         throws ColibriException
     {
         synchronized (syncRoot)
@@ -310,7 +310,8 @@ public class ColibriConferenceImpl
             ColibriException exception = null;
             if (response == null)
             {
-                exception = new TimeoutException();
+                exception = new TimeoutException(
+                    "Timed out waiting for a response for " + request.getStanzaId());
             }
             else if (response.getError() != null)
             {
