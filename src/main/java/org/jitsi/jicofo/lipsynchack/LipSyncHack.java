@@ -109,70 +109,19 @@ public class LipSyncHack implements OperationSetJingle
         return LipSyncHackUtilsKt.toMediaSourceMap(p.getSources()).getSources();
     }
 
-    /**
-     * Decides whether or not it's ok to merge streams sent from one participant
-     * to another.
-     *
-     * @param participantJid the MUC JID of the participant to whom we're going
-     *        to send stream info.
-     * @param ownerJid the MUC JID of the owner of the streams which are to be
-     *        advertised to given <tt>participantJid</tt>
-     *
-     * @return <tt>true</tt> if it's OK to merge audio+video streams or
-     *         <tt>false</tt> otherwise.
-     */
-    private boolean isOkToMergeParticipantAV(Jid participantJid,
-                                             Jid ownerJid)
+
+    private boolean receiverSupportsLipSync(Jid receiverJid)
     {
-        // Do not merge JVBs streams (they are only used for RTCP if anything).
-        if (ParticipantChannelAllocator.SSRC_OWNER_JVB.equals(ownerJid))
-        {
-            return false;
-        }
-
-        Participant participant = conference.findParticipantForRoomJid(participantJid);
-        if (participant == null)
-        {
-            logger.error("No target participant found for: " + participantJid);
-            return false;
-        }
-
-        Participant streamsOwner = conference.findParticipantForRoomJid(ownerJid);
-        if (streamsOwner == null)
-        {
-            logger.error("Stream owner not a participant or not found for jid: " + ownerJid);
-            return false;
-        }
-
-        boolean supportsLipSync = participant.hasLipSyncSupport();
-        logger.debug(String.format(
-                "Lips-sync From %s to %s, lip-sync: %s",
-                ownerJid, participantJid, supportsLipSync));
-
-        return supportsLipSync;
+        Participant receiver = conference.findParticipantForRoomJid(receiverJid);
+        return receiver != null && receiver.hasLipSyncSupport();
     }
 
-    private void doMerge(Jid participant, Jid owner, MediaSourceMap ssrcs)
+    private void doMerge(Jid owner, MediaSourceMap ssrcs)
     {
-        boolean merged = false;
-        if (isOkToMergeParticipantAV(participant, owner))
+        if (!ParticipantChannelAllocator.SSRC_OWNER_JVB.equals(owner))
         {
-            logger.info("Enabling lip-sync for " + participant.toString());
-            merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
-        }
-
-        String logMsg
-            = (merged ? "Merging" : "Not merging")
-                    + " A/V streams from " + owner +" to " + participant;
-
-        // The stream is merged most of the time and it's not that interesting.
-        if (merged)
-        {
-            logger.debug(logMsg);
-        }
-        else
-        {
-            logger.info(logMsg);
+            boolean merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
+            logger.debug(merged ? "Merging" : "Not merging" + " A/V streams for owner " + owner);
         }
     }
 
@@ -184,19 +133,13 @@ public class LipSyncHack implements OperationSetJingle
      *
      * @param contents a list of Jingle contents which describes audio and video
      *        streams for the whole conference.
-     * @param mucJid the MUC JID of the participant to whom Jingle notification
-     *        will be sent.
      */
-    private void processAllParticipantsSSRCs(
-            List<ContentPacketExtension> contents,
-            Jid mucJid)
+    private void processAllParticipantsSSRCs(List<ContentPacketExtension> contents)
     {
         // Split into maps on per owner basis
-        Map<Jid, MediaSourceMap> perOwnerMapping
-            = SSRCSignaling.ownerMapping(contents);
+        Map<Jid, MediaSourceMap> perOwnerMapping = SSRCSignaling.ownerMapping(contents);
 
-        for (Map.Entry<Jid, MediaSourceMap> ownerSSRCs
-                : perOwnerMapping.entrySet())
+        for (Map.Entry<Jid, MediaSourceMap> ownerSSRCs : perOwnerMapping.entrySet())
         {
             Jid ownerJid = ownerSSRCs.getKey();
             if (ownerJid != null)
@@ -204,13 +147,17 @@ public class LipSyncHack implements OperationSetJingle
                 MediaSourceMap ssrcMap = ownerSSRCs.getValue();
                 if (ssrcMap != null)
                 {
-                    doMerge(mucJid, ownerJid, ssrcMap);
+                    doMerge(ownerJid, ssrcMap);
                 }
                 else
+                {
                     logger.error("'ssrcMap' is null");
+                }
             }
             else
+            {
                 logger.warn("'owner' is null");
+            }
         }
     }
 
@@ -232,7 +179,11 @@ public class LipSyncHack implements OperationSetJingle
             JingleRequestHandler requestHandler)
         throws SmackException.NotConnectedException
     {
-        processAllParticipantsSSRCs(contents, to);
+        if (receiverSupportsLipSync(to))
+        {
+            logger.debug("Using lip-sync for " + to);
+            processAllParticipantsSSRCs(contents);
+        }
 
         return jingleImpl.initiateSession(to, contents, additionalExtensions, requestHandler);
     }
@@ -256,7 +207,11 @@ public class LipSyncHack implements OperationSetJingle
             List<ExtensionElement> additionalExtensions)
         throws SmackException.NotConnectedException
     {
-        processAllParticipantsSSRCs(contents, session.getAddress());
+        if (receiverSupportsLipSync(session.getAddress()))
+        {
+            logger.debug("Using lip-sync for " + session.getAddress());
+            processAllParticipantsSSRCs(contents);
+        }
 
         return jingleImpl.replaceTransport(session, contents, additionalExtensions);
     }
@@ -278,7 +233,6 @@ public class LipSyncHack implements OperationSetJingle
         SourceMapAndGroupMap sourceMapAndGroupMap = LipSyncHackUtilsKt.toMediaSourceMap(sources);
         MediaSourceMap ssrcMap = sourceMapAndGroupMap.getSources();
 
-        Jid mucJid = session.getAddress();
         // If this is source add for video only then add audio for merge process
         for (SourcePacketExtension videoSsrc
                 : ssrcMap.getSourcesForMedia("video"))
@@ -298,13 +252,12 @@ public class LipSyncHack implements OperationSetJingle
             if (audioSsrc != null)
             {
                 ssrcMap.addSource("audio", audioSsrc);
-                doMerge(mucJid, owner, ssrcMap);
+                doMerge(owner, ssrcMap);
                 ssrcMap.remove("audio", audioSsrc);
             }
             else
             {
-                logger.warn("No corresponding audio found for: " + owner
-                            + " 'source-add' to: " + mucJid);
+                logger.warn("No corresponding audio found for: " + owner + " 'source-add' to: " + session.getAddress());
             }
         }
         jingleImpl.sendAddSourceIQ(
