@@ -26,6 +26,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
+import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -115,16 +116,30 @@ public abstract class AbstractOperationSetJingle
             List<ContentPacketExtension> contents,
             List<ExtensionElement> additionalExtensions,
             JingleRequestHandler requestHandler,
-            ConferenceSourceMap sources)
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
-        contents = encodeSources(sources, contents);
+        JsonMessageExtension jsonSources = null;
+        if (encodeSourcesAsJson)
+        {
+            jsonSources = encodeSourcesAsJson(sources);
+        }
+        else
+        {
+            contents = encodeSources(sources, contents);
+        }
+
         JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
         JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
 
         inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
         additionalExtensions.forEach(inviteIQ::addExtension);
+        if (jsonSources != null)
+        {
+            inviteIQ.addExtension(jsonSources);
+        }
 
         sessions.put(sid, session);
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
@@ -150,7 +165,8 @@ public abstract class AbstractOperationSetJingle
             @NotNull JingleSession session,
             List<ContentPacketExtension> contents,
             List<ExtensionElement> additionalExtensions,
-            ConferenceSourceMap sources)
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
@@ -160,10 +176,23 @@ public abstract class AbstractOperationSetJingle
         }
         logger.info("RE-INVITE PEER: " + address);
 
-        contents = encodeSources(sources, contents);
+        JsonMessageExtension jsonSources = null;
+        if (encodeSourcesAsJson)
+        {
+            jsonSources = encodeSourcesAsJson(sources);
+        }
+        else
+        {
+            contents = encodeSources(sources, contents);
+        }
+
         JingleIQ jingleIQ = JingleUtilsKt.createTransportReplace(getOurJID(), session, contents);
         jingleIQ.addExtension(GroupPacketExtension.createBundleGroup(jingleIQ.getContentList()));
         additionalExtensions.forEach(jingleIQ::addExtension);
+        if (jsonSources != null)
+        {
+            jingleIQ.addExtension(jsonSources);
+        }
 
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
         stats.stanzaSent(jingleIQ.getAction());
@@ -180,6 +209,15 @@ public abstract class AbstractOperationSetJingle
         }
     }
 
+    /**
+     * Encodes the sources described in {@code sources} as a {@link JsonMessageExtension} in the compact JSON format
+     * (see {@link ConferenceSourceMap#compactJson()}).
+     * @return the {@link JsonMessageExtension} encoding {@code sources}.
+     */
+    private JsonMessageExtension encodeSourcesAsJson(ConferenceSourceMap sources)
+    {
+        return new JsonMessageExtension("\"sources\":" + sources.compactJson() + "}");
+    }
     /**
      * Encodes the sources described in {@code sources} in the list of Jingle contents. If necessary, new
      * {@link ContentPacketExtension}s are created. Returns the resulting list of {@link ContentPacketExtension} which
@@ -345,21 +383,23 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Sends 'source-add' notification to the peer of given
-     * <tt>JingleSession</tt>.
-     *
-     * @param sources the sources to be included in the source-add message.
-     * @param session the <tt>JingleSession</tt> used to send the notification.
+     * {@inheritDoc}
      */
     @Override
-    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
     {
         JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
         addSourceIq.setFrom(getOurJID());
         addSourceIq.setType(IQ.Type.set);
         addSourceIq.setTo(session.getAddress());
-        List<ContentPacketExtension> contents = sources.toJingle();
-        contents.forEach(addSourceIq::addContent);
+        if (encodeSourcesAsJson)
+        {
+            addSourceIq.addExtension(encodeSourcesAsJson(sources));
+        }
+        else
+        {
+            sources.toJingle().forEach(addSourceIq::addContent);
+        }
 
         logger.debug("Sending source-add to " + session.getAddress()
                 + ", SID=" + session.getSessionID() + ", sources= " + sources);
@@ -369,21 +409,28 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Sends 'source-remove' notification to the peer of given
-     * <tt>JingleSession</tt>.
-     *
-     * @param sourcesToRemove the sources to remove.
-     * @param session the <tt>JingleSession</tt> used to send the notification.
+     * {@inheritDoc}
      */
     @Override
-    public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
+    public void sendRemoveSourceIQ(
+            ConferenceSourceMap sourcesToRemove,
+            JingleSession session,
+            boolean encodeSourcesAsJson)
     {
         JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE, session.getSessionID());
 
         removeSourceIq.setFrom(getOurJID());
         removeSourceIq.setType(IQ.Type.set);
         removeSourceIq.setTo(session.getAddress());
-        sourcesToRemove.toJingle().forEach(removeSourceIq::addContent);
+
+        if (encodeSourcesAsJson)
+        {
+            removeSourceIq.addExtension(encodeSourcesAsJson(sourcesToRemove));
+        }
+        else
+        {
+            sourcesToRemove.toJingle().forEach(removeSourceIq::addContent);
+        }
 
         logger.debug(
             "Sending source-remove to " + session.getAddress() + ", SID=" + session.getSessionID()

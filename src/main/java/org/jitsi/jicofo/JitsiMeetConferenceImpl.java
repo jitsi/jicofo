@@ -1407,7 +1407,11 @@ public class JitsiMeetConferenceImpl
                 {
                     if (participant.isSessionEstablished())
                     {
-                        jingle.sendAddSourceIQ(finalSources, participant.getJingleSession());
+                        jingle.sendAddSourceIQ(
+                                finalSources,
+                                participant.getJingleSession(),
+                                ConferenceConfig.config.getUseJsonEncodedSources()
+                                        && participant.supportsJsonEncodedSources());
                     }
                     else
                     {
@@ -1693,6 +1697,8 @@ public class JitsiMeetConferenceImpl
         // Loop over current participant and send 'source-add' notification
         propagateNewSources(participant, sourcesAccepted);
 
+        boolean encodeSourcesAsJson
+                = ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources();
         for (SourcesToAddOrRemove sourcesToAddOrRemove : participant.clearQueuedRemoteSourceChanges())
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
@@ -1702,11 +1708,14 @@ public class JitsiMeetConferenceImpl
                             + " to " + participantId + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
-                jingle.sendAddSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession);
+                jingle.sendAddSourceIQ(
+                        sourcesToAddOrRemove.getSources(),
+                        jingleSession,
+                        encodeSourcesAsJson);
             }
             else if (action == AddOrRemove.Remove)
             {
-                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession);
+                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
             }
         }
 
@@ -1813,7 +1822,11 @@ public class JitsiMeetConferenceImpl
                         {
                             if (participant.isSessionEstablished())
                             {
-                                jingle.sendRemoveSourceIQ(finalSources, participant.getJingleSession());
+                                jingle.sendRemoveSourceIQ(
+                                        finalSources,
+                                        participant.getJingleSession(),
+                                        ConferenceConfig.config.getUseJsonEncodedSources()
+                                                && participant.supportsJsonEncodedSources());
                             }
                             else
                             {

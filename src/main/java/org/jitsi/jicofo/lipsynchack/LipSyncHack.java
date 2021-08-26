@@ -252,7 +252,8 @@ public class LipSyncHack implements OperationSetJingle
             List<ContentPacketExtension> contents,
             List<ExtensionElement> additionalExtensions,
             JingleRequestHandler requestHandler,
-            ConferenceSourceMap sources)
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
         ConferenceSourceMap mergedSources = sources;
@@ -262,7 +263,8 @@ public class LipSyncHack implements OperationSetJingle
             mergedSources = mergeVideoIntoAudio(sources);
         }
 
-        return jingleImpl.initiateSession(to, contents, additionalExtensions, requestHandler, mergedSources);
+        return jingleImpl.initiateSession(
+                to, contents, additionalExtensions, requestHandler, mergedSources, encodeSourcesAsJson);
     }
 
     @Override
@@ -282,7 +284,8 @@ public class LipSyncHack implements OperationSetJingle
             @NotNull JingleSession session,
             List<ContentPacketExtension> contents,
             List<ExtensionElement> additionalExtensions,
-            ConferenceSourceMap sources)
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
         ConferenceSourceMap mergedSources = sources;
@@ -292,7 +295,7 @@ public class LipSyncHack implements OperationSetJingle
             mergedSources = mergeVideoIntoAudio(sources);
         }
 
-        return jingleImpl.replaceTransport(session, contents, additionalExtensions, mergedSources);
+        return jingleImpl.replaceTransport(session, contents, additionalExtensions, mergedSources, encodeSourcesAsJson);
     }
 
     /**
@@ -307,7 +310,7 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
     {
         ConferenceSourceMap mergedSources = new ConferenceSourceMap();
         for (Map.Entry<Jid, EndpointSourceSet> entry : sources.entrySet())
@@ -364,7 +367,7 @@ public class LipSyncHack implements OperationSetJingle
             }
         }
 
-        jingleImpl.sendAddSourceIQ(mergedSources, session);
+        jingleImpl.sendAddSourceIQ(mergedSources, session, encodeSourcesAsJson);
     }
 
     /**
@@ -378,9 +381,12 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
+    public void sendRemoveSourceIQ(
+            ConferenceSourceMap sourcesToRemove,
+            JingleSession session,
+            boolean encodeSourcesAsJson)
     {
-        jingleImpl.sendRemoveSourceIQ(sourcesToRemove, session);
+        jingleImpl.sendRemoveSourceIQ(sourcesToRemove, session, encodeSourcesAsJson);
     }
 
     /**

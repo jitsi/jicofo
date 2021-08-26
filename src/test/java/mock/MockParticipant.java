@@ -394,7 +394,7 @@ public class MockParticipant
         ConferenceSourceMap toRemove = new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(audioSource));
 
         localSSRCs.remove(toRemove);
-        jingle.sendRemoveSourceIQ(toRemove, jingleSession);
+        jingle.sendRemoveSourceIQ(toRemove, jingleSession, false);
     }
 
     public void videoSourceAdd(long[] newSSRCs)
@@ -410,7 +410,7 @@ public class MockParticipant
         }
 
         // Send source-add
-        jingle.sendAddSourceIQ(toAdd, jingleSession);
+        jingle.sendAddSourceIQ(toAdd, jingleSession, false);
     }
 
     public ConferenceSourceMap getRemoteSources()
