@@ -216,7 +216,7 @@ public abstract class AbstractOperationSetJingle
      */
     private JsonMessageExtension encodeSourcesAsJson(ConferenceSourceMap sources)
     {
-        return new JsonMessageExtension("\"sources\":" + sources.compactJson() + "}");
+        return new JsonMessageExtension("{\"sources\":" + sources.compactJson() + "}");
     }
     /**
      * Encodes the sources described in {@code sources} in the list of Jingle contents. If necessary, new
