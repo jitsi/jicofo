@@ -211,7 +211,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * occurs.
      *
      * @param address the destination JID.
-     * @param offer the list of contents to include.
+     * @param offer The description of the offer to send (sources and a list of {@link ContentPacketExtension}s).
      * @return {@code false} on failure.
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.

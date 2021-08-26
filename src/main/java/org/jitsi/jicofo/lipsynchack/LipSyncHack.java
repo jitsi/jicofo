@@ -73,7 +73,9 @@ public class LipSyncHack implements OperationSetJingle
     private static boolean hasValidStreamId(Source source)
     {
         String streamId = getStreamId(source);
-        return streamId != null && !"default".equalsIgnoreCase(streamId.trim());
+        return streamId != null
+                && !"default".equalsIgnoreCase(streamId.trim())
+                && !"-".equals(streamId.trim());
     }
 
     /**
