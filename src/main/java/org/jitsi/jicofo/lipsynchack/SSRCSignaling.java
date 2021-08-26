@@ -219,8 +219,7 @@ public class SSRCSignaling
      */
     public static boolean mergeVideoIntoAudio(MediaSourceMap peerSSRCs)
     {
-        List<SourcePacketExtension> audioSSRCs
-            = peerSSRCs.getSourcesForMedia(MediaType.AUDIO.toString());
+        List<SourcePacketExtension> audioSSRCs = peerSSRCs.getSourcesForMedia(MediaType.AUDIO.toString());
 
         // We want to sync video stream with the first valid audio stream
         SourcePacketExtension audioSSRC = getFirstWithMSID(audioSSRCs);
