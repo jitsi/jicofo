@@ -102,7 +102,7 @@ class AvModerationHandler(
      * We do that only once for the life of jicofo and skip it on reconnections.
      */
     override fun registrationChanged(registered: Boolean) {
-        if (!registered || avModerationAddress != null) {
+        if (!registered) {
             avModerationAddress = null
             return
         }
@@ -113,8 +113,13 @@ class AvModerationHandler(
 
             if (avModIdentities != null && avModIdentities.size > 0) {
                 avModerationAddress = JidCreate.domainBareFrom(avModIdentities[0].name)
+                logger.info("Discovered av_moderation component at $avModerationAddress.")
+            } else {
+                avModerationAddress = null
+                logger.info("Did not discover av_moderation component.")
             }
         } catch (e: Exception) {
+            avModerationAddress = null
             logger.error("Error checking for av_moderation component", e)
         }
     }
