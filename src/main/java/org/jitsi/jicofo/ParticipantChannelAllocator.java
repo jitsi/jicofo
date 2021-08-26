@@ -94,7 +94,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected List<ContentPacketExtension> createOffer()
+    protected Offer createOffer()
         throws UnsupportedFeatureConfigurationException
     {
         // Feature discovery
@@ -107,7 +107,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         OfferOptionsKt.applyConstraints(offerOptions, config);
         OfferOptionsKt.applyConstraints(offerOptions, participant);
 
-        return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
+        return new Offer(new ConferenceSourceMap(), JingleOfferFactory.INSTANCE.createOffer(offerOptions));
     }
 
     /**
@@ -129,7 +129,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected void invite(List<ContentPacketExtension> offer)
+    protected void invite(Offer offer)
         throws SmackException.NotConnectedException
     {
         /*
@@ -211,12 +211,12 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * occurs.
      *
      * @param address the destination JID.
-     * @param contents the list of contents to include.
+     * @param offer the list of contents to include.
      * @return {@code false} on failure.
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.
      */
-    private boolean doInviteOrReinvite(Jid address, List<ContentPacketExtension> contents)
+    private boolean doInviteOrReinvite(Jid address, Offer offer)
         throws SmackException.NotConnectedException
     {
         OperationSetJingle jingle = meetConference.getJingle();
@@ -239,13 +239,14 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         if (initiateSession)
         {
             logger.info("Sending session-initiate to: " + address);
-            ack = jingle.initiateSession(address, contents, additionalExtensions, meetConference);
+            ack = jingle.initiateSession(
+                    address, offer.getContents(), additionalExtensions, meetConference, offer.getSources());
         }
         else
         {
             logger.info("Sending transport-replace to: " + address);
             // will throw OperationFailedExc if XMPP connection is broken
-            ack = jingle.replaceTransport(jingleSession, contents, additionalExtensions);
+            ack = jingle.replaceTransport(jingleSession, offer.getContents(), additionalExtensions, offer.getSources());
         }
 
         if (!ack)
@@ -265,9 +266,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected List<ContentPacketExtension> updateOffer(
-            List<ContentPacketExtension> offer,
-            ColibriConferenceIQ colibriChannels)
+    protected Offer updateOffer(Offer offer, ColibriConferenceIQ colibriChannels)
     {
         ConferenceSourceMap conferenceSources = meetConference.getSources()
                 .copy()
@@ -275,7 +274,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
 
-        for (ContentPacketExtension cpe : offer)
+        for (ContentPacketExtension cpe : offer.getContents())
         {
             String contentName = cpe.getName();
             ColibriConferenceIQ.Content colibriContent = colibriChannels.getContent(contentName);
@@ -372,59 +371,20 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                         continue;
                     }
 
-                    try
-                    {
-                        SourcePacketExtension ssrcCopy = ssrcPe.copy();
-
-                        // FIXME: not all parameters are used currently
-                        ssrcCopy.addParameter(new ParameterPacketExtension("cname", "mixed"));
-                        ssrcCopy.addParameter(new ParameterPacketExtension("label", "mixedlabel" + contentName + "0"));
-                        ssrcCopy.addParameter(new ParameterPacketExtension(
-                                        "msid",
-                                        "mixedmslabel mixedlabel" + contentName + "0"));
-                        ssrcCopy.addParameter(new ParameterPacketExtension("mslabel", "mixedmslabel"));
-
-                        // Mark 'jvb' as SSRC owner
-                        SSRCInfoPacketExtension ssrcInfo = new SSRCInfoPacketExtension();
-                        ssrcInfo.setOwner(SSRC_OWNER_JVB);
-                        ssrcCopy.addChildExtension(ssrcInfo);
-
-                        rtpDescPe.addChildExtension(ssrcCopy);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Copy SSRC error", e);
-                    }
-                }
-
-                // Include all peers SSRCs
-                List<SourcePacketExtension> sourceExtensions
-                    = conferenceSources.createSourcePacketExtensions(MediaType.parseString(contentName));
-
-                for (SourcePacketExtension ssrc : sourceExtensions)
-                {
-                    try
-                    {
-                        rtpDescPe.addChildExtension(ssrc.copy());
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Copy SSRC error", e);
-                    }
-                }
-
-                // Include SSRC groups
-                List<SourceGroupPacketExtension> sourceGroups
-                    = conferenceSources.createSourceGroupPacketExtensions(MediaType.parseString(contentName));
-
-                for (SourceGroupPacketExtension sourceGroupPacketExtension : sourceGroups)
-                {
-                    rtpDescPe.addChildExtension(sourceGroupPacketExtension);
+                    conferenceSources.add(
+                            SSRC_OWNER_JVB,
+                            new EndpointSourceSet(
+                                    new Source(
+                                            ssrcPe.getSSRC(),
+                                            MediaType.parseString(contentName),
+                                            "mixedmslabel mixedlabel" + contentName + "0",
+                                            "mixed",
+                                            false)));
                 }
             }
         }
 
-        return offer;
+        return new Offer(conferenceSources, offer.getContents());
     }
 
     /**

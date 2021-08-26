@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jitsi.jicofo.codec.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -67,12 +68,12 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected List<ContentPacketExtension> createOffer()
+    protected Offer createOffer()
     {
         OfferOptions options = OfferOptionsKt.getOctoOptions();
         OfferOptionsKt.applyConstraints(options, meetConference.getConfig());
 
-        return JingleOfferFactory.INSTANCE.createOffer(options);
+        return new Offer(new ConferenceSourceMap(), JingleOfferFactory.INSTANCE.createOffer(options));
     }
 
     /**

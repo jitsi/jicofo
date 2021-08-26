@@ -52,7 +52,8 @@ public interface OperationSetJingle
         Jid to,
         List<ContentPacketExtension> contents,
         List<ExtensionElement> additionalExtensions,
-        JingleRequestHandler requestHandler)
+        JingleRequestHandler requestHandler,
+        ConferenceSourceMap sources)
         throws SmackException.NotConnectedException;
 
     Jid getOurJID();
@@ -70,7 +71,8 @@ public interface OperationSetJingle
     boolean replaceTransport(
             JingleSession session,
             List<ContentPacketExtension> contents,
-            List<ExtensionElement> additionalExtensions)
+            List<ExtensionElement> additionalExtensions,
+            ConferenceSourceMap sources)
         throws SmackException.NotConnectedException;
 
     /**

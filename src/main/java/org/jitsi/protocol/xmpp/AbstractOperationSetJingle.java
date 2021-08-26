@@ -21,7 +21,9 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jivesoftware.smack.*;
@@ -112,9 +114,11 @@ public abstract class AbstractOperationSetJingle
             Jid to,
             List<ContentPacketExtension> contents,
             List<ExtensionElement> additionalExtensions,
-            JingleRequestHandler requestHandler)
+            JingleRequestHandler requestHandler,
+            ConferenceSourceMap sources)
         throws SmackException.NotConnectedException
     {
+        contents = encodeSources(sources, contents);
         JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
         JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
@@ -145,7 +149,8 @@ public abstract class AbstractOperationSetJingle
     public boolean replaceTransport(
             @NotNull JingleSession session,
             List<ContentPacketExtension> contents,
-            List<ExtensionElement> additionalExtensions)
+            List<ExtensionElement> additionalExtensions,
+            ConferenceSourceMap sources)
         throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
@@ -155,6 +160,7 @@ public abstract class AbstractOperationSetJingle
         }
         logger.info("RE-INVITE PEER: " + address);
 
+        contents = encodeSources(sources, contents);
         JingleIQ jingleIQ = JingleUtilsKt.createTransportReplace(getOurJID(), session, contents);
         jingleIQ.addExtension(GroupPacketExtension.createBundleGroup(jingleIQ.getContentList()));
         additionalExtensions.forEach(jingleIQ::addExtension);
@@ -172,6 +178,101 @@ public abstract class AbstractOperationSetJingle
                     "Unexpected response to 'transport-replace' from " + session.getAddress() + ": " + reply.toXML());
             return false;
         }
+    }
+
+    /**
+     * Encodes the sources described in {@code sources} in the list of Jingle contents. If necessary, new
+     * {@link ContentPacketExtension}s are created. Returns the resulting list of {@link ContentPacketExtension} which
+     * contains the encoded sources.
+     *
+     * @param sources the sources to encode.
+     * @param contents list of existing {@link ContentPacketExtension} to which to add sources if possible.
+     * @return the resulting list of {@link ContentPacketExtension}, which consisnts of {@code contents} plus any new
+     * {@link ContentPacketExtension}s that were created.
+     */
+    private List<ContentPacketExtension> encodeSources(
+            ConferenceSourceMap sources,
+            List<ContentPacketExtension> contents)
+    {
+        ContentPacketExtension audioContent
+                = contents.stream().filter(c -> c.getName().equals("audio")).findFirst().orElse(null);
+        ContentPacketExtension videoContent
+                = contents.stream().filter(c -> c.getName().equals("video")).findFirst().orElse(null);
+
+        List<ContentPacketExtension> ret = new ArrayList<>();
+        if (audioContent != null)
+        {
+            ret.add(audioContent);
+        }
+        if (videoContent != null)
+        {
+            ret.add(videoContent);
+        }
+
+        List<SourcePacketExtension> audioSourceExtensions = sources.createSourcePacketExtensions(MediaType.AUDIO);
+        List<SourceGroupPacketExtension> audioSsrcGroupExtensions
+                = sources.createSourceGroupPacketExtensions(MediaType.AUDIO);
+        List<SourcePacketExtension> videoSourceExtensions = sources.createSourcePacketExtensions(MediaType.VIDEO);
+        List<SourceGroupPacketExtension> videoSsrcGroupExtensions
+                = sources.createSourceGroupPacketExtensions(MediaType.VIDEO);
+
+        if (!audioSourceExtensions.isEmpty() || !audioSsrcGroupExtensions.isEmpty())
+        {
+            if (audioContent == null)
+            {
+                audioContent = new ContentPacketExtension();
+                audioContent.setName("audio");
+                ret.add(audioContent);
+            }
+
+            RtpDescriptionPacketExtension audioDescription
+                    = audioContent.getFirstChildOfType(RtpDescriptionPacketExtension.class);
+            if (audioDescription == null)
+            {
+                audioDescription = new RtpDescriptionPacketExtension();
+                audioDescription.setMedia("audio");
+                audioContent.addChildExtension(audioDescription);
+            }
+
+            for (SourcePacketExtension extension : audioSourceExtensions)
+            {
+                audioDescription.addChildExtension(extension);
+            }
+            for (SourceGroupPacketExtension extension : audioSsrcGroupExtensions)
+            {
+                audioDescription.addChildExtension(extension);
+            }
+        }
+
+        if (!videoSourceExtensions.isEmpty() || !videoSsrcGroupExtensions.isEmpty())
+        {
+            if (videoContent == null)
+            {
+                videoContent = new ContentPacketExtension();
+                videoContent.setName("video");
+                ret.add(videoContent);
+            }
+
+            RtpDescriptionPacketExtension videoDescription
+                    = videoContent.getFirstChildOfType(RtpDescriptionPacketExtension.class);
+            if (videoDescription == null)
+            {
+                videoDescription = new RtpDescriptionPacketExtension();
+                videoDescription.setMedia("video");
+                videoContent.addChildExtension(videoDescription);
+            }
+
+            for (SourcePacketExtension extension : videoSourceExtensions)
+            {
+                videoContent.addChildExtension(extension);
+            }
+            for (SourceGroupPacketExtension extension : videoSsrcGroupExtensions)
+            {
+                videoDescription.addChildExtension(extension);
+            }
+        }
+
+        return ret;
     }
 
     /**

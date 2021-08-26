@@ -251,18 +251,18 @@ public class LipSyncHack implements OperationSetJingle
             Jid to,
             List<ContentPacketExtension> contents,
             List<ExtensionElement> additionalExtensions,
-            JingleRequestHandler requestHandler)
+            JingleRequestHandler requestHandler,
+            ConferenceSourceMap sources)
         throws SmackException.NotConnectedException
     {
+        ConferenceSourceMap mergedSources = sources;
         if (receiverSupportsLipSync(to))
         {
             logger.debug("Using lip-sync for " + to);
-            ConferenceSourceMap sources = LipSyncHackUtilsKt.parseConferenceSourceMap(contents);
-            ConferenceSourceMap mergedSources = mergeVideoIntoAudio(sources);
-            // XXX TODO this is broken as it doesn't re-populate [contents], will be fixed in a subsequent commit.
+            mergedSources = mergeVideoIntoAudio(sources);
         }
 
-        return jingleImpl.initiateSession(to, contents, additionalExtensions, requestHandler);
+        return jingleImpl.initiateSession(to, contents, additionalExtensions, requestHandler, mergedSources);
     }
 
     @Override
@@ -281,18 +281,18 @@ public class LipSyncHack implements OperationSetJingle
     public boolean replaceTransport(
             @NotNull JingleSession session,
             List<ContentPacketExtension> contents,
-            List<ExtensionElement> additionalExtensions)
+            List<ExtensionElement> additionalExtensions,
+            ConferenceSourceMap sources)
         throws SmackException.NotConnectedException
     {
+        ConferenceSourceMap mergedSources = sources;
         if (receiverSupportsLipSync(session.getAddress()))
         {
             logger.debug("Using lip-sync for " + session.getAddress());
-            ConferenceSourceMap sources = LipSyncHackUtilsKt.parseConferenceSourceMap(contents);
-            ConferenceSourceMap mergedSources = mergeVideoIntoAudio(sources);
-            // XXX TODO this is broken as it doesn't re-populate [contents], will be fixed in a subsequent commit.
+            mergedSources = mergeVideoIntoAudio(sources);
         }
 
-        return jingleImpl.replaceTransport(session, contents, additionalExtensions);
+        return jingleImpl.replaceTransport(session, contents, additionalExtensions, mergedSources);
     }
 
     /**
