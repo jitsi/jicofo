@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo;
 
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -153,7 +152,7 @@ public abstract class AbstractChannelAllocator implements Runnable
 
     private void doRun()
     {
-        List<ContentPacketExtension> offer;
+        Offer offer;
 
         try
         {
@@ -169,7 +168,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             return;
         }
 
-        colibriChannels = allocateChannels(offer);
+        colibriChannels = allocateChannels(offer.getContents());
         if (canceled)
         {
             return;
@@ -210,7 +209,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * {@link AbstractChannelAllocator}, if there is one, in order to invite
      * (or re-invite) him to the conference.
      */
-    protected void invite(List<ContentPacketExtension> offer)
+    protected void invite(Offer offer)
         throws SmackException.NotConnectedException
     {
     }
@@ -219,7 +218,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * Creates a Jingle offer for the {@link Participant} of this
      * {@link AbstractChannelAllocator}.
      */
-    protected abstract List<ContentPacketExtension> createOffer() throws UnsupportedFeatureConfigurationException;
+    protected abstract Offer createOffer() throws UnsupportedFeatureConfigurationException;
 
     /**
      * Allocates Colibri channels for this {@link AbstractChannelAllocator}'s
@@ -336,9 +335,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      * the channels allocated on a jitsi-videobridge instance for the participant
      * for which the Jingle offer is being prepared.
      */
-    protected List<ContentPacketExtension> updateOffer(
-            List<ContentPacketExtension> offer,
-            ColibriConferenceIQ colibriChannels)
+    protected Offer updateOffer(Offer offer, ColibriConferenceIQ colibriChannels)
     {
         return offer;
     }

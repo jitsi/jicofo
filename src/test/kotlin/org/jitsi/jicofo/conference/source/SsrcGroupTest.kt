@@ -68,5 +68,10 @@ class SsrcGroupTest : ShouldSpec() {
                 Source(3, MediaType.VIDEO)
             )
         }
+        context("Compact JSON") {
+            SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)).compactJson shouldBe """
+                ["s",1,2,3]
+            """.trimIndent()
+        }
     }
 }

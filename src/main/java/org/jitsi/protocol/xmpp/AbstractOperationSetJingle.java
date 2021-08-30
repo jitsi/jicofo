@@ -17,14 +17,16 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.protocol.xmpp.util.*;
 
+import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -74,10 +76,7 @@ public abstract class AbstractOperationSetJingle
         if (session == null)
         {
             logger.warn("No session found for SID " + packet.getSID());
-            return
-                IQ.createErrorResponse(
-                    packet,
-                    XMPPError.getBuilder(XMPPError.Condition.bad_request));
+            return IQ.createErrorResponse(packet, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
 
         return processJingleIQ(packet);
@@ -112,14 +111,37 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean initiateSession(JingleIQ inviteIQ, JingleRequestHandler requestHandler)
+    public boolean initiateSession(
+            Jid to,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions,
+            JingleRequestHandler requestHandler,
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
+        JsonMessageExtension jsonSources = null;
+        if (encodeSourcesAsJson)
+        {
+            jsonSources = encodeSourcesAsJson(sources);
+        }
+        else
+        {
+            contents = encodeSources(sources, contents);
+        }
+
+        JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
         JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
 
-        sessions.put(sid, session);
+        inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
+        additionalExtensions.forEach(inviteIQ::addExtension);
+        if (jsonSources != null)
+        {
+            inviteIQ.addExtension(jsonSources);
+        }
 
+        sessions.put(sid, session);
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
         stats.stanzaSent(inviteIQ.getAction());
 
@@ -130,9 +152,7 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Unexpected response to 'session-initiate' from "
-                            + session.getAddress() + ": "
-                            + reply.toXML());
+                    "Unexpected response to 'session-initiate' from " + session.getAddress() + ": " + reply.toXML());
             return false;
         }
     }
@@ -141,17 +161,37 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
+    public boolean replaceTransport(
+            @NotNull JingleSession session,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions,
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
         Jid address = session.getAddress();
-
-        logger.info("RE-INVITE PEER: " + address);
-
         if (!sessions.containsValue(session))
         {
-            throw new IllegalStateException(
-                    "Session does not exist for: " + address);
+            throw new IllegalStateException("Session does not exist for: " + address);
+        }
+        logger.info("RE-INVITE PEER: " + address);
+
+        JsonMessageExtension jsonSources = null;
+        if (encodeSourcesAsJson)
+        {
+            jsonSources = encodeSourcesAsJson(sources);
+        }
+        else
+        {
+            contents = encodeSources(sources, contents);
+        }
+
+        JingleIQ jingleIQ = JingleUtilsKt.createTransportReplace(getOurJID(), session, contents);
+        jingleIQ.addExtension(GroupPacketExtension.createBundleGroup(jingleIQ.getContentList()));
+        additionalExtensions.forEach(jingleIQ::addExtension);
+        if (jsonSources != null)
+        {
+            jingleIQ.addExtension(jsonSources);
         }
 
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
@@ -164,11 +204,113 @@ public abstract class AbstractOperationSetJingle
         else
         {
             logger.error(
-                    "Unexpected response to 'transport-replace' from "
-                            + session.getAddress() + ": "
-                            + reply.toXML());
+                    "Unexpected response to 'transport-replace' from " + session.getAddress() + ": " + reply.toXML());
             return false;
         }
+    }
+
+    /**
+     * Encodes the sources described in {@code sources} as a {@link JsonMessageExtension} in the compact JSON format
+     * (see {@link ConferenceSourceMap#compactJson()}).
+     * @return the {@link JsonMessageExtension} encoding {@code sources}.
+     */
+    private JsonMessageExtension encodeSourcesAsJson(ConferenceSourceMap sources)
+    {
+        return new JsonMessageExtension("{\"sources\":" + sources.compactJson() + "}");
+    }
+    /**
+     * Encodes the sources described in {@code sources} in the list of Jingle contents. If necessary, new
+     * {@link ContentPacketExtension}s are created. Returns the resulting list of {@link ContentPacketExtension} which
+     * contains the encoded sources.
+     *
+     * @param sources the sources to encode.
+     * @param contents list of existing {@link ContentPacketExtension} to which to add sources if possible.
+     * @return the resulting list of {@link ContentPacketExtension}, which consisnts of {@code contents} plus any new
+     * {@link ContentPacketExtension}s that were created.
+     */
+    private List<ContentPacketExtension> encodeSources(
+            ConferenceSourceMap sources,
+            List<ContentPacketExtension> contents)
+    {
+        ContentPacketExtension audioContent
+                = contents.stream().filter(c -> c.getName().equals("audio")).findFirst().orElse(null);
+        ContentPacketExtension videoContent
+                = contents.stream().filter(c -> c.getName().equals("video")).findFirst().orElse(null);
+
+        List<ContentPacketExtension> ret = new ArrayList<>();
+        if (audioContent != null)
+        {
+            ret.add(audioContent);
+        }
+        if (videoContent != null)
+        {
+            ret.add(videoContent);
+        }
+
+        List<SourcePacketExtension> audioSourceExtensions = sources.createSourcePacketExtensions(MediaType.AUDIO);
+        List<SourceGroupPacketExtension> audioSsrcGroupExtensions
+                = sources.createSourceGroupPacketExtensions(MediaType.AUDIO);
+        List<SourcePacketExtension> videoSourceExtensions = sources.createSourcePacketExtensions(MediaType.VIDEO);
+        List<SourceGroupPacketExtension> videoSsrcGroupExtensions
+                = sources.createSourceGroupPacketExtensions(MediaType.VIDEO);
+
+        if (!audioSourceExtensions.isEmpty() || !audioSsrcGroupExtensions.isEmpty())
+        {
+            if (audioContent == null)
+            {
+                audioContent = new ContentPacketExtension();
+                audioContent.setName("audio");
+                ret.add(audioContent);
+            }
+
+            RtpDescriptionPacketExtension audioDescription
+                    = audioContent.getFirstChildOfType(RtpDescriptionPacketExtension.class);
+            if (audioDescription == null)
+            {
+                audioDescription = new RtpDescriptionPacketExtension();
+                audioDescription.setMedia("audio");
+                audioContent.addChildExtension(audioDescription);
+            }
+
+            for (SourcePacketExtension extension : audioSourceExtensions)
+            {
+                audioDescription.addChildExtension(extension);
+            }
+            for (SourceGroupPacketExtension extension : audioSsrcGroupExtensions)
+            {
+                audioDescription.addChildExtension(extension);
+            }
+        }
+
+        if (!videoSourceExtensions.isEmpty() || !videoSsrcGroupExtensions.isEmpty())
+        {
+            if (videoContent == null)
+            {
+                videoContent = new ContentPacketExtension();
+                videoContent.setName("video");
+                ret.add(videoContent);
+            }
+
+            RtpDescriptionPacketExtension videoDescription
+                    = videoContent.getFirstChildOfType(RtpDescriptionPacketExtension.class);
+            if (videoDescription == null)
+            {
+                videoDescription = new RtpDescriptionPacketExtension();
+                videoDescription.setMedia("video");
+                videoContent.addChildExtension(videoDescription);
+            }
+
+            for (SourcePacketExtension extension : videoSourceExtensions)
+            {
+                videoContent.addChildExtension(extension);
+            }
+            for (SourceGroupPacketExtension extension : videoSsrcGroupExtensions)
+            {
+                videoDescription.addChildExtension(extension);
+            }
+        }
+
+        return ret;
     }
 
     /**
@@ -184,18 +326,14 @@ public abstract class AbstractOperationSetJingle
         if (action == null)
         {
             // bad-request
-            return IQ.createErrorResponse(
-                iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
+            return IQ.createErrorResponse(iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
         }
         stats.stanzaReceived(action);
 
         if (session == null)
         {
-            logger.warn(
-                "Action: " + action
-                    + ", no session found for SID " + iq.getSID());
-            return IQ.createErrorResponse(
-                iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
+            logger.warn("Action: " + action + ", no session found for SID " + iq.getSID());
+            return IQ.createErrorResponse(iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
         }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
@@ -245,21 +383,23 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Sends 'source-add' notification to the peer of given
-     * <tt>JingleSession</tt>.
-     *
-     * @param sources the sources to be included in the source-add message.
-     * @param session the <tt>JingleSession</tt> used to send the notification.
+     * {@inheritDoc}
      */
     @Override
-    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
     {
         JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
         addSourceIq.setFrom(getOurJID());
         addSourceIq.setType(IQ.Type.set);
         addSourceIq.setTo(session.getAddress());
-        List<ContentPacketExtension> contents = sources.toJingle();
-        contents.forEach(addSourceIq::addContent);
+        if (encodeSourcesAsJson)
+        {
+            addSourceIq.addExtension(encodeSourcesAsJson(sources));
+        }
+        else
+        {
+            sources.toJingle().forEach(addSourceIq::addContent);
+        }
 
         logger.debug("Sending source-add to " + session.getAddress()
                 + ", SID=" + session.getSessionID() + ", sources= " + sources);
@@ -269,21 +409,28 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * Sends 'source-remove' notification to the peer of given
-     * <tt>JingleSession</tt>.
-     *
-     * @param sourcesToRemove the sources to remove.
-     * @param session the <tt>JingleSession</tt> used to send the notification.
+     * {@inheritDoc}
      */
     @Override
-    public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
+    public void sendRemoveSourceIQ(
+            ConferenceSourceMap sourcesToRemove,
+            JingleSession session,
+            boolean encodeSourcesAsJson)
     {
         JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE, session.getSessionID());
 
         removeSourceIq.setFrom(getOurJID());
         removeSourceIq.setType(IQ.Type.set);
         removeSourceIq.setTo(session.getAddress());
-        sourcesToRemove.toJingle().forEach(removeSourceIq::addContent);
+
+        if (encodeSourcesAsJson)
+        {
+            removeSourceIq.addExtension(encodeSourcesAsJson(sourcesToRemove));
+        }
+        else
+        {
+            sourcesToRemove.toJingle().forEach(removeSourceIq::addContent);
+        }
 
         logger.debug(
             "Sending source-remove to " + session.getAddress() + ", SID=" + session.getSessionID()
@@ -323,10 +470,11 @@ public abstract class AbstractOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void terminateSession(JingleSession    session,
-                                 Reason           reason,
-                                 String           message,
-                                 boolean          sendTerminate)
+    public void terminateSession(
+            JingleSession session,
+            Reason reason,
+            String message,
+            boolean sendTerminate)
     {
         logger.info(String.format(
                 "Terminate session: %s, reason: %s, send terminate: %s",

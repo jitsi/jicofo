@@ -56,5 +56,14 @@ class SourceTest : ShouldSpec() {
             ssrcInfo shouldNotBe null
             ssrcInfo.owner shouldBe ownerJid
         }
+        context("Compact JSON") {
+            Source(1, MediaType.VIDEO, msid = "msid", cname = "cname").compactJson shouldBe
+                """
+                {"s":1,"m":"msid","c":"cname"}
+                """.trimIndent()
+            Source(1, MediaType.AUDIO).compactJson shouldBe """
+            {"s":1}
+            """.trimIndent()
+        }
     }
 }

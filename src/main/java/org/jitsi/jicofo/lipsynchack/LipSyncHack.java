@@ -19,13 +19,14 @@ package org.jitsi.jicofo.lipsynchack;
 
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import javax.validation.constraints.*;
@@ -67,6 +68,68 @@ import java.util.*;
 public class LipSyncHack implements OperationSetJingle
 {
     /**
+     * Checks if a source has valid stream ID('msid'). The 'default' stream id is not considered a valid one.
+     */
+    private static boolean hasValidStreamId(Source source)
+    {
+        String streamId = getStreamId(source);
+        return streamId != null
+                && !"default".equalsIgnoreCase(streamId.trim())
+                && !"-".equals(streamId.trim());
+    }
+
+    /**
+     * Get's WebRTC stream ID extracted from "msid" SSRC parameter.
+     * @param source {@link Source} that describes the SSRC for which we want to obtain WebRTC stream ID.
+     * @return WebRTC stream ID that is the first part of "msid" SSRC parameter.
+     */
+    private static String getStreamId(Source source)
+    {
+        String msid = source.getMsid();
+
+        if (msid == null)
+        {
+            return null;
+        }
+
+        String[] streamAndTrack = msid.split(" ");
+        String streamId = streamAndTrack.length == 2 ? streamAndTrack[0] : null;
+        if (streamId != null)
+        {
+            streamId = streamId.trim();
+            if (streamId.isEmpty())
+            {
+                streamId = null;
+            }
+        }
+        return streamId;
+    }
+    /**
+     * Get's WebRTC track ID extracted from "msid" SSRC parameter.
+     * @param source {@link Source} that describes the SSRC for which we want to obtain WebRTC stream ID.
+     * @return WebRTC track ID that is the second part of "msid" SSRC parameter.
+     */
+    private static String getTrackId(Source source)
+    {
+        String msid = source.getMsid();
+
+        if (msid == null)
+            return null;
+
+        String[] streamAndTrack = msid.split(" ");
+        String trackId = streamAndTrack.length == 2 ? streamAndTrack[1] : null;
+        if (trackId != null)
+        {
+            trackId = trackId.trim();
+            if (trackId.isEmpty())
+            {
+                trackId = null;
+            }
+        }
+        return trackId;
+    }
+
+    /**
      * Parent conference for which this instance is doing stream merging.
      */
     private final JitsiMeetConference conference;
@@ -96,121 +159,83 @@ public class LipSyncHack implements OperationSetJingle
         this.logger = parentLogger.createChildLogger(getClass().getName());
     }
 
-    private MediaSourceMap getParticipantSSRCMap(Jid mucJid)
+    private boolean receiverSupportsLipSync(Jid receiverJid)
     {
-        Participant p = conference.findParticipantForRoomJid(mucJid);
-        if (p == null)
-        {
-            logger.warn("No participant found for: " + mucJid);
-            // Return empty to avoid null checks
-            return new MediaSourceMap();
-        }
-        return LipSyncHackUtilsKt.toMediaSourceMap(p.getSources()).getSources();
+        Participant receiver = conference.findParticipantForRoomJid(receiverJid);
+        return receiver != null && receiver.hasLipSyncSupport();
     }
 
     /**
-     * Decides whether or not it's ok to merge streams sent from one participant
-     * to another.
+     * Creates a new {@link EndpointSourceSet} by "merging" all video sources with an MSID in the given set into the
+     * first audio source with a valid stream ID (see {@link #hasValidStreamId(Source)})
      *
-     * @param participantJid the MUC JID of the participant to whom we're going
-     *        to send stream info.
-     * @param ownerJid the MUC JID of the owner of the streams which are to be
-     *        advertised to given <tt>participantJid</tt>
+     * @param sourceSet the original set of sources, which are to be "merged".
      *
-     * @return <tt>true</tt> if it's OK to merge audio+video streams or
-     *         <tt>false</tt> otherwise.
+     * @return the modified set of sources, with video "merged" into audio.
      */
-    private boolean isOkToMergeParticipantAV(Jid participantJid,
-                                             Jid ownerJid)
+    private EndpointSourceSet mergeVideoIntoAudio(EndpointSourceSet sourceSet)
     {
-        // Do not merge JVBs streams (they are only used for RTCP if anything).
-        if (ParticipantChannelAllocator.SSRC_OWNER_JVB.equals(ownerJid))
+        // We want to sync video stream with the first valid audio stream
+        Source audioSource
+                = sourceSet.getSources().stream()
+                .filter(s -> s.getMediaType() == MediaType.AUDIO)
+                .filter(LipSyncHack::hasValidStreamId)
+                .findFirst().orElse(null);
+        // Nothing to sync to
+        if (audioSource == null)
         {
-            return false;
+            return sourceSet;
         }
 
-        Participant participant = conference.findParticipantForRoomJid(participantJid);
-        if (participant == null)
+        String audioStreamId = getStreamId(audioSource);
+
+        Set<Source> mergedSources = new HashSet<>();
+        // There are multiple video SSRCs in simulcast
+        // FIXME this will not work with more than 1 video stream
+        //       per participant, as it will merge them into single stream
+        for (Source source : sourceSet.getSources())
         {
-            logger.error("No target participant found for: " + participantJid);
-            return false;
-        }
-
-        Participant streamsOwner = conference.findParticipantForRoomJid(ownerJid);
-        if (streamsOwner == null)
-        {
-            logger.error("Stream owner not a participant or not found for jid: " + ownerJid);
-            return false;
-        }
-
-        boolean supportsLipSync = participant.hasLipSyncSupport();
-        logger.debug(String.format(
-                "Lips-sync From %s to %s, lip-sync: %s",
-                ownerJid, participantJid, supportsLipSync));
-
-        return supportsLipSync;
-    }
-
-    private void doMerge(Jid participant, Jid owner, MediaSourceMap ssrcs)
-    {
-        boolean merged = false;
-        if (isOkToMergeParticipantAV(participant, owner))
-        {
-            logger.info("Enabling lip-sync for " + participant.toString());
-            merged = SSRCSignaling.mergeVideoIntoAudio(ssrcs);
-        }
-
-        String logMsg
-            = (merged ? "Merging" : "Not merging")
-                    + " A/V streams from " + owner +" to " + participant;
-
-        // The stream is merged most of the time and it's not that interesting.
-        if (merged)
-        {
-            logger.debug(logMsg);
-        }
-        else
-        {
-            logger.info(logMsg);
-        }
-    }
-
-    /**
-     * Does the lip-sync processing of given Jingle content list that contains
-     * streams description for the whole conference which are about to be sent
-     * to one of the conference participants. It will do audio and video stream
-     * merging for the purpose of enabling lip-sync functionality on the client.
-     *
-     * @param contents a list of Jingle contents which describes audio and video
-     *        streams for the whole conference.
-     * @param mucJid the MUC JID of the participant to whom Jingle notification
-     *        will be sent.
-     */
-    private void processAllParticipantsSSRCs(
-            List<ContentPacketExtension> contents,
-            Jid mucJid)
-    {
-        // Split into maps on per owner basis
-        Map<Jid, MediaSourceMap> perOwnerMapping
-            = SSRCSignaling.ownerMapping(contents);
-
-        for (Map.Entry<Jid, MediaSourceMap> ownerSSRCs
-                : perOwnerMapping.entrySet())
-        {
-            Jid ownerJid = ownerSSRCs.getKey();
-            if (ownerJid != null)
+            if (source.getMediaType() != MediaType.VIDEO)
             {
-                MediaSourceMap ssrcMap = ownerSSRCs.getValue();
-                if (ssrcMap != null)
-                {
-                    doMerge(mucJid, ownerJid, ssrcMap);
-                }
-                else
-                    logger.error("'ssrcMap' is null");
+                mergedSources.add(source);
+            }
+            else if (!hasValidStreamId(source))
+            {
+                mergedSources.add(source);
             }
             else
-                logger.warn("'owner' is null");
+            {
+                // "merge" the video source into the audio media stream by replacing the stream ID
+                String trackId = getTrackId(source);
+                mergedSources.add(new Source(
+                        source.getSsrc(),
+                        source.getMediaType(),
+                        audioStreamId + " " + trackId,
+                        source.getCname(),
+                        false));
+                logger.debug("Merged video SSRC " + source.getSsrc() + " into " + audioSource);
+            }
         }
+
+        return new EndpointSourceSet(mergedSources, sourceSet.getSsrcGroups());
+    }
+
+    /**
+     * Creates a new {@link ConferenceSourceMap} by "merging" each entry of the given map.
+     * See {@link #mergeVideoIntoAudio(EndpointSourceSet)}
+     * @param sources the original source map, which is to be "merged".
+     * @return the modified source map.
+     */
+    private ConferenceSourceMap mergeVideoIntoAudio(ConferenceSourceMap sources)
+    {
+        ConferenceSourceMap mergedSources = new ConferenceSourceMap();
+        for (Map.Entry<Jid, EndpointSourceSet> entry : sources.entrySet())
+        {
+            Jid ownerJid = entry.getKey();
+            mergedSources.add(ownerJid, mergeVideoIntoAudio(entry.getValue()));
+        }
+
+        return mergedSources;
     }
 
     /**
@@ -225,13 +250,23 @@ public class LipSyncHack implements OperationSetJingle
      */
     @Override
     public boolean initiateSession(
-        JingleIQ jingleIQ,
-        JingleRequestHandler requestHandler)
+            Jid to,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions,
+            JingleRequestHandler requestHandler,
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
-        processAllParticipantsSSRCs(jingleIQ.getContentList(), jingleIQ.getTo());
+        ConferenceSourceMap mergedSources = sources;
+        if (receiverSupportsLipSync(to))
+        {
+            logger.debug("Using lip-sync for " + to);
+            mergedSources = mergeVideoIntoAudio(sources);
+        }
 
-        return jingleImpl.initiateSession(jingleIQ, requestHandler);
+        return jingleImpl.initiateSession(
+                to, contents, additionalExtensions, requestHandler, mergedSources, encodeSourcesAsJson);
     }
 
     @Override
@@ -247,14 +282,22 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public boolean replaceTransport(JingleIQ jingleIQ, JingleSession session)
+    public boolean replaceTransport(
+            @NotNull JingleSession session,
+            List<ContentPacketExtension> contents,
+            List<ExtensionElement> additionalExtensions,
+            ConferenceSourceMap sources,
+            boolean encodeSourcesAsJson)
         throws SmackException.NotConnectedException
     {
-        processAllParticipantsSSRCs(
-            jingleIQ.getContentList(),
-            session.getAddress());
+        ConferenceSourceMap mergedSources = sources;
+        if (receiverSupportsLipSync(session.getAddress()))
+        {
+            logger.debug("Using lip-sync for " + session.getAddress());
+            mergedSources = mergeVideoIntoAudio(sources);
+        }
 
-        return jingleImpl.replaceTransport(jingleIQ, session);
+        return jingleImpl.replaceTransport(session, contents, additionalExtensions, mergedSources, encodeSourcesAsJson);
     }
 
     /**
@@ -269,45 +312,64 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session)
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
     {
-        SourceMapAndGroupMap sourceMapAndGroupMap = LipSyncHackUtilsKt.toMediaSourceMap(sources);
-        MediaSourceMap ssrcMap = sourceMapAndGroupMap.getSources();
-
-        Jid mucJid = session.getAddress();
-        // If this is source add for video only then add audio for merge process
-        for (SourcePacketExtension videoSsrc
-                : ssrcMap.getSourcesForMedia("video"))
+        ConferenceSourceMap mergedSources = new ConferenceSourceMap();
+        for (Map.Entry<Jid, EndpointSourceSet> entry : sources.entrySet())
         {
-            Jid owner = SSRCSignaling.getSSRCOwner(videoSsrc);
-            SourcePacketExtension audioSsrc
-                = ssrcMap.findSsrcForOwner("audio", owner);
-            if (audioSsrc == null)
+            Jid ownerJid = entry.getKey();
+            EndpointSourceSet ownerSources = entry.getValue();
+
+            // If this is a source-add for video only, search for an audio source in the sources previously signaled
+            // by the endpoint.
+            boolean haveValidAudioSource = ownerSources.getSources().stream()
+                    .anyMatch(s -> s.getMediaType() == MediaType.AUDIO && hasValidStreamId(s));
+            Source existingAudioSource = null;
+            if (!haveValidAudioSource)
             {
-                // Try finding corresponding audio from the global conference
-                // state for this owner
-                MediaSourceMap allOwnersSSRCs = getParticipantSSRCMap(owner);
-                List<SourcePacketExtension> audioSSRCs
-                    = allOwnersSSRCs.getSourcesForMedia("audio");
-                audioSsrc = SSRCSignaling.getFirstWithMSID(audioSSRCs);
+                Participant owner = conference.findParticipantForRoomJid(ownerJid);
+                if (owner != null)
+                {
+                    EndpointSourceSet existingOwnerSources = owner.getSources().get(ownerJid);
+                    if (existingOwnerSources != null)
+                    {
+                        existingAudioSource = existingOwnerSources.getSources().stream()
+                                .filter(s -> s.getMediaType() == MediaType.AUDIO && hasValidStreamId(s))
+                                .findFirst().orElse(null);
+                    }
+                }
             }
-            if (audioSsrc != null)
+
+            if (!haveValidAudioSource && existingAudioSource == null)
             {
-                ssrcMap.addSource("audio", audioSsrc);
-                doMerge(mucJid, owner, ssrcMap);
-                ssrcMap.remove("audio", audioSsrc);
+                logger.debug("Cannot merge video into audio, no audio source exists for owner " + ownerJid + ".");
+                mergedSources.add(ownerJid, ownerSources);
+            }
+            else if (haveValidAudioSource)
+            {
+                mergedSources.add(ownerJid, mergeVideoIntoAudio(ownerSources));
             }
             else
             {
-                logger.warn("No corresponding audio found for: " + owner
-                            + " 'source-add' to: " + mucJid);
+                // We're using existingAudioSource only for the merge process.
+                // We don't want it included in the source-add.
+                Set<Source> ownerSourcesPlusExistingAudio = new HashSet<>(ownerSources.getSources());
+                ownerSourcesPlusExistingAudio.add(existingAudioSource);
+
+                EndpointSourceSet mergedOwnerSourcesPlusExistingAudio = mergeVideoIntoAudio(
+                        new EndpointSourceSet(ownerSourcesPlusExistingAudio, ownerSources.getSsrcGroups()));
+
+                Set<Source> mergedOwnerSourcesWithoutExistingAudio
+                        = new HashSet<>(mergedOwnerSourcesPlusExistingAudio.getSources());
+                mergedOwnerSourcesWithoutExistingAudio.remove(existingAudioSource);
+
+                mergedSources.add(
+                        ownerJid,
+                        new EndpointSourceSet(mergedOwnerSourcesWithoutExistingAudio, ownerSources.getSsrcGroups()));
             }
         }
-        jingleImpl.sendAddSourceIQ(
-                LipSyncHackUtilsKt.fromMediaSourceMap(
-                        ssrcMap,
-                        sourceMapAndGroupMap.getGroups()),
-                session);
+
+        jingleImpl.sendAddSourceIQ(mergedSources, session, encodeSourcesAsJson);
     }
 
     /**
@@ -321,9 +383,12 @@ public class LipSyncHack implements OperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    public void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session)
+    public void sendRemoveSourceIQ(
+            ConferenceSourceMap sourcesToRemove,
+            JingleSession session,
+            boolean encodeSourcesAsJson)
     {
-        jingleImpl.sendRemoveSourceIQ(sourcesToRemove, session);
+        jingleImpl.sendRemoveSourceIQ(sourcesToRemove, session, encodeSourcesAsJson);
     }
 
     /**

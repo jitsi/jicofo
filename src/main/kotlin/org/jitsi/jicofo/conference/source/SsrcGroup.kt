@@ -60,4 +60,24 @@ data class SsrcGroup(
             return SsrcGroup(semantics, sgpe.sources.map { it.ssrc }.toList(), mediaType)
         }
     }
+
+    /**
+     * A compact JSON representation of this [SsrcGroup] (optimized for size). This is done ad-hoc instead of using e.g.
+     * jackson because we only need serialization support (no parsing) and to keep it separated from the main code.
+     *
+     * The JSON contains a list with the first element encoding the semantics ("s" for Sim, "f" for Fid), and the rest
+     * of the elements encoding the SSRCs. For example a simulcast group for SSRCs 1, 2, 3 is encoded as:
+     * ["s", 1, 2, 3]
+     */
+    val compactJson: String by lazy {
+        buildString {
+            append("[")
+            when (semantics) {
+                SsrcGroupSemantics.Sim -> append("\"s\"")
+                SsrcGroupSemantics.Fid -> append("\"f\"")
+            }
+            ssrcs.forEach { append(",$it") }
+            append("]")
+        }
+    }
 }

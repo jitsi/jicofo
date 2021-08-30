@@ -81,6 +81,11 @@ public class DiscoveryUtil
     public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
 
     /**
+     * Jingle sources encoded as JSON.
+     */
+    public final static String FEATURE_JSON_SOURCES = "http://jitsi.org/json-encoded-sources";
+
+    /**
      * RTCP mux feature name.
      */
     public final static String FEATURE_RTCP_MUX = "urn:ietf:rfc:5761";

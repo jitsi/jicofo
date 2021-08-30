@@ -210,6 +210,15 @@ public class Participant
     }
 
     /**
+     * @return {@code true} if this participant supports receiving Jingle sources encoded as JSON instead of the
+     * standard Jingle encoding.
+     */
+    public boolean supportsJsonEncodedSources()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_JSON_SOURCES);
+    }
+
+    /**
      * Returns <tt>true</tt> if this participant supports 'lip-sync' or
      * <tt>false</tt> otherwise.
      */

@@ -20,11 +20,15 @@ package org.jitsi.jicofo.conference.source
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
+import org.json.simple.JSONArray
+import org.json.simple.JSONObject
+import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 
@@ -117,6 +121,40 @@ class EndpointSourceSetTest : ShouldSpec() {
                         setOf(fid1)
                     )
                 }
+            }
+            context("Compact JSON") {
+                // See the documentation of [EndpointSourceSet.compactJson] for the expected JSON format.
+                val json = JSONParser().parse(sourceSet.compactJson)
+                json.shouldBeInstanceOf<JSONArray>()
+
+                val videoSourceList = json[0]
+                videoSourceList.shouldBeInstanceOf<JSONArray>()
+                videoSourceList.map { (it as JSONObject).toMap() }.toSet() shouldBe setOf(
+                    mapOf("s" to 1L),
+                    mapOf("s" to 2L),
+                    mapOf("s" to 3L),
+                    mapOf("s" to 4L),
+                    mapOf("s" to 5L),
+                    mapOf("s" to 6L)
+                )
+
+                val videoSsrcGroups = json[1]
+                videoSsrcGroups.shouldBeInstanceOf<JSONArray>()
+                videoSsrcGroups.map { (it as JSONArray).toList() }.toSet() shouldBe setOf(
+                    listOf("s", 1, 2, 3),
+                    listOf("f", 1, 4),
+                    listOf("f", 2, 5),
+                    listOf("f", 3, 6)
+                )
+
+                val audioSourceList = json[2]
+                audioSourceList.shouldBeInstanceOf<JSONArray>()
+                audioSourceList.map { (it as JSONObject).toMap() }.toSet() shouldBe setOf(
+                    mapOf("s" to 7L)
+                )
+
+                // No audio source groups encoded.
+                json.size shouldBe 3
             }
         }
     }

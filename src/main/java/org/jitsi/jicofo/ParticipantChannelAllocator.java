@@ -20,7 +20,6 @@ package org.jitsi.jicofo;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -28,9 +27,9 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -95,7 +94,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected List<ContentPacketExtension> createOffer()
+    protected Offer createOffer()
         throws UnsupportedFeatureConfigurationException
     {
         // Feature discovery
@@ -108,7 +107,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         OfferOptionsKt.applyConstraints(offerOptions, config);
         OfferOptionsKt.applyConstraints(offerOptions, participant);
 
-        return JingleOfferFactory.INSTANCE.createOffer(offerOptions);
+        return new Offer(new ConferenceSourceMap(), JingleOfferFactory.INSTANCE.createOffer(offerOptions));
     }
 
     /**
@@ -130,7 +129,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected void invite(List<ContentPacketExtension> offer)
+    protected void invite(Offer offer)
         throws SmackException.NotConnectedException
     {
         /*
@@ -212,52 +211,52 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * occurs.
      *
      * @param address the destination JID.
-     * @param contents the list of contents to include.
+     * @param offer The description of the offer to send (sources and a list of {@link ContentPacketExtension}s).
      * @return {@code false} on failure.
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.
      */
-    private boolean doInviteOrReinvite(
-        Jid address, List<ContentPacketExtension> contents)
+    private boolean doInviteOrReinvite(Jid address, Offer offer)
         throws SmackException.NotConnectedException
     {
         OperationSetJingle jingle = meetConference.getJingle();
         JingleSession jingleSession = participant.getJingleSession();
         boolean initiateSession = !reInvite || jingleSession == null;
         boolean ack;
-        JingleIQ jingleIQ;
+        List<ExtensionElement> additionalExtensions = new ArrayList<>();
 
-        if (initiateSession)
-        {
-            // will throw OperationFailedExc if XMPP connection is broken
-            jingleIQ = JingleUtilsKt.createSessionInitiate(jingle.getOurJID(), address, contents);
-        }
-        else
-        {
-            jingleIQ = JingleUtilsKt.createTransportReplace(jingle.getOurJID(), jingleSession, contents);
-        }
-
-        JicofoJingleUtils.addBundleExtensions(jingleIQ);
         if (startMuted[0] || startMuted[1])
         {
-            JicofoJingleUtils.addStartMutedExtension(jingleIQ, startMuted[0], startMuted[1]);
+            StartMutedPacketExtension startMutedExt = new StartMutedPacketExtension();
+            startMutedExt.setAudioMute(startMuted[0]);
+            startMutedExt.setVideoMute(startMuted[1]);
+            additionalExtensions.add(startMutedExt);
         }
 
         // Include info about the BridgeSession which provides the transport
-        jingleIQ.addExtension(
-            new BridgeSessionPacketExtension(
-                    bridgeSession.id, bridgeSession.bridge.getRegion()));
+        additionalExtensions.add(new BridgeSessionPacketExtension(bridgeSession.id, bridgeSession.bridge.getRegion()));
 
         if (initiateSession)
         {
             logger.info("Sending session-initiate to: " + address);
-            ack = jingle.initiateSession(jingleIQ, meetConference);
+            ack = jingle.initiateSession(
+                    address,
+                    offer.getContents(),
+                    additionalExtensions,
+                    meetConference,
+                    offer.getSources(),
+                    ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
         }
         else
         {
             logger.info("Sending transport-replace to: " + address);
             // will throw OperationFailedExc if XMPP connection is broken
-            ack = jingle.replaceTransport(jingleIQ, jingleSession);
+            ack = jingle.replaceTransport(
+                    jingleSession,
+                    offer.getContents(),
+                    additionalExtensions,
+                    offer.getSources(),
+                    ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
         }
 
         if (!ack)
@@ -277,9 +276,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      * {@inheritDoc}
      */
     @Override
-    protected List<ContentPacketExtension> updateOffer(
-            List<ContentPacketExtension> offer,
-            ColibriConferenceIQ colibriChannels)
+    protected Offer updateOffer(Offer offer, ColibriConferenceIQ colibriChannels)
     {
         ConferenceSourceMap conferenceSources = meetConference.getSources()
                 .copy()
@@ -287,7 +284,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
 
-        for (ContentPacketExtension cpe : offer)
+        for (ContentPacketExtension cpe : offer.getContents())
         {
             String contentName = cpe.getName();
             ColibriConferenceIQ.Content colibriContent = colibriChannels.getContent(contentName);
@@ -384,59 +381,20 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                         continue;
                     }
 
-                    try
-                    {
-                        SourcePacketExtension ssrcCopy = ssrcPe.copy();
-
-                        // FIXME: not all parameters are used currently
-                        ssrcCopy.addParameter(new ParameterPacketExtension("cname", "mixed"));
-                        ssrcCopy.addParameter(new ParameterPacketExtension("label", "mixedlabel" + contentName + "0"));
-                        ssrcCopy.addParameter(new ParameterPacketExtension(
-                                        "msid",
-                                        "mixedmslabel mixedlabel" + contentName + "0"));
-                        ssrcCopy.addParameter(new ParameterPacketExtension("mslabel", "mixedmslabel"));
-
-                        // Mark 'jvb' as SSRC owner
-                        SSRCInfoPacketExtension ssrcInfo = new SSRCInfoPacketExtension();
-                        ssrcInfo.setOwner(SSRC_OWNER_JVB);
-                        ssrcCopy.addChildExtension(ssrcInfo);
-
-                        rtpDescPe.addChildExtension(ssrcCopy);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Copy SSRC error", e);
-                    }
-                }
-
-                // Include all peers SSRCs
-                List<SourcePacketExtension> sourceExtensions
-                    = conferenceSources.createSourcePacketExtensions(MediaType.parseString(contentName));
-
-                for (SourcePacketExtension ssrc : sourceExtensions)
-                {
-                    try
-                    {
-                        rtpDescPe.addChildExtension(ssrc.copy());
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Copy SSRC error", e);
-                    }
-                }
-
-                // Include SSRC groups
-                List<SourceGroupPacketExtension> sourceGroups
-                    = conferenceSources.createSourceGroupPacketExtensions(MediaType.parseString(contentName));
-
-                for (SourceGroupPacketExtension sourceGroupPacketExtension : sourceGroups)
-                {
-                    rtpDescPe.addChildExtension(sourceGroupPacketExtension);
+                    conferenceSources.add(
+                            SSRC_OWNER_JVB,
+                            new EndpointSourceSet(
+                                    new Source(
+                                            ssrcPe.getSSRC(),
+                                            MediaType.parseString(contentName),
+                                            "mixedmslabel mixedlabel" + contentName + "0",
+                                            "mixed",
+                                            false)));
                 }
             }
         }
 
-        return offer;
+        return new Offer(conferenceSources, offer.getContents());
     }
 
     /**
