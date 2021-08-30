@@ -302,7 +302,7 @@ public abstract class AbstractOperationSetJingle
 
             for (SourcePacketExtension extension : videoSourceExtensions)
             {
-                videoContent.addChildExtension(extension);
+                videoDescription.addChildExtension(extension);
             }
             for (SourceGroupPacketExtension extension : videoSsrcGroupExtensions)
             {
