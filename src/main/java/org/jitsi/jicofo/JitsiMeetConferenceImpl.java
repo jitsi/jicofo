@@ -2371,9 +2371,9 @@ public class JitsiMeetConferenceImpl
             {
                 result = jibriRecorder.handleJibriRequest(request);
             }
-            if (!(result instanceof NotProcessed) && jibriSipGateway != null)
+            if (result instanceof NotProcessed && jibriSipGateway != null)
             {
-                result = jibriRecorder.handleJibriRequest(request);
+                result = jibriSipGateway.handleJibriRequest(request);
             }
         }
         return result;
