@@ -966,6 +966,13 @@ public class ColibriConferenceImpl
 
         private MapsOfExtensions(ConferenceSourceMap sources)
         {
+            // Make sure we have entries with an empty list when there are no sources for a given media type, because
+            // the ColibriBuilder API expects them in order to properly signal source removal.
+            sourcePacketExtensions.put("audio", new ArrayList<>());
+            sourcePacketExtensions.put("video", new ArrayList<>());
+            sourceGroupPacketExtensions.put("audio", new ArrayList<>());
+            sourceGroupPacketExtensions.put("video", new ArrayList<>());
+
             sources.forEach((owner, endpointSourceSet) ->
             {
                 for (Source source : endpointSourceSet.getSources())
