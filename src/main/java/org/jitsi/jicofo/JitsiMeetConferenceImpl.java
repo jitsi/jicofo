@@ -124,8 +124,7 @@ public class JitsiMeetConferenceImpl
     private volatile ChatRoom chatRoom;
 
     /**
-     * Operation set used to handle Jingle sessions with conference
-     * participants.
+     * Operation set used to handle Jingle sessions with conference participants.
      */
     private OperationSetJingle jingle;
 
@@ -1402,24 +1401,7 @@ public class JitsiMeetConferenceImpl
 
         participants.stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
-            .forEach(
-                participant ->
-                {
-                    if (participant.isSessionEstablished())
-                    {
-                        jingle.sendAddSourceIQ(
-                                finalSources,
-                                participant.getJingleSession(),
-                                ConferenceConfig.config.getUseJsonEncodedSources()
-                                        && participant.supportsJsonEncodedSources());
-                    }
-                    else
-                    {
-                        logger.warn("No jingle session yet for " + participant.getChatMember().getName());
-
-                        participant.queueRemoteSourcesToAdd(finalSources);
-                    }
-                });
+            .forEach(participant -> participant.addRemoteSources(finalSources));
     }
 
     /**
@@ -1694,30 +1676,10 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        // Loop over current participant and send 'source-add' notification
+        // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);
-
-        boolean encodeSourcesAsJson
-                = ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources();
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : participant.clearQueuedRemoteSourceChanges())
-        {
-            AddOrRemove action = sourcesToAddOrRemove.getAction();
-            ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
-            logger.info(
-                    "Sending a queued source-" + action.toString().toLowerCase()
-                            + " to " + participantId + ", sources:" + sources);
-            if (action == AddOrRemove.Add)
-            {
-                jingle.sendAddSourceIQ(
-                        sourcesToAddOrRemove.getSources(),
-                        jingleSession,
-                        encodeSourcesAsJson);
-            }
-            else if (action == AddOrRemove.Remove)
-            {
-                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
-            }
-        }
+        // Now that the Jingle session is ready, signal any sources from other participants to [participant].
+        participant.sendQueuedRemoteSources();
 
         return null;
     }
@@ -1817,23 +1779,7 @@ public class JitsiMeetConferenceImpl
 
         participants.stream()
                 .filter(participant -> participant != except)
-                .forEach(
-                        participant ->
-                        {
-                            if (participant.isSessionEstablished())
-                            {
-                                jingle.sendRemoveSourceIQ(
-                                        finalSources,
-                                        participant.getJingleSession(),
-                                        ConferenceConfig.config.getUseJsonEncodedSources()
-                                                && participant.supportsJsonEncodedSources());
-                            }
-                            else
-                            {
-                                logger.warn("Remove source: no jingle session for " + participant.getEndpointId());
-                                participant.queueRemoteSourcesToRemove(finalSources);
-                            }
-                        });
+                .forEach(participant -> participant.removeRemoveSources(finalSources));
     }
 
     /**

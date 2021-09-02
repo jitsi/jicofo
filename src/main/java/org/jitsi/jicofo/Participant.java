@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -126,6 +127,7 @@ public class Participant
         this.conference = conference;
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
+        logger.addContext("participant", getEndpointId());
     }
 
     /**
@@ -517,6 +519,101 @@ public class Participant
             if (content != null)
             {
                 content.getChannels().forEach(ch -> ch.setDirection(value ? "sendonly" : "sendrecv"));
+            }
+        }
+    }
+
+    /**
+     * Add a set of remote sources, which are to be signaled to the remote side. The sources may be signaled
+     * immediately, or queued to be signaled later.
+     * @param sources the sources to add.
+     */
+    public void addRemoteSources(ConferenceSourceMap sources)
+    {
+        if (isSessionEstablished())
+        {
+            OperationSetJingle jingle = conference.getJingle();
+            if (jingle == null)
+            {
+                logger.error("Can not send Jingle source-add, no Jingle API available.");
+                return;
+            }
+            jingle.sendAddSourceIQ(
+                    sources,
+                    getJingleSession(),
+                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+        }
+        else
+        {
+            logger.debug("No Jingle session yet, queueing source-add.");
+
+            queueRemoteSourcesToAdd(sources);
+        }
+    }
+
+    /**
+     * Removee a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
+     * signaled immediately, or queued to be signaled later.
+     * @param sources the sources to remove.
+     */
+    public void removeRemoveSources(ConferenceSourceMap sources)
+    {
+        if (isSessionEstablished())
+        {
+            OperationSetJingle jingle = conference.getJingle();
+            if (jingle == null)
+            {
+                logger.error("Can not send Jingle source-remove, no Jingle API available.");
+                return;
+            }
+            jingle.sendRemoveSourceIQ(
+                    sources,
+                    getJingleSession(),
+                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+        }
+        else
+        {
+            logger.debug("No Jingle session yet, queueing source-remove.");
+            queueRemoteSourcesToRemove(sources);
+        }
+    }
+
+    /**
+     * Signal any queued remote source modifications (either addition or removal) to the remote side.
+     */
+    public void sendQueuedRemoteSources()
+    {
+        OperationSetJingle jingle = conference.getJingle();
+        if (jingle == null)
+        {
+            logger.error("Can not signal remote sources, no Jingle API available");
+            return;
+        }
+
+        if (!isSessionEstablished())
+        {
+            logger.warn("Can not singal remote sources, Jingle session not established.");
+            return;
+        }
+
+        boolean encodeSourcesAsJson
+                = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
+
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
+        {
+            AddOrRemove action = sourcesToAddOrRemove.getAction();
+            ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
+            logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
+            if (action == AddOrRemove.Add)
+            {
+                jingle.sendAddSourceIQ(
+                        sourcesToAddOrRemove.getSources(),
+                        jingleSession,
+                        encodeSourcesAsJson);
+            }
+            else if (action == AddOrRemove.Remove)
+            {
+                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
             }
         }
     }
