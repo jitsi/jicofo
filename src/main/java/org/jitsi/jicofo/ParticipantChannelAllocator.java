@@ -388,7 +388,6 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                                             ssrcPe.getSSRC(),
                                             MediaType.parseString(contentName),
                                             "mixedmslabel mixedlabel" + contentName + "0",
-                                            "mixed",
                                             false)));
                 }
             }
