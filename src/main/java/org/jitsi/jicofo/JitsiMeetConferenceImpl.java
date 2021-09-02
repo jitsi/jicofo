@@ -23,7 +23,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
-import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.util.*;
@@ -1779,7 +1778,7 @@ public class JitsiMeetConferenceImpl
 
         participants.stream()
                 .filter(participant -> participant != except)
-                .forEach(participant -> participant.removeRemoveSources(finalSources));
+                .forEach(participant -> participant.removeRemoteSources(finalSources));
     }
 
     /**

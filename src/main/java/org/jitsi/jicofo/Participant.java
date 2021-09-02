@@ -606,7 +606,7 @@ public class Participant
      * signaled immediately, or queued to be signaled later.
      * @param sources the sources to remove.
      */
-    public void removeRemoveSources(ConferenceSourceMap sources)
+    public void removeRemoteSources(ConferenceSourceMap sources)
     {
         if (!isSessionEstablished())
         {
