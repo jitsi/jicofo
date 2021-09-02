@@ -95,11 +95,11 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
     }
 
     private fun createErrorResponse(iq: IQ, condition: StanzaError.Condition): IQ =
-        IQ.createErrorResponse(iq, StanzaError.getBuilder(condition))
+        IQ.createErrorResponse(iq, StanzaError.getBuilder(condition).build())
     private fun createNotAcceptableErrorResponse(iq: IQ): IQ =
         createErrorResponse(iq, StanzaError.Condition.not_acceptable)
     private fun createBadRequestErrorResponse(iq: IQ, message: String): IQ =
-        IQ.createErrorResponse(iq, StanzaError.from(StanzaError.Condition.bad_request, message))
+        IQ.createErrorResponse(iq, StanzaError.from(StanzaError.Condition.bad_request, message).build())
     private fun createInternalServerErrorResponse(iq: IQ): IQ =
         IQ.createErrorResponse(iq, StanzaError.Condition.internal_server_error)
 }

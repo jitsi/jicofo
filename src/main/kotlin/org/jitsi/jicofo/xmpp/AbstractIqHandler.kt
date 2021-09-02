@@ -119,7 +119,7 @@ sealed class IqProcessingResult {
         constructor(
             iq: IQ,
             condition: StanzaError.Condition
-        ) : this(IQ.createErrorResponse(iq, StanzaError.getBuilder(condition)))
+        ) : this(IQ.createErrorResponse(iq, StanzaError.getBuilder(condition).build()))
     }
     /** The IQ was not handled. */
     class NotProcessed : IqProcessingResult()

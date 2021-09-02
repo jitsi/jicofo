@@ -21,6 +21,6 @@ public class ErrorResponse
     {
         return IQ.createErrorResponse(
                 request,
-                StanzaError.from(condition, text));
+                StanzaError.from(condition, text).build());
     }
 }

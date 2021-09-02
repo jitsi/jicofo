@@ -30,7 +30,7 @@ import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
-import org.jivesoftware.smack.packet.id.StanzaIdUtil
+import org.jivesoftware.smack.packet.id.StandardStanzaIdSource
 import org.jxmpp.jid.Jid
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -45,6 +45,8 @@ class JigasiIqHandler(
     setOf(IQ.Type.set)
 ) {
     private val logger = createLogger()
+
+    private val stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource()
 
     private val stats = Stats()
     val statsJson = stats.toJson()
@@ -112,7 +114,7 @@ class JigasiIqHandler(
         val requestToJigasi = RayoIqProvider.DialIq(request.iq).apply {
             from = null
             to = jigasiJid
-            stanzaId = StanzaIdUtil.newStanzaId()
+            stanzaId = stanzaIdSource.newStanzaId
         }
         val responseFromJigasi = try {
             jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
@@ -146,7 +148,7 @@ class JigasiIqHandler(
                     logger.warn("Request failed, all instances failed.")
                     stats.allInstancesFailed()
                     request.connection.tryToSendStanza(
-                        IQ.createErrorResponse(request.iq, StanzaError.getBuilder(condition))
+                        IQ.createErrorResponse(request.iq, StanzaError.getBuilder(condition).build())
                     )
                 }
             }
@@ -162,6 +164,10 @@ class JigasiIqHandler(
                 return
             }
         }
+    }
+
+    companion object {
+        private val stanzaIdSourceFactory = StandardStanzaIdSource.Factory()
     }
 
     class Stats {

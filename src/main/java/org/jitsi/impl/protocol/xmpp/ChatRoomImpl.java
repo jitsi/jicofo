@@ -32,6 +32,7 @@ import org.jivesoftware.smack.packet.id.*;
 import org.jivesoftware.smackx.muc.*;
 import org.jivesoftware.smackx.muc.packet.*;
 import org.jivesoftware.smackx.xdata.*;
+import org.jivesoftware.smackx.xdata.form.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -209,24 +210,17 @@ public class ChatRoomImpl
         FormField meetingIdField = config.getField(meetingIdFieldName);
         if (meetingIdField != null)
         {
-            meetingId = meetingIdField.getValues().stream().findFirst().orElse(null);
+            meetingId = meetingIdField.getValuesAsString().stream().findFirst().orElse(null);
             if (meetingId != null)
             {
                 logger.addContext("meeting_id", meetingId);
             }
         }
 
-        Form answer = config.createAnswerForm();
+        FillableForm answer = config.getFillableForm();
         // Room non-anonymous
         String whoisFieldName = "muc#roomconfig_whois";
-        FormField whois = answer.getField(whoisFieldName);
-        if (whois == null)
-        {
-            whois = new FormField(whoisFieldName);
-            answer.addField(whois);
-        }
-
-        whois.addValue("anyone");
+        answer.setAnswer(whoisFieldName, "anyone");
 
         muc.sendConfigurationForm(answer);
     }
@@ -255,11 +249,12 @@ public class ChatRoomImpl
             // lingering around
             muc.leave();
         }
-        catch (NotConnectedException | InterruptedException e)
+        catch (NotConnectedException | InterruptedException | NoResponseException | XMPPException.XMPPErrorException
+            | MultiUserChatException.MucNotJoinedException e)
         {
             // when the connection is not connected and
             // we get NotConnectedException, this is expected (skip log)
-            if (connection.isConnected() || e instanceof InterruptedException)
+            if (!(connection.isConnected() && e instanceof NotConnectedException))
             {
                 logger.error("Failed to properly leave " + muc, e);
             }
@@ -568,9 +563,8 @@ public class ChatRoomImpl
         // it indicates that the client lost its synchronization and causes
         // the MUC service to re-send the presence of each occupant in the
         // room.
+        lastPresenceSent = lastPresenceSent.cloneWithNewId();
         lastPresenceSent.removeExtension(MUCInitialPresence.ELEMENT, MUCInitialPresence.NAMESPACE);
-
-        lastPresenceSent.setStanzaId(StanzaIdUtil.newStanzaId());
 
         UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent);
     }
@@ -1069,7 +1063,7 @@ public class ChatRoomImpl
      * Listens for room destroyed and pass it to the conference.
      */
     class LocalUserStatusListener
-        extends DefaultUserStatusListener
+        implements UserStatusListener
     {
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)

@@ -29,7 +29,6 @@ import org.jitsi.retry.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
@@ -352,7 +351,7 @@ public class XmppProviderImpl
         {
             return discoveryManager.discoverInfo(jid);
         }
-        catch (XMPPException.StanzaErrorException |
+        catch (XMPPException.XMPPErrorException |
                 SmackException.NotConnectedException |
                 SmackException.NoResponseException |
                 InterruptedException e)
@@ -399,32 +398,6 @@ public class XmppProviderImpl
 
             setRegistered(false);
         }
-
-        /**
-         * Deprecated and will be removed in smack 4.3
-         */
-        @Override
-        @SuppressWarnings("deprecation")
-        public void reconnectionSuccessful()
-        {}
-
-        /**
-         * Deprecated and will be removed in smack 4.3
-         * @param e
-         */
-        @Override
-        @SuppressWarnings("deprecation")
-        public void reconnectionFailed(Exception e)
-        {}
-
-        /**
-         * Deprecated and will be removed in smack 4.3
-         * @param i
-         */
-        @Override
-        @SuppressWarnings("deprecation")
-        public void reconnectingIn(int i)
-        {}
     }
 
     /**

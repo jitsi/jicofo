@@ -76,7 +76,7 @@ public abstract class AbstractOperationSetJingle
         if (session == null)
         {
             logger.warn("No session found for SID " + packet.getSID());
-            return IQ.createErrorResponse(packet, StanzaError.getBuilder(StanzaError.Condition.bad_request));
+            return IQ.createErrorResponse(packet, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
         }
 
         return processJingleIQ(packet);
@@ -326,14 +326,14 @@ public abstract class AbstractOperationSetJingle
         if (action == null)
         {
             // bad-request
-            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.bad_request));
+            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
         }
         stats.stanzaReceived(action);
 
         if (session == null)
         {
             logger.warn("Action: " + action + ", no session found for SID " + iq.getSID());
-            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.item_not_found));
+            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.item_not_found).build());
         }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();

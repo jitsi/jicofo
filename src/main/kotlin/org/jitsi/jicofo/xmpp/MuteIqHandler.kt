@@ -121,10 +121,16 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                     }
                 }
                 MuteResult.NOT_ALLOWED -> request.connection.tryToSendStanza(
-                    IQ.createErrorResponse(request.iq, StanzaError.getBuilder(StanzaError.Condition.not_allowed))
+                    IQ.createErrorResponse(
+                        request.iq,
+                        StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
+                    )
                 )
                 MuteResult.ERROR -> request.connection.tryToSendStanza(
-                    IQ.createErrorResponse(request.iq, StanzaError.getBuilder(StanzaError.Condition.internal_server_error))
+                    IQ.createErrorResponse(
+                        request.iq,
+                        StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
+                    )
                 )
             }
         } catch (e: Exception) {
