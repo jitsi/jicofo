@@ -69,9 +69,9 @@ public class PacketDebugger
      * {@inheritDoc}
      */
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-    public PacketDebugger(XMPPConnection connection, Writer writer, Reader reader)
+    public PacketDebugger(XMPPConnection connection)
     {
-        super(connection, writer, reader);
+        super(connection);
 
         // Change the static value only if an instance is created.
         AbstractDebugger.printInterpreted = true;

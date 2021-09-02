@@ -718,7 +718,7 @@ public class ColibriConferenceImpl
      * @param name the new name.
      */
     @Override
-    public void setName(EntityBareJid name)
+    public void setName(BareJid name)
     {
         conferenceState.setName(name);
     }
@@ -734,7 +734,7 @@ public class ColibriConferenceImpl
      * @return the name.
      */
     @Override
-    public EntityBareJid getName()
+    public BareJid getName()
     {
         return conferenceState.getName();
     }

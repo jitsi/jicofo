@@ -29,6 +29,7 @@ import org.jitsi.retry.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
@@ -53,7 +54,6 @@ public class XmppProviderImpl
     {
         XMPPTCPConnection.setUseStreamManagementResumptionDefault(false);
         XMPPTCPConnection.setUseStreamManagementDefault(false);
-        SmackConfiguration.setDebuggerFactory(PacketDebugger::new);
     }
 
     private final Logger logger;
@@ -141,7 +141,7 @@ public class XmppProviderImpl
                 .setXmppDomain(config.getDomain());
 
         // Required for PacketDebugger and XMPP stats to work
-        connConfig.setDebuggerEnabled(true);
+        connConfig.setDebuggerFactory(PacketDebugger::new);
 
         if (!config.getUseTls())
         {

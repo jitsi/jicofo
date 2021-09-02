@@ -65,6 +65,11 @@
       <artifactId>smack-tcp</artifactId>
       <version>${smack.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.igniterealtime.smack</groupId>
+      <artifactId>smack-sasl-javax</artifactId>
+      <version>${smack.version}</version>
+    </dependency>
     <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
     <dependency>
       <groupId>org.jetbrains</groupId>
