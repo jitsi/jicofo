@@ -31,7 +31,7 @@ import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import java.lang.Exception
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
@@ -57,7 +57,7 @@ abstract class BaseJibri internal constructor(
             } catch (e: Exception) {
                 logger.warn("Failed to handle request: ${jibriRequest.iq}", e)
                 jibriRequest.connection.tryToSendStanza(
-                    IQ.createErrorResponse(jibriRequest.iq, XMPPError.Condition.internal_server_error)
+                    IQ.createErrorResponse(jibriRequest.iq, StanzaError.Condition.internal_server_error)
                 )
                 return@PacketQueue true
             }
@@ -158,7 +158,7 @@ abstract class BaseJibri internal constructor(
             return session.processJibriIqRequestFromJibri(iq)
         }
         if (iq.action == Action.UNDEFINED) {
-            return error(iq, XMPPError.Condition.bad_request, "undefined action")
+            return error(iq, StanzaError.Condition.bad_request, "undefined action")
         }
 
         verifyModeratorRole(iq)?.let {
@@ -170,10 +170,10 @@ abstract class BaseJibri internal constructor(
             iq.action == Action.START && session == null -> handleStartRequest(iq)
             iq.action == Action.START && session != null -> {
                 // If there's a session active, we know there are Jibri's connected
-                // (so it isn't XMPPError.Condition.service_unavailable), so it
+                // (so it isn't StanzaError.Condition.service_unavailable), so it
                 // must be that they're all busy.
                 logger.info("Failed to start a Jibri session, all Jibris were busy")
-                error(iq, XMPPError.Condition.resource_constraint, "all Jibris are busy")
+                error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
             }
             iq.action == Action.STOP && session != null -> {
                 session.stop(iq.from)
@@ -181,18 +181,18 @@ abstract class BaseJibri internal constructor(
             }
             else -> {
                 logger.warn("Discarded jibri IQ with an unknown action: ${iq.toXML()}")
-                error(iq, XMPPError.Condition.bad_request, "Unable to handle ${iq.action}")
+                error(iq, StanzaError.Condition.bad_request, "Unable to handle ${iq.action}")
             }
         }
     }
 
-    private fun verifyModeratorRole(iq: JibriIq): XMPPError? {
+    private fun verifyModeratorRole(iq: JibriIq): StanzaError? {
         val role = conference.getRoleForMucJid(iq.from)
         return when {
             // XXX do we need to keep the difference between `forbidden` and `not_allowed`?
-            role == null -> XMPPError.getBuilder(XMPPError.Condition.forbidden).build()
+            role == null -> StanzaError.getBuilder(StanzaError.Condition.forbidden).build()
             role.hasModeratorRights() -> null // no error
-            else -> XMPPError.getBuilder(XMPPError.Condition.not_allowed).build()
+            else -> StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
         }
     }
 

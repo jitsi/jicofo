@@ -315,8 +315,8 @@ public class ColibriConferenceImpl
             }
             else if (response.getError() != null)
             {
-                XMPPError error = response.getError();
-                if (XMPPError.Condition
+                StanzaError error = response.getError();
+                if (StanzaError.Condition
                     .bad_request.equals(error.getCondition()))
                 {
                     // Currently jitsi-videobridge returns the same error type

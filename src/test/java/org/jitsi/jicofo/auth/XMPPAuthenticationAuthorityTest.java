@@ -99,7 +99,7 @@ public class XMPPAuthenticationAuthorityTest
         // REPLY WITH: not-authorized
         assertNotNull(errorResponse);
         assertEquals(
-                XMPPError.Condition.not_authorized,
+                StanzaError.Condition.not_authorized,
                 errorResponse.getError().getCondition());
 
         // CASE 2: Auth domain, no session-id and room does not exist
@@ -157,7 +157,7 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertEquals(
-                XMPPError.Condition.not_acceptable,
+                StanzaError.Condition.not_acceptable,
                 errorResponse.getError().getCondition());
 
         // CASE 7: auth jid, but stolen session id
@@ -169,7 +169,7 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertNotNull(
-                XMPPError.Condition.not_acceptable.toString(),
+                StanzaError.Condition.not_acceptable.toString(),
                 errorResponse.getError().getCondition());
 
         // CASE 8: guest jid, session used without machine UID
@@ -181,7 +181,7 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertNotNull(
-                XMPPError.Condition.not_acceptable.toString(),
+                StanzaError.Condition.not_acceptable.toString(),
                 errorResponse.getError().getCondition());
 
         // CASE 9: auth jid, try to create session without machine UID
@@ -194,7 +194,7 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertNotNull(
-                XMPPError.Condition.not_acceptable.toString(),
+                StanzaError.Condition.not_acceptable.toString(),
                 errorResponse.getError().getCondition());
 
         // CASE 10: same user, different machine UID - assign separate session

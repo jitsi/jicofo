@@ -352,7 +352,7 @@ public class XmppProviderImpl
         {
             return discoveryManager.discoverInfo(jid);
         }
-        catch (XMPPException.XMPPErrorException |
+        catch (XMPPException.StanzaErrorException |
                 SmackException.NotConnectedException |
                 SmackException.NoResponseException |
                 InterruptedException e)

@@ -97,7 +97,7 @@ public class XmppPeer
 
         return IQ.createErrorResponse(
                 iqRequest,
-                XMPPError.Condition.feature_not_implemented);
+                StanzaError.Condition.feature_not_implemented);
     }
 
     @Override

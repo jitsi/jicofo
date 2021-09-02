@@ -38,8 +38,8 @@ public class ErrorFactory
      */
     public static IQ createNotAuthorizedError(IQ query, String msg)
     {
-        final XMPPError error
-            = XMPPError.from(XMPPError.Condition.not_authorized, msg).build();
+        final StanzaError error
+            = StanzaError.from(StanzaError.Condition.not_authorized, msg).build();
 
         return IQ.createErrorResponse(query, error);
     }
@@ -55,9 +55,9 @@ public class ErrorFactory
      */
     public static IQ createSessionInvalidResponse(IQ query)
     {
-        final XMPPError error
-            = XMPPError.from(
-                    XMPPError.Condition.not_acceptable,
+        final StanzaError error
+            = StanzaError.from(
+                    StanzaError.Condition.not_acceptable,
                     "invalid session")
                 // session-invalid application specific error
                 .addExtension(new SessionInvalidPacketExtension())
@@ -80,8 +80,8 @@ public class ErrorFactory
     public static IQ createNotAcceptableError(IQ query, String errorMessage)
     {
         // not acceptable
-        final XMPPError error
-            = XMPPError.from(XMPPError.Condition.not_acceptable, errorMessage)
+        final StanzaError error
+            = StanzaError.from(StanzaError.Condition.not_acceptable, errorMessage)
                 .build();
 
         return IQ.createErrorResponse(query, error);
@@ -101,9 +101,9 @@ public class ErrorFactory
     public static IQ createReservationError(ConferenceIq query,
                                             ReservationSystem.Result result)
     {
-        final XMPPError error
-            = XMPPError.from(
-                    XMPPError.Condition.service_unavailable,
+        final StanzaError error
+            = StanzaError.from(
+                    StanzaError.Condition.service_unavailable,
                     result.getErrorMessage())
                 .addExtension(new ReservationErrorPacketExt(result.getCode()))
                 .build();

@@ -76,7 +76,7 @@ public abstract class AbstractOperationSetJingle
         if (session == null)
         {
             logger.warn("No session found for SID " + packet.getSID());
-            return IQ.createErrorResponse(packet, XMPPError.getBuilder(XMPPError.Condition.bad_request));
+            return IQ.createErrorResponse(packet, StanzaError.getBuilder(StanzaError.Condition.bad_request));
         }
 
         return processJingleIQ(packet);
@@ -326,18 +326,18 @@ public abstract class AbstractOperationSetJingle
         if (action == null)
         {
             // bad-request
-            return IQ.createErrorResponse(iq, XMPPError.getBuilder(XMPPError.Condition.bad_request));
+            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.bad_request));
         }
         stats.stanzaReceived(action);
 
         if (session == null)
         {
             logger.warn("Action: " + action + ", no session found for SID " + iq.getSID());
-            return IQ.createErrorResponse(iq, XMPPError.getBuilder(XMPPError.Condition.item_not_found));
+            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.item_not_found));
         }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
-        XMPPError error = null;
+        StanzaError error = null;
         switch (action)
         {
         case SESSION_ACCEPT:
@@ -367,7 +367,7 @@ public abstract class AbstractOperationSetJingle
             error = requestHandler.onRemoveSource(session, iq.getContentList());
             break;
         default:
-            error = XMPPError.getBuilder(XMPPError.Condition.feature_not_implemented).build();
+            error = StanzaError.getBuilder(StanzaError.Condition.feature_not_implemented).build();
             logger.warn("unsupported action " + action);
         }
 

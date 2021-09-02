@@ -29,7 +29,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 
 class AudioMuteIqHandler(
@@ -87,11 +87,11 @@ private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.MuteIqHandler")
 private fun handleRequest(request: MuteRequest): IqProcessingResult {
     if (request.doMute == null || request.jidToMute == null) {
         logger.warn("Mute request missing required fields: ${request.iq.toXML()}")
-        return RejectedWithError(request.iq, XMPPError.Condition.bad_request)
+        return RejectedWithError(request.iq, StanzaError.Condition.bad_request)
     }
 
     val conference = request.conferenceStore.getConference(request.iq.from.asEntityBareJidIfPossible())
-        ?: return RejectedWithError(request.iq, XMPPError.Condition.item_not_found).also {
+        ?: return RejectedWithError(request.iq, StanzaError.Condition.item_not_found).also {
             logger.warn("Mute request for unknown conference: ${request.iq.toXML()}")
         }
 
@@ -121,16 +121,16 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                     }
                 }
                 MuteResult.NOT_ALLOWED -> request.connection.tryToSendStanza(
-                    IQ.createErrorResponse(request.iq, XMPPError.getBuilder(XMPPError.Condition.not_allowed))
+                    IQ.createErrorResponse(request.iq, StanzaError.getBuilder(StanzaError.Condition.not_allowed))
                 )
                 MuteResult.ERROR -> request.connection.tryToSendStanza(
-                    IQ.createErrorResponse(request.iq, XMPPError.getBuilder(XMPPError.Condition.internal_server_error))
+                    IQ.createErrorResponse(request.iq, StanzaError.getBuilder(StanzaError.Condition.internal_server_error))
                 )
             }
         } catch (e: Exception) {
             logger.warn("Failed to handle mute request: ${request.iq.toXML()}", e)
             request.connection.tryToSendStanza(
-                IQ.createErrorResponse(request.iq, XMPPError.Condition.internal_server_error)
+                IQ.createErrorResponse(request.iq, StanzaError.Condition.internal_server_error)
             )
         }
     }

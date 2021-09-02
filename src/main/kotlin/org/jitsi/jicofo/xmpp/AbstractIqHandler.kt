@@ -24,7 +24,7 @@ import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import java.lang.IllegalArgumentException
 
 /**
@@ -93,7 +93,7 @@ abstract class AbstractIqHandler<T : IQ>(
                 is IqProcessingResult.AcceptedWithNoResponse -> null
                 is IqProcessingResult.RejectedWithError -> result.response
                 is IqProcessingResult.NotProcessed ->
-                    IQ.createErrorResponse(iq, XMPPError.Condition.feature_not_implemented)
+                    IQ.createErrorResponse(iq, StanzaError.Condition.feature_not_implemented)
             }
         }
     }
@@ -114,12 +114,12 @@ sealed class IqProcessingResult {
     class RejectedWithError(val response: ErrorIQ) : IqProcessingResult() {
         constructor(
             request: IqRequest<*>,
-            condition: XMPPError.Condition
+            condition: StanzaError.Condition
         ) : this(request.iq, condition)
         constructor(
             iq: IQ,
-            condition: XMPPError.Condition
-        ) : this(IQ.createErrorResponse(iq, XMPPError.getBuilder(condition)))
+            condition: StanzaError.Condition
+        ) : this(IQ.createErrorResponse(iq, StanzaError.getBuilder(condition)))
     }
     /** The IQ was not handled. */
     class NotProcessed : IqProcessingResult()

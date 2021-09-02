@@ -495,7 +495,7 @@ public class MockParticipant
         private final static Logger logger = new LoggerImpl(JingleHandler.class.getName());
 
         @Override
-        public XMPPError onAddSource(JingleSession jingleSession,
+        public StanzaError onAddSource(JingleSession jingleSession,
             List<ContentPacketExtension> contents)
         {
             logger.warn("Ignored Jingle 'source-add'");
@@ -504,7 +504,7 @@ public class MockParticipant
         }
 
         @Override
-        public XMPPError onRemoveSource(JingleSession jingleSession,
+        public StanzaError onRemoveSource(JingleSession jingleSession,
             List<ContentPacketExtension> contents)
         {
             logger.warn("Ignored Jingle 'source-remove'");
@@ -513,7 +513,7 @@ public class MockParticipant
         }
 
         @Override
-        public XMPPError onSessionAccept(JingleSession jingleSession,
+        public StanzaError onSessionAccept(JingleSession jingleSession,
             List<ContentPacketExtension> answer)
         {
             logger.warn("Ignored Jingle 'session-accept'");
@@ -522,7 +522,7 @@ public class MockParticipant
         }
 
         @Override
-        public XMPPError onSessionTerminate(JingleSession jingleSession, JingleIQ iq)
+        public StanzaError onSessionTerminate(JingleSession jingleSession, JingleIQ iq)
         {
             logger.warn("Ignored Jingle 'session-terminate'");
 
@@ -530,7 +530,7 @@ public class MockParticipant
         }
 
         @Override
-        public XMPPError onSessionInfo(JingleSession session, JingleIQ iq)
+        public StanzaError onSessionInfo(JingleSession session, JingleIQ iq)
         {
             logger.warn("Ignored Jingle 'session-info'");
 
@@ -538,7 +538,7 @@ public class MockParticipant
         }
 
         @Override
-        public XMPPError onTransportAccept(JingleSession jingleSession,
+        public StanzaError onTransportAccept(JingleSession jingleSession,
             List<ContentPacketExtension> contents)
         {
             logger.warn("Ignored Jingle 'transport-accept'");

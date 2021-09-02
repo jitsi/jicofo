@@ -20,7 +20,7 @@ import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 
 open class MockXmppEndpoint(val jid: Jid) {
@@ -40,7 +40,7 @@ class MockJigasi(
                 override fun handleIQRequest(iq: IQ): IQ? {
                     return when (response) {
                         Response.Success -> IQ.createResultIQ(iq)
-                        Response.Failure -> IQ.createErrorResponse(iq, XMPPError.Condition.internal_server_error)
+                        Response.Failure -> IQ.createErrorResponse(iq, StanzaError.Condition.internal_server_error)
                         Response.Timeout -> null
                     }
                 }

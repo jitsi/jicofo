@@ -42,10 +42,10 @@ public interface JingleRequestHandler
      *                 of <tt>RtpDescriptionPacketExtension</tt> or in the
      *                 <tt>ContentPacketExtension</tt> directly.
      *
-     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * @return <tt>StanzaError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
+    StanzaError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Callback fired when 'source-remove' proprietary Jingle notification is
@@ -57,10 +57,10 @@ public interface JingleRequestHandler
      *                 of <tt>RtpDescriptionPacketExtension</tt> or in the
      *                 <tt>ContentPacketExtension</tt> directly.
      *
-     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * @return <tt>StanzaError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onRemoveSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
+    StanzaError onRemoveSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Callback fired when 'session-accept' is received from the client.
@@ -68,10 +68,10 @@ public interface JingleRequestHandler
      * @param jingleSession the session that has received the notification.
      * @param answer content list that describe peer media offer.
      *
-     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * @return <tt>StanzaError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer);
+    StanzaError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer);
 
     /**
      * Callback fired when 'session-info' is received from the client.
@@ -79,10 +79,10 @@ public interface JingleRequestHandler
      * @param jingleSession the session that has received the notification.
      * @param iq the full message sent by the client.
      *
-     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * @return <tt>StanzaError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onSessionInfo(@NotNull JingleSession jingleSession, JingleIQ iq);
+    StanzaError onSessionInfo(@NotNull JingleSession jingleSession, JingleIQ iq);
 
     /**
      * Callback fired when 'session-terminate' is received from the client.
@@ -90,10 +90,10 @@ public interface JingleRequestHandler
      * @param jingleSession the session that has received the notification.
      * @param iq the full message sent by the client.
      *
-     * @return <tt>XMPPError</tt> if an error should be returned as response to the original request or <tt>null</tt>
+     * @return <tt>StanzaError</tt> if an error should be returned as response to the original request or <tt>null</tt>
      * to reply with RESULT.
      */
-    XMPPError onSessionTerminate(@NotNull JingleSession jingleSession, JingleIQ iq);
+    StanzaError onSessionTerminate(@NotNull JingleSession jingleSession, JingleIQ iq);
 
     /**
      * Callback fired when 'transport-info' is received from the client.
@@ -109,10 +109,10 @@ public interface JingleRequestHandler
      * @param jingleSession the session that has received the notification
      * @param contents content list that contains media transport description
      *
-     * @return <tt>XMPPError</tt> if an error should be returned as response to
+     * @return <tt>StanzaError</tt> if an error should be returned as response to
      * the original request or <tt>null</tt> if the processing was successful.
      */
-    XMPPError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
+    StanzaError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents);
 
     /**
      * Called when 'transport-reject' IQ is received from the client.
