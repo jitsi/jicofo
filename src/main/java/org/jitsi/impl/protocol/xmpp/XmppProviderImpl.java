@@ -29,7 +29,6 @@ import org.jitsi.retry.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
@@ -153,7 +152,7 @@ public class XmppProviderImpl
         // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but tries
         // authenticate with GSSAPI when it's offered by the server.
         // Disable GSSAPI.
-        SASLAuthentication.unregisterSASLMechanism(SASLGSSAPIMechanism.class.getName());
+        SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism");
 
         if (config.getPassword() == null)
         {
