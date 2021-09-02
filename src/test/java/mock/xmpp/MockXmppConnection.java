@@ -114,8 +114,9 @@ public class MockXmppConnection
     protected void connectInternal()
     {
         sharedStanzaQueue.put(user, this);
-        tlsHandled.reportSuccess();
-        saslFeatureReceived.reportSuccess();
+        tlsHandled = true;
+        saslFeatureReceived = true;
+        notifyWaitingThreads();
     }
 
     @Override
@@ -135,6 +136,12 @@ public class MockXmppConnection
 
     @Override
     protected void shutdown()
+    {
+        instantShutdown();
+    }
+
+    @Override
+    public void instantShutdown()
     {
         sharedStanzaQueue.remove(user);
         connected = false;

@@ -47,6 +47,10 @@ public class MockParticipant
 
     private final static Random random = new Random(System.nanoTime());
 
+    private final static StanzaIdSourceFactory stanzaIdSourceFactory = new StandardStanzaIdSource.Factory();
+
+    private final StanzaIdSource stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource();
+
     private final String nick;
 
     private XmppPeer xmppPeer;
@@ -284,7 +288,7 @@ public class MockParticipant
     {
         JingleIQ accept = new JingleIQ(JingleAction.SESSION_ACCEPT, sessionInit.getSID());
 
-        accept.setStanzaId(StanzaIdUtil.newStanzaId());
+        accept.setStanzaId(stanzaIdSource.getNewStanzaId());
         accept.setType(IQ.Type.set);
         accept.setFrom(sessionInit.getTo());
         accept.setTo(sessionInit.getFrom());

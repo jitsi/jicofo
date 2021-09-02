@@ -264,7 +264,7 @@ public class AllocThreadingTestColibriConference
         {
             response = IQ.createErrorResponse(
                 request,
-                StanzaError.getBuilder(responseError));
+                StanzaError.getBuilder(responseError).build());
         }
 
         synchronized (blockResponseReceiveLock)
