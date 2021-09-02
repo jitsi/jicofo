@@ -138,7 +138,7 @@ class AvModerationHandler(
  * @return a map that is guaranteed to have a runtime type of Map<String, List<String>>.
  */
 @Throws(IllegalArgumentException::class)
-private fun parseAsMapOfStringToListOfString(o: Any) : Map<String, List<String>> {
+private fun parseAsMapOfStringToListOfString(o: Any): Map<String, List<String>> {
     val jsonObject: JSONObject = o as? JSONObject ?: throw IllegalArgumentException("Not a JSONObject")
     val map = mutableMapOf<String, List<String>>()
     jsonObject.forEach { (k, v) ->
