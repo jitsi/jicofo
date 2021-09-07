@@ -60,7 +60,7 @@ public class XmppProviderImpl
     /**
      * Jingle operation set.
      */
-    private final OperationSetJingleImpl jingleOpSet;
+    private final @NotNull OperationSetJingleImpl jingleOpSet;
 
     private final Muc muc = new Muc();
 
