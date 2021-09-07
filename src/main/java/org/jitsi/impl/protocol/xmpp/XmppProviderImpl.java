@@ -146,6 +146,11 @@ public class XmppProviderImpl
         {
             connConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
         }
+        else
+        {
+            /* TODO - make the required except on localhost. */
+            connConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible);
+        }
 
         ReconnectionManager.setEnabledPerDefault(true);
 
