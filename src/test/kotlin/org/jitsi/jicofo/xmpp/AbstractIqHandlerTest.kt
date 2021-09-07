@@ -75,9 +75,11 @@ class AbstractIqHandlerTest : ShouldSpec() {
         AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
 
         override fun handleRequest(request: IqRequest<DummyIq>) = AcceptedWithResponse(
-            request.iq.apply {
+            DummyIq().apply {
                 type = IQ.Type.result
-                to = from.also { from = to }
+                to = request.iq.from
+                from = request.iq.to
+                stanzaId = request.iq.stanzaId
             }
         )
     }
