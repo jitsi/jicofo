@@ -101,7 +101,7 @@ public class AllocThreadingTestColibriConference
      * If field is set XMPP error response will be returned to conference create
      * request. The condition specified type of error.
      */
-    private XMPPError.Condition responseError;
+    private StanzaError.Condition responseError;
 
     /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
@@ -264,7 +264,7 @@ public class AllocThreadingTestColibriConference
         {
             response = IQ.createErrorResponse(
                 request,
-                XMPPError.getBuilder(responseError));
+                StanzaError.getBuilder(responseError).build());
         }
 
         synchronized (blockResponseReceiveLock)
@@ -301,7 +301,7 @@ public class AllocThreadingTestColibriConference
      * Returns the type of error which will be returned as a response to
      * conference create request.
      */
-    public XMPPError.Condition getResponseError()
+    public StanzaError.Condition getResponseError()
     {
         return responseError;
     }
@@ -313,7 +313,7 @@ public class AllocThreadingTestColibriConference
      * @param responseError the type fo the error to be returned or
      * <tt>null</tt> to not interfere into the response returned by the bridge.
      */
-    public void setResponseError(XMPPError.Condition responseError)
+    public void setResponseError(StanzaError.Condition responseError)
     {
         this.responseError = responseError;
     }

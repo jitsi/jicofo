@@ -26,7 +26,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 
 /**
  * A Smack [IQRequestHandler] for "jibri" IQs. Terminates all "jibri" IQs received by Smack, but delegates their
@@ -60,6 +60,6 @@ class JibriIqHandler(
         }
 
         // No conference accepted the request.
-        return RejectedWithError(request, XMPPError.Condition.item_not_found)
+        return RejectedWithError(request, StanzaError.Condition.item_not_found)
     }
 }

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp
 
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.mockk
 import mock.xmpp.MockXmppConnection
@@ -46,7 +47,11 @@ class AbstractIqHandlerTest : ShouldSpec() {
                         this.type = type
                     }
 
-                    senderConnection.sendIqAndGetResponse(dummyIq).shouldBeInstanceOf<DummyIq>()
+                    val response = senderConnection.sendIqAndGetResponse(dummyIq)
+
+                    response shouldNotBe null
+
+                    response.shouldBeInstanceOf<DummyIq>()
                 }
             }
 
@@ -70,9 +75,11 @@ class AbstractIqHandlerTest : ShouldSpec() {
         AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
 
         override fun handleRequest(request: IqRequest<DummyIq>) = AcceptedWithResponse(
-            request.iq.apply {
+            DummyIq().apply {
                 type = IQ.Type.result
-                to = from.also { from = to }
+                to = request.iq.from
+                from = request.iq.to
+                stanzaId = request.iq.stanzaId
             }
         )
     }

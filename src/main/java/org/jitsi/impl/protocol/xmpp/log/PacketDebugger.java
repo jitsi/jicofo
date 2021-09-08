@@ -19,6 +19,7 @@ import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
+import org.jivesoftware.smack.packet.*;
 
 import java.io.*;
 import java.lang.*;
@@ -69,9 +70,9 @@ public class PacketDebugger
      * {@inheritDoc}
      */
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-    public PacketDebugger(XMPPConnection connection, Writer writer, Reader reader)
+    public PacketDebugger(XMPPConnection connection)
     {
-        super(connection, writer, reader);
+        super(connection);
 
         // Change the static value only if an instance is created.
         AbstractDebugger.printInterpreted = true;
@@ -97,6 +98,18 @@ public class PacketDebugger
         return totalPacketsSent.get();
     }
 
+    @Override
+    public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
+        totalPacketsRecv.incrementAndGet();
+        logger.debug(() -> "RCV PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
+    }
+
+    @Override
+    public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
+        totalPacketsSent.incrementAndGet();
+        logger.debug(() -> "SENT PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
+    }
+
     // It's fine to do non-atomic as it's only 1 thread doing write operation
     /**
      * {@inheritDoc}
@@ -104,16 +117,7 @@ public class PacketDebugger
     @Override
     protected void log(String logMessage)
     {
-        if (logMessage.startsWith("SENT"))
-        {
-            totalPacketsSent.incrementAndGet();
-        }
-        else if (logMessage.startsWith("RCV PKT ("))
-        {
-            totalPacketsRecv.incrementAndGet();
-        }
-
-        if (logger.isDebugEnabled() && !logMessage.startsWith("RECV ("))
+        if (logger.isDebugEnabled() && !logMessage.startsWith("RECV (") && !logMessage.startsWith("SENT ("))
         {
             logger.debug(logMessage);
         }

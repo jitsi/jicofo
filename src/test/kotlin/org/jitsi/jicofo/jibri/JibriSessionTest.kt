@@ -33,7 +33,7 @@ import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.impl.JidCreate
 
 class JibriSessionTest : ShouldSpec({
@@ -87,7 +87,7 @@ class JibriSessionTest : ShouldSpec({
         val iqRequests = mutableListOf<IQ>()
         every { mockXmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
             // First return error
-            IQ.createErrorResponse(arg(1), XMPPError.Condition.service_unavailable)
+            IQ.createErrorResponse(arg(1), StanzaError.Condition.service_unavailable)
         } andThen {
             // Then return a successful response
             JibriIq().apply {
@@ -107,7 +107,7 @@ class JibriSessionTest : ShouldSpec({
             every { detector.selectJibri() } returns JidCreate.bareFrom("solo@bar.com")
             every { mockXmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
                 // First return error
-                IQ.createErrorResponse(arg(1), XMPPError.Condition.service_unavailable)
+                IQ.createErrorResponse(arg(1), StanzaError.Condition.service_unavailable)
             }
             context("trying to start a jibri session") {
                 should("give up after exceeding the retry count") {

@@ -16,13 +16,13 @@
     <assembly.skipAssembly>false</assembly.skipAssembly>
     <jetty.version>9.4.41.v20210516</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <smack.version>4.2.4-47d17fc</smack.version>
+    <smack.version>4.4.3</smack.version>
     <kotlin.version>1.5.20</kotlin.version>
     <kotest.version>4.6.1</kotest.version>
     <slf4j.version>1.7.26</slf4j.version>
     <jersey.version>2.34</jersey.version>
     <jitsi.utils.version>1.0-97-g67c980b</jitsi.utils.version>
-    <jicoco.version>1.1-90-gfa0e11e</jicoco.version>
+    <jicoco.version>1.1-94-g9c140b8</jicoco.version>
     <spotbugs.version>4.2.0</spotbugs.version>
   </properties>
 
@@ -49,6 +49,11 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <version>4.5.13</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.12.0</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -96,7 +101,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-25-gbdceb27</version>
+      <version>1.0-26-g67e8beb</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -173,7 +178,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.1-525-gf11825c3</version>
+      <version>2.1-552-g3d744464</version>
       <scope>test</scope>
     </dependency>
     <dependency>

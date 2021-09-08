@@ -1235,7 +1235,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer)
+    public StanzaError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer)
     {
         logger.info("Receive session-accept from " + jingleSession.getAddress());
 
@@ -1250,7 +1250,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onSessionInfo(@NotNull JingleSession session, JingleIQ iq)
+    public StanzaError onSessionInfo(@NotNull JingleSession session, JingleIQ iq)
     {
         Jid address = session.getAddress();
         Participant participant = findParticipantForJingleSession(session);
@@ -1260,7 +1260,7 @@ public class JitsiMeetConferenceImpl
         {
             String errorMsg = "No session for " + address;
             logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
+            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
         IceStatePacketExtension iceStatePE
@@ -1312,7 +1312,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onSessionTerminate(JingleSession session, JingleIQ iq)
+    public StanzaError onSessionTerminate(JingleSession session, JingleIQ iq)
     {
         Participant participant = findParticipantForJingleSession(session);
 
@@ -1321,7 +1321,7 @@ public class JitsiMeetConferenceImpl
         {
             String errorMsg = "No participant for " + session.getAddress();
             logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
+            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
@@ -1342,7 +1342,7 @@ public class JitsiMeetConferenceImpl
                     bridgeSessionId,
                     restartRequested));
 
-            return XMPPError.from(XMPPError.Condition.item_not_found, "invalid bridge session ID").build();
+            return StanzaError.from(StanzaError.Condition.item_not_found, "invalid bridge session ID").build();
         }
 
         logger.info(String.format(
@@ -1371,7 +1371,7 @@ public class JitsiMeetConferenceImpl
                 {
                     logger.warn(String.format("Rate limiting %s for restart requests", participant));
 
-                    return XMPPError.from(XMPPError.Condition.resource_constraint, "rate-limited").build();
+                    return StanzaError.from(StanzaError.Condition.resource_constraint, "rate-limited").build();
                 }
             }
         }
@@ -1463,7 +1463,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         logger.info("Received transport-accept from " + jingleSession.getAddress());
 
@@ -1505,7 +1505,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         Jid address = jingleSession.getAddress();
         Participant participant = findParticipantForJingleSession(jingleSession);
@@ -1513,7 +1513,7 @@ public class JitsiMeetConferenceImpl
         {
             String errorMsg = "no session for " + address;
             logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
+            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
         String participantId = participant.getEndpointId();
@@ -1527,7 +1527,7 @@ public class JitsiMeetConferenceImpl
         catch (ValidationFailedException e)
         {
             logger.error("Error adding SSRCs from: " + address + ": " + e.getMessage());
-            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
+            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
@@ -1575,7 +1575,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onRemoveSource(@NotNull JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onRemoveSource(@NotNull JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
     {
         EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
 
@@ -1583,7 +1583,7 @@ public class JitsiMeetConferenceImpl
         if (participant == null)
         {
             logger.warn("No participant for jingle-session: " + sourceJingleSession);
-            return XMPPError.from(XMPPError.Condition.bad_request, "No associated participant").build();
+            return StanzaError.from(StanzaError.Condition.bad_request, "No associated participant").build();
         }
         else
         {
@@ -1596,7 +1596,7 @@ public class JitsiMeetConferenceImpl
      * groups of a participant that sends the session-accept or transport-accept
      * Jingle IQs.
      */
-    private XMPPError onSessionAcceptInternal(
+    private StanzaError onSessionAcceptInternal(
             @NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         Participant participant = findParticipantForJingleSession(jingleSession);
@@ -1606,7 +1606,7 @@ public class JitsiMeetConferenceImpl
         {
             String errorMsg = "No participant found for: " + participantJid;
             logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
+            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
         if (participant.getJingleSession() != null && participant.getJingleSession() != jingleSession)
@@ -1647,7 +1647,7 @@ public class JitsiMeetConferenceImpl
         {
             logger.error("Error processing session-accept from: " + participantJid +": " + e.getMessage());
 
-            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
+            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
         logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
@@ -1692,7 +1692,7 @@ public class JitsiMeetConferenceImpl
      * @param updateChannels tells whether or not sources update request should be sent to the bridge.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
-    private XMPPError removeSources(
+    private StanzaError removeSources(
             @NotNull Participant participant,
             EndpointSourceSet sourcesRequestedToBeRemoved,
             boolean updateChannels,
@@ -1707,7 +1707,7 @@ public class JitsiMeetConferenceImpl
         catch (ValidationFailedException e)
         {
             logger.error("Error removing SSRCs from: " + participantJid + ": " + e.getMessage());
-            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
+            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
         String participantId = participant.getEndpointId();

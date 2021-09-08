@@ -29,8 +29,8 @@ import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
-import org.jivesoftware.smack.packet.id.StanzaIdUtil
+import org.jivesoftware.smack.packet.StanzaError
+import org.jivesoftware.smack.packet.id.StandardStanzaIdSource
 import org.jxmpp.jid.Jid
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -46,24 +46,26 @@ class JigasiIqHandler(
 ) {
     private val logger = createLogger()
 
+    private val stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource()
+
     private val stats = Stats()
     val statsJson = stats.toJson()
 
     override fun handleRequest(request: IqRequest<RayoIqProvider.DialIq>): IqProcessingResult {
         val conferenceJid = request.iq.from.asEntityBareJidIfPossible()
-            ?: return RejectedWithError(request, XMPPError.Condition.bad_request).also {
+            ?: return RejectedWithError(request, StanzaError.Condition.bad_request).also {
                 logger.warn("Rejected request with invalid conferenceJid: ${request.iq.from}")
                 stats.requestRejected()
             }
 
         val conference = conferenceStore.getConference(conferenceJid)
-            ?: return RejectedWithError(request, XMPPError.Condition.item_not_found).also {
+            ?: return RejectedWithError(request, StanzaError.Condition.item_not_found).also {
                 logger.warn("Rejected request for non-existent conference: $conferenceJid")
                 stats.requestRejected()
             }
 
         if (!conference.acceptJigasiRequest(request.iq.from)) {
-            return RejectedWithError(request, XMPPError.Condition.forbidden).also {
+            return RejectedWithError(request, StanzaError.Condition.forbidden).also {
                 logger.warn("Rejected request from unauthorized user: ${request.iq.from}")
                 stats.requestRejected()
             }
@@ -78,7 +80,7 @@ class JigasiIqHandler(
             } catch (e: Exception) {
                 logger.warn("Failed to invite jigasi", e)
                 request.connection.tryToSendStanza(
-                    IQ.createErrorResponse(request.iq, XMPPError.Condition.internal_server_error)
+                    IQ.createErrorResponse(request.iq, StanzaError.Condition.internal_server_error)
                 )
             }
         }
@@ -101,7 +103,7 @@ class JigasiIqHandler(
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
                     request.iq,
-                    XMPPError.getBuilder(XMPPError.Condition.service_unavailable).build()
+                    StanzaError.getBuilder(StanzaError.Condition.service_unavailable).build()
                 )
             )
             stats.noInstanceAvailable()
@@ -112,7 +114,7 @@ class JigasiIqHandler(
         val requestToJigasi = RayoIqProvider.DialIq(request.iq).apply {
             from = null
             to = jigasiJid
-            stanzaId = StanzaIdUtil.newStanzaId()
+            stanzaId = stanzaIdSource.newStanzaId
         }
         val responseFromJigasi = try {
             jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
@@ -139,14 +141,14 @@ class JigasiIqHandler(
                     inviteJigasi(request, conferenceRegions, retryCount - 1, exclude + jigasiJid)
                 } else {
                     val condition = if (responseFromJigasi == null) {
-                        XMPPError.Condition.remote_server_timeout
+                        StanzaError.Condition.remote_server_timeout
                     } else {
-                        XMPPError.Condition.undefined_condition
+                        StanzaError.Condition.undefined_condition
                     }
                     logger.warn("Request failed, all instances failed.")
                     stats.allInstancesFailed()
                     request.connection.tryToSendStanza(
-                        IQ.createErrorResponse(request.iq, XMPPError.getBuilder(condition))
+                        IQ.createErrorResponse(request.iq, StanzaError.getBuilder(condition).build())
                     )
                 }
             }
@@ -162,6 +164,10 @@ class JigasiIqHandler(
                 return
             }
         }
+    }
+
+    companion object {
+        private val stanzaIdSourceFactory = StandardStanzaIdSource.Factory()
     }
 
     class Stats {

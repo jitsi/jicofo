@@ -274,11 +274,11 @@ public class JvbDoctor
 
                 if (IQ.Type.error.equals(responseType))
                 {
-                    XMPPError error = response.getError();
-                    XMPPError.Condition condition = error.getCondition();
+                    StanzaError error = response.getError();
+                    StanzaError.Condition condition = error.getCondition();
 
-                    if (XMPPError.Condition.internal_server_error.equals(condition)
-                        || XMPPError.Condition.service_unavailable.equals(condition))
+                    if (StanzaError.Condition.internal_server_error.equals(condition)
+                        || StanzaError.Condition.service_unavailable.equals(condition))
                     {
                         // Health check failure
                         logger.warn("Health check failed for: " + bridgeJid + ": " + error.toXML().toString());
