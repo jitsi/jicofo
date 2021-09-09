@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import kotlin.*;
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -28,7 +29,6 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.id.*;
 import org.jivesoftware.smackx.muc.*;
 import org.jivesoftware.smackx.muc.packet.*;
 import org.jivesoftware.smackx.xdata.*;
@@ -241,40 +241,42 @@ public class ChatRoomImpl
     @Override
     public void leave()
     {
-        XMPPConnection connection = xmppProvider.getXmppConnection();
-        try
+        if (presenceInterceptor != null)
         {
-            // FIXME smack4: there used to be a custom dispose() method
-            // if leave() fails, there might still be some listeners
-            // lingering around
-            muc.leave();
+            muc.removePresenceInterceptor(presenceInterceptor);
         }
-        catch (NotConnectedException | InterruptedException | NoResponseException | XMPPException.XMPPErrorException
-            | MultiUserChatException.MucNotJoinedException e)
-        {
-            // when the connection is not connected and
-            // we get NotConnectedException, this is expected (skip log)
-            if (!(connection.isConnected() && e instanceof NotConnectedException))
-            {
-                logger.error("Failed to properly leave " + muc, e);
-            }
-        }
-        finally
-        {
-            if (presenceInterceptor != null)
-            {
-                muc.removePresenceInterceptor(presenceInterceptor);
-            }
 
-            muc.removeParticipantStatusListener(memberListener);
-            muc.removeUserStatusListener(userListener);
-            muc.removeParticipantListener(this);
+        muc.removeParticipantStatusListener(memberListener);
+        muc.removeUserStatusListener(userListener);
+        muc.removeParticipantListener(this);
 
-            if (leaveCallback != null)
-            {
-                leaveCallback.accept(this);
-            }
+        if (leaveCallback != null)
+        {
+            leaveCallback.accept(this);
         }
+
+        // Call MultiUserChat.leave() in an IO thread, because it now (with Smack 4.4.3) blocks waiting for a response
+        // from the XMPP server (and we want ChatRoom#leave to return immediately).
+        TaskPools.getIoPool().submit(() ->
+        {
+            XMPPConnection connection = xmppProvider.getXmppConnection();
+            try
+            {
+                // FIXME smack4: there used to be a custom dispose() method
+                // if leave() fails, there might still be some listeners
+                // lingering around
+                muc.leave();
+            }
+            catch (NotConnectedException | InterruptedException | NoResponseException | XMPPException.XMPPErrorException
+                    | MultiUserChatException.MucNotJoinedException e)
+            {
+                // when the connection is not connected and we get NotConnectedException, this is expected (skip log)
+                if (!(connection.isConnected() && e instanceof NotConnectedException))
+                {
+                    logger.error("Failed to properly leave " + muc, e);
+                }
+            }
+        });
     }
 
     @Override
