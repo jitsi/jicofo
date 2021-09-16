@@ -106,6 +106,11 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
         OfferOptions offerOptions = new OfferOptions();
         OfferOptionsKt.applyConstraints(offerOptions, config);
         OfferOptionsKt.applyConstraints(offerOptions, participant);
+        // Enable REMB only when TCC is not enabled.
+        if (!offerOptions.getTcc() && participant.hasRembSupport())
+        {
+            offerOptions.setRemb(true);
+        }
 
         return new Offer(new ConferenceSourceMap(), JingleOfferFactory.INSTANCE.createOffer(offerOptions));
     }
