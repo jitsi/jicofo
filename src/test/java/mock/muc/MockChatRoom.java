@@ -132,6 +132,16 @@ public class MockChatRoom
     }
 
     @Override
+    public boolean isBreakoutRoom() {
+        return false;
+    }
+
+    @Override
+    public String getMainRoom() {
+        return null;
+    }
+
+    @Override
     public EntityBareJid getRoomJid()
     {
         return roomName;
