@@ -32,17 +32,15 @@ class SourceTest : ShouldSpec() {
             val packetExtension = SourcePacketExtension().apply {
                 ssrc = 1
                 addChildExtension(ParameterPacketExtension("msid", "msid"))
-                addChildExtension(ParameterPacketExtension("cname", "cname"))
                 isInjected = true
             }
 
             Source(MediaType.VIDEO, packetExtension) shouldBe
-                Source(1, MediaType.VIDEO, msid = "msid", cname = "cname", injected = true)
+                Source(1, MediaType.VIDEO, msid = "msid", injected = true)
         }
         context("To XML") {
             val msidValue = "msid-value"
-            val cnameValue = "cname-value"
-            val source = Source(1, MediaType.VIDEO, msid = msidValue, cname = cnameValue, injected = true)
+            val source = Source(1, MediaType.VIDEO, msid = msidValue, injected = true)
             val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
             val extension = source.toPacketExtension(owner = ownerJid)
 
@@ -50,16 +48,15 @@ class SourceTest : ShouldSpec() {
             extension.isInjected shouldBe true
             val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
-            parameters.filter { it.name == "cname" && it.value == cnameValue }.size shouldBe 1
 
             val ssrcInfo = extension.getFirstChildOfType(SSRCInfoPacketExtension::class.java)
             ssrcInfo shouldNotBe null
             ssrcInfo.owner shouldBe ownerJid
         }
         context("Compact JSON") {
-            Source(1, MediaType.VIDEO, msid = "msid", cname = "cname").compactJson shouldBe
+            Source(1, MediaType.VIDEO, msid = "msid").compactJson shouldBe
                 """
-                {"s":1,"m":"msid","c":"cname"}
+                {"s":1,"m":"msid"}
                 """.trimIndent()
             Source(1, MediaType.AUDIO).compactJson shouldBe """
             {"s":1}
