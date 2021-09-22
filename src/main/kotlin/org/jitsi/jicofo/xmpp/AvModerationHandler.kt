@@ -73,9 +73,6 @@ class AvModerationHandler(
                     }
 
                     val enabled = incomingJson["enabled"] as Boolean?
-                    val lists = parseAsMapOfStringToListOfString(
-                        incomingJson["whitelists"] ?: throw IllegalArgumentException("No value for whitelists")
-                    )
 
                     if (enabled != null) {
                         val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
@@ -90,11 +87,15 @@ class AvModerationHandler(
                             // let's mute everyone
                             conference.muteAllNonModeratorParticipants(mediaType)
                         }
+                    } else {
+                        val lists = incomingJson["whitelists"]?.let { parseAsMapOfStringToListOfString(it) }
+                        if (lists != null) {
+                            conference.chatRoom.updateAvModerationWhitelists(lists)
+                        }
                     }
-                    conference.chatRoom.updateAvModerationWhitelists(lists)
                 }
             } catch (e: Exception) {
-                logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}")
+                logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}", e)
             }
         }
     }
