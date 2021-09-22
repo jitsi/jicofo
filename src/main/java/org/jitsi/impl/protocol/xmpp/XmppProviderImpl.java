@@ -29,7 +29,6 @@ import org.jitsi.retry.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.sasl.javax.*;
 import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
@@ -54,7 +53,6 @@ public class XmppProviderImpl
     {
         XMPPTCPConnection.setUseStreamManagementResumptionDefault(false);
         XMPPTCPConnection.setUseStreamManagementDefault(false);
-        SmackConfiguration.setDebuggerFactory(PacketDebugger::new);
     }
 
     private final Logger logger;
@@ -62,7 +60,7 @@ public class XmppProviderImpl
     /**
      * Jingle operation set.
      */
-    private final OperationSetJingleImpl jingleOpSet;
+    private final @NotNull OperationSetJingleImpl jingleOpSet;
 
     private final Muc muc = new Muc();
 
@@ -142,11 +140,16 @@ public class XmppProviderImpl
                 .setXmppDomain(config.getDomain());
 
         // Required for PacketDebugger and XMPP stats to work
-        connConfig.setDebuggerEnabled(true);
+        connConfig.setDebuggerFactory(PacketDebugger::new);
 
         if (!config.getUseTls())
         {
             connConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
+        }
+        else
+        {
+            /* TODO - make the required except on localhost. */
+            connConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible);
         }
 
         ReconnectionManager.setEnabledPerDefault(true);
@@ -154,7 +157,7 @@ public class XmppProviderImpl
         // focus uses SASL Mechanisms ANONYMOUS and PLAIN, but tries
         // authenticate with GSSAPI when it's offered by the server.
         // Disable GSSAPI.
-        SASLAuthentication.unregisterSASLMechanism(SASLGSSAPIMechanism.class.getName());
+        SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism");
 
         if (config.getPassword() == null)
         {
@@ -399,32 +402,6 @@ public class XmppProviderImpl
 
             setRegistered(false);
         }
-
-        /**
-         * Deprecated and will be removed in smack 4.3
-         */
-        @Override
-        @SuppressWarnings("deprecation")
-        public void reconnectionSuccessful()
-        {}
-
-        /**
-         * Deprecated and will be removed in smack 4.3
-         * @param e
-         */
-        @Override
-        @SuppressWarnings("deprecation")
-        public void reconnectionFailed(Exception e)
-        {}
-
-        /**
-         * Deprecated and will be removed in smack 4.3
-         * @param i
-         */
-        @Override
-        @SuppressWarnings("deprecation")
-        public void reconnectingIn(int i)
-        {}
     }
 
     /**

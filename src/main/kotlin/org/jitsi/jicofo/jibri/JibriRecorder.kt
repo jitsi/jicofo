@@ -29,7 +29,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq.RecordingMode
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Status
 import org.jitsi.xmpp.extensions.jibri.RecordingStatus
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
 /**
@@ -92,10 +92,10 @@ class JibriRecorder(
 
         return if (streamIdIsEmpty && iq.recordingMode != RecordingMode.FILE) {
             // Stream ID is mandatory unless we're recording to a file.
-            error(iq, XMPPError.Condition.bad_request, "Stream ID is empty or undefined")
+            error(iq, StanzaError.Condition.bad_request, "Stream ID is empty or undefined")
         } else if (!streamIdIsEmpty && iq.recordingMode == RecordingMode.FILE) {
             // Stream ID should not be provided with requests to record to a file.
-            error(iq, XMPPError.Condition.bad_request, "Stream ID is provided for a FILE recording.")
+            error(iq, StanzaError.Condition.bad_request, "Stream ID is provided for a FILE recording.")
         } else {
             val sessionId = generateSessionId()
             try {
@@ -118,15 +118,15 @@ class JibriRecorder(
                 when (exc) {
                     is AllBusy -> {
                         logger.info("Failed to start a Jibri session, all Jibris were busy")
-                        error(iq, XMPPError.Condition.resource_constraint, "all Jibris are busy")
+                        error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
                     }
                     is NotAvailable -> {
                         logger.info("Failed to start a Jibri session, no Jibris available")
-                        error(iq, XMPPError.Condition.service_unavailable, "no Jibris available")
+                        error(iq, StanzaError.Condition.service_unavailable, "no Jibris available")
                     }
                     else -> {
                         logger.warn("Failed to start a Jibri session: ${exc.message}", exc)
-                        error(iq, XMPPError.Condition.internal_server_error, exc.message)
+                        error(iq, StanzaError.Condition.internal_server_error, exc.message)
                     }
                 }
             }

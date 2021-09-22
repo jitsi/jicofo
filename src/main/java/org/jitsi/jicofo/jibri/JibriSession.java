@@ -360,42 +360,32 @@ public class JibriSession
 
         logger.info("Trying to stop: " + stopRequest.toXML());
 
-        // When we send stop, we won't get an OFF presence back (just
-        // a response to this message) so clean up the session
-        // in the processing of the response.
-        try
+        SmackFuture<IQ, Exception> future =
+            jibriDetector.getXmppConnection().sendIqRequestAsync(stopRequest, 60000);
+
+        future.onSuccess(stanza ->
         {
-            jibriDetector.getXmppConnection().sendIqWithResponseCallback(
-                    stopRequest,
-                    stanza ->
-                    {
-                        if (stanza instanceof JibriIq)
-                        {
-                            processJibriIqFromJibri((JibriIq) stanza);
-                        }
-                        else
-                        {
-                            logger.error(
-                                "Unexpected response to stop iq: "
-                                + (stanza != null ? stanza.toXML() : "null"));
+            if (stanza instanceof JibriIq)
+            {
+                processJibriIqFromJibri((JibriIq) stanza);
+            }
+            else
+            {
+                logger.error(
+                    "Unexpected response to stop iq: "
+                        + (stanza != null ? stanza.toXML() : "null"));
 
-                            JibriIq error = new JibriIq();
+                JibriIq error = new JibriIq();
 
-                            error.setFrom(stopRequest.getTo());
-                            error.setFailureReason(FailureReason.ERROR);
-                            error.setStatus(Status.OFF);
+                error.setFrom(stopRequest.getTo());
+                error.setFailureReason(FailureReason.ERROR);
+                error.setStatus(Status.OFF);
 
-                            processJibriIqFromJibri(error);
-                        }
-                    },
-                    exception -> logger.error(
-                        "Error sending stop iq: " + exception.toString()),
-                    60000);
-        }
-        catch (SmackException.NotConnectedException | InterruptedException e)
-        {
-            logger.error("Error sending stop iq: " + e, e);
-        }
+                processJibriIqFromJibri(error);
+            }
+        }).onError(exception ->
+            logger.error(
+                "Error sending stop iq: " + exception.toString()));
     }
 
     private void cleanupSession()

@@ -17,11 +17,15 @@
  */
 package org.jitsi.jicofo
 
+import com.typesafe.config.ConfigObject
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import java.time.Duration
+import java.util.TreeMap
 
+@SuppressFBWarnings(value = ["BX_UNBOXING_IMMEDIATELY_REBOXED"], justification = "False positive.")
 class ConferenceConfig {
     val conferenceStartTimeout: Duration by config {
         "org.jitsi.focus.IDLE_TIMEOUT".from(legacyConfig)
@@ -71,6 +75,19 @@ class ConferenceConfig {
         "jicofo.conference.shared-document.use-random-name".from(newConfig)
     }
     fun useRandomSharedDocumentName(): Boolean = useRandomSharedDocumentName
+
+    private val sourceSignalingDelays: TreeMap<Int, Int> by config {
+        "jicofo.conference.source-signaling-delays".from(newConfig)
+            .convertFrom<ConfigObject> { cfg ->
+                TreeMap(cfg.entries.associate { it.key.toInt() to it.value.unwrapped() as Int })
+            }
+    }
+
+    /**
+     * Get the number of milliseconds to delay signaling of Jingle sources given a certain [conferenceSize].
+     */
+    fun getSourceSignalingDelayMs(conferenceSize: Int) =
+        sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0
 
     /**
      * Whether to strip simulcast streams when signaling receivers. This option requires that jitsi-videobridge

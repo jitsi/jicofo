@@ -21,6 +21,7 @@ import org.custommonkey.xmlunit.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
 import org.jitsi.xmpp.util.*;
+import org.jivesoftware.smack.packet.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
@@ -40,6 +41,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(JUnit4.class)
 public class MuteIqProviderTest
 {
+    private final XmlEnvironment jabberClientNs = new XmlEnvironment("jabber:client");
+
     @Test
     public void testParseIq()
         throws Exception
@@ -84,6 +87,6 @@ public class MuteIqProviderTest
                          "jid='mucjid1234'" +
                          ">true</mute>" +
                          "</iq>",
-                     muteIq.toXML().toString()), true);
+                     muteIq.toXML(jabberClientNs).toString()), true);
     }
 }

@@ -8,7 +8,7 @@ import time
 
 import sleekxmpp
 from sleekxmpp import Iq
-from sleekxmpp.exceptions import XMPPError
+from sleekxmpp.exceptions import StanzaError
 from sleekxmpp.xmlstream import register_stanza_plugin, ElementBase
 
 # Global variable for storing exit code:
@@ -104,7 +104,7 @@ class FocusShutdownUserBot(sleekxmpp.ClientXMPP):
                 # The wait=True delays the disconnect until the queue
                 # of stanzas to be sent becomes empty.
                 self.disconnect(wait=True)
-        except XMPPError as error:
+        except StanzaError as error:
             if not shutdown_accepted and\
                             error.etype != 'wait' and\
                             error.condition != 'service-unavailable':

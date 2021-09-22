@@ -19,6 +19,7 @@ package org.jitsi.impl.protocol.xmpp;
 
 import kotlin.*;
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -28,10 +29,10 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.SmackException.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.packet.id.*;
 import org.jivesoftware.smackx.muc.*;
 import org.jivesoftware.smackx.muc.packet.*;
 import org.jivesoftware.smackx.xdata.*;
+import org.jivesoftware.smackx.xdata.form.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
@@ -209,24 +210,17 @@ public class ChatRoomImpl
         FormField meetingIdField = config.getField(meetingIdFieldName);
         if (meetingIdField != null)
         {
-            meetingId = meetingIdField.getValues().stream().findFirst().orElse(null);
+            meetingId = meetingIdField.getValuesAsString().stream().findFirst().orElse(null);
             if (meetingId != null)
             {
                 logger.addContext("meeting_id", meetingId);
             }
         }
 
-        Form answer = config.createAnswerForm();
+        FillableForm answer = config.getFillableForm();
         // Room non-anonymous
         String whoisFieldName = "muc#roomconfig_whois";
-        FormField whois = answer.getField(whoisFieldName);
-        if (whois == null)
-        {
-            whois = new FormField(whoisFieldName);
-            answer.addField(whois);
-        }
-
-        whois.addValue("anyone");
+        answer.setAnswer(whoisFieldName, "anyone");
 
         muc.sendConfigurationForm(answer);
     }
@@ -247,39 +241,42 @@ public class ChatRoomImpl
     @Override
     public void leave()
     {
-        XMPPConnection connection = xmppProvider.getXmppConnection();
-        try
+        if (presenceInterceptor != null)
         {
-            // FIXME smack4: there used to be a custom dispose() method
-            // if leave() fails, there might still be some listeners
-            // lingering around
-            muc.leave();
+            muc.removePresenceInterceptor(presenceInterceptor);
         }
-        catch (NotConnectedException | InterruptedException e)
-        {
-            // when the connection is not connected and
-            // we get NotConnectedException, this is expected (skip log)
-            if (connection.isConnected() || e instanceof InterruptedException)
-            {
-                logger.error("Failed to properly leave " + muc, e);
-            }
-        }
-        finally
-        {
-            if (presenceInterceptor != null)
-            {
-                muc.removePresenceInterceptor(presenceInterceptor);
-            }
 
-            muc.removeParticipantStatusListener(memberListener);
-            muc.removeUserStatusListener(userListener);
-            muc.removeParticipantListener(this);
+        muc.removeParticipantStatusListener(memberListener);
+        muc.removeUserStatusListener(userListener);
+        muc.removeParticipantListener(this);
 
-            if (leaveCallback != null)
-            {
-                leaveCallback.accept(this);
-            }
+        if (leaveCallback != null)
+        {
+            leaveCallback.accept(this);
         }
+
+        // Call MultiUserChat.leave() in an IO thread, because it now (with Smack 4.4.3) blocks waiting for a response
+        // from the XMPP server (and we want ChatRoom#leave to return immediately).
+        TaskPools.getIoPool().submit(() ->
+        {
+            XMPPConnection connection = xmppProvider.getXmppConnection();
+            try
+            {
+                // FIXME smack4: there used to be a custom dispose() method
+                // if leave() fails, there might still be some listeners
+                // lingering around
+                muc.leave();
+            }
+            catch (NotConnectedException | InterruptedException | NoResponseException | XMPPException.XMPPErrorException
+                    | MultiUserChatException.MucNotJoinedException e)
+            {
+                // when the connection is not connected and we get NotConnectedException, this is expected (skip log)
+                if (!(connection.isConnected() && e instanceof NotConnectedException))
+                {
+                    logger.error("Failed to properly leave " + muc, e);
+                }
+            }
+        });
     }
 
     @Override
@@ -568,9 +565,8 @@ public class ChatRoomImpl
         // it indicates that the client lost its synchronization and causes
         // the MUC service to re-send the presence of each occupant in the
         // room.
+        lastPresenceSent = lastPresenceSent.cloneWithNewId();
         lastPresenceSent.removeExtension(MUCInitialPresence.ELEMENT, MUCInitialPresence.NAMESPACE);
-
-        lastPresenceSent.setStanzaId(StanzaIdUtil.newStanzaId());
 
         UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent);
     }
@@ -1069,7 +1065,7 @@ public class ChatRoomImpl
      * Listens for room destroyed and pass it to the conference.
      */
     class LocalUserStatusListener
-        extends DefaultUserStatusListener
+        implements UserStatusListener
     {
         @Override
         public void roomDestroyed(MultiUserChat alternateMUC, String reason)

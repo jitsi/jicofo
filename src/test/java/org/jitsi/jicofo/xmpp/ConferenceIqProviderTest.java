@@ -41,6 +41,8 @@ import static org.junit.Assert.assertNotNull;
  */
 public class ConferenceIqProviderTest
 {
+    private final XmlEnvironment jabberClientNs = new XmlEnvironment("jabber:client");
+
     @Test
     public void testParseConferenceIq()
         throws Exception {
@@ -132,7 +134,7 @@ public class ConferenceIqProviderTest
                         "<property xmlns='http://jitsi.org/protocol/focus' name='name2' value='xyz2'/>" +
                         "</conference>" +
                         "</iq>",
-                conferenceIq.toXML().toString()), true);
+                conferenceIq.toXML(jabberClientNs).toString()), true);
     }
 
     @Test
@@ -159,6 +161,6 @@ public class ConferenceIqProviderTest
                         "url=\'" + encodedUrl + "\' " +
                         "room='room@sdaf.dsf.dsf'" +
                         "/>" +
-                        "</iq>", authUrlIQ.toXML().toString());
+                        "</iq>", authUrlIQ.toXML(jabberClientNs).toString());
     }
 }

@@ -30,7 +30,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.SessionInvalidPacketExtension
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.impl.JidCreate
 
 /**
@@ -81,7 +81,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                     xmppConnection.sendIqAndGetResponse(query).let {
                         // REPLY WITH: 'not-authorized'
                         it.shouldBeInstanceOf<ErrorIQ>()
-                        it.error.condition shouldBe XMPPError.Condition.not_authorized
+                        it.error.condition shouldBe StanzaError.Condition.not_authorized
                     }
                 }
                 context("And a valid session-id was passed") {
@@ -136,7 +136,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.machineUID = machineUid2
                             xmppConnection.sendIqAndGetResponse(query).let {
                                 it.shouldBeInstanceOf<ErrorIQ>()
-                                it.error.condition shouldBe XMPPError.Condition.not_acceptable
+                                it.error.condition shouldBe StanzaError.Condition.not_acceptable
                             }
                         }
                         context("And the machineUid is not set") {
@@ -145,7 +145,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.machineUID = null
                             xmppConnection.sendIqAndGetResponse(query).let {
                                 it.shouldBeInstanceOf<ErrorIQ>()
-                                it.error.condition shouldBe XMPPError.Condition.not_acceptable
+                                it.error.condition shouldBe StanzaError.Condition.not_acceptable
                             }
                         }
                         context("And the same user authenticates again") {

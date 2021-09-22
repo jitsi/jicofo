@@ -25,7 +25,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.LogoutIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError
+import org.jivesoftware.smack.packet.StanzaError
 
 class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority) {
     private val logger = createLogger()
@@ -94,12 +94,12 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
         }
     }
 
-    private fun createErrorResponse(iq: IQ, condition: XMPPError.Condition): IQ =
-        IQ.createErrorResponse(iq, XMPPError.getBuilder(condition))
+    private fun createErrorResponse(iq: IQ, condition: StanzaError.Condition): IQ =
+        IQ.createErrorResponse(iq, StanzaError.getBuilder(condition).build())
     private fun createNotAcceptableErrorResponse(iq: IQ): IQ =
-        createErrorResponse(iq, XMPPError.Condition.not_acceptable)
+        createErrorResponse(iq, StanzaError.Condition.not_acceptable)
     private fun createBadRequestErrorResponse(iq: IQ, message: String): IQ =
-        IQ.createErrorResponse(iq, XMPPError.from(XMPPError.Condition.bad_request, message))
+        IQ.createErrorResponse(iq, StanzaError.from(StanzaError.Condition.bad_request, message).build())
     private fun createInternalServerErrorResponse(iq: IQ): IQ =
-        IQ.createErrorResponse(iq, XMPPError.Condition.internal_server_error)
+        IQ.createErrorResponse(iq, StanzaError.Condition.internal_server_error)
 }

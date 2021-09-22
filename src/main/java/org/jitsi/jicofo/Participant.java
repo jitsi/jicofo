@@ -19,6 +19,7 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -33,6 +34,7 @@ import org.jxmpp.jid.*;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -111,6 +113,17 @@ public class Participant
     private final JitsiMeetConferenceImpl conference;
 
     /**
+     * The task, if any, currently scheduled to signal queued remote sources.
+     */
+    private ScheduledFuture<?> signalQueuedSourcesTask;
+
+    /**
+     * The lock used when queueing remote sources to be signaled with a delay, i.e. when setting
+     * {@link #signalQueuedSourcesTask}.
+     */
+    private final Object signalQueuedSourcesTaskSyncRoot = new Object();
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
@@ -126,6 +139,7 @@ public class Participant
         this.conference = conference;
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
+        logger.addContext("participant", getEndpointId());
     }
 
     /**
@@ -517,6 +531,151 @@ public class Participant
             if (content != null)
             {
                 content.getChannels().forEach(ch -> ch.setDirection(value ? "sendonly" : "sendrecv"));
+            }
+        }
+    }
+
+    /**
+     * Add a set of remote sources, which are to be signaled to the remote side. The sources may be signaled
+     * immediately, or queued to be signaled later.
+     * @param sources the sources to add.
+     */
+    public void addRemoteSources(ConferenceSourceMap sources)
+    {
+        if (!isSessionEstablished())
+        {
+            logger.debug("No Jingle session yet, queueing source-add.");
+            queueRemoteSourcesToAdd(sources);
+            // No need to schedule, the sources will be signaled when the session is established.
+            return;
+        }
+
+        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
+        if (delayMs > 0)
+        {
+            synchronized (signalQueuedSourcesTaskSyncRoot)
+            {
+                queueRemoteSourcesToAdd(sources);
+                scheduleSignalingOfQueuedSources(delayMs);
+            }
+        }
+        else
+        {
+            OperationSetJingle jingle = conference.getJingle();
+            if (jingle == null)
+            {
+                logger.error("Can not send Jingle source-add, no Jingle API available.");
+                return;
+            }
+            jingle.sendAddSourceIQ(
+                    sources,
+                    getJingleSession(),
+                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+        }
+    }
+
+    /**
+     * Schedule a task to signal all queued remote sources to the remote side. If a task is already scheduled, does
+     * not schedule a new one (the existing task will send all latest queued sources).
+     * @param delayMs the delay in milliseconds after which the task is to execute.
+     */
+    private void scheduleSignalingOfQueuedSources(int delayMs)
+    {
+        synchronized (signalQueuedSourcesTaskSyncRoot)
+        {
+            if (signalQueuedSourcesTask == null)
+            {
+                logger.debug("Scheduling a task to signal queued remote sources after " + delayMs + " ms.");
+                signalQueuedSourcesTask = TaskPools.getScheduledPool().schedule(() ->
+                        {
+                            synchronized (signalQueuedSourcesTaskSyncRoot)
+                            {
+                                sendQueuedRemoteSources();
+                                signalQueuedSourcesTask = null;
+                            }
+                        },
+                        delayMs,
+                        TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+
+    /**
+     * Removee a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
+     * signaled immediately, or queued to be signaled later.
+     * @param sources the sources to remove.
+     */
+    public void removeRemoteSources(ConferenceSourceMap sources)
+    {
+        if (!isSessionEstablished())
+        {
+            logger.debug("No Jingle session yet, queueing source-remove.");
+            queueRemoteSourcesToRemove(sources);
+            // No need to schedule, the sources will be signaled when the session is established.
+            return;
+        }
+
+        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
+        if (delayMs > 0)
+        {
+            synchronized (signalQueuedSourcesTaskSyncRoot)
+            {
+                queueRemoteSourcesToRemove(sources);
+                scheduleSignalingOfQueuedSources(delayMs);
+            }
+        }
+        else
+        {
+            OperationSetJingle jingle = conference.getJingle();
+            if (jingle == null)
+            {
+                logger.error("Can not send Jingle source-remove, no Jingle API available.");
+                return;
+            }
+            jingle.sendRemoveSourceIQ(
+                    sources,
+                    getJingleSession(),
+                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+        }
+    }
+
+    /**
+     * Signal any queued remote source modifications (either addition or removal) to the remote side.
+     */
+    public void sendQueuedRemoteSources()
+    {
+        OperationSetJingle jingle = conference.getJingle();
+        if (jingle == null)
+        {
+            logger.error("Can not signal remote sources, no Jingle API available");
+            return;
+        }
+
+        if (!isSessionEstablished())
+        {
+            logger.warn("Can not singal remote sources, Jingle session not established.");
+            return;
+        }
+
+        boolean encodeSourcesAsJson
+                = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
+
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
+        {
+            AddOrRemove action = sourcesToAddOrRemove.getAction();
+            ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
+            logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
+            if (action == AddOrRemove.Add)
+            {
+                jingle.sendAddSourceIQ(
+                        sourcesToAddOrRemove.getSources(),
+                        jingleSession,
+                        encodeSourcesAsJson);
+            }
+            else if (action == AddOrRemove.Remove)
+            {
+                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
             }
         }
     }

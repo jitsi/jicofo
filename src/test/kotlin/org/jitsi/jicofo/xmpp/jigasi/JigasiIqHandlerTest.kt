@@ -35,7 +35,7 @@ import org.jitsi.xmpp.extensions.rayo.RayoIqProvider.DialIq
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.XMPPError.Condition
+import org.jivesoftware.smack.packet.StanzaError.Condition
 import org.jxmpp.jid.impl.JidCreate
 
 class JigasiIqHandlerTest : ShouldSpec() {

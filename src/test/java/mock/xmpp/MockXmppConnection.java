@@ -114,8 +114,10 @@ public class MockXmppConnection
     protected void connectInternal()
     {
         sharedStanzaQueue.put(user, this);
-        tlsHandled.reportSuccess();
-        saslFeatureReceived.reportSuccess();
+        tlsHandled = true;
+        saslFeatureReceived = true;
+        connected = true;
+        notifyWaitingThreads();
     }
 
     @Override
@@ -136,6 +138,12 @@ public class MockXmppConnection
     @Override
     protected void shutdown()
     {
+        instantShutdown();
+    }
+
+    @Override
+    public void instantShutdown()
+    {
         sharedStanzaQueue.remove(user);
         connected = false;
     }
@@ -143,6 +151,6 @@ public class MockXmppConnection
     @Override
     public boolean isSecureConnection()
     {
-        return false;
+        return true;
     }
 }

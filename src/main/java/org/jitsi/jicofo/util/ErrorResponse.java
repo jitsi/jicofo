@@ -12,15 +12,15 @@ public class ErrorResponse
      *
      * @param request the {@link IQ.Type#get IQ.Type.get} or
      * {@link IQ.Type#set IQ.Type.set} IQ packet.
-     * @param condition the {@link XMPPError.Condition} for the error.
+     * @param condition the {@link StanzaError.Condition} for the error.
      * @param text human readable error description.
      * @return ErrorIQ
      */
     static public ErrorIQ create(
-            IQ request, XMPPError.Condition condition, String text)
+            IQ request, StanzaError.Condition condition, String text)
     {
         return IQ.createErrorResponse(
                 request,
-                XMPPError.from(condition, text));
+                StanzaError.from(condition, text).build());
     }
 }

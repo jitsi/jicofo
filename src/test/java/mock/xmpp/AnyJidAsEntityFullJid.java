@@ -78,6 +78,9 @@ public class AnyJidAsEntityFullJid implements EntityFullJid
     }
 
     @Override
+    public String asUrlEncodedString() { return ourJid.asUrlEncodedString(); }
+
+    @Override
     public boolean isEntityJid()
     {
         return ourJid.isEntityJid();
