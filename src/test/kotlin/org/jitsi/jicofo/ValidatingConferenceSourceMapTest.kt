@@ -25,6 +25,7 @@ import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
 import org.jxmpp.jid.impl.JidCreate
 
+@Suppress("NAME_SHADOWING")
 class ValidatingConferenceSourceMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 

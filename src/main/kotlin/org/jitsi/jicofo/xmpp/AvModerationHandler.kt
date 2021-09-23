@@ -31,6 +31,8 @@ import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
+import java.lang.IllegalArgumentException
+import kotlin.jvm.Throws
 
 /**
  * Adds the A/V moderation handling. Process incoming messages and when audio or video moderation is enabled,
@@ -71,7 +73,6 @@ class AvModerationHandler(
                     }
 
                     val enabled = incomingJson["enabled"] as Boolean?
-                    val lists = incomingJson["whitelists"] as JSONObject?
 
                     if (enabled != null) {
                         val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
@@ -86,12 +87,15 @@ class AvModerationHandler(
                             // let's mute everyone
                             conference.muteAllNonModeratorParticipants(mediaType)
                         }
-                    } else if (lists != null) {
-                        conference.chatRoom.updateAvModerationWhitelists(lists as Map<String, List<String>>)
+                    } else {
+                        val lists = incomingJson["whitelists"]?.let { parseAsMapOfStringToListOfString(it) }
+                        if (lists != null) {
+                            conference.chatRoom.updateAvModerationWhitelists(lists)
+                        }
                     }
                 }
             } catch (e: Exception) {
-                logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}")
+                logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}", e)
             }
         }
     }
@@ -127,4 +131,21 @@ class AvModerationHandler(
     fun shutdown() {
         xmppProvider.xmppConnection.removeSyncStanzaListener(this)
     }
+}
+
+/**
+ * Parses the given object (expected to be a [JSONObject]) as a Map<String, List<String>>. Throws
+ * [IllegalArgumentException] if [o] is not of the expected type.
+ * @return a map that is guaranteed to have a runtime type of Map<String, List<String>>.
+ */
+@Throws(IllegalArgumentException::class)
+private fun parseAsMapOfStringToListOfString(o: Any): Map<String, List<String>> {
+    val jsonObject: JSONObject = o as? JSONObject ?: throw IllegalArgumentException("Not a JSONObject")
+    val map = mutableMapOf<String, List<String>>()
+    jsonObject.forEach { (k, v) ->
+        k as? String ?: throw IllegalArgumentException("Key is not a string")
+        v as? List<*> ?: throw IllegalArgumentException("Value is not a list")
+        map[k] = v.map { it.toString() }
+    }
+    return map
 }

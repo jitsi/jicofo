@@ -63,7 +63,6 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
         context("Shibboleth authentication") {
             val shibbolethAuth = harness?.jicofoServices?.authenticationAuthority
             shibbolethAuth.shouldBeInstanceOf<ShibbolethAuthAuthority>()
-            shibbolethAuth as ShibbolethAuthAuthority
 
             val room = JidCreate.entityBareFrom("testroom1-shibboeth@example.com")
             val query = ConferenceIq().apply {
@@ -82,7 +81,6 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                     xmppConnection.sendIqAndGetResponse(query).let {
                         // REPLY WITH: 'not-authorized'
                         it.shouldBeInstanceOf<ErrorIQ>()
-                        it as ErrorIQ
                         it.error.condition shouldBe StanzaError.Condition.not_authorized
                     }
                 }
@@ -112,7 +110,6 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                     xmppConnection.sendIqAndGetResponse(query).let {
                         // REPLY with session-invalid
                         it.shouldBeInstanceOf<ErrorIQ>()
-                        it as ErrorIQ
                         it.error.getExtension<ExtensionElement>(
                             SessionInvalidPacketExtension.ELEMENT_NAME,
                             SessionInvalidPacketExtension.NAMESPACE
@@ -139,7 +136,6 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.machineUID = machineUid2
                             xmppConnection.sendIqAndGetResponse(query).let {
                                 it.shouldBeInstanceOf<ErrorIQ>()
-                                it as ErrorIQ
                                 it.error.condition shouldBe StanzaError.Condition.not_acceptable
                             }
                         }
@@ -149,7 +145,6 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.machineUID = null
                             xmppConnection.sendIqAndGetResponse(query).let {
                                 it.shouldBeInstanceOf<ErrorIQ>()
-                                it as ErrorIQ
                                 it.error.condition shouldBe StanzaError.Condition.not_acceptable
                             }
                         }

@@ -74,9 +74,9 @@ public class RESTReservations
      */
     public RESTReservations(String baseUrl, BiConsumer<EntityBareJid, String> destroyConferenceCallback)
     {
-        if (StringUtils.isEmpty(baseUrl))
+        if (StringUtils.isBlank(baseUrl))
         {
-            throw new IllegalArgumentException("baseUrl: " + baseUrl);
+            throw new IllegalArgumentException("baseUrl is null or empty.");
         }
 
         this.destroyConferenceCallback = destroyConferenceCallback;
