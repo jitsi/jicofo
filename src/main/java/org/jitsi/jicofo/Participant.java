@@ -542,6 +542,11 @@ public class Participant
      */
     public void addRemoteSources(ConferenceSourceMap sources)
     {
+        if (!hasVideoSupport())
+        {
+            sources = sources.copy().stripVideo();
+        }
+
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-add.");
@@ -608,6 +613,11 @@ public class Participant
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
     {
+        if (!hasVideoSupport())
+        {
+            sources = sources.copy().stripVideo();
+        }
+
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
