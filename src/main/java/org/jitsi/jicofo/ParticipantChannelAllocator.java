@@ -288,6 +288,10 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                 .strip(ConferenceConfig.config.stripSimulcast(), true);
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
+        if (offer.getContents().stream().noneMatch(content -> "video".equals(content.getName())))
+        {
+            conferenceSources = conferenceSources.stripVideo();
+        }
 
         for (ContentPacketExtension cpe : offer.getContents())
         {
