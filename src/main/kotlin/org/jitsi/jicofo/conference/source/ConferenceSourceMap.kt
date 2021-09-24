@@ -190,7 +190,7 @@ open class ConferenceSourceMap(
     }
 
     /**
-     * Remove all video sources from this [ConferenceSourceMap]
+     * Remove all sources from this [ConferenceSourceMap] unless their media type is in [retain].
      */
     open fun stripByMediaType(
         /** The set of media types to retain, all other media types will be removed */
