@@ -188,6 +188,29 @@ open class ConferenceSourceMap(
         }
         this
     }
+
+    /**
+     * Remove all sources from this [ConferenceSourceMap] unless their media type is in [retain].
+     */
+    open fun stripByMediaType(
+        /** The set of media types to retain, all other media types will be removed */
+        retain: Set<MediaType>
+    ) = synchronized(syncRoot) {
+        if (retain.contains(MediaType.AUDIO) && retain.contains(MediaType.VIDEO)) {
+            // Nothing to strip.
+            return this
+        }
+        endpointSourceSets.forEach { (owner, sources) ->
+            val strippedSources = sources.sources.filter { retain.contains(it.mediaType) }.toSet()
+            if (strippedSources.isEmpty()) {
+                endpointSourceSets.remove(owner)
+            } else {
+                val strippedSsrcGroups = sources.ssrcGroups.filter { retain.contains(it.mediaType) }.toSet()
+                endpointSourceSets[owner] = EndpointSourceSet(strippedSources, strippedSsrcGroups)
+            }
+        }
+        this
+    }
 }
 
 /**
@@ -219,6 +242,9 @@ class UnmodifiableConferenceSourceMap(
 
     override fun strip(stripSimulcast: Boolean, stripInjected: Boolean) =
         throw UnsupportedOperationException("strip() not supported in unmodifiable view")
+
+    override fun stripByMediaType(retain: Set<MediaType>) =
+        throw UnsupportedOperationException("stripByMediaType() is not supported in unmodifiable view")
 }
 
 fun EndpointSourceSet.stripInjected() = EndpointSourceSet(
