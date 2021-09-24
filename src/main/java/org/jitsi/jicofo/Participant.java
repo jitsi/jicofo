@@ -542,6 +542,11 @@ public class Participant
      */
     public void addRemoteSources(ConferenceSourceMap sources)
     {
+        if (!hasAudioSupport() || !hasVideoSupport())
+        {
+            sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
+        }
+
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-add.");
@@ -600,6 +605,20 @@ public class Participant
         }
     }
 
+    Set<MediaType> getSupportedMediaTypes()
+    {
+        Set<MediaType> supportedMediaTypes = new HashSet<>();
+        if (hasVideoSupport())
+        {
+            supportedMediaTypes.add(MediaType.VIDEO);
+        }
+        if (hasAudioSupport())
+        {
+            supportedMediaTypes.add(MediaType.AUDIO);
+        }
+
+        return supportedMediaTypes;
+    }
 
     /**
      * Removee a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
@@ -608,6 +627,11 @@ public class Participant
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
     {
+        if (!hasAudioSupport() || !hasVideoSupport())
+        {
+            sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
+        }
+
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
