@@ -244,7 +244,7 @@ class UnmodifiableConferenceSourceMap(
         throw UnsupportedOperationException("strip() not supported in unmodifiable view")
 
     override fun stripByMediaType(retain: Set<MediaType>) =
-        throw UnsupportedOperationException("stripVideo() is not supported in unmodifiable view")
+        throw UnsupportedOperationException("stripByMediaType() is not supported in unmodifiable view")
 }
 
 fun EndpointSourceSet.stripInjected() = EndpointSourceSet(
