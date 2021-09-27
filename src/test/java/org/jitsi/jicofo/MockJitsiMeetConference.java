@@ -106,6 +106,6 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public void muteAllNonModeratorParticipants(MediaType mediaType)
+    public void muteAllParticipants(MediaType mediaType)
     {}
 }
