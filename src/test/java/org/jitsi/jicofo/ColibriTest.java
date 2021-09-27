@@ -19,11 +19,10 @@ package org.jitsi.jicofo;
 
 import mock.jvb.*;
 import mock.xmpp.*;
-import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.jicofo.codec.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.jitsi.protocol.xmpp.colibri.*;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;

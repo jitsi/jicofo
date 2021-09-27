@@ -23,7 +23,6 @@ import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
-import org.jitsi.impl.protocol.xmpp.colibri.ColibriConferenceImpl
 import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
@@ -33,6 +32,7 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeMucDetector
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.conference.colibri.ColibriConferenceImpl
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig

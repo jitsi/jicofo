@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.conference;
 
 import org.jitsi.jicofo.*;
-import org.jitsi.protocol.xmpp.colibri.exception.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.utils.logging2.*;
