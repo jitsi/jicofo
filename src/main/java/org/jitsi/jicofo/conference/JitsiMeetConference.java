@@ -100,10 +100,10 @@ public interface JitsiMeetConference
     @NotNull IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request);
 
     /**
-     * Used for av moderation, when we want to mute all participants that are not moderators.
+     * Used for av moderation, when we want to mute all participants.
      * @param mediaType the media type we want to mute.
      */
-    void muteAllNonModeratorParticipants(MediaType mediaType);
+    void muteAllParticipants(MediaType mediaType);
 
     /**
      * Return {@code true} if the user with the given JID should be allowed to invite jigasi to this conference.

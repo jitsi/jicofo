@@ -85,7 +85,7 @@ class AvModerationHandler(
                                 }, for mediaType=$mediaType"
                             )
                             // let's mute everyone
-                            conference.muteAllNonModeratorParticipants(mediaType)
+                            conference.muteAllParticipants(mediaType)
                         }
                     } else {
                         val lists = incomingJson["whitelists"]?.let { parseAsMapOfStringToListOfString(it) }

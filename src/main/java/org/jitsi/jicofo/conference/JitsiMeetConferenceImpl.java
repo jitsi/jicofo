@@ -1931,13 +1931,12 @@ public class JitsiMeetConferenceImpl
     /**
      * {@inheritDoc}
      */
-    public void muteAllNonModeratorParticipants(MediaType mediaType)
+    public void muteAllParticipants(MediaType mediaType)
     {
         Iterable<Participant> participantsToMute;
         synchronized (participantLock)
         {
-            participantsToMute
-                    = participants.stream().filter(p -> !p.hasModeratorRights()).collect(Collectors.toList());
+            participantsToMute = new ArrayList<>(participants);
         }
 
         for (Participant participant : participantsToMute)
