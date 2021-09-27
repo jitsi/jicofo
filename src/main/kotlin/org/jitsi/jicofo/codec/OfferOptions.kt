@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.codec
 
 import org.jitsi.jicofo.JitsiMeetConfig
-import org.jitsi.jicofo.Participant
+import org.jitsi.jicofo.conference.Participant
 import java.lang.Integer.min
 
 /**

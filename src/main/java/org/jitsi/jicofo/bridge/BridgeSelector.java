@@ -20,6 +20,7 @@ package org.jitsi.jicofo.bridge;
 import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
 import org.jitsi.xmpp.extensions.colibri.*;

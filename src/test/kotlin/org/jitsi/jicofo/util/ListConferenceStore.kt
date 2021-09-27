@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.util
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.JitsiMeetConference
+import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jxmpp.jid.EntityBareJid
 
 class ListConferenceStore : ConferenceStore, MutableList<JitsiMeetConference> by ArrayList() {

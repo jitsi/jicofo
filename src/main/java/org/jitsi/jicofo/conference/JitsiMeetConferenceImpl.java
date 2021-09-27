@@ -15,12 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.conference;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.source.*;
@@ -53,7 +54,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
-import static org.jitsi.jicofo.JitsiMeetConferenceImpl.MuteResult.*;
+import static org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.MuteResult.*;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -351,7 +352,7 @@ public class JitsiMeetConferenceImpl
      * Stops the conference, disposes colibri channels and releases all
      * resources used by the focus.
      */
-    void stop()
+    public void stop()
     {
         if (!started.compareAndSet(true, false))
         {
@@ -2356,7 +2357,7 @@ public class JitsiMeetConferenceImpl
     /**
      * The interface used to listen for conference events.
      */
-    interface ConferenceListener
+    public interface ConferenceListener
     {
         /**
          * Event fired when conference has ended.

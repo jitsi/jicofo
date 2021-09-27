@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import mock.muc.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.utils.logging2.*;
 import org.junit.*;
 import org.junit.runner.*;

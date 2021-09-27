@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.conference;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;

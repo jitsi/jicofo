@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.conference;
 
+import org.jitsi.jicofo.*;
 import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -91,12 +92,12 @@ public abstract class AbstractChannelAllocator implements Runnable
      * invite a specific {@link Participant} into a specific
      * {@link JitsiMeetConferenceImpl} (using a specific jitsi-videobridge
      * instance specified by a
-     * {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession}).
+     * {@link JitsiMeetConferenceImpl.BridgeSession}).
      *
      * @param meetConference the {@link JitsiMeetConferenceImpl} into which to
      * invite {@code participant}.
      * @param bridgeSession the
-     * {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession} which
+     * {@link JitsiMeetConferenceImpl.BridgeSession} which
      * identifies the jitsi-videobridge instance on which to allocate channels.
      * @param participant the participant to be invited.
      * @param startMuted an array which must have the size of 2 where the first

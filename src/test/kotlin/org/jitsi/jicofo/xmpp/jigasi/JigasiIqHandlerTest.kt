@@ -26,7 +26,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.jicofo.JitsiMeetConference
+import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.util.ListConferenceStore
 import org.jitsi.jicofo.xmpp.JigasiIqHandler

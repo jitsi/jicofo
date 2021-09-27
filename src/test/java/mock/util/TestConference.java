@@ -22,6 +22,7 @@ import mock.jvb.*;
 import mock.muc.*;
 import mock.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.conference.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;

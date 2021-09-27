@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.lipsynchack;
 
-import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jingle.*;

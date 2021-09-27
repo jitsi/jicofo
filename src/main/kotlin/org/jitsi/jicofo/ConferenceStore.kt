@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jxmpp.jid.EntityBareJid
 
 interface ConferenceStore {
