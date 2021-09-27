@@ -67,7 +67,7 @@ public class Participant
      * Whenever this value is set to a non-null value it means that Jicofo
      * has assigned a bridge to this instance.
      */
-    private JitsiMeetConferenceImpl.BridgeSession bridgeSession;
+    private BridgeSession bridgeSession;
 
     /**
      * The {@link Clock} used by this participant.
@@ -157,7 +157,7 @@ public class Participant
      * @param bridgeSession the new bridge session to set.
      * @see #bridgeSession
      */
-    void setBridgeSession(JitsiMeetConferenceImpl.BridgeSession bridgeSession)
+    void setBridgeSession(BridgeSession bridgeSession)
     {
         if (this.bridgeSession != null)
         {
@@ -438,10 +438,10 @@ public class Participant
     }
 
     /**
-     * Returns the {@link JitsiMeetConferenceImpl.BridgeSession}
+     * Returns the {@link BridgeSession}
      * or <tt>null</tt>.
      */
-    public JitsiMeetConferenceImpl.BridgeSession getBridgeSession()
+    public BridgeSession getBridgeSession()
     {
         return bridgeSession;
     }
@@ -506,9 +506,9 @@ public class Participant
      * of any bridge session.
      * @see ColibriConference#expireChannels(ColibriConferenceIQ)
      */
-    JitsiMeetConferenceImpl.BridgeSession terminateBridgeSession()
+    BridgeSession terminateBridgeSession()
     {
-        JitsiMeetConferenceImpl.BridgeSession _session = this.bridgeSession;
+        BridgeSession _session = this.bridgeSession;
 
         if (_session != null)
         {

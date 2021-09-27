@@ -63,7 +63,7 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  *
  * A note on synchronization: this class uses a lot of 'synchronized' blocks,
  * on 4 different objects ({@link #bridges}, {@link #participantLock},
- * {@code this} and {@link BridgeSession#octoParticipant}). At the time of this
+ * {@code this} and {@code BridgeSession#octoParticipant}). At the time of this
  * writing it seems that multiple locks are acquired only in the following
  * order: * {@code participantsLock} -> {@code bridges}.
  *
@@ -594,30 +594,6 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    /**
-     * Creates a new {@link ColibriConference} instance for use by this
-     * {@link JitsiMeetConferenceImpl}.
-     */
-    // False positive
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    private ColibriConference createNewColibriConference(Jid bridgeJid)
-    {
-        ColibriConferenceImpl colibriConference
-                = new ColibriConferenceImpl(
-                        jicofoServices.getXmppServices().getServiceConnection().getXmppConnection());
-        // JVB expects the hex string
-        colibriConference.setGID(Long.toHexString(gid));
-
-        colibriConference.setName(chatRoom.getRoomJid());
-        String meetingId = chatRoom.getMeetingId();
-        if (meetingId != null)
-        {
-            colibriConference.setMeetingId(meetingId);
-        }
-        colibriConference.setJitsiVideobridge(bridgeJid);
-
-        return colibriConference;
-    }
 
     /**
      * Adds a {@link ChatRoomMember} to the conference. Creates the
@@ -752,9 +728,13 @@ public class JitsiMeetConferenceImpl
             bridgeSession = findBridgeSession(bridge);
             if (bridgeSession == null)
             {
-                // The selected bridge is not yet used for this conference,
-                // so initialize a new BridgeSession
-                bridgeSession = new BridgeSession(bridge);
+                // The selected bridge is not yet used for this conference, so initialize a new BridgeSession
+                bridgeSession = new BridgeSession(
+                        this,
+                        jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
+                        bridge,
+                        gid,
+                        logger);
 
                 bridges.add(bridgeSession);
                 setConferenceProperty(
@@ -840,7 +820,7 @@ public class JitsiMeetConferenceImpl
      * @return the set of all Octo relays of bridges in the conference, except
      * for {@code exclude}.
      */
-    private List<String> getAllRelays(String exclude)
+    List<String> getAllRelays(String exclude)
     {
         synchronized (bridges)
         {
@@ -1800,7 +1780,7 @@ public class JitsiMeetConferenceImpl
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
-    private ConferenceSourceMap getSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
+    ConferenceSourceMap getSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         ConferenceSourceMap allSources = getSources().copy();
 
@@ -2385,338 +2365,6 @@ public class JitsiMeetConferenceImpl
          * A bridge was removed from the conference because it was non-operational.
          */
         void bridgeRemoved();
-    }
-
-    /**
-     * Represents a {@link Bridge} instance as used by this
-     * {@link JitsiMeetConferenceImpl}.
-     */
-    class BridgeSession
-    {
-        /**
-         * The {@link Bridge}.
-         */
-        final Bridge bridge;
-
-        /**
-         * The bridge session's id.
-         *
-         * At the time of this writing it's used to distinguish between current
-         * and outdated ICE failed notifications coming from the client.
-         *
-         * It can often happen that during a bridge failure multiple clients
-         * will send ICE failed messages because all of them will have
-         * connectivity broken. Jicofo will mark the bridge as unhealthy when
-         * processing the first notification and any following ones should be
-         * discarded.
-         */
-        final String id = JitsiMeetConferenceImpl.this.gid + "_" +Integer.toHexString(RANDOM.nextInt(0x1_000000));
-
-        /**
-         * The list of participants in the conference which use this
-         * {@link BridgeSession}.
-         */
-        private final List<Participant> participants = new LinkedList<>();
-
-        /**
-         * The {@link ColibriConference} instance used to communicate with
-         * the jitsi-videobridge represented by this {@link BridgeSession}.
-         */
-        final ColibriConference colibriConference;
-
-        /**
-         * The single {@link OctoParticipant} for this bridge session, if any.
-         */
-        private OctoParticipant octoParticipant;
-
-        /**
-         * Indicates if the bridge used in this conference is faulty. We use
-         * this flag to skip channel expiration step when the conference is being
-         * disposed of.
-         */
-        public boolean hasFailed = false;
-
-        /**
-         * Initializes a new {@link BridgeSession} instance.
-         * @param bridge the {@link Bridge} which the new
-         * {@link BridgeSession} instance is to represent.
-         */
-        BridgeSession(Bridge bridge)
-        {
-            this.bridge = Objects.requireNonNull(bridge, "bridge");
-            this.colibriConference = createNewColibriConference(bridge.getJid());
-        }
-
-        private void addParticipant(Participant participant)
-        {
-            participants.add(participant);
-            bridge.endpointAdded();
-        }
-
-        /**
-         * Disposes of this {@link BridgeSession}, attempting to expire the
-         * COLIBRI conference.
-         */
-        private void dispose()
-        {
-            // We will not expire channels if the bridge is faulty or when our connection is down.
-            if (!hasFailed && getClientXmppProvider().isRegistered())
-            {
-                colibriConference.expireConference();
-            }
-            else
-            {
-                // TODO: make sure this doesn't block waiting for a response
-                colibriConference.dispose();
-            }
-
-            // TODO: should we terminate (or clear) #participants?
-        }
-
-        /**
-         * Expires the COLIBRI channels (via
-         * {@link Participant#terminateBridgeSession()}) for all
-         * participants.
-         * @return the list of participants which were removed from
-         * {@link #participants} as a result of this call (does not include
-         * the Octo participant).
-         */
-        private List<Participant> terminateAll()
-        {
-            List<Participant> terminatedParticipants = new LinkedList<>();
-            // sync on what?
-            for (Participant participant : new LinkedList<>(participants))
-            {
-                if (participant.terminateBridgeSession() != null)
-                {
-                    terminatedParticipants.add(participant);
-                }
-            }
-
-            if (octoParticipant != null)
-            {
-                terminate(octoParticipant);
-            }
-
-            return terminatedParticipants;
-        }
-
-        /**
-         * Expires the COLIBRI channels allocated for a specific {@link Participant} and removes the participant from
-         * {@link #participants}.
-         * @param participant the {@link Participant} for which to expire the COLIBRI channels.
-         * @return {@code true} if the participant was a member of {@link #participants} and was removed as a result of
-         * this call, and {@code false} otherwise.
-         */
-        public boolean terminate(AbstractParticipant participant)
-        {
-            boolean octo = participant == this.octoParticipant;
-            boolean removed = octo || participants.remove(participant);
-
-            ColibriConferenceIQ channelsInfo
-                = participant != null
-                    ? participant.getColibriChannelsInfo() : null;
-
-            if (channelsInfo != null && !hasFailed)
-            {
-                String id
-                    = (participant instanceof Participant)
-                        ? ((Participant) participant).getMucJid().toString()
-                        : "octo";
-                logger.info("Expiring channels for: " + id + " on: " + bridge);
-                colibriConference.expireChannels(channelsInfo);
-            }
-
-            if (octo)
-            {
-                if (participant != null)
-                {
-                    participant.setChannelAllocator(null);
-                }
-                this.octoParticipant = null;
-            }
-
-            return removed;
-        }
-
-        /**
-         * Sends a COLIBRI message which updates the channels for a particular
-         * {@link Participant} in this {@link BridgeSession}, setting the
-         * participant's RTP description, sources, transport information, etc.
-         */
-        private void updateColibriChannels(Participant participant)
-        {
-            colibriConference.updateChannelsInfo(
-                participant.getColibriChannelsInfo(),
-                participant.getRtpDescriptionMap(),
-                participant.getSources(),
-                participant.getBundleTransport(),
-                participant.getEndpointId(),
-                null);
-        }
-
-        /**
-         * Sends a COLIBRI message which updates the channels for the Octo
-         * participant in this {@link BridgeSession}.
-         */
-        private void updateColibriOctoChannels(OctoParticipant octoParticipant)
-        {
-            if (octoParticipant != null)
-            {
-                colibriConference.updateChannelsInfo(
-                    octoParticipant.getColibriChannelsInfo(),
-                    octoParticipant.getRtpDescriptionMap(),
-                    octoParticipant.getSources(),
-                    null,
-                    null,
-                    octoParticipant.getRelays());
-            }
-        }
-
-        /**
-         * Returns the Octo participant for this {@link BridgeSession}. If
-         * a participant doesn't exist yet, it is created.
-         * @return the {@link OctoParticipant} for this {@link BridgeSession}.
-         */
-        private OctoParticipant getOrCreateOctoParticipant()
-        {
-            if (octoParticipant != null)
-            {
-                return octoParticipant;
-            }
-
-            List<String> remoteRelays = getAllRelays(bridge.getRelayId());
-            return getOrCreateOctoParticipant(new LinkedList<>(remoteRelays));
-        }
-
-        /**
-         * Returns the Octo participant for this {@link BridgeSession}. If
-         * a participant doesn't exist yet, it is created and initialized
-         * with {@code relays} as the list of remote Octo relays.
-         * @return the {@link OctoParticipant} for this {@link BridgeSession}.
-         */
-        private OctoParticipant getOrCreateOctoParticipant(List<String> relays)
-        {
-            if (octoParticipant == null)
-            {
-                octoParticipant = createOctoParticipant(relays);
-            }
-            return octoParticipant;
-        }
-
-        /**
-         * Adds sources and source groups to this {@link BridgeSession}'s Octo
-         * participant. If the Octo participant's session is already
-         * established, then the sources are added and a colibri message is
-         * sent to the bridge. Otherwise, they are scheduled to be added once
-         * the session is established.
-         * @param sources the sources to add.
-         */
-        private void addSourcesToOcto(ConferenceSourceMap sources)
-        {
-            if (!OctoConfig.config.getEnabled())
-            {
-                return;
-            }
-
-           OctoParticipant octoParticipant = getOrCreateOctoParticipant();
-
-           synchronized (octoParticipant)
-           {
-               if (octoParticipant.isSessionEstablished())
-               {
-                   octoParticipant.addSources(sources);
-                   updateColibriOctoChannels(octoParticipant);
-               }
-               else
-               {
-                   // The allocator will take care of updating these when the
-                   // session is established.
-                   octoParticipant.queueRemoteSourcesToAdd(sources);
-               }
-           }
-        }
-
-        /**
-         * Removes sources and source groups
-         */
-        private void removeSourcesFromOcto(ConferenceSourceMap sourcesToRemove)
-        {
-            OctoParticipant octoParticipant = this.octoParticipant;
-            if (octoParticipant != null)
-            {
-                synchronized (octoParticipant)
-                {
-                    if (octoParticipant.isSessionEstablished())
-                    {
-                        octoParticipant.removeSources(sourcesToRemove);
-
-                        updateColibriOctoChannels(octoParticipant);
-                    }
-                    else
-                    {
-                        octoParticipant.queueRemoteSourcesToRemove(sourcesToRemove);
-                    }
-                }
-            }
-        }
-
-        /**
-         * Sets the list of Octo relays for this {@link BridgeSession}.
-         * @param allRelays all relays in the conference (including the relay
-         * of the bridge of this {@link BridgeSession}).
-         */
-        private void setRelays(List<String> allRelays)
-        {
-            List<String> remoteRelays = new LinkedList<>(allRelays);
-            remoteRelays.remove(bridge.getRelayId());
-
-            logger.info("Updating Octo relays for " + bridge);
-
-            OctoParticipant octoParticipant = getOrCreateOctoParticipant(remoteRelays);
-            octoParticipant.setRelays(remoteRelays);
-            if (octoParticipant.isSessionEstablished())
-            {
-                updateColibriOctoChannels(octoParticipant);
-            }
-        }
-
-        /**
-         * Creates an {@link OctoParticipant} for this {@link BridgeSession}
-         * and starts an {@link OctoChannelAllocator} to allocate channels for
-         * it.
-         * @param relays the list of Octo relay ids to set to the newly
-         * allocated channels.
-         * @return the instance which was created.
-         */
-        private OctoParticipant createOctoParticipant(List<String> relays)
-        {
-            logger.info("Creating an Octo participant for " + bridge);
-
-            OctoParticipant octoParticipant = new OctoParticipant(relays, logger, bridge.getJid());
-
-            ConferenceSourceMap remoteSources = getSources(participants, true);
-
-            octoParticipant.addSources(remoteSources);
-
-            OctoChannelAllocator channelAllocator
-                = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant, logger);
-            octoParticipant.setChannelAllocator(channelAllocator);
-
-            TaskPools.getIoPool().submit(channelAllocator);
-
-            return octoParticipant;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format(
-                    "BridgeSession[id=%s, bridge=%s]@%d",
-                    id,
-                    bridge,
-                    hashCode());
-        }
     }
 
     /**

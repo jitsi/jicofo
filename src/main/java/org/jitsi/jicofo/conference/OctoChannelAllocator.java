@@ -55,7 +55,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
      */
     public OctoChannelAllocator(
             JitsiMeetConferenceImpl conference,
-            JitsiMeetConferenceImpl.BridgeSession bridgeSession,
+            BridgeSession bridgeSession,
             OctoParticipant participant,
             Logger parentLogger)
     {

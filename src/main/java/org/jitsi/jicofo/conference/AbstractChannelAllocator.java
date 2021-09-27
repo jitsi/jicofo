@@ -48,10 +48,10 @@ public abstract class AbstractChannelAllocator implements Runnable
     protected final JitsiMeetConferenceImpl meetConference;
 
     /**
-     * The {@link JitsiMeetConferenceImpl.BridgeSession} on which
+     * The {@link BridgeSession} on which
      * to allocate channels for the participant.
      */
-    protected final JitsiMeetConferenceImpl.BridgeSession bridgeSession;
+    protected final BridgeSession bridgeSession;
 
     /**
      * The participant that is to be invited by this instance to the conference.
@@ -92,12 +92,12 @@ public abstract class AbstractChannelAllocator implements Runnable
      * invite a specific {@link Participant} into a specific
      * {@link JitsiMeetConferenceImpl} (using a specific jitsi-videobridge
      * instance specified by a
-     * {@link JitsiMeetConferenceImpl.BridgeSession}).
+     * {@link BridgeSession}).
      *
      * @param meetConference the {@link JitsiMeetConferenceImpl} into which to
      * invite {@code participant}.
      * @param bridgeSession the
-     * {@link JitsiMeetConferenceImpl.BridgeSession} which
+     * {@link BridgeSession} which
      * identifies the jitsi-videobridge instance on which to allocate channels.
      * @param participant the participant to be invited.
      * @param startMuted an array which must have the size of 2 where the first
@@ -108,7 +108,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      */
     protected AbstractChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
-            @NotNull JitsiMeetConferenceImpl.BridgeSession bridgeSession,
+            @NotNull BridgeSession bridgeSession,
             @NotNull AbstractParticipant participant,
             boolean[] startMuted,
             boolean reInvite,

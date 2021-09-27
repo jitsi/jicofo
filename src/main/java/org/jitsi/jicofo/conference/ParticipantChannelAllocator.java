@@ -79,7 +79,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
      */
     public ParticipantChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
-            JitsiMeetConferenceImpl.BridgeSession bridgeSession,
+            BridgeSession bridgeSession,
             Participant participant,
             boolean[] startMuted,
             boolean reInvite,
