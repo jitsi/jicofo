@@ -210,6 +210,7 @@ public class LipSyncHack implements OperationSetJingle
                 mergedSources.add(new Source(
                         source.getSsrc(),
                         source.getMediaType(),
+                        source.getName(),
                         audioStreamId + " " + trackId,
                         false));
                 logger.debug("Merged video SSRC " + source.getSsrc() + " into " + audioSource);

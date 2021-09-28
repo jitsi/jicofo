@@ -31,20 +31,23 @@ class SourceTest : ShouldSpec() {
         context("From XML") {
             val packetExtension = SourcePacketExtension().apply {
                 ssrc = 1
+                name = "name-1"
                 addChildExtension(ParameterPacketExtension("msid", "msid"))
                 isInjected = true
             }
 
             Source(MediaType.VIDEO, packetExtension) shouldBe
-                Source(1, MediaType.VIDEO, msid = "msid", injected = true)
+                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid", injected = true)
         }
         context("To XML") {
             val msidValue = "msid-value"
-            val source = Source(1, MediaType.VIDEO, msid = msidValue, injected = true)
+            val nameValue = "source-name-value"
+            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue, injected = true)
             val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
             val extension = source.toPacketExtension(owner = ownerJid)
 
             extension.ssrc shouldBe 1
+            extension.name shouldBe nameValue
             extension.isInjected shouldBe true
             val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
@@ -54,9 +57,9 @@ class SourceTest : ShouldSpec() {
             ssrcInfo.owner shouldBe ownerJid
         }
         context("Compact JSON") {
-            Source(1, MediaType.VIDEO, msid = "msid").compactJson shouldBe
+            Source(1, MediaType.VIDEO, name = "test-name", msid = "msid").compactJson shouldBe
                 """
-                {"s":1,"m":"msid"}
+                {"s":1,"n":"test-name","m":"msid"}
                 """.trimIndent()
             Source(1, MediaType.AUDIO).compactJson shouldBe """
             {"s":1}
