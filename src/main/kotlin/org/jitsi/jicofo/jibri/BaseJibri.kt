@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.jibri
 
-import org.jitsi.jicofo.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.TaskPools
+import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
 import org.jitsi.jicofo.xmpp.IqProcessingResult
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse

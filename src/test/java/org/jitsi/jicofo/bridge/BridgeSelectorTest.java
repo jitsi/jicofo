@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.junit.*;

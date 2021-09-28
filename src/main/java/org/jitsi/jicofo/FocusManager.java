@@ -18,6 +18,7 @@
 package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.utils.logging2.*;
@@ -525,7 +526,7 @@ public class FocusManager
         return statistics;
     }
 
-    boolean isJicofoIdConfigured()
+    public boolean isJicofoIdConfigured()
     {
         return octoId != 0;
     }

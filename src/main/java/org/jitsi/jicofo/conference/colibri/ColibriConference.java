@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp.colibri;
+package org.jitsi.jicofo.conference.colibri;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -65,17 +64,6 @@ public interface ColibriConference
      * @return the name.
      */
     EntityBareJid getName();
-
-    /**
-     * Returns <tt>true</tt> if conference has been allocated during last
-     * allocate channels request. Method is synchronized and will return
-     * <tt>true</tt> only for the first time is called, so that only one thread
-     * will get positive value. That is because there are multiple threads
-     * allocating channels on conference start and all of them will have
-     * conference ID == null before operation, so it can't be used to detect
-     * conference created event.
-     */
-    boolean hasJustAllocated();
 
     /**
      * Creates channels on the videobridge for given parameters.

@@ -15,21 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.conference;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.conference.*;
+import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.jicofo.xmpp.muc.*;
-import org.jitsi.utils.*;
-import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.jingle.*;
-
 import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.util.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -46,7 +46,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
  * @author Boris Grozev
  */
 public class Participant
-    extends AbstractParticipant
+        extends AbstractParticipant
 {
     /**
      * Returns the endpoint ID for a participant in the videobridge (Colibri)
@@ -63,11 +63,11 @@ public class Participant
 
     /**
      * The {@code BridgeSession} of which this {@code Participant} is part of.
-     *
+     * <p>
      * Whenever this value is set to a non-null value it means that Jicofo
      * has assigned a bridge to this instance.
      */
-    private JitsiMeetConferenceImpl.BridgeSession bridgeSession;
+    private BridgeSession bridgeSession;
 
     /**
      * The {@link Clock} used by this participant.
@@ -105,7 +105,7 @@ public class Participant
     /**
      * State whether this participant is muted by media type.
      */
-    private Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
+    private final Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
 
     /**
      * The conference in which this participant participates.
@@ -157,7 +157,7 @@ public class Participant
      * @param bridgeSession the new bridge session to set.
      * @see #bridgeSession
      */
-    void setBridgeSession(JitsiMeetConferenceImpl.BridgeSession bridgeSession)
+    void setBridgeSession(BridgeSession bridgeSession)
     {
         if (this.bridgeSession != null)
         {
@@ -172,6 +172,7 @@ public class Participant
 
     /**
      * Sets the new clock instance to be used by this participant. Meant for testing.
+     *
      * @param newClock - the new {@link Clock}
      */
     public void setClock(Clock newClock)
@@ -181,6 +182,7 @@ public class Participant
 
     /**
      * Sets {@link JingleSession} established with this peer.
+     *
      * @param jingleSession the new Jingle session to be assigned to this peer.
      */
     public void setJingleSession(JingleSession jingleSession)
@@ -353,11 +355,12 @@ public class Participant
 
     /**
      * Sets the list of features supported by this participant.
-     * @see DiscoveryUtil for the list of predefined feature constants.
+     *
      * @param supportedFeatures the list of features to set.
+     * @see DiscoveryUtil for the list of predefined feature constants.
      */
     public void setSupportedFeatures(@NotNull List<String> supportedFeatures)
-        throws UnsupportedFeatureConfigurationException
+            throws UnsupportedFeatureConfigurationException
     {
         this.supportedFeatures = supportedFeatures;
         if (!hasBundleSupport())
@@ -373,8 +376,8 @@ public class Participant
      * {@link TransportSignaling#mergeTransportExtension}.
      *
      * @param contents the list of <tt>ContentPacketExtension</tt> from one of
-     * jingle message which can potentially contain transport info like
-     * 'session-accept', 'transport-info', 'transport-accept' etc.
+     *                 jingle message which can potentially contain transport info like
+     *                 'session-accept', 'transport-info', 'transport-accept' etc.
      */
     public void addTransportFromJingle(List<ContentPacketExtension> contents)
     {
@@ -383,8 +386,8 @@ public class Participant
         for (ContentPacketExtension cpe : contents)
         {
             IceUdpTransportPacketExtension contentTransport
-                = cpe.getFirstChildOfType(
-                        IceUdpTransportPacketExtension.class);
+                    = cpe.getFirstChildOfType(
+                    IceUdpTransportPacketExtension.class);
             if (contentTransport != null)
             {
                 transport = contentTransport;
@@ -393,7 +396,7 @@ public class Participant
         }
         if (transport == null)
         {
-            logger.error( "No valid transport supplied in transport-update from " + getChatMember().getName());
+            logger.error("No valid transport supplied in transport-update from " + getChatMember().getName());
             return;
         }
 
@@ -415,9 +418,10 @@ public class Participant
     /**
      * Returns 'bundled' transport information stored for this
      * <tt>Participant</tt>.
+     *
      * @return <tt>IceUdpTransportPacketExtension</tt> which describes 'bundled'
-     *         transport of this participant or <tt>null</tt> either if it's not
-     *         available yet or if 'non-bundled' transport is being used.
+     * transport of this participant or <tt>null</tt> either if it's not
+     * available yet or if 'non-bundled' transport is being used.
      */
     public IceUdpTransportPacketExtension getBundleTransport()
     {
@@ -434,10 +438,10 @@ public class Participant
     }
 
     /**
-     * Returns the {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession}
+     * Returns the {@link BridgeSession}
      * or <tt>null</tt>.
      */
-    public JitsiMeetConferenceImpl.BridgeSession getBridgeSession()
+    public BridgeSession getBridgeSession()
     {
         return bridgeSession;
     }
@@ -453,6 +457,7 @@ public class Participant
 
     /**
      * Returns the stats ID of the participant.
+     *
      * @return the stats ID of the participant.
      */
     public String getStatId()
@@ -462,6 +467,7 @@ public class Participant
 
     /**
      * Returns the MUC JID of this <tt>Participant</tt>.
+     *
      * @return full MUC address e.g. "room1@muc.server.net/nickname"
      */
     public EntityFullJid getMucJid()
@@ -471,6 +477,7 @@ public class Participant
 
     /**
      * Gets the sources advertised by this participant. They are stored in a common map by the conference.
+     *
      * @return
      */
     @Override
@@ -497,11 +504,11 @@ public class Participant
      * @return {@code BridgeSession} from which this {@code Participant} has
      * been removed or {@code null} if this {@link Participant} was not part
      * of any bridge session.
-     * @see org.jitsi.protocol.xmpp.colibri.ColibriConference#expireChannels(ColibriConferenceIQ)
+     * @see ColibriConference#expireChannels(ColibriConferenceIQ)
      */
-    JitsiMeetConferenceImpl.BridgeSession terminateBridgeSession()
+    BridgeSession terminateBridgeSession()
     {
-        JitsiMeetConferenceImpl.BridgeSession _session = this.bridgeSession;
+        BridgeSession _session = this.bridgeSession;
 
         if (_session != null)
         {
@@ -517,6 +524,7 @@ public class Participant
 
     /**
      * Changes participant muted state by media type.
+     *
      * @param mediaType the media type to change.
      */
     public void setMuted(MediaType mediaType, boolean value)
@@ -538,6 +546,7 @@ public class Participant
     /**
      * Add a set of remote sources, which are to be signaled to the remote side. The sources may be signaled
      * immediately, or queued to be signaled later.
+     *
      * @param sources the sources to add.
      */
     public void addRemoteSources(ConferenceSourceMap sources)
@@ -582,6 +591,7 @@ public class Participant
     /**
      * Schedule a task to signal all queued remote sources to the remote side. If a task is already scheduled, does
      * not schedule a new one (the existing task will send all latest queued sources).
+     *
      * @param delayMs the delay in milliseconds after which the task is to execute.
      */
     private void scheduleSignalingOfQueuedSources(int delayMs)
@@ -623,6 +633,7 @@ public class Participant
     /**
      * Removee a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
      * signaled immediately, or queued to be signaled later.
+     *
      * @param sources the sources to remove.
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
@@ -706,6 +717,7 @@ public class Participant
 
     /**
      * Checks whether the participant is muted.
+     *
      * @param mediaType the media type to check.
      * @return tru if it is muted.
      */
@@ -730,7 +742,6 @@ public class Participant
     }
 
 }
-
 class UnsupportedFeatureConfigurationException extends Exception
 {
     public UnsupportedFeatureConfigurationException(String msg)

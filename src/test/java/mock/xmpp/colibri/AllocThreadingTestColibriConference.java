@@ -18,18 +18,13 @@
 package mock.xmpp.colibri;
 
 import edu.umd.cs.findbugs.annotations.*;
-import org.jitsi.protocol.xmpp.colibri.exception.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-
-import org.jitsi.impl.protocol.xmpp.colibri.*;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
-import java.util.*;
 import java.util.concurrent.*;
-
-import static org.junit.Assert.fail;
 
 /**
  * Extended version of <tt>ColibriConferenceImpl</tt> that allows to block
@@ -49,8 +44,7 @@ public class AllocThreadingTestColibriConference
     /**
      * Blocking queue used to put and acquire conference creator endpoint.
      */
-    private final BlockingQueue<String> confCreatorQueue
-        = new ArrayBlockingQueue<>(1);
+    private final BlockingQueue<String> confCreatorQueue = new ArrayBlockingQueue<>(1);
 
     /**
      * Indicates whether creator thread should be suspended before it sends it's
@@ -69,15 +63,13 @@ public class AllocThreadingTestColibriConference
      * {@code ColibriConferenceImpl.ConferenceCreationSemaphore}.
      * Used to verify if all running threads have reached the semaphore.
      */
-    private final BlockingQueue<String> createConfSemaphoreQueue
-        = new LinkedBlockingQueue<>();
+    private final BlockingQueue<String> createConfSemaphoreQueue = new LinkedBlockingQueue<>();
 
     /**
      * Blocking queue used to put and acquire endpoints that have sent it's
      * request packets.
      */
-    private final BlockingQueue<String> requestsSentQueue
-        = new LinkedBlockingQueue<>();
+    private final BlockingQueue<String> requestsSentQueue = new LinkedBlockingQueue<>();
 
     /**
      * Indicates if threads should be blocked before response is received.
@@ -94,14 +86,7 @@ public class AllocThreadingTestColibriConference
      * response packets. Used to verify if all threads have received their
      * response packets.
      */
-    private final BlockingQueue<String> responseReceivedQueue
-        = new LinkedBlockingQueue<>();
-
-    /**
-     * If field is set XMPP error response will be returned to conference create
-     * request. The condition specified type of error.
-     */
-    private StanzaError.Condition responseError;
+    private final BlockingQueue<String> responseReceivedQueue = new LinkedBlockingQueue<>();
 
     /**
      * Creates new instance of <tt>ColibriConferenceImpl</tt>.
@@ -151,45 +136,6 @@ public class AllocThreadingTestColibriConference
         throws InterruptedException
     {
         return confCreatorQueue.poll(5, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Waits until all threads serving endpoints listed in
-     * <tt>endpointToEnter</tt> until they reach "conference creation semaphore"
-     *
-     * The test will fail if all threads will not end up on the semaphore within
-     * 5 seconds timeout(timeout is counted since the time when the last
-     * endpoint has arrived on the semaphore).
-     *
-     * @param endpointToEnter the list of endpoint we want to be on the
-     *                        "conference creation semaphore".
-     *
-     * @throws InterruptedException if the thread has been interrupted while
-     *         waiting for endpoints.
-     */
-    public void waitAllOnCreateConfSemaphore(List<String> endpointToEnter)
-        throws InterruptedException
-    {
-        List<String> endpointsCopy = new ArrayList<>(endpointToEnter);
-        while (!endpointsCopy.isEmpty())
-        {
-            String endpoint = nextOnCreateConfSemaphore(5);
-            if (endpoint != null)
-            {
-                endpointsCopy.remove(endpoint);
-            }
-            else
-            {
-                fail("Endpoints have not reached " +
-                     "create conf semaphore: " + endpointsCopy);
-            }
-        }
-    }
-
-    public String nextOnCreateConfSemaphore(long timeoutSec)
-        throws InterruptedException
-    {
-        return createConfSemaphoreQueue.poll(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
@@ -255,17 +201,7 @@ public class AllocThreadingTestColibriConference
 
         requestsSentQueue.add(endpointId);
 
-        Stanza response;
-        if (responseError == null)
-        {
-            response = super.sendAllocRequest(endpointId, request);
-        }
-        else
-        {
-            response = IQ.createErrorResponse(
-                request,
-                StanzaError.getBuilder(responseError).build());
-        }
+        Stanza response = super.sendAllocRequest(endpointId, request);
 
         synchronized (blockResponseReceiveLock)
         {
@@ -295,26 +231,5 @@ public class AllocThreadingTestColibriConference
 
             blockResponseReceiveLock.notifyAll();
         }
-    }
-
-    /**
-     * Returns the type of error which will be returned as a response to
-     * conference create request.
-     */
-    public StanzaError.Condition getResponseError()
-    {
-        return responseError;
-    }
-
-    /**
-     * Sets the type of error which will be returned as a response to conference
-     * create request.
-     *
-     * @param responseError the type fo the error to be returned or
-     * <tt>null</tt> to not interfere into the response returned by the bridge.
-     */
-    public void setResponseError(StanzaError.Condition responseError)
-    {
-        this.responseError = responseError;
     }
 }

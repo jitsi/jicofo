@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo;
+package org.jitsi.jicofo.conference;
 
-import org.jitsi.protocol.xmpp.colibri.exception.*;
+import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.utils.logging2.*;
@@ -47,10 +48,10 @@ public abstract class AbstractChannelAllocator implements Runnable
     protected final JitsiMeetConferenceImpl meetConference;
 
     /**
-     * The {@link JitsiMeetConferenceImpl.BridgeSession} on which
+     * The {@link BridgeSession} on which
      * to allocate channels for the participant.
      */
-    protected final JitsiMeetConferenceImpl.BridgeSession bridgeSession;
+    protected final BridgeSession bridgeSession;
 
     /**
      * The participant that is to be invited by this instance to the conference.
@@ -91,12 +92,12 @@ public abstract class AbstractChannelAllocator implements Runnable
      * invite a specific {@link Participant} into a specific
      * {@link JitsiMeetConferenceImpl} (using a specific jitsi-videobridge
      * instance specified by a
-     * {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession}).
+     * {@link BridgeSession}).
      *
      * @param meetConference the {@link JitsiMeetConferenceImpl} into which to
      * invite {@code participant}.
      * @param bridgeSession the
-     * {@link org.jitsi.jicofo.JitsiMeetConferenceImpl.BridgeSession} which
+     * {@link BridgeSession} which
      * identifies the jitsi-videobridge instance on which to allocate channels.
      * @param participant the participant to be invited.
      * @param startMuted an array which must have the size of 2 where the first
@@ -107,7 +108,7 @@ public abstract class AbstractChannelAllocator implements Runnable
      */
     protected AbstractChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
-            @NotNull JitsiMeetConferenceImpl.BridgeSession bridgeSession,
+            @NotNull BridgeSession bridgeSession,
             @NotNull AbstractParticipant participant,
             boolean[] startMuted,
             boolean reInvite,
@@ -248,8 +249,7 @@ public abstract class AbstractChannelAllocator implements Runnable
                 "Using " + jvb + " to allocate channels for: "
                  + (participant == null ? "null" : participant.toString()));
 
-            ColibriConferenceIQ colibriChannels
-                = doAllocateChannels(contents);
+            ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
 
             // null means canceled, because colibriConference has been
             // disposed by another thread
@@ -260,11 +260,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             }
 
             bridgeSession.bridge.setIsOperational(true);
-
-            if (bridgeSession.colibriConference.hasJustAllocated())
-            {
-                meetConference.onColibriConferenceAllocated();
-            }
+            meetConference.colibriRequestSucceeded();
             return colibriChannels;
         }
         catch (ConferenceNotFoundException e)
@@ -274,8 +270,7 @@ public abstract class AbstractChannelAllocator implements Runnable
             // faulty.
             restartConference = true;
             faulty = false;
-            logger.error(
-                jvb + " - conference ID not found (expired?):" + e.getMessage());
+            logger.error(jvb + " - conference ID not found (expired?):" + e.getMessage());
         }
         catch (BadRequestException e)
         {

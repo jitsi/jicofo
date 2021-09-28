@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2019-Present 8x8 Inc
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.protocol.xmpp.colibri.exception;
+package org.jitsi.jicofo.conference;
 
-/**
- * An exception in Colibri channel allocation.
- */
-public class ColibriException extends Exception
+/** The result of a mute operation. */
+public enum MuteResult
 {
-    public ColibriException(String message)
-    {
-        super(message);
-    }
-
-    public ColibriException clone(String prefix)
-    {
-        return new ColibriException(prefix + getMessage());
-    }
+    SUCCESS,
+    NOT_ALLOWED,
+    ERROR
 }

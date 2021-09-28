@@ -19,7 +19,6 @@ package org.jitsi.jicofo.conference
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.AbstractParticipant
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap

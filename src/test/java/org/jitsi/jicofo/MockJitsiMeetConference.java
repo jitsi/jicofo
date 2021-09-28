@@ -20,6 +20,7 @@ package org.jitsi.jicofo;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -85,6 +86,7 @@ public class MockJitsiMeetConference
     }
 
     @Override
+    @NotNull
     public IqProcessingResult handleJibriRequest(@NotNull IqRequest<JibriIq> request)
     {
         return new IqProcessingResult.NotProcessed();
@@ -97,10 +99,10 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public @NotNull JitsiMeetConferenceImpl.MuteResult
+    public @NotNull MuteResult
     handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        return JitsiMeetConferenceImpl.MuteResult.SUCCESS;
+        return MuteResult.SUCCESS;
     }
 
     @Override

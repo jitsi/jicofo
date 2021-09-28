@@ -15,13 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp.colibri;
+package org.jitsi.jicofo.conference.colibri;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.colibri.*;
-import org.jitsi.protocol.xmpp.colibri.exception.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
@@ -84,8 +82,7 @@ public class ColibriConferenceImpl
      * By "create request" we mean a channel allocation Colibri IQ that has no
      * conference id specified.
      */
-    private final ConferenceCreationSemaphore createConfSemaphore
-        = new ConferenceCreationSemaphore();
+    private final ConferenceCreationSemaphore createConfSemaphore = new ConferenceCreationSemaphore();
 
     /**
      * The exception produced by the allocator thread which is to be passed to
@@ -100,16 +97,7 @@ public class ColibriConferenceImpl
     /**
      * Utility used for building Colibri queries.
      */
-    private final ColibriBuilder colibriBuilder
-        = new ColibriBuilder(conferenceState);
-
-    /**
-     * Flag used to figure out if Colibri conference has been
-     * allocated during last
-     * {@link #createColibriChannels(String, String, boolean, List)}
-     * call.
-     */
-    private boolean justAllocated = false;
+    private final ColibriBuilder colibriBuilder = new ColibriBuilder(conferenceState);
 
     /**
      * Flag indicates that this instance has been disposed and should not be
@@ -172,8 +160,7 @@ public class ColibriConferenceImpl
     {
         if (isNotBlank(conferenceState.getID()))
         {
-            throw new IllegalStateException(
-                "Cannot change the bridge on active conference");
+            throw new IllegalStateException("Cannot change the bridge on active conference");
         }
         this.jitsiVideobridge = videobridgeJid;
     }
@@ -236,10 +223,7 @@ public class ColibriConferenceImpl
                 allocateRequest = colibriBuilder.getRequest(jitsiVideobridge);
             }
 
-            if (logger.isDebugEnabled())
-            {
-                logger.debug(Thread.currentThread() + " sending alloc request");
-            }
+            logger.debug("Sending alloc request");
 
             logStanza("Channel allocate request", allocateRequest);
 
@@ -262,11 +246,6 @@ public class ColibriConferenceImpl
                 ColibriAnalyser analyser = new ColibriAnalyser(conferenceState);
 
                 analyser.processChannelAllocResp((ColibriConferenceIQ) response);
-
-                if (!conferenceExisted && getConferenceId() != null)
-                {
-                    justAllocated = true;
-                }
             }
 
             /*
@@ -275,8 +254,7 @@ public class ColibriConferenceImpl
              * includes the remote channels explicitly requested by the method
              * caller and their respective local channels.
              */
-            return ColibriAnalyser.getResponseContents(
-                        (ColibriConferenceIQ) response, contents);
+            return ColibriAnalyser.getResponseContents((ColibriConferenceIQ) response, contents);
 
         }
         finally
@@ -316,8 +294,7 @@ public class ColibriConferenceImpl
             else if (response.getError() != null)
             {
                 StanzaError error = response.getError();
-                if (StanzaError.Condition
-                    .bad_request.equals(error.getCondition()))
+                if (StanzaError.Condition.bad_request.equals(error.getCondition()))
                 {
                     // Currently jitsi-videobridge returns the same error type
                     // (bad-request) for two separate cases:
@@ -329,32 +306,23 @@ public class ColibriConferenceImpl
                     // We want to handle the two cases differently, so we
                     // distinguish them by matching the string.
                     if (error.getDescriptiveText() != null &&
-                            error.getDescriptiveText()
-                                    .matches("Conference not found for ID:.*"))
+                            error.getDescriptiveText().matches("Conference not found for ID:.*"))
                     {
-                        exception
-                            = new ConferenceNotFoundException(
-                                    error.getConditionText());
+                        exception = new ConferenceNotFoundException(error.getConditionText());
                     }
                     else
                     {
-                        exception
-                            = new BadRequestException(
-                                    response.toXML().toString());
+                        exception = new BadRequestException(response.toXML().toString());
                     }
                 }
                 else
                 {
-                    exception
-                        = new ColibriException(
-                                "XMPP error: " + response.toXML());
+                    exception = new ColibriException("XMPP error: " + response.toXML());
                 }
             }
             else if (!(response instanceof ColibriConferenceIQ))
             {
-                exception
-                    = new WrongResponseTypeException(
-                            response.getClass().getCanonicalName());
+                exception = new WrongResponseTypeException(response.getClass().getCanonicalName());
             }
 
             this.allocateChannelsException = exception;
@@ -413,8 +381,7 @@ public class ColibriConferenceImpl
      * @throws ColibriException If sending the packet fails (see
      * {@link UtilKt#sendIqAndGetResponse(AbstractXMPPConnection, IQ)} (IQ)}).
      */
-    protected Stanza sendAllocRequest(String endpointId,
-                                      ColibriConferenceIQ request)
+    protected Stanza sendAllocRequest(String endpointId, ColibriConferenceIQ request)
         throws ColibriException
     {
         try
@@ -428,23 +395,6 @@ public class ColibriConferenceImpl
         catch (SmackException.NotConnectedException e)
         {
             throw new ColibriException(e.getMessage());
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasJustAllocated()
-    {
-        synchronized (syncRoot)
-        {
-            if (justAllocated)
-            {
-                justAllocated = false;
-                return true;
-            }
-            return false;
         }
     }
 
@@ -514,9 +464,7 @@ public class ColibriConferenceImpl
 
             if (isBlank(conferenceState.getID()))
             {
-                logger.error(
-                        "Have not updated source info on the bridge - "
-                            + "no conference in progress");
+                logger.error("Have not updated source info on the bridge - no conference in progress");
                 return;
             }
 
@@ -554,9 +502,7 @@ public class ColibriConferenceImpl
      * Does not block or wait for a response.
      */
     @Override
-    public void updateBundleTransportInfo(
-            IceUdpTransportPacketExtension transport,
-            String channelBundleId)
+    public void updateBundleTransportInfo(IceUdpTransportPacketExtension transport, String channelBundleId)
     {
         ColibriConferenceIQ request;
 
@@ -568,10 +514,7 @@ public class ColibriConferenceImpl
             }
 
             colibriBuilder.reset();
-
-            colibriBuilder.addBundleTransportUpdateReq(
-                    transport, channelBundleId);
-
+            colibriBuilder.addBundleTransportUpdateReq(transport, channelBundleId);
             request = colibriBuilder.getRequest(jitsiVideobridge);
         }
 
@@ -799,8 +742,7 @@ public class ColibriConferenceImpl
             {
                 send = true;
             }
-            if (relays != null
-                    && colibriBuilder.addOctoRelays(relays, localChannelsInfo))
+            if (relays != null && colibriBuilder.addOctoRelays(relays, localChannelsInfo))
             {
                 send = true;
             }
@@ -859,8 +801,7 @@ public class ColibriConferenceImpl
 
                     if (logger.isDebugEnabled())
                     {
-                        logger.debug("I'm the conference creator - " +
-                                         Thread.currentThread().getName());
+                        logger.debug("I'm the conference creator - " + Thread.currentThread().getName());
                     }
 
                     return true;
@@ -869,10 +810,8 @@ public class ColibriConferenceImpl
                 {
                     if (logger.isDebugEnabled())
                     {
-                        logger.debug(
-                            "Will have to wait until the conference " +
-                                "is created - " + Thread.currentThread()
-                                .getName());
+                        logger.debug("Will have to wait until the conference is created - "
+                                + Thread.currentThread().getName());
                     }
 
                     while (creatorThread != null)
@@ -889,15 +828,12 @@ public class ColibriConferenceImpl
 
                     if (conferenceState.getID() == null)
                     {
-                        throw allocateChannelsException.clone(
-                            "Creator thread has failed to allocate channels: ");
+                        throw allocateChannelsException.clone("Creator thread has failed to allocate channels: ");
                     }
 
                     if (logger.isDebugEnabled())
                     {
-                        logger.debug(
-                            "Conference created ! Continuing with " +
-                                "channel allocation -" +
+                        logger.debug("Conference created ! Continuing with channel allocation -" +
                                 Thread.currentThread().getName());
                     }
                 }
@@ -917,9 +853,7 @@ public class ColibriConferenceImpl
                 {
                     if (logger.isDebugEnabled())
                     {
-                        logger.debug(
-                               "Conference creator is releasing the lock - "
-                                    + Thread.currentThread().getName());
+                        logger.debug("Conference creator is releasing the lock - " + Thread.currentThread().getName());
                     }
 
                     creatorThread = null;
@@ -934,15 +868,15 @@ public class ColibriConferenceImpl
          * An average of the time it takes to make allocate channel requests
          * to JVB.
          */
-        private final MovingAverage<Long> allocateChannelsReqTimes =
-            new MovingAverage<>(Duration.ofMinutes(1));
+        private final MovingAverage<Long> allocateChannelsReqTimes = new MovingAverage<>(Duration.ofMinutes(1));
 
         /**
          * Notify the stats object how long an allocate channels request took
          * to execute
          * @param nanos the time, in nanoseconds
          */
-        void allocateChannelsRequestTook(long nanos) {
+        void allocateChannelsRequestTook(long nanos)
+        {
             allocateChannelsReqTimes.add(nanos);
         }
 
@@ -978,8 +912,7 @@ public class ColibriConferenceImpl
             {
                 for (Source source : endpointSourceSet.getSources())
                 {
-                    List<SourcePacketExtension> l
-                            = sourcePacketExtensions.computeIfAbsent(
+                    List<SourcePacketExtension> l = sourcePacketExtensions.computeIfAbsent(
                             source.getMediaType().toString(),
                             (k) -> new ArrayList<>());
                     l.add(source.toPacketExtension(owner));
@@ -987,8 +920,7 @@ public class ColibriConferenceImpl
 
                 for (SsrcGroup ssrcGroup : endpointSourceSet.getSsrcGroups())
                 {
-                    List<SourceGroupPacketExtension> l
-                            = sourceGroupPacketExtensions.computeIfAbsent(
+                    List<SourceGroupPacketExtension> l = sourceGroupPacketExtensions.computeIfAbsent(
                             ssrcGroup.getMediaType().toString(),
                             (k) -> new ArrayList<>());
                     l.add(ssrcGroup.toPacketExtension());
