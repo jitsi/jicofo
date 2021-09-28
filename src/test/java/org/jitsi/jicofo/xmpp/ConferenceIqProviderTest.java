@@ -91,6 +91,8 @@ public class ConferenceIqProviderTest
                     "</conference>" +
                 "</iq>";
 
+        // we expect that an exception will be thrown
+        Exception resultException = null;
         try
         {
             ConferenceIqProvider provider = new ConferenceIqProvider();
@@ -98,9 +100,13 @@ public class ConferenceIqProviderTest
         }
         catch(Exception e)
         {
-            // we expect XmppStringprepException
-            assertEquals(XmppStringprepException.class, e.getClass());
-        }   
+            resultException = e;
+        }
+
+        assertNotNull(resultException);
+
+        // we expect XmppStringprepException
+        assertEquals(XmppStringprepException.class, resultException.getClass());
     }
 
     @Test
