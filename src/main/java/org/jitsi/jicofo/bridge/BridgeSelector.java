@@ -32,6 +32,7 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.stream.*;
 
 import static org.glassfish.jersey.internal.guava.Predicates.not;
@@ -70,6 +71,11 @@ public class BridgeSelector
     private final BridgeSelectionStrategy bridgeSelectionStrategy = BridgeConfig.config.getSelectionStrategy();
 
     private final JvbDoctor jvbDoctor = new JvbDoctor(this);
+
+    /**
+     * The number of bridges which disconnected without going into graceful shutdown first.
+     */
+    private final AtomicInteger lostBridges = new AtomicInteger();
 
     /**
      * Creates new instance of {@link BridgeSelector}.
@@ -139,6 +145,10 @@ public class BridgeSelector
 
         if (bridge != null)
         {
+            if (!bridge.isInGracefulShutdown())
+            {
+                lostBridges.incrementAndGet();
+            }
             notifyBridgeDown(bridge);
             jvbDoctor.removeBridge(bridgeJid);
         }
@@ -337,6 +347,7 @@ public class BridgeSelector
         stats.put("bridge_count", getBridgeCount());
         stats.put("operational_bridge_count", getOperationalBridgeCount());
         stats.put("in_shutdown_bridge_count", getInGracefulShutdownBridgeCount());
+        stats.put("lost_bridges", lostBridges.get());
 
         return stats;
     }
