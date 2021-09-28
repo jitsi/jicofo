@@ -36,7 +36,7 @@ import java.util.*;
  * Represents a {@link Bridge} instance as used by this
  * {@link JitsiMeetConferenceImpl}.
  */
-class BridgeSession
+public class BridgeSession
 {
     private final static Random RANDOM = new Random();
     private final Logger logger;
@@ -257,7 +257,7 @@ class BridgeSession
             return octoParticipant;
         }
 
-        List<String> remoteRelays = jitsiMeetConference.getAllRelays(bridge.getRelayId());
+        Set<String> remoteRelays = jitsiMeetConference.getAllRelays(bridge.getRelayId());
         return getOrCreateOctoParticipant(new LinkedList<>(remoteRelays));
     }
 
