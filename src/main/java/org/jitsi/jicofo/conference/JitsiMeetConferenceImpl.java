@@ -631,7 +631,7 @@ public class JitsiMeetConferenceImpl
      */
     private Bridge selectBridge(Participant participant)
     {
-        if (findBridgeSession(participant) != null)
+        if (bridgeSessions.find(participant) != null)
         {
             // This should never happen.
             logger.error("The participant already has a bridge:" + participant.getChatMember().getName());
@@ -666,8 +666,6 @@ public class JitsiMeetConferenceImpl
      */
     private void removeNonOperationalBridges()
     {
-        // We should be locking bridgeSessions here for consistent synchronization, but I'm afraid to add it because
-        // I can't verify that it's safe.
         Set<Jid> nonOperationalBridges =
                 bridgeSessions.nonOperational().stream()
                         .map(bridgeSession -> bridgeSession.bridge.getJid()).collect(Collectors.toSet());
@@ -716,7 +714,7 @@ public class JitsiMeetConferenceImpl
                 logger.error("The selected bridge is non-operational: " + bridge);
             }
 
-            bridgeSession = findBridgeSession(bridge);
+            bridgeSession = bridgeSessions.find(bridge);
             if (bridgeSession == null)
             {
                 // The selected bridge is not yet used for this conference, so initialize a new BridgeSession
@@ -743,7 +741,10 @@ public class JitsiMeetConferenceImpl
                     // participant for each bridge), or if it is already enabled
                     // the list of relays for each bridge may need to be
                     // updated.
-                    updateOctoRelays();
+                    if (OctoConfig.config.getEnabled())
+                    {
+                        bridgeSessions.updateOctoRelays();
+                    }
                 }
             }
 
@@ -768,7 +769,7 @@ public class JitsiMeetConferenceImpl
 
             if (reInvite)
             {
-                propagateNewSourcesToOcto(participant.getBridgeSession(), participant.getSources());
+                bridgeSessions.propagateNewSourcesToOcto(participant.getBridgeSession(), participant.getSources());
             }
         }
     }
@@ -785,81 +786,13 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Re-calculates the Octo relays for bridges in the conference, and updates
-     * each bridge session.
-     */
-    private void updateOctoRelays()
-    {
-        if (!OctoConfig.config.getEnabled())
-        {
-            return;
-        }
-
-        synchronized (bridgeSessions)
-        {
-            bridgeSessions.updateOctoRelays();
-        }
-    }
-
-    /**
      * @param exclude a relay id to exclude from the result.
      * @return the set of all Octo relays of bridges in the conference, except
      * for {@code exclude}.
      */
     Set<String> getAllRelays(String exclude)
     {
-        synchronized (bridgeSessions)
-        {
-            return bridgeSessions.getAllRelays(exclude);
-        }
-    }
-
-    /**
-     * @return the {@link BridgeSession} instance which is used for a specific
-     * {@link Participant}, or {@code null} if there is no bridge for the
-     * participant.
-     * @param participant the {@link Participant} for which to find the bridge.
-     */
-    private BridgeSession findBridgeSession(Participant participant)
-    {
-        synchronized (bridgeSessions)
-        {
-            return bridgeSessions.find(participant);
-        }
-    }
-
-    /**
-     * @return the {@link BridgeSession} instance used by this
-     * {@link JitsiMeetConferenceImpl} which corresponds to a particular
-     * jitsi-videobridge instance represented by a {@link Bridge}, or
-     * {@code null} if the {@link Bridge} is not currently used in this
-     * conference.
-     * @param bridge the {@link BridgeSession} which represents a particular
-     * jitsi-videobridge instance for which to return the {@link BridgeSession}.
-     */
-    private BridgeSession findBridgeSession(Bridge bridge)
-    {
-        synchronized (bridgeSessions)
-        {
-            return bridgeSessions.find(bridge);
-        }
-    }
-
-    /**
-     * @return the {@link BridgeSession} instance used by this
-     * {@link JitsiMeetConferenceImpl} which corresponds to a particular
-     * jitsi-videobridge instance represented by its JID, or
-     * {@code null} if the {@link Bridge} is not currently used in this
-     * conference.
-     * @param jid the XMPP JID which represents a particular
-     * jitsi-videobridge instance for which to return the {@link BridgeSession}.
-     */
-    private BridgeSession findBridgeSession(Jid jid)
-    {
-        synchronized (bridgeSessions)
-        {
-            return bridgeSessions.find(jid);
-        }
+        return bridgeSessions.getAllRelays(exclude);
     }
 
     /**
@@ -1048,24 +981,9 @@ public class JitsiMeetConferenceImpl
         }
 
         BridgeSession bridgeSession = terminateParticipantBridgeSession(participant, false);
-        if (bridgeSession != null)
+        if (bridgeSession != null && bridgeSessions.maybeExpire(bridgeSession))
         {
-            maybeExpireBridgeSession(bridgeSession);
-        }
-    }
-
-    /**
-     * Expires the session with a particular bridge if it has no real (non-octo) participants left.
-     * @param bridgeSession the bridge session to expire.
-     */
-    private void maybeExpireBridgeSession(BridgeSession bridgeSession)
-    {
-        synchronized (bridgeSessions)
-        {
-            if (bridgeSessions.maybeExpire(bridgeSession))
-            {
-                setConferenceProperty(ConferenceProperties.KEY_BRIDGE_COUNT, Integer.toString(bridgeSessions.count()));
-            }
+            setConferenceProperty(ConferenceProperties.KEY_BRIDGE_COUNT, Integer.toString(bridgeSessions.count()));
         }
     }
 
@@ -1200,7 +1118,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        BridgeSession bridgeSession = findBridgeSession(participant);
+        BridgeSession bridgeSession = bridgeSessions.find(participant);
 
         if (bridgeSession != null && bridgeSession.id.equals(bridgeSessionId))
         {
@@ -1248,7 +1166,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        BridgeSession bridgeSession = findBridgeSession(participant);
+        BridgeSession bridgeSession = bridgeSessions.find(participant);
         boolean restartRequested = bsPE != null && bsPE.isRestart();
 
         if (restartRequested)
@@ -1326,22 +1244,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Adds the specified sources and source groups to the Octo participants
-     * of all bridges except for {@code exclude}.
-     * @param exclude the bridge to which sources will not be added (i.e. the
-     * bridge to which the participant whose sources we are adding is
-     * connected).
-     * @param sources the sources to add.
-     */
-    private void propagateNewSourcesToOcto(BridgeSession exclude, ConferenceSourceMap sources)
-    {
-        synchronized (bridgeSessions)
-        {
-            bridgeSessions.propagateNewSourcesToOcto(exclude, sources);
-        }
-    }
-
-    /**
      * Callback called when we receive 'transport-info' from conference
      * participant. The info is forwarded to the videobridge at this point.
      *
@@ -1360,7 +1262,7 @@ public class JitsiMeetConferenceImpl
         // Participant will figure out bundle or non-bundle transport based on its hasBundleSupport() value
         participant.addTransportFromJingle(contentList);
 
-        BridgeSession bridgeSession = findBridgeSession(participant);
+        BridgeSession bridgeSession = bridgeSessions.find(participant);
         // We can hit null here during conference restart, but the state will be synced up later when the client
         // sends 'transport-accept'
         // XXX FIXME: we half-handled this above!
@@ -1465,14 +1367,14 @@ public class JitsiMeetConferenceImpl
         synchronized (bridgeSessions)
         {
             ColibriConferenceIQ colibriChannelsInfo = participant.getColibriChannelsInfo();
-            BridgeSession bridgeSession = findBridgeSession(participant);
+            BridgeSession bridgeSession = bridgeSessions.find(participant);
             if (bridgeSession != null && colibriChannelsInfo != null)
             {
                 bridgeSession.colibriConference.updateSourcesInfo(
                     participant.getSources(),
                     colibriChannelsInfo);
 
-                propagateNewSourcesToOcto(bridgeSession, sourcesAccepted);
+                bridgeSessions.propagateNewSourcesToOcto(bridgeSession, sourcesAccepted);
             }
             else
             {
@@ -1576,7 +1478,7 @@ public class JitsiMeetConferenceImpl
         // participant on the new bridge
         synchronized (bridgeSessions)
         {
-            BridgeSession participantBridge = findBridgeSession(participant);
+            BridgeSession participantBridge = bridgeSessions.find(participant);
             if (participantBridge != null)
             {
                 participantBridge.updateColibriChannels(participant);
@@ -1591,7 +1493,7 @@ public class JitsiMeetConferenceImpl
             // the state of all remote bridges.
             if ((!sourcesAccepted.isEmpty() && participantBridge != null))
             {
-                propagateNewSourcesToOcto(participantBridge, sourcesAccepted);
+                bridgeSessions.propagateNewSourcesToOcto(participantBridge, sourcesAccepted);
             }
         }
 
@@ -1644,7 +1546,7 @@ public class JitsiMeetConferenceImpl
         }
 
         // Update sources on the bridge
-        BridgeSession bridgeSession = findBridgeSession(participant);
+        BridgeSession bridgeSession = bridgeSessions.find(participant);
         // We may hit null here during conference restart, but that's not
         // important since the bridge for this instance will not be used
         // anymore and state is synced up soon after channels are allocated
@@ -1655,26 +1557,13 @@ public class JitsiMeetConferenceImpl
                     participant.getColibriChannelsInfo());
         }
 
-        removeSourcesFromOcto(sourcesAcceptedToBeRemoved, bridgeSession);
+        bridgeSessions.removeSourcesFromOcto(bridgeSession, sourcesAcceptedToBeRemoved);
         if (sendSourceRemove)
         {
             sendSourceRemove(sourcesAcceptedToBeRemoved, participant);
         }
 
         return null;
-    }
-
-    /**
-     * Update octo channels on all bridges except {@code except}, removing the specified set of {@code sources}.
-     * @param sources the sources to remove.
-     * @param except the bridge session which is not to be updated.
-     */
-    private void removeSourcesFromOcto(final ConferenceSourceMap sources, BridgeSession except)
-    {
-        synchronized (bridgeSessions)
-        {
-            bridgeSessions.removeSourcesFromOcto(except, sources);
-        }
     }
 
     /**
@@ -1847,7 +1736,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        BridgeSession bridgeSession = findBridgeSession(participant);
+        BridgeSession bridgeSession = bridgeSessions.find(participant);
         ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
         boolean succeeded
             = bridgeSession != null
@@ -2002,7 +1891,7 @@ public class JitsiMeetConferenceImpl
         {
             bridgeJids.forEach(bridgeJid ->
             {
-                BridgeSession bridgeSession = findBridgeSession(bridgeJid);
+                BridgeSession bridgeSession = bridgeSessions.find(bridgeJid);
                 if (bridgeSession != null)
                 {
                     logger.error("One of our bridges failed: " + bridgeJid);
@@ -2018,7 +1907,10 @@ public class JitsiMeetConferenceImpl
 
             setConferenceProperty(ConferenceProperties.KEY_BRIDGE_COUNT, Integer.toString(bridgeSessions.count()));
 
-            updateOctoRelays();
+            if (OctoConfig.config.getEnabled())
+            {
+                bridgeSessions.updateOctoRelays();
+            }
         }
 
         if (!participantsToReinvite.isEmpty())
@@ -2150,10 +2042,7 @@ public class JitsiMeetConferenceImpl
 
             // Locking participantLock and the bridges is okay (or at
             // least used elsewhere).
-            synchronized (bridgeSessions)
-            {
-                bridgeSessions.removeSourcesFromOcto(session, removedSources);
-            }
+            bridgeSessions.removeSourcesFromOcto(session, removedSources);
         }
 
         return session;
@@ -2195,10 +2084,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public Map<Bridge, Integer> getBridges()
     {
-        synchronized (this.bridgeSessions)
-        {
-            return bridgeSessions.getBridges();
-        }
+        return bridgeSessions.getBridges();
     }
 
     @Override

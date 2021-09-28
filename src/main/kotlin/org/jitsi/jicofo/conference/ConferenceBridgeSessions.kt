@@ -23,17 +23,16 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jxmpp.jid.Jid
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Contain the set of [BridgeSession]s used by a single conference.
  */
-class ConferenceBridgeSessions(
-    parentLogger: Logger
-) {
+class ConferenceBridgeSessions(parentLogger: Logger) {
     private val logger = createChildLogger(parentLogger)
 
     /** The underlying list. */
-    private val bridgeSessions: MutableList<BridgeSession> = mutableListOf()
+    private val bridgeSessions: MutableList<BridgeSession> = CopyOnWriteArrayList()
     /** Get the number of [BridgeSession]s */
     fun count() = bridgeSessions.size
 
@@ -45,7 +44,7 @@ class ConferenceBridgeSessions(
     fun nonOperational() = bridgeSessions.filter { !it.isOperational() }
 
     /** Add a [BridgeSession] to the list. */
-    fun add(bridgeSession: BridgeSession) = bridgeSessions.add(bridgeSession)
+    fun add(bridgeSession: BridgeSession) = synchronized(this) { bridgeSessions.add(bridgeSession) }
 
     /** Get the set of "relays" for operational bridges in the list. */
     fun getAllRelays(
@@ -68,7 +67,7 @@ class ConferenceBridgeSessions(
     fun find(bridgeJid: Jid) = bridgeSessions.find { it.bridge.jid == bridgeJid }
 
     /** Dispose of all [BridgeSession]s and clear them from the list. */
-    fun dispose() {
+    fun dispose() = synchronized(this) {
         // No need to expire channels, just expire the whole colibri conference.
         // bridgeSessions.forEach { it. terminateAll() }
         bridgeSessions.forEach { it.dispose() }
@@ -83,8 +82,10 @@ class ConferenceBridgeSessions(
         if (bridgeSession.participants.isEmpty()) {
             // This is needed to terminate the octo participant.
             bridgeSession.terminateAll()
-            bridgeSessions.remove(bridgeSession)
-            updateOctoRelays();
+            synchronized(this) {
+                bridgeSessions.remove(bridgeSession)
+            }
+            updateOctoRelays()
             return true
         }
         return false
@@ -96,7 +97,7 @@ class ConferenceBridgeSessions(
         exclude: BridgeSession?,
         /** The sources to add. */
         sources: ConferenceSourceMap
-    ) = operational().filter { it != exclude }.forEach { it.addSourcesToOcto(sources) }
+    ) = synchronized(this) { operational().filter { it != exclude }.forEach { it.addSourcesToOcto(sources) } }
 
     /** Removes sources from the octo participant of each [BridgeSession] (except [exclude]). */
     fun removeSourcesFromOcto(
@@ -104,10 +105,10 @@ class ConferenceBridgeSessions(
         exclude: BridgeSession?,
         /** The sources to remove. */
         sources: ConferenceSourceMap
-    ) = operational().filter { it != exclude }.forEach { it.removeSourcesFromOcto(sources) }
+    ) = synchronized(this) { operational().filter { it != exclude }.forEach { it.removeSourcesFromOcto(sources) } }
 
     /** Remove a specific [bridgeSession] from the list. */
-    fun remove(bridgeSession: BridgeSession) = bridgeSessions.remove(bridgeSession)
+    fun remove(bridgeSession: BridgeSession) = synchronized(this) { bridgeSessions.remove(bridgeSession) }
 
     /**
      * Gets a map of each [Bridge] used in one of the [BridgeSession]s to the number of participants on that bridge
