@@ -45,7 +45,8 @@ public class ConferenceIqProviderTest
 
     @Test
     public void testParseConferenceIq()
-        throws Exception {
+        throws Exception
+    {
         // ConferenceIq
         String iqXml =
                 "<iq to='t' from='f' type='set'>" +
@@ -76,6 +77,30 @@ public class ConferenceIqProviderTest
         ConferenceIq.Property property2 = properties.get(1);
         assertEquals("name2", property2.getName());
         assertEquals("value2", property2.getValue());
+    }
+
+    @Test
+    public void testParseConferenceIqWithWrongRoom()
+        throws Exception
+    {
+        // ConferenceIq
+        String iqXml =
+                "<iq to='t' from='f' type='set'>" +
+                    "<conference xmlns='http://jitsi.org/protocol/focus'" +
+                        " room='somename@email.com@example.com' ready='true'>" +
+                    "</conference>" +
+                "</iq>";
+
+        try
+        {
+            ConferenceIqProvider provider = new ConferenceIqProvider();
+            IQUtils.parse(iqXml, provider);
+        }
+        catch(Exception e)
+        {
+            // we expect XmppStringprepException
+            assertEquals(XmppStringprepException.class, e.getClass());
+        }   
     }
 
     @Test
