@@ -271,7 +271,7 @@ public class ChatRoomImpl
                     | MultiUserChatException.MucNotJoinedException e)
             {
                 // when the connection is not connected and we get NotConnectedException, this is expected (skip log)
-                if (!(connection.isConnected() && e instanceof NotConnectedException))
+                if (connection.isConnected() || !(e instanceof NotConnectedException))
                 {
                     logger.error("Failed to properly leave " + muc, e);
                 }
