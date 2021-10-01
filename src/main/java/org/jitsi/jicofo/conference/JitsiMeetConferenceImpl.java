@@ -1007,9 +1007,6 @@ public class JitsiMeetConferenceImpl
                 bridgeSession.dispose();
             }
             bridges.clear();
-            setConferenceProperty(
-                ConferenceProperties.KEY_BRIDGE_COUNT,
-                "0");
         }
 
         // TODO: what about removing the participants and ending their jingle
