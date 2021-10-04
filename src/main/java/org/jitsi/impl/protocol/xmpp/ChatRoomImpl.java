@@ -1098,7 +1098,8 @@ public class ChatRoomImpl
             occupantsMapField.setAccessible(true);
 
             Map<EntityFullJid, Presence> occupantsMap = (Map<EntityFullJid, Presence>)occupantsMapField.get(muc);
-            if (!occupantsMap.isEmpty()) {
+            if (!occupantsMap.isEmpty())
+            {
                 logger.warn("MultiUserChat occupantsMap is not empty, clearing.");
                 occupantsMap.clear();
             }
