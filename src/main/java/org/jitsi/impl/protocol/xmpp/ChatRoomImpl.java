@@ -38,6 +38,7 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -202,7 +203,11 @@ public class ChatRoomImpl
         };
         muc.addPresenceInterceptor(presenceInterceptor);
 
-        muc.createOrJoin(nickname);
+        synchronized (muc)
+        {
+            clearMucOccupantsMap(muc);
+            muc.createOrJoin(nickname);
+        }
 
         // Make the room non-anonymous, so that others can recognize focus JID
         Form config = muc.getConfigurationForm();
@@ -1074,6 +1079,34 @@ public class ChatRoomImpl
                 handler.roomDestroyed(reason);
                 return Unit.INSTANCE;
             });
+        }
+    }
+
+    /**
+     * Due to a race in Smack 4.4.3 handling presence while leaving, there are cases where the MultiUserChat
+     * object's occupantsMap object is not empty, as it should be, when we first reference it for the next
+     * chat instance.  This function uses reflection to hack the internal state to fix the problem.
+     */
+    private void clearMucOccupantsMap(MultiUserChat muc)
+    {
+        assert(!muc.isJoined());
+
+        Field occupantsMapField = null;
+        try
+        {
+            occupantsMapField = muc.getClass().getDeclaredField("occupantsMap");
+            occupantsMapField.setAccessible(true);
+
+            Map<EntityFullJid, Presence> occupantsMap = (Map<EntityFullJid, Presence>)occupantsMapField.get(muc);
+            if (!occupantsMap.isEmpty())
+            {
+                logger.warn("MultiUserChat occupantsMap is not empty, clearing.");
+                occupantsMap.clear();
+            }
+        }
+        catch (NoSuchFieldException | IllegalAccessException e)
+        {
+            logger.error("Unable to reset MultiUserChat occupantsMap", e);
         }
     }
 }
