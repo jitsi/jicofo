@@ -891,7 +891,6 @@ public class JitsiMeetConferenceImpl
         synchronized (bridgeSessions)
         {
             bridgeSessions.dispose();
-            setConferenceProperty(ConferenceProperties.KEY_BRIDGE_COUNT, "0");
         }
 
         // TODO: what about removing the participants and ending their jingle
@@ -1456,9 +1455,7 @@ public class JitsiMeetConferenceImpl
             // conference will not be aware of the participant.
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcesAdvertised
-                    = new EndpointSourceSet(
-                            new Source(ssrc, MediaType.AUDIO, null, true));
+            sourcesAdvertised = new EndpointSourceSet(new Source(ssrc, MediaType.AUDIO, null, null, true));
         }
         ConferenceSourceMap sourcesAccepted;
         try

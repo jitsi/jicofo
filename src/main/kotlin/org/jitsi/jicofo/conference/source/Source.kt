@@ -28,6 +28,8 @@ data class Source(
     val ssrc: Long,
     /** Audio or Video **/
     val mediaType: MediaType,
+    /** Optional name */
+    val name: String? = null,
     /** Optional msid */
     val msid: String? = null,
     /**
@@ -40,6 +42,7 @@ data class Source(
     constructor(mediaType: MediaType, sourcePacketExtension: SourcePacketExtension) : this(
         sourcePacketExtension.ssrc,
         mediaType,
+        sourcePacketExtension.name,
         sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             .filter { it.name == "msid" }.map { it.value }.firstOrNull(),
         sourcePacketExtension.isInjected
@@ -51,6 +54,7 @@ data class Source(
         owner: Jid? = null
     ) = SourcePacketExtension().apply {
         ssrc = this@Source.ssrc
+        name = this@Source.name
         if (owner != null) {
             addChildExtension(SSRCInfoPacketExtension().apply { this.owner = owner })
         }
@@ -69,6 +73,9 @@ data class Source(
     val compactJson: String by lazy {
         buildString {
             append("""{"s":$ssrc""")
+            name?.let {
+                append(""","n":"$it"""")
+            }
             msid?.let {
                 append(""","m":"$it"""")
             }

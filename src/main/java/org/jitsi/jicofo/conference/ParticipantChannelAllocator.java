@@ -388,12 +388,16 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
                         continue;
                     }
 
+                    MediaType mediaType = MediaType.parseString(contentName);
+
                     conferenceSources.add(
                             SSRC_OWNER_JVB,
                             new EndpointSourceSet(
                                     new Source(
                                             ssrcPe.getSSRC(),
-                                            MediaType.parseString(contentName),
+                                            mediaType,
+                                            // assuming either audio or video the source name: jvb-a0 or jvb-v0
+                                            "jvb-" + mediaType.toString().charAt(0) + "0",
                                             "mixedmslabel mixedlabel" + contentName + "0",
                                             false)));
                 }
