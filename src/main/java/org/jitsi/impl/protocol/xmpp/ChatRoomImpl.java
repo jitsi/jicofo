@@ -1094,11 +1094,14 @@ public class ChatRoomImpl
         Field occupantsMapField = null;
         try
         {
-            occupantsMapField = muc.getClass().getField("occupantsMap");
+            occupantsMapField = muc.getClass().getDeclaredField("occupantsMap");
             occupantsMapField.setAccessible(true);
 
             Map<EntityFullJid, Presence> occupantsMap = (Map<EntityFullJid, Presence>)occupantsMapField.get(muc);
-            occupantsMap.clear();
+            if (!occupantsMap.isEmpty()) {
+                logger.warn("MultiUserChat occupantsMap is not empty, clearing.");
+                occupantsMap.clear();
+            }
         }
         catch (NoSuchFieldException | IllegalAccessException e)
         {
