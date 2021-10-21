@@ -53,7 +53,7 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
     private fun handleLogoutIq(logoutIq: LogoutIq): IQ = authAuthority.processLogoutIq(logoutIq)
 
     private inner class LoginUrlIqHandler : AbstractIqRequestHandler(
-        LoginUrlIq.ELEMENT_NAME,
+        LoginUrlIq.ELEMENT,
         LoginUrlIq.NAMESPACE,
         IQ.Type.get,
         IQRequestHandler.Mode.sync
@@ -74,7 +74,7 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
     }
 
     private inner class LogoutIqHandler : AbstractIqRequestHandler(
-        LogoutIq.ELEMENT_NAME,
+        LogoutIq.ELEMENT,
         LogoutIq.NAMESPACE,
         IQ.Type.set,
         IQRequestHandler.Mode.sync

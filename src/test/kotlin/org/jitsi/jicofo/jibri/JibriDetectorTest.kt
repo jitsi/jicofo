@@ -53,7 +53,7 @@ private fun createJibriMember(jid: EntityFullJid): ChatRoomMember {
         every { occupantJid } returns jid
         every { presence } returns mockk<Presence> {
             every {
-                getExtension<ExtensionElement>(JibriStatusPacketExt.ELEMENT_NAME, JibriStatusPacketExt.NAMESPACE)
+                getExtension<ExtensionElement>(JibriStatusPacketExt.ELEMENT, JibriStatusPacketExt.NAMESPACE)
             } answers {
                 JibriStatusPacketExt().apply {
                     healthStatus = HealthStatusPacketExt().apply { status = HealthStatusPacketExt.Health.HEALTHY }

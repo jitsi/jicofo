@@ -41,7 +41,7 @@ class JibriDetector(
 ) : BaseBrewery<JibriStatusPacketExt>(
     xmppProvider,
     breweryJid,
-    JibriStatusPacketExt.ELEMENT_NAME,
+    JibriStatusPacketExt.ELEMENT,
     JibriStatusPacketExt.NAMESPACE,
     createLogger().apply { addContext("type", if (isSip) "sip_jibri" else "jibri") }
 ) {

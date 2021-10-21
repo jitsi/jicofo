@@ -111,7 +111,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                         // REPLY with session-invalid
                         it.shouldBeInstanceOf<ErrorIQ>()
                         it.error.getExtension<ExtensionElement>(
-                            SessionInvalidPacketExtension.ELEMENT_NAME,
+                            SessionInvalidPacketExtension.ELEMENT,
                             SessionInvalidPacketExtension.NAMESPACE
                         ) shouldNotBe null
                     }

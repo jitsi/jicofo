@@ -35,7 +35,7 @@ class MockJigasi(
     init {
         xmppConnection.registerIQRequestHandler(
             object : AbstractIqRequestHandler(
-                RayoIqProvider.DialIq.ELEMENT_NAME, RayoIqProvider.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync
+                RayoIqProvider.DialIq.ELEMENT, RayoIqProvider.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync
             ) {
                 override fun handleIQRequest(iq: IQ): IQ? {
                     return when (response) {

@@ -145,7 +145,7 @@ public class XMPPAuthenticationAuthorityTest
 
         // REPLY with session-invalid
         assertNotNull(errorResponse.getError().getExtension(
-                SessionInvalidPacketExtension.ELEMENT_NAME,
+                SessionInvalidPacketExtension.ELEMENT,
                 SessionInvalidPacketExtension.NAMESPACE));
 
         // CASE 6: do not allow to use session-id from different machine

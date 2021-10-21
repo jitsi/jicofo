@@ -38,7 +38,7 @@ class JibriIqHandler(
 ) :
     AbstractIqHandler<JibriIq>(
         connections,
-        JibriIq.ELEMENT_NAME,
+        JibriIq.ELEMENT,
         JibriIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync

@@ -398,7 +398,7 @@ public class ChatRoomImpl
     @Override
     public boolean containsPresenceExtension(String elementName, String namespace)
     {
-        return lastPresenceSent != null && lastPresenceSent.getExtension(elementName, namespace) != null;
+        return lastPresenceSent != null && lastPresenceSent.getExtensionElement(elementName, namespace) != null;
     }
 
     @Override
@@ -502,7 +502,8 @@ public class ChatRoomImpl
         boolean presenceUpdated = false;
 
         // Remove old
-        ExtensionElement old = lastPresenceSent.getExtension(extension.getElementName(), extension.getNamespace());
+        ExtensionElement old =
+            lastPresenceSent.getExtensionElement(extension.getElementName(), extension.getNamespace());
         if (old != null)
         {
             lastPresenceSent.removeExtension(old);

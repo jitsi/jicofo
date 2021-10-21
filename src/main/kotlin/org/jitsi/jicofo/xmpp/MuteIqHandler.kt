@@ -38,7 +38,7 @@ class AudioMuteIqHandler(
 ) :
     AbstractIqHandler<MuteIq>(
         connections,
-        MuteIq.ELEMENT_NAME,
+        MuteIq.ELEMENT,
         MuteIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
@@ -63,7 +63,7 @@ class VideoMuteIqHandler(
 ) :
     AbstractIqHandler<MuteVideoIq>(
         connections,
-        MuteVideoIq.ELEMENT_NAME,
+        MuteVideoIq.ELEMENT,
         MuteVideoIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync

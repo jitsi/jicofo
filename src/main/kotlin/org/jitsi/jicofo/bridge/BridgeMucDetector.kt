@@ -40,7 +40,7 @@ class BridgeMucDetector(
 ) : BaseBrewery<ColibriStatsExtension?>(
     xmppProvider,
     breweryJid,
-    ColibriStatsExtension.ELEMENT_NAME,
+    ColibriStatsExtension.ELEMENT,
     ColibriStatsExtension.NAMESPACE,
     LoggerImpl(BridgeMucDetector::class.simpleName).apply { addContext("type", "bridge") }
 ) {

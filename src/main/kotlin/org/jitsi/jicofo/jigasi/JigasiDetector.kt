@@ -37,7 +37,7 @@ class JigasiDetector(
 ) : BaseBrewery<ColibriStatsExtension>(
     xmppProvider,
     breweryJid,
-    ColibriStatsExtension.ELEMENT_NAME,
+    ColibriStatsExtension.ELEMENT,
     ColibriStatsExtension.NAMESPACE,
     createLogger().apply { addContext("type", "jigasi") }
 ) {

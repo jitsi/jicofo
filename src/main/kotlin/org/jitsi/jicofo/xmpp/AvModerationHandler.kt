@@ -56,8 +56,8 @@ class AvModerationHandler(
             return
         }
 
-        val jsonMessage = stanza.getExtension<JsonMessageExtension>(
-            JsonMessageExtension.ELEMENT_NAME, JsonMessageExtension.NAMESPACE
+        val jsonMessage = stanza.getExtension(
+            JsonMessageExtension::class.java
         ) ?: return Unit.also {
             logger.warn("Skip processing stanza without JsonMessageExtension")
         }

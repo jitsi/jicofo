@@ -220,7 +220,7 @@ public class ChatMemberImpl
         this.presence = presence;
 
         UserInfoPacketExt userInfoPacketExt
-            = presence.getExtension(UserInfoPacketExt.ELEMENT_NAME, UserInfoPacketExt.NAMESPACE);
+            = presence.getExtension(UserInfoPacketExt.class);
         if (userInfoPacketExt != null)
         {
             Boolean newStatus = userInfoPacketExt.isRobot();
@@ -262,14 +262,14 @@ public class ChatMemberImpl
         }
 
         RegionPacketExtension regionPE
-            = presence.getExtension(RegionPacketExtension.ELEMENT_NAME, RegionPacketExtension.NAMESPACE);
+            = presence.getExtension(RegionPacketExtension.class);
         if (regionPE != null)
         {
             region = regionPE.getRegionId();
         }
 
         StartMutedPacketExtension ext
-            = presence.getExtension(StartMutedPacketExtension.ELEMENT_NAME, StartMutedPacketExtension.NAMESPACE);
+            = presence.getExtension(StartMutedPacketExtension.class);
 
         if (ext != null)
         {
@@ -282,7 +282,7 @@ public class ChatMemberImpl
             }
         }
 
-        StatsId statsIdPacketExt = presence.getExtension(StatsId.ELEMENT_NAME, StatsId.NAMESPACE);
+        StatsId statsIdPacketExt = presence.getExtension(StatsId.class);
         if (statsIdPacketExt != null)
         {
             statsId = statsIdPacketExt.getStatsId();

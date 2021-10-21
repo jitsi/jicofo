@@ -115,7 +115,7 @@ public class XmppPeer
     @Override
     public String getElement()
     {
-        return JingleIQ.ELEMENT_NAME;
+        return JingleIQ.ELEMENT;
     }
 
     @Override

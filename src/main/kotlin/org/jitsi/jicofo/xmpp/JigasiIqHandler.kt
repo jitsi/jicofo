@@ -40,7 +40,7 @@ class JigasiIqHandler(
     private val jigasiDetector: JigasiDetector
 ) : AbstractIqHandler<RayoIqProvider.DialIq>(
     connections,
-    RayoIqProvider.DialIq.ELEMENT_NAME,
+    RayoIqProvider.DialIq.ELEMENT,
     RayoIqProvider.NAMESPACE,
     setOf(IQ.Type.set)
 ) {
