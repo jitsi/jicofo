@@ -484,7 +484,7 @@ public class ChatRoomImpl
         if (packet != null)
         {
             // Get the MUC User extension
-            return packet.getExtension(MUCInitialPresence.ELEMENT, MUCInitialPresence.NAMESPACE);
+            return packet.getExtension(MUCUser.class);
         }
 
         return null;
