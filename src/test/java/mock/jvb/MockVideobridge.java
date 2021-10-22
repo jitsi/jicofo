@@ -74,7 +74,7 @@ public class MockVideobridge
     {
         ColibriConferenceIqHandler(IQ.Type type)
         {
-            super(ColibriConferenceIQ.ELEMENT_NAME,
+            super(ColibriConferenceIQ.ELEMENT,
                 ColibriConferenceIQ.NAMESPACE,
                 type,
                 Mode.sync

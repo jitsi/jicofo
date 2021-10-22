@@ -161,10 +161,7 @@ public class TranscriberManager
      */
     private TranscriptionStatusExtension getTranscriptionStatus(Presence p)
     {
-        return p.getExtension(
-            TranscriptionStatusExtension.ELEMENT_NAME,
-            TranscriptionStatusExtension.NAMESPACE
-        );
+        return p.getExtension(TranscriptionStatusExtension.class);
     }
 
     /**
@@ -272,9 +269,7 @@ public class TranscriberManager
             return false;
         }
 
-        TranscriptionRequestExtension ext =  presence.getExtension(
-            TranscriptionRequestExtension.ELEMENT_NAME,
-            TranscriptionRequestExtension.NAMESPACE);
+        TranscriptionRequestExtension ext =  presence.getExtension(TranscriptionRequestExtension.class);
 
         if (ext == null)
         {

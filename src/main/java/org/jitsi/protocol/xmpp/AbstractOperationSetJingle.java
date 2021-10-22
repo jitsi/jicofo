@@ -65,7 +65,7 @@ public abstract class AbstractOperationSetJingle
 
     protected AbstractOperationSetJingle()
     {
-        super(JingleIQ.ELEMENT_NAME, JingleIQ.NAMESPACE, IQ.Type.set, Mode.sync);
+        super(JingleIQ.ELEMENT, JingleIQ.NAMESPACE, IQ.Type.set, Mode.sync);
     }
 
     @Override

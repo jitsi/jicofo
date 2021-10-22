@@ -70,74 +70,74 @@ fun registerXmppExtensions() {
     HealthCheckIQProvider.registerIQProvider()
     // ice-state
     ProviderManager.addExtensionProvider(
-        IceStatePacketExtension.ELEMENT_NAME,
+        IceStatePacketExtension.ELEMENT,
         IceStatePacketExtension.NAMESPACE,
         DefaultPacketExtensionProvider(IceStatePacketExtension::class.java)
     )
     // bridge-session
     ProviderManager.addExtensionProvider(
-        BridgeSessionPacketExtension.ELEMENT_NAME,
+        BridgeSessionPacketExtension.ELEMENT,
         BridgeSessionPacketExtension.NAMESPACE,
         DefaultPacketExtensionProvider(BridgeSessionPacketExtension::class.java)
     )
     // Jibri IQs
-    ProviderManager.addIQProvider(JibriIq.ELEMENT_NAME, JibriIq.NAMESPACE, JibriIqProvider())
+    ProviderManager.addIQProvider(JibriIq.ELEMENT, JibriIq.NAMESPACE, JibriIqProvider())
     JibriStatusPacketExt.registerExtensionProvider()
     JibriBusyStatusPacketExt.registerExtensionProvider()
     HealthStatusPacketExt.registerExtensionProvider()
     // User info
     ProviderManager.addExtensionProvider(
-        UserInfoPacketExt.ELEMENT_NAME,
+        UserInfoPacketExt.ELEMENT,
         UserInfoPacketExt.NAMESPACE,
         DefaultPacketExtensionProvider(UserInfoPacketExt::class.java)
     )
     ProviderManager.addExtensionProvider(
-        RegionPacketExtension.ELEMENT_NAME,
+        RegionPacketExtension.ELEMENT,
         RegionPacketExtension.NAMESPACE,
         DefaultPacketExtensionProvider(RegionPacketExtension::class.java)
     )
     ProviderManager.addExtensionProvider(
-        StatsId.ELEMENT_NAME,
+        StatsId.ELEMENT,
         StatsId.NAMESPACE,
         StatsId.Provider()
     )
 
     // Add the extensions used for handling the inviting of transcriber
     ProviderManager.addExtensionProvider(
-        TranscriptionRequestExtension.ELEMENT_NAME,
+        TranscriptionRequestExtension.ELEMENT,
         TranscriptionRequestExtension.NAMESPACE,
         DefaultPacketExtensionProvider(TranscriptionRequestExtension::class.java)
     )
     ProviderManager.addExtensionProvider(
-        TranscriptionStatusExtension.ELEMENT_NAME,
+        TranscriptionStatusExtension.ELEMENT,
         TranscriptionStatusExtension.NAMESPACE,
         DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
     )
 
     // Register Colibri
     ProviderManager.addIQProvider(
-        ColibriConferenceIQ.ELEMENT_NAME,
+        ColibriConferenceIQ.ELEMENT,
         ColibriConferenceIQ.NAMESPACE,
         ColibriIQProvider()
     )
     // register Jingle
     ProviderManager.addIQProvider(
-        JingleIQ.ELEMENT_NAME,
+        JingleIQ.ELEMENT,
         JingleIQ.NAMESPACE,
         JingleIQProvider()
     )
     ProviderManager.addExtensionProvider(
-        JsonMessageExtension.ELEMENT_NAME,
+        JsonMessageExtension.ELEMENT,
         JsonMessageExtension.NAMESPACE,
         DefaultPacketExtensionProvider(JsonMessageExtension::class.java)
     )
     ProviderManager.addExtensionProvider(
-        FeaturesExtension.ELEMENT_NAME,
+        FeaturesExtension.ELEMENT,
         FeaturesExtension.NAMESPACE,
         DefaultPacketExtensionProvider(FeaturesExtension::class.java)
     )
     ProviderManager.addExtensionProvider(
-        FeatureExtension.ELEMENT_NAME,
+        FeatureExtension.ELEMENT,
         FeatureExtension.NAMESPACE,
         DefaultPacketExtensionProvider(FeatureExtension::class.java)
     )

@@ -650,7 +650,7 @@ public class JitsiMeetConferenceImpl
 
             if (chatRoom != null
                 && !chatRoom.containsPresenceExtension(
-                BridgeNotAvailablePacketExt.ELEMENT_NAME,
+                BridgeNotAvailablePacketExt.ELEMENT,
                 BridgeNotAvailablePacketExt.NAMESPACE))
             {
                 chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
@@ -1240,10 +1240,7 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
-        IceStatePacketExtension iceStatePE
-                = iq.getExtension(
-                        IceStatePacketExtension.ELEMENT_NAME,
-                        IceStatePacketExtension.NAMESPACE);
+        IceStatePacketExtension iceStatePE = iq.getExtension(IceStatePacketExtension.class);
         String iceState = iceStatePE != null ? iceStatePE.getText() : null;
 
         if (!"failed".equalsIgnoreCase(iceState))
@@ -1280,7 +1277,7 @@ public class JitsiMeetConferenceImpl
 
     private BridgeSessionPacketExtension getBridgeSessionPacketExtension(@NotNull IQ iq)
     {
-        return iq.getExtension(BridgeSessionPacketExtension.ELEMENT_NAME, BridgeSessionPacketExtension.NAMESPACE);
+        return iq.getExtension(BridgeSessionPacketExtension.class);
     }
 
     /**
