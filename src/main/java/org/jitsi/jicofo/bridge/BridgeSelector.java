@@ -145,7 +145,7 @@ public class BridgeSelector
 
         if (bridge != null)
         {
-            if (!bridge.isInGracefulShutdown())
+            if (!bridge.isInGracefulShutdown() && bridge.hasConferences())
             {
                 lostBridges.incrementAndGet();
             }

@@ -126,6 +126,11 @@ public class Bridge
     private volatile long failureTimestamp;
 
     /**
+     * Whether the last received report from the bridge had any conferences.
+     */
+    private boolean hasConferences = false;
+
+    /**
      * The last known {@link ColibriStatsExtension} reported by this bridge.
      */
     private ColibriStatsExtension stats = EMPTY_STATS;
@@ -192,11 +197,22 @@ public class Bridge
             version = newVersion;
         }
 
+        Integer conferences = stats.getValueAsInt("conferences");
+        hasConferences = conferences != null && conferences > 0;
+
         Integer octoVersion = stats.getValueAsInt("octo_version");
         if (octoVersion != null)
         {
             this.octoVersion = octoVersion;
         }
+    }
+
+    /**
+     * @return {@code true} if the bridge last reported having any conferences.
+     */
+    boolean hasConferences()
+    {
+        return hasConferences;
     }
 
     /**
