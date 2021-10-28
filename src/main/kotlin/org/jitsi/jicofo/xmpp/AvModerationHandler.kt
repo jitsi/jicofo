@@ -68,7 +68,7 @@ class AvModerationHandler(
                 if (incomingJson["type"] == "av_moderation") {
                     val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
 
-                    val conference = conferenceStore.getConference(conferenceJid) ?: return@submit Unit.also {
+                    val conference = conferenceStore.getConference(conferenceJid) ?: return@execute Unit.also {
                         logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
                     }
 
