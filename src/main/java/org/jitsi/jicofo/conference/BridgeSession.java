@@ -379,7 +379,7 @@ class BridgeSession
                 = new OctoChannelAllocator(jitsiMeetConference, this, octoParticipant, logger);
         octoParticipant.setChannelAllocator(channelAllocator);
 
-        TaskPools.getIoPool().submit(channelAllocator);
+        TaskPools.getIoPool().execute(channelAllocator);
 
         return octoParticipant;
     }

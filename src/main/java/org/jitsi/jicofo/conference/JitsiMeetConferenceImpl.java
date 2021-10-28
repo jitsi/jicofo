@@ -775,7 +775,7 @@ public class JitsiMeetConferenceImpl
                         logger);
 
             participant.setChannelAllocator(channelAllocator);
-            TaskPools.getIoPool().submit(channelAllocator);
+            TaskPools.getIoPool().execute(channelAllocator);
 
             if (reInvite)
             {

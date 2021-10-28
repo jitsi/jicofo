@@ -62,7 +62,7 @@ class AvModerationHandler(
             logger.warn("Skip processing stanza without JsonMessageExtension")
         }
 
-        TaskPools.ioPool.submit {
+        TaskPools.ioPool.execute {
             try {
                 val incomingJson = JSONParser().parse(jsonMessage.json) as JSONObject
                 if (incomingJson["type"] == "av_moderation") {

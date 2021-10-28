@@ -262,7 +262,7 @@ public class ChatRoomImpl
 
         // Call MultiUserChat.leave() in an IO thread, because it now (with Smack 4.4.3) blocks waiting for a response
         // from the XMPP server (and we want ChatRoom#leave to return immediately).
-        TaskPools.getIoPool().submit(() ->
+        TaskPools.getIoPool().execute(() ->
         {
             XMPPConnection connection = xmppProvider.getXmppConnection();
             try
