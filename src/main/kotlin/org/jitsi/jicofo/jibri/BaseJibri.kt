@@ -113,7 +113,7 @@ abstract class BaseJibri internal constructor(
      * participant in the conference, or from a Jibri instance. It should be accepted if:
      * 1a. It originates from a participant in the conference AND
      * 1b. Matches the type of this instance (recording/streaming vs SIP), OR
-     * 2. Originates from a Jibri with which this instance has an active seesion.
+     * 2. Originates from a Jibri with which this instance has an active session.
      *
      * @return `true` if the IQ is to be accepted.
      */
@@ -152,11 +152,13 @@ abstract class BaseJibri internal constructor(
     private fun doHandleIQRequest(iq: JibriIq): IQ {
         logger.debug { "Jibri request. IQ: ${iq.toXML()}" }
 
-        // Process if it belongs to an active recording session
+        // Coming from a Jibri instance.
         val session = getJibriSessionForMeetIq(iq)
         if (session != null && session.accept(iq)) {
             return session.processJibriIqRequestFromJibri(iq)
         }
+
+        // Coming from a client.
         if (iq.action == Action.UNDEFINED) {
             return error(iq, StanzaError.Condition.bad_request, "undefined action")
         }
@@ -169,11 +171,8 @@ abstract class BaseJibri internal constructor(
         return when {
             iq.action == Action.START && session == null -> handleStartRequest(iq)
             iq.action == Action.START && session != null -> {
-                // If there's a session active, we know there are Jibri's connected
-                // (so it isn't StanzaError.Condition.service_unavailable), so it
-                // must be that they're all busy.
-                logger.info("Failed to start a Jibri session, all Jibris were busy")
-                error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
+                logger.info("Will not start a Jibri session, a session is already active")
+                error(iq, StanzaError.Condition.unexpected_request, "Recording or live streaming is already enabled")
             }
             iq.action == Action.STOP && session != null -> {
                 session.stop(iq.from)
