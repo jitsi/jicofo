@@ -115,7 +115,7 @@ public class JitsiMeetConferenceImpl
     @NotNull
     private final JitsiMeetConfig config;
 
-    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl(this);
 
     /**
      * Conference room chat instance.
@@ -227,6 +227,11 @@ public class JitsiMeetConferenceImpl
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
      */
     private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap();
+
+    /**
+     * Whether the limit on the number of video senders is currently hit.
+     */
+    private boolean videoLimitReached = false;
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -523,6 +528,19 @@ public class JitsiMeetConferenceImpl
         if (updatePresence && chatRoom != null)
         {
             chatRoom.setPresenceExtension(ConferenceProperties.clone(conferenceProperties), false);
+        }
+    }
+
+    /**
+     * Process the new number of video senders reported by the chat room.
+     */
+    private void numVideoSendersChanged(int numVideoSenders)
+    {
+        boolean newValue = numVideoSenders >= ConferenceConfig.config.getMaxVideoSenders();
+        if (videoLimitReached != newValue)
+        {
+            videoLimitReached = newValue;
+            setConferenceProperty("video-limit-reached", String.valueOf(videoLimitReached));
         }
     }
 
@@ -2425,6 +2443,12 @@ public class JitsiMeetConferenceImpl
 
     private class ChatRoomListenerImpl implements ChatRoomListener
     {
+        private final JitsiMeetConferenceImpl conference;
+        private ChatRoomListenerImpl(JitsiMeetConferenceImpl conference)
+        {
+            this.conference = conference;
+        }
+
         @Override
         public void roomDestroyed(@NotNull String reason)
         {
@@ -2470,6 +2494,12 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+        }
+
+        @Override
+        public void numVideoSendersChanged(int numVideoSenders)
+        {
+            conference.numVideoSendersChanged(numVideoSenders);
         }
     }
 }

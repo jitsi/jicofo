@@ -589,12 +589,22 @@ public class ChatRoomImpl
     {
         ++numVideoSenders;
         logger.debug(() -> "The number of video senders has increased to " + numVideoSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numVideoSendersChanged(numVideoSenders);
+            return Unit.INSTANCE;
+        });
     }
 
     public void removeVideoSender()
     {
         --numVideoSenders;
         logger.debug(() -> "The number of video senders has decreased to " + numVideoSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numVideoSendersChanged(numVideoSenders);
+            return Unit.INSTANCE;
+        });
     }
 
     /**
