@@ -130,11 +130,11 @@ public class TranscriberManager
             // puts the stopping in the single threaded executor
             // so we can order the events and avoid indicating active = false
             // while we are starting due to concurrent presences processed
-            executorService.submit(this::stopTranscribing);
+            executorService.execute(this::stopTranscribing);
         }
         if (isRequestingTranscriber(presence) && !active)
         {
-            executorService.submit(() -> this.startTranscribing(getBridgeRegions()));
+            executorService.execute(() -> this.startTranscribing(getBridgeRegions()));
         }
     }
 

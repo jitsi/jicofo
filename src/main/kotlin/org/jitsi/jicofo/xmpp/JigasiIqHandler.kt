@@ -74,7 +74,7 @@ class JigasiIqHandler(
         logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toXML()}")
         stats.requestAccepted()
 
-        TaskPools.ioPool.submit {
+        TaskPools.ioPool.execute {
             try {
                 inviteJigasi(request, conference.bridges.keys.mapNotNull { it.region }.toSet())
             } catch (e: Exception) {

@@ -62,13 +62,13 @@ class AvModerationHandler(
             logger.warn("Skip processing stanza without JsonMessageExtension")
         }
 
-        TaskPools.ioPool.submit {
+        TaskPools.ioPool.execute {
             try {
                 val incomingJson = JSONParser().parse(jsonMessage.json) as JSONObject
                 if (incomingJson["type"] == "av_moderation") {
                     val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
 
-                    val conference = conferenceStore.getConference(conferenceJid) ?: return@submit Unit.also {
+                    val conference = conferenceStore.getConference(conferenceJid) ?: return@execute Unit.also {
                         logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
                     }
 

@@ -95,7 +95,7 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
             logger.warn("Mute request for unknown conference: ${request.iq.toXML()}")
         }
 
-    TaskPools.ioPool.submit {
+    TaskPools.ioPool.execute {
         try {
             when (conference.handleMuteRequest(request.iq.from, request.jidToMute, request.doMute, request.mediaType)) {
                 MuteResult.SUCCESS -> {

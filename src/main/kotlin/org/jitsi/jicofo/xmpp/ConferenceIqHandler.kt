@@ -149,7 +149,7 @@ class ConferenceIqHandler(
         val originalFrom = iqRequest.from
         iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
 
-        TaskPools.ioPool.submit {
+        TaskPools.ioPool.execute {
             val response = handleConferenceIq(iqRequest).apply { to = originalFrom }
 
             try {
