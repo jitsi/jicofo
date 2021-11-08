@@ -127,6 +127,11 @@ public class ChatRoomImpl
     private EventEmitter<ChatRoomListener> eventEmitter = new SyncEventEmitter<>();
 
     /**
+     * The number of members that currently have their video sources unmuted.
+     */
+    private int numVideoSenders;
+
+    /**
      * Creates new instance of <tt>ChatRoomImpl</tt>.
      *
      * @param roomJid the room JID (e.g. "room@service").
@@ -577,6 +582,21 @@ public class ChatRoomImpl
         UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent);
     }
 
+    @Override
+    public int getVideoSendersCount() { return numVideoSenders; }
+
+    public void addVideoSender()
+    {
+        ++numVideoSenders;
+        logger.debug(() -> "The number of video senders has increased to " + numVideoSenders + ".");
+    }
+
+    public void removeVideoSender()
+    {
+        --numVideoSenders;
+        logger.debug(() -> "The number of video senders has decreased to " + numVideoSenders + ".");
+    }
+
     /**
      * Adds a new {@link ChatMemberImpl} with the given JID to {@link #members}.
      * If a member with the given JID already exists, it returns the existing
@@ -596,6 +616,9 @@ public class ChatRoomImpl
             ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, members.size() + 1);
 
             members.put(jid, newMember);
+
+            if (!newMember.isVideoMuted())
+                addVideoSender();
 
             return newMember;
         }
@@ -857,6 +880,9 @@ public class ChatRoomImpl
                 {
                     logger.error(occupantJid + " not in " + roomJid);
                 }
+
+                if (!removed.isVideoMuted())
+                    removeVideoSender();
 
                 return removed;
             }

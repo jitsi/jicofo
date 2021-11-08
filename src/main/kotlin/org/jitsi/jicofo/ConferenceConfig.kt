@@ -62,6 +62,10 @@ class ConferenceConfig {
         "jicofo.conference.min-participants".from(newConfig)
     }
 
+    val maxVideoSenders: Int by config {
+        "jicofo.conference.max-video-senders".from(newConfig)
+    }
+
     val enableLipSync: Boolean by config {
         "jicofo.conference.enable-lip-sync".from(newConfig)
     }

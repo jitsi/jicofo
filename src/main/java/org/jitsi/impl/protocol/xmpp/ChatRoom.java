@@ -90,6 +90,11 @@ public interface ChatRoom
     int getMembersCount();
 
     /**
+     * Returns the number of members that currently have their video sources unmuted.
+     */
+    int getVideoSendersCount();
+
+    /**
     * Grants ownership privileges to another user. Room owners may grant
     * ownership privileges. Some room implementations will not allow to grant
     * ownership privileges to other users. An owner is allowed to change

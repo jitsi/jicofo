@@ -1504,6 +1504,16 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
+        // $ optimize. add methods to EndpointSourceSet that don't need to copy ssrcs.
+        boolean hasVideo = !sourcesAdvertised.getVideoSsrcs().isEmpty();
+
+        if (hasVideo && chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
+        {
+            String errorMsg = "Source add rejected. Maximum number of video senders reached.";
+            logger.warn(() -> participantId + ": " + errorMsg);
+            return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
+        }
+
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
         logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAccepted);
 

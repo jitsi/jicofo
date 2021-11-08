@@ -97,6 +97,11 @@ public interface ChatRoomMember
     boolean isJibri();
 
     /**
+     * Returns whether the room member has its video sources muted.
+     */
+    boolean isVideoMuted();
+
+    /**
      * Gets the region (e.g. "us-east") of this {@link ChatRoomMember}.
      */
     String getRegion();
