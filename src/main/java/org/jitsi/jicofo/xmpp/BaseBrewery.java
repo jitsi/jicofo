@@ -249,24 +249,6 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     }
 
     /**
-     * Notify this {@link BaseBrewery} that the member with jid {@code member} experienced
-     * an error which is expected to be transient.
-     *
-     * @param member the {@link Jid} of the member who experienced the error
-     */
-    synchronized public void memberHadTransientError(Jid member)
-    {
-        BrewInstance instance = find(member);
-        if (instance != null)
-        {
-            logger.info("Jid member " + member + " had a transient error, moving to the back of the queue");
-            // Move the instance to the back of the list
-            removeInstance(instance);
-            addInstance(instance);
-        }
-    }
-
-    /**
      * Process chat room member status changed. Extract the appropriate
      * presence extension and use it to process it further.
      * @param member the chat member to process

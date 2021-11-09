@@ -56,13 +56,9 @@ class JibriSessionTest : ShouldSpec({
         every { selectJibri() } returnsMany (jibriList)
         every { isAnyInstanceConnected } returns true
         every { xmppConnection } returns mockXmppConnection
-        every { memberHadTransientError(any()) } answers {
-            // Simulate the real JibriDetector logic and put the Jibri at the back of the list
-            jibriList.remove(arg(0))
-            jibriList.add(arg(0))
-        }
         every { addHandler(any()) } returns Unit
         every { removeHandler(any()) } returns Unit
+        every { instanceFailed(any()) } returns Unit
     }
     val logger: Logger = LoggerImpl("JibriSessionTest")
 
@@ -141,9 +137,6 @@ class JibriSessionTest : ShouldSpec({
             }
         }
         jibriSession.start()
-        should("not count as a transient error") {
-            verify(exactly = 0) { detector.memberHadTransientError(any()) }
-        }
         should("retry with another jibri") {
             verify(exactly = 2) { mockXmppConnection.sendIqAndGetResponse(any()) }
         }

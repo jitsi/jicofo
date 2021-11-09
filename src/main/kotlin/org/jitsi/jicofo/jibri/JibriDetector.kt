@@ -26,6 +26,9 @@ import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.Jid
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.Executors
 
 /**
@@ -37,7 +40,8 @@ import java.util.concurrent.Executors
 class JibriDetector(
     xmppProvider: XmppProvider,
     breweryJid: EntityBareJid,
-    isSip: Boolean
+    isSip: Boolean,
+    val clock: Clock = Clock.systemUTC()
 ) : BaseBrewery<JibriStatusPacketExt>(
     xmppProvider,
     breweryJid,
@@ -47,30 +51,74 @@ class JibriDetector(
 ) {
     private val eventEmitter = AsyncEventEmitter<EventHandler>(eventEmitterExecutor)
 
+    val logger = createLogger()
+
     val xmppConnection = xmppProvider.xmppConnection
     /**
-     * Selects first idle Jibri which can be used to start recording.
+     * Selects a Jibri to be used for a recording session.
      *
-     * @return XMPP address of idle Jibri instance or <tt>null</tt> if there are
-     * no Jibris available currently.
+     * Selects from the jibris which have advertised themselves as healthy and idle, which haven't been
+     * selected in the last [SELECT_TIMEOUT], and which have not been reported failed in the last [FAILURE_TIMEOUT].
+     * If multiple instances match, selects the one which has failed least recently (or hasn't failed).
+     *
+     * @return the XMPP address of the selected instance.
      */
     fun selectJibri(): Jid? {
-        return instances.stream()
-            .filter { it.status.isAvailable }
-            .map { it.jid }
-            .findFirst()
-            .orElse(null)
+        val now = clock.instant()
+        val oldest = jibriInstances.values.filter {
+            it.reportsAvailable && Duration.between(it.lastSelected, now) >= SELECT_TIMEOUT
+        }.minByOrNull { it.lastFailed } ?: return null
+
+        return if (Duration.between(oldest.lastFailed, now) >= FAILURE_TIMEOUT) {
+            oldest.jid.also { oldest.lastSelected = now }
+        } else null
     }
 
+    /**
+     * Notify [JibriDetector] that the instance with JID [jid] failed a request (it returned an error or a request
+     * timed out). Failed instances are not selected for [FAILURE_TIMEOUT], and after this timeout they are prioritized
+     * according to the time of failure.
+     */
+    fun instanceFailed(jid: Jid) {
+        jibriInstances[jid]?.let {
+            logger.info("Instance failed: $jid. Will not be selected for the next $FAILURE_TIMEOUT")
+            it.lastFailed = clock.instant()
+        }
+    }
+
+    /** The jibri instances to select from */
+    private val jibriInstances: MutableMap<Jid, JibriInstance> = mutableMapOf()
+
     override fun onInstanceStatusChanged(jid: Jid, presenceExt: JibriStatusPacketExt) {
-        if (!presenceExt.isAvailable) {
-            if (presenceExt.busyStatus == null || presenceExt.healthStatus == null) {
-                notifyInstanceOffline(jid)
+        if (!jibriInstances.containsKey(jid)) {
+            logger.info("Creating a new instance for $jid, available = ${presenceExt.isAvailable}")
+            jibriInstances[jid] = JibriInstance(jid, presenceExt.isAvailable)
+        }
+
+        val jibriInstance = jibriInstances[jid] ?: let {
+            logger.error("Instance was removed. Thread safety issues?")
+            return
+        }
+
+        jibriInstance.reportsAvailable = presenceExt.isAvailable
+        if (jibriInstance.reportsAvailable) {
+            // If we receive a new presence indicating the instance is available, override any failures we've detected.
+            // This is because jibri does NOT periodically advertise presence in the MUC and only updates it when
+            // something actually changes.
+            if (jibriInstance.lastFailed != NEVER) {
+                logger.info("Resetting failure state for $jid")
+                jibriInstance.lastFailed = NEVER
             }
         }
     }
 
-    override fun notifyInstanceOffline(jid: Jid) = eventEmitter.fireEvent { instanceOffline(jid) }
+    override fun notifyInstanceOffline(jid: Jid) {
+        // Remove from jibriInstances
+        logger.info("Removing instance $jid")
+        jibriInstances.remove(jid)
+
+        eventEmitter.fireEvent { instanceOffline(jid) }
+    }
 
     fun addHandler(eventHandler: EventHandler) = eventEmitter.addHandler(eventHandler)
     fun removeHandler(eventHandler: EventHandler) = eventEmitter.removeHandler(eventHandler)
@@ -95,5 +143,33 @@ class JibriDetector(
         private val eventEmitterExecutor = Executors.newSingleThreadExecutor(
             CustomizableThreadFactory("JibriDetector-AsyncEventEmitter", false)
         )
+
+        private val NEVER = Instant.MIN
+
+        /**
+         * The length of the failure timeout. See [selectJibri] and [instanceFailed].
+         */
+        val FAILURE_TIMEOUT: Duration = Duration.ofMinutes(1)
+
+        /**
+         * The length of the select timeout. See [selectJibri].
+         */
+        val SELECT_TIMEOUT: Duration = Duration.ofMillis(200)
+    }
+
+    /**
+     * Contains the relevant state for a Jibri instance.
+     */
+    private class JibriInstance(
+        /** The jid of the instance */
+        val jid: Jid,
+        /** Whether the jibri reported itself available (healthy and idle) in presence. */
+        var reportsAvailable: Boolean
+    ) {
+        /** The last time (if any) at which this instance was reported failed via [instanceFailed]. */
+        var lastFailed: Instant = NEVER
+
+        /** The last time this instance was selected via [selectJibri]. */
+        var lastSelected: Instant = NEVER
     }
 }
