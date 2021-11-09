@@ -94,6 +94,11 @@ public class ChatMemberImpl
      */
     private String statsId;
 
+    /**
+     * Indicates whether the member's video sources are currently muted.
+     */
+    private boolean isVideoMuted = true;
+
     public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom,
                           int joinOrderNumber)
     {
@@ -199,6 +204,9 @@ public class ChatMemberImpl
         return isJibri;
     }
 
+    @Override
+    public boolean isVideoMuted() { return isVideoMuted; }
+
     /**
      * Does presence processing.
      *
@@ -286,6 +294,19 @@ public class ChatMemberImpl
         if (statsIdPacketExt != null)
         {
             statsId = statsIdPacketExt.getStatsId();
+        }
+
+        boolean wasVideoMuted = isVideoMuted;
+        StandardExtensionElement videoMutedExt = presence.getExtension("videomuted", "jabber:client");
+        isVideoMuted = videoMutedExt == null || Boolean.valueOf(videoMutedExt.getText()); /* defaults to true */
+
+        if (isVideoMuted != wasVideoMuted)
+        {
+            logger.debug(() -> toString() + ". isMuted = " + isVideoMuted + ".");
+            if (isVideoMuted)
+                chatRoom.removeVideoSender();
+            else
+                chatRoom.addVideoSender();
         }
     }
 

@@ -229,6 +229,11 @@ public class JitsiMeetConferenceImpl
     private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap();
 
     /**
+     * Whether the limit on the number of video senders is currently hit.
+     */
+    private boolean videoLimitReached = false;
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -523,6 +528,19 @@ public class JitsiMeetConferenceImpl
         if (updatePresence && chatRoom != null)
         {
             chatRoom.setPresenceExtension(ConferenceProperties.clone(conferenceProperties), false);
+        }
+    }
+
+    /**
+     * Process the new number of video senders reported by the chat room.
+     */
+    private void onNumVideoSendersChanged(int numVideoSenders)
+    {
+        boolean newValue = numVideoSenders >= ConferenceConfig.config.getMaxVideoSenders();
+        if (videoLimitReached != newValue)
+        {
+            videoLimitReached = newValue;
+            setConferenceProperty("video-limit-reached", String.valueOf(videoLimitReached));
         }
     }
 
@@ -1504,6 +1522,14 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
+        if (sourcesAdvertised.getHasVideo() &&
+            chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
+        {
+            String errorMsg = "Source add rejected. Maximum number of video senders reached.";
+            logger.warn(() -> participantId + ": " + errorMsg);
+            return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
+        }
+
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
         logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAccepted);
 
@@ -2462,6 +2488,12 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+        }
+
+        @Override
+        public void numVideoSendersChanged(int numVideoSenders)
+        {
+            onNumVideoSendersChanged(numVideoSenders);
         }
     }
 }

@@ -42,6 +42,16 @@ data class EndpointSourceSet(
     fun isEmpty() = sources.isEmpty() && ssrcGroups.isEmpty()
 
     /**
+     * Whether there are any audio sources in this set.
+     */
+    val hasAudio: Boolean by lazy { sources.any { it.mediaType == AUDIO } }
+
+    /**
+     * Whether there are any video sources in this set.
+     */
+    val hasVideo: Boolean by lazy { sources.any { it.mediaType == VIDEO } }
+
+    /**
      * Creates a list of Jingle [ContentPacketExtension]s that describe the sources in this [EndpointSourceSet].
      */
     fun toJingle(owner: Jid? = null): List<ContentPacketExtension> = toJingle(mutableMapOf(), owner)
