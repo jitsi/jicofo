@@ -44,12 +44,12 @@ data class EndpointSourceSet(
     /**
      * Whether there are any audio sources in this set.
      */
-    fun hasAudio() = sources.any { it.mediaType == AUDIO }
+    val hasAudio: Boolean by lazy { sources.any { it.mediaType == AUDIO } }
 
     /**
      * Whether there are any video sources in this set.
      */
-    fun hasVideo() = sources.any { it.mediaType == VIDEO }
+    val hasVideo: Boolean by lazy { sources.any { it.mediaType == VIDEO } }
 
     /**
      * Creates a list of Jingle [ContentPacketExtension]s that describe the sources in this [EndpointSourceSet].

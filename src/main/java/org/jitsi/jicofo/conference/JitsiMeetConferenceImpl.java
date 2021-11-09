@@ -115,7 +115,7 @@ public class JitsiMeetConferenceImpl
     @NotNull
     private final JitsiMeetConfig config;
 
-    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl(this);
+    private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
 
     /**
      * Conference room chat instance.
@@ -534,7 +534,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Process the new number of video senders reported by the chat room.
      */
-    private void numVideoSendersChanged(int numVideoSenders)
+    private void onNumVideoSendersChanged(int numVideoSenders)
     {
         boolean newValue = numVideoSenders >= ConferenceConfig.config.getMaxVideoSenders();
         if (videoLimitReached != newValue)
@@ -1522,7 +1522,7 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
-        if (sourcesAdvertised.hasVideo() &&
+        if (sourcesAdvertised.getHasVideo() &&
             chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
         {
             String errorMsg = "Source add rejected. Maximum number of video senders reached.";
@@ -2443,12 +2443,6 @@ public class JitsiMeetConferenceImpl
 
     private class ChatRoomListenerImpl implements ChatRoomListener
     {
-        private final JitsiMeetConferenceImpl conference;
-        private ChatRoomListenerImpl(JitsiMeetConferenceImpl conference)
-        {
-            this.conference = conference;
-        }
-
         @Override
         public void roomDestroyed(@NotNull String reason)
         {
@@ -2499,7 +2493,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void numVideoSendersChanged(int numVideoSenders)
         {
-            conference.numVideoSendersChanged(numVideoSenders);
+            onNumVideoSendersChanged(numVideoSenders);
         }
     }
 }

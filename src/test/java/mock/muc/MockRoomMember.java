@@ -111,6 +111,12 @@ public class MockRoomMember
     }
 
     @Override
+    public boolean isVideoMuted()
+    {
+        return false;
+    }
+
+    @Override
     public Presence getPresence()
     {
         // FIXME: not implemented

@@ -255,6 +255,12 @@ public class MockChatRoom
         return members.size();
     }
 
+    @Override
+    public int getVideoSendersCount()
+    {
+        return 0; /* implement */
+    }
+
     private void grantRole(EntityFullJid address, MemberRole newRole)
     {
         MockRoomMember member = findMember(address.getResourceOrNull());
