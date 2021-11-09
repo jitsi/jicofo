@@ -890,9 +890,10 @@ public class ChatRoomImpl
                 {
                     logger.error(occupantJid + " not in " + roomJid);
                 }
-
-                if (!removed.isVideoMuted())
+                else if (!removed.isVideoMuted())
+                {
                     removeVideoSender();
+                }
 
                 return removed;
             }
