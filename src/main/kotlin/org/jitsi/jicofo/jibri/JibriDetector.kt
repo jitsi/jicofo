@@ -70,7 +70,8 @@ class JibriDetector(
         }.minByOrNull { it.lastFailed } ?: return null
 
         return if (Duration.between(oldest.lastFailed, now) >= FAILURE_TIMEOUT) {
-            oldest.jid.also { oldest.lastSelected = now }
+            oldest.lastSelected = now
+            oldest.jid
         } else null
     }
 
