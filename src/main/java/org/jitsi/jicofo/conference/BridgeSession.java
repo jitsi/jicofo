@@ -105,6 +105,7 @@ class BridgeSession
         this.colibriConference = new ColibriConferenceImpl(xmppConnection);
         colibriConference.setName(jitsiMeetConference.getRoomName());
         colibriConference.setGID(Long.toHexString(gid));
+        colibriConference.setRtcStatsEnabled(jitsiMeetConference.getConfig().getRtcStatsEnabled());
         ChatRoom chatRoom = jitsiMeetConference.getChatRoom();
         if (chatRoom != null)
         {

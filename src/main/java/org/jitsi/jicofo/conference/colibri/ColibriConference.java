@@ -233,4 +233,6 @@ public interface ColibriConference
      * Sets the "global" id of the conference.
      */
     void setGID(String gid) ;
+
+    void setRtcStatsEnabled(boolean rtcStatsEnabled);
 }
