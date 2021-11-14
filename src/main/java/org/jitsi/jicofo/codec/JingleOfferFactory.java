@@ -449,6 +449,11 @@ public class JingleOfferFactory
             {
                 PayloadTypePacketExtension red = addPayloadTypeExtension(rtpDesc, config.opus.red.pt(), "red", 48000);
                 red.setChannels(2);
+
+                // RFC 2198 fmtp line
+                // Indicates Opus payload type (111) as primary/secondary encoding for RED (112)
+                // fmtp:112 111/111
+                addParameterExtension(red, null, config.opus.pt() + "/" + config.opus.pt());
             }
 
             // a=rtpmap:111 opus/48000/2
