@@ -235,4 +235,6 @@ public interface ColibriConference
     void setGID(String gid) ;
 
     void setRtcStatsEnabled(boolean rtcStatsEnabled);
+
+    void setCallStatsEnabled(boolean callStatsEnabled);
 }

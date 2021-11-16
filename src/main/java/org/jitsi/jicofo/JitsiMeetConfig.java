@@ -59,6 +59,11 @@ public class JitsiMeetConfig
     public static final String PNAME_RTCSTATS_ENABLED = "rtcstatsEnabled";
 
     /**
+     * The name of the callstats enabled property.
+     */
+    public static final String PNAME_CALLSTATS_ENABLED = "callstatsEnabled";
+
+    /**
      * The name of the "startBitrate" property.
      */
     public static final String PNAME_START_BITRATE = "startBitrate";
@@ -153,6 +158,14 @@ public class JitsiMeetConfig
         // we default to true to match the default in config.js
         return enabled == null || enabled;
     }
+
+    public boolean getCallStatsEnabled()
+    {
+        Boolean enabled = getBoolean(PNAME_CALLSTATS_ENABLED);
+        // we default to true to match the default in config.js
+        return enabled == null || enabled;
+    }
+
 
     /**
      * @return the "min bitrate" which should be included in offers.

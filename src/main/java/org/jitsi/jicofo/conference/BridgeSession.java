@@ -106,6 +106,7 @@ class BridgeSession
         colibriConference.setName(jitsiMeetConference.getRoomName());
         colibriConference.setGID(Long.toHexString(gid));
         colibriConference.setRtcStatsEnabled(jitsiMeetConference.getConfig().getRtcStatsEnabled());
+        colibriConference.setCallStatsEnabled(jitsiMeetConference.getConfig().getCallStatsEnabled());
         ChatRoom chatRoom = jitsiMeetConference.getChatRoom();
         if (chatRoom != null)
         {
