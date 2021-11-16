@@ -52,7 +52,7 @@ public class TransportSignaling
         // RTCP-MUX
         if (src.isRtcpMux() && !dst.isRtcpMux())
         {
-            dst.addChildExtension(new RtcpmuxPacketExtension());
+            dst.addChildExtension(new IceRtcpmuxPacketExtension());
         }
 
         // Candidates

@@ -17,14 +17,14 @@
  */
 package org.jitsi.jicofo;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import mock.*;
 import mock.muc.*;
 import mock.util.*;
-import org.junit.*;
+import org.junit.jupiter.api.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Pawel Domas
@@ -33,7 +33,7 @@ public class LeakingRoomsTest
 {
     private final JicofoHarness harness = new JicofoHarness();
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         harness.shutdown();

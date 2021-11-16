@@ -17,6 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import javax.xml.namespace.*;
 import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
@@ -38,7 +39,6 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -106,7 +106,7 @@ public class ChatRoomImpl
     /**
      * Stores our last MUC presence packet for future update.
      */
-    private Presence lastPresenceSent;
+    private PresenceBuilder lastPresenceSent;
 
     /**
      * The value of the "meetingId" field from the MUC form, if present.
@@ -225,21 +225,21 @@ public class ChatRoomImpl
     {
         this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
 
-        this.presenceInterceptor = new PresenceListener()
+        this.presenceInterceptor = packet ->
         {
-            @Override
-            public void processPresence(Presence packet)
-            {
-                lastPresenceSent = packet;
-            }
+            lastPresenceSent = packet.asBuilder((String) null);
+
+            // The initial presence sent by smack contains an empty "x"
+            // extension. If this extension is included in a subsequent stanza,
+            // it indicates that the client lost its synchronization and causes
+            // the MUC service to re-send the presence of each occupant in the
+            // room.
+            lastPresenceSent.removeExtension(
+                MUCInitialPresence.ELEMENT,
+                MUCInitialPresence.NAMESPACE);
         };
         muc.addPresenceInterceptor(presenceInterceptor);
-
-        synchronized (muc)
-        {
-            clearMucOccupantsMap(muc);
-            muc.createOrJoin(nickname);
-        }
+        muc.createOrJoin(nickname);
 
         Form config = muc.getConfigurationForm();
 
@@ -444,7 +444,9 @@ public class ChatRoomImpl
     @Override
     public boolean containsPresenceExtension(String elementName, String namespace)
     {
-        return lastPresenceSent != null && lastPresenceSent.getExtensionElement(elementName, namespace) != null;
+        return lastPresenceSent != null
+            && lastPresenceSent.getExtension(new QName(elementName, namespace))
+            != null;
     }
 
     @Override
@@ -549,7 +551,7 @@ public class ChatRoomImpl
 
         // Remove old
         ExtensionElement old =
-            lastPresenceSent.getExtensionElement(extension.getElementName(), extension.getNamespace());
+            lastPresenceSent.getExtension(new QName(extension.getElementName(), extension.getNamespace()));
         if (old != null)
         {
             lastPresenceSent.removeExtension(old);
@@ -594,13 +596,13 @@ public class ChatRoomImpl
         // Remove old
         if (toRemove != null)
         {
-            toRemove.forEach(old -> lastPresenceSent.removeExtension(old));
+            toRemove.forEach(lastPresenceSent::removeExtension);
         }
 
         // Add new
         if (toAdd != null)
         {
-            toAdd.forEach(newExt -> lastPresenceSent.addExtension(newExt));
+            toAdd.forEach(lastPresenceSent::addExtension);
         }
 
         sendLastPresence();
@@ -612,15 +614,7 @@ public class ChatRoomImpl
      */
     private void sendLastPresence()
     {
-        // The initial presence sent by smack contains an empty "x"
-        // extension. If this extension is included in a subsequent stanza,
-        // it indicates that the client lost its synchronization and causes
-        // the MUC service to re-send the presence of each occupant in the
-        // room.
-        lastPresenceSent = lastPresenceSent.cloneWithNewId();
-        lastPresenceSent.removeExtension(MUCInitialPresence.ELEMENT, MUCInitialPresence.NAMESPACE);
-
-        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent);
+        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent.build());
     }
 
     @Override
@@ -942,7 +936,6 @@ public class ChatRoomImpl
 
         /**
          * This needs to be prepared to run twice for the same member.
-         * @param occupantJid
          */
         @Override
         public void left(EntityFullJid occupantJid)
@@ -1158,34 +1151,6 @@ public class ChatRoomImpl
                 handler.roomDestroyed(reason);
                 return Unit.INSTANCE;
             });
-        }
-    }
-
-    /**
-     * Due to a race in Smack 4.4.3 handling presence while leaving, there are cases where the MultiUserChat
-     * object's occupantsMap object is not empty, as it should be, when we first reference it for the next
-     * chat instance.  This function uses reflection to hack the internal state to fix the problem.
-     */
-    private void clearMucOccupantsMap(MultiUserChat muc)
-    {
-        assert(!muc.isJoined());
-
-        Field occupantsMapField = null;
-        try
-        {
-            occupantsMapField = muc.getClass().getDeclaredField("occupantsMap");
-            occupantsMapField.setAccessible(true);
-
-            Map<EntityFullJid, Presence> occupantsMap = (Map<EntityFullJid, Presence>)occupantsMapField.get(muc);
-            if (!occupantsMap.isEmpty())
-            {
-                logger.warn("MultiUserChat occupantsMap is not empty, clearing.");
-                occupantsMap.clear();
-            }
-        }
-        catch (NoSuchFieldException | IllegalAccessException e)
-        {
-            logger.error("Unable to reset MultiUserChat occupantsMap", e);
         }
     }
 }

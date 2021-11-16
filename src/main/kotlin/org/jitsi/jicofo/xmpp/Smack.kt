@@ -19,7 +19,10 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.xmpp.extensions.DefaultPacketExtensionProvider
 import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
-import org.jitsi.xmpp.extensions.colibri.ColibriIQProvider
+import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIqProvider
+import org.jitsi.xmpp.extensions.colibri.ColibriStatsIqProvider
+import org.jitsi.xmpp.extensions.colibri.ForcefulShutdownIqProvider
+import org.jitsi.xmpp.extensions.colibri.GracefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.health.HealthCheckIQProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
@@ -44,6 +47,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionRequestExtension
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
+import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
 import org.jivesoftware.smack.SmackConfiguration
 import org.jivesoftware.smack.parsing.ExceptionLoggingCallback
@@ -66,7 +70,10 @@ fun registerXmppExtensions() {
     ConferenceIqProvider()
     LoginUrlIqProvider()
     LogoutIqProvider()
-    ColibriIQProvider()
+    ColibriConferenceIqProvider()
+    GracefulShutdownIqProvider.registerIQProvider()
+    ForcefulShutdownIqProvider.registerIQProvider()
+    ColibriStatsIqProvider()
     HealthCheckIQProvider.registerIQProvider()
     // ice-state
     ProviderManager.addExtensionProvider(
@@ -118,7 +125,7 @@ fun registerXmppExtensions() {
     ProviderManager.addIQProvider(
         ColibriConferenceIQ.ELEMENT,
         ColibriConferenceIQ.NAMESPACE,
-        ColibriIQProvider()
+        ColibriConferenceIqProvider()
     )
     // register Jingle
     ProviderManager.addIQProvider(
@@ -145,4 +152,10 @@ fun registerXmppExtensions() {
     MuteIqProvider.registerMuteIqProvider()
     MuteVideoIqProvider.registerMuteVideoIqProvider()
     StartMutedProvider.registerStartMutedProvider()
+
+    ProviderManager.addExtensionProvider(
+        VideoMutedExtension.ELEMENT,
+        VideoMutedExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(VideoMutedExtension::class.java)
+    )
 }

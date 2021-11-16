@@ -202,7 +202,7 @@ public class TranscriberManager
             return;
         }
 
-        RayoIqProvider.DialIq dialIq = new RayoIqProvider.DialIq();
+        DialIq dialIq = new DialIq();
         dialIq.setDestination("jitsi_meet_transcribe");
         dialIq.setTo(jigasiJid);
         dialIq.setType(IQ.Type.set);

@@ -264,7 +264,8 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             return;
         }
 
-        T ext = presence.getExtension(extensionElementName, extensionNamespace);
+        @SuppressWarnings("unchecked")
+        T ext = (T) presence.getExtensionElement(extensionElementName, extensionNamespace);
 
         // if the extension is missing skip processing
         if (ext == null)

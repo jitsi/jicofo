@@ -17,28 +17,24 @@
  */
 package org.jitsi.jicofo;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import mock.xmpp.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jivesoftware.smack.packet.*;
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
+import org.junit.jupiter.api.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import static org.junit.Assert.assertEquals;
-
-@RunWith(JUnit4.class)
 public class ConnectionMockTest
 {
     private XmppPeer peerA;
     private XmppPeer peerB;
     private XmppPeer peerC;
 
-    @Before
+    @BeforeEach
     public void setup()
-            throws Exception
     {
         peerA = new XmppPeer("A");
         peerB = new XmppPeer("B");
@@ -49,7 +45,7 @@ public class ConnectionMockTest
         peerC.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         peerA.stop();
