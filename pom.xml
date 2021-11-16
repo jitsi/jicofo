@@ -16,7 +16,7 @@
     <assembly.skipAssembly>false</assembly.skipAssembly>
     <jetty.version>9.4.41.v20210516</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <smack.version>4.4.3</smack.version>
+    <smack.version>4.4.4</smack.version>
     <kotlin.version>1.5.20</kotlin.version>
     <kotest.version>4.6.1</kotest.version>
     <slf4j.version>1.7.26</slf4j.version>
