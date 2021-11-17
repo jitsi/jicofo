@@ -28,7 +28,6 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.LocalAndDomainpartJid;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -300,7 +299,7 @@ public class JibriSession
      * @throws StartException if fails  to start.
      */
     private void startInternal()
-        throws StartException
+            throws StartException
     {
         try
         {
@@ -308,27 +307,20 @@ public class JibriSession
 
             selectAndStartJibri();
 
-            if(currentJibriJid == null)
-            {
+            if (currentJibriJid == null) {
                 logger.error("Unable to find an available Jibri, can't start");
 
-                if (jibriDetector.isAnyInstanceConnected())
-                {
+                if (jibriDetector.isAnyInstanceConnected()) {
                     throw new StartException.AllBusy();
                 }
 
                 throw new StartException.NotAvailable();
             }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             logger.error("Failed to send start Jibri IQ: " + e, e);
-            if (!maxRetriesExceeded())
-            {
+            if (!maxRetriesExceeded()) {
                 retryRequestWithAnotherJibri();
-            }
-            else
-            {
+            } else {
                 throw new StartException.InternalServerError();
             }
         }
@@ -338,49 +330,25 @@ public class JibriSession
      * Stops this session if it's not already stopped.
      * @param initiator The jid of the initiator of the stop request.
      */
-    synchronized public void stop(Jid initiator)
-    {
-        if (currentJibriJid == null)
-        {
+    synchronized public void stop(Jid initiator) {
+        if (currentJibriJid == null) {
             return;
         }
         this.terminator = initiator;
 
-        JibriIq stopRequest = new JibriIq();
 
-        stopRequest.setType(IQ.Type.set);
-        stopRequest.setTo(currentJibriJid);
-        stopRequest.setAction(JibriIq.Action.STOP);
-        stopRequest.setSessionId(this.sessionId);
+        logger.info("Trying to stop: " + currentJibriJid);
+        Jid result = jibriDetector.stopJibri(sessionId, currentJibriJid.getResourceOrEmpty().toString());
 
-        logger.info("Trying to stop: " + stopRequest.toXML());
+        if (result == null) {
+            logger.error("Unable to stop Jibri");
 
-        SmackFuture<IQ, Exception> future =
-            jibriDetector.getXmppConnection().sendIqRequestAsync(stopRequest, 60000);
-
-        future.onSuccess(stanza ->
-        {
-            if (stanza instanceof JibriIq)
-            {
-                processJibriIqFromJibri((JibriIq) stanza);
-            }
-            else
-            {
-                logger.error(
-                    "Unexpected response to stop iq: "
-                        + (stanza != null ? stanza.toXML() : "null"));
-
-                JibriIq error = new JibriIq();
-
-                error.setFrom(stopRequest.getTo());
-                error.setFailureReason(FailureReason.ERROR);
-                error.setStatus(Status.OFF);
-
-                processJibriIqFromJibri(error);
-            }
-        }).onError(exception ->
-            logger.error(
-                "Error sending stop iq: " + exception.toString()));
+            JibriIq error = new JibriIq();
+            error.setFrom(currentJibriJid);
+            error.setFailureReason(FailureReason.ERROR);
+            error.setStatus(Status.OFF);
+            processJibriIqFromJibri(error);
+        }
     }
 
     private void cleanupSession()
@@ -467,8 +435,10 @@ public class JibriSession
                         : (" for stream ID: " + streamID))
                         + " in room: " + roomName);
 
-        jibriDetector.selectAndStartJibri(sessionId, roomName.getLocalpart().toString());
-
+        currentJibriJid = jibriDetector.selectAndStartJibri(sessionId, roomName.getLocalpart().toString());
+        if (currentJibriJid != null) {
+            handleJibriStatusUpdate(currentJibriJid, Status.ON, null, false);
+        }
     }
 
     /**

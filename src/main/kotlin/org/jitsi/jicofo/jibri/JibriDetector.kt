@@ -33,6 +33,11 @@ import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.Jid
+import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.jid.impl.LocalAndDomainpartJid
+import org.jxmpp.jid.parts.Domainpart
+import org.jxmpp.jid.parts.Localpart
+import org.jxmpp.jid.parts.Resourcepart
 import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
@@ -68,7 +73,7 @@ class JibriDetector(
 
     val hostname = xmppProvider.config.hostname
     val xmppConnection = xmppProvider.xmppConnection
-    val breweryJidAsString = breweryJid.asUnescapedString()
+    val breweryJid = breweryJid
     /**
      * Selects a Jibri to be used for a recording session.
      *
@@ -122,10 +127,7 @@ class JibriDetector(
             if (200 == statusCode || 201 == statusCode) {
                 val responseJSONObject = JSON.parse(responseBody) as Map<*, *>
                 val selectedJibriKey = responseJSONObject.get("jibriKey") as String
-                //var selectedJibriJid = EntityBareJid()
-                //return "jibribrewery@internal.auth.oana.jitsi.net/"
-                //TODO transform in JID
-                return null
+                return JidCreate.entityFullFrom(breweryJid.localpart, breweryJid.asDomainBareJid(), Resourcepart.from(selectedJibriKey))
             } else {
                 //TODO check for busy error
             }
@@ -134,6 +136,37 @@ class JibriDetector(
         }
 
         return null
+    }
+
+    fun stopJibri(sessionId: String, jibriKey: String): Jid? {
+        val client = HttpClientBuilder.create().build()
+        val post = HttpPost("http://localhost:3000/sip-jibri-gateway/jibris/stop")
+
+        val jsonObject = JSONObject()
+        jsonObject.put("sessionId", sessionId)
+        jsonObject.put("jibriKey", jibriKey)
+        post.entity = StringEntity(
+            jsonObject.toString(),
+            ContentType.APPLICATION_JSON
+        )
+
+        try {
+            val response = client.execute(post)
+            val statusCode = response.getStatusLine().statusCode
+            val entity = response.getEntity()
+            val responseBody: String = EntityUtils.toString(entity, StandardCharsets.UTF_8)
+            logger.info("STATUS CODE: $statusCode")
+            logger.info("RESPONSE BODY: $responseBody")
+
+            if (200 == statusCode || 201 == statusCode) {
+                return JidCreate.entityFullFrom(breweryJid.localpart, breweryJid.asDomainBareJid(), Resourcepart.from(jibriKey))
+            } else {
+                return null
+            }
+        } catch (e: Exception) {
+            logger.error(e)
+            return null
+        }
     }
 
     /**
