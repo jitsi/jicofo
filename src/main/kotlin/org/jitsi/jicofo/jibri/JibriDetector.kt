@@ -17,6 +17,13 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.apache.http.HttpResponse
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.entity.ContentType
+import org.apache.http.entity.StringEntity
+import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.util.EntityUtils
+import org.eclipse.jetty.util.ajax.JSON
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
@@ -26,10 +33,16 @@ import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.Jid
+import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
+import javax.ws.rs.client.Entity.json
+
+
+
+
 
 /**
  * <tt>JibriDetector</tt> manages the pool of Jibri instances by joining a "brewery" room where Jibris connect to and
@@ -53,7 +66,9 @@ class JibriDetector(
 
     val logger = createLogger()
 
+    val hostname = xmppProvider.config.hostname
     val xmppConnection = xmppProvider.xmppConnection
+    val breweryJidAsString = breweryJid.asUnescapedString()
     /**
      * Selects a Jibri to be used for a recording session.
      *
@@ -73,6 +88,52 @@ class JibriDetector(
             oldest.lastSelected = now
             oldest.jid
         } else null
+    }
+
+    fun selectAndStartJibri(sessionId: String, room: String): Jid? {
+        val client = HttpClientBuilder.create().build()
+
+        val post = HttpPost("http://localhost:3000/sip-jibri-gateway/jibris/start")
+        val jsonObject = JSONObject()
+
+        val callUrlInfo = JSONObject()
+        callUrlInfo.put("baseUrl", "https://" + hostname)
+        callUrlInfo.put("callName", room)
+        val callParams = JSONObject()
+        callParams.put("callUrlInfo", callUrlInfo)
+
+        jsonObject.put("sessionId", sessionId)
+        jsonObject.put("callParams", callParams)
+        jsonObject.put("sinkType", "FILE")
+
+        post.entity = StringEntity(
+            jsonObject.toString(),
+            ContentType.APPLICATION_JSON
+        )
+
+        try {
+            val response = client.execute(post)
+            val statusCode = response.getStatusLine().statusCode
+            val entity = response.getEntity()
+            val responseBody: String = EntityUtils.toString(entity, StandardCharsets.UTF_8)
+            logger.info("STATUS CODE: $statusCode")
+            logger.info("RESPONSE BODY: $responseBody")
+
+            if (200 == statusCode || 201 == statusCode) {
+                val responseJSONObject = JSON.parse(responseBody) as Map<*, *>
+                val selectedJibriKey = responseJSONObject.get("jibriKey") as String
+                //var selectedJibriJid = EntityBareJid()
+                //return "jibribrewery@internal.auth.oana.jitsi.net/"
+                //TODO transform in JID
+                return null
+            } else {
+                //TODO check for busy error
+            }
+        } catch (e: Exception) {
+            logger.error(e)
+        }
+
+        return null
     }
 
     /**

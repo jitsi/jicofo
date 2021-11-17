@@ -28,6 +28,7 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.LocalAndDomainpartJid;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -301,30 +302,27 @@ public class JibriSession
     private void startInternal()
         throws StartException
     {
-        final Jid jibriJid = jibriDetector.selectJibri();
-
-        if (jibriJid == null)
-        {
-            logger.error("Unable to find an available Jibri, can't start");
-
-            if (jibriDetector.isAnyInstanceConnected())
-            {
-                throw new StartException.AllBusy();
-            }
-
-            throw new StartException.NotAvailable();
-        }
-
         try
         {
-            logger.info("Starting session with Jibri " + jibriJid);
+            logger.info("Starting session with Jibri ");
 
-            sendJibriStartIq(jibriJid);
+            selectAndStartJibri();
+
+            if(currentJibriJid == null)
+            {
+                logger.error("Unable to find an available Jibri, can't start");
+
+                if (jibriDetector.isAnyInstanceConnected())
+                {
+                    throw new StartException.AllBusy();
+                }
+
+                throw new StartException.NotAvailable();
+            }
         }
         catch (Exception e)
         {
             logger.error("Failed to send start Jibri IQ: " + e, e);
-            jibriDetector.instanceFailed(jibriJid);
             if (!maxRetriesExceeded())
             {
                 retryRequestWithAnotherJibri();
@@ -459,6 +457,18 @@ public class JibriSession
             return RecordingMode.STREAM;
         }
         return RecordingMode.FILE;
+    }
+
+    private void selectAndStartJibri() {
+        logger.info(
+                "Starting Jibri "
+                        + (isSIP
+                        ? ("for SIP address: " + sipAddress)
+                        : (" for stream ID: " + streamID))
+                        + " in room: " + roomName);
+
+        jibriDetector.selectAndStartJibri(sessionId, roomName.getLocalpart().toString());
+
     }
 
     /**
