@@ -247,7 +247,7 @@ location /Shibboleth.sso {
   fastcgi_pass unix:/opt/shibboleth/shibresponder.sock;
 }
 
-location /shibboleth-sp {
+location /shibboleth-sp/ {
   alias /usr/share/shibboleth/;
 }
 
