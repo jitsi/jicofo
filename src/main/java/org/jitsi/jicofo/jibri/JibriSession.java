@@ -236,6 +236,14 @@ public class JibriSession
         stateListener.onSessionStateChanged(this, newStatus, failureReason);
     }
 
+    public void markStarted() {
+        handleJibriStatusUpdate(currentJibriJid, Status.ON, null, false);
+    }
+
+    public void markStopped(){
+        handleJibriStatusUpdate(currentJibriJid, Status.OFF, null, false);
+    }
+
     /**
      * @return The {@link JibriSession.Type} of this session.
      */
@@ -321,6 +329,9 @@ public class JibriSession
             if (!maxRetriesExceeded()) {
                 retryRequestWithAnotherJibri();
             } else {
+                if (e instanceof StartException ){
+                    throw e;
+                }
                 throw new StartException.InternalServerError();
             }
         }
@@ -437,7 +448,7 @@ public class JibriSession
 
         currentJibriJid = jibriDetector.selectAndStartJibri(sessionId, roomName.getLocalpart().toString());
         if (currentJibriJid != null) {
-            handleJibriStatusUpdate(currentJibriJid, Status.ON, null, false);
+            handleJibriStatusUpdate(currentJibriJid, Status.PENDING, null, false);
         }
     }
 
