@@ -266,6 +266,12 @@ public class MockChatRoom
     }
 
     @Override
+    public int getAudioSendersCount()
+    {
+        return 0; /* implement */
+    }
+
+    @Override
     public int getVideoSendersCount()
     {
         return 0; /* implement */

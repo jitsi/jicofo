@@ -95,6 +95,11 @@ public class ChatMemberImpl
     private String statsId;
 
     /**
+     * Indicates whether the member's audio sources are currently muted.
+     */
+    private boolean isAudioMuted = true;
+
+    /**
      * Indicates whether the member's video sources are currently muted.
      */
     private boolean isVideoMuted = true;
@@ -205,6 +210,9 @@ public class ChatMemberImpl
     }
 
     @Override
+    public boolean isAudioMuted() { return isAudioMuted; }
+
+    @Override
     public boolean isVideoMuted() { return isVideoMuted; }
 
     /**
@@ -296,13 +304,26 @@ public class ChatMemberImpl
             statsId = statsIdPacketExt.getStatsId();
         }
 
+        boolean wasAudioMuted = isAudioMuted;
+        StandardExtensionElement audioMutedExt = presence.getExtension("audiomuted", "jabber:client");
+        isAudioMuted = audioMutedExt == null || Boolean.valueOf(audioMutedExt.getText()); /* defaults to true */
+
+        if (isAudioMuted != wasAudioMuted)
+        {
+            logger.debug(() -> toString() + ". isAudioMuted = " + isAudioMuted + ".");
+            if (isAudioMuted)
+                chatRoom.removeAudioSender();
+            else
+                chatRoom.addAudioSender();
+        }
+
         boolean wasVideoMuted = isVideoMuted;
         StandardExtensionElement videoMutedExt = presence.getExtension("videomuted", "jabber:client");
         isVideoMuted = videoMutedExt == null || Boolean.valueOf(videoMutedExt.getText()); /* defaults to true */
 
         if (isVideoMuted != wasVideoMuted)
         {
-            logger.debug(() -> toString() + ". isMuted = " + isVideoMuted + ".");
+            logger.debug(() -> toString() + ". isVideoMuted = " + isVideoMuted + ".");
             if (isVideoMuted)
                 chatRoom.removeVideoSender();
             else

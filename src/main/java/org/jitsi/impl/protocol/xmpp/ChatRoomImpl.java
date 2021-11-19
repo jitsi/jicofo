@@ -144,6 +144,11 @@ public class ChatRoomImpl
     }
 
     /**
+     * The number of members that currently have their audio sources unmuted.
+     */
+    private int numAudioSenders;
+
+    /**
      * The number of members that currently have their video sources unmuted.
      */
     private int numVideoSenders;
@@ -624,7 +629,32 @@ public class ChatRoomImpl
     }
 
     @Override
+    public int getAudioSendersCount() { return numAudioSenders; }
+
+    @Override
     public int getVideoSendersCount() { return numVideoSenders; }
+
+    public void addAudioSender()
+    {
+        ++numAudioSenders;
+        logger.debug(() -> "The number of audio senders has increased to " + numAudioSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numAudioSendersChanged(numAudioSenders);
+            return Unit.INSTANCE;
+        });
+    }
+
+    public void removeAudioSender()
+    {
+        --numAudioSenders;
+        logger.debug(() -> "The number of audio senders has decreased to " + numAudioSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numAudioSendersChanged(numAudioSenders);
+            return Unit.INSTANCE;
+        });
+    }
 
     public void addVideoSender()
     {
@@ -668,6 +698,8 @@ public class ChatRoomImpl
 
             members.put(jid, newMember);
 
+            if (!newMember.isAudioMuted())
+                addAudioSender();
             if (!newMember.isVideoMuted())
                 addVideoSender();
 
@@ -931,9 +963,12 @@ public class ChatRoomImpl
                 {
                     logger.error(occupantJid + " not in " + roomJid);
                 }
-                else if (!removed.isVideoMuted())
+                else
                 {
-                    removeVideoSender();
+                    if (!removed.isAudioMuted())
+                        removeAudioSender();
+                    if (!removed.isVideoMuted())
+                        removeVideoSender();
                 }
 
                 return removed;

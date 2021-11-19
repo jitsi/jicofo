@@ -229,6 +229,11 @@ public class JitsiMeetConferenceImpl
     private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap();
 
     /**
+     * Whether the limit on the number of audio senders is currently hit.
+     */
+    private boolean audioLimitReached = false;
+
+    /**
      * Whether the limit on the number of video senders is currently hit.
      */
     private boolean videoLimitReached = false;
@@ -528,6 +533,19 @@ public class JitsiMeetConferenceImpl
         if (updatePresence && chatRoom != null)
         {
             chatRoom.setPresenceExtension(ConferenceProperties.clone(conferenceProperties), false);
+        }
+    }
+
+    /**
+     * Process the new number of audio senders reported by the chat room.
+     */
+    private void onNumAudioSendersChanged(int numAudioSenders)
+    {
+        boolean newValue = numAudioSenders >= ConferenceConfig.config.getMaxAudioSenders();
+        if (audioLimitReached != newValue)
+        {
+            audioLimitReached = newValue;
+            setConferenceProperty("audio-limit-reached", String.valueOf(audioLimitReached));
         }
     }
 
@@ -1522,10 +1540,15 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
-        if (sourcesAdvertised.getHasVideo() &&
+        boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
+            chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
+
+        if (rejectedAudioSource ||
+            sourcesAdvertised.getHasVideo() &&
             chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
         {
-            String errorMsg = "Source add rejected. Maximum number of video senders reached.";
+            String errorMsg = "Source add rejected. Maximum number of " +
+                (rejectedAudioSource ? "audio" : "video") + " senders reached.";
             logger.warn(() -> participantId + ": " + errorMsg);
             return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
         }
@@ -2488,6 +2511,12 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+        }
+
+        @Override
+        public void numAudioSendersChanged(int numAudioSenders)
+        {
+            onNumAudioSendersChanged(numAudioSenders);
         }
 
         @Override

@@ -121,6 +121,7 @@ private class JibriChatRoomMember(
     override fun isRobot(): Boolean = TODO("Not yet implemented")
     override fun isJigasi(): Boolean = TODO("Not yet implemented")
     override fun isJibri(): Boolean = TODO("Not yet implemented")
+    override fun isAudioMuted(): Boolean = TODO("Not yet implemented")
     override fun isVideoMuted(): Boolean = TODO("Not yet implemented")
 
     override fun getRegion(): String = TODO("Not yet implemented")

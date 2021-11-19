@@ -62,6 +62,10 @@ class ConferenceConfig {
         "jicofo.conference.min-participants".from(newConfig)
     }
 
+    val maxAudioSenders: Int by config {
+        "jicofo.conference.max-audio-senders".from(newConfig)
+    }
+
     val maxVideoSenders: Int by config {
         "jicofo.conference.max-video-senders".from(newConfig)
     }

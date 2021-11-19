@@ -29,6 +29,7 @@ interface ChatRoomListener {
     fun roomDestroyed(reason: String) {}
     fun startMutedChanged(startAudioMuted: Boolean, startVideoMuted: Boolean) {}
     fun localRoleChanged(newRole: MemberRole, oldRole: MemberRole? = null) {}
+    fun numAudioSendersChanged(numAudioSenders: Int) {}
     fun numVideoSendersChanged(numVideoSenders: Int) {}
 }
 
