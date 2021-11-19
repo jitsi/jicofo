@@ -1062,8 +1062,13 @@ public class JitsiMeetConferenceImpl
             }
             else if (participants.size() == 0)
             {
-                stop();
+                expireBridgeSessions();
             }
+        }
+
+        if (chatRoom == null || chatRoom.getMembersCount() == 0)
+        {
+            stop();
         }
     }
 
