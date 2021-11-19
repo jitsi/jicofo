@@ -17,14 +17,12 @@
  */
 package org.jitsi.jicofo.conference;
 
-import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
-import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.util.*;
@@ -396,7 +394,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            disposeConference();
+            expireBridgeSessions();
         }
         catch (Exception e)
         {
@@ -1004,12 +1002,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Disposes of this conference. Expires all allocated COLIBRI conferences.
-     *
-     * Does not terminate jingle sessions with its participants (why???).
-     *
+     * Expires all COLIBRI conferences.
      */
-    private void disposeConference()
+    private void expireBridgeSessions()
     {
         // If the conference is being disposed the timeout is not needed
         // anymore
@@ -1026,9 +1021,6 @@ public class JitsiMeetConferenceImpl
             }
             bridges.clear();
         }
-
-        // TODO: what about removing the participants and ending their jingle
-        // session?
     }
 
     private void onMemberKicked(ChatRoomMember chatRoomMember)
@@ -2415,7 +2407,7 @@ public class JitsiMeetConferenceImpl
                             /* send session-terminate */ true,
                             /* send source-remove */ false);
 
-                    disposeConference();
+                    expireBridgeSessions();
                 }
                 else
                 {
