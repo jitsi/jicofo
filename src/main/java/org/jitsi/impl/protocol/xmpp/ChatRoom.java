@@ -25,7 +25,6 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Represents a chat channel/room/rendez-vous point/ where multiple chat users
@@ -52,11 +51,6 @@ public interface ChatRoom
      * otherwise.
      */
     boolean isJoined();
-
-    /**
-     * Set the executor to use to fire events to {@link ChatRoomListener}s.
-     */
-    void setEventExecutor(@NotNull Executor executor);
 
     /**
      * Leave this chat room. Once this method is called, the user won't be
