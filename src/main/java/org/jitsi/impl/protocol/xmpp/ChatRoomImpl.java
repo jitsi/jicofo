@@ -227,16 +227,17 @@ public class ChatRoomImpl
 
         this.presenceInterceptor = packet ->
         {
-            lastPresenceSent = packet.asBuilder((String) null);
-
             // The initial presence sent by smack contains an empty "x"
             // extension. If this extension is included in a subsequent stanza,
             // it indicates that the client lost its synchronization and causes
             // the MUC service to re-send the presence of each occupant in the
             // room.
-            lastPresenceSent.removeExtension(
-                MUCInitialPresence.ELEMENT,
-                MUCInitialPresence.NAMESPACE);
+            synchronized (this)
+            {
+                lastPresenceSent = packet.asBuilder((String) null).removeExtension(
+                    MUCInitialPresence.ELEMENT,
+                    MUCInitialPresence.NAMESPACE);
+            }
         };
         muc.addPresenceInterceptor(presenceInterceptor);
         muc.createOrJoin(nickname);
@@ -442,7 +443,7 @@ public class ChatRoomImpl
      * {@inheritDoc}
      */
     @Override
-    public boolean containsPresenceExtension(String elementName, String namespace)
+    public synchronized boolean containsPresenceExtension(String elementName, String namespace)
     {
         return lastPresenceSent != null
             && lastPresenceSent.getExtension(new QName(elementName, namespace))
@@ -541,40 +542,49 @@ public class ChatRoomImpl
     @Override
     public void setPresenceExtension(ExtensionElement extension, boolean remove)
     {
-        if (lastPresenceSent == null)
+        Presence presenceToSend = null;
+        synchronized (this)
         {
-            logger.error("No presence packet obtained yet");
-            return;
+            if (lastPresenceSent == null)
+            {
+                logger.error("No presence packet obtained yet");
+                return;
+            }
+
+            boolean presenceUpdated = false;
+
+            // Remove old
+            ExtensionElement old =
+                lastPresenceSent.getExtension(new QName(extension.getElementName(), extension.getNamespace()));
+            if (old != null)
+            {
+                lastPresenceSent.removeExtension(old);
+                presenceUpdated = true;
+            }
+
+            if (!remove)
+            {
+                // Add new
+                lastPresenceSent.addExtension(extension);
+                presenceUpdated = true;
+            }
+
+            if (presenceUpdated)
+            {
+                presenceToSend = lastPresenceSent.build();
+            }
         }
 
-        boolean presenceUpdated = false;
-
-        // Remove old
-        ExtensionElement old =
-            lastPresenceSent.getExtension(new QName(extension.getElementName(), extension.getNamespace()));
-        if (old != null)
+        if (presenceToSend != null)
         {
-            lastPresenceSent.removeExtension(old);
-            presenceUpdated = true;
-        }
-
-        if (!remove)
-        {
-            // Add new
-            lastPresenceSent.addExtension(extension);
-            presenceUpdated = true;
-        }
-
-        if (presenceUpdated)
-        {
-            sendLastPresence();
+            sendPresence(presenceToSend);
         }
     }
 
     /**
      * {@inheritDoc}
      */
-    public Collection<ExtensionElement> getPresenceExtensions()
+    public synchronized Collection<ExtensionElement> getPresenceExtensions()
     {
         return lastPresenceSent != null
             ? new ArrayList<>(lastPresenceSent.getExtensions())
@@ -587,34 +597,39 @@ public class ChatRoomImpl
     public void modifyPresence(Collection<ExtensionElement> toRemove,
                                Collection<ExtensionElement> toAdd)
     {
-        if (lastPresenceSent == null)
+        Presence presenceToSend;
+        synchronized (this)
         {
-            logger.error("No presence packet obtained yet");
-            return;
+            if (lastPresenceSent == null)
+            {
+                logger.error("No presence packet obtained yet");
+                return;
+            }
+
+            // Remove old
+            if (toRemove != null)
+            {
+                toRemove.forEach(lastPresenceSent::removeExtension);
+            }
+
+            // Add new
+            if (toAdd != null)
+            {
+                toAdd.forEach(lastPresenceSent::addExtension);
+            }
+
+            presenceToSend = lastPresenceSent.build();
         }
 
-        // Remove old
-        if (toRemove != null)
-        {
-            toRemove.forEach(lastPresenceSent::removeExtension);
-        }
-
-        // Add new
-        if (toAdd != null)
-        {
-            toAdd.forEach(lastPresenceSent::addExtension);
-        }
-
-        sendLastPresence();
+        sendPresence(presenceToSend);
     }
 
     /**
-     * Prepares and sends the last seen presence.
-     * Removes the initial <x> extension and sets new id.
+     * Sends a presence.
      */
-    private void sendLastPresence()
+    private void sendPresence(Presence presence)
     {
-        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), lastPresenceSent.build());
+        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), presence);
     }
 
     @Override
