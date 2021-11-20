@@ -131,7 +131,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-34-g3b1bde2</version>
+      <version>1.0-35-g090af0a</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -179,7 +179,7 @@
     <dependency>
       <groupId>io.sentry</groupId>
       <artifactId>sentry</artifactId>
-      <version>5.3.0</version>
+      <version>5.4.0</version>
       <scope>runtime</scope>
     </dependency>
     <!-- test -->
