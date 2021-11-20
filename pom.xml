@@ -51,7 +51,7 @@
     <slf4j.version>1.7.32</slf4j.version>
     <jersey.version>2.35</jersey.version>
     <jitsi.utils.version>1.0-108-g480acf0</jitsi.utils.version>
-    <jicoco.version>1.1-SNAPSHOT</jicoco.version>
+    <jicoco.version>1.1-98-gbeeaa92</jicoco.version>
     <spotbugs.version>4.2.0</spotbugs.version>
     <junit.version>5.8.1</junit.version>
   </properties>
