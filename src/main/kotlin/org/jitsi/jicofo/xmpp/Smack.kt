@@ -31,6 +31,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIqProvider
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JingleIQProvider
+import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
@@ -152,6 +153,12 @@ fun registerXmppExtensions() {
     MuteIqProvider.registerMuteIqProvider()
     MuteVideoIqProvider.registerMuteVideoIqProvider()
     StartMutedProvider.registerStartMutedProvider()
+
+    ProviderManager.addExtensionProvider(
+        AudioMutedExtension.ELEMENT,
+        AudioMutedExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(AudioMutedExtension::class.java)
+    )
 
     ProviderManager.addExtensionProvider(
         VideoMutedExtension.ELEMENT,
