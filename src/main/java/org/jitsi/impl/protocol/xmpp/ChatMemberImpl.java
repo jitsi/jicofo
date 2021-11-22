@@ -111,6 +111,7 @@ public class ChatMemberImpl
         this.resourcepart = fullJid.getResourceOrThrow();
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
+        logger.addContext("occupantJid", occupantJid.toString());
     }
 
     /**
@@ -242,7 +243,7 @@ public class ChatMemberImpl
             Boolean newStatus = userInfoPacketExt.isRobot();
             if (newStatus != null && this.robot != newStatus)
             {
-                logger.debug(getName() +" robot: " + robot);
+                logger.debug(() -> "robot: " + robot);
 
                 this.robot = newStatus;
             }
@@ -310,7 +311,7 @@ public class ChatMemberImpl
 
         if (isAudioMuted != wasAudioMuted)
         {
-            logger.debug(() -> toString() + ". isAudioMuted = " + isAudioMuted + ".");
+            logger.debug(() -> "isAudioMuted = " + isAudioMuted);
             if (isAudioMuted)
                 chatRoom.removeAudioSender();
             else
@@ -323,7 +324,7 @@ public class ChatMemberImpl
 
         if (isVideoMuted != wasVideoMuted)
         {
-            logger.debug(() -> toString() + ". isVideoMuted = " + isVideoMuted + ".");
+            logger.debug(() -> "isVideoMuted = " + isVideoMuted);
             if (isVideoMuted)
                 chatRoom.removeVideoSender();
             else
