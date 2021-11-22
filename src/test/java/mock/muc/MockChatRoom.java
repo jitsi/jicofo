@@ -234,11 +234,6 @@ public class MockChatRoom
     }
 
     @Override
-    public void setEventExecutor(@NotNull Executor executor)
-    {
-    }
-
-    @Override
     public void leave()
     {
         if (!isJoined)

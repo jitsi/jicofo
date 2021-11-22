@@ -17,17 +17,14 @@
  */
 package org.jitsi.jicofo.conference;
 
-import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
-import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -100,11 +97,6 @@ public class JitsiMeetConferenceImpl
      * about conference events.
      */
     private final JitsiMeetConferenceImpl.ConferenceListener listener;
-
-    /**
-     * An executor to be used for tasks related to this conference, which need to execute in order and which may block.
-     */
-    private final QueueExecutor queueExecutor;
 
     @NotNull
     private final Logger logger;
@@ -263,7 +255,6 @@ public class JitsiMeetConferenceImpl
         this.includeInStatistics = includeInStatistics;
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        queueExecutor = new QueueExecutor(TaskPools.getIoPool(), "JitsiMeetConference-queueExecutor", logger);
 
         logger.info("Created new conference.");
     }
@@ -396,7 +387,7 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            disposeConference();
+            expireBridgeSessions();
         }
         catch (Exception e)
         {
@@ -451,7 +442,6 @@ public class JitsiMeetConferenceImpl
 
         chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
         chatRoom.addListener(chatRoomListener);
-        chatRoom.setEventExecutor(queueExecutor);
 
         AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
         if (authenticationAuthority != null)
@@ -1004,12 +994,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Disposes of this conference. Expires all allocated COLIBRI conferences.
-     *
-     * Does not terminate jingle sessions with its participants (why???).
-     *
+     * Expires all COLIBRI conferences.
      */
-    private void disposeConference()
+    private void expireBridgeSessions()
     {
         // If the conference is being disposed the timeout is not needed
         // anymore
@@ -1026,9 +1013,6 @@ public class JitsiMeetConferenceImpl
             }
             bridges.clear();
         }
-
-        // TODO: what about removing the participants and ending their jingle
-        // session?
     }
 
     private void onMemberKicked(ChatRoomMember chatRoomMember)
@@ -1070,8 +1054,13 @@ public class JitsiMeetConferenceImpl
             }
             else if (participants.size() == 0)
             {
-                stop();
+                expireBridgeSessions();
             }
+        }
+
+        if (chatRoom == null || chatRoom.getMembersCount() == 0)
+        {
+            stop();
         }
     }
 
@@ -2415,7 +2404,7 @@ public class JitsiMeetConferenceImpl
                             /* send session-terminate */ true,
                             /* send source-remove */ false);
 
-                    disposeConference();
+                    expireBridgeSessions();
                 }
                 else
                 {

@@ -131,10 +131,9 @@ public class ChatRoomImpl
     private Map<String, List<String>> whitelists = new HashMap<>();
 
     /**
-     * The emitter used to fire events. By default we fire them synchronously, unless an executor is set via
-     * {@link #setEventExecutor(Executor)}
+     * The emitter used to fire events.
      */
-    private EventEmitter<ChatRoomListener> eventEmitter = new SyncEventEmitter<>();
+    private final EventEmitter<ChatRoomListener> eventEmitter = new SyncEventEmitter<>();
 
     private static class MucConfigFields {
         static final String IS_BREAKOUT_ROOM =  "muc#roominfo_isbreakout";
@@ -897,15 +896,6 @@ public class ChatRoomImpl
 
         List<String> whitelist = this.whitelists.get(mediaType.toString());
         return whitelist != null && whitelist.contains(jid.toString());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setEventExecutor(@NotNull Executor executor)
-    {
-        this.eventEmitter = new AsyncEventEmitter<>(executor, eventEmitter.getEventHandlers());
     }
 
     class MemberListener implements ParticipantStatusListener
