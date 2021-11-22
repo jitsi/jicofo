@@ -241,7 +241,7 @@ public class ChatMemberImpl
         }
 
         // We recognize jigasi by the existence of a "feature" extension in its presence.
-        FeaturesExtension features = presence.getExtension("features", "jabber:client");
+        FeaturesExtension features = presence.getExtension(FeaturesExtension.class);
         if (features != null)
         {
             isJigasi = features.getFeatureExtensions().stream().anyMatch(
@@ -297,12 +297,12 @@ public class ChatMemberImpl
         }
 
         boolean wasVideoMuted = isVideoMuted;
-        StandardExtensionElement videoMutedExt = presence.getExtension("videomuted", "jabber:client");
-        isVideoMuted = videoMutedExt == null || Boolean.valueOf(videoMutedExt.getText()); /* defaults to true */
+        VideoMutedExtension videoMutedExt = presence.getExtension(VideoMutedExtension.class);
+        isVideoMuted = videoMutedExt == null || videoMutedExt.isVideoMuted(); /* defaults to true */
 
         if (isVideoMuted != wasVideoMuted)
         {
-            logger.debug(() -> toString() + ". isMuted = " + isVideoMuted + ".");
+            logger.debug(() -> this + ". isMuted = " + isVideoMuted + ".");
             if (isVideoMuted)
                 chatRoom.removeVideoSender();
             else

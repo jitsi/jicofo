@@ -20,7 +20,8 @@ package org.jitsi.jicofo;
 import mock.xmpp.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import org.junit.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -29,7 +30,7 @@ import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JigasiSelectorTest
 {
@@ -52,7 +53,7 @@ public class JigasiSelectorTest
 
     private int numberOfInstances = 0;
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         harness.shutdown();
@@ -129,7 +130,7 @@ public class JigasiSelectorTest
             emptyList(),        /* preferred regions */
             null,               /* local region */
             false);             /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid2, res);
+        assertEquals(jid2, res, "Wrong jigasi selected");
 
         // select by preferred regions
         // should select based on participant as no region reported by instances
@@ -141,7 +142,7 @@ public class JigasiSelectorTest
             asList("region2", "region3"),           /* preferred regions */
             "region2",                              /* local region */
             false);                                 /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid1, res);
+        assertEquals(jid1, res, "Wrong jigasi selected");
 
         updateStats(jid1, 1, "region1", null, true, true);
         updateStats(jid2, 2, "region2", null, true, true);
@@ -152,7 +153,7 @@ public class JigasiSelectorTest
             asList("region2", "region3"),           /* preferred regions */
             null,                                   /* local region */
             false);                                 /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid2, res);
+        assertEquals(jid2, res, "Wrong jigasi selected");
         // no matching region, selects based on participants
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
@@ -160,7 +161,7 @@ public class JigasiSelectorTest
             singletonList("region3"),   /* preferred regions */
             null,                                   /* local region */
             false);                                 /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid1, res);
+        assertEquals(jid1, res, "Wrong jigasi selected");
 
         // select by local region
         // no matching region, selects based on local region
@@ -170,14 +171,14 @@ public class JigasiSelectorTest
             singletonList("region3"),               /* preferred regions */
             "region2",                              /* local region */
             false);                                 /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid2, res);
+        assertEquals(jid2, res, "Wrong jigasi selected");
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
             emptyList(),        /* exclude */
             emptyList(),        /* preferred regions */
             "region2",          /* local region */
             false);             /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid2, res);
+        assertEquals(jid2, res, "Wrong jigasi selected");
 
         // filter
         // should select from region2, but that is filtered so will select
@@ -188,7 +189,7 @@ public class JigasiSelectorTest
             asList("region2", "region3"),            /* preferred regions */
             null,                                    /* local region */
             false);                                  /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid1, res);
+        assertEquals(jid1, res, "Wrong jigasi selected");
 
 
         // select transcriber
@@ -203,7 +204,7 @@ public class JigasiSelectorTest
             emptyList(),        /* preferred regions */
             null,               /* local region */
             true);              /* select transcriber*/
-        assertNull("Wrong jigasi selected", res);
+        assertNull(res, "Wrong jigasi selected");
 
         Jid jid3 = createAndAddInstance();
         Jid jid4 = createAndAddInstance();
@@ -216,7 +217,7 @@ public class JigasiSelectorTest
             emptyList(),        /* preferred regions */
             null,               /* local region */
             true);              /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid3, res);
+        assertEquals(jid3, res, "Wrong jigasi selected");
 
         // select sipgw
         res = JigasiDetector.selectJigasi(
@@ -225,7 +226,7 @@ public class JigasiSelectorTest
             emptyList(),        /* preferred regions */
             null,               /* local region */
             false);             /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid1, res);
+        assertEquals(jid1, res, "Wrong jigasi selected");
 
         // transcriber from local region2
         res = JigasiDetector.selectJigasi(
@@ -234,7 +235,7 @@ public class JigasiSelectorTest
             emptyList(),        /* preferred regions */
             "region2",          /* local region */
             true);              /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid4, res);
+        assertEquals(jid4, res, "Wrong jigasi selected");
 
         // transcriber from region2
         res = JigasiDetector.selectJigasi(
@@ -243,7 +244,7 @@ public class JigasiSelectorTest
             asList("region2", "region3"),            /* preferred regions */
             null,                                    /* local region */
             true);                                   /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid4, res);
+        assertEquals(jid4, res, "Wrong jigasi selected");
 
         // transcriber no matching region, select based on participants
         res = JigasiDetector.selectJigasi(
@@ -252,7 +253,7 @@ public class JigasiSelectorTest
             singletonList("region3"),               /* preferred regions */
             null,                                   /* local region */
             true);                                  /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid3, res);
+        assertEquals(jid3, res, "Wrong jigasi selected");
 
         // transcriber no matching region, select based on participants, but
         // with filtered jid3(which has lowest number of participants)
@@ -262,6 +263,6 @@ public class JigasiSelectorTest
             singletonList("region3"),               /* preferred regions */
             null,                                   /* local region */
             true);                                  /* select transcriber*/
-        assertEquals("Wrong jigasi selected", jid4, res);
+        assertEquals(jid4, res, "Wrong jigasi selected");
     }
 }

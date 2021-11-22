@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 package org.jitsi.jicofo.bridge;
-import org.jitsi.xmpp.extensions.colibri.*;
-import org.junit.*;
-import org.jxmpp.jid.impl.*;
-
-import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.junit.jupiter.api.*;
+import org.jxmpp.jid.impl.*;
 
 public class BridgeSelectionStrategyTest
 {

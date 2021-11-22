@@ -17,27 +17,21 @@
  */
 package org.jitsi.jicofo.auth;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import mock.xmpp.*;
-import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.packet.*;
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 /**
  * Tests for authentication modules.
  *
  * @author Pawel Domas
  */
-@RunWith(JUnit4.class)
 public class XMPPAuthenticationAuthorityTest
 {
     private final static String AUTH_DOMAIN = "auth.server.net";
@@ -46,7 +40,7 @@ public class XMPPAuthenticationAuthorityTest
 
     private final MockXmppConnectionWrapper xmppConnection = new MockXmppConnectionWrapper();
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         // Enable XMPP authentication
@@ -54,7 +48,7 @@ public class XMPPAuthenticationAuthorityTest
         harness = new JicofoHarness();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         xmppConnection.shutdown();
@@ -169,8 +163,8 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertNotNull(
-                StanzaError.Condition.not_acceptable.toString(),
-                errorResponse.getError().getCondition());
+            errorResponse.getError().getCondition(),
+            StanzaError.Condition.not_acceptable.toString());
 
         // CASE 8: guest jid, session used without machine UID
         query.setFrom(user1GuestJid);
@@ -181,8 +175,8 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertNotNull(
-                StanzaError.Condition.not_acceptable.toString(),
-                errorResponse.getError().getCondition());
+            errorResponse.getError().getCondition(),
+            StanzaError.Condition.not_acceptable.toString());
 
         // CASE 9: auth jid, try to create session without machine UID
         query.setRoom(room3);
@@ -194,8 +188,8 @@ public class XMPPAuthenticationAuthorityTest
 
         // not-acceptable
         assertNotNull(
-                StanzaError.Condition.not_acceptable.toString(),
-                errorResponse.getError().getCondition());
+            errorResponse.getError().getCondition(),
+            StanzaError.Condition.not_acceptable.toString());
 
         // CASE 10: same user, different machine UID - assign separate session
         String user3MachineUID = "user3machineUID";

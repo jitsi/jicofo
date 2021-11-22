@@ -21,23 +21,21 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
 import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for bridge selection logic.
  *
  * @author Pawel Domas
  */
-@RunWith(JUnit4.class)
 public class BridgeSelectorTest
 {
     private final JicofoHarness harness = new JicofoHarness();
@@ -50,7 +48,7 @@ public class BridgeSelectorTest
     private Bridge jvb3;
     private BridgeSelector bridgeSelector;
 
-    @Before
+    @BeforeEach
     public void setUp()
         throws Exception
     {
@@ -65,7 +63,7 @@ public class BridgeSelectorTest
         jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
     }
 
-    @After
+    @AfterEach
     public void tearDown()
         throws Exception
     {

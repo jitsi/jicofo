@@ -10,20 +10,50 @@
   <packaging>jar</packaging>
 
   <name>jicofo</name>
+  <description>JItsi COnference FOcus is a server side focus component used in Jitsi Meet conferences.</description>
   <url>https://github.com/jitsi/jicofo</url>
+
+  <organization>
+    <name>jitsi.org</name>
+    <url>https://jitsi.org</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <id>org.jitsi</id>
+      <name>Jitsi Team</name>
+      <email>dev@jitsi.org</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/jitsi/jicofo</url>
+    <connection>scm:git:https://github.com/jitsi/jicofo</connection>
+    <developerConnection>scm:git:https://github.com/jicofo</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://github.com/jitsi/jicofo/blob/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
-    <jetty.version>9.4.41.v20210516</jetty.version>
+    <jetty.version>9.4.44.v20210927</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.4.4</smack.version>
-    <kotlin.version>1.5.20</kotlin.version>
-    <kotest.version>4.6.1</kotest.version>
-    <slf4j.version>1.7.26</slf4j.version>
-    <jersey.version>2.34</jersey.version>
-    <jitsi.utils.version>1.0-97-g67c980b</jitsi.utils.version>
-    <jicoco.version>1.1-94-g9c140b8</jicoco.version>
+    <kotlin.version>1.5.31</kotlin.version>
+    <kotest.version>4.6.3</kotest.version>
+    <slf4j.version>1.7.32</slf4j.version>
+    <jersey.version>2.35</jersey.version>
+    <jitsi.utils.version>1.0-108-g480acf0</jitsi.utils.version>
+    <jicoco.version>1.1-98-gbeeaa92</jicoco.version>
     <spotbugs.version>4.2.0</spotbugs.version>
+    <junit.version>5.8.1</junit.version>
   </properties>
 
   <dependencies>
@@ -32,7 +62,7 @@
       <artifactId>json-simple</artifactId>
       <version>1.1.1</version>
       <!-- json-simple 1.1.1 incorrectly listed junit as a compile dependency rather than a test dependency.
-	   This has been fixed in its github repo but a new release hasn't been pushed to maven. -->
+       This has been fixed in its github repo but a new release hasn't been pushed to maven. -->
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>
@@ -69,7 +99,7 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>15.0</version>
+      <version>23.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
@@ -101,7 +131,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-30-g48113ca</version>
+      <version>1.0-35-g090af0a</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -133,16 +163,6 @@
       <artifactId>jersey-media-json-jackson</artifactId>
       <version>${jersey.version}</version>
     </dependency>
-    <!-- jersey relies on this version of javassist or we get hk2
-    errors, but other libs (Powermock, at this time) also rely on
-    it but an older version, and that version is getting selected
-    which breaks jersey, so we explicitly depend on this here to
-    force the version -->
-    <dependency>
-      <groupId>org.javassist</groupId>
-      <artifactId>javassist</artifactId>
-      <version>3.22.0-CR2</version>
-    </dependency>
     <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
     <dependency>
       <groupId>com.github.spotbugs</groupId>
@@ -159,32 +179,26 @@
     <dependency>
       <groupId>io.sentry</groupId>
       <artifactId>sentry</artifactId>
-      <version>4.3.0</version>
+      <version>5.4.0</version>
       <scope>runtime</scope>
     </dependency>
     <!-- test -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>xmlunit</groupId>
-      <artifactId>xmlunit</artifactId>
-      <version>1.6</version>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-core</artifactId>
+      <version>2.8.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.1-552-g3d744464</version>
+      <version>2.1-590-gb5f3b420</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>3.1.0</version>
+      <version>4.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -192,18 +206,36 @@
       <artifactId>jersey-test-framework-core</artifactId>
       <version>${jersey.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.test-framework.providers</groupId>
       <artifactId>jersey-test-framework-provider-jetty</artifactId>
       <version>${jersey.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.test-framework.providers</groupId>
       <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
       <version>${jersey.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.kotest</groupId>
@@ -224,9 +256,21 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <version>5.7.0</version>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>1.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -280,7 +324,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>3.8.1</version>
         <executions>
           <!-- Replacing default-compile as it is treated specially by maven -->
           <execution>
@@ -311,14 +355,14 @@
           <source>1.8</source>
           <target>1.8</target>
           <compilerArgs>
-            <arg>-Xlint:all</arg>
+            <arg>-Xlint:all,-serial</arg>
           </compilerArgs>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <id>assemble-archive</id>
@@ -343,11 +387,16 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.22.2</version>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.config.file>${project.basedir}/lib/logging.properties</java.util.logging.config.file>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.4.0</version>
+        <version>3.0.0</version>
         <configuration>
           <mainClass>org.jitsi.jicofo.Main</mainClass>
         </configuration>
@@ -370,10 +419,17 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>9.1</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <goals>
@@ -385,7 +441,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>${spotbugs.version}</version>
+        <version>4.4.2.2</version>
         <configuration>
           <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
           <includeTests>true</includeTests>
@@ -407,7 +463,7 @@
       <plugin>
         <groupId>com.github.gantsign.maven</groupId>
         <artifactId>ktlint-maven-plugin</artifactId>
-        <version>1.7.0</version>
+        <version>1.11.0</version>
         <configuration>
           <sourceRoots>
             <sourceRoot>${project.basedir}/src/main/kotlin</sourceRoot>
@@ -457,15 +513,12 @@
   <profiles>
     <profile>
       <id>coverage</id>
-      <properties>
-        <jacoco.version>0.8.7</jacoco.version>
-      </properties>
       <build>
         <plugins>
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>${jacoco.version}</version>
+            <version>0.8.7</version>
             <executions>
               <execution>
                 <goals>

@@ -17,17 +17,18 @@
  */
 package org.jitsi.jicofo.reservation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.jitsi.impl.reservation.rest.*;
 import org.jitsi.impl.reservation.rest.json.*;
 import org.json.simple.parser.*;
-import org.junit.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.junit.Assert.*;
 
 /**
  * Tests/playground for {@link ConferenceJsonHandler}.
