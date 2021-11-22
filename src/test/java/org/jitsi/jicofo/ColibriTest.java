@@ -17,33 +17,30 @@
  */
 package org.jitsi.jicofo;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
 import mock.jvb.*;
 import mock.xmpp.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
+import org.junit.jupiter.api.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests colibri tools used for channel management.
  *
  * @author Pawel Domas
  */
-@RunWith(JUnit4.class)
+
 public class ColibriTest
 {
     private final JicofoHarness harness = new JicofoHarness();
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         harness.shutdown();
@@ -74,11 +71,15 @@ public class ColibriTest
         ColibriConferenceIQ peer1Channels = colibriConf.createColibriChannels(peer1, null, true, contents);
         ColibriConferenceIQ peer2Channels = colibriConf.createColibriChannels(peer2, null, true, contents);
 
-        assertEquals("Peer 1 should have 2 channels allocated", 2, countChannels(peer1Channels));
-        assertEquals("Peer 2 should have 2 channels allocated", 2, countChannels(peer2Channels));
+        assertEquals(2, countChannels(peer1Channels),
+            "Peer 1 should have 2 channels allocated");
+        assertEquals(2, countChannels(peer2Channels),
+            "Peer 2 should have 2 channels allocated");
 
-        assertEquals("Peer 1 should have a single bundle allocated", 1, peer1Channels.getChannelBundles().size());
-        assertEquals("Peer 2 should have a single bundle allocated", 1, peer2Channels.getChannelBundles().size());
+        assertEquals(1, peer1Channels.getChannelBundles().size(),
+            "Peer 1 should have a single bundle allocated");
+        assertEquals(1, peer2Channels.getChannelBundles().size(),
+            "Peer 2 should have a single bundle allocated");
 
         colibriConf.expireChannels(peer1Channels);
         colibriConf.expireChannels(peer2Channels);

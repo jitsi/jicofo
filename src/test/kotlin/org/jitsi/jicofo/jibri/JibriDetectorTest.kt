@@ -20,7 +20,6 @@ import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt.Health.UNHEALTHY
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
 import org.jivesoftware.smack.AbstractXMPPConnection
-import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.Presence
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -143,7 +142,7 @@ private class JibriChatRoomMember(
     override fun getOccupantJid(): EntityFullJid = jid_
     override fun getPresence(): Presence = mockk {
         every {
-            getExtension<ExtensionElement>(JibriStatusPacketExt.ELEMENT, JibriStatusPacketExt.NAMESPACE)
+            getExtensionElement(JibriStatusPacketExt.ELEMENT, JibriStatusPacketExt.NAMESPACE)
         } answers {
             JibriStatusPacketExt().apply {
                 healthStatus = HealthStatusPacketExt().apply {

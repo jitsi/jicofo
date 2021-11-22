@@ -31,7 +31,7 @@ import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.util.ListConferenceStore
 import org.jitsi.jicofo.xmpp.JigasiIqHandler
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
-import org.jitsi.xmpp.extensions.rayo.RayoIqProvider.DialIq
+import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ

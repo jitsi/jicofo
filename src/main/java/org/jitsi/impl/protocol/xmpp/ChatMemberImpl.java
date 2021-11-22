@@ -250,7 +250,7 @@ public class ChatMemberImpl
         }
 
         // We recognize jigasi by the existence of a "feature" extension in its presence.
-        FeaturesExtension features = presence.getExtension("features", "jabber:client");
+        FeaturesExtension features = presence.getExtension(FeaturesExtension.class);
         if (features != null)
         {
             isJigasi = features.getFeatureExtensions().stream().anyMatch(

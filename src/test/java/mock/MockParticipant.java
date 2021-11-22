@@ -253,7 +253,7 @@ public class MockParticipant
                 = new IceUdpTransportPacketExtension();
 
             // Bundle uses RTCP mux
-            transport.addChildExtension(new RtcpmuxPacketExtension());
+            transport.addChildExtension(new IceRtcpmuxPacketExtension());
 
             DtlsFingerprintPacketExtension dtlsFingerprint
                 = new DtlsFingerprintPacketExtension();

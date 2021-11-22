@@ -60,7 +60,7 @@ public class JvbDoctor
     /**
      * Health check tasks map.
      */
-    private final Map<Jid, ScheduledFuture> tasks = new ConcurrentHashMap<>();
+    private final Map<Jid, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
 
     private final HealthCheckListener listener;
 
@@ -128,7 +128,7 @@ public class JvbDoctor
             return;
         }
 
-        ScheduledFuture healthTask
+        ScheduledFuture<?> healthTask
             = TaskPools.getScheduledPool().scheduleAtFixedRate(
                     new HealthCheckTask(bridgeJid),
                     healthCheckInterval,
@@ -142,7 +142,7 @@ public class JvbDoctor
 
     void removeBridge(Jid bridgeJid)
     {
-        ScheduledFuture healthTask = tasks.remove(bridgeJid);
+        ScheduledFuture<?> healthTask = tasks.remove(bridgeJid);
         if (healthTask == null)
         {
             logger.warn("Trying to remove a bridge that does not exist anymore: " + bridgeJid);

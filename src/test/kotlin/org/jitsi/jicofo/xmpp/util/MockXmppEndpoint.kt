@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 import mock.xmpp.MockXmppConnection
+import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
@@ -35,7 +36,7 @@ class MockJigasi(
     init {
         xmppConnection.registerIQRequestHandler(
             object : AbstractIqRequestHandler(
-                RayoIqProvider.DialIq.ELEMENT, RayoIqProvider.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync
+                DialIq.ELEMENT, RayoIqProvider.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync
             ) {
                 override fun handleIQRequest(iq: IQ): IQ? {
                     return when (response) {

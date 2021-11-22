@@ -17,20 +17,16 @@
  */
 package org.jitsi.jicofo;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.time.*;
 import mock.muc.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.utils.logging2.*;
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
+import org.junit.jupiter.api.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import java.time.*;
-
-import static org.junit.Assert.*;
-
-@RunWith(JUnit4.class)
 public class ParticipantTest
 {
     @Test
@@ -44,34 +40,46 @@ public class ParticipantTest
 
         p.setClock(Clock.fixed(Instant.now(), ZoneId.systemDefault()));
 
-        assertTrue("should allow 1st request", p.incrementAndCheckRestartRequests());
-        assertFalse("should not allow next request immediately", p.incrementAndCheckRestartRequests());
+        assertTrue(p.incrementAndCheckRestartRequests(),
+            "should allow 1st request");
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow next request immediately");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(5)));
-        assertFalse("should not allow next request after 5 seconds", p.incrementAndCheckRestartRequests());
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow next request after 5 seconds");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(6)));
-        assertTrue("should allow 2nd request after 11 seconds", p.incrementAndCheckRestartRequests());
+        assertTrue(p.incrementAndCheckRestartRequests(),
+            "should allow 2nd request after 11 seconds");
 
-        assertFalse("should not allow 3rd request after 11 seconds", p.incrementAndCheckRestartRequests());
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow 3rd request after 11 seconds");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(10)));
-        assertTrue("should allow 3rd request after 21 seconds", p.incrementAndCheckRestartRequests());
+        assertTrue(p.incrementAndCheckRestartRequests(),
+            "should allow 3rd request after 21 seconds");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(11)));
-        assertFalse("should not allow more than 3 request within the last minute (31 second)", p.incrementAndCheckRestartRequests());
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow more than 3 request within the last minute (31 second)");
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(10)));
-        assertFalse("should not allow more than 3 request within the last minute (41 second)", p.incrementAndCheckRestartRequests());
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow more than 3 request within the last minute (41 second)");
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(10)));
-        assertFalse("should not allow more than 3 request within the last minute (51 second)", p.incrementAndCheckRestartRequests());
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow more than 3 request within the last minute (51 second)");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(10)));
-        assertTrue("should allow the 4th request after 60 seconds have passed since the 1st (61 second)", p.incrementAndCheckRestartRequests());
+        assertTrue(p.incrementAndCheckRestartRequests(),
+            "should allow the 4th request after 60 seconds have passed since the 1st (61 second)");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(5)));
-        assertFalse("should not allow the 5th request in 66th second", p.incrementAndCheckRestartRequests());
+        assertFalse(p.incrementAndCheckRestartRequests(),
+            "should not allow the 5th request in 66th second");
 
         p.setClock(Clock.offset(p.getClock(), Duration.ofSeconds(5)));
-        assertTrue("should allow the 5th request in 71st second", p.incrementAndCheckRestartRequests());
+        assertTrue(p.incrementAndCheckRestartRequests(),
+            "should allow the 5th request in 71st second");
     }
 }

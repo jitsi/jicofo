@@ -402,7 +402,7 @@ public class Participant
 
         if (!transport.isRtcpMux())
         {
-            transport.addChildExtension(new RtcpmuxPacketExtension());
+            transport.addChildExtension(new IceRtcpmuxPacketExtension());
         }
 
         if (bundleTransport == null)
@@ -741,11 +741,4 @@ public class Participant
         return "Participant[" + getMucJid() + "]@" + hashCode();
     }
 
-}
-class UnsupportedFeatureConfigurationException extends Exception
-{
-    public UnsupportedFeatureConfigurationException(String msg)
-    {
-        super(msg);
-    }
 }

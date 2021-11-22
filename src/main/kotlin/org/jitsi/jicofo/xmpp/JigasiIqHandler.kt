@@ -24,7 +24,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
-import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
+import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -38,10 +38,10 @@ class JigasiIqHandler(
     connections: Set<AbstractXMPPConnection>,
     private val conferenceStore: ConferenceStore,
     private val jigasiDetector: JigasiDetector
-) : AbstractIqHandler<RayoIqProvider.DialIq>(
+) : AbstractIqHandler<DialIq>(
     connections,
-    RayoIqProvider.DialIq.ELEMENT,
-    RayoIqProvider.NAMESPACE,
+    DialIq.ELEMENT,
+    DialIq.NAMESPACE,
     setOf(IQ.Type.set)
 ) {
     private val logger = createLogger()
@@ -51,7 +51,7 @@ class JigasiIqHandler(
     private val stats = Stats()
     val statsJson = stats.toJson()
 
-    override fun handleRequest(request: IqRequest<RayoIqProvider.DialIq>): IqProcessingResult {
+    override fun handleRequest(request: IqRequest<DialIq>): IqProcessingResult {
         val conferenceJid = request.iq.from.asEntityBareJidIfPossible()
             ?: return RejectedWithError(request, StanzaError.Condition.bad_request).also {
                 logger.warn("Rejected request with invalid conferenceJid: ${request.iq.from}")
@@ -92,7 +92,7 @@ class JigasiIqHandler(
      * retry logic. Sends an IQ response for the [request].
      */
     private fun inviteJigasi(
-        request: IqRequest<RayoIqProvider.DialIq>,
+        request: IqRequest<DialIq>,
         conferenceRegions: Set<String>,
         retryCount: Int = 2,
         exclude: List<Jid> = emptyList()
@@ -111,7 +111,7 @@ class JigasiIqHandler(
         }
 
         // Forward the request to the selected Jigasi instance.
-        val requestToJigasi = RayoIqProvider.DialIq(request.iq).apply {
+        val requestToJigasi = DialIq(request.iq).apply {
             from = null
             to = jigasiJid
             stanzaId = stanzaIdSource.newStanzaId

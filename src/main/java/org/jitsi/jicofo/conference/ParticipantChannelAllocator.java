@@ -315,7 +315,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
 
                 if (!transport.isRtcpMux())
                 {
-                    transport.addChildExtension(new RtcpmuxPacketExtension());
+                    transport.addChildExtension(new IceRtcpmuxPacketExtension());
                 }
 
                 try
@@ -376,7 +376,7 @@ public class ParticipantChannelAllocator extends AbstractChannelAllocator
             if (rtpDescPe != null)
             {
                 // rtcp-mux is always used
-                rtpDescPe.addChildExtension(new RtcpmuxPacketExtension());
+                rtpDescPe.addChildExtension(new JingleRtcpmuxPacketExtension());
 
                 // Copy SSRC sent from the bridge(only the first one)
                 for (ColibriConferenceIQ.Channel channel : colibriContent.getChannels())

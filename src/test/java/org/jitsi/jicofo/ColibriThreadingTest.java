@@ -17,21 +17,18 @@
  */
 package org.jitsi.jicofo;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
 import mock.jvb.*;
 import mock.xmpp.*;
 import mock.xmpp.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
+import org.junit.jupiter.api.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
-
-import java.util.*;
-
-import static org.junit.Assert.*;
 
 /**
  * Here we test the multithreading of colibri channels allocation. What we want
@@ -44,7 +41,6 @@ import static org.junit.Assert.*;
  *
  * @author Pawel Domas
  */
-@RunWith(JUnit4.class)
 public class ColibriThreadingTest
 {
     private JicofoHarness harness = new JicofoHarness();
@@ -65,7 +61,7 @@ public class ColibriThreadingTest
         return null;
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         harness.shutdown();
@@ -74,8 +70,6 @@ public class ColibriThreadingTest
     /**
      * Here we test successful scenario of thread burst trying to allocate
      * channels at the same time.
-     *
-     * @throws InterruptedException
      */
     @Test
     public void testColibriMultiThreading()
