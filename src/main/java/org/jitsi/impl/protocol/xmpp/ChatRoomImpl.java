@@ -554,13 +554,7 @@ public class ChatRoomImpl
             boolean presenceUpdated = false;
 
             // Remove old
-            ExtensionElement old =
-                lastPresenceSent.getExtension(new QName(extension.getElementName(), extension.getNamespace()));
-            if (old != null)
-            {
-                lastPresenceSent.removeExtension(old);
-                presenceUpdated = true;
-            }
+            lastPresenceSent.removeExtension(extension.getElementName(), extension.getNamespace());
 
             if (!remove)
             {
@@ -577,7 +571,7 @@ public class ChatRoomImpl
 
         if (presenceToSend != null)
         {
-            sendPresence(presenceToSend);
+            UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), presenceToSend);
         }
     }
 
@@ -621,15 +615,7 @@ public class ChatRoomImpl
             presenceToSend = lastPresenceSent.build();
         }
 
-        sendPresence(presenceToSend);
-    }
-
-    /**
-     * Sends a presence.
-     */
-    private void sendPresence(Presence presence)
-    {
-        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), presence);
+        UtilKt.tryToSendStanza(xmppProvider.getXmppConnection(), presenceToSend);
     }
 
     @Override
