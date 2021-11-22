@@ -306,8 +306,8 @@ public class ChatMemberImpl
         }
 
         boolean wasAudioMuted = isAudioMuted;
-        StandardExtensionElement audioMutedExt = presence.getExtension("audiomuted", "jabber:client");
-        isAudioMuted = audioMutedExt == null || Boolean.valueOf(audioMutedExt.getText()); /* defaults to true */
+        AudioMutedExtension audioMutedExt = presence.getExtension(AudioMutedExtension.class);
+        isAudioMuted = audioMutedExt == null || audioMutedExt.isAudioMuted(); /* defaults to true */
 
         if (isAudioMuted != wasAudioMuted)
         {
@@ -319,8 +319,8 @@ public class ChatMemberImpl
         }
 
         boolean wasVideoMuted = isVideoMuted;
-        StandardExtensionElement videoMutedExt = presence.getExtension("videomuted", "jabber:client");
-        isVideoMuted = videoMutedExt == null || Boolean.valueOf(videoMutedExt.getText()); /* defaults to true */
+        VideoMutedExtension videoMutedExt = presence.getExtension(VideoMutedExtension.class);
+        isVideoMuted = videoMutedExt == null || videoMutedExt.isVideoMuted(); /* defaults to true */
 
         if (isVideoMuted != wasVideoMuted)
         {
