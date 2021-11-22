@@ -554,8 +554,7 @@ public class ChatRoomImpl
             boolean presenceUpdated = false;
 
             // Remove old
-            ExtensionElement old =
-                lastPresenceSent.getExtension(new QName(extension.getNamespace(), extension.getElementName()));
+            ExtensionElement old = lastPresenceSent.getExtension(extension.getQName());
             if (old != null)
             {
                 lastPresenceSent.removeExtension(old);
