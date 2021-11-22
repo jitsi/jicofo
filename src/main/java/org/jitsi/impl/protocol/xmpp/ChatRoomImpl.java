@@ -446,7 +446,7 @@ public class ChatRoomImpl
     public synchronized boolean containsPresenceExtension(String elementName, String namespace)
     {
         return lastPresenceSent != null
-            && lastPresenceSent.getExtension(new QName(elementName, namespace))
+            && lastPresenceSent.getExtension(new QName(namespace, elementName))
             != null;
     }
 
@@ -555,7 +555,7 @@ public class ChatRoomImpl
 
             // Remove old
             ExtensionElement old =
-                lastPresenceSent.getExtension(new QName(extension.getElementName(), extension.getNamespace()));
+                lastPresenceSent.getExtension(new QName(extension.getNamespace(), extension.getElementName()));
             if (old != null)
             {
                 lastPresenceSent.removeExtension(old);
