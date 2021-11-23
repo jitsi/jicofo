@@ -95,6 +95,11 @@ public class ChatMemberImpl
     private String statsId;
 
     /**
+     * Indicates whether the member's audio sources are currently muted.
+     */
+    private boolean isAudioMuted = true;
+
+    /**
      * Indicates whether the member's video sources are currently muted.
      */
     private boolean isVideoMuted = true;
@@ -106,6 +111,7 @@ public class ChatMemberImpl
         this.resourcepart = fullJid.getResourceOrThrow();
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
+        logger.addContext("occupantJid", occupantJid.toString());
     }
 
     /**
@@ -205,6 +211,9 @@ public class ChatMemberImpl
     }
 
     @Override
+    public boolean isAudioMuted() { return isAudioMuted; }
+
+    @Override
     public boolean isVideoMuted() { return isVideoMuted; }
 
     /**
@@ -234,7 +243,7 @@ public class ChatMemberImpl
             Boolean newStatus = userInfoPacketExt.isRobot();
             if (newStatus != null && this.robot != newStatus)
             {
-                logger.debug(getName() +" robot: " + robot);
+                logger.debug(() -> "robot: " + robot);
 
                 this.robot = newStatus;
             }
@@ -296,13 +305,26 @@ public class ChatMemberImpl
             statsId = statsIdPacketExt.getStatsId();
         }
 
+        boolean wasAudioMuted = isAudioMuted;
+        AudioMutedExtension audioMutedExt = presence.getExtension(AudioMutedExtension.class);
+        isAudioMuted = audioMutedExt == null || audioMutedExt.isAudioMuted(); /* defaults to true */
+
+        if (isAudioMuted != wasAudioMuted)
+        {
+            logger.debug(() -> "isAudioMuted = " + isAudioMuted);
+            if (isAudioMuted)
+                chatRoom.removeAudioSender();
+            else
+                chatRoom.addAudioSender();
+        }
+
         boolean wasVideoMuted = isVideoMuted;
         VideoMutedExtension videoMutedExt = presence.getExtension(VideoMutedExtension.class);
         isVideoMuted = videoMutedExt == null || videoMutedExt.isVideoMuted(); /* defaults to true */
 
         if (isVideoMuted != wasVideoMuted)
         {
-            logger.debug(() -> this + ". isMuted = " + isVideoMuted + ".");
+            logger.debug(() -> "isVideoMuted = " + isVideoMuted);
             if (isVideoMuted)
                 chatRoom.removeVideoSender();
             else

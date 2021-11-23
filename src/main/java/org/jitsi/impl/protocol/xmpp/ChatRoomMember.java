@@ -97,6 +97,11 @@ public interface ChatRoomMember
     boolean isJibri();
 
     /**
+     * Returns whether the room member has its audio sources muted.
+     */
+    boolean isAudioMuted();
+
+    /**
      * Returns whether the room member has its video sources muted.
      */
     boolean isVideoMuted();

@@ -111,10 +111,10 @@ public class MockRoomMember
     }
 
     @Override
-    public boolean isVideoMuted()
-    {
-        return false;
-    }
+    public boolean isAudioMuted() { return false; }
+
+    @Override
+    public boolean isVideoMuted() { return false; }
 
     @Override
     public Presence getPresence()

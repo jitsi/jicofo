@@ -84,6 +84,11 @@ public interface ChatRoom
     int getMembersCount();
 
     /**
+     * Returns the number of members that currently have their audio sources unmuted.
+     */
+    int getAudioSendersCount();
+
+    /**
      * Returns the number of members that currently have their video sources unmuted.
      */
     int getVideoSendersCount();
