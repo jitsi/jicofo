@@ -125,6 +125,16 @@ public class ColibriConferenceImpl
         conferenceState.setGID(gid);
     }
 
+    @Override
+    public void setRtcStatsEnabled(boolean rtcStatsEnabled) {
+        conferenceState.setRtcStatsEnabled(rtcStatsEnabled);
+    }
+
+    @Override
+    public void setCallStatsEnabled(boolean callStatsEnabled) {
+        conferenceState.setCallStatsEnabled(callStatsEnabled);
+    }
+
     /**
      * Checks if this instance has been disposed already and if so prints
      * a warning message. It will also cancel execution in case
