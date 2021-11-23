@@ -92,7 +92,7 @@ case "$1" in
 
         if [ ! -f $HOCON_CONFIG ]; then
             echo "Generating an empty jicofo.conf file"
-            echo "# Jicofo HOCON configuration. See /usr/share/jicofo/jicofo.jar/reference.conf for
+            echo "# Jicofo HOCON configuration. See reference.conf in /usr/share/jicofo/jicofo.jar for
 #available options, syntax, and default values.
 jicofo {
 }" >> $HOCON_CONFIG
