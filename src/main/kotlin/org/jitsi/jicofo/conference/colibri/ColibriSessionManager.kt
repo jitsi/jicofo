@@ -7,6 +7,7 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -184,12 +185,10 @@ class ColibriSessionManager(
         }
     }
 
-    /**
-     * Return the bridge session for a specific [Participant], or null if there isn't one.
-     * TODO: do not expose.
-     */
-    fun findBridgeSession(participant: Participant) =
-        bridgeSessions.find { it.participants.contains(participant) }
+    /** Get the ID of the bridge session for a [participant], or null if there's none. */
+    fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
+        return findBridgeSession(participant)?.id
+    }
 
     /**
      * Handles the event of a set of bridges going down. Removes the associated bridge sessions.
@@ -222,6 +221,43 @@ class ColibriSessionManager(
 
     /** The number of bridges currently used. */
     fun bridgeCount() = bridgeSessions.size
+
+    /** Updates the transport info for a participant. */
+    fun updateTransportInfo(participant: Participant) {
+        val bridgeSession = findBridgeSession(participant)
+        // We can hit null here during conference restart, but the state will be synced up later when the client
+        // sends 'transport-accept'
+        if (bridgeSession == null) {
+            logger.warn("Can not update transport-info, no bridge session for $participant.")
+            return
+        }
+
+        bridgeSession.colibriConference.updateBundleTransportInfo(
+            participant.bundleTransport,
+            participant.endpointId
+        )
+    }
+
+    /**
+     * Mute a participant.
+     * @return true iff successful.
+     * TODO: improve error handling.
+     */
+    fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
+        val bridgeSession = findBridgeSession(participant)
+        if (bridgeSession == null) {
+            logger.error("No bridge session for $participant")
+            return false
+        }
+
+        val participantChannels = participant.colibriChannelsInfo
+        if (participantChannels == null) {
+            logger.error("No colibri channels for $participant")
+            return false
+        }
+
+        return bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType)
+    }
 
     private fun addBridgeSession(bridge: Bridge): BridgeSession = synchronized(syncRoot) {
         val bridgeSession = BridgeSession(
@@ -302,6 +338,9 @@ class ColibriSessionManager(
 
     private fun findBridgeSession(jid: Jid) = bridgeSessions.find { it.bridge.jid == jid }
     private fun findBridgeSession(bridge: Bridge) = bridgeSessions.find { it.bridge == bridge }
+    /** Return the bridge session for a specific [Participant], or null if there isn't one. */
+    private fun findBridgeSession(participant: Participant) =
+        bridgeSessions.find { it.participants.contains(participant) }
 
     /**
      * Update octo channels on all bridges except `except`, removing the specified set of `sources`.

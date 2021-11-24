@@ -32,7 +32,6 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -696,17 +695,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * @return the {@link BridgeSession} instance which is used for a specific
-     * {@link Participant}, or {@code null} if there is no bridge for the
-     * participant.
-     * @param participant the {@link Participant} for which to find the bridge.
-     */
-    private BridgeSession findBridgeSession(Participant participant)
-    {
-        return colibriSessionManager.findBridgeSession(participant);
-    }
-
-    /**
      * Returns array of boolean values that indicates whether the last
      * participant have to start video or audio muted.
      * @param participant the participant
@@ -1017,21 +1005,19 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        BridgeSession bridgeSession = findBridgeSession(participant);
-
-        if (bridgeSession != null && bridgeSession.id.equals(bridgeSessionId))
+        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
+        if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
-                    "Received ICE failed notification from %s, session: %s",
+                    "Received ICE failed notification from %s, bridge-session ID: %s",
                     address,
-                    bridgeSession));
+                    bridgeSessionId));
             reInviteParticipant(participant);
         }
         else
         {
             logger.info(String.format(
-                    "Ignored ICE failed notification for invalid session,"
-                        + " participant: %s, bridge session ID: %s",
+                    "Ignored ICE failed notification for invalid session, participant: %s, bridge session ID: %s",
                     address,
                     bridgeSessionId));
         }
@@ -1065,7 +1051,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        BridgeSession bridgeSession = findBridgeSession(participant);
+        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
         boolean restartRequested = bsPE != null && bsPE.isRestart();
 
         if (restartRequested)
@@ -1073,7 +1059,7 @@ public class JitsiMeetConferenceImpl
             listener.participantRequestedRestart();
         }
 
-        if (bridgeSession == null || !bridgeSession.id.equals(bridgeSessionId))
+        if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
                     "Ignored session-terminate for invalid session: %s, bridge session ID: %s restart: %s",
@@ -1085,9 +1071,9 @@ public class JitsiMeetConferenceImpl
         }
 
         logger.info(String.format(
-                "Received session-terminate from %s, bridge session: %s, restart: %s",
+                "Received session-terminate from %s, bridge-session ID: %s, restart: %s",
                 participant,
-                bridgeSession,
+                bridgeSessionId,
                 restartRequested));
 
         synchronized (participantLock)
@@ -1162,19 +1148,7 @@ public class JitsiMeetConferenceImpl
         // Participant will figure out bundle or non-bundle transport based on its hasBundleSupport() value
         participant.addTransportFromJingle(contentList);
 
-        BridgeSession bridgeSession = findBridgeSession(participant);
-        // We can hit null here during conference restart, but the state will be synced up later when the client
-        // sends 'transport-accept'
-        // XXX FIXME: we half-handled this above!
-        if (bridgeSession == null)
-        {
-            logger.warn("Skipped transport-info processing - no bridge session for " + session.getAddress());
-            return;
-        }
-
-        bridgeSession.colibriConference.updateBundleTransportInfo(
-                participant.getBundleTransport(),
-                participant.getEndpointId());
+        colibriSessionManager.updateTransportInfo(participant);
     }
 
     /**
@@ -1607,16 +1581,11 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        BridgeSession bridgeSession = findBridgeSession(participant);
-        ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
-        boolean succeeded
-            = bridgeSession != null
-                    && participantChannels != null
-                    && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType);
+        boolean succeeded = colibriSessionManager.mute(participant, doMute, mediaType);
 
         if (!succeeded)
         {
-            logger.warn("Failed to mute, bridgeSession=" + bridgeSession + ", pc=" + participantChannels);
+            logger.warn("Failed to mute colibri channels for " + participant);
         }
         else
         {
