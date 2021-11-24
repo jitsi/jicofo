@@ -59,18 +59,23 @@ class ColibriSessionManager(
 
     /** Removes a participant, terminating its colibri session. */
     fun removeParticipant(participant: Participant) {
-        val session = participant.bridgeSession
-        participant.terminateBridgeSession()
+        val bridgeSession = participant.bridgeSession
 
         // Expire the OctoEndpoints for this participant on other bridges.
-        if (session != null) {
+        if (bridgeSession != null) {
+            participant.setChannelAllocator(null)
+            bridgeSession.terminate(participant)
+            participant.clearTransportInfo()
+            participant.colibriChannelsInfo = null
+            participant.bridgeSession = null
+
             val removedSources = participant.sources
 
             synchronized(syncRoot) {
                 operationalBridges()
-                    .filter { it != session }
+                    .filter { it != bridgeSession }
                     .forEach { bridge -> bridge.removeSourcesFromOcto(removedSources) }
-                maybeExpireBridgeSession(session)
+                maybeExpireBridgeSession(bridgeSession)
             }
         }
     }

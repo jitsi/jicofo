@@ -147,9 +147,7 @@ public class BridgeSession
     }
 
     /**
-     * Expires the COLIBRI channels (via
-     * {@link Participant#terminateBridgeSession()}) for all
-     * participants.
+     * Expires the COLIBRI channels for all participants.
      *
      * @return the list of participants which were removed from
      * {@link #participants} as a result of this call (does not include
@@ -161,9 +159,13 @@ public class BridgeSession
         // sync on what?
         for (Participant participant : new LinkedList<>(participants))
         {
-            if (participant.terminateBridgeSession() != null)
+            if (participant.hasColibriSession())
             {
                 terminatedParticipants.add(participant);
+                participant.setChannelAllocator(null);
+                participant.clearTransportInfo();
+                participant.setColibriChannelsInfo(null);
+                participant.setBridgeSession(null);
             }
         }
 
