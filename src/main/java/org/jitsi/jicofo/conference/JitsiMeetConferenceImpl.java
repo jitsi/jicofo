@@ -23,6 +23,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.version.*;
@@ -689,7 +690,7 @@ public class JitsiMeetConferenceImpl
      * @return the set of all Octo relays of bridges in the conference, except
      * for {@code exclude}.
      */
-    List<String> getAllRelays(String exclude)
+    public List<String> getAllRelays(String exclude)
     {
         return colibriSessionManager.getAllRelays(exclude);
     }
@@ -1475,7 +1476,7 @@ public class JitsiMeetConferenceImpl
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
-    ConferenceSourceMap getSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
+    public ConferenceSourceMap getSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         ConferenceSourceMap allSources = getSources().copy();
 
@@ -1735,7 +1736,7 @@ public class JitsiMeetConferenceImpl
      * @param bridgeJid the JID of the bridge on which participants need to be
      * re-invited.
      */
-    void channelAllocationFailed(Jid bridgeJid)
+    public void channelAllocationFailed(Jid bridgeJid)
     {
         onBridgeDown(bridgeJid);
     }
@@ -1769,7 +1770,7 @@ public class JitsiMeetConferenceImpl
      * establishing the Jingle session with its participant fails.
      * @param channelAllocator the channel allocator which failed.
      */
-    void onInviteFailed(ParticipantChannelAllocator channelAllocator)
+    public void onInviteFailed(ParticipantChannelAllocator channelAllocator)
     {
         terminateParticipant(
                 channelAllocator.getParticipant(),
@@ -1801,7 +1802,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Notifies this conference that a COLIBRI request sent to one of the bridges has succeeded.
      */
-    void colibriRequestSucceeded()
+    public void colibriRequestSucceeded()
     {
         // Remove "bridge not available" from Jicofo's presence
         ChatRoom chatRoom = this.chatRoom;

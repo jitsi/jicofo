@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference;
+package org.jitsi.jicofo.conference.colibri;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
-import org.jitsi.jicofo.conference.colibri.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -56,7 +56,7 @@ public class BridgeSession
      * processing the first notification and any following ones should be
      * discarded.
      */
-    final String id = Integer.toHexString(RANDOM.nextInt(0x1_000000));
+    public final String id = Integer.toHexString(RANDOM.nextInt(0x1_000000));
 
     /**
      * The list of participants in the conference which use this
@@ -68,7 +68,7 @@ public class BridgeSession
      * The {@link ColibriConference} instance used to communicate with
      * the jitsi-videobridge represented by this {@link BridgeSession}.
      */
-    final ColibriConference colibriConference;
+    public final ColibriConference colibriConference;
 
     /**
      * The single {@link OctoParticipant} for this bridge session, if any.

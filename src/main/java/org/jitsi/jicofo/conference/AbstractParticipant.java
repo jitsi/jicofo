@@ -20,6 +20,7 @@ package org.jitsi.jicofo.conference;
 import java.util.*;
 
 import com.google.common.collect.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -232,7 +233,7 @@ public abstract class AbstractParticipant
      * @param channelAllocator the {@link AbstractChannelAllocator} which has
      * completed its task and its thread is about to terminate.
      */
-    void channelAllocatorCompleted(
+    public void channelAllocatorCompleted(
         AbstractChannelAllocator channelAllocator)
     {
         synchronized (channelAllocatorSyncRoot)

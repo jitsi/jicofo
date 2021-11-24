@@ -157,7 +157,7 @@ public class Participant
      * @param bridgeSession the new bridge session to set.
      * @see #bridgeSession
      */
-    void setBridgeSession(BridgeSession bridgeSession)
+    public void setBridgeSession(BridgeSession bridgeSession)
     {
         if (this.bridgeSession != null)
         {
@@ -506,7 +506,7 @@ public class Participant
      * of any bridge session.
      * @see ColibriConference#expireChannels(ColibriConferenceIQ)
      */
-    BridgeSession terminateBridgeSession()
+    public BridgeSession terminateBridgeSession()
     {
         BridgeSession _session = this.bridgeSession;
 
@@ -615,7 +615,7 @@ public class Participant
         }
     }
 
-    Set<MediaType> getSupportedMediaTypes()
+    public Set<MediaType> getSupportedMediaTypes()
     {
         Set<MediaType> supportedMediaTypes = new HashSet<>();
         if (hasVideoSupport())

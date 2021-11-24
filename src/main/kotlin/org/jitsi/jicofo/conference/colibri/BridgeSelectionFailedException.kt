@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015-Present 8x8, Inc.
+ * Copyright @ 2021-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference;
 
-public class UnsupportedFeatureConfigurationException
-    extends Exception
-{
-    public UnsupportedFeatureConfigurationException(String msg)
-    {
-        super(msg);
-    }
-}
+package org.jitsi.jicofo.conference.colibri
+
+/** Bridge selection failed, i.e. there were no bridges available. */
+class BridgeSelectionFailedException : Exception()
