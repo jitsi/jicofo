@@ -19,7 +19,6 @@ package org.jitsi.jicofo;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -47,9 +46,9 @@ public class MockJitsiMeetConference
     }
 
     @Override
-    public Map<Bridge, Integer> getBridges()
+    public @NotNull Set<String> getBridgeRegions()
     {
-        return new HashMap<>();
+        return Collections.emptySet();
     }
 
     @Override

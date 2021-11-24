@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.conference;
 
 import edu.umd.cs.findbugs.annotations.*;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
@@ -28,7 +27,6 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.*;
-import org.jxmpp.jid.*;
 
 import java.util.*;
 
@@ -36,7 +34,7 @@ import java.util.*;
  * Represents a {@link Bridge} instance as used by this
  * {@link JitsiMeetConferenceImpl}.
  */
-class BridgeSession
+public class BridgeSession
 {
     private final static Random RANDOM = new Random();
     private final Logger logger;
