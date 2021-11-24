@@ -447,6 +447,15 @@ public class Participant
     }
 
     /**
+     * Whether this participant has a colibri session.
+     * @return
+     */
+    public boolean hasColibriSession()
+    {
+        return getBridgeSession() != null;
+    }
+
+    /**
      * Returns the endpoint ID for this participant in the videobridge(Colibri)
      * context.
      */

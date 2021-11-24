@@ -1432,8 +1432,7 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Get all sources in the conference.
-     * @return
+     * @return all sources in the conference.
      */
     @NotNull
     public ConferenceSourceMap getSources()
@@ -1445,12 +1444,13 @@ public class JitsiMeetConferenceImpl
      * Gathers the list of all sources that exist in the current conference state.
      *
      * @param except optional <tt>Participant</tt> instance whose sources will be excluded from the list
-     * @param skipParticipantsWithoutBridgeSession skip sources from participants without a  bridge session.
      *
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
+     *
+     * @deprecated For use with old colibri, octo only.
      */
-    public ConferenceSourceMap getSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
+    public ConferenceSourceMap getSources(List<Participant> except)
     {
         ConferenceSourceMap allSources = getSources().copy();
 
@@ -1463,8 +1463,7 @@ public class JitsiMeetConferenceImpl
             // participant from soon to be re-invited (and hence soon to be local)
             // participants, causing a weird transition from octo participant to
             // local participant in the new bridge.
-            if (except.contains(participant) ||
-                    (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null))
+            if (except.contains(participant) || !participant.hasColibriSession())
             {
                 allSources.remove(participant.getMucJid());
             }

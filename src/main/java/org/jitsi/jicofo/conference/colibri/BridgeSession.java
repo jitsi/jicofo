@@ -371,7 +371,7 @@ public class BridgeSession
 
         OctoParticipant octoParticipant = new OctoParticipant(relays, logger, bridge.getJid());
 
-        ConferenceSourceMap remoteSources = jitsiMeetConference.getSources(participants, true);
+        ConferenceSourceMap remoteSources = jitsiMeetConference.getSources(participants);
 
         octoParticipant.addSources(remoteSources);
 
