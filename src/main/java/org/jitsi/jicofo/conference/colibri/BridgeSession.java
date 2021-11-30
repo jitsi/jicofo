@@ -34,7 +34,7 @@ import java.util.*;
  * Represents a {@link Bridge} instance as used by this
  * {@link JitsiMeetConferenceImpl}.
  */
-public class BridgeSession
+class BridgeSession
 {
     private final static Random RANDOM = new Random();
     private final Logger logger;
