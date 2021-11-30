@@ -24,7 +24,6 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.utils.logging2.*;
-import org.jivesoftware.smack.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -66,22 +65,6 @@ public class OctoChannelAllocator implements Runnable
     private volatile boolean canceled = false;
 
     /**
-     * First argument stands for "start audio muted" and the second one for
-     * "start video muted". The information is included as a custom extension in
-     * 'session-initiate' sent to the user.
-     */
-    private final boolean[] startMuted;
-
-    /**
-     * Indicates whether or not this task will be doing a "re-invite". It
-     * means that we're going to replace a previous conference which has failed.
-     * Channels are allocated on new JVB and peer is re-invited with
-     * 'transport-replace' Jingle action as opposed to 'session-initiate' in
-     * regular invite.
-     */
-    private final boolean reInvite;
-
-    /**
      * The colibri channels that this allocator has allocated. They'll be
      * cleaned up if the allocator is canceled or failed at any point.
      */
@@ -106,15 +89,13 @@ public class OctoChannelAllocator implements Runnable
     {
         this.meetConference = conference;
         this.bridgeSession = bridgeSession;
-        this.startMuted = null;
-        this.reInvite = false;
         this.participant = participant;
         logger = parentLogger.createChildLogger(OctoChannelAllocator.class.getName());
         logger.addContext("bridge", bridgeSession.bridge.getJid().toString());
     }
 
     /**
-     * Entry point for the {@link AbstractChannelAllocator} task.
+     * Entry point for the {@link OctoChannelAllocator} task.
      */
     @Override
     public void run()
@@ -144,7 +125,9 @@ public class OctoChannelAllocator implements Runnable
 
     private void doRun()
     {
-        Offer offer = createOffer();
+        Offer offer = new Offer(
+                new ConferenceSourceMap(),
+                JingleOfferFactory.INSTANCE.createOffer(OfferOptionsKt.getOctoOptions()));
         if (canceled)
         {
             return;
@@ -169,42 +152,16 @@ public class OctoChannelAllocator implements Runnable
         {
             participant.setColibriChannelsInfo(colibriChannels);
         }
-
-        offer = updateOffer(offer, colibriChannels);
-        if (offer == null || canceled)
-        {
-            return;
-        }
-
-        try
-        {
-            invite(offer);
-        }
-        catch (SmackException.NotConnectedException e)
-        {
-            logger.error("Failed to invite participant: ", e);
-        }
     }
 
     /**
-     * Sends a Jingle message to the {@link Participant} associated with this
-     * {@link AbstractChannelAllocator}, if there is one, in order to invite
-     * (or re-invite) him to the conference.
-     */
-    private void invite(Offer offer)
-            throws SmackException.NotConnectedException
-    {
-    }
-
-    /**
-     * Allocates Colibri channels for this {@link AbstractChannelAllocator}'s
-     * {@link Participant} on {@link #bridgeSession}.
+     * Allocates Colibri channels for this {@link OctoChannelAllocator}'s
+     * {@link OctoParticipant} on {@link #bridgeSession}.
      *
      * @return a {@link ColibriConferenceIQ} which describes the allocated
      * channels, or {@code null}.
      */
-    private ColibriConferenceIQ allocateChannels(
-            List<ContentPacketExtension> contents)
+    private ColibriConferenceIQ allocateChannels(List<ContentPacketExtension> contents)
     {
         Jid jvb = bridgeSession.bridge.getJid();
         if (jvb == null)
@@ -220,9 +177,7 @@ public class OctoChannelAllocator implements Runnable
         boolean restartConference;
         try
         {
-            logger.info(
-                    "Using " + jvb + " to allocate channels for: "
-                            + (participant == null ? "null" : participant.toString()));
+            logger.info("Allocating octo channels on " + jvb);
 
             ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
 
@@ -291,22 +246,6 @@ public class OctoChannelAllocator implements Runnable
     }
 
     /**
-     * Updates a Jingle offer (represented by a list of
-     * {@link ContentPacketExtension}) with the transport and SSRC information
-     * contained in {@code colibriChannels}.
-     *
-     * @param offer the list which contains Jingle content to be included in
-     * the offer.
-     * @param colibriChannels the {@link ColibriConferenceIQ} which represents
-     * the channels allocated on a jitsi-videobridge instance for the participant
-     * for which the Jingle offer is being prepared.
-     */
-    private Offer updateOffer(Offer offer, ColibriConferenceIQ colibriChannels)
-    {
-        return offer;
-    }
-
-    /**
      * Raises the {@code canceled} flag, which causes the thread to not continue
      * with the allocation process.
      */
@@ -316,7 +255,7 @@ public class OctoChannelAllocator implements Runnable
     }
 
     /**
-     * @return the {@link Participant} of this {@link AbstractChannelAllocator}.
+     * @return the {@link OctoParticipant} of this {@link OctoChannelAllocator}.
      */
     public OctoParticipant getParticipant()
     {
@@ -332,17 +271,6 @@ public class OctoChannelAllocator implements Runnable
                 bridgeSession,
                 participant,
                 hashCode());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    private Offer createOffer()
-    {
-        OfferOptions options = OfferOptionsKt.getOctoOptions();
-        OfferOptionsKt.applyConstraints(options, meetConference.getConfig());
-
-        return new Offer(new ConferenceSourceMap(), JingleOfferFactory.INSTANCE.createOffer(options));
     }
 
     /**

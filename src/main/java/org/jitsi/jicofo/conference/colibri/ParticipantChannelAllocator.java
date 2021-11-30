@@ -41,10 +41,7 @@ import java.util.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
- * An {@link AbstractChannelAllocator} which invites an actual participant to
- * the conference (as opposed to e.g. allocating Colibri channels for
- * bridge-to-bridge
- * communication).
+ * An {@link Runnable} which invites a participant to a conference.
  *
  * @author Pawel Domas
  * @author Boris Grozev
@@ -139,7 +136,7 @@ public class ParticipantChannelAllocator implements Runnable
     }
 
     /**
-     * Entry point for the {@link AbstractChannelAllocator} task.
+     * Entry point for the {@link ParticipantChannelAllocator} task.
      */
     @Override
     public void run()
@@ -222,7 +219,7 @@ public class ParticipantChannelAllocator implements Runnable
     }
 
     /**
-     * Allocates Colibri channels for this {@link AbstractChannelAllocator}'s
+     * Allocates Colibri channels for this {@link ParticipantChannelAllocator}'s
      * {@link Participant} on {@link #bridgeSession}.
      *
      * @return a {@link ColibriConferenceIQ} which describes the allocated
