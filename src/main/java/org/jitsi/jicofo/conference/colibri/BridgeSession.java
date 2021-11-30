@@ -82,8 +82,9 @@ public class BridgeSession
      */
     public boolean hasFailed = false;
 
-    @NotNull
-    private final JitsiMeetConferenceImpl jitsiMeetConference;
+    @NotNull private final JitsiMeetConferenceImpl jitsiMeetConference;
+
+    @NotNull private final ColibriRequestCallback colibriRequestCallback;
 
     /**
      * Initializes a new {@link BridgeSession} instance.
@@ -93,12 +94,14 @@ public class BridgeSession
      */
     BridgeSession(
             @NotNull JitsiMeetConferenceImpl jitsiMeetConference,
+            @NotNull ColibriRequestCallback colibriRequestCallback,
             @NonNull AbstractXMPPConnection xmppConnection,
             @NotNull Bridge bridge,
             long gid,
             @NotNull Logger parentLogger)
     {
         this.jitsiMeetConference = jitsiMeetConference;
+        this.colibriRequestCallback = colibriRequestCallback;
         this.bridge = bridge;
         this.colibriConference = new ColibriConferenceImpl(xmppConnection);
         colibriConference.setName(jitsiMeetConference.getRoomName());
@@ -378,7 +381,7 @@ public class BridgeSession
         octoParticipant.addSources(remoteSources);
 
         OctoChannelAllocator channelAllocator
-                = new OctoChannelAllocator(jitsiMeetConference, this, octoParticipant, logger);
+                = new OctoChannelAllocator(colibriRequestCallback, this, octoParticipant, logger);
         octoParticipant.setChannelAllocator(channelAllocator);
 
         TaskPools.getIoPool().execute(channelAllocator);

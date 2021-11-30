@@ -28,6 +28,7 @@ class ColibriSessionManager(
      * TODO: remove this reference.
      */
     private val jitsiMeetConference: JitsiMeetConferenceImpl,
+    private val colibriRequestCallback: ColibriRequestCallback,
     parentLogger: Logger
 ) {
     /** The list of [BridgeSession]s currently used. */
@@ -108,6 +109,7 @@ class ColibriSessionManager(
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
         val channelAllocator = ParticipantChannelAllocator(
             jitsiMeetConference,
+            colibriRequestCallback,
             bridgeSession,
             participant,
             startAudioMuted,
@@ -269,6 +271,7 @@ class ColibriSessionManager(
     private fun addBridgeSession(bridge: Bridge): BridgeSession = synchronized(syncRoot) {
         val bridgeSession = BridgeSession(
             jitsiMeetConference,
+            colibriRequestCallback,
             jicofoServices.xmppServices.serviceConnection.xmppConnection,
             bridge,
             gid,

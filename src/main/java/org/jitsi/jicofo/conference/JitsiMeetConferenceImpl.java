@@ -222,6 +222,11 @@ public class JitsiMeetConferenceImpl
     private boolean videoLimitReached = false;
 
     /**
+     * Callback for colibri requests failing/succeeding.
+     */
+    private final ColibriRequestCallback colibriRequestCallback = new ColibriRequestCallbackImpl();
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -250,7 +255,8 @@ public class JitsiMeetConferenceImpl
         this.includeInStatistics = includeInStatistics;
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        this.colibriSessionManager = new ColibriSessionManager(jicofoServices, gid, this, logger);
+        this.colibriSessionManager
+                = new ColibriSessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
@@ -1675,27 +1681,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Notifies this conference that one of its channel allocators failed to
-     * allocate channels, and that the participants on a specific bridge need
-     * to be re-invited.
-     * @param bridgeJid the JID of the bridge on which participants need to be
-     * re-invited.
-     */
-    public void channelAllocationFailed(Jid bridgeJid)
-    {
-        onBridgeDown(bridgeJid);
-    }
-
-    /**
-     * Notifies this conference that the bridge with a specific JID has failed.
-     * @param bridgeJid the JID of the bridge which failed.
-     */
-    void onBridgeDown(Jid bridgeJid)
-    {
-        onMultipleBridgesDown(Collections.singleton(bridgeJid));
-    }
-
-    /**
      * Handles the case of some bridges in the conference becoming non-operational.
      * @param bridgeJids the JIDs of the bridges that are non-operational.
      */
@@ -1742,19 +1727,6 @@ public class JitsiMeetConferenceImpl
     public JitsiMeetConfig getConfig()
     {
         return config;
-    }
-
-    /**
-     * Notifies this conference that a COLIBRI request sent to one of the bridges has succeeded.
-     */
-    public void colibriRequestSucceeded()
-    {
-        // Remove "bridge not available" from Jicofo's presence
-        ChatRoom chatRoom = this.chatRoom;
-        if (chatRoom != null)
-        {
-            chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
-        }
     }
 
     /**
@@ -1980,7 +1952,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(Bridge bridge)
         {
-            onBridgeDown(bridge.getJid());
+            onMultipleBridgesDown(Collections.singleton(bridge.getJid()));
         }
 
         @Override
@@ -2072,6 +2044,26 @@ public class JitsiMeetConferenceImpl
         public void failedBridgesRemoved(int count)
         {
             listener.bridgeRemoved(count);
+        }
+    }
+
+    private class ColibriRequestCallbackImpl implements ColibriRequestCallback
+    {
+        @Override
+        public void requestFailed(@NotNull Jid jvbJid)
+        {
+            onMultipleBridgesDown(Collections.singleton(jvbJid));
+        }
+
+        @Override
+        public void requestSucceeded(@NotNull Jid jvbJid)
+        {
+            // Remove "bridge not available" from Jicofo's presence
+            ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
+            if (chatRoom != null)
+            {
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
+            }
         }
     }
 }

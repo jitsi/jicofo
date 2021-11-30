@@ -75,6 +75,8 @@ public class ParticipantChannelAllocator implements Runnable
      */
     private final JitsiMeetConferenceImpl meetConference;
 
+    @NonNull private final ColibriRequestCallback colibriRequestCallback;
+
     /**
      * The {@link BridgeSession} on which
      * to allocate channels for the participant.
@@ -123,6 +125,7 @@ public class ParticipantChannelAllocator implements Runnable
      */
     public ParticipantChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
+            @NonNull ColibriRequestCallback colibriRequestCallback,
             BridgeSession bridgeSession,
             Participant participant,
             boolean startAudioMuted,
@@ -131,6 +134,7 @@ public class ParticipantChannelAllocator implements Runnable
             Logger parentLogger)
     {
         this.meetConference = meetConference;
+        this.colibriRequestCallback = colibriRequestCallback;
         this.bridgeSession = bridgeSession;
         this.startAudioMuted = startAudioMuted;
         this.startVideoMuted = startVideoMuted;
@@ -262,7 +266,7 @@ public class ParticipantChannelAllocator implements Runnable
             }
 
             bridgeSession.bridge.setIsOperational(true);
-            meetConference.colibriRequestSucceeded();
+            colibriRequestCallback.requestSucceeded(jvb);
             return colibriChannels;
         }
         catch (ConferenceNotFoundException e)
@@ -311,7 +315,7 @@ public class ParticipantChannelAllocator implements Runnable
         if (restartConference &&
                 isNotBlank(bridgeSession.colibriConference.getConferenceId()))
         {
-            meetConference.channelAllocationFailed(jvb);
+            colibriRequestCallback.requestFailed(jvb);
         }
 
         return null;

@@ -49,7 +49,7 @@ public class OctoChannelAllocator implements Runnable
      * The {@link JitsiMeetConferenceImpl} into which a participant will be
      * invited.
      */
-    private final JitsiMeetConferenceImpl meetConference;
+    private final ColibriRequestCallback colibriRequestCallback;
 
     /**
      * The {@link BridgeSession} on which
@@ -82,12 +82,12 @@ public class OctoChannelAllocator implements Runnable
      *
      */
     public OctoChannelAllocator(
-            JitsiMeetConferenceImpl conference,
+            ColibriRequestCallback colibriRequestCallback,
             BridgeSession bridgeSession,
             OctoParticipant participant,
             Logger parentLogger)
     {
-        this.meetConference = conference;
+        this.colibriRequestCallback = colibriRequestCallback;
         this.bridgeSession = bridgeSession;
         this.participant = participant;
         logger = parentLogger.createChildLogger(OctoChannelAllocator.class.getName());
@@ -190,7 +190,7 @@ public class OctoChannelAllocator implements Runnable
             }
 
             bridgeSession.bridge.setIsOperational(true);
-            meetConference.colibriRequestSucceeded();
+            colibriRequestCallback.requestSucceeded(jvb);
             return colibriChannels;
         }
         catch (ConferenceNotFoundException e)
@@ -239,7 +239,7 @@ public class OctoChannelAllocator implements Runnable
         if (restartConference &&
                 isNotBlank(bridgeSession.colibriConference.getConferenceId()))
         {
-            meetConference.channelAllocationFailed(jvb);
+            colibriRequestCallback.requestFailed(jvb);
         }
 
         return null;
