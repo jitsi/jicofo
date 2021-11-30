@@ -24,8 +24,12 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.utils.logging2.*;
+import org.jivesoftware.smack.*;
+import org.jxmpp.jid.*;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Allocates colibri channels for an {@link OctoParticipant}. The "offer" that
@@ -35,12 +39,53 @@ import java.util.*;
  *
  * @author Boris Grozev
  */
-public class OctoChannelAllocator extends AbstractChannelAllocator
+public class OctoChannelAllocator implements Runnable
 {
     /**
      * The logger for this instance.
      */
     private final Logger logger;
+
+    /**
+     * The {@link JitsiMeetConferenceImpl} into which a participant will be
+     * invited.
+     */
+    private final JitsiMeetConferenceImpl meetConference;
+
+    /**
+     * The {@link BridgeSession} on which
+     * to allocate channels for the participant.
+     */
+    private final BridgeSession bridgeSession;
+
+    /**
+     * A flag which indicates whether channel allocation is canceled. Raising
+     * this makes the allocation thread discontinue the allocation process and
+     * return.
+     */
+    private volatile boolean canceled = false;
+
+    /**
+     * First argument stands for "start audio muted" and the second one for
+     * "start video muted". The information is included as a custom extension in
+     * 'session-initiate' sent to the user.
+     */
+    private final boolean[] startMuted;
+
+    /**
+     * Indicates whether or not this task will be doing a "re-invite". It
+     * means that we're going to replace a previous conference which has failed.
+     * Channels are allocated on new JVB and peer is re-invited with
+     * 'transport-replace' Jingle action as opposed to 'session-initiate' in
+     * regular invite.
+     */
+    private final boolean reInvite;
+
+    /**
+     * The colibri channels that this allocator has allocated. They'll be
+     * cleaned up if the allocator is canceled or failed at any point.
+     */
+    private ColibriConferenceIQ colibriChannels;
 
     /**
      * The {@link OctoParticipant} for which colibri channels will be allocated.
@@ -59,17 +104,240 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
             OctoParticipant participant,
             Logger parentLogger)
     {
-        super(conference, bridgeSession, participant, null, false, parentLogger);
+        this.meetConference = conference;
+        this.bridgeSession = bridgeSession;
+        this.startMuted = null;
+        this.reInvite = false;
         this.participant = participant;
         logger = parentLogger.createChildLogger(OctoChannelAllocator.class.getName());
         logger.addContext("bridge", bridgeSession.bridge.getJid().toString());
     }
 
     /**
-     * {@inheritDoc}
+     * Entry point for the {@link AbstractChannelAllocator} task.
      */
     @Override
-    protected Offer createOffer()
+    public void run()
+    {
+        try
+        {
+            doRun();
+        }
+        catch (Throwable e)
+        {
+            logger.error("Channel allocator failed: ", e);
+            cancel();
+        }
+        finally
+        {
+            if (canceled && colibriChannels != null)
+            {
+                bridgeSession.colibriConference.expireChannels(colibriChannels);
+            }
+
+            if (participant != null)
+            {
+                participant.channelAllocatorCompleted(this);
+            }
+        }
+    }
+
+    private void doRun()
+    {
+        Offer offer = createOffer();
+        if (canceled)
+        {
+            return;
+        }
+
+        colibriChannels = allocateChannels(offer.getContents());
+        if (canceled)
+        {
+            return;
+        }
+
+        if (colibriChannels == null)
+        {
+            logger.error("Channel allocator failed: " + participant);
+
+            // Cancel this task - nothing to be done after failure
+            cancel();
+            return;
+        }
+
+        if (participant != null)
+        {
+            participant.setColibriChannelsInfo(colibriChannels);
+        }
+
+        offer = updateOffer(offer, colibriChannels);
+        if (offer == null || canceled)
+        {
+            return;
+        }
+
+        try
+        {
+            invite(offer);
+        }
+        catch (SmackException.NotConnectedException e)
+        {
+            logger.error("Failed to invite participant: ", e);
+        }
+    }
+
+    /**
+     * Sends a Jingle message to the {@link Participant} associated with this
+     * {@link AbstractChannelAllocator}, if there is one, in order to invite
+     * (or re-invite) him to the conference.
+     */
+    private void invite(Offer offer)
+            throws SmackException.NotConnectedException
+    {
+    }
+
+    /**
+     * Allocates Colibri channels for this {@link AbstractChannelAllocator}'s
+     * {@link Participant} on {@link #bridgeSession}.
+     *
+     * @return a {@link ColibriConferenceIQ} which describes the allocated
+     * channels, or {@code null}.
+     */
+    private ColibriConferenceIQ allocateChannels(
+            List<ContentPacketExtension> contents)
+    {
+        Jid jvb = bridgeSession.bridge.getJid();
+        if (jvb == null)
+        {
+            logger.error("No bridge jid");
+            cancel();
+            return null;
+        }
+
+        // The bridge is faulty.
+        boolean faulty;
+        // We want to re-invite the participants in this conference.
+        boolean restartConference;
+        try
+        {
+            logger.info(
+                    "Using " + jvb + " to allocate channels for: "
+                            + (participant == null ? "null" : participant.toString()));
+
+            ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
+
+            // null means canceled, because colibriConference has been
+            // disposed by another thread
+            if (colibriChannels == null)
+            {
+                cancel();
+                return null;
+            }
+
+            bridgeSession.bridge.setIsOperational(true);
+            meetConference.colibriRequestSucceeded();
+            return colibriChannels;
+        }
+        catch (ConferenceNotFoundException e)
+        {
+            // The conference on the bridge has likely expired. We want to
+            // re-invite the conference participants, though the bridge is not
+            // faulty.
+            restartConference = true;
+            faulty = false;
+            logger.error(jvb + " - conference ID not found (expired?):" + e.getMessage());
+        }
+        catch (BadRequestException e)
+        {
+            // The bridge indicated that our request is invalid. This does not
+            // mean the bridge is faulty, and retrying will likely result
+            // in the same error.
+            // We observe this when an endpoint uses an ID not accepted by
+            // the new bridge (via a custom client).
+            restartConference = false;
+            faulty = false;
+            logger.error(
+                    jvb + " - the bridge indicated bad-request: " + e.getMessage());
+        }
+        catch (ColibriException e)
+        {
+            // All other errors indicate that the bridge is faulty: timeout,
+            // wrong response type, or something else.
+            restartConference = true;
+            faulty = true;
+            logger.error(
+                    jvb + " - failed to allocate channels, will consider the "
+                            + "bridge faulty: " + e.getMessage(), e);
+        }
+
+        // We only get here if we caught an exception.
+        if (faulty)
+        {
+            bridgeSession.bridge.setIsOperational(false);
+            bridgeSession.hasFailed = true;
+        }
+
+        cancel();
+
+        // If the ColibriConference is in use, and we want to retry,
+        // notify the JitsiMeetConference.
+        if (restartConference &&
+                isNotBlank(bridgeSession.colibriConference.getConferenceId()))
+        {
+            meetConference.channelAllocationFailed(jvb);
+        }
+
+        return null;
+    }
+
+    /**
+     * Updates a Jingle offer (represented by a list of
+     * {@link ContentPacketExtension}) with the transport and SSRC information
+     * contained in {@code colibriChannels}.
+     *
+     * @param offer the list which contains Jingle content to be included in
+     * the offer.
+     * @param colibriChannels the {@link ColibriConferenceIQ} which represents
+     * the channels allocated on a jitsi-videobridge instance for the participant
+     * for which the Jingle offer is being prepared.
+     */
+    private Offer updateOffer(Offer offer, ColibriConferenceIQ colibriChannels)
+    {
+        return offer;
+    }
+
+    /**
+     * Raises the {@code canceled} flag, which causes the thread to not continue
+     * with the allocation process.
+     */
+    public void cancel()
+    {
+        canceled = true;
+    }
+
+    /**
+     * @return the {@link Participant} of this {@link AbstractChannelAllocator}.
+     */
+    public OctoParticipant getParticipant()
+    {
+        return participant;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format(
+                "%s[%s, %s]@%d",
+                this.getClass().getSimpleName(),
+                bridgeSession,
+                participant,
+                hashCode());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    private Offer createOffer()
     {
         OfferOptions options = OfferOptionsKt.getOctoOptions();
         OfferOptionsKt.applyConstraints(options, meetConference.getConfig());
@@ -80,9 +348,7 @@ public class OctoChannelAllocator extends AbstractChannelAllocator
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected ColibriConferenceIQ doAllocateChannels(
-        List<ContentPacketExtension> offer)
+    private ColibriConferenceIQ doAllocateChannels(List<ContentPacketExtension> offer)
         throws ColibriException
     {
         // This is a blocking call.

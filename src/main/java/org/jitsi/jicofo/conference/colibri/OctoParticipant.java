@@ -17,15 +17,18 @@
  */
 package org.jitsi.jicofo.conference.colibri;
 
+import com.google.common.collect.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
- * Implements a {@link AbstractParticipant} for Octo. Manages the colibri
+ * Implements a participant for Octo. Manages the colibri
  * channels used for Octo on a particular jitsi-videobridge instance, and
  * the sources and source groups which need to be added to these colibri
  * channels (i.e. all sources and source groups from real participants in the
@@ -34,8 +37,44 @@ import java.util.*;
  * @author Boris Grozev
  */
 public class OctoParticipant
-    extends AbstractParticipant
 {
+    /**
+     * Information about Colibri channels allocated for this peer (if any).
+     */
+    private ColibriConferenceIQ colibriChannelsInfo;
+
+    /**
+     * The map of the most recently received RTP description for each Colibri
+     * content.
+     */
+    private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
+
+    /**
+     * List of remote source addition or removal operations that have not yet been signaled to this participant.
+     */
+    private final List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
+
+    /**
+     * Returns currently stored map of RTP description to Colibri content name.
+     * @return a <tt>Map<String,RtpDescriptionPacketExtension></tt> which maps
+     *         the RTP descriptions to the corresponding Colibri content names.
+     */
+    public Map<String, RtpDescriptionPacketExtension> getRtpDescriptionMap()
+    {
+        return rtpDescriptionMap;
+    }
+
+    /**
+     * Used to synchronize access to {@link #channelAllocator}.
+     */
+    private final Object channelAllocatorSyncRoot = new Object();
+
+    /**
+     * The {@link OctoChannelAllocator}, if any, which is currently
+     * allocating channels for this participant.
+     */
+    private OctoChannelAllocator channelAllocator = null;
+
     /**
      * A flag which determines when the session can be considered established.
      * This is initially set to false, and raised when the colibri channels
@@ -67,10 +106,165 @@ public class OctoParticipant
      */
     OctoParticipant(List<String> relays, Logger parentLogger, Jid bridgeJid)
     {
-        super(parentLogger);
         logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("bridge", bridgeJid.getResourceOrEmpty().toString());
         this.relays = relays;
+    }
+
+    /**
+     * Extracts and stores RTP description for each content type from given
+     * Jingle contents.
+     * @param jingleContents the list of Jingle content packet extension from
+     *        <tt>Participant</tt>'s answer.
+     */
+    public void setRTPDescription(List<ContentPacketExtension> jingleContents)
+    {
+        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
+
+        for (ContentPacketExtension content : jingleContents)
+        {
+            RtpDescriptionPacketExtension rtpDesc
+                    = content.getFirstChildOfType(
+                    RtpDescriptionPacketExtension.class);
+
+            if (rtpDesc != null)
+            {
+                rtpDescMap.put(content.getName(), rtpDesc);
+            }
+        }
+
+        this.rtpDescriptionMap = rtpDescMap;
+    }
+
+    /**
+     * Clear the pending remote sources, indicating that they have now been signaled.
+     * @return the list of source addition or removal which have been queueed and not signaled to this participant.
+     */
+    public List<SourcesToAddOrRemove> clearQueuedRemoteSourceChanges()
+    {
+        synchronized (queuedRemoteSourceChanges)
+        {
+            List<SourcesToAddOrRemove> ret = new ArrayList<>(queuedRemoteSourceChanges);
+            queuedRemoteSourceChanges.clear();
+            return ret;
+        }
+    }
+
+    /**
+     * Gets the list of pending remote sources, without clearing them. For testing.
+     */
+    public List<SourcesToAddOrRemove> getQueuedRemoteSourceChanges()
+    {
+        synchronized (queuedRemoteSourceChanges)
+        {
+            return new ArrayList<>(queuedRemoteSourceChanges);
+        }
+    }
+
+    /**
+     * Queue a "source-add" for remote sources, to be signaled once the session is established.
+     *
+     * @param sourcesToAdd the remote sources for the "source-add".
+     */
+    public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
+    {
+        synchronized (queuedRemoteSourceChanges)
+        {
+            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
+            if (previous != null && previous.getAction() == AddOrRemove.Add)
+            {
+                // We merge sourcesToAdd with the previous sources queued to be added to reduce the number of
+                // source-add messages that need to be sent.
+                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
+                sourcesToAdd = sourcesToAdd.copy();
+                sourcesToAdd.add(previous.getSources());
+            }
+
+            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
+        }
+    }
+
+    /**
+     * Queue a "source-remove" for remote sources, to be signaled once the session is established.
+     *
+     * @param sourcesToRemove the remote sources for the "source-remove".
+     */
+    public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
+    {
+        synchronized (queuedRemoteSourceChanges)
+        {
+            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
+            if (previous != null && previous.getAction() == AddOrRemove.Remove)
+            {
+                // We merge sourcesToRemove with the previous sources queued to be remove to reduce the number of
+                // source-remove messages that need to be sent.
+                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
+                sourcesToRemove = sourcesToRemove.copy();
+                sourcesToRemove.add(previous.getSources());
+            }
+
+            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
+        }
+    }
+
+    /**
+     * Sets information about Colibri channels allocated for this participant.
+     *
+     * @param colibriChannelsInfo the IQ that holds colibri channels state.
+     */
+    public void setColibriChannelsInfo(ColibriConferenceIQ colibriChannelsInfo)
+    {
+        this.colibriChannelsInfo = colibriChannelsInfo;
+    }
+
+    /**
+     * Returns {@link ColibriConferenceIQ} that describes Colibri channels
+     * allocated for this participant.
+     */
+    public ColibriConferenceIQ getColibriChannelsInfo()
+    {
+        return colibriChannelsInfo;
+    }
+
+    /**
+     * Replaces the {@link OctoChannelAllocator}, which is currently
+     * allocating channels for this participant (if any) with the specified
+     * channel allocator (if any).
+     * @param channelAllocator the channel allocator to set, or {@code null}
+     * to clear it.
+     */
+    public void setChannelAllocator(OctoChannelAllocator channelAllocator)
+    {
+        synchronized (channelAllocatorSyncRoot)
+        {
+            if (this.channelAllocator != null)
+            {
+                // There is an ongoing thread allocating channels and sending
+                // an invite for this participant. Tell it to stop.
+                logger.warn("Canceling " + this.channelAllocator);
+                this.channelAllocator.cancel();
+            }
+
+            this.channelAllocator = channelAllocator;
+        }
+    }
+
+    /**
+     * Signals to this {@link Participant} that a specific
+     * {@link OctoChannelAllocator} has completed its task and its thread
+     * is about to terminate.
+     * @param channelAllocator the {@link OctoChannelAllocator} which has
+     * completed its task and its thread is about to terminate.
+     */
+    public void channelAllocatorCompleted(OctoChannelAllocator channelAllocator)
+    {
+        synchronized (channelAllocatorSyncRoot)
+        {
+            if (this.channelAllocator == channelAllocator)
+            {
+                this.channelAllocator = null;
+            }
+        }
     }
 
     /**
@@ -109,7 +303,6 @@ public class OctoParticipant
         return relays;
     }
 
-    @Override
     public ConferenceSourceMap getSources()
     {
         return sources.unmodifiable();
@@ -118,7 +311,6 @@ public class OctoParticipant
     /**
      * {@inheritDoc}
      */
-    @Override
     synchronized public boolean isSessionEstablished()
     {
         return sessionEstablished;

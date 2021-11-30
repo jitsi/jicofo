@@ -171,7 +171,7 @@ public class BridgeSession
 
         if (octoParticipant != null)
         {
-            terminate(octoParticipant);
+            terminateOctoParticipant();
         }
 
         return terminatedParticipants;
@@ -185,10 +185,9 @@ public class BridgeSession
      * @return {@code true} if the participant was a member of {@link #participants} and was removed as a result of
      * this call, and {@code false} otherwise.
      */
-    public boolean terminate(AbstractParticipant participant)
+    public boolean terminate(Participant participant)
     {
-        boolean octo = participant == this.octoParticipant;
-        boolean removed = octo || participants.remove(participant);
+        boolean removed = participants.remove(participant);
 
         ColibriConferenceIQ channelsInfo
                 = participant != null
@@ -200,16 +199,18 @@ public class BridgeSession
             colibriConference.expireChannels(channelsInfo);
         }
 
-        if (octo)
-        {
-            if (participant != null)
-            {
-                participant.setChannelAllocator(null);
-            }
-            this.octoParticipant = null;
-        }
-
         return removed;
+    }
+
+    public boolean terminateOctoParticipant()
+    {
+        OctoParticipant participant = octoParticipant;
+        if (participant != null)
+        {
+            participant.setChannelAllocator(null);
+        }
+        octoParticipant = null;
+        return true;
     }
 
     /**

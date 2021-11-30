@@ -19,6 +19,8 @@ package org.jitsi.jicofo.conference
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
@@ -28,7 +30,7 @@ import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jxmpp.jid.impl.JidCreate
 
-class AbstractParticipantTest : ShouldSpec() {
+class ParticipantTest : ShouldSpec() {
     init {
         val jid1 = JidCreate.from("jid1")
         val s1 = ConferenceSourceMap(jid1 to EndpointSourceSet(Source(1, AUDIO))).unmodifiable
@@ -107,7 +109,13 @@ class AbstractParticipantTest : ShouldSpec() {
     }
 }
 
-class TestParticipant : AbstractParticipant(LoggerImpl("AbstractParticipantTest")) {
+class TestParticipant : Participant(
+    mockk {
+        every { name } returns "name"
+    },
+    LoggerImpl("ParticipantTest"),
+    mockk()
+) {
     override fun getSources() = ConferenceSourceMap()
     override fun isSessionEstablished() = true
 }
