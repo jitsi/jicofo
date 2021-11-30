@@ -58,10 +58,7 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * instances used for the conference.
  *
  * A note on synchronization: this class uses a lot of 'synchronized' blocks,
- * on 3 different objects {@link #participantLock},
- * {@code this} and {@code BridgeSession#octoParticipant}). At the time of this
- * writing it seems that multiple locks are acquired only in the following
- * order: * {@code participantsLock} -> {@code bridges}.
+ * on 3 different objects {@link #participantLock}, {@code this} and {@code BridgeSession#octoParticipant}).
  *
  * This seems safe, but it is hard to maintain this way, and we should
  * re-factor to simplify.

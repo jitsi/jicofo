@@ -1,3 +1,20 @@
+/*
+ * Jicofo, the Jitsi Conference Focus.
+ *
+ * Copyright @ 2021-Present 8x8, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jitsi.jicofo.conference.colibri
 
 import org.jitsi.jicofo.JicofoServices
@@ -229,7 +246,7 @@ class ColibriSessionManager(
     }
 
     /** The number of bridges currently used. */
-    fun bridgeCount() = bridgeSessions.size
+    fun bridgeCount() = synchronized(syncRoot) { bridgeSessions.size }
 
     /** Updates the transport info for a participant. */
     fun updateTransportInfo(participant: Participant) {
@@ -346,11 +363,14 @@ class ColibriSessionManager(
         }
     }
 
-    private fun findBridgeSession(jid: Jid) = bridgeSessions.find { it.bridge.jid == jid }
-    private fun findBridgeSession(bridge: Bridge) = bridgeSessions.find { it.bridge == bridge }
+    private fun findBridgeSession(jid: Jid) = synchronized(syncRoot) {
+        bridgeSessions.find { it.bridge.jid == jid }
+    }
+    private fun findBridgeSession(bridge: Bridge) = findBridgeSession(bridge.jid)
     /** Return the bridge session for a specific [Participant], or null if there isn't one. */
-    private fun findBridgeSession(participant: Participant) =
+    private fun findBridgeSession(participant: Participant) = synchronized(syncRoot) {
         bridgeSessions.find { it.participants.contains(participant) }
+    }
 
     /**
      * Update octo channels on all bridges except `except`, removing the specified set of `sources`.
@@ -371,7 +391,7 @@ class ColibriSessionManager(
      * connected).
      * @param sources the sources to add.
      */
-    private fun addSourcesToOcto(sources: ConferenceSourceMap, except: BridgeSession) = synchronized(sources) {
+    private fun addSourcesToOcto(sources: ConferenceSourceMap, except: BridgeSession) = synchronized(syncRoot) {
         operationalBridges()
             .filter { it != except }
             .forEach { it.addSourcesToOcto(sources) }
@@ -386,6 +406,9 @@ class ColibriSessionManager(
 
     /**
      * Interface for events fired by [ColibriSessionManager].
+     *
+     * Note that [ColibriSessionManager] calls these while holding its internal lock, so listeners should be careful
+     * not to perform action that will cause a deadlock.
      */
     interface Listener {
         /** The number of bridges changed. */

@@ -264,7 +264,7 @@ public class BridgeSelector
     }
 
     /**
-     * Selects a bridge.
+     * Selects a bridge (assuming the conference it is to be used for has no bridges yet).
      *
      * @return the selected bridge, represented by its {@link Bridge}.
      */
