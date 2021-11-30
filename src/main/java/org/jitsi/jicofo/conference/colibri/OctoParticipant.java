@@ -44,25 +44,9 @@ public class OctoParticipant
     private ColibriConferenceIQ colibriChannelsInfo;
 
     /**
-     * The map of the most recently received RTP description for each Colibri
-     * content.
-     */
-    private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
-
-    /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
     private final List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
-
-    /**
-     * Returns currently stored map of RTP description to Colibri content name.
-     * @return a <tt>Map<String,RtpDescriptionPacketExtension></tt> which maps
-     *         the RTP descriptions to the corresponding Colibri content names.
-     */
-    public Map<String, RtpDescriptionPacketExtension> getRtpDescriptionMap()
-    {
-        return rtpDescriptionMap;
-    }
 
     /**
      * Used to synchronize access to {@link #channelAllocator}.
@@ -112,31 +96,6 @@ public class OctoParticipant
     }
 
     /**
-     * Extracts and stores RTP description for each content type from given
-     * Jingle contents.
-     * @param jingleContents the list of Jingle content packet extension from
-     *        <tt>Participant</tt>'s answer.
-     */
-    public void setRTPDescription(List<ContentPacketExtension> jingleContents)
-    {
-        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
-
-        for (ContentPacketExtension content : jingleContents)
-        {
-            RtpDescriptionPacketExtension rtpDesc
-                    = content.getFirstChildOfType(
-                    RtpDescriptionPacketExtension.class);
-
-            if (rtpDesc != null)
-            {
-                rtpDescMap.put(content.getName(), rtpDesc);
-            }
-        }
-
-        this.rtpDescriptionMap = rtpDescMap;
-    }
-
-    /**
      * Clear the pending remote sources, indicating that they have now been signaled.
      * @return the list of source addition or removal which have been queueed and not signaled to this participant.
      */
@@ -147,17 +106,6 @@ public class OctoParticipant
             List<SourcesToAddOrRemove> ret = new ArrayList<>(queuedRemoteSourceChanges);
             queuedRemoteSourceChanges.clear();
             return ret;
-        }
-    }
-
-    /**
-     * Gets the list of pending remote sources, without clearing them. For testing.
-     */
-    public List<SourcesToAddOrRemove> getQueuedRemoteSourceChanges()
-    {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            return new ArrayList<>(queuedRemoteSourceChanges);
         }
     }
 

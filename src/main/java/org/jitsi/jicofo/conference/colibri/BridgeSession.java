@@ -202,7 +202,7 @@ public class BridgeSession
         return removed;
     }
 
-    public boolean terminateOctoParticipant()
+    private void terminateOctoParticipant()
     {
         OctoParticipant participant = octoParticipant;
         if (participant != null)
@@ -210,7 +210,6 @@ public class BridgeSession
             participant.setChannelAllocator(null);
         }
         octoParticipant = null;
-        return true;
     }
 
     /**
@@ -239,7 +238,7 @@ public class BridgeSession
         {
             colibriConference.updateChannelsInfo(
                     octoParticipant.getColibriChannelsInfo(),
-                    octoParticipant.getRtpDescriptionMap(),
+                    null,
                     octoParticipant.getSources(),
                     null,
                     null,
