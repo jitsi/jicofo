@@ -17,12 +17,10 @@
  */
 package org.jitsi.jicofo.conference.colibri;
 
-import com.google.common.collect.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -46,7 +44,7 @@ public class OctoParticipant
     /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
-    private final List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
+    private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
 
     /**
      * Used to synchronize access to {@link #channelAllocator}.
@@ -96,40 +94,13 @@ public class OctoParticipant
     }
 
     /**
-     * Clear the pending remote sources, indicating that they have now been signaled.
-     * @return the list of source addition or removal which have been queueed and not signaled to this participant.
-     */
-    public List<SourcesToAddOrRemove> clearQueuedRemoteSourceChanges()
-    {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            List<SourcesToAddOrRemove> ret = new ArrayList<>(queuedRemoteSourceChanges);
-            queuedRemoteSourceChanges.clear();
-            return ret;
-        }
-    }
-
-    /**
      * Queue a "source-add" for remote sources, to be signaled once the session is established.
      *
      * @param sourcesToAdd the remote sources for the "source-add".
      */
     public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
     {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
-            if (previous != null && previous.getAction() == AddOrRemove.Add)
-            {
-                // We merge sourcesToAdd with the previous sources queued to be added to reduce the number of
-                // source-add messages that need to be sent.
-                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
-                sourcesToAdd = sourcesToAdd.copy();
-                sourcesToAdd.add(previous.getSources());
-            }
-
-            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
-        }
+        remoteSourcesQueue.sourceAdd(sourcesToAdd);
     }
 
     /**
@@ -139,20 +110,7 @@ public class OctoParticipant
      */
     public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
     {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
-            if (previous != null && previous.getAction() == AddOrRemove.Remove)
-            {
-                // We merge sourcesToRemove with the previous sources queued to be remove to reduce the number of
-                // source-remove messages that need to be sent.
-                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
-                sourcesToRemove = sourcesToRemove.copy();
-                sourcesToRemove.add(previous.getSources());
-            }
-
-            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
-        }
+        remoteSourcesQueue.sourceRemove(sourcesToRemove);
     }
 
     /**
@@ -285,7 +243,7 @@ public class OctoParticipant
     {
         boolean changed = false;
 
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : remoteSourcesQueue.clear())
         {
             changed = true;
 

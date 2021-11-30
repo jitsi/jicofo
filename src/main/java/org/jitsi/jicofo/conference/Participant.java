@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.conference;
 
-import com.google.common.collect.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
@@ -75,7 +74,7 @@ public class Participant
     /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
-    private final List<SourcesToAddOrRemove> queuedRemoteSourceChanges = new ArrayList<>();
+    private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
 
     /**
      * Returns currently stored map of RTP description to Colibri content name.
@@ -200,77 +199,6 @@ public class Participant
         }
 
         this.rtpDescriptionMap = rtpDescMap;
-    }
-
-    /**
-     * Clear the pending remote sources, indicating that they have now been signaled.
-     * @return the list of source addition or removal which have been queueed and not signaled to this participant.
-     */
-    public List<SourcesToAddOrRemove> clearQueuedRemoteSourceChanges()
-    {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            List<SourcesToAddOrRemove> ret = new ArrayList<>(queuedRemoteSourceChanges);
-            queuedRemoteSourceChanges.clear();
-            return ret;
-        }
-    }
-
-    /**
-     * Gets the list of pending remote sources, without clearing them. For testing.
-     */
-    public List<SourcesToAddOrRemove> getQueuedRemoteSourceChanges()
-    {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            return new ArrayList<>(queuedRemoteSourceChanges);
-        }
-    }
-
-    /**
-     * Queue a "source-add" for remote sources, to be signaled once the session is established.
-     *
-     * @param sourcesToAdd the remote sources for the "source-add".
-     */
-    public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
-    {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
-            if (previous != null && previous.getAction() == AddOrRemove.Add)
-            {
-                // We merge sourcesToAdd with the previous sources queued to be added to reduce the number of
-                // source-add messages that need to be sent.
-                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
-                sourcesToAdd = sourcesToAdd.copy();
-                sourcesToAdd.add(previous.getSources());
-            }
-
-            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Add, sourcesToAdd));
-        }
-    }
-
-    /**
-     * Queue a "source-remove" for remote sources, to be signaled once the session is established.
-     *
-     * @param sourcesToRemove the remote sources for the "source-remove".
-     */
-    public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
-    {
-        synchronized (queuedRemoteSourceChanges)
-        {
-            SourcesToAddOrRemove previous = Iterables.getLast(queuedRemoteSourceChanges, null);
-            if (previous != null && previous.getAction() == AddOrRemove.Remove)
-            {
-                // We merge sourcesToRemove with the previous sources queued to be remove to reduce the number of
-                // source-remove messages that need to be sent.
-                queuedRemoteSourceChanges.remove(queuedRemoteSourceChanges.size() - 1);
-                sourcesToRemove = sourcesToRemove.copy();
-                sourcesToRemove.add(previous.getSources());
-            }
-
-            queuedRemoteSourceChanges.add(new SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove));
-        }
     }
 
     /**
@@ -732,7 +660,7 @@ public class Participant
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-add.");
-            queueRemoteSourcesToAdd(sources);
+            remoteSourcesQueue.sourceAdd(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
@@ -742,7 +670,7 @@ public class Participant
         {
             synchronized (signalQueuedSourcesTaskSyncRoot)
             {
-                queueRemoteSourcesToAdd(sources);
+                remoteSourcesQueue.sourceAdd(sources);
                 scheduleSignalingOfQueuedSources(delayMs);
             }
         }
@@ -804,7 +732,7 @@ public class Participant
     }
 
     /**
-     * Removee a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
+     * Remove a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
      * signaled immediately, or queued to be signaled later.
      *
      * @param sources the sources to remove.
@@ -819,7 +747,7 @@ public class Participant
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
-            queueRemoteSourcesToRemove(sources);
+            remoteSourcesQueue.sourceRemove(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
@@ -829,7 +757,7 @@ public class Participant
         {
             synchronized (signalQueuedSourcesTaskSyncRoot)
             {
-                queueRemoteSourcesToRemove(sources);
+                remoteSourcesQueue.sourceRemove(sources);
                 scheduleSignalingOfQueuedSources(delayMs);
             }
         }
@@ -869,7 +797,7 @@ public class Participant
         boolean encodeSourcesAsJson
                 = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
 
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : remoteSourcesQueue.clear())
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
             ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
