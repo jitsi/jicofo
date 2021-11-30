@@ -38,7 +38,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  *
  * @author Boris Grozev
  */
-public class OctoChannelAllocator implements Runnable
+class OctoChannelAllocator implements Runnable
 {
     /**
      * The logger for this instance.

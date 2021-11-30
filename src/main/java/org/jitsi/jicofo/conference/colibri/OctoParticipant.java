@@ -34,7 +34,7 @@ import java.util.*;
  *
  * @author Boris Grozev
  */
-public class OctoParticipant
+class OctoParticipant
 {
     /**
      * Information about Colibri channels allocated for this peer (if any).
