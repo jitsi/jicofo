@@ -289,6 +289,11 @@ public class OctoChannelAllocator implements Runnable
                 participant.getSources(),
                 participant.getRelays());
 
+        if (result == null)
+        {
+            return null;
+        }
+
         // The colibri channels have now been allocated and we know their IDs.
         // Now we check for any scheduled updates to the sources and source
         // groups, as well as the relays.
@@ -307,8 +312,7 @@ public class OctoChannelAllocator implements Runnable
 
             // Check if the relays need an update. We always use the same set
             // of relays for the audio and video channels, so just check video.
-            ColibriConferenceIQ.Channel channel
-                = result.getContent("video").getChannel(0);
+            ColibriConferenceIQ.Channel channel = result.getContent("video").getChannel(0);
             if (!(channel instanceof ColibriConferenceIQ.OctoChannel))
             {
                 logger.error("Expected to find an OctoChannel in the response, found" + channel + " instead.");
