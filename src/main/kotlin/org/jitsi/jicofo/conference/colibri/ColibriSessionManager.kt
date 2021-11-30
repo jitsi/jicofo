@@ -87,7 +87,8 @@ class ColibriSessionManager(
     @Throws(BridgeSelectionFailedException::class)
     fun inviteParticipant(
         participant: Participant,
-        startMuted: BooleanArray,
+        startAudioMuted: Boolean,
+        startVideoMuted: Boolean,
         reInvite: Boolean
     ) = synchronized(syncRoot) {
         // Some bridges in the conference may have become non-operational. Inviting a new participant to the conference
@@ -109,7 +110,8 @@ class ColibriSessionManager(
             jitsiMeetConference,
             bridgeSession,
             participant,
-            startMuted,
+            startAudioMuted,
+            startVideoMuted,
             reInvite,
             logger
         )

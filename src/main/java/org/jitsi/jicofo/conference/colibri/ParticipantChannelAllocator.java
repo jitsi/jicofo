@@ -89,11 +89,14 @@ public class ParticipantChannelAllocator implements Runnable
     private volatile boolean canceled = false;
 
     /**
-     * First argument stands for "start audio muted" and the second one for
-     * "start video muted". The information is included as a custom extension in
-     * 'session-initiate' sent to the user.
+     * Whether to include a "start audio muted" extension when sending session-initiate.
      */
-    private final boolean[] startMuted;
+    private final boolean startAudioMuted;
+
+    /**
+     * Whether to include a "start video muted" extension when sending session-initiate.
+     */
+    private final boolean startVideoMuted;
 
     /**
      * Indicates whether or not this task will be doing a "re-invite". It
@@ -122,13 +125,15 @@ public class ParticipantChannelAllocator implements Runnable
             JitsiMeetConferenceImpl meetConference,
             BridgeSession bridgeSession,
             Participant participant,
-            boolean[] startMuted,
+            boolean startAudioMuted,
+            boolean startVideoMuted,
             boolean reInvite,
             Logger parentLogger)
     {
         this.meetConference = meetConference;
         this.bridgeSession = bridgeSession;
-        this.startMuted = startMuted;
+        this.startAudioMuted = startAudioMuted;
+        this.startVideoMuted = startVideoMuted;
         this.reInvite = reInvite;
         this.participant = participant;
         logger = parentLogger.createChildLogger(getClass().getName());
@@ -469,11 +474,11 @@ public class ParticipantChannelAllocator implements Runnable
         boolean ack;
         List<ExtensionElement> additionalExtensions = new ArrayList<>();
 
-        if (startMuted[0] || startMuted[1])
+        if (startAudioMuted || startVideoMuted)
         {
             StartMutedPacketExtension startMutedExt = new StartMutedPacketExtension();
-            startMutedExt.setAudioMute(startMuted[0]);
-            startMutedExt.setVideoMute(startMuted[1]);
+            startMutedExt.setAudioMute(startAudioMuted);
+            startMutedExt.setVideoMute(startVideoMuted);
             additionalExtensions.add(startMutedExt);
         }
 

@@ -165,12 +165,16 @@ public class JitsiMeetConferenceImpl
     private Future<?> singleParticipantTout;
 
     /**
-     * Contains the flags which indicate whether participants being invited
-     * to the conference as a result of joining (as opposed to having already
-     * joined) should be invited with the "start muted" option. The element at
-     * offset 0 is for audio, at offset 1 for video.
+     * Whether participants being invited to the conference as a result of joining (as opposed to having already
+     * joined) should be invited with the "start audio muted" option.
      */
-    private boolean[] startMuted = { false, false };
+    private boolean startAudioMuted = false;
+
+    /**
+     * Whether participants being invited to the conference as a result of joining (as opposed to having already
+     * joined) should be invited with the "start video muted" option.
+     */
+    private boolean startVideoMuted = false;
 
     /**
      * The name of shared Etherpad document. Is advertised through MUC Presence
@@ -634,7 +638,7 @@ public class JitsiMeetConferenceImpl
             final Participant participant = new Participant(chatRoomMember, logger, this);
 
             participants.add(participant);
-            inviteParticipant(participant, false, hasToStartMuted(participant, justJoined));
+            inviteParticipant(participant, false, justJoined);
         }
     }
 
@@ -644,19 +648,16 @@ public class JitsiMeetConferenceImpl
      * ParticipantChannelAllocator} to allocate COLIBRI channels and initiate
      * a Jingle session with the {@link Participant}.
      * @param participant the participant to invite.
-     * @param reInvite whether the participant is to be re-invited or invited
-     * for the first time.
-     * @param startMuted an array of size 2, which will determine whether the
-     * offer sent to the participant should indicate that the participant
-     * should start audio muted (depending on the value of the element at
-     * index 0) and video muted (depending on the value of the element at
-     * index 1).
+     * @param reInvite whether the participant is to be re-invited or invited for the first time.
      */
-    private void inviteParticipant(Participant participant, boolean reInvite, boolean[] startMuted)
+    private void inviteParticipant(@NotNull Participant participant, boolean reInvite, boolean justJoined)
     {
         try
         {
-            colibriSessionManager.inviteParticipant(participant, startMuted, reInvite);
+            colibriSessionManager.inviteParticipant(
+                    participant,
+                    hasToStartAudioMuted(participant, justJoined),
+                    hasToStartVideoMuted(participant, justJoined), reInvite);
         }
         catch (BridgeSelectionFailedException e)
         {
@@ -695,57 +696,33 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns array of boolean values that indicates whether the last
-     * participant have to start video or audio muted.
-     * @param participant the participant
-     * @param justJoined indicates whether the participant joined the room now
-     * or he was in the room before.
-     * @return array of boolean values that indicates whether the last
-     * participant have to start video or audio muted. The first element
-     * should be associated with the audio and the second with video.
+     * Returns true if {@code participant} should be invited with the "start audio muted" option given that they just
+     * joined or are being re-invited (depending on the value of {@code justJoined}.
      */
-    private boolean[] hasToStartMuted(Participant participant, boolean justJoined)
+    private boolean hasToStartAudioMuted(@NotNull Participant participant, boolean justJoined)
     {
-        final boolean[] startMuted = new boolean[] {false, false};
-        if (this.startMuted != null && this.startMuted[0] && justJoined)
+        if (startAudioMuted && justJoined)
         {
-            startMuted[0] = true;
+            return true;
         }
 
-        if (this.startMuted != null && this.startMuted[1] && justJoined)
+        Integer startAudioMutedInt = config.getStartAudioMuted();
+        return startAudioMutedInt != null && participant.getChatMember().getJoinOrderNumber() > startAudioMutedInt;
+    }
+
+    /**
+     * Returns true if {@code participant} should be invited with the "start video muted" option given that they just
+     * joined or are being re-invited (depending on the value of {@code justJoined}.
+     */
+    private boolean hasToStartVideoMuted(@NotNull Participant participant, boolean justJoined)
+    {
+        if (startVideoMuted && justJoined)
         {
-            startMuted[1] = true;
+            return true;
         }
 
-        if (startMuted[0] && startMuted[1])
-        {
-            return startMuted;
-        }
-
-        int participantNumber
-            = participant != null
-                    ? participant.getChatMember().getJoinOrderNumber()
-                    : participants.size();
-
-        if (!startMuted[0])
-        {
-            Integer startAudioMuted = config.getStartAudioMuted();
-            if (startAudioMuted != null)
-            {
-                startMuted[0] = (participantNumber > startAudioMuted);
-            }
-        }
-
-        if (!startMuted[1])
-        {
-            Integer startVideoMuted = config.getStartVideoMuted();
-            if (startVideoMuted != null)
-            {
-                startMuted[1] = (participantNumber > startVideoMuted);
-            }
-        }
-
-        return startMuted;
+        Integer startVideoMutedInt = config.getStartVideoMuted();
+        return startVideoMutedInt != null && participant.getChatMember().getJoinOrderNumber() > startVideoMutedInt;
     }
 
     /**
@@ -1090,7 +1067,7 @@ public class JitsiMeetConferenceImpl
                 if (participant.incrementAndCheckRestartRequests())
                 {
                     participants.add(participant);
-                    inviteParticipant(participant, false, hasToStartMuted(participant, false));
+                    inviteParticipant(participant, false, false);
                 }
                 else
                 {
@@ -1825,10 +1802,7 @@ public class JitsiMeetConferenceImpl
             colibriSessionManager.removeParticipants(participants);
             for (Participant participant : participants)
             {
-                inviteParticipant(
-                        participant,
-                        true,
-                        hasToStartMuted(participant, false));
+                inviteParticipant(participant, true, false);
             }
         }
     }
@@ -2028,7 +2002,8 @@ public class JitsiMeetConferenceImpl
         @Override
         public void startMutedChanged(boolean startAudioMuted, boolean startVideoMuted)
         {
-            startMuted = new boolean[] { startAudioMuted, startVideoMuted };
+            JitsiMeetConferenceImpl.this.startAudioMuted = startAudioMuted;
+            JitsiMeetConferenceImpl.this.startVideoMuted = startVideoMuted;
         }
 
         @Override
