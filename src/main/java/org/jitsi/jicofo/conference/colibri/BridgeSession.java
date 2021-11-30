@@ -168,7 +168,7 @@ public class BridgeSession
                 participant.setChannelAllocator(null);
                 participant.clearTransportInfo();
                 participant.setColibriChannelsInfo(null);
-                participant.setBridgeSession(null);
+                participant.hasColibriSession = false;
             }
         }
 

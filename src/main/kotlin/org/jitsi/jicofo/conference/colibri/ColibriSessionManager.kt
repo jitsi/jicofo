@@ -77,7 +77,7 @@ class ColibriSessionManager(
 
     /** Removes a participant, terminating its colibri session. */
     fun removeParticipant(participant: Participant) {
-        val bridgeSession = participant.bridgeSession
+        val bridgeSession = findBridgeSession(participant)
 
         // Expire the OctoEndpoints for this participant on other bridges.
         if (bridgeSession != null) {
@@ -85,7 +85,7 @@ class ColibriSessionManager(
             bridgeSession.terminate(participant)
             participant.clearTransportInfo()
             participant.colibriChannelsInfo = null
-            participant.bridgeSession = null
+            participant.hasColibriSession = false
 
             val removedSources = participant.sources
 
@@ -120,7 +120,7 @@ class ColibriSessionManager(
 
         val bridgeSession = findBridgeSession(bridge) ?: addBridgeSession(bridge)
         bridgeSession.addParticipant(participant)
-        participant.bridgeSession = bridgeSession
+        participant.hasColibriSession = true
         logger.info("Added participant id=${participant.chatMember.name}, bridge=${bridgeSession.bridge.jid}")
 
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.

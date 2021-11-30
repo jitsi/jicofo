@@ -97,13 +97,7 @@ public class Participant
      */
     private ParticipantChannelAllocator channelAllocator = null;
 
-    /**
-     * The {@code BridgeSession} of which this {@code Participant} is part of.
-     * <p>
-     * Whenever this value is set to a non-null value it means that Jicofo
-     * has assigned a bridge to this instance.
-     */
-    private BridgeSession bridgeSession;
+    public boolean hasColibriSession = false;
 
     /**
      * The {@link Clock} used by this participant.
@@ -268,25 +262,6 @@ public class Participant
     public JingleSession getJingleSession()
     {
         return jingleSession;
-    }
-
-    /**
-     * Sets the current {@code BridgeSession}.
-     *
-     * @param bridgeSession the new bridge session to set.
-     * @see #bridgeSession
-     */
-    public void setBridgeSession(BridgeSession bridgeSession)
-    {
-        if (this.bridgeSession != null)
-        {
-            logger.error(String.format(
-                    "Overwriting bridge session in %s new: %s old: %s",
-                    this,
-                    bridgeSession,
-                    this.bridgeSession));
-        }
-        this.bridgeSession = bridgeSession;
     }
 
     /**
@@ -557,21 +532,12 @@ public class Participant
     }
 
     /**
-     * Returns the {@link BridgeSession}
-     * or <tt>null</tt>.
-     */
-    public BridgeSession getBridgeSession()
-    {
-        return bridgeSession;
-    }
-
-    /**
      * Whether this participant has a colibri session.
      * @return
      */
     public boolean hasColibriSession()
     {
-        return getBridgeSession() != null;
+        return hasColibriSession;
     }
 
     /**
