@@ -402,16 +402,14 @@ public class ParticipantChannelAllocator implements Runnable
         if (chatRoom == null)
         {
             // Conference disposed
-            logger.info(
-                    "Expiring " + address + " channels - conference disposed");
+            logger.info("Expiring " + address + " channels - conference disposed");
 
             expireChannels = true;
         }
         else if (meetConference.findMember(address) == null)
         {
             // Participant has left the room
-            logger.info(
-                    "Expiring " + address + " channels - participant has left");
+            logger.info("Expiring " + address + " channels - participant has left");
 
             expireChannels = true;
         }

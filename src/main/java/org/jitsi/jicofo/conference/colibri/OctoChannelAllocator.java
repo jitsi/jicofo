@@ -46,8 +46,7 @@ class OctoChannelAllocator implements Runnable
     private final Logger logger;
 
     /**
-     * The {@link JitsiMeetConferenceImpl} into which a participant will be
-     * invited.
+     * The callback to use when a colibri request fails or succeeds.
      */
     private final ColibriRequestCallback colibriRequestCallback;
 
@@ -76,10 +75,8 @@ class OctoChannelAllocator implements Runnable
     private final OctoParticipant participant;
 
     /**
-     * Initializes a new {@link OctoChannelAllocator} instance which is meant to
-     * invite a specific {@link Participant} into a specific
-     * {@link JitsiMeetConferenceImpl}.
-     *
+     * Initializes a new {@link OctoChannelAllocator} instance which is meant to invite a specific {@link Participant}
+     * into a conference.
      */
     public OctoChannelAllocator(
             ColibriRequestCallback colibriRequestCallback,
@@ -171,9 +168,9 @@ class OctoChannelAllocator implements Runnable
             return null;
         }
 
-        // The bridge is faulty.
+        // The bridge is faulty, i.e. shouldn't be used anymore.
         boolean faulty;
-        // We want to re-invite the participants in this conference.
+        // The participants on this bridge should be re-invited.
         boolean restartConference;
         try
         {
@@ -195,34 +192,27 @@ class OctoChannelAllocator implements Runnable
         }
         catch (ConferenceNotFoundException e)
         {
-            // The conference on the bridge has likely expired. We want to
-            // re-invite the conference participants, though the bridge is not
-            // faulty.
+            // The conference on the bridge has likely expired. We want to re-invite the conference participants,
+            // though the bridge is not faulty.
             restartConference = true;
             faulty = false;
             logger.error(jvb + " - conference ID not found (expired?):" + e.getMessage());
         }
         catch (BadRequestException e)
         {
-            // The bridge indicated that our request is invalid. This does not
-            // mean the bridge is faulty, and retrying will likely result
-            // in the same error.
-            // We observe this when an endpoint uses an ID not accepted by
-            // the new bridge (via a custom client).
+            // The bridge indicated that our request is invalid. This does not mean the bridge is faulty, and retrying
+            // will likely result in the same error, so we don't call the failure callback. We observe this when an
+            // endpoint uses an ID not accepted by the bridge (via a custom client).
             restartConference = false;
             faulty = false;
-            logger.error(
-                    jvb + " - the bridge indicated bad-request: " + e.getMessage());
+            logger.error(jvb + " - the bridge indicated bad-request: " + e.getMessage());
         }
         catch (ColibriException e)
         {
-            // All other errors indicate that the bridge is faulty: timeout,
-            // wrong response type, or something else.
+            // All other errors indicate that the bridge is faulty: timeout, wrong response type, or something else.
             restartConference = true;
             faulty = true;
-            logger.error(
-                    jvb + " - failed to allocate channels, will consider the "
-                            + "bridge faulty: " + e.getMessage(), e);
+            logger.error(jvb + " - failed to allocate channels, will consider the bridge faulty: " + e.getMessage(), e);
         }
 
         // We only get here if we caught an exception.
@@ -234,10 +224,8 @@ class OctoChannelAllocator implements Runnable
 
         cancel();
 
-        // If the ColibriConference is in use, and we want to retry,
-        // notify the JitsiMeetConference.
-        if (restartConference &&
-                isNotBlank(bridgeSession.colibriConference.getConferenceId()))
+        // If the ColibriConference is in use, and we want to retry.
+        if (restartConference && isNotBlank(bridgeSession.colibriConference.getConferenceId()))
         {
             colibriRequestCallback.requestFailed(jvb);
         }

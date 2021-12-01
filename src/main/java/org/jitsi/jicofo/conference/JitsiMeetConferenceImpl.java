@@ -180,7 +180,7 @@ public class JitsiMeetConferenceImpl
     private final String etherpadName;
 
     /**
-     * The list of {@link BridgeSession} currently in use by this conference.
+     * Maintains all colibri sessions for this conference.
      */
     private final ColibriSessionManager colibriSessionManager;
 
@@ -646,9 +646,8 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Invites a {@link Participant} to the conference. Selects the
-     * {@link BridgeSession} to use and starts a new {@link
-     * ParticipantChannelAllocator} to allocate COLIBRI channels and initiate
+     * Invites a {@link Participant} to the conference. Selects the bridge to use and starts a new
+     * {@link ParticipantChannelAllocator} to allocate COLIBRI channels and initiate
      * a Jingle session with the {@link Participant}.
      * @param participant the participant to invite.
      * @param reInvite whether the participant is to be re-invited or invited for the first time.
@@ -686,16 +685,6 @@ public class JitsiMeetConferenceImpl
                     ? new ConferenceSourceMap()
                     : new ConferenceSourceMap(participant.getMucJid(), participantSourcesSet);
         return participantSourceMap.unmodifiable();
-    }
-
-    /**
-     * @param exclude a relay id to exclude from the result.
-     * @return the set of all Octo relays of bridges in the conference, except
-     * for {@code exclude}.
-     */
-    public List<String> getAllRelays(String exclude)
-    {
-        return colibriSessionManager.getAllRelays(exclude);
     }
 
     /**

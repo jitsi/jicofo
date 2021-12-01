@@ -31,8 +31,7 @@ import org.jivesoftware.smack.*;
 import java.util.*;
 
 /**
- * Represents a {@link Bridge} instance as used by this
- * {@link JitsiMeetConferenceImpl}.
+ * Represents a colibri session to a specific {@link Bridge} instance in a specific conference.
  */
 class BridgeSession
 {
@@ -82,7 +81,7 @@ class BridgeSession
      */
     public boolean hasFailed = false;
 
-    @NotNull private final JitsiMeetConferenceImpl jitsiMeetConference;
+    @NotNull private final ColibriSessionManager colibriSessionManager;
 
     @NotNull private final ColibriRequestCallback colibriRequestCallback;
 
@@ -94,13 +93,14 @@ class BridgeSession
      */
     BridgeSession(
             @NotNull JitsiMeetConferenceImpl jitsiMeetConference,
+            @NotNull ColibriSessionManager colibriSessionManager,
             @NotNull ColibriRequestCallback colibriRequestCallback,
             @NonNull AbstractXMPPConnection xmppConnection,
             @NotNull Bridge bridge,
             long gid,
             @NotNull Logger parentLogger)
     {
-        this.jitsiMeetConference = jitsiMeetConference;
+        this.colibriSessionManager = colibriSessionManager;
         this.colibriRequestCallback = colibriRequestCallback;
         this.bridge = bridge;
         this.colibriConference = new ColibriConferenceImpl(xmppConnection);
@@ -262,7 +262,7 @@ class BridgeSession
             return octoParticipant;
         }
 
-        List<String> remoteRelays = jitsiMeetConference.getAllRelays(bridge.getRelayId());
+        List<String> remoteRelays = colibriSessionManager.getAllRelays(bridge.getRelayId());
         return getOrCreateOctoParticipant(new LinkedList<>(remoteRelays));
     }
 
@@ -376,7 +376,7 @@ class BridgeSession
 
         OctoParticipant octoParticipant = new OctoParticipant(relays, logger, bridge.getJid());
 
-        ConferenceSourceMap remoteSources = jitsiMeetConference.getSources(participants);
+        ConferenceSourceMap remoteSources = colibriSessionManager.getSources(participants);
 
         octoParticipant.addSources(remoteSources);
 

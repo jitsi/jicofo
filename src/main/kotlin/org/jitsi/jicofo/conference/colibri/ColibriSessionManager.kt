@@ -285,9 +285,12 @@ class ColibriSessionManager(
         return bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType)
     }
 
+    fun getSources(except: List<Participant>): ConferenceSourceMap = jitsiMeetConference.getSources(except)
+
     private fun addBridgeSession(bridge: Bridge): BridgeSession = synchronized(syncRoot) {
         val bridgeSession = BridgeSession(
             jitsiMeetConference,
+            this,
             colibriRequestCallback,
             jicofoServices.xmppServices.serviceConnection.xmppConnection,
             bridge,
