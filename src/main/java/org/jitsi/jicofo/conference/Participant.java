@@ -469,18 +469,7 @@ public class Participant
      */
     public void setMuted(MediaType mediaType, boolean value)
     {
-        this.mutedByMediaType.put(mediaType, value);
-
-        ColibriConferenceIQ colibriChannelsInfo = this.getColibriChannelsInfo();
-        if (colibriChannelsInfo != null)
-        {
-            ColibriConferenceIQ.Content content = colibriChannelsInfo.getContent(mediaType.toString());
-
-            if (content != null)
-            {
-                content.getChannels().forEach(ch -> ch.setDirection(value ? "sendonly" : "sendrecv"));
-            }
-        }
+        mutedByMediaType.put(mediaType, value);
     }
 
     /**
