@@ -965,20 +965,24 @@ public class JitsiMeetConferenceImpl
 
         if (!startMuted[0])
         {
+            int limit = ConferenceConfig.config.getMaxAudioSenders();
             Integer startAudioMuted = config.getStartAudioMuted();
             if (startAudioMuted != null)
             {
-                startMuted[0] = (participantNumber > startAudioMuted);
+                limit = Math.min(limit, startAudioMuted);
             }
+            startMuted[0] = (participantNumber > limit);
         }
 
         if (!startMuted[1])
         {
+            int limit = ConferenceConfig.config.getMaxVideoSenders();
             Integer startVideoMuted = config.getStartVideoMuted();
             if (startVideoMuted != null)
             {
-                startMuted[1] = (participantNumber > startVideoMuted);
+                limit = Math.min(limit, startVideoMuted);
             }
+            startMuted[1] = (participantNumber > limit);
         }
 
         return startMuted;
