@@ -91,7 +91,6 @@ class ColibriSessionManager(
         if (bridgeSession != null) {
             participant.setChannelAllocator(null)
             bridgeSession.terminate(participant)
-            participant.colibriChannelsInfo = null
 
             val removedSources = participant.sources
 
@@ -160,7 +159,7 @@ class ColibriSessionManager(
             return
         }
 
-        val colibriChannelsInfo = participant.colibriChannelsInfo
+        val colibriChannelsInfo = participantInfoMap[participant]?.colibriChannels
         if (colibriChannelsInfo == null) {
             logger.warn("No colibriChannelsInfo for $participant")
             return
@@ -212,7 +211,7 @@ class ColibriSessionManager(
         if (bridgeSession != null) {
             bridgeSession.colibriConference.updateSourcesInfo(
                 participant.sources,
-                participant.colibriChannelsInfo
+                participantInfoMap[participant]?.colibriChannels
             )
             removeSourcesFromOcto(sourcesToRemove, bridgeSession)
         }
@@ -284,7 +283,7 @@ class ColibriSessionManager(
             return false
         }
 
-        val participantChannels = participant.colibriChannelsInfo
+        val participantChannels = participantInfoMap[participant]?.colibriChannels
         if (participantChannels == null) {
             logger.error("No colibri channels for $participant")
             return false

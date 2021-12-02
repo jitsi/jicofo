@@ -119,7 +119,7 @@ public class ParticipantChannelAllocator implements Runnable
     /**
      * Override super's AbstractParticipant
      */
-    private final Participant participant;
+    @NonNull private final Participant participant;
 
     /**
      * {@inheritDoc}
@@ -129,7 +129,7 @@ public class ParticipantChannelAllocator implements Runnable
             @NonNull ColibriRequestCallback colibriRequestCallback,
             @NonNull ColibriSessionManager colibriSessionManager,
             BridgeSession bridgeSession,
-            Participant participant,
+            @NonNull Participant participant,
             boolean startAudioMuted,
             boolean startVideoMuted,
             boolean reInvite,
@@ -209,9 +209,11 @@ public class ParticipantChannelAllocator implements Runnable
             return;
         }
 
-        if (participant != null)
+
+        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
+        if (participantInfo != null)
         {
-            participant.setColibriChannelsInfo(colibriChannels);
+            participantInfo.setColibriChannels(colibriChannels);
         }
 
         offer = updateOffer(offer, colibriChannels);
@@ -437,7 +439,7 @@ public class ParticipantChannelAllocator implements Runnable
             // Update channels info
             // FIXME we should include this stuff in the offer
             bridgeSession.colibriConference.updateChannelsInfo(
-                    participant.getColibriChannelsInfo(),
+                    participantInfo == null ? null : participantInfo.getColibriChannels(),
                     participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
                     participant.getSources());
         }

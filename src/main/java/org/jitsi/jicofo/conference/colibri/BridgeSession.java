@@ -168,7 +168,7 @@ class BridgeSession
                 terminatedParticipants.add(participant);
                 participant.setChannelAllocator(null);
                 participantInfo.setTransport(null);
-                participant.setColibriChannelsInfo(null);
+                participantInfo.setColibriChannels(null);
                 participantInfo.setHasColibriSession(false);
             }
         }
@@ -189,13 +189,12 @@ class BridgeSession
      * @return {@code true} if the participant was a member of {@link #participants} and was removed as a result of
      * this call, and {@code false} otherwise.
      */
-    public boolean terminate(Participant participant)
+    public boolean terminate(@NotNull Participant participant)
     {
         boolean removed = participants.remove(participant);
 
-        ColibriConferenceIQ channelsInfo
-                = participant != null
-                ? participant.getColibriChannelsInfo() : null;
+        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
+        ColibriConferenceIQ channelsInfo = participantInfo == null ? null : participantInfo.getColibriChannels();
 
         if (channelsInfo != null && !hasFailed)
         {
@@ -225,7 +224,7 @@ class BridgeSession
     {
         ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
         colibriConference.updateChannelsInfo(
-                participant.getColibriChannelsInfo(),
+                participantInfo == null ? null : participantInfo.getColibriChannels(),
                 participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
                 participant.getSources(),
                 participantInfo == null ? null : participantInfo.getTransport(),

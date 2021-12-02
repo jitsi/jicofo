@@ -59,11 +59,6 @@ public class Participant
     }
 
     /**
-     * Information about Colibri channels allocated for this peer (if any).
-     */
-    private ColibriConferenceIQ colibriChannelsInfo;
-
-    /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
     private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
@@ -143,25 +138,6 @@ public class Participant
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
-    }
-
-    /**
-     * Sets information about Colibri channels allocated for this participant.
-     *
-     * @param colibriChannelsInfo the IQ that holds colibri channels state.
-     */
-    public void setColibriChannelsInfo(ColibriConferenceIQ colibriChannelsInfo)
-    {
-        this.colibriChannelsInfo = colibriChannelsInfo;
-    }
-
-    /**
-     * Returns {@link ColibriConferenceIQ} that describes Colibri channels
-     * allocated for this participant.
-     */
-    public ColibriConferenceIQ getColibriChannelsInfo()
-    {
-        return colibriChannelsInfo;
     }
 
     /**
