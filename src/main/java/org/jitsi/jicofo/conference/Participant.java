@@ -27,7 +27,6 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
