@@ -290,7 +290,27 @@ class ColibriSessionManager(
         return bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType)
     }
 
-    fun getSources(except: List<Participant>): ConferenceSourceMap = jitsiMeetConference.getSources(except)
+    fun getSources(except: List<Participant>): ConferenceSourceMap {
+        val sources = jitsiMeetConference.sources
+        val sourcesCopy = sources.copy()
+        sources.keys.forEach { sourceJid ->
+            // If the return value is used to create a new octo participant then
+            // we skip participants without a bridge session (which happens when
+            // a bridge fails & participant are re-invited). The reason why we
+            // do this is to avoid adding sources to the (newly created) octo
+            // participant from soon to be re-invited (and hence soon to be local)
+            // participants, causing a weird transition from octo participant to
+            // local participant in the new bridge.
+            if (except.any { it.mucJid == sourceJid } || (sourceJid != null && !hasColibriSession(sourceJid))) {
+                sourcesCopy.remove(sourceJid)
+            }
+        }
+        return sourcesCopy.unmodifiable
+    }
+
+    private fun hasColibriSession(mucJid: Jid) = getParticipantInfo(mucJid).let { it != null && it.hasColibriSession }
+    private fun getParticipantInfo(mucJid: Jid) =
+        participantInfoMap.entries.firstOrNull { it.key.mucJid == mucJid }?.value
 
     /** Get the [ParticipantInfo] structure associated with a participant. This persists across re-invites. */
     fun getParticipantInfo(participant: Participant) = participantInfoMap[participant]

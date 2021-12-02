@@ -62,7 +62,7 @@ class BridgeSession
      * The list of participants in the conference which use this
      * {@link BridgeSession}.
      */
-    final List<Participant> participants = new LinkedList<>();
+    @NotNull final List<Participant> participants = new LinkedList<>();
 
     /**
      * The {@link ColibriConference} instance used to communicate with
