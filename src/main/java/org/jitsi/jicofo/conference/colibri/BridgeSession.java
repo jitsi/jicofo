@@ -222,9 +222,10 @@ class BridgeSession
      */
     void updateColibriChannels(Participant participant)
     {
+        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
         colibriConference.updateChannelsInfo(
                 participant.getColibriChannelsInfo(),
-                participant.getRtpDescriptionMap(),
+                participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
                 participant.getSources(),
                 participant.getBundleTransport(),
                 participant.getEndpointId(),

@@ -28,7 +28,10 @@ import org.jitsi.utils.MediaType
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jxmpp.jid.Jid
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Manage all Colibri sessions for a conference.
@@ -52,6 +55,7 @@ class ColibriSessionManager(
     private val bridgeSessions = mutableListOf<BridgeSession>()
     private val syncRoot = Any()
     private val logger = createChildLogger(parentLogger)
+    private val participantInfoMap = ConcurrentHashMap<Participant, ParticipantInfo>()
 
     private val eventEmitter = SyncEventEmitter<Listener>()
     fun addListener(listener: Listener) = eventEmitter.addHandler(listener)
@@ -96,6 +100,7 @@ class ColibriSessionManager(
                 maybeExpireBridgeSession(bridgeSession)
             }
         }
+        participantInfoMap.remove(participant)
     }
 
     /**
@@ -118,6 +123,7 @@ class ColibriSessionManager(
             logger.error("The selected bridge is non-operational: $bridge")
         }
 
+        participantInfoMap[participant] = ParticipantInfo(hasColibriSession = true)
         val bridgeSession = findBridgeSession(bridge) ?: addBridgeSession(bridge)
         bridgeSession.addParticipant(participant)
         participant.hasColibriSession = true
@@ -127,6 +133,7 @@ class ColibriSessionManager(
         val channelAllocator = ParticipantChannelAllocator(
             jitsiMeetConference,
             colibriRequestCallback,
+            this,
             bridgeSession,
             participant,
             startAudioMuted,
@@ -286,6 +293,23 @@ class ColibriSessionManager(
     }
 
     fun getSources(except: List<Participant>): ConferenceSourceMap = jitsiMeetConference.getSources(except)
+
+    /** Get the [ParticipantInfo] structure associated with a participant. This persists across re-invites. */
+    fun getParticipantInfo(participant: Participant) = participantInfoMap[participant]
+
+    /** Update the RTP Description map for a specific participant. */
+    fun setRtpDescriptionMap(participant: Participant, contents: List<ContentPacketExtension>) {
+        val rtpDescMap = mutableMapOf<String, RtpDescriptionPacketExtension>()
+        for (content in contents) {
+            val rtpDesc = content.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)
+            if (rtpDesc != null) {
+                rtpDescMap[content.name] = rtpDesc
+            }
+        }
+
+        participantInfoMap[participant]?.let { it.rtpDescriptionMap = rtpDescMap }
+            ?: run { logger.warn("No ParticipantInfo for $participant") }
+    }
 
     private fun addBridgeSession(bridge: Bridge): BridgeSession = synchronized(syncRoot) {
         val bridgeSession = BridgeSession(

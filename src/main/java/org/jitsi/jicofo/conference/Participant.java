@@ -66,25 +66,9 @@ public class Participant
     private ColibriConferenceIQ colibriChannelsInfo;
 
     /**
-     * The map of the most recently received RTP description for each Colibri
-     * content.
-     */
-    private Map<String, RtpDescriptionPacketExtension> rtpDescriptionMap;
-
-    /**
      * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
     private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
-
-    /**
-     * Returns currently stored map of RTP description to Colibri content name.
-     * @return a <tt>Map<String,RtpDescriptionPacketExtension></tt> which maps
-     *         the RTP descriptions to the corresponding Colibri content names.
-     */
-    public Map<String, RtpDescriptionPacketExtension> getRtpDescriptionMap()
-    {
-        return rtpDescriptionMap;
-    }
 
     /**
      * Used to synchronize access to {@link #channelAllocator}.
@@ -168,31 +152,6 @@ public class Participant
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
-    }
-
-    /**
-     * Extracts and stores RTP description for each content type from given
-     * Jingle contents.
-     * @param jingleContents the list of Jingle content packet extension from
-     *        <tt>Participant</tt>'s answer.
-     */
-    public void setRTPDescription(List<ContentPacketExtension> jingleContents)
-    {
-        Map<String, RtpDescriptionPacketExtension> rtpDescMap = new HashMap<>();
-
-        for (ContentPacketExtension content : jingleContents)
-        {
-            RtpDescriptionPacketExtension rtpDesc
-                    = content.getFirstChildOfType(
-                    RtpDescriptionPacketExtension.class);
-
-            if (rtpDesc != null)
-            {
-                rtpDescMap.put(content.getName(), rtpDesc);
-            }
-        }
-
-        this.rtpDescriptionMap = rtpDescMap;
     }
 
     /**

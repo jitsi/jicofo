@@ -659,7 +659,8 @@ public class JitsiMeetConferenceImpl
             colibriSessionManager.inviteParticipant(
                     participant,
                     hasToStartAudioMuted(participant, justJoined),
-                    hasToStartVideoMuted(participant, justJoined), reInvite);
+                    hasToStartVideoMuted(participant, justJoined),
+                    reInvite);
         }
         catch (BridgeSelectionFailedException e)
         {
@@ -1279,7 +1280,7 @@ public class JitsiMeetConferenceImpl
         participant.setJingleSession(jingleSession);
 
         // Extract and store various session information in the Participant
-        participant.setRTPDescription(contents);
+        colibriSessionManager.setRtpDescriptionMap(participant, contents);
         participant.addTransportFromJingle(contents);
 
         String participantId = participant.getEndpointId();

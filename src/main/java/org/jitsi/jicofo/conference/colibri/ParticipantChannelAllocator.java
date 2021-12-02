@@ -76,6 +76,7 @@ public class ParticipantChannelAllocator implements Runnable
     private final JitsiMeetConferenceImpl meetConference;
 
     @NonNull private final ColibriRequestCallback colibriRequestCallback;
+    @NonNull private final ColibriSessionManager colibriSessionManager;
 
     /**
      * The {@link BridgeSession} on which
@@ -126,6 +127,7 @@ public class ParticipantChannelAllocator implements Runnable
     public ParticipantChannelAllocator(
             JitsiMeetConferenceImpl meetConference,
             @NonNull ColibriRequestCallback colibriRequestCallback,
+            @NonNull ColibriSessionManager colibriSessionManager,
             BridgeSession bridgeSession,
             Participant participant,
             boolean startAudioMuted,
@@ -135,6 +137,7 @@ public class ParticipantChannelAllocator implements Runnable
     {
         this.meetConference = meetConference;
         this.colibriRequestCallback = colibriRequestCallback;
+        this.colibriSessionManager = colibriSessionManager;
         this.bridgeSession = bridgeSession;
         this.startAudioMuted = startAudioMuted;
         this.startVideoMuted = startVideoMuted;
@@ -430,11 +433,12 @@ public class ParticipantChannelAllocator implements Runnable
         }
         else if (reInvite)
         {
+            ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
             // Update channels info
             // FIXME we should include this stuff in the offer
             bridgeSession.colibriConference.updateChannelsInfo(
                     participant.getColibriChannelsInfo(),
-                    participant.getRtpDescriptionMap(),
+                    participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
                     participant.getSources());
         }
 
