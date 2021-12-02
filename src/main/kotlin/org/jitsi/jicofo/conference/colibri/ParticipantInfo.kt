@@ -27,5 +27,7 @@ import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
  */
 class ParticipantInfo(
     /** The map of the most recently received RTP description for each Colibri content. */
-    var rtpDescriptionMap: Map<String, RtpDescriptionPacketExtension>? = null
+    var rtpDescriptionMap: Map<String, RtpDescriptionPacketExtension>? = null,
+    /** Whether this participant has an associated active [BridgeSession]? */
+    var hasColibriSession: Boolean = false
 )

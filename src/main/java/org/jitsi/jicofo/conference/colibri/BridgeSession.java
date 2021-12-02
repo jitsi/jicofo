@@ -27,6 +27,7 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.*;
+import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -162,13 +163,14 @@ class BridgeSession
         // sync on what?
         for (Participant participant : new LinkedList<>(participants))
         {
-            if (participant.hasColibriSession())
+            ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
+            if (participantInfo != null && participantInfo.getHasColibriSession())
             {
                 terminatedParticipants.add(participant);
                 participant.setChannelAllocator(null);
                 participant.clearTransportInfo();
                 participant.setColibriChannelsInfo(null);
-                participant.hasColibriSession = false;
+                participantInfo.setHasColibriSession(false);
             }
         }
 

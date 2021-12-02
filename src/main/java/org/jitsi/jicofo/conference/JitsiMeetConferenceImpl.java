@@ -1433,7 +1433,9 @@ public class JitsiMeetConferenceImpl
             // participant from soon to be re-invited (and hence soon to be local)
             // participants, causing a weird transition from octo participant to
             // local participant in the new bridge.
-            if (except.contains(participant) || !participant.hasColibriSession())
+            ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
+            if (except.contains(participant)
+                    || (participantInfo == null || !participantInfo.getHasColibriSession()))
             {
                 allSources.remove(participant.getMucJid());
             }

@@ -81,8 +81,6 @@ public class Participant
      */
     private ParticipantChannelAllocator channelAllocator = null;
 
-    public boolean hasColibriSession = false;
-
     /**
      * The {@link Clock} used by this participant.
      */
@@ -488,15 +486,6 @@ public class Participant
     public void clearTransportInfo()
     {
         bundleTransport = null;
-    }
-
-    /**
-     * Whether this participant has a colibri session.
-     * @return
-     */
-    public boolean hasColibriSession()
-    {
-        return hasColibriSession;
     }
 
     /**

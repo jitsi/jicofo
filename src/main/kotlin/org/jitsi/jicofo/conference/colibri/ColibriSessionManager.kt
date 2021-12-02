@@ -89,7 +89,6 @@ class ColibriSessionManager(
             bridgeSession.terminate(participant)
             participant.clearTransportInfo()
             participant.colibriChannelsInfo = null
-            participant.hasColibriSession = false
 
             val removedSources = participant.sources
 
@@ -126,7 +125,6 @@ class ColibriSessionManager(
         participantInfoMap[participant] = ParticipantInfo(hasColibriSession = true)
         val bridgeSession = findBridgeSession(bridge) ?: addBridgeSession(bridge)
         bridgeSession.addParticipant(participant)
-        participant.hasColibriSession = true
         logger.info("Added participant id=${participant.chatMember.name}, bridge=${bridgeSession.bridge.jid}")
 
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
