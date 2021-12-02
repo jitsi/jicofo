@@ -42,8 +42,8 @@ class SourceAddRemoveQueue {
     }
 
     /** Add a source-add operation to the queue. */
-    fun sourceAdd(sourcesToAdd: ConferenceSourceMap) {
-        var sourcesToAdd = sourcesToAdd
+    fun sourceAdd(s: ConferenceSourceMap) {
+        var sourcesToAdd = s
         synchronized(queuedRemoteSourceChanges) {
             val previous = queuedRemoteSourceChanges.lastOrNull()
             if (previous != null && previous.action === AddOrRemove.Add) {
@@ -58,8 +58,8 @@ class SourceAddRemoveQueue {
     }
 
     /** Add a source-remove operation to the queue. */
-    fun sourceRemove(sourcesToRemove: ConferenceSourceMap) {
-        var sourcesToRemove = sourcesToRemove
+    fun sourceRemove(s: ConferenceSourceMap) {
+        var sourcesToRemove = s
         synchronized(queuedRemoteSourceChanges) {
             val previous = queuedRemoteSourceChanges.lastOrNull()
             if (previous != null && previous.action === AddOrRemove.Remove) {
