@@ -24,11 +24,14 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.protocol.xmpp.util.TransportSignaling
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jxmpp.jid.Jid
 import java.util.concurrent.ConcurrentHashMap
@@ -81,13 +84,13 @@ class ColibriSessionManager(
 
     /** Removes a participant, terminating its colibri session. */
     fun removeParticipant(participant: Participant) {
+        participantInfoMap.remove(participant)
         val bridgeSession = findBridgeSession(participant)
 
         // Expire the OctoEndpoints for this participant on other bridges.
         if (bridgeSession != null) {
             participant.setChannelAllocator(null)
             bridgeSession.terminate(participant)
-            participant.clearTransportInfo()
             participant.colibriChannelsInfo = null
 
             val removedSources = participant.sources
@@ -99,7 +102,6 @@ class ColibriSessionManager(
                 maybeExpireBridgeSession(bridgeSession)
             }
         }
-        participantInfoMap.remove(participant)
     }
 
     /**
@@ -254,7 +256,8 @@ class ColibriSessionManager(
     fun bridgeCount() = synchronized(syncRoot) { bridgeSessions.size }
 
     /** Updates the transport info for a participant. */
-    fun updateTransportInfo(participant: Participant) {
+    fun updateTransportInfo(participant: Participant, contents: List<ContentPacketExtension>) {
+        addTransportFromJingle(participant, contents)
         val bridgeSession = findBridgeSession(participant)
         // We can hit null here during conference restart, but the state will be synced up later when the client
         // sends 'transport-accept'
@@ -264,7 +267,7 @@ class ColibriSessionManager(
         }
 
         bridgeSession.colibriConference.updateBundleTransportInfo(
-            participant.bundleTransport,
+            participantInfoMap[participant]?.transport,
             participant.endpointId
         )
     }
@@ -326,7 +329,40 @@ class ColibriSessionManager(
         }
 
         participantInfoMap[participant]?.let { it.rtpDescriptionMap = rtpDescMap }
-            ?: run { logger.warn("No ParticipantInfo for $participant") }
+            ?: run { logger.warn("Can not set RTP description, no ParticipantInfo for $participant") }
+    }
+
+    /**
+     * Update a participant's transport information given a list of Jingle contents (using the first
+     * [IceUdpTransportPacketExtension] extension found in the contents).
+     * If the participant already has the transport information, the new one will be merged into it using
+     * [TransportSignaling#mergeTransportExtension].
+     *
+     * @param contents the list of [ContentPacketExtension] received from the remote endpoint in a jingle message like
+     * 'session-accept', 'transport-info', 'transport-accept' etc.
+     */
+    fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>) {
+        participantInfoMap[participant]?.let { participantInfo ->
+            val transport = contents.mapNotNull {
+                it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java)
+            }.firstOrNull()
+
+            if (transport == null) {
+                logger.error("No valid transport supplied in transport-update from $participant")
+                return
+            }
+
+            if (!transport.isRtcpMux) {
+                transport.addChildExtension(IceRtcpmuxPacketExtension())
+            }
+
+            val existingTransport = participantInfo.transport
+            if (existingTransport == null) {
+                participantInfo.transport = transport
+            } else {
+                TransportSignaling.mergeTransportExtension(existingTransport, transport)
+            }
+        } ?: run { logger.warn("Can not add transport info, no ParticipantInfo for $participant.") }
     }
 
     private fun addBridgeSession(bridge: Bridge): BridgeSession = synchronized(syncRoot) {

@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol.xmpp.util;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import java.util.*;
@@ -37,12 +38,9 @@ public class TransportSignaling
      *               all relevant information will be merged into <tt>dst</tt>
      */
     static public void mergeTransportExtension(
-            IceUdpTransportPacketExtension    dst,
-            IceUdpTransportPacketExtension    src)
+            @NotNull IceUdpTransportPacketExtension dst,
+            @NotNull IceUdpTransportPacketExtension src)
     {
-        Objects.requireNonNull(dst, "dst");
-        Objects.requireNonNull(src, "src");
-
         // Attributes
         for (String attribute : src.getAttributeNames())
         {

@@ -25,11 +25,9 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -103,11 +101,6 @@ public class Participant
     private JingleSession jingleSession;
 
     private final Logger logger;
-
-    /**
-     * Stores information about bundled transport
-     */
-    private IceUdpTransportPacketExtension bundleTransport;
 
     /**
      * The list of XMPP features supported by this participant.
@@ -418,74 +411,6 @@ public class Participant
         {
             throw new UnsupportedFeatureConfigurationException("Participant doesn't support bundle, which is required");
         }
-    }
-
-    /**
-     * Extracts and stores transport information from given map of Jingle
-     * content.  If we already have the transport information it will be
-     * merged into the currently stored one with
-     * {@link TransportSignaling#mergeTransportExtension}.
-     *
-     * @param contents the list of <tt>ContentPacketExtension</tt> from one of
-     *                 jingle message which can potentially contain transport info like
-     *                 'session-accept', 'transport-info', 'transport-accept' etc.
-     */
-    public void addTransportFromJingle(List<ContentPacketExtension> contents)
-    {
-        // Select first transport
-        IceUdpTransportPacketExtension transport = null;
-        for (ContentPacketExtension cpe : contents)
-        {
-            IceUdpTransportPacketExtension contentTransport
-                    = cpe.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
-            if (contentTransport != null)
-            {
-                transport = contentTransport;
-                break;
-            }
-        }
-        if (transport == null)
-        {
-            logger.error("No valid transport supplied in transport-update from " + getChatMember().getName());
-            return;
-        }
-
-        if (!transport.isRtcpMux())
-        {
-            transport.addChildExtension(new IceRtcpmuxPacketExtension());
-        }
-
-        if (bundleTransport == null)
-        {
-            bundleTransport = transport;
-        }
-        else
-        {
-            TransportSignaling.mergeTransportExtension(bundleTransport, transport);
-        }
-    }
-
-    /**
-     * Returns 'bundled' transport information stored for this
-     * <tt>Participant</tt>.
-     *
-     * @return <tt>IceUdpTransportPacketExtension</tt> which describes 'bundled'
-     * transport of this participant or <tt>null</tt> either if it's not
-     * available yet or if 'non-bundled' transport is being used.
-     */
-    public IceUdpTransportPacketExtension getBundleTransport()
-    {
-        return bundleTransport;
-    }
-
-    /**
-     * Clears any ICE transport information currently stored for this
-     * participant.
-     */
-    public void clearTransportInfo()
-    {
-        bundleTransport = null;
     }
 
     /**

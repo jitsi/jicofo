@@ -27,7 +27,6 @@ import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.*;
-import org.jxmpp.jid.parts.*;
 
 import java.util.*;
 
@@ -168,7 +167,7 @@ class BridgeSession
             {
                 terminatedParticipants.add(participant);
                 participant.setChannelAllocator(null);
-                participant.clearTransportInfo();
+                participantInfo.setTransport(null);
                 participant.setColibriChannelsInfo(null);
                 participantInfo.setHasColibriSession(false);
             }
@@ -229,7 +228,7 @@ class BridgeSession
                 participant.getColibriChannelsInfo(),
                 participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
                 participant.getSources(),
-                participant.getBundleTransport(),
+                participantInfo == null ? null : participantInfo.getTransport(),
                 participant.getEndpointId(),
                 null);
     }

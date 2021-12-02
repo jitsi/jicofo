@@ -1115,10 +1115,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        // Participant will figure out bundle or non-bundle transport based on its hasBundleSupport() value
-        participant.addTransportFromJingle(contentList);
-
-        colibriSessionManager.updateTransportInfo(participant);
+        colibriSessionManager.updateTransportInfo(participant, contentList);
     }
 
     /**
@@ -1281,7 +1278,7 @@ public class JitsiMeetConferenceImpl
 
         // Extract and store various session information in the Participant
         colibriSessionManager.setRtpDescriptionMap(participant, contents);
-        participant.addTransportFromJingle(contents);
+        colibriSessionManager.addTransportFromJingle(participant, contents);
 
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
@@ -1296,9 +1293,7 @@ public class JitsiMeetConferenceImpl
             // conference will not be aware of the participant.
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcesAdvertised
-                    = new EndpointSourceSet(
-                            new Source(ssrc, MediaType.AUDIO, null, null, true));
+            sourcesAdvertised = new EndpointSourceSet(new Source(ssrc, MediaType.AUDIO, null, null, true));
         }
         ConferenceSourceMap sourcesAccepted;
         try
