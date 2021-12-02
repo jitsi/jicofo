@@ -20,9 +20,9 @@ package org.jitsi.jicofo.conference;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
@@ -68,10 +68,9 @@ public class Participant
     private final Object channelAllocatorSyncRoot = new Object();
 
     /**
-     * The {@link ParticipantChannelAllocator}, if any, which is currently
-     * allocating channels for this participant.
+     * The cancelable thread, if any, which is currently allocating channels for this participant.
      */
-    private ParticipantChannelAllocator channelAllocator = null;
+    private Cancelable channelAllocator = null;
 
     /**
      * The {@link Clock} used by this participant.
@@ -140,13 +139,11 @@ public class Participant
     }
 
     /**
-     * Replaces the {@link ParticipantChannelAllocator}, which is currently
-     * allocating channels for this participant (if any) with the specified
-     * channel allocator (if any).
-     * @param channelAllocator the channel allocator to set, or {@code null}
-     * to clear it.
+     * Replaces the channel allocator thread, which is currently allocating channels for this participant (if any)
+     * with the specified channel allocator (if any).
+     * @param channelAllocator the channel allocator to set, or {@code null} to clear it.
      */
-    public void setChannelAllocator(ParticipantChannelAllocator channelAllocator)
+    public void setChannelAllocator(Cancelable channelAllocator)
     {
         synchronized (channelAllocatorSyncRoot)
         {
@@ -163,13 +160,11 @@ public class Participant
     }
 
     /**
-     * Signals to this {@link Participant} that a specific
-     * {@link ParticipantChannelAllocator} has completed its task and its thread
+     * Signals to this {@link Participant} that a specific channel allocator has completed its task and its thread
      * is about to terminate.
-     * @param channelAllocator the {@link ParticipantChannelAllocator} which has
-     * completed its task and its thread is about to terminate.
+     * @param channelAllocator the channel allocator which has completed its task and its thread is about to terminate.
      */
-    public void channelAllocatorCompleted(ParticipantChannelAllocator channelAllocator)
+    public void channelAllocatorCompleted(Cancelable channelAllocator)
     {
         synchronized (channelAllocatorSyncRoot)
         {

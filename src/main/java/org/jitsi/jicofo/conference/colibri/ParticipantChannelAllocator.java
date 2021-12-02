@@ -23,6 +23,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -46,7 +47,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-public class ParticipantChannelAllocator implements Runnable
+public class ParticipantChannelAllocator implements Runnable, Cancelable
 {
     /**
      * The constant value used as owner attribute value of
@@ -330,6 +331,7 @@ public class ParticipantChannelAllocator implements Runnable
      * Raises the {@code canceled} flag, which causes the thread to not continue
      * with the allocation process.
      */
+    @Override
     public void cancel()
     {
         canceled = true;
