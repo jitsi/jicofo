@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference.colibri;
+package org.jitsi.jicofo.conference;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.codec.*;
-import org.jitsi.jicofo.conference.*;
+import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
@@ -46,7 +46,7 @@ import java.util.*;
  * @author Pawel Domas
  * @author Boris Grozev
  */
-public class ParticipantChannelAllocator implements Runnable, Cancelable
+public class ParticipantInviteRunnable implements Runnable, Cancelable
 {
     /**
      * The constant value used as owner attribute value of
@@ -112,7 +112,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
     /**
      * {@inheritDoc}
      */
-    public ParticipantChannelAllocator(
+    public ParticipantInviteRunnable(
             JitsiMeetConferenceImpl meetConference,
             @NonNull ColibriRequestCallback colibriRequestCallback,
             @NonNull ColibriSessionManager colibriSessionManager,
@@ -134,7 +134,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
     }
 
     /**
-     * Entry point for the {@link ParticipantChannelAllocator} task.
+     * Entry point for the {@link ParticipantInviteRunnable} task.
      */
     @Override
     public void run()
@@ -155,7 +155,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
                 colibriSessionManager.removeParticipant(participant);
             }
 
-            participant.channelAllocatorCompleted(this);
+            participant.inviteRunnableCompleted(this);
         }
     }
 
@@ -501,7 +501,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
 
     /**
      * @return the {@link Participant} associated with this
-     * {@link ParticipantChannelAllocator}.
+     * {@link ParticipantInviteRunnable}.
      */
     public @NotNull Participant getParticipant()
     {

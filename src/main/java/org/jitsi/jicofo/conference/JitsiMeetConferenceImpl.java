@@ -648,7 +648,7 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Invites a {@link Participant} to the conference. Selects the bridge to use and starts a new
-     * {@link ParticipantChannelAllocator} to allocate COLIBRI channels and initiate
+     * {@link ParticipantInviteRunnable} to allocate COLIBRI channels and initiate
      * a Jingle session with the {@link Participant}.
      * @param participant the participant to invite.
      * @param reInvite whether the participant is to be re-invited or invited for the first time.
@@ -656,7 +656,7 @@ public class JitsiMeetConferenceImpl
     private void inviteParticipant(@NotNull Participant participant, boolean reInvite, boolean justJoined)
     {
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
-        ParticipantChannelAllocator channelAllocator = new ParticipantChannelAllocator(
+        ParticipantInviteRunnable channelAllocator = new ParticipantInviteRunnable(
                 this,
                 colibriRequestCallback,
                 colibriSessionManager,
@@ -667,7 +667,7 @@ public class JitsiMeetConferenceImpl
                 logger
         );
 
-        participant.setChannelAllocator(channelAllocator);
+        participant.setInviteRunnable(channelAllocator);
         TaskPools.getIoPool().execute(channelAllocator);
     }
 
@@ -1650,11 +1650,11 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * A callback called by {@link ParticipantChannelAllocator} when
+     * A callback called by {@link ParticipantInviteRunnable} when
      * establishing the Jingle session with its participant fails.
      * @param channelAllocator the channel allocator which failed.
      */
-    public void onInviteFailed(ParticipantChannelAllocator channelAllocator)
+    public void onInviteFailed(ParticipantInviteRunnable channelAllocator)
     {
         terminateParticipant(
                 channelAllocator.getParticipant(),

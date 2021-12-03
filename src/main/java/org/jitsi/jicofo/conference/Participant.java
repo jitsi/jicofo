@@ -63,14 +63,14 @@ public class Participant
     private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
 
     /**
-     * Used to synchronize access to {@link #channelAllocator}.
+     * Used to synchronize access to {@link #inviteRunnable}.
      */
-    private final Object channelAllocatorSyncRoot = new Object();
+    private final Object inviteRunnableSyncRoot = new Object();
 
     /**
      * The cancelable thread, if any, which is currently allocating channels for this participant.
      */
-    private Cancelable channelAllocator = null;
+    private Cancelable inviteRunnable = null;
 
     /**
      * The {@link Clock} used by this participant.
@@ -141,21 +141,21 @@ public class Participant
     /**
      * Replaces the channel allocator thread, which is currently allocating channels for this participant (if any)
      * with the specified channel allocator (if any).
-     * @param channelAllocator the channel allocator to set, or {@code null} to clear it.
+     * @param inviteRunnable the channel allocator to set, or {@code null} to clear it.
      */
-    public void setChannelAllocator(Cancelable channelAllocator)
+    public void setInviteRunnable(Cancelable inviteRunnable)
     {
-        synchronized (channelAllocatorSyncRoot)
+        synchronized (inviteRunnableSyncRoot)
         {
-            if (this.channelAllocator != null)
+            if (this.inviteRunnable != null)
             {
                 // There is an ongoing thread allocating channels and sending
                 // an invite for this participant. Tell it to stop.
-                logger.warn("Canceling " + this.channelAllocator);
-                this.channelAllocator.cancel();
+                logger.warn("Canceling " + this.inviteRunnable);
+                this.inviteRunnable.cancel();
             }
 
-            this.channelAllocator = channelAllocator;
+            this.inviteRunnable = inviteRunnable;
         }
     }
 
@@ -164,13 +164,13 @@ public class Participant
      * is about to terminate.
      * @param channelAllocator the channel allocator which has completed its task and its thread is about to terminate.
      */
-    public void channelAllocatorCompleted(Cancelable channelAllocator)
+    public void inviteRunnableCompleted(Cancelable channelAllocator)
     {
-        synchronized (channelAllocatorSyncRoot)
+        synchronized (inviteRunnableSyncRoot)
         {
-            if (this.channelAllocator == channelAllocator)
+            if (this.inviteRunnable == channelAllocator)
             {
-                this.channelAllocator = null;
+                this.inviteRunnable = null;
             }
         }
     }

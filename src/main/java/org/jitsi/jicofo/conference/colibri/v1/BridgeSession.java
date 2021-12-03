@@ -167,7 +167,7 @@ class BridgeSession
             if (participantInfo != null && participantInfo.getHasColibriSession())
             {
                 terminatedParticipants.add(participant);
-                participant.setChannelAllocator(null);
+                participant.setInviteRunnable(null);
                 participantInfo.setTransport(null);
                 participantInfo.setColibriChannels(null);
                 participantInfo.setHasColibriSession(false);

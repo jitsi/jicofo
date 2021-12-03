@@ -32,7 +32,7 @@ import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
 import org.jitsi.jicofo.conference.colibri.ColibriConferenceExpiredException
 import org.jitsi.jicofo.conference.colibri.ColibriParsingException
 import org.jitsi.jicofo.conference.colibri.ColibriRequestCallback
-import org.jitsi.jicofo.conference.colibri.ParticipantChannelAllocator
+import org.jitsi.jicofo.conference.ParticipantInviteRunnable
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
@@ -102,7 +102,7 @@ class ColibriSessionManager(
 
         // Expire the OctoEndpoints for this participant on other bridges.
         if (bridgeSession != null) {
-            participant.setChannelAllocator(null)
+            participant.setInviteRunnable(null)
             bridgeSession.terminate(participant)
 
             val removedSources = participant.sources
@@ -243,7 +243,7 @@ class ColibriSessionManager(
             content.channels.forEach { channel ->
                 channel.sources.firstOrNull()?.let { sourcePacketExtension ->
                     sources.add(
-                        ParticipantChannelAllocator.SSRC_OWNER_JVB,
+                        ParticipantInviteRunnable.SSRC_OWNER_JVB,
                         EndpointSourceSet(
                             Source(
                                 sourcePacketExtension.ssrc,
