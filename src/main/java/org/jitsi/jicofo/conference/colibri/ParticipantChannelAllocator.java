@@ -170,10 +170,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
                 bridgeSession.colibriConference.expireChannels(colibriChannels);
             }
 
-            if (participant != null)
-            {
-                participant.channelAllocatorCompleted(this);
-            }
+            participant.channelAllocatorCompleted(this);
         }
     }
 
@@ -257,9 +254,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         boolean restartConference;
         try
         {
-            logger.info(
-                    "Using " + jvb + " to allocate channels for: "
-                            + (participant == null ? "null" : participant.toString()));
+            logger.info("Using " + jvb + " to allocate channels for: " + participant);
 
             ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
 
@@ -293,8 +288,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
             // the new bridge (via a custom client).
             restartConference = false;
             faulty = false;
-            logger.error(
-                    jvb + " - the bridge indicated bad-request: " + e.getMessage());
+            logger.error(jvb + " - the bridge indicated bad-request: " + e.getMessage());
         }
         catch (ColibriException e)
         {
@@ -302,9 +296,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
             // wrong response type, or something else.
             restartConference = true;
             faulty = true;
-            logger.error(
-                    jvb + " - failed to allocate channels, will consider the "
-                            + "bridge faulty: " + e.getMessage(), e);
+            logger.error(jvb + " - failed to allocate channels, will consider the bridge faulty: " + e.getMessage(), e);
         }
 
         // We only get here if we caught an exception.
@@ -318,8 +310,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
 
         // If the ColibriConference is in use, and we want to retry,
         // notify the JitsiMeetConference.
-        if (restartConference &&
-                isNotBlank(bridgeSession.colibriConference.getConferenceId()))
+        if (restartConference && isNotBlank(bridgeSession.colibriConference.getConferenceId()))
         {
             colibriRequestCallback.requestFailed(jvb);
         }
