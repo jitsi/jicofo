@@ -7,7 +7,7 @@ sealed class ColibriAllocationFailedException(message: String = "") : Exception(
 /** Bridge selection failed, i.e. there were no bridges available. */
 class BridgeSelectionFailedException : ColibriAllocationFailedException()
 
-class ColibriConferenceDisposedException: ColibriAllocationFailedException()
+class ColibriConferenceDisposedException : ColibriAllocationFailedException()
 
 class ColibriConferenceExpiredException(
     val jid: Jid,

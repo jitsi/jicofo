@@ -20,7 +20,6 @@ package org.jitsi.jicofo.conference.colibri
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.JicofoServices
 import org.jitsi.jicofo.OctoConfig
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
@@ -118,7 +117,11 @@ class ColibriSessionManager(
     }
 
     @Throws(ColibriAllocationFailedException::class)
-    fun allocate(participant: Participant, contents: List<ContentPacketExtension>, reInvite: Boolean): ColibriAllocation {
+    fun allocate(
+        participant: Participant,
+        contents: List<ContentPacketExtension>,
+        reInvite: Boolean
+    ): ColibriAllocation {
         val bridgeSession: BridgeSession
         val participantInfo: ParticipantInfo
         synchronized(syncRoot) {
@@ -188,7 +191,8 @@ class ColibriSessionManager(
             throw ColibriConferenceExpiredException(
                 jvb,
                 // If the ColibriConference is in use, and we want to retry.
-                restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId))
+                restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId)
+            )
         } catch (e: BadRequestException) {
             // The bridge indicated that our request is invalid. This does not mean the bridge is faulty, and retrying
             // will likely result in the same error.
@@ -203,16 +207,10 @@ class ColibriSessionManager(
             logger.error("$jvb - failed to allocate channels, will consider the bridge faulty: ${e.message}", e)
             throw BridgeFailedException(
                 jvb,
-                restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId))
+                restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId)
+            )
         }
-
-//        if (restartConference && StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId)) {
-//            colibriRequestCallback.requestFailed(jvb)
-//        }
-
-        //return null
     }
-
 
     @Throws(ColibriParsingException::class)
     private fun parseAllocation(colibriConferenceIQ: ColibriConferenceIQ): ColibriAllocation {
@@ -239,7 +237,7 @@ class ColibriSessionManager(
                         EndpointSourceSet(
                             Source(
                                 sourcePacketExtension.ssrc,
-                                mediaType,  // assuming either audio or video the source name: jvb-a0 or jvb-v0
+                                mediaType, // assuming either audio or video the source name: jvb-a0 or jvb-v0
                                 "jvb-" + mediaType.toString()[0] + "0",
                                 "mixedmslabel mixedlabel" + content.name + "0",
                                 false

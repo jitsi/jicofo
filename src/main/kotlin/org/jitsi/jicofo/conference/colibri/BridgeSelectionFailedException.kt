@@ -17,4 +17,3 @@
  */
 
 package org.jitsi.jicofo.conference.colibri
-
