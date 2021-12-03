@@ -10,5 +10,9 @@ data class ColibriAllocation(
     /** The sources advertised by the bridge. */
     val sources: ConferenceSourceMap,
     /** Encodes the bridge-side transport information (ICE candidates, DTLS fingerprint, etc.). */
-    val transport: IceUdpTransportPacketExtension
+    val transport: IceUdpTransportPacketExtension,
+    /** The region of the bridge */
+    val region: String?,
+    /** An identifier for the session */
+    val bridgeSessionId: String?
 )

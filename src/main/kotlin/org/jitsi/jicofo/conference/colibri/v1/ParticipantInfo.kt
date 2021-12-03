@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference.colibri.v1
 
+import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -31,7 +32,8 @@ class ParticipantInfo(
     /** The map of the most recently received RTP description for each Colibri content. */
     var rtpDescriptionMap: Map<String, RtpDescriptionPacketExtension>? = null,
     /** Whether this participant has an associated active [BridgeSession]? */
-    var hasColibriSession: Boolean = false,
+    var hasColibriSession: Boolean = true,
     var transport: IceUdpTransportPacketExtension? = null,
-    var colibriChannels: ColibriConferenceIQ? = null
+    var colibriChannels: ColibriConferenceIQ? = null,
+    var colibriAllocation: ColibriAllocation? = null
 )

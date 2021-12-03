@@ -170,6 +170,7 @@ class BridgeSession
                 participant.setInviteRunnable(null);
                 participantInfo.setTransport(null);
                 participantInfo.setColibriChannels(null);
+                participantInfo.setColibriAllocation(null);
                 participantInfo.setHasColibriSession(false);
             }
         }

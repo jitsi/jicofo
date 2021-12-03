@@ -59,8 +59,7 @@ interface ColibriSessionManager {
     fun setRtpDescriptionMap(participant: Participant, contents: List<ContentPacketExtension>)
     fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>)
     fun updateSources(participant: Participant, sources: ConferenceSourceMap)
-    fun getBridgeSessionId(participant: Participant): String?
-    fun getRegion(participant: Participant): String?
+    fun getAllocation(participant: Participant): ColibriAllocation?
     fun bridgesDown(bridges: Set<Jid>): List<Participant>
 
     /**

@@ -147,7 +147,7 @@ class ColibriV1SessionManager(
                 logger.error("The selected bridge is non-operational: $bridge")
             }
 
-            participantInfo = ParticipantInfo(hasColibriSession = true)
+            participantInfo = ParticipantInfo()
             participantInfoMap[participant] = participantInfo
             bridgeSession = findBridgeSession(bridge) ?: addBridgeSession(bridge)
             bridgeSession.addParticipant(participant)
@@ -181,9 +181,11 @@ class ColibriV1SessionManager(
                 contents
             ) ?: throw ColibriConferenceDisposedException()
 
-            val colibriAllocation: ColibriAllocation
+            val transport: IceUdpTransportPacketExtension
+            val sources: ConferenceSourceMap
             try {
-                colibriAllocation = parseAllocation(colibriChannels)
+                transport = parseTransport(colibriChannels)
+                sources = parseSources(colibriChannels)
             } catch (e: ColibriParsingException) {
                 // This is not an error coming from the bridge, so the channels are still active. Make sure they are
                 // expired.
@@ -191,9 +193,11 @@ class ColibriV1SessionManager(
                 throw BridgeFailedException(jvb, restartConference = false)
             }
 
+            val colibriAllocation = ColibriAllocation(sources, transport, bridgeSession.bridge.region, bridgeSession.id)
             bridgeSession.bridge.setIsOperational(true)
             colibriRequestCallback.requestSucceeded(jvb)
             participantInfo.colibriChannels = colibriChannels
+            participantInfo.colibriAllocation = colibriAllocation
 
             return colibriAllocation
         } catch (e: ConferenceNotFoundException) {
@@ -225,7 +229,7 @@ class ColibriV1SessionManager(
     }
 
     @Throws(ColibriParsingException::class)
-    private fun parseAllocation(colibriConferenceIQ: ColibriConferenceIQ): ColibriAllocation {
+    private fun parseTransport(colibriConferenceIQ: ColibriConferenceIQ): IceUdpTransportPacketExtension {
         // Look for any channels that reference a channel-bundle and extract the associated transport element.
         val channelBundleId =
             colibriConferenceIQ.contents.flatMap { it.channels }.mapNotNull { it.channelBundleId }.firstOrNull()
@@ -239,6 +243,11 @@ class ColibriV1SessionManager(
             transport.addChildExtension(IceRtcpmuxPacketExtension())
         }
 
+        return transport
+    }
+
+    @Throws(ColibriParsingException::class)
+    private fun parseSources(colibriConferenceIQ: ColibriConferenceIQ): ConferenceSourceMap {
         val sources = ConferenceSourceMap()
         colibriConferenceIQ.contents.forEach { content ->
             val mediaType = MediaType.parseString(content.name)
@@ -260,7 +269,7 @@ class ColibriV1SessionManager(
             }
         }
 
-        return ColibriAllocation(sources, transport)
+        return sources
     }
 
     /**
@@ -331,12 +340,8 @@ class ColibriV1SessionManager(
     }
 
     /** Get the ID of the bridge session for a [participant], or null if there's none. */
-    override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
-        return findBridgeSession(participant)?.id
-    }
-
-    override fun getRegion(participant: Participant): String? = synchronized(syncRoot) {
-        return findBridgeSession(participant)?.bridge?.region
+    override fun getAllocation(participant: Participant): ColibriAllocation? = synchronized(syncRoot) {
+        return participantInfoMap[participant]?.colibriAllocation
     }
 
     /**

@@ -982,7 +982,8 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
+        ColibriAllocation colibriAllocation = colibriSessionManager.getAllocation(participant);
+        String existingBridgeSessionId = colibriAllocation == null ? null : colibriAllocation.getBridgeSessionId();
         if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
@@ -1028,7 +1029,8 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
+        ColibriAllocation colibriAllocation = colibriSessionManager.getAllocation(participant);
+        String existingBridgeSessionId = colibriAllocation == null ? null : colibriAllocation.getBridgeSessionId();
         boolean restartRequested = bsPE != null && bsPE.isRestart();
 
         if (restartRequested)

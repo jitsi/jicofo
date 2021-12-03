@@ -250,7 +250,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
         try
         {
-            invite(offer);
+            invite(offer, colibriAllocation);
         }
         catch (SmackException.NotConnectedException e)
         {
@@ -305,7 +305,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     /**
      * {@inheritDoc}
      */
-    private void invite(Offer offer)
+    private void invite(Offer offer, ColibriAllocation colibriAllocation)
         throws SmackException.NotConnectedException
     {
         /*
@@ -338,7 +338,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else if (!canceled)
         {
-            if (!doInviteOrReinvite(address, offer))
+            if (!doInviteOrReinvite(address, offer, colibriAllocation))
             {
                 expireChannels = true;
             }
@@ -385,7 +385,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.
      */
-    private boolean doInviteOrReinvite(Jid address, Offer offer)
+    private boolean doInviteOrReinvite(Jid address, Offer offer, ColibriAllocation colibriAllocation)
         throws SmackException.NotConnectedException
     {
         OperationSetJingle jingle = meetConference.getJingle();
@@ -404,9 +404,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
         // Include info about the BridgeSession which provides the transport
         additionalExtensions.add(new BridgeSessionPacketExtension(
-                colibriSessionManager.getBridgeSessionId(participant),
-                colibriSessionManager.getRegion(participant)
-        ));
+                colibriAllocation.getBridgeSessionId(),
+                colibriAllocation.getRegion()));
 
         if (initiateSession)
         {
