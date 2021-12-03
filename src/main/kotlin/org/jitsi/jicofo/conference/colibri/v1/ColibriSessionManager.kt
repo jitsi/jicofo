@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference.colibri
+package org.jitsi.jicofo.conference.colibri.v1
 
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.JicofoServices
@@ -23,6 +23,16 @@ import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
+import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
+import org.jitsi.jicofo.conference.colibri.BridgeFailedException
+import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
+import org.jitsi.jicofo.conference.colibri.ColibriAllocation
+import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
+import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
+import org.jitsi.jicofo.conference.colibri.ColibriConferenceExpiredException
+import org.jitsi.jicofo.conference.colibri.ColibriParsingException
+import org.jitsi.jicofo.conference.colibri.ColibriRequestCallback
+import org.jitsi.jicofo.conference.colibri.ParticipantChannelAllocator
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source

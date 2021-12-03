@@ -23,7 +23,7 @@ import java.util.*;
 import mock.jvb.*;
 import mock.xmpp.*;
 import org.jitsi.jicofo.codec.*;
-import org.jitsi.jicofo.conference.colibri.*;
+import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.junit.jupiter.api.*;

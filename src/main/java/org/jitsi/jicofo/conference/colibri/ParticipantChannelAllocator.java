@@ -23,6 +23,7 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.*;
+import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
