@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference.colibri
 
+import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.JicofoServices
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
@@ -24,11 +25,14 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.protocol.xmpp.util.TransportSignaling
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
@@ -103,50 +107,150 @@ class ColibriSessionManager(
         }
     }
 
-    /**
-     * Invites a new participant to the conference. Currently, this includes starting the Jingle session (via
-     * [ParticipantChannelAllocator]), but the intention is to simplify this flow.
-     */
-    @Throws(BridgeSelectionFailedException::class)
-    fun inviteParticipant(
-        participant: Participant,
-        startAudioMuted: Boolean,
-        startVideoMuted: Boolean,
-        reInvite: Boolean
-    ) = synchronized(syncRoot) {
-        // Some bridges in the conference may have become non-operational. Inviting a new participant to the conference
-        // requires communication with its bridges, so we remove them from the conference first.
-        removeNonOperationalBridges()
-
-        val bridge: Bridge = selectBridge(participant)
-        if (!bridge.isOperational) {
-            logger.error("The selected bridge is non-operational: $bridge")
-        }
-
-        participantInfoMap[participant] = ParticipantInfo(hasColibriSession = true)
-        val bridgeSession = findBridgeSession(bridge) ?: addBridgeSession(bridge)
-        bridgeSession.addParticipant(participant)
-        logger.info("Added participant id=${participant.chatMember.name}, bridge=${bridgeSession.bridge.jid}")
-
-        // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
-        val channelAllocator = ParticipantChannelAllocator(
-            jitsiMeetConference,
-            colibriRequestCallback,
-            this,
-            bridgeSession,
-            participant,
-            startAudioMuted,
-            startVideoMuted,
-            reInvite,
-            logger
+    fun updateChannels(participant: Participant) = synchronized(syncRoot) {
+        val participantInfo = participantInfoMap[participant]
+        val bridgeSession = findBridgeSession(participant) ?: return
+        bridgeSession.colibriConference.updateChannelsInfo(
+            participantInfo?.colibriChannels,
+            participantInfo?.rtpDescriptionMap,
+            participant.sources
         )
+    }
 
-        participant.setChannelAllocator(channelAllocator)
-        TaskPools.ioPool.execute(channelAllocator)
+    @Throws(ColibriAllocationFailedException::class)
+    fun allocate(participant: Participant, contents: List<ContentPacketExtension>, reInvite: Boolean): ColibriAllocation {
+        val bridgeSession: BridgeSession
+        val participantInfo: ParticipantInfo
+        synchronized(syncRoot) {
+            // Some bridges in the conference may have become non-operational. Allocating channels for a new participant
+            // requires communication with all bridges, so we remove them from the conference first.
+            removeNonOperationalBridges()
 
-        if (reInvite) {
-            addSourcesToOcto(participant.sources, bridgeSession)
+            val bridge: Bridge = selectBridge(participant)
+            if (!bridge.isOperational) {
+                // TODO should we throw here?
+                logger.error("The selected bridge is non-operational: $bridge")
+            }
+
+            participantInfo = ParticipantInfo(hasColibriSession = true)
+            participantInfoMap[participant] = participantInfo
+            bridgeSession = findBridgeSession(bridge) ?: addBridgeSession(bridge)
+            bridgeSession.addParticipant(participant)
+            logger.info("Added participant id=${participant.chatMember.name}, bridge=${bridgeSession.bridge.jid}")
         }
+
+        return allocateChannels(participant, participantInfo, bridgeSession, contents).also {
+            if (reInvite) {
+                addSourcesToOcto(participant.sources, bridgeSession)
+            }
+        }
+    }
+
+    @Throws(ColibriAllocationFailedException::class)
+    private fun allocateChannels(
+        participant: Participant,
+        participantInfo: ParticipantInfo,
+        bridgeSession: BridgeSession,
+        contents: List<ContentPacketExtension>
+    ): ColibriAllocation {
+        val jvb = bridgeSession.bridge.jid
+        // We want to re-invite the participants in this conference.
+        try {
+            logger.info("Using $jvb to allocate channels for: $participant")
+
+            // null means canceled, because colibriConference has been disposed by another thread
+            val colibriChannels = bridgeSession.colibriConference.createColibriChannels(
+                participant.endpointId,
+                participant.statId,
+                true /* initiator */,
+                contents
+            ) ?: throw ColibriConferenceDisposedException()
+
+            val colibriAllocation: ColibriAllocation
+            try {
+                colibriAllocation = parseAllocation(colibriChannels)
+            } catch (e: ColibriParsingException) {
+                // This is not an error coming from the bridge, so the channels are still active. Make sure they are
+                // expired.
+                bridgeSession.colibriConference.expireChannels(colibriChannels)
+                throw BridgeFailedException(jvb, restartConference = false)
+            }
+
+            bridgeSession.bridge.setIsOperational(true)
+            colibriRequestCallback.requestSucceeded(jvb)
+            participantInfo.colibriChannels = colibriChannels
+
+            return colibriAllocation
+        } catch (e: ConferenceNotFoundException) {
+            // The conference on the bridge has likely expired. We want to re-invite the conference participants,
+            // though the bridge is not faulty.
+            logger.error("$jvb - conference ID not found (expired?): ${e.message}")
+            throw ColibriConferenceExpiredException(
+                jvb,
+                // If the ColibriConference is in use, and we want to retry.
+                restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId))
+        } catch (e: BadRequestException) {
+            // The bridge indicated that our request is invalid. This does not mean the bridge is faulty, and retrying
+            // will likely result in the same error.
+            // We observe this when an endpoint uses an ID not accepted by the new bridge (via a custom client).
+            // TODO: Jicofo should not allow such endpoints.
+            logger.error("$jvb - the bridge indicated bad-request: ${e.message}")
+            throw BadColibriRequestException()
+        } catch (e: ColibriException) {
+            // All other errors indicate that the bridge is faulty: timeout, wrong response type, or something else.
+            bridgeSession.bridge.setIsOperational(false)
+            bridgeSession.hasFailed = true
+            logger.error("$jvb - failed to allocate channels, will consider the bridge faulty: ${e.message}", e)
+            throw BridgeFailedException(
+                jvb,
+                restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId))
+        }
+
+//        if (restartConference && StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId)) {
+//            colibriRequestCallback.requestFailed(jvb)
+//        }
+
+        //return null
+    }
+
+
+    @Throws(ColibriParsingException::class)
+    private fun parseAllocation(colibriConferenceIQ: ColibriConferenceIQ): ColibriAllocation {
+        // Look for any channels that reference a channel-bundle and extract the associated transport element.
+        val channelBundleId =
+            colibriConferenceIQ.contents.flatMap { it.channels }.mapNotNull { it.channelBundleId }.firstOrNull()
+                ?: throw ColibriParsingException("No channel with a channel-bundle-id found")
+        val channelBundle = colibriConferenceIQ.getChannelBundle(channelBundleId)
+            ?: throw ColibriParsingException("No channel-bundle found with ID=$channelBundleId")
+        val transport = channelBundle.transport
+            ?: throw ColibriParsingException("channel-bundle has no transport")
+
+        if (!transport.isRtcpMux) {
+            transport.addChildExtension(IceRtcpmuxPacketExtension())
+        }
+
+        val sources = ConferenceSourceMap()
+        colibriConferenceIQ.contents.forEach { content ->
+            val mediaType = MediaType.parseString(content.name)
+            content.channels.forEach { channel ->
+                channel.sources.firstOrNull()?.let { sourcePacketExtension ->
+                    sources.add(
+                        ParticipantChannelAllocator.SSRC_OWNER_JVB,
+                        EndpointSourceSet(
+                            Source(
+                                sourcePacketExtension.ssrc,
+                                mediaType,  // assuming either audio or video the source name: jvb-a0 or jvb-v0
+                                "jvb-" + mediaType.toString()[0] + "0",
+                                "mixedmslabel mixedlabel" + content.name + "0",
+                                false
+                            )
+                        )
+                    )
+                }
+            }
+        }
+
+        return ColibriAllocation(sources, transport)
     }
 
     /**
@@ -220,6 +324,10 @@ class ColibriSessionManager(
     /** Get the ID of the bridge session for a [participant], or null if there's none. */
     fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
         return findBridgeSession(participant)?.id
+    }
+
+    fun getRegion(participant: Participant): String? = synchronized(syncRoot) {
+        return findBridgeSession(participant)?.bridge?.region
     }
 
     /**

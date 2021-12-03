@@ -18,5 +18,3 @@
 
 package org.jitsi.jicofo.conference.colibri
 
-/** Bridge selection failed, i.e. there were no bridges available. */
-class BridgeSelectionFailedException : Exception()

@@ -161,12 +161,6 @@ class OctoChannelAllocator implements Runnable
     private ColibriConferenceIQ allocateChannels(List<ContentPacketExtension> contents)
     {
         Jid jvb = bridgeSession.bridge.getJid();
-        if (jvb == null)
-        {
-            logger.error("No bridge jid");
-            cancel();
-            return null;
-        }
 
         // The bridge is faulty, i.e. shouldn't be used anymore.
         boolean faulty;

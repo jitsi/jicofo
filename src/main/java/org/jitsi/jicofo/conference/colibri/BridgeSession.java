@@ -41,7 +41,7 @@ class BridgeSession
     /**
      * The {@link Bridge}.
      */
-    final Bridge bridge;
+    @NotNull final Bridge bridge;
 
     /**
      * The bridge session's id.

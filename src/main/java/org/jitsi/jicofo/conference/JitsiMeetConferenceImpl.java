@@ -654,27 +654,20 @@ public class JitsiMeetConferenceImpl
      */
     private void inviteParticipant(@NotNull Participant participant, boolean reInvite, boolean justJoined)
     {
-        try
-        {
-            colibriSessionManager.inviteParticipant(
-                    participant,
-                    hasToStartAudioMuted(participant, justJoined),
-                    hasToStartVideoMuted(participant, justJoined),
-                    reInvite);
-        }
-        catch (BridgeSelectionFailedException e)
-        {
-            // Can not find a bridge to use.
-            logger.error("Can not invite participant, no bridge available: " + participant.getChatMember().getName());
+        // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
+        ParticipantChannelAllocator channelAllocator = new ParticipantChannelAllocator(
+                this,
+                colibriRequestCallback,
+                colibriSessionManager,
+                participant,
+                startAudioMuted,
+                startVideoMuted,
+                reInvite,
+                logger
+        );
 
-            if (chatRoom != null
-                    && !chatRoom.containsPresenceExtension(
-                        BridgeNotAvailablePacketExt.ELEMENT,
-                        BridgeNotAvailablePacketExt.NAMESPACE))
-            {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
-            }
-        }
+        participant.setChannelAllocator(channelAllocator);
+        TaskPools.getIoPool().execute(channelAllocator);
     }
 
     @NotNull

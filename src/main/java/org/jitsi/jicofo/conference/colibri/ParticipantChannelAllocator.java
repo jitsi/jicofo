@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference.colibri;
 
 import org.checkerframework.checker.nullness.qual.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.codec.*;
@@ -25,7 +26,6 @@ import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -38,8 +38,6 @@ import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
-
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * An {@link Runnable} which invites a participant to a conference.
@@ -80,12 +78,6 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
     @NonNull private final ColibriSessionManager colibriSessionManager;
 
     /**
-     * The {@link BridgeSession} on which
-     * to allocate channels for the participant.
-     */
-    private final BridgeSession bridgeSession;
-
-    /**
      * A flag which indicates whether channel allocation is canceled. Raising
      * this makes the allocation thread discontinue the allocation process and
      * return.
@@ -112,12 +104,6 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
     private final boolean reInvite;
 
     /**
-     * The colibri channels that this allocator has allocated. They'll be
-     * cleaned up if the allocator is canceled or failed at any point.
-     */
-    private ColibriConferenceIQ colibriChannels;
-
-    /**
      * Override super's AbstractParticipant
      */
     @NonNull private final Participant participant;
@@ -129,7 +115,6 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
             JitsiMeetConferenceImpl meetConference,
             @NonNull ColibriRequestCallback colibriRequestCallback,
             @NonNull ColibriSessionManager colibriSessionManager,
-            BridgeSession bridgeSession,
             @NonNull Participant participant,
             boolean startAudioMuted,
             boolean startVideoMuted,
@@ -139,7 +124,6 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         this.meetConference = meetConference;
         this.colibriRequestCallback = colibriRequestCallback;
         this.colibriSessionManager = colibriSessionManager;
-        this.bridgeSession = bridgeSession;
         this.startAudioMuted = startAudioMuted;
         this.startVideoMuted = startVideoMuted;
         this.reInvite = reInvite;
@@ -165,9 +149,9 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         }
         finally
         {
-            if (canceled && colibriChannels != null)
+            if (canceled)
             {
-                bridgeSession.colibriConference.expireChannels(colibriChannels);
+                colibriSessionManager.removeParticipant(participant);
             }
 
             participant.channelAllocatorCompleted(this);
@@ -192,29 +176,72 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
             return;
         }
 
-        colibriChannels = allocateChannels(offer.getContents());
-        if (canceled)
+        ColibriAllocation colibriAllocation;
+        try
         {
+            colibriAllocation = colibriSessionManager.allocate(participant, offer.getContents(), reInvite);
+        }
+        catch (BridgeSelectionFailedException e)
+        {
+            // Can not find a bridge to use.
+            logger.error("Can not invite participant, no bridge available: " + participant.getChatMember().getName());
+
+            ChatRoom chatRoom = meetConference.getChatRoom();
+            if (chatRoom != null
+                    && !chatRoom.containsPresenceExtension(
+                    BridgeNotAvailablePacketExt.ELEMENT,
+                    BridgeNotAvailablePacketExt.NAMESPACE))
+            {
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
+            }
             return;
         }
-
-        if (colibriChannels == null)
+        catch (ColibriConferenceDisposedException e)
         {
-            logger.error("Channel allocator failed: " + participant);
-
-            // Cancel this task - nothing to be done after failure
+            logger.error("Canceling due to ", e);
+            cancel();
+            return;
+        }
+        catch (ColibriConferenceExpiredException e)
+        {
+            logger.error("Canceling due to", e);
+            cancel();
+            if (e.getRestartConference())
+            {
+                colibriRequestCallback.requestFailed(e.getJid());
+            }
+            return;
+        }
+        catch (BadColibriRequestException e)
+        {
+            logger.error("Canceling due to", e);
+            cancel();
+            return;
+        }
+        catch (BridgeFailedException e)
+        {
+            logger.error("Canceling due to", e);
+            cancel();
+            if (e.getRestartConference())
+            {
+                colibriRequestCallback.requestFailed(e.getJid());
+            }
+            return;
+        }
+        catch (ColibriAllocationFailedException e)
+        {
+            logger.error("Canceling due to unexpected exception", e);
             cancel();
             return;
         }
 
 
-        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
-        if (participantInfo != null)
+        if (canceled)
         {
-            participantInfo.setColibriChannels(colibriChannels);
+            return;
         }
 
-        offer = updateOffer(offer, colibriChannels);
+        offer = updateOffer(offer, colibriAllocation);
         if (canceled)
         {
             return;
@@ -231,94 +258,6 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
     }
 
     /**
-     * Allocates Colibri channels for this {@link ParticipantChannelAllocator}'s
-     * {@link Participant} on {@link #bridgeSession}.
-     *
-     * @return a {@link ColibriConferenceIQ} which describes the allocated
-     * channels, or {@code null}.
-     */
-    private ColibriConferenceIQ allocateChannels(
-            List<ContentPacketExtension> contents)
-    {
-        Jid jvb = bridgeSession.bridge.getJid();
-        if (jvb == null)
-        {
-            logger.error("No bridge jid");
-            cancel();
-            return null;
-        }
-
-        // The bridge is faulty.
-        boolean faulty;
-        // We want to re-invite the participants in this conference.
-        boolean restartConference;
-        try
-        {
-            logger.info("Using " + jvb + " to allocate channels for: " + participant);
-
-            ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
-
-            // null means canceled, because colibriConference has been
-            // disposed by another thread
-            if (colibriChannels == null)
-            {
-                cancel();
-                return null;
-            }
-
-            bridgeSession.bridge.setIsOperational(true);
-            colibriRequestCallback.requestSucceeded(jvb);
-            return colibriChannels;
-        }
-        catch (ConferenceNotFoundException e)
-        {
-            // The conference on the bridge has likely expired. We want to
-            // re-invite the conference participants, though the bridge is not
-            // faulty.
-            restartConference = true;
-            faulty = false;
-            logger.error(jvb + " - conference ID not found (expired?):" + e.getMessage());
-        }
-        catch (BadRequestException e)
-        {
-            // The bridge indicated that our request is invalid. This does not
-            // mean the bridge is faulty, and retrying will likely result
-            // in the same error.
-            // We observe this when an endpoint uses an ID not accepted by
-            // the new bridge (via a custom client).
-            restartConference = false;
-            faulty = false;
-            logger.error(jvb + " - the bridge indicated bad-request: " + e.getMessage());
-        }
-        catch (ColibriException e)
-        {
-            // All other errors indicate that the bridge is faulty: timeout,
-            // wrong response type, or something else.
-            restartConference = true;
-            faulty = true;
-            logger.error(jvb + " - failed to allocate channels, will consider the bridge faulty: " + e.getMessage(), e);
-        }
-
-        // We only get here if we caught an exception.
-        if (faulty)
-        {
-            bridgeSession.bridge.setIsOperational(false);
-            bridgeSession.hasFailed = true;
-        }
-
-        cancel();
-
-        // If the ColibriConference is in use, and we want to retry,
-        // notify the JitsiMeetConference.
-        if (restartConference && isNotBlank(bridgeSession.colibriConference.getConferenceId()))
-        {
-            colibriRequestCallback.requestFailed(jvb);
-        }
-
-        return null;
-    }
-
-    /**
      * Raises the {@code canceled} flag, which causes the thread to not continue
      * with the allocation process.
      */
@@ -332,9 +271,8 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
     public String toString()
     {
         return String.format(
-                "%s[%s, %s]@%d",
+                "%s[%s]@%d",
                 this.getClass().getSimpleName(),
-                bridgeSession,
                 participant,
                 hashCode());
     }
@@ -361,20 +299,6 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         }
 
         return new Offer(new ConferenceSourceMap(), JingleOfferFactory.INSTANCE.createOffer(offerOptions));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    private ColibriConferenceIQ doAllocateChannels(
-        List<ContentPacketExtension> offer)
-        throws ColibriException
-    {
-        return bridgeSession.colibriConference.createColibriChannels(
-            participant.getEndpointId(),
-            participant.getStatId(),
-            true /* initiator */,
-            offer);
     }
 
     /**
@@ -428,13 +352,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         }
         else if (reInvite)
         {
-            ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
-            // Update channels info
-            // FIXME we should include this stuff in the offer
-            bridgeSession.colibriConference.updateChannelsInfo(
-                    participantInfo == null ? null : participantInfo.getColibriChannels(),
-                    participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
-                    participant.getSources());
+            colibriSessionManager.updateChannels(participant);
         }
 
         if (chatRoom != null && !participant.hasModeratorRights())
@@ -484,7 +402,10 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         }
 
         // Include info about the BridgeSession which provides the transport
-        additionalExtensions.add(new BridgeSessionPacketExtension(bridgeSession.id, bridgeSession.bridge.getRegion()));
+        additionalExtensions.add(new BridgeSessionPacketExtension(
+                colibriSessionManager.getBridgeSessionId(participant),
+                colibriSessionManager.getRegion(participant)
+        ));
 
         if (initiateSession)
         {
@@ -522,83 +443,33 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    private @NonNull Offer updateOffer(Offer offer, ColibriConferenceIQ colibriChannels)
+    private @NonNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
     {
+        // Take all sources from participants in the conference.
         ConferenceSourceMap conferenceSources = meetConference.getSources()
                 .copy()
                 .strip(ConferenceConfig.config.stripSimulcast(), true)
                 .stripByMediaType(participant.getSupportedMediaTypes());
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
+        // Add sources advertised by the bridge.
+        conferenceSources.add(colibriAllocation.getSources());
 
         for (ContentPacketExtension cpe : offer.getContents())
         {
-            String contentName = cpe.getName();
-            ColibriConferenceIQ.Content colibriContent = colibriChannels.getContent(contentName);
-
-            if (colibriContent == null)
-                continue;
-
-            // Channels
-            for (ColibriConferenceIQ.Channel channel : colibriContent.getChannels())
+            try
             {
-                ColibriConferenceIQ.ChannelBundle bundle
-                    = colibriChannels.getChannelBundle(channel.getChannelBundleId());
+                // Remove empty transport PE
+                IceUdpTransportPacketExtension empty = cpe.getFirstChildOfType(IceUdpTransportPacketExtension.class);
+                cpe.getChildExtensions().remove(empty);
 
-                if (bundle == null)
+                IceUdpTransportPacketExtension copy =
+                        IceUdpTransportPacketExtension.cloneTransportAndCandidates(
+                                colibriAllocation.getTransport(),
+                                true);
+
+                if ("data".equalsIgnoreCase(cpe.getName()))
                 {
-                    logger.error("No bundle for " + channel.getChannelBundleId());
-                    continue;
-                }
-
-                IceUdpTransportPacketExtension transport = bundle.getTransport();
-
-                if (!transport.isRtcpMux())
-                {
-                    transport.addChildExtension(new IceRtcpmuxPacketExtension());
-                }
-
-                try
-                {
-                    // Remove empty transport PE
-                    IceUdpTransportPacketExtension empty
-                        = cpe.getFirstChildOfType(IceUdpTransportPacketExtension.class);
-                    cpe.getChildExtensions().remove(empty);
-
-                    cpe.addChildExtension(IceUdpTransportPacketExtension.cloneTransportAndCandidates(transport, true));
-                }
-                catch (Exception e)
-                {
-                    logger.error(e, e);
-                }
-            }
-            // SCTP connections
-            for (ColibriConferenceIQ.SctpConnection sctpConn : colibriContent.getSctpConnections())
-            {
-                ColibriConferenceIQ.ChannelBundle bundle
-                    = colibriChannels.getChannelBundle(sctpConn.getChannelBundleId());
-
-                if (bundle == null)
-                {
-                    logger.error("No bundle for " + sctpConn.getChannelBundleId());
-                    continue;
-                }
-
-                IceUdpTransportPacketExtension transport = bundle.getTransport();
-
-                try
-                {
-                    // Remove empty transport
-                    IceUdpTransportPacketExtension empty
-                        = cpe.getFirstChildOfType(IceUdpTransportPacketExtension.class);
-                    cpe.getChildExtensions().remove(empty);
-
-                    IceUdpTransportPacketExtension copy
-                        = IceUdpTransportPacketExtension.cloneTransportAndCandidates(transport, true);
-
                     // FIXME: hardcoded
                     SctpMapExtension sctpMap = new SctpMapExtension();
                     sctpMap.setPort(5000);
@@ -606,46 +477,23 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
                     sctpMap.setStreams(1024);
 
                     copy.addChildExtension(sctpMap);
+                }
 
-                    cpe.addChildExtension(copy);
-                }
-                catch (Exception e)
-                {
-                    logger.error(e, e);
-                }
+                cpe.addChildExtension(copy);
             }
-            // Existing peers SSRCs
+            catch (Exception e)
+            {
+                logger.error(e, e);
+            }
+
             RtpDescriptionPacketExtension rtpDescPe = JingleUtils.getRtpDescription(cpe);
             if (rtpDescPe != null)
             {
                 // rtcp-mux is always used
                 rtpDescPe.addChildExtension(new JingleRtcpmuxPacketExtension());
-
-                // Copy SSRC sent from the bridge(only the first one)
-                for (ColibriConferenceIQ.Channel channel : colibriContent.getChannels())
-                {
-                    SourcePacketExtension ssrcPe
-                        = channel.getSources().size() > 0 ? channel.getSources().get(0) : null;
-                    if (ssrcPe == null)
-                    {
-                        continue;
-                    }
-
-                    MediaType mediaType = MediaType.parseString(contentName);
-
-                    conferenceSources.add(
-                            SSRC_OWNER_JVB,
-                            new EndpointSourceSet(
-                                    new Source(
-                                            ssrcPe.getSSRC(),
-                                            mediaType,
-                                            // assuming either audio or video the source name: jvb-a0 or jvb-v0
-                                            "jvb-" + mediaType.toString().charAt(0) + "0",
-                                            "mixedmslabel mixedlabel" + contentName + "0",
-                                            false)));
-                }
             }
         }
+
 
         return new Offer(conferenceSources, offer.getContents());
     }
@@ -654,7 +502,7 @@ public class ParticipantChannelAllocator implements Runnable, Cancelable
      * @return the {@link Participant} associated with this
      * {@link ParticipantChannelAllocator}.
      */
-    public Participant getParticipant()
+    public @NotNull Participant getParticipant()
     {
         return participant;
     }
