@@ -82,7 +82,7 @@ class BridgeSession
      */
     public boolean hasFailed = false;
 
-    @NotNull private final ColibriSessionManager colibriSessionManager;
+    @NotNull private final ColibriV1SessionManager colibriSessionManager;
 
     @NotNull private final ColibriRequestCallback colibriRequestCallback;
 
@@ -94,7 +94,7 @@ class BridgeSession
      */
     BridgeSession(
             @NotNull JitsiMeetConferenceImpl jitsiMeetConference,
-            @NotNull ColibriSessionManager colibriSessionManager,
+            @NotNull ColibriV1SessionManager colibriSessionManager,
             @NotNull ColibriRequestCallback colibriRequestCallback,
             @NonNull AbstractXMPPConnection xmppConnection,
             @NotNull Bridge bridge,

@@ -23,6 +23,7 @@ import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
+import org.jitsi.jicofo.conference.ParticipantInviteRunnable
 import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
 import org.jitsi.jicofo.conference.colibri.BridgeFailedException
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
@@ -32,7 +33,7 @@ import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
 import org.jitsi.jicofo.conference.colibri.ColibriConferenceExpiredException
 import org.jitsi.jicofo.conference.colibri.ColibriParsingException
 import org.jitsi.jicofo.conference.colibri.ColibriRequestCallback
-import org.jitsi.jicofo.conference.ParticipantInviteRunnable
+import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
@@ -52,7 +53,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Manage all Colibri sessions for a conference.
  */
-class ColibriSessionManager(
+class ColibriV1SessionManager(
     private val jicofoServices: JicofoServices,
     /**
      * A "global" identifier of this [JitsiMeetConferenceImpl] (i.e.
@@ -66,19 +67,19 @@ class ColibriSessionManager(
     private val jitsiMeetConference: JitsiMeetConferenceImpl,
     private val colibriRequestCallback: ColibriRequestCallback,
     parentLogger: Logger
-) {
+) : ColibriSessionManager {
     /** The list of [BridgeSession]s currently used. */
     private val bridgeSessions = mutableListOf<BridgeSession>()
     private val syncRoot = Any()
     private val logger = createChildLogger(parentLogger)
     private val participantInfoMap = ConcurrentHashMap<Participant, ParticipantInfo>()
 
-    private val eventEmitter = SyncEventEmitter<Listener>()
-    fun addListener(listener: Listener) = eventEmitter.addHandler(listener)
-    fun removeListener(listener: Listener) = eventEmitter.removeHandler(listener)
+    private val eventEmitter = SyncEventEmitter<ColibriSessionManager.Listener>()
+    override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
+    override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
     /** Expire all colibri sessions. */
-    fun expireAll() = synchronized(syncRoot) {
+    override fun expire() = synchronized(syncRoot) {
         // Expire all bridge sessions
         bridgeSessions.forEach { it.dispose() }
         bridgeSessions.clear()
@@ -86,17 +87,18 @@ class ColibriSessionManager(
     }
 
     /** Get the set of regions of the bridges. */
-    fun getBridgeRegions(): Set<String> = synchronized(syncRoot) {
-        return bridgeSessions.mapNotNull { it.bridge.region }.toSet()
-    }
+    override val bridgeRegions: Set<String>
+        get() = synchronized(syncRoot) {
+            return bridgeSessions.mapNotNull { it.bridge.region }.toSet()
+        }
 
     /** Remove a set of participants */
-    fun removeParticipants(participants: List<Participant>) = synchronized(syncRoot) {
+    override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
         participants.forEach { removeParticipant(it) }
     }
 
     /** Removes a participant, terminating its colibri session. */
-    fun removeParticipant(participant: Participant) {
+    override fun removeParticipant(participant: Participant) {
         participantInfoMap.remove(participant)
         val bridgeSession = findBridgeSession(participant)
 
@@ -116,7 +118,7 @@ class ColibriSessionManager(
         }
     }
 
-    fun updateChannels(participant: Participant) = synchronized(syncRoot) {
+    override fun updateChannels(participant: Participant) = synchronized(syncRoot) {
         val participantInfo = participantInfoMap[participant]
         val bridgeSession = findBridgeSession(participant) ?: return
         bridgeSession.colibriConference.updateChannelsInfo(
@@ -127,7 +129,7 @@ class ColibriSessionManager(
     }
 
     @Throws(ColibriAllocationFailedException::class)
-    fun allocate(
+    override fun allocate(
         participant: Participant,
         contents: List<ContentPacketExtension>,
         reInvite: Boolean
@@ -264,7 +266,7 @@ class ColibriSessionManager(
     /**
      * Add sources for a participant.
      */
-    fun addSources(participant: Participant, sourcesToAdd: ConferenceSourceMap) {
+    override fun addSources(participant: Participant, sourcesToAdd: ConferenceSourceMap) {
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession == null) {
             logger.warn("No bridge session for $participant")
@@ -291,7 +293,7 @@ class ColibriSessionManager(
      * This is very similar to [addSources]. This one is called when we receive session-accept.
      * TODO: figure out why they are different.
      */
-    fun updateSources(participant: Participant, sourcesToAdd: ConferenceSourceMap) {
+    override fun updateSources(participant: Participant, sourcesToAdd: ConferenceSourceMap) {
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession == null) {
             logger.warn("No bridge found for a participant: " + participant.chatMember.name)
@@ -300,8 +302,7 @@ class ColibriSessionManager(
 
         bridgeSession.updateColibriChannels(participant)
 
-        // If we accepted any new sources from the participant, update
-        // the state of all remote bridges.
+        // If we accepted any new sources from the participant, update the state of all remote bridges.
         if (sourcesToAdd.isNotEmpty()) {
             addSourcesToOcto(sourcesToAdd, bridgeSession)
         }
@@ -317,7 +318,7 @@ class ColibriSessionManager(
     }
 
     /** Remove sources for a [participant] */
-    fun removeSources(participant: Participant, sourcesToRemove: ConferenceSourceMap) {
+    override fun removeSources(participant: Participant, sourcesToRemove: ConferenceSourceMap) {
         // TODO error handling
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession != null) {
@@ -330,11 +331,11 @@ class ColibriSessionManager(
     }
 
     /** Get the ID of the bridge session for a [participant], or null if there's none. */
-    fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
+    override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
         return findBridgeSession(participant)?.id
     }
 
-    fun getRegion(participant: Participant): String? = synchronized(syncRoot) {
+    override fun getRegion(participant: Participant): String? = synchronized(syncRoot) {
         return findBridgeSession(participant)?.bridge?.region
     }
 
@@ -343,7 +344,7 @@ class ColibriSessionManager(
      *
      * @return the set of participants which were on removed bridges (and now need to be re-invited).
      */
-    fun bridgesDown(bridges: Set<Jid>): List<Participant> {
+    override fun bridgesDown(bridges: Set<Jid>): List<Participant> {
         val participantsToReinvite: MutableList<Participant> = ArrayList()
         var bridgesRemoved = 0
 
@@ -368,10 +369,11 @@ class ColibriSessionManager(
     }
 
     /** The number of bridges currently used. */
-    fun bridgeCount() = synchronized(syncRoot) { bridgeSessions.size }
+    override val bridgeCount
+        get() = synchronized(syncRoot) { bridgeSessions.size }
 
     /** Updates the transport info for a participant. */
-    fun updateTransportInfo(participant: Participant, contents: List<ContentPacketExtension>) {
+    override fun updateTransportInfo(participant: Participant, contents: List<ContentPacketExtension>) {
         addTransportFromJingle(participant, contents)
         val bridgeSession = findBridgeSession(participant)
         // We can hit null here during conference restart, but the state will be synced up later when the client
@@ -392,7 +394,7 @@ class ColibriSessionManager(
      * @return true iff successful.
      * TODO: improve error handling.
      */
-    fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
+    override fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession == null) {
             logger.error("No bridge session for $participant")
@@ -434,7 +436,7 @@ class ColibriSessionManager(
     fun getParticipantInfo(participant: Participant) = participantInfoMap[participant]
 
     /** Update the RTP Description map for a specific participant. */
-    fun setRtpDescriptionMap(participant: Participant, contents: List<ContentPacketExtension>) {
+    override fun setRtpDescriptionMap(participant: Participant, contents: List<ContentPacketExtension>) {
         val rtpDescMap = mutableMapOf<String, RtpDescriptionPacketExtension>()
         for (content in contents) {
             val rtpDesc = content.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)
@@ -456,7 +458,7 @@ class ColibriSessionManager(
      * @param contents the list of [ContentPacketExtension] received from the remote endpoint in a jingle message like
      * 'session-accept', 'transport-info', 'transport-accept' etc.
      */
-    fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>) {
+    override fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>) {
         participantInfoMap[participant]?.let { participantInfo ->
             val transport = contents.mapNotNull {
                 it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java)
@@ -598,18 +600,5 @@ class ColibriSessionManager(
      */
     private fun operationalBridges(): List<BridgeSession> = synchronized(syncRoot) {
         bridgeSessions.filter { !it.hasFailed && it.bridge.isOperational }
-    }
-
-    /**
-     * Interface for events fired by [ColibriSessionManager].
-     *
-     * Note that [ColibriSessionManager] calls these while holding its internal lock, so listeners should be careful
-     * not to perform action that will cause a deadlock.
-     */
-    interface Listener {
-        /** The number of bridges changed. */
-        fun bridgeCountChanged(bridgeCount: Int)
-        /** A specific number of bridges were removed from the conference because they failed. */
-        fun failedBridgesRemoved(count: Int)
     }
 }

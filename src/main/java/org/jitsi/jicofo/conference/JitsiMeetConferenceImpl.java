@@ -219,6 +219,8 @@ public class JitsiMeetConferenceImpl
      */
     private boolean videoLimitReached = false;
 
+    private final long gid;
+
     /**
      * Callback for colibri requests failing/succeeding.
      */
@@ -253,8 +255,9 @@ public class JitsiMeetConferenceImpl
         this.includeInStatistics = includeInStatistics;
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
+        this.gid = gid;
         this.colibriSessionManager
-                = new ColibriSessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
+                = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
@@ -758,7 +761,7 @@ public class JitsiMeetConferenceImpl
         // anymore
         cancelSingleParticipantTimeout();
 
-        colibriSessionManager.expireAll();
+        colibriSessionManager.expire();
     }
 
     private void onMemberKicked(ChatRoomMember chatRoomMember)
@@ -1608,7 +1611,7 @@ public class JitsiMeetConferenceImpl
      */
     public long getId()
     {
-        return colibriSessionManager.getGid();
+        return gid;
     }
 
     private void onBridgeUp(Jid bridgeJid)
@@ -1623,7 +1626,7 @@ public class JitsiMeetConferenceImpl
         // participants to another one. Here we should re-invite everyone if
         // the conference is not running (e.g. there was a single bridge and
         // it failed, then in was brought up).
-        if (chatRoom != null && checkMinParticipants() && colibriSessionManager.bridgeCount() == 0)
+        if (chatRoom != null && checkMinParticipants() && colibriSessionManager.getBridgeCount() == 0)
         {
             logger.info("New bridge available, will try to restart: " + bridgeJid);
 
@@ -1980,9 +1983,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Listener for events from {@link ColibriSessionManager}.
+     * Listener for events from {@link ColibriV1SessionManager}.
      */
-    private class ColibriSessionManagerListener implements ColibriSessionManager.Listener
+    private class ColibriSessionManagerListener implements ColibriV1SessionManager.Listener
     {
         @Override
         public void bridgeCountChanged(int bridgeCount)
