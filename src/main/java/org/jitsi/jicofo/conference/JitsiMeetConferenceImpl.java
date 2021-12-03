@@ -660,8 +660,8 @@ public class JitsiMeetConferenceImpl
                 colibriRequestCallback,
                 colibriSessionManager,
                 participant,
-                startAudioMuted,
-                startVideoMuted,
+                hasToStartAudioMuted(participant, justJoined),
+                hasToStartVideoMuted(participant, justJoined),
                 reInvite,
                 logger
         );
@@ -692,8 +692,13 @@ public class JitsiMeetConferenceImpl
             return true;
         }
 
+        int limit = ConferenceConfig.config.getMaxAudioSenders();
         Integer startAudioMutedInt = config.getStartAudioMuted();
-        return startAudioMutedInt != null && participant.getChatMember().getJoinOrderNumber() > startAudioMutedInt;
+        if (startAudioMutedInt != null)
+        {
+            limit = Math.min(limit, startAudioMutedInt);
+        }
+        return participant.getChatMember().getJoinOrderNumber() > limit;
     }
 
     /**
@@ -707,8 +712,13 @@ public class JitsiMeetConferenceImpl
             return true;
         }
 
+        int limit = ConferenceConfig.config.getMaxVideoSenders();
         Integer startVideoMutedInt = config.getStartVideoMuted();
-        return startVideoMutedInt != null && participant.getChatMember().getJoinOrderNumber() > startVideoMutedInt;
+        if (startVideoMutedInt != null)
+        {
+            limit = Math.min(limit, startVideoMutedInt);
+        }
+        return participant.getChatMember().getJoinOrderNumber() > limit;
     }
 
     /**
