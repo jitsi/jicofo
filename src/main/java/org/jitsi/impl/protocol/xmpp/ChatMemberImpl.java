@@ -112,7 +112,7 @@ public class ChatMemberImpl
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
         this.logger = parentLogger.createChildLogger(getClass().getName());
-        logger.addContext("occupantJid", occupantJid.toString());
+        logger.addContext("occupant", resourcepart.toString());
     }
 
     /**

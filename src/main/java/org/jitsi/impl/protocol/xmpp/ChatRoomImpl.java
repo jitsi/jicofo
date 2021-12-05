@@ -163,7 +163,7 @@ public class ChatRoomImpl
             Consumer<ChatRoomImpl> leaveCallback)
     {
         logger = new LoggerImpl(getClass().getName());
-        logger.addContext("room", roomJid.getResourceOrEmpty().toString());
+        logger.addContext("room", roomJid.toString());
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
