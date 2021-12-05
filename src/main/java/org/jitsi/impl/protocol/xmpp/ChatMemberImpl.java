@@ -38,7 +38,7 @@ public class ChatMemberImpl
     /**
      * The logger
      */
-    static final private Logger logger = new LoggerImpl(ChatMemberImpl.class.getName());
+    private final Logger logger;
 
     /**
      * The resource part of this {@link ChatMemberImpl}'s JID in the MUC.
@@ -104,13 +104,15 @@ public class ChatMemberImpl
      */
     private boolean isVideoMuted = true;
 
-    public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom,
+    public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom, Logger parentLogger,
                           int joinOrderNumber)
     {
         this.occupantJid = fullJid;
         this.resourcepart = fullJid.getResourceOrThrow();
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
+        this.logger = parentLogger.createChildLogger(getClass().getName());
+        logger.addContext("occupantJid", occupantJid.toString());
     }
 
     /**
@@ -242,7 +244,7 @@ public class ChatMemberImpl
             Boolean newStatus = userInfoPacketExt.isRobot();
             if (newStatus != null && this.robot != newStatus)
             {
-                logger.debug(getName() +" robot: " + robot);
+                logger.debug(() -> "robot: " + robot);
 
                 this.robot = newStatus;
             }
@@ -310,7 +312,7 @@ public class ChatMemberImpl
 
         if (isAudioMuted != wasAudioMuted)
         {
-            logger.debug(() -> occupantJid + ": isAudioMuted = " + isAudioMuted);
+            logger.debug(() -> "isAudioMuted = " + isAudioMuted);
             if (isAudioMuted)
                 chatRoom.removeAudioSender();
             else
@@ -323,7 +325,7 @@ public class ChatMemberImpl
 
         if (isVideoMuted != wasVideoMuted)
         {
-            logger.debug(() -> occupantJid + ": isVideoMuted = " + isVideoMuted);
+            logger.debug(() -> "isVideoMuted = " + isVideoMuted);
             if (isVideoMuted)
                 chatRoom.removeVideoSender();
             else
