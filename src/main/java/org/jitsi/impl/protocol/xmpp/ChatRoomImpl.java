@@ -163,7 +163,7 @@ public class ChatRoomImpl
             Consumer<ChatRoomImpl> leaveCallback)
     {
         logger = new LoggerImpl(getClass().getName());
-        logger.addContext("room", roomJid.getResourceOrEmpty().toString());
+        logger.addContext("room", roomJid.toString());
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
@@ -701,7 +701,7 @@ public class ChatRoomImpl
                 return members.get(jid);
             }
 
-            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, members.size() + 1);
+            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, logger, members.size() + 1);
 
             members.put(jid, newMember);
 
