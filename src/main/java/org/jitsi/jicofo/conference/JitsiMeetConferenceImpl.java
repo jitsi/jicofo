@@ -25,6 +25,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.colibri.v1.*;
+import org.jitsi.jicofo.conference.colibri.v2.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.version.*;
@@ -255,8 +256,16 @@ public class JitsiMeetConferenceImpl
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.gid = gid;
-        this.colibriSessionManager
-                = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
+        ColibriConfig colibriConfig = new ColibriConfig();
+        if (colibriConfig.getEnableColibri2())
+        {
+            colibriSessionManager = new ColibriV2SessionManager(logger);
+        }
+        else
+        {
+            colibriSessionManager
+                    = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
+        }
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
