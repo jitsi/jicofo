@@ -786,7 +786,7 @@ public class JitsiMeetConferenceImpl
 
             bridgeSession.addParticipant(participant);
             participant.setBridgeSession(bridgeSession);
-            logger.info("Added participant id= " + participant.getChatMember().getName()
+            logger.info("Added participant id=" + participant.getChatMember().getName()
                             + ", bridge=" + bridgeSession.bridge.getJid());
 
             // Colibri channel allocation and jingle invitation take time, so

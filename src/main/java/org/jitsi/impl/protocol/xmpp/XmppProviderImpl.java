@@ -203,7 +203,7 @@ public class XmppProviderImpl
             try
             {
                 connection.connect();
-                logger.info("Connected, JID= " + connection.getUser());
+                logger.info("Connected, JID=" + connection.getUser());
 
                 // XXX Is there a reason we add listeners *after* we call connect()?
                 connection.addConnectionListener(connListener);
