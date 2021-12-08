@@ -402,7 +402,7 @@ public abstract class AbstractOperationSetJingle
         }
 
         logger.debug("Sending source-add to " + session.getAddress()
-                + ", SID=" + session.getSessionID() + ", sources= " + sources);
+                + ", SID=" + session.getSessionID() + ", sources=" + sources);
 
         UtilKt.tryToSendStanza(getConnection(), addSourceIq);
         stats.stanzaSent(JingleAction.SOURCEADD);
