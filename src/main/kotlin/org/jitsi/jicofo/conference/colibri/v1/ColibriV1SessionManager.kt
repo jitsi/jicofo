@@ -118,16 +118,6 @@ class ColibriV1SessionManager(
         }
     }
 
-    override fun updateChannels(participant: Participant) = synchronized(syncRoot) {
-        val participantInfo = participantInfoMap[participant]
-        val bridgeSession = findBridgeSession(participant) ?: return
-        bridgeSession.colibriConference.updateChannelsInfo(
-            participantInfo?.colibriChannels,
-            participantInfo?.rtpDescriptionMap,
-            participant.sources
-        )
-    }
-
     @Throws(ColibriAllocationFailedException::class)
     override fun allocate(
         participant: Participant,
@@ -299,25 +289,6 @@ class ColibriV1SessionManager(
     }
 
     /**
-     * This is very similar to [addSources]. This one is called when we receive session-accept.
-     * TODO: figure out why they are different.
-     */
-    override fun updateSources(participant: Participant, sourcesToAdd: ConferenceSourceMap) {
-        val bridgeSession = findBridgeSession(participant)
-        if (bridgeSession == null) {
-            logger.warn("No bridge found for a participant: " + participant.chatMember.name)
-            return
-        }
-
-        bridgeSession.updateColibriChannels(participant)
-
-        // If we accepted any new sources from the participant, update the state of all remote bridges.
-        if (sourcesToAdd.isNotEmpty()) {
-            addSourcesToOcto(sourcesToAdd, bridgeSession)
-        }
-    }
-
-    /**
      * Get the set of relay IDs of bridges currently used, excluding [exclude].
      * TODO: don't expose.
      */
@@ -377,23 +348,6 @@ class ColibriV1SessionManager(
     override val bridgeCount
         get() = synchronized(syncRoot) { bridgeSessions.size }
 
-    /** Updates the transport info for a participant. */
-    override fun updateTransportInfo(participant: Participant, contents: List<ContentPacketExtension>) {
-        addTransportFromJingle(participant, contents)
-        val bridgeSession = findBridgeSession(participant)
-        // We can hit null here during conference restart, but the state will be synced up later when the client
-        // sends 'transport-accept'
-        if (bridgeSession == null) {
-            logger.warn("Can not update transport-info, no bridge session for $participant.")
-            return
-        }
-
-        bridgeSession.colibriConference.updateBundleTransportInfo(
-            participantInfoMap[participant]?.transport,
-            participant.endpointId
-        )
-    }
-
     /**
      * Mute a participant.
      * @return true iff successful.
@@ -440,18 +394,45 @@ class ColibriV1SessionManager(
     /** Get the [ParticipantInfo] structure associated with a participant. This persists across re-invites. */
     fun getParticipantInfo(participant: Participant) = participantInfoMap[participant]
 
-    /** Update the RTP Description map for a specific participant. */
-    override fun setRtpDescriptionMap(participant: Participant, contents: List<ContentPacketExtension>) {
-        val rtpDescMap = mutableMapOf<String, RtpDescriptionPacketExtension>()
-        for (content in contents) {
-            val rtpDesc = content.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)
-            if (rtpDesc != null) {
-                rtpDescMap[content.name] = rtpDesc
+    override fun updateParticipant(
+        participant: Participant,
+        transport: IceUdpTransportPacketExtension?,
+        sources: ConferenceSourceMap?,
+        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?) = synchronized(syncRoot) {
+
+        val participantInfo = participantInfoMap[participant]
+            ?: run {
+                logger.error("No ParticipantInfo for $participant")
+                return
+            }
+
+        if (rtpDescriptions != null) {
+            participantInfo.rtpDescriptionMap = rtpDescriptions
+        }
+
+        if (transport != null) {
+            val existingTransport = participantInfo.transport
+            if (existingTransport == null) {
+                participantInfo.transport = transport
+            } else {
+                TransportSignaling.mergeTransportExtension(existingTransport, transport)
             }
         }
 
-        participantInfoMap[participant]?.let { it.rtpDescriptionMap = rtpDescMap }
-            ?: run { logger.warn("Can not set RTP description, no ParticipantInfo for $participant") }
+        // The sources for the participant have been updated in the Participant object.
+
+        val bridgeSession = findBridgeSession(participant)
+        if (bridgeSession == null) {
+            logger.warn("No bridge found for a participant: " + participant.chatMember.name)
+            return
+        }
+
+        bridgeSession.updateColibriChannels(participant)
+
+        // If we accepted any new sources from the participant, update the state of all remote bridges.
+        if (sources != null && sources.isNotEmpty()) {
+            addSourcesToOcto(sources, bridgeSession)
+        }
     }
 
     /**
@@ -463,7 +444,7 @@ class ColibriV1SessionManager(
      * @param contents the list of [ContentPacketExtension] received from the remote endpoint in a jingle message like
      * 'session-accept', 'transport-info', 'transport-accept' etc.
      */
-    override fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>) {
+    private fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>) {
         participantInfoMap[participant]?.let { participantInfo ->
             val transport = contents.mapNotNull {
                 it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java)

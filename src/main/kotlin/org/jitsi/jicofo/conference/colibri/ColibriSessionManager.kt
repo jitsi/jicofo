@@ -22,6 +22,8 @@ import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jxmpp.jid.Jid
 
 interface ColibriSessionManager {
@@ -53,12 +55,11 @@ interface ColibriSessionManager {
         reInvite: Boolean
     ): ColibriAllocation
 
-    fun updateTransportInfo(participant: Participant, contents: List<ContentPacketExtension>)
-    fun updateChannels(participant: Participant)
-
-    fun setRtpDescriptionMap(participant: Participant, contents: List<ContentPacketExtension>)
-    fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>)
-    fun updateSources(participant: Participant, sources: ConferenceSourceMap)
+    fun updateParticipant(
+        participant: Participant,
+        transport: IceUdpTransportPacketExtension?,
+        sources: ConferenceSourceMap?,
+        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?)
     fun getAllocation(participant: Participant): ColibriAllocation?
     fun bridgesDown(bridges: Set<Jid>): List<Participant>
 

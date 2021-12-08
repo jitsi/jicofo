@@ -1124,7 +1124,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        colibriSessionManager.updateTransportInfo(participant, contentList);
+        colibriSessionManager.updateParticipant(participant, getTransport(contentList), null, null);
     }
 
     /**
@@ -1285,10 +1285,6 @@ public class JitsiMeetConferenceImpl
 
         participant.setJingleSession(jingleSession);
 
-        // Extract and store various session information in the Participant
-        colibriSessionManager.setRtpDescriptionMap(participant, contents);
-        colibriSessionManager.addTransportFromJingle(participant, contents);
-
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
         if (logger.isDebugEnabled())
@@ -1320,7 +1316,11 @@ public class JitsiMeetConferenceImpl
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
         // participant on the new bridge
-        colibriSessionManager.updateSources(participant, sourcesAccepted);
+        colibriSessionManager.updateParticipant(
+                participant,
+                getTransport(contents),
+                sourcesAccepted,
+                getRtpDescriptions(contents));
 
         // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);
@@ -1328,6 +1328,55 @@ public class JitsiMeetConferenceImpl
         participant.sendQueuedRemoteSources();
 
         return null;
+    }
+
+    /**
+     * Extract a map from content name to the first child of type {@link RtpDescriptionPacketExtension}.
+     */
+    private Map<String, RtpDescriptionPacketExtension> getRtpDescriptions(
+            @NotNull List<ContentPacketExtension> contents)
+    {
+        Map<String, RtpDescriptionPacketExtension> rtpDescriptions = new HashMap<>();
+        for (ContentPacketExtension content : contents)
+        {
+            RtpDescriptionPacketExtension rtpDescription
+                    = content.getFirstChildOfType(RtpDescriptionPacketExtension.class);
+            if (rtpDescription != null)
+            {
+                rtpDescriptions.put(content.getName(), rtpDescription);
+            }
+        }
+
+        return rtpDescriptions;
+    }
+
+    /**
+     * Find the first {@link IceUdpTransportPacketExtension} in a list of Jingle contents.
+     */
+    private IceUdpTransportPacketExtension getTransport(@NotNull List<ContentPacketExtension> contents)
+    {
+        IceUdpTransportPacketExtension transport = null;
+        for (ContentPacketExtension content : contents)
+        {
+            transport = content.getFirstChildOfType(IceUdpTransportPacketExtension.class);
+            if (transport != null)
+            {
+                break;
+            }
+        }
+
+        if (transport == null)
+        {
+            logger.error("No valid transport supplied in transport-update from $participant");
+            return null;
+        }
+
+        if (!transport.isRtcpMux())
+        {
+            transport.addChildExtension(new IceRtcpmuxPacketExtension());
+        }
+
+        return transport;
     }
 
 

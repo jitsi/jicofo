@@ -23,7 +23,6 @@ import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.colibri.*;
-import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
@@ -353,7 +352,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else if (reInvite)
         {
-            colibriSessionManager.updateChannels(participant);
+            colibriSessionManager.updateParticipant(participant, null, null, null);
         }
 
         if (chatRoom != null && !participant.hasModeratorRights())
