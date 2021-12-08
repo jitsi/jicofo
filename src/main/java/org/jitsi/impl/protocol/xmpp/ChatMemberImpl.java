@@ -38,7 +38,7 @@ public class ChatMemberImpl
     /**
      * The logger
      */
-    static final private Logger logger = new LoggerImpl(ChatMemberImpl.class.getName());
+    private final Logger logger;
 
     /**
      * The resource part of this {@link ChatMemberImpl}'s JID in the MUC.
@@ -104,14 +104,15 @@ public class ChatMemberImpl
      */
     private boolean isVideoMuted = true;
 
-    public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom,
+    public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom, Logger parentLogger,
                           int joinOrderNumber)
     {
         this.occupantJid = fullJid;
         this.resourcepart = fullJid.getResourceOrThrow();
         this.chatRoom = chatRoom;
         this.joinOrderNumber = joinOrderNumber;
-        logger.addContext("occupantJid", occupantJid.toString());
+        this.logger = parentLogger.createChildLogger(getClass().getName());
+        logger.addContext("occupant", resourcepart.toString());
     }
 
     /**

@@ -1189,11 +1189,25 @@ public class JitsiMeetConferenceImpl
         }
 
         String participantId = participant.getEndpointId();
-        EndpointSourceSet sourcesAdvertised;
+        EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
+        logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
+
+        boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
+                chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
+
+        if (rejectedAudioSource ||
+                sourcesAdvertised.getHasVideo() &&
+                chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
+        {
+            String errorMsg = "Source add rejected. Maximum number of " +
+                    (rejectedAudioSource ? "audio" : "video") + " senders reached.";
+            logger.warn(() -> participantId + ": " + errorMsg);
+            return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
+        }
+
         ConferenceSourceMap sourcesAccepted;
         try
         {
-            sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
             sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
         }
         catch (ValidationFailedException e)
@@ -1202,20 +1216,6 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
-        boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
-            chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
-
-        if (rejectedAudioSource ||
-            sourcesAdvertised.getHasVideo() &&
-            chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
-        {
-            String errorMsg = "Source add rejected. Maximum number of " +
-                (rejectedAudioSource ? "audio" : "video") + " senders reached.";
-            logger.warn(() -> participantId + ": " + errorMsg);
-            return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
-        }
-
-        logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
         logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
