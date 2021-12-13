@@ -436,39 +436,6 @@ class ColibriV1SessionManager(
         }
     }
 
-    /**
-     * Update a participant's transport information given a list of Jingle contents (using the first
-     * [IceUdpTransportPacketExtension] extension found in the contents).
-     * If the participant already has the transport information, the new one will be merged into it using
-     * [TransportSignaling#mergeTransportExtension].
-     *
-     * @param contents the list of [ContentPacketExtension] received from the remote endpoint in a jingle message like
-     * 'session-accept', 'transport-info', 'transport-accept' etc.
-     */
-    private fun addTransportFromJingle(participant: Participant, contents: List<ContentPacketExtension>) {
-        participantInfoMap[participant]?.let { participantInfo ->
-            val transport = contents.mapNotNull {
-                it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java)
-            }.firstOrNull()
-
-            if (transport == null) {
-                logger.error("No valid transport supplied in transport-update from $participant")
-                return
-            }
-
-            if (!transport.isRtcpMux) {
-                transport.addChildExtension(IceRtcpmuxPacketExtension())
-            }
-
-            val existingTransport = participantInfo.transport
-            if (existingTransport == null) {
-                participantInfo.transport = transport
-            } else {
-                TransportSignaling.mergeTransportExtension(existingTransport, transport)
-            }
-        } ?: run { logger.warn("Can not add transport info, no ParticipantInfo for $participant.") }
-    }
-
     private fun addBridgeSession(bridge: Bridge): BridgeSession = synchronized(syncRoot) {
         val bridgeSession = BridgeSession(
             jitsiMeetConference,
