@@ -265,7 +265,7 @@ class ColibriV1SessionManager(
     /**
      * Add sources for a participant.
      */
-    override fun addSources(participant: Participant, sourcesToAdd: ConferenceSourceMap) {
+    override fun addSources(participant: Participant, sources: ConferenceSourceMap) {
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession == null) {
             logger.warn("No bridge session for $participant")
@@ -283,8 +283,8 @@ class ColibriV1SessionManager(
             colibriChannelsInfo
         )
 
-        if (sourcesToAdd.isNotEmpty()) {
-            addSourcesToOcto(sourcesToAdd, bridgeSession)
+        if (sources.isNotEmpty()) {
+            addSourcesToOcto(sources, bridgeSession)
         }
     }
 
@@ -298,7 +298,7 @@ class ColibriV1SessionManager(
     }
 
     /** Remove sources for a [participant] */
-    override fun removeSources(participant: Participant, sourcesToRemove: ConferenceSourceMap) {
+    override fun removeSources(participant: Participant, sources: ConferenceSourceMap) {
         // TODO error handling
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession != null) {
@@ -306,7 +306,7 @@ class ColibriV1SessionManager(
                 participant.sources,
                 participantInfoMap[participant]?.colibriChannels
             )
-            removeSourcesFromOcto(sourcesToRemove, bridgeSession)
+            removeSourcesFromOcto(sources, bridgeSession)
         }
     }
 
@@ -398,7 +398,8 @@ class ColibriV1SessionManager(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?) = synchronized(syncRoot) {
+        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
+    ) = synchronized(syncRoot) {
 
         val participantInfo = participantInfoMap[participant]
             ?: run {

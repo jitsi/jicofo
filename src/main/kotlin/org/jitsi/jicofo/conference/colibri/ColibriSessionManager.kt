@@ -59,7 +59,8 @@ interface ColibriSessionManager {
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?)
+        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
+    )
     fun getAllocation(participant: Participant): ColibriAllocation?
     fun bridgesDown(bridges: Set<Jid>): List<Participant>
 
