@@ -101,11 +101,6 @@ public class Participant
     private List<String> supportedFeatures = new ArrayList<>();
 
     /**
-     * State whether this participant is muted by media type.
-     */
-    private final Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
-
-    /**
      * The conference in which this participant participates.
      */
     private final JitsiMeetConferenceImpl conference;
@@ -433,16 +428,6 @@ public class Participant
     }
 
     /**
-     * Changes participant muted state by media type.
-     *
-     * @param mediaType the media type to change.
-     */
-    public void setMuted(MediaType mediaType, boolean value)
-    {
-        mutedByMediaType.put(mediaType, value);
-    }
-
-    /**
      * Add a set of remote sources, which are to be signaled to the remote side. The sources may be signaled
      * immediately, or queued to be signaled later.
      *
@@ -612,18 +597,6 @@ public class Participant
                 jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
             }
         }
-    }
-
-    /**
-     * Checks whether the participant is muted.
-     *
-     * @param mediaType the media type to check.
-     * @return tru if it is muted.
-     */
-    public boolean isMuted(MediaType mediaType)
-    {
-        Boolean value = this.mutedByMediaType.get(mediaType);
-        return value != null && value;
     }
 
     /**

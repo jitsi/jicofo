@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference.colibri.v1
 
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
+import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -35,5 +36,11 @@ class ParticipantInfo(
     var hasColibriSession: Boolean = true,
     var transport: IceUdpTransportPacketExtension? = null,
     var colibriChannels: ColibriConferenceIQ? = null,
+    private val mutedByMediaType: MutableMap<MediaType, Boolean> = mutableMapOf(),
     var colibriAllocation: ColibriAllocation? = null
-)
+) {
+    fun mute(doMute: Boolean, mediaType: MediaType) {
+        mutedByMediaType[mediaType] = doMute
+    }
+    fun isMuted(mediaType: MediaType) = mutedByMediaType[mediaType] ?: false
+}

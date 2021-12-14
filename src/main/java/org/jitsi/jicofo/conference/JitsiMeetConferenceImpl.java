@@ -50,7 +50,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.jitsi.jicofo.conference.MuteResult.*;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -1571,18 +1570,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        boolean succeeded = colibriSessionManager.mute(participant, doMute, mediaType);
-
-        if (!succeeded)
-        {
-            logger.warn("Failed to mute colibri channels for " + participant);
-        }
-        else
-        {
-            participant.setMuted(mediaType, doMute);
-        }
-
-        return succeeded ? MuteResult.SUCCESS : MuteResult.ERROR;
+        return colibriSessionManager.mute(participant, doMute, mediaType) ? MuteResult.SUCCESS : MuteResult.ERROR;
     }
 
     /**
@@ -1610,11 +1598,6 @@ public class JitsiMeetConferenceImpl
      */
     public void muteParticipant(Participant participant, MediaType mediaType)
     {
-        if (participant.isMuted(mediaType))
-        {
-            return;
-        }
-
         if (participant.getChatMember().isJigasi() && !participant.hasAudioMuteSupport())
         {
             logger.warn("Will not mute jigasi with not audioMute support: " + participant);
@@ -1633,7 +1616,6 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        participant.setMuted(mediaType, true);
         IQ muteIq = null;
         if (mediaType == MediaType.AUDIO)
         {

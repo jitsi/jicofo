@@ -360,13 +360,30 @@ class ColibriV1SessionManager(
             return false
         }
 
-        val participantChannels = participantInfoMap[participant]?.colibriChannels
+        val participantInfo = participantInfoMap[participant]
+        if (participantInfo == null) {
+            logger.error("No participantInfo for $participant")
+            return false
+        }
+
+        if (participantInfo.isMuted(mediaType) == doMute) {
+            // Nothing to do.
+            return true
+        }
+
+        val participantChannels = participantInfo.colibriChannels
         if (participantChannels == null) {
             logger.error("No colibri channels for $participant")
             return false
         }
 
-        return bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType)
+        return if (bridgeSession.colibriConference.muteParticipant(participantChannels, doMute, mediaType)) {
+            participantInfo.mute(doMute, mediaType)
+            true
+        } else {
+            logger.error("Failed to ${if (doMute) "mute" else "unmute"} $participant.")
+            false
+        }
     }
 
     fun getSources(except: List<Participant>): ConferenceSourceMap {
