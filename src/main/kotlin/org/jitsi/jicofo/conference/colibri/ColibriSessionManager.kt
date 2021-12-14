@@ -37,7 +37,7 @@ interface ColibriSessionManager {
     fun removeParticipant(participant: Participant)
 
     /**
-     *  Remove a set of participants, expiring all resources allocated for it.
+     *  Remove a set of participants, expiring all resources allocated for them.
      *
      *  Defined in addition to [removeParticipant] to allow implementations to perform it atomically.
      */
@@ -65,7 +65,7 @@ interface ColibriSessionManager {
     fun bridgesDown(bridges: Set<Jid>): List<Participant>
 
     /**
-     * Interface for events fired by [ColibriV1SessionManager].
+     * Interface for events fired by [ColibriSessionManager].
      *
      * Note that [ColibriV1SessionManager] calls these while holding its internal lock, so listeners should be careful
      * not to perform action that will cause a deadlock.
