@@ -20,16 +20,13 @@ package org.jitsi.jicofo.conference;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.discovery.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.util.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.xmpp.extensions.colibri.*;
-import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -46,7 +43,6 @@ import static java.time.temporal.ChronoUnit.SECONDS;
  * @author Boris Grozev
  */
 public class Participant
-        extends AbstractParticipant
 {
     /**
      * Returns the endpoint ID for a participant in the videobridge (Colibri)
@@ -62,12 +58,19 @@ public class Participant
     }
 
     /**
-     * The {@code BridgeSession} of which this {@code Participant} is part of.
-     * <p>
-     * Whenever this value is set to a non-null value it means that Jicofo
-     * has assigned a bridge to this instance.
+     * List of remote source addition or removal operations that have not yet been signaled to this participant.
      */
-    private BridgeSession bridgeSession;
+    private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
+
+    /**
+     * Used to synchronize access to {@link #inviteRunnable}.
+     */
+    private final Object inviteRunnableSyncRoot = new Object();
+
+    /**
+     * The cancelable thread, if any, which is currently allocating channels for this participant.
+     */
+    private Cancelable inviteRunnable = null;
 
     /**
      * The {@link Clock} used by this participant.
@@ -93,19 +96,9 @@ public class Participant
     private final Logger logger;
 
     /**
-     * Stores information about bundled transport
-     */
-    private IceUdpTransportPacketExtension bundleTransport;
-
-    /**
      * The list of XMPP features supported by this participant.
      */
     private List<String> supportedFeatures = new ArrayList<>();
-
-    /**
-     * State whether this participant is muted by media type.
-     */
-    private final Map<MediaType, Boolean> mutedByMediaType = new HashMap<>();
 
     /**
      * The conference in which this participant participates.
@@ -134,12 +127,47 @@ public class Participant
             Logger parentLogger,
             JitsiMeetConferenceImpl conference)
     {
-        super(parentLogger);
-
         this.conference = conference;
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
+    }
+
+    /**
+     * Replaces the channel allocator thread, which is currently allocating channels for this participant (if any)
+     * with the specified channel allocator (if any).
+     * @param inviteRunnable the channel allocator to set, or {@code null} to clear it.
+     */
+    public void setInviteRunnable(Cancelable inviteRunnable)
+    {
+        synchronized (inviteRunnableSyncRoot)
+        {
+            if (this.inviteRunnable != null)
+            {
+                // There is an ongoing thread allocating channels and sending
+                // an invite for this participant. Tell it to stop.
+                logger.warn("Canceling " + this.inviteRunnable);
+                this.inviteRunnable.cancel();
+            }
+
+            this.inviteRunnable = inviteRunnable;
+        }
+    }
+
+    /**
+     * Signals to this {@link Participant} that a specific channel allocator has completed its task and its thread
+     * is about to terminate.
+     * @param channelAllocator the channel allocator which has completed its task and its thread is about to terminate.
+     */
+    public void inviteRunnableCompleted(Cancelable channelAllocator)
+    {
+        synchronized (inviteRunnableSyncRoot)
+        {
+            if (this.inviteRunnable == channelAllocator)
+            {
+                this.inviteRunnable = null;
+            }
+        }
     }
 
     /**
@@ -149,25 +177,6 @@ public class Participant
     public JingleSession getJingleSession()
     {
         return jingleSession;
-    }
-
-    /**
-     * Sets the current {@code BridgeSession}.
-     *
-     * @param bridgeSession the new bridge session to set.
-     * @see #bridgeSession
-     */
-    void setBridgeSession(BridgeSession bridgeSession)
-    {
-        if (this.bridgeSession != null)
-        {
-            logger.error(String.format(
-                    "Overwriting bridge session in %s new: %s old: %s",
-                    this,
-                    bridgeSession,
-                    this.bridgeSession));
-        }
-        this.bridgeSession = bridgeSession;
     }
 
     /**
@@ -370,83 +379,6 @@ public class Participant
     }
 
     /**
-     * Extracts and stores transport information from given map of Jingle
-     * content.  If we already have the transport information it will be
-     * merged into the currently stored one with
-     * {@link TransportSignaling#mergeTransportExtension}.
-     *
-     * @param contents the list of <tt>ContentPacketExtension</tt> from one of
-     *                 jingle message which can potentially contain transport info like
-     *                 'session-accept', 'transport-info', 'transport-accept' etc.
-     */
-    public void addTransportFromJingle(List<ContentPacketExtension> contents)
-    {
-        // Select first transport
-        IceUdpTransportPacketExtension transport = null;
-        for (ContentPacketExtension cpe : contents)
-        {
-            IceUdpTransportPacketExtension contentTransport
-                    = cpe.getFirstChildOfType(
-                    IceUdpTransportPacketExtension.class);
-            if (contentTransport != null)
-            {
-                transport = contentTransport;
-                break;
-            }
-        }
-        if (transport == null)
-        {
-            logger.error("No valid transport supplied in transport-update from " + getChatMember().getName());
-            return;
-        }
-
-        if (!transport.isRtcpMux())
-        {
-            transport.addChildExtension(new IceRtcpmuxPacketExtension());
-        }
-
-        if (bundleTransport == null)
-        {
-            bundleTransport = transport;
-        }
-        else
-        {
-            TransportSignaling.mergeTransportExtension(bundleTransport, transport);
-        }
-    }
-
-    /**
-     * Returns 'bundled' transport information stored for this
-     * <tt>Participant</tt>.
-     *
-     * @return <tt>IceUdpTransportPacketExtension</tt> which describes 'bundled'
-     * transport of this participant or <tt>null</tt> either if it's not
-     * available yet or if 'non-bundled' transport is being used.
-     */
-    public IceUdpTransportPacketExtension getBundleTransport()
-    {
-        return bundleTransport;
-    }
-
-    /**
-     * Clears any ICE transport information currently stored for this
-     * participant.
-     */
-    public void clearTransportInfo()
-    {
-        bundleTransport = null;
-    }
-
-    /**
-     * Returns the {@link BridgeSession}
-     * or <tt>null</tt>.
-     */
-    public BridgeSession getBridgeSession()
-    {
-        return bridgeSession;
-    }
-
-    /**
      * Returns the endpoint ID for this participant in the videobridge(Colibri)
      * context.
      */
@@ -480,7 +412,6 @@ public class Participant
      *
      * @return
      */
-    @Override
     @NotNull
     public ConferenceSourceMap getSources()
     {
@@ -491,56 +422,9 @@ public class Participant
      * @return {@code true} if the Jingle session with this participant has
      * been established.
      */
-    @Override
     public boolean isSessionEstablished()
     {
         return jingleSession != null;
-    }
-
-    /**
-     * Terminates the current {@code BridgeSession}, terminates the channel
-     * allocator and resets any fields related to the session.
-     *
-     * @return {@code BridgeSession} from which this {@code Participant} has
-     * been removed or {@code null} if this {@link Participant} was not part
-     * of any bridge session.
-     * @see ColibriConference#expireChannels(ColibriConferenceIQ)
-     */
-    BridgeSession terminateBridgeSession()
-    {
-        BridgeSession _session = this.bridgeSession;
-
-        if (_session != null)
-        {
-            this.setChannelAllocator(null);
-            _session.terminate(this);
-            this.clearTransportInfo();
-            this.setColibriChannelsInfo(null);
-            this.bridgeSession = null;
-        }
-
-        return _session;
-    }
-
-    /**
-     * Changes participant muted state by media type.
-     *
-     * @param mediaType the media type to change.
-     */
-    public void setMuted(MediaType mediaType, boolean value)
-    {
-        this.mutedByMediaType.put(mediaType, value);
-
-        ColibriConferenceIQ colibriChannelsInfo = this.getColibriChannelsInfo();
-        if (colibriChannelsInfo != null)
-        {
-            ColibriConferenceIQ.Content content = colibriChannelsInfo.getContent(mediaType.toString());
-
-            if (content != null)
-            {
-                content.getChannels().forEach(ch -> ch.setDirection(value ? "sendonly" : "sendrecv"));
-            }
-        }
     }
 
     /**
@@ -559,7 +443,7 @@ public class Participant
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-add.");
-            queueRemoteSourcesToAdd(sources);
+            remoteSourcesQueue.sourceAdd(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
@@ -569,7 +453,7 @@ public class Participant
         {
             synchronized (signalQueuedSourcesTaskSyncRoot)
             {
-                queueRemoteSourcesToAdd(sources);
+                remoteSourcesQueue.sourceAdd(sources);
                 scheduleSignalingOfQueuedSources(delayMs);
             }
         }
@@ -615,7 +499,7 @@ public class Participant
         }
     }
 
-    Set<MediaType> getSupportedMediaTypes()
+    public Set<MediaType> getSupportedMediaTypes()
     {
         Set<MediaType> supportedMediaTypes = new HashSet<>();
         if (hasVideoSupport())
@@ -631,7 +515,7 @@ public class Participant
     }
 
     /**
-     * Removee a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
+     * Remove a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
      * signaled immediately, or queued to be signaled later.
      *
      * @param sources the sources to remove.
@@ -646,7 +530,7 @@ public class Participant
         if (!isSessionEstablished())
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
-            queueRemoteSourcesToRemove(sources);
+            remoteSourcesQueue.sourceRemove(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
@@ -656,7 +540,7 @@ public class Participant
         {
             synchronized (signalQueuedSourcesTaskSyncRoot)
             {
-                queueRemoteSourcesToRemove(sources);
+                remoteSourcesQueue.sourceRemove(sources);
                 scheduleSignalingOfQueuedSources(delayMs);
             }
         }
@@ -696,7 +580,7 @@ public class Participant
         boolean encodeSourcesAsJson
                 = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
 
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : remoteSourcesQueue.clear())
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
             ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
@@ -713,18 +597,6 @@ public class Participant
                 jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
             }
         }
-    }
-
-    /**
-     * Checks whether the participant is muted.
-     *
-     * @param mediaType the media type to check.
-     * @return tru if it is muted.
-     */
-    public boolean isMuted(MediaType mediaType)
-    {
-        Boolean value = this.mutedByMediaType.get(mediaType);
-        return value != null && value;
     }
 
     /**

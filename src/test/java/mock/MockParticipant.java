@@ -223,6 +223,7 @@ public class MockParticipant
 
         processStanza(invite);
 
+        logger.warn("XXX: "+invite.toXML());
         JingleIQ user1Accept = generateSessionAccept(invite, createTransportMap(invite));
 
         logger.info(nick + " accept: " + user1Accept.toXML());
@@ -242,29 +243,24 @@ public class MockParticipant
         user.leave();
     }
 
-    private Map<String, IceUdpTransportPacketExtension> createTransportMap(
-            JingleIQ user1Invite)
+    private Map<String, IceUdpTransportPacketExtension> createTransportMap(JingleIQ user1Invite)
     {
         this.transportMap = new HashMap<>();
 
         for (ContentPacketExtension content : user1Invite.getContentList())
         {
-            IceUdpTransportPacketExtension transport
-                = new IceUdpTransportPacketExtension();
+            IceUdpTransportPacketExtension transport = new IceUdpTransportPacketExtension();
 
             // Bundle uses RTCP mux
             transport.addChildExtension(new IceRtcpmuxPacketExtension());
 
-            DtlsFingerprintPacketExtension dtlsFingerprint
-                = new DtlsFingerprintPacketExtension();
+            DtlsFingerprintPacketExtension dtlsFingerprint = new DtlsFingerprintPacketExtension();
 
             IceUdpTransportPacketExtension offerTransport
-                = content.getFirstChildOfType(
-                        IceUdpTransportPacketExtension.class);
+                = content.getFirstChildOfType(IceUdpTransportPacketExtension.class);
 
             DtlsFingerprintPacketExtension offerFingerprint
-                = offerTransport.getFirstChildOfType(
-                        DtlsFingerprintPacketExtension.class);
+                = offerTransport.getFirstChildOfType(DtlsFingerprintPacketExtension.class);
 
             dtlsFingerprint.setHash(offerFingerprint.getHash());
             dtlsFingerprint.setFingerprint(

@@ -76,7 +76,7 @@ class JigasiIqHandler(
 
         TaskPools.ioPool.execute {
             try {
-                inviteJigasi(request, conference.bridges.keys.mapNotNull { it.region }.toSet())
+                inviteJigasi(request, conference.bridgeRegions)
             } catch (e: Exception) {
                 logger.warn("Failed to invite jigasi", e)
                 request.connection.tryToSendStanza(

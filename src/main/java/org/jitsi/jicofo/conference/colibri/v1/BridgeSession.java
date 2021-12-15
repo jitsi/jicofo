@@ -15,26 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference;
+package org.jitsi.jicofo.conference.colibri.v1;
 
 import edu.umd.cs.findbugs.annotations.*;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jivesoftware.smack.*;
-import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
- * Represents a {@link Bridge} instance as used by this
- * {@link JitsiMeetConferenceImpl}.
+ * Represents a colibri session to a specific {@link Bridge} instance in a specific conference.
  */
 class BridgeSession
 {
@@ -44,7 +42,7 @@ class BridgeSession
     /**
      * The {@link Bridge}.
      */
-    final Bridge bridge;
+    @NotNull final Bridge bridge;
 
     /**
      * The bridge session's id.
@@ -58,19 +56,19 @@ class BridgeSession
      * processing the first notification and any following ones should be
      * discarded.
      */
-    final String id = Integer.toHexString(RANDOM.nextInt(0x1_000000));
+    public final String id = Integer.toHexString(RANDOM.nextInt(0x1_000000));
 
     /**
      * The list of participants in the conference which use this
      * {@link BridgeSession}.
      */
-    final List<Participant> participants = new LinkedList<>();
+    @NotNull final List<Participant> participants = new LinkedList<>();
 
     /**
      * The {@link ColibriConference} instance used to communicate with
      * the jitsi-videobridge represented by this {@link BridgeSession}.
      */
-    final ColibriConference colibriConference;
+    public final ColibriConference colibriConference;
 
     /**
      * The single {@link OctoParticipant} for this bridge session, if any.
@@ -84,8 +82,9 @@ class BridgeSession
      */
     public boolean hasFailed = false;
 
-    @NotNull
-    private final JitsiMeetConferenceImpl jitsiMeetConference;
+    @NotNull private final ColibriV1SessionManager colibriSessionManager;
+
+    @NotNull private final ColibriRequestCallback colibriRequestCallback;
 
     /**
      * Initializes a new {@link BridgeSession} instance.
@@ -95,12 +94,15 @@ class BridgeSession
      */
     BridgeSession(
             @NotNull JitsiMeetConferenceImpl jitsiMeetConference,
+            @NotNull ColibriV1SessionManager colibriSessionManager,
+            @NotNull ColibriRequestCallback colibriRequestCallback,
             @NonNull AbstractXMPPConnection xmppConnection,
             @NotNull Bridge bridge,
             long gid,
             @NotNull Logger parentLogger)
     {
-        this.jitsiMeetConference = jitsiMeetConference;
+        this.colibriSessionManager = colibriSessionManager;
+        this.colibriRequestCallback = colibriRequestCallback;
         this.bridge = bridge;
         this.colibriConference = new ColibriConferenceImpl(xmppConnection);
         colibriConference.setName(jitsiMeetConference.getRoomName());
@@ -149,9 +151,7 @@ class BridgeSession
     }
 
     /**
-     * Expires the COLIBRI channels (via
-     * {@link Participant#terminateBridgeSession()}) for all
-     * participants.
+     * Expires the COLIBRI channels for all participants.
      *
      * @return the list of participants which were removed from
      * {@link #participants} as a result of this call (does not include
@@ -163,15 +163,21 @@ class BridgeSession
         // sync on what?
         for (Participant participant : new LinkedList<>(participants))
         {
-            if (participant.terminateBridgeSession() != null)
+            ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
+            if (participantInfo != null && participantInfo.getHasColibriSession())
             {
                 terminatedParticipants.add(participant);
+                participant.setInviteRunnable(null);
+                participantInfo.setTransport(null);
+                participantInfo.setColibriChannels(null);
+                participantInfo.setColibriAllocation(null);
+                participantInfo.setHasColibriSession(false);
             }
         }
 
         if (octoParticipant != null)
         {
-            terminate(octoParticipant);
+            terminateOctoParticipant();
         }
 
         return terminatedParticipants;
@@ -185,14 +191,12 @@ class BridgeSession
      * @return {@code true} if the participant was a member of {@link #participants} and was removed as a result of
      * this call, and {@code false} otherwise.
      */
-    public boolean terminate(AbstractParticipant participant)
+    public boolean terminate(@NotNull Participant participant)
     {
-        boolean octo = participant == this.octoParticipant;
-        boolean removed = octo || participants.remove(participant);
+        boolean removed = participants.remove(participant);
 
-        ColibriConferenceIQ channelsInfo
-                = participant != null
-                ? participant.getColibriChannelsInfo() : null;
+        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
+        ColibriConferenceIQ channelsInfo = participantInfo == null ? null : participantInfo.getColibriChannels();
 
         if (channelsInfo != null && !hasFailed)
         {
@@ -200,16 +204,17 @@ class BridgeSession
             colibriConference.expireChannels(channelsInfo);
         }
 
-        if (octo)
-        {
-            if (participant != null)
-            {
-                participant.setChannelAllocator(null);
-            }
-            this.octoParticipant = null;
-        }
-
         return removed;
+    }
+
+    private void terminateOctoParticipant()
+    {
+        OctoParticipant participant = octoParticipant;
+        if (participant != null)
+        {
+            participant.setChannelAllocator(null);
+        }
+        octoParticipant = null;
     }
 
     /**
@@ -219,11 +224,12 @@ class BridgeSession
      */
     void updateColibriChannels(Participant participant)
     {
+        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
         colibriConference.updateChannelsInfo(
-                participant.getColibriChannelsInfo(),
-                participant.getRtpDescriptionMap(),
+                participantInfo == null ? null : participantInfo.getColibriChannels(),
+                participantInfo == null ? null : participantInfo.getRtpDescriptionMap(),
                 participant.getSources(),
-                participant.getBundleTransport(),
+                participantInfo == null ? null : participantInfo.getTransport(),
                 participant.getEndpointId(),
                 null);
     }
@@ -238,7 +244,7 @@ class BridgeSession
         {
             colibriConference.updateChannelsInfo(
                     octoParticipant.getColibriChannelsInfo(),
-                    octoParticipant.getRtpDescriptionMap(),
+                    null,
                     octoParticipant.getSources(),
                     null,
                     null,
@@ -259,7 +265,7 @@ class BridgeSession
             return octoParticipant;
         }
 
-        List<String> remoteRelays = jitsiMeetConference.getAllRelays(bridge.getRelayId());
+        List<String> remoteRelays = colibriSessionManager.getAllRelays(bridge.getRelayId());
         return getOrCreateOctoParticipant(new LinkedList<>(remoteRelays));
     }
 
@@ -373,12 +379,12 @@ class BridgeSession
 
         OctoParticipant octoParticipant = new OctoParticipant(relays, logger, bridge.getJid());
 
-        ConferenceSourceMap remoteSources = jitsiMeetConference.getSources(participants, true);
+        ConferenceSourceMap remoteSources = colibriSessionManager.getSources(participants);
 
         octoParticipant.addSources(remoteSources);
 
         OctoChannelAllocator channelAllocator
-                = new OctoChannelAllocator(jitsiMeetConference, this, octoParticipant, logger);
+                = new OctoChannelAllocator(colibriRequestCallback, this, octoParticipant, logger);
         octoParticipant.setChannelAllocator(channelAllocator);
 
         TaskPools.getIoPool().execute(channelAllocator);

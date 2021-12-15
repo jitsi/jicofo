@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference.colibri
+package org.jitsi.jicofo.conference.colibri.v1
 
 /** An exception in Colibri channel allocation. */
 open class ColibriException(message: String) : Exception(message) {

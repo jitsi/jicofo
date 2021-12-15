@@ -22,6 +22,8 @@
       <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
       <!-- False positive with kotlin's "when" -->
       <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+      <!-- False positives with ?. chains. -->
+      <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
       <And>
         <!-- Spotbugs doesn't recognize that a value can't be null, and using @SuppressFBWarnings doesn't work. -->
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>

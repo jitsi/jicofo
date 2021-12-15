@@ -63,7 +63,7 @@ public class Bridge
     /**
      * The XMPP address of the bridge.
      */
-    private final Jid jid;
+    @NonNull private final Jid jid;
 
     /**
      * Keep track of the recently added endpoints.

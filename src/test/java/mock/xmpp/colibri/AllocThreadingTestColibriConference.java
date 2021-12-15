@@ -18,7 +18,7 @@
 package mock.xmpp.colibri;
 
 import edu.umd.cs.findbugs.annotations.*;
-import org.jitsi.jicofo.conference.colibri.*;
+import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.jivesoftware.smack.*;

@@ -80,7 +80,7 @@ class JigasiIqHandlerTest : ShouldSpec() {
         context("When the conference exists") {
             val conference: JitsiMeetConference = mockk()
             every { conference.roomName } returns conferenceJid
-            every { conference.bridges } returns emptyMap()
+            every { conference.bridgeRegions } returns emptySet()
             conferenceStore.apply { add(conference) }
 
             context("And rejects the request") {

@@ -374,9 +374,9 @@ public class FocusManager
     }
 
     @Override
-    public void bridgeRemoved()
+    public void bridgeRemoved(int count)
     {
-        statistics.totalBridgesRemoved.incrementAndGet();
+        statistics.totalBridgesRemoved.addAndGet(count);
     }
 
     /**

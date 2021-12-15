@@ -134,22 +134,8 @@ public class TranscriberManager
         }
         if (isRequestingTranscriber(presence) && !active)
         {
-            executorService.execute(() -> this.startTranscribing(getBridgeRegions()));
+            executorService.execute(() -> this.startTranscribing(conference.getBridgeRegions()));
         }
-    }
-
-    /**
-     * Returns a list of regions of the bridges that are currently used
-     * in the conference, empty list if nothing found or an error occurs.
-     * @return a list of used bridge regions.
-     */
-    @NotNull
-    private Collection<String> getBridgeRegions()
-    {
-        return conference.getBridges().keySet().stream()
-                    .map(Bridge::getRegion)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
     }
 
     /**

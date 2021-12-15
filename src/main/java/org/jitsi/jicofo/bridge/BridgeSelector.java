@@ -224,12 +224,12 @@ public class BridgeSelector
      * a specific {@link JitsiMeetConference}.
      *
      * @return the selected bridge, represented by its {@link Bridge}.
-     * @param conference the conference for which a bridge is to be selected.
+     * @param conferenceBridges the bridges in the conference mapped to the number of participants on each.
      * @param participantRegion the region of the participant for which a
      * bridge is to be selected.
      */
     synchronized public Bridge selectBridge(
-            @NotNull JitsiMeetConference conference,
+            @NotNull Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
         // the list of all known videobridges JIDs ordered by load and *operational* status.
@@ -258,20 +258,19 @@ public class BridgeSelector
 
         return bridgeSelectionStrategy.select(
             candidateBridges,
-            conference.getBridges(),
+            conferenceBridges,
             participantRegion,
             OctoConfig.config.getEnabled());
     }
 
     /**
-     * Selects a bridge to be used for a specific {@link JitsiMeetConference}.
+     * Selects a bridge (assuming the conference it is to be used for has no bridges yet).
      *
-     * @param conference the conference for which a bridge is to be selected.
      * @return the selected bridge, represented by its {@link Bridge}.
      */
-    public Bridge selectBridge(@NotNull JitsiMeetConference conference)
+    public Bridge selectBridge()
     {
-        return selectBridge(conference, null);
+        return selectBridge(new HashMap<>(), null);
     }
 
     /**

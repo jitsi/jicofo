@@ -15,16 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference;
+package org.jitsi.jicofo.conference.colibri.v1;
 
+import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
 
 /**
- * Implements a {@link AbstractParticipant} for Octo. Manages the colibri
+ * Implements a participant for Octo. Manages the colibri
  * channels used for Octo on a particular jitsi-videobridge instance, and
  * the sources and source groups which need to be added to these colibri
  * channels (i.e. all sources and source groups from real participants in the
@@ -32,9 +34,29 @@ import java.util.*;
  *
  * @author Boris Grozev
  */
-public class OctoParticipant
-    extends AbstractParticipant
+class OctoParticipant
 {
+    /**
+     * Information about Colibri channels allocated for this peer (if any).
+     */
+    private ColibriConferenceIQ colibriChannelsInfo;
+
+    /**
+     * List of remote source addition or removal operations that have not yet been signaled to this participant.
+     */
+    private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
+
+    /**
+     * Used to synchronize access to {@link #channelAllocator}.
+     */
+    private final Object channelAllocatorSyncRoot = new Object();
+
+    /**
+     * The {@link OctoChannelAllocator}, if any, which is currently
+     * allocating channels for this participant.
+     */
+    private OctoChannelAllocator channelAllocator = null;
+
     /**
      * A flag which determines when the session can be considered established.
      * This is initially set to false, and raised when the colibri channels
@@ -66,10 +88,89 @@ public class OctoParticipant
      */
     OctoParticipant(List<String> relays, Logger parentLogger, Jid bridgeJid)
     {
-        super(parentLogger);
         logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("bridge", bridgeJid.getResourceOrEmpty().toString());
         this.relays = relays;
+    }
+
+    /**
+     * Queue a "source-add" for remote sources, to be signaled once the session is established.
+     *
+     * @param sourcesToAdd the remote sources for the "source-add".
+     */
+    public void queueRemoteSourcesToAdd(ConferenceSourceMap sourcesToAdd)
+    {
+        remoteSourcesQueue.sourceAdd(sourcesToAdd);
+    }
+
+    /**
+     * Queue a "source-remove" for remote sources, to be signaled once the session is established.
+     *
+     * @param sourcesToRemove the remote sources for the "source-remove".
+     */
+    public void queueRemoteSourcesToRemove(ConferenceSourceMap sourcesToRemove)
+    {
+        remoteSourcesQueue.sourceRemove(sourcesToRemove);
+    }
+
+    /**
+     * Sets information about Colibri channels allocated for this participant.
+     *
+     * @param colibriChannelsInfo the IQ that holds colibri channels state.
+     */
+    public void setColibriChannelsInfo(ColibriConferenceIQ colibriChannelsInfo)
+    {
+        this.colibriChannelsInfo = colibriChannelsInfo;
+    }
+
+    /**
+     * Returns {@link ColibriConferenceIQ} that describes Colibri channels
+     * allocated for this participant.
+     */
+    public ColibriConferenceIQ getColibriChannelsInfo()
+    {
+        return colibriChannelsInfo;
+    }
+
+    /**
+     * Replaces the {@link OctoChannelAllocator}, which is currently
+     * allocating channels for this participant (if any) with the specified
+     * channel allocator (if any).
+     * @param channelAllocator the channel allocator to set, or {@code null}
+     * to clear it.
+     */
+    public void setChannelAllocator(OctoChannelAllocator channelAllocator)
+    {
+        synchronized (channelAllocatorSyncRoot)
+        {
+            if (this.channelAllocator != null)
+            {
+                // There is an ongoing thread allocating channels and sending
+                // an invite for this participant. Tell it to stop.
+                logger.warn("Canceling " + this.channelAllocator);
+                this.channelAllocator.cancel();
+            }
+
+            this.channelAllocator = channelAllocator;
+        }
+    }
+
+    /**
+     * Signals to this {@link Participant} that a specific
+     * {@link OctoChannelAllocator} has completed its task and its thread
+     * is about to terminate.
+     * @param channelAllocator the {@link OctoChannelAllocator} which has
+     * completed its task and its thread is about to terminate.
+     */
+    public void channelAllocatorCompleted(OctoChannelAllocator channelAllocator)
+    {
+        synchronized (channelAllocatorSyncRoot)
+        {
+            if (this.channelAllocator == channelAllocator)
+            {
+                this.channelAllocator = null;
+            }
+        }
     }
 
     /**
@@ -108,7 +209,6 @@ public class OctoParticipant
         return relays;
     }
 
-    @Override
     public ConferenceSourceMap getSources()
     {
         return sources.unmodifiable();
@@ -117,7 +217,6 @@ public class OctoParticipant
     /**
      * {@inheritDoc}
      */
-    @Override
     synchronized public boolean isSessionEstablished()
     {
         return sessionEstablished;
@@ -144,7 +243,7 @@ public class OctoParticipant
     {
         boolean changed = false;
 
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : clearQueuedRemoteSourceChanges())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : remoteSourcesQueue.clear())
         {
             changed = true;
 
