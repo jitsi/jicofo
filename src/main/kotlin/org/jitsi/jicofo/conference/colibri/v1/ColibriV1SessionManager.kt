@@ -311,8 +311,8 @@ class ColibriV1SessionManager(
     }
 
     /** Get the ID of the bridge session for a [participant], or null if there's none. */
-    override fun getAllocation(participant: Participant): ColibriAllocation? = synchronized(syncRoot) {
-        return participantInfoMap[participant]?.colibriAllocation
+    override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
+        return participantInfoMap[participant]?.colibriAllocation?.bridgeSessionId
     }
 
     /**

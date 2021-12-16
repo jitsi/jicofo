@@ -69,7 +69,7 @@ interface ColibriSessionManager {
         sources: ConferenceSourceMap? = null,
         rtpDescriptions: Map<String, RtpDescriptionPacketExtension>? = null
     )
-    fun getAllocation(participant: Participant): ColibriAllocation?
+    fun getBridgeSessionId(participant: Participant): String?
 
     /**
      * Stop using [bridges] (because they were detected to have failed).

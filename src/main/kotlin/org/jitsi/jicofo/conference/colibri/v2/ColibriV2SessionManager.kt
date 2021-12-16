@@ -145,9 +145,8 @@ class ColibriV2SessionManager(
         session.updateParticipant(participant, transport, sources, rtpDescriptions)
     }
 
-    override fun getAllocation(participant: Participant): ColibriAllocation? {
-        TODO("Not yet implemented")
-    }
+    override fun getBridgeSessionId(participant: Participant): String? = null
+        //TODO("Not yet implemented")
 
     override fun removeBridges(bridges: Set<Jid>): List<Participant> {
         TODO("Not yet implemented")
