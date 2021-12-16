@@ -70,7 +70,12 @@ interface ColibriSessionManager {
         rtpDescriptions: Map<String, RtpDescriptionPacketExtension>? = null
     )
     fun getAllocation(participant: Participant): ColibriAllocation?
-    fun bridgesDown(bridges: Set<Jid>): List<Participant>
+
+    /**
+     * Stop using [bridges] (because they were detected to have failed).
+     * @return the list of participants which were on one of the removed bridges and now need to be re-invited.
+     */
+    fun removeBridges(bridges: Set<Jid>): List<Participant>
 
     /**
      * Interface for events fired by [ColibriSessionManager].

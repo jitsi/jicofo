@@ -1701,7 +1701,7 @@ public class JitsiMeetConferenceImpl
      */
     private void onMultipleBridgesDown(Set<Jid> bridgeJids)
     {
-        List<Participant> participantsToReinvite = colibriSessionManager.bridgesDown(bridgeJids);
+        List<Participant> participantsToReinvite = colibriSessionManager.removeBridges(bridgeJids);
 
         if (!participantsToReinvite.isEmpty())
         {

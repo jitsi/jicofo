@@ -320,7 +320,7 @@ class ColibriV1SessionManager(
      *
      * @return the set of participants which were on removed bridges (and now need to be re-invited).
      */
-    override fun bridgesDown(bridges: Set<Jid>): List<Participant> {
+    override fun removeBridges(bridges: Set<Jid>): List<Participant> {
         val participantsToReinvite: MutableList<Participant> = ArrayList()
         var bridgesRemoved = 0
 
@@ -528,7 +528,7 @@ class ColibriV1SessionManager(
             .map { it.bridge.jid }.toSet()
 
         if (nonOperationalBridges.isNotEmpty()) {
-            bridgesDown(nonOperationalBridges)
+            removeBridges(nonOperationalBridges)
         }
     }
 

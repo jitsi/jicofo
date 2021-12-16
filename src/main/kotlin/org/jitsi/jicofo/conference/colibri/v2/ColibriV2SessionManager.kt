@@ -100,6 +100,7 @@ class ColibriV2SessionManager(
         // TODO count participants
         sessions.values.associate { Pair(it.bridge, 1) }
     }
+
     @Throws(ColibriAllocationFailedException::class)
     override fun allocate(
         participant: Participant,
@@ -148,7 +149,7 @@ class ColibriV2SessionManager(
         TODO("Not yet implemented")
     }
 
-    override fun bridgesDown(bridges: Set<Jid>): List<Participant> {
+    override fun removeBridges(bridges: Set<Jid>): List<Participant> {
         TODO("Not yet implemented")
     }
 
