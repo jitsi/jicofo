@@ -99,13 +99,13 @@ class ColibriV1SessionManager(
 
     /** Removes a participant, terminating its colibri session. */
     override fun removeParticipant(participant: Participant) {
-        participantInfoMap.remove(participant)
+        val participantInfo = participantInfoMap.remove(participant)
         val bridgeSession = findBridgeSession(participant)
 
         // Expire the OctoEndpoints for this participant on other bridges.
         if (bridgeSession != null) {
             participant.setInviteRunnable(null)
-            bridgeSession.terminate(participant)
+            bridgeSession.terminate(participant, participantInfo)
 
             val removedSources = participant.sources
 

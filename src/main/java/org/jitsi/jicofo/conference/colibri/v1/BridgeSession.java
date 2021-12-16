@@ -191,17 +191,19 @@ class BridgeSession
      * @return {@code true} if the participant was a member of {@link #participants} and was removed as a result of
      * this call, and {@code false} otherwise.
      */
-    public boolean terminate(@NotNull Participant participant)
+    public boolean terminate(@NotNull Participant participant, ParticipantInfo participantInfo)
     {
         boolean removed = participants.remove(participant);
 
-        ParticipantInfo participantInfo = colibriSessionManager.getParticipantInfo(participant);
         ColibriConferenceIQ channelsInfo = participantInfo == null ? null : participantInfo.getColibriChannels();
-
         if (channelsInfo != null && !hasFailed)
         {
             logger.info("Expiring channels for: " + participant + " on: " + bridge);
             colibriConference.expireChannels(channelsInfo);
+        }
+        else
+        {
+            logger.warn("No channels to be expired for participant " + participant);
         }
 
         return removed;
