@@ -82,7 +82,7 @@ internal class Colibri2Session(
     }
 
     @Throws(ColibriAllocationFailedException::class)
-    internal fun processAllocationResponse(response: IQ?, participantId: String, create: Boolean ): ColibriAllocation {
+    internal fun processAllocationResponse(response: IQ?, participantId: String, create: Boolean): ColibriAllocation {
         logger.debug {
             "Received response of type ${response?.let { it::class.java } ?: "null" }: ${response?.toXML()}"
         }
@@ -92,8 +92,7 @@ internal class Colibri2Session(
         else if (response is ErrorIQ) {
             // TODO proper error handling
             throw GenericColibriAllocationFailedException(response.toXML().toString())
-        }
-        else if (response !is ConferenceModifiedIQ)
+        } else if (response !is ConferenceModifiedIQ)
             throw BadColibriRequestException("response of wrong type: ${response::class.java.name }")
 
         if (create) {
@@ -162,7 +161,9 @@ internal class Colibri2Session(
     }
 }
 
-private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoint(Endpoint.getBuilder().apply {
-    setId(endpointId)
-    setExpire(true)
-}.build())
+private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoint(
+    Endpoint.getBuilder().apply {
+        setId(endpointId)
+        setExpire(true)
+    }.build()
+)

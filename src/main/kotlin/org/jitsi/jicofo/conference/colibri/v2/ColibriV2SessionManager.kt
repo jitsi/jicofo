@@ -106,7 +106,8 @@ class ColibriV2SessionManager(
             // TODO: generate a meeting ID if missing.
             conference.chatRoom.meetingId,
             bridge,
-            logger)
+            logger
+        )
         sessions[bridge] = session
         return Pair(session, true)
     }
@@ -157,8 +158,7 @@ class ColibriV2SessionManager(
         val response: IQ?
         try {
             response = stanzaCollector.nextResult()
-        }
-        finally {
+        } finally {
             stanzaCollector.cancel()
         }
 
