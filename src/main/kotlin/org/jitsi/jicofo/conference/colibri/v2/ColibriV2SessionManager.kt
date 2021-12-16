@@ -60,17 +60,15 @@ class ColibriV2SessionManager(
         // TODO("Not yet implemented")
     }
 
-    override fun removeParticipants(participants: Collection<Participant>) {
-        // TODO("Not yet implemented")
+    override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
+        participants.forEach { removeParticipant(it) }
     }
 
-    override fun addSources(participant: Participant, sources: ConferenceSourceMap) {
-        // TODO("Not yet implemented")
-    }
+    override fun addSources(participant: Participant, sources: ConferenceSourceMap) =
+        updateParticipant(participant, sources = participant.sources)
 
-    override fun removeSources(participant: Participant, sources: ConferenceSourceMap) {
-        // TODO("Not yet implemented")
-    }
+    override fun removeSources(participant: Participant, sources: ConferenceSourceMap) =
+        updateParticipant(participant, sources = participant.sources)
 
     override fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
         TODO("Not yet implemented")

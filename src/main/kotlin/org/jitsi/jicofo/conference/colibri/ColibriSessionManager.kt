@@ -43,7 +43,15 @@ interface ColibriSessionManager {
      */
     fun removeParticipants(participants: Collection<Participant>)
 
+    /**
+     *  Note at the time this is called [participant.sources] have already been updated.
+     * TODO: remove in favor of updateParticipant
+     */
     fun addSources(participant: Participant, sources: ConferenceSourceMap)
+    /**
+     *  Note at the time this is called [participant.sources] have already been updated.
+     * TODO: remove in favor of updateParticipant
+     */
     fun removeSources(participant: Participant, sources: ConferenceSourceMap)
     fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
@@ -57,9 +65,9 @@ interface ColibriSessionManager {
 
     fun updateParticipant(
         participant: Participant,
-        transport: IceUdpTransportPacketExtension?,
-        sources: ConferenceSourceMap?,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
+        transport: IceUdpTransportPacketExtension? = null,
+        sources: ConferenceSourceMap? = null,
+        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>? = null
     )
     fun getAllocation(participant: Participant): ColibriAllocation?
     fun bridgesDown(bridges: Set<Jid>): List<Participant>
