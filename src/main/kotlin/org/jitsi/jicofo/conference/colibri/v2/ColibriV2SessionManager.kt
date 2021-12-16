@@ -50,14 +50,29 @@ class ColibriV2SessionManager(
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
     private val sessions: MutableMap<Bridge, Colibri2Session> = mutableMapOf()
+    private val participants: MutableMap<String, ParticipantInfo> = mutableMapOf()
     private val syncRoot = Any()
 
-    override fun expire() {
-        // TODO("Not yet implemented")
+    override fun expire() = synchronized(syncRoot) {
+        // Should we add a colibri2 way to expire a whole conference?
+        val participantsBySession: MutableMap<Colibri2Session, MutableList<String>> = mutableMapOf()
+
+        participants.forEach { (id, participantInfo) ->
+            participantInfo.session?.let { session ->
+                participantsBySession.computeIfAbsent(session) { mutableListOf() }.add(id)
+            }
+        }
+        participantsBySession.forEach { (session, participantIds) ->
+            session.expire(participantIds)
+        }
     }
 
-    override fun removeParticipant(participant: Participant) {
-        // TODO("Not yet implemented")
+    override fun removeParticipant(participant: Participant): Unit = synchronized(syncRoot) {
+        participant.setInviteRunnable(null)
+
+        getSession(participant)?.expire(participant.endpointId)
+            ?: logger.warn("No session for participant $participant")
+        participants.remove(participant.endpointId)
     }
 
     override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
@@ -109,16 +124,27 @@ class ColibriV2SessionManager(
     ): ColibriAllocation {
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session
+        val created: Boolean
+        val participantInfo: ParticipantInfo
         synchronized(syncRoot) {
+            if (participants.containsKey(participant.endpointId)) {
+                throw IllegalStateException("participant already exists")
+            }
+
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
             val bridge = jicofoServices.bridgeSelector.selectBridge(getBridges(), participant.chatMember.region)
                 ?: throw BridgeSelectionFailedException()
-            val (s, created) = getOrCreateSession(bridge)
+            getOrCreateSession(bridge).let {
+                session = it.first
+                created = it.second
+            }
             logger.warn("Selected ${bridge.jid.resourceOrNull} for $participant, session exists: ${!created}")
-            session = s
             stanzaCollector = session.sendAllocationRequest(participant, contents, created)
+
+            participantInfo = ParticipantInfo(session = session)
+            participants[participant.endpointId] = participantInfo
         }
 
         val response: IQ?
@@ -128,7 +154,15 @@ class ColibriV2SessionManager(
         finally {
             stanzaCollector.cancel()
         }
-        return session.processAllocationResponse(response, participant)
+
+        return try {
+            session.processAllocationResponse(response, participant.endpointId, created)
+        } catch (e: ColibriAllocationFailedException) {
+            logger.warn("Failed to allocated a colibri endpoint for ${participant.endpointId}", e)
+            participantInfo.session = null
+            participants.remove(participant.endpointId)
+            throw e
+        }
     }
 
     override fun updateParticipant(
@@ -145,15 +179,15 @@ class ColibriV2SessionManager(
         session.updateParticipant(participant, transport, sources, rtpDescriptions)
     }
 
-    override fun getBridgeSessionId(participant: Participant): String? = null
-        //TODO("Not yet implemented")
+    override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
+        return participants[participant.endpointId]?.session?.id
+    }
 
     override fun removeBridges(bridges: Set<Jid>): List<Participant> {
         TODO("Not yet implemented")
     }
 
-    // TODO: implement
     private fun getSession(participant: Participant): Colibri2Session? = synchronized(syncRoot) {
-        sessions.values.firstOrNull()
+        return participants[participant.endpointId]?.session
     }
 }

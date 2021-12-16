@@ -41,7 +41,8 @@ import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
-import java.lang.RuntimeException
+import java.util.Collections.singletonList
+import java.util.UUID
 
 internal class Colibri2Session(
     private val xmppConnection: AbstractXMPPConnection,
@@ -53,6 +54,13 @@ internal class Colibri2Session(
     private val logger = createChildLogger(parentLogger).apply {
         addContext("bridge", bridge.jid.resourceOrNull?.toString())
     }
+
+    /**
+     * The sources advertised by the bridge, read from the response of the initial request to create a conference.
+     */
+    var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
+
+    val id = UUID.randomUUID().toString()
 
     /**
      * Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response.
@@ -74,7 +82,7 @@ internal class Colibri2Session(
     }
 
     @Throws(ColibriAllocationFailedException::class)
-    internal fun processAllocationResponse(response: IQ?, participant: Participant): ColibriAllocation {
+    internal fun processAllocationResponse(response: IQ?, participantId: String, create: Boolean ): ColibriAllocation {
         logger.debug {
             "Received response of type ${response?.let { it::class.java } ?: "null" }: ${response?.toXML()}"
         }
@@ -88,12 +96,16 @@ internal class Colibri2Session(
         else if (response !is ConferenceModifiedIQ)
             throw BadColibriRequestException("response of wrong type: ${response::class.java.name }")
 
+        if (create) {
+            bridgeSources = response.parseSources()
+        }
+
         return ColibriAllocation(
-            response.parseSources(),
-            response.parseTransport(participant.endpointId)
+            bridgeSources,
+            response.parseTransport(participantId)
                 ?: throw ColibriParsingException("failed to parse transport"),
-            "",
-            ""
+            bridge.region,
+            id
         )
     }
 
@@ -125,8 +137,21 @@ internal class Colibri2Session(
 
         val response = xmppConnection.sendIqAndGetResponse(request.build())
 
+        // TODO improve error handling. Do we need to clean up? *Can* we clean up?
         if (response !is ConferenceModifiedIQ) {
-            throw RuntimeException("Unexpected response: ${response?.javaClass?.name}: ${response?.toXML()}")
+            logger.error("Failed to update participant: ${response?.javaClass?.name}: ${response?.toXML()}")
+        }
+    }
+
+    internal fun expire(endpointId: String) = expire(singletonList(endpointId))
+    internal fun expire(endpointIds: List<String>) {
+        val request = createRequest()
+        endpointIds.forEach { request.addExpire(it) }
+
+        val response = xmppConnection.sendIqAndGetResponse(request.build())
+
+        if (response !is ConferenceModifiedIQ) {
+            logger.error("Failed to expire: ${response?.javaClass?.name}: ${response?.toXML()}")
         }
     }
 
@@ -136,3 +161,8 @@ internal class Colibri2Session(
         setConferenceName(conferenceName)
     }
 }
+
+private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoint(Endpoint.getBuilder().apply {
+    setId(endpointId)
+    setExpire(true)
+}.build())
