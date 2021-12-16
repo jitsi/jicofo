@@ -259,7 +259,7 @@ public class JitsiMeetConferenceImpl
         ColibriConfig colibriConfig = new ColibriConfig();
         if (colibriConfig.getEnableColibri2())
         {
-            colibriSessionManager = new ColibriV2SessionManager(logger);
+            colibriSessionManager = new ColibriV2SessionManager(jicofoServices, this, logger);
         }
         else
         {

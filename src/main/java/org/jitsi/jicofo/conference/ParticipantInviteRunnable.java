@@ -228,6 +228,13 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             }
             return;
         }
+        catch (ColibriTimeoutException e)
+        {
+            logger.error("Canceling due to", e);
+            cancel();
+            colibriRequestCallback.requestFailed(e.getJid());
+            return;
+        }
         catch (ColibriAllocationFailedException e)
         {
             logger.error("Canceling due to unexpected exception", e);
