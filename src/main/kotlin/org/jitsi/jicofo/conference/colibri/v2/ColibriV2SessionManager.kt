@@ -112,8 +112,15 @@ class ColibriV2SessionManager(
     }
 
     private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
-        // TODO count participants
-        sessions.values.associate { Pair(it.bridge, 1) }
+        // TODO do we need to be efficient here?
+        val bridges = mutableMapOf<Bridge, Int>()
+        participants.values.forEach { participantInfo ->
+            participantInfo.session?.bridge?.let {
+                val old = bridges.computeIfAbsent(it) { 0 }
+                bridges[it] = old + 1
+            }
+        }
+        return bridges
     }
 
     @Throws(ColibriAllocationFailedException::class)
