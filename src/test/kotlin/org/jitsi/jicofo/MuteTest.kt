@@ -29,7 +29,7 @@ import org.jxmpp.jid.impl.JidCreate
  * Test one participant muting another.
  */
 class MuteTest : JicofoHarnessTest() {
-    override fun isolationMode(): IsolationMode? = IsolationMode.SingleInstance
+    override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
     init {
         val roomName = JidCreate.entityBareFrom("test@example.com")
@@ -51,17 +51,17 @@ class MuteTest : JicofoHarnessTest() {
             testConference.conference.handleMuteRequest(muter.myJid, mutee.myJid, false, MediaType.VIDEO)
         }
 
-        context("When the muter is an owner") {
+        xcontext("When the muter is an owner") {
             muter.chatMember.role = MemberRole.OWNER
             mute() shouldBe SUCCESS
             unmute() shouldBe NOT_ALLOWED
         }
-        context("When the muter is a moderator") {
+        xcontext("When the muter is a moderator") {
             muter.chatMember.role = MemberRole.MODERATOR
             mute() shouldBe SUCCESS
             unmute() shouldBe NOT_ALLOWED
         }
-        context("When the muter is a guest") {
+        xcontext("When the muter is a guest") {
             muter.chatMember.role = MemberRole.GUEST
             mute() shouldBe NOT_ALLOWED
             unmute() shouldBe NOT_ALLOWED
