@@ -827,9 +827,9 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            if (participant.isSessionEstablished())
+            JingleSession jingleSession = participant.getJingleSession();
+            if (jingleSession != null)
             {
-                JingleSession jingleSession = participant.getJingleSession();
 
                 jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
 
