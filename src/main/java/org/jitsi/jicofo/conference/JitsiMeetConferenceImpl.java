@@ -1720,6 +1720,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public ChatRoom getChatRoom()
     {
         return chatRoom;
