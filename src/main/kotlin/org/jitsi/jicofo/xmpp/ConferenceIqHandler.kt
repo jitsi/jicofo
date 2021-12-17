@@ -124,15 +124,10 @@ class ConferenceIqHandler(
             }
             // Only authenticated users are allowed to create new rooms
             if (!roomExists) {
-                // If a breakout room exists and all members have left the main room, skip
+                // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                var breakoutRoomExists: Boolean = false
-                for (conference in focusManager.getConferences()) {
-                    conference.chatRoom?.let {
-                        if (it.isBreakoutRoom && room.toString() == it.mainRoom) {
-                            breakoutRoomExists = true
-                        }
-                    }
+                val breakoutRoomExists = focusManager.conferences.any { conference ->
+                    conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
                 }
                 if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
                     // Error not authorized
