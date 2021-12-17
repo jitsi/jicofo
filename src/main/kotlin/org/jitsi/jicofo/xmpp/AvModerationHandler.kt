@@ -68,16 +68,17 @@ class AvModerationHandler(
                 if (incomingJson["type"] == "av_moderation") {
                     val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
 
-                    val conference = conferenceStore.getConference(conferenceJid) ?: return@execute Unit.also {
-                        logger.warn("Not processing message for not existing conference conferenceJid=$conferenceJid")
-                    }
+                    val conference = conferenceStore.getConference(conferenceJid)
+                        ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
+                    val chatRoom = conference.chatRoom
+                        ?: throw IllegalStateException("Conference has no associated chatRoom.")
 
                     val enabled = incomingJson["enabled"] as Boolean?
 
                     if (enabled != null) {
                         val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
-                        val oldEnabledValue = conference.chatRoom.isAvModerationEnabled(mediaType)
-                        conference.chatRoom.setAvModerationEnabled(mediaType, enabled)
+                        val oldEnabledValue = chatRoom.isAvModerationEnabled(mediaType)
+                        chatRoom.setAvModerationEnabled(mediaType, enabled)
                         if (oldEnabledValue != enabled && enabled) {
                             logger.info(
                                 "Moderation had been enabled for conferenceJid=$conferenceJid, by=${
@@ -88,14 +89,13 @@ class AvModerationHandler(
                             conference.muteAllParticipants(mediaType)
                         }
                     } else {
-                        val lists = incomingJson["whitelists"]?.let { parseAsMapOfStringToListOfString(it) }
-                        if (lists != null) {
-                            conference.chatRoom.updateAvModerationWhitelists(lists)
+                        incomingJson["whitelists"]?.let {
+                            chatRoom.updateAvModerationWhitelists(parseAsMapOfStringToListOfString(it))
                         }
                     }
                 }
             } catch (e: Exception) {
-                logger.warn("Cannot parse json for av_moderation coming from ${stanza.from}", e)
+                logger.warn("Failed to process av_moderation request from ${stanza.from}", e)
             }
         }
     }

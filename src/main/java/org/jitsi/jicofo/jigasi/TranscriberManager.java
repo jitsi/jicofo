@@ -93,6 +93,7 @@ public class TranscriberManager
      */
     public TranscriberManager(@NotNull XmppProvider xmppProvider,
                               @NotNull JitsiMeetConferenceImpl conference,
+                              @NotNull ChatRoom chatRoom,
                               JigasiDetector jigasiDetector,
                               @NotNull Logger parentLogger)
     {
@@ -101,7 +102,7 @@ public class TranscriberManager
         this.connection = xmppProvider.getXmppConnection();
 
         this.conference = conference;
-        this.chatRoom = conference.getChatRoom();
+        this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
         this.jigasiDetector = jigasiDetector;
     }

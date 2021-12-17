@@ -445,7 +445,8 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
+        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
+        this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
         AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
@@ -465,6 +466,7 @@ public class JitsiMeetConferenceImpl
                 JigasiConfig.config.xmppConnectionName()
             ),
             this,
+            chatRoom,
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
 
