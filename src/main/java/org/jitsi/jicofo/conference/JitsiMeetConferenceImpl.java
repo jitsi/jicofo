@@ -445,7 +445,8 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
+        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
+        this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
         AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
@@ -465,6 +466,7 @@ public class JitsiMeetConferenceImpl
                 JigasiConfig.config.xmppConnectionName()
             ),
             this,
+            chatRoom,
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
 
@@ -827,9 +829,9 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            if (participant.isSessionEstablished())
+            JingleSession jingleSession = participant.getJingleSession();
+            if (jingleSession != null)
             {
-                JingleSession jingleSession = participant.getJingleSession();
 
                 jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
 
@@ -1720,6 +1722,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public ChatRoom getChatRoom()
     {
         return chatRoom;

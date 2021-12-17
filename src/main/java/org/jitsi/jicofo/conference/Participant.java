@@ -419,15 +419,6 @@ public class Participant
     }
 
     /**
-     * @return {@code true} if the Jingle session with this participant has
-     * been established.
-     */
-    public boolean isSessionEstablished()
-    {
-        return jingleSession != null;
-    }
-
-    /**
      * Add a set of remote sources, which are to be signaled to the remote side. The sources may be signaled
      * immediately, or queued to be signaled later.
      *
@@ -440,7 +431,8 @@ public class Participant
             sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
         }
 
-        if (!isSessionEstablished())
+        JingleSession jingleSession = getJingleSession();
+        if (jingleSession == null)
         {
             logger.debug("No Jingle session yet, queueing source-add.");
             remoteSourcesQueue.sourceAdd(sources);
@@ -467,7 +459,7 @@ public class Participant
             }
             jingle.sendAddSourceIQ(
                     sources,
-                    getJingleSession(),
+                    jingleSession,
                     ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
         }
     }
@@ -527,7 +519,8 @@ public class Participant
             sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
         }
 
-        if (!isSessionEstablished())
+        JingleSession jingleSession = getJingleSession();
+        if (jingleSession == null)
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
             remoteSourcesQueue.sourceRemove(sources);
@@ -554,7 +547,7 @@ public class Participant
             }
             jingle.sendRemoveSourceIQ(
                     sources,
-                    getJingleSession(),
+                    jingleSession,
                     ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
         }
     }
@@ -571,9 +564,10 @@ public class Participant
             return;
         }
 
-        if (!isSessionEstablished())
+        JingleSession jingleSession = getJingleSession();
+        if (jingleSession == null)
         {
-            logger.warn("Can not singal remote sources, Jingle session not established.");
+            logger.warn("Can not signal remote sources, Jingle session not established.");
             return;
         }
 

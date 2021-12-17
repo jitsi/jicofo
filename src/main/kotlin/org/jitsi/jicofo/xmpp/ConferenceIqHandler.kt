@@ -109,8 +109,6 @@ class ConferenceIqHandler(
      * which should be returned to the user
      */
     private fun processExtensions(query: ConferenceIq, response: ConferenceIq?, roomExists: Boolean): IQ? {
-        val peerJid = query.from
-        var identity: String? = null
         val room = query.room
         val isBreakoutRoom = breakoutAddress != null && room.domain == breakoutAddress
 
@@ -120,27 +118,20 @@ class ConferenceIqHandler(
             val authErrorOrResponse = authAuthority.processAuthentication(query, response)
 
             // Checks if authentication module wants to cancel further
-            // processing and eventually returns it's response
+            // processing and eventually returns its response
             if (authErrorOrResponse != null) {
                 return authErrorOrResponse
             }
             // Only authenticated users are allowed to create new rooms
             if (!roomExists) {
-                // If a breakout room exists and all members had left the main room, skip
+                // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                var breakoutRoomExists: Boolean = false
-                for (conference in focusManager.getConferences()) {
-                    if (conference.chatRoom.isBreakoutRoom && room.toString() == conference.chatRoom.mainRoom) {
-                        breakoutRoomExists = true
-                        break
-                    }
+                val breakoutRoomExists = focusManager.conferences.any { conference ->
+                    conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
                 }
-                if (!breakoutRoomExists) {
-                    identity = authAuthority.getUserIdentity(peerJid)
-                    if (identity == null) {
-                        // Error not authorized
-                        return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
-                    }
+                if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
+                    // Error not authorized
+                    return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
                 }
             }
         }
