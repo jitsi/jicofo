@@ -23,7 +23,6 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
-import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
@@ -42,7 +41,6 @@ class ConferenceIqHandler(
     val focusAuthJid: String,
     val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
-    val reservationSystem: ReservationSystem?,
     val jigasiEnabled: Boolean
 ) : RegistrationListener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
@@ -65,7 +63,7 @@ class ConferenceIqHandler(
         logger.info("Focus request for room: $room")
         val roomExists = focusManager.getConference(room) != null
 
-        // Authentication and reservations system logic
+        // Authentication logic
         val error: IQ? = processExtensions(query, response, roomExists)
         if (error != null) {
             return error
@@ -101,7 +99,7 @@ class ConferenceIqHandler(
     }
 
     /**
-     * Additional logic added for conference IQ processing like authentication and room reservation.
+     * Additional logic added for conference IQ processing like authentication.
      *
      * @param query <tt>ConferenceIq</tt> query
      * @param response <tt>ConferenceIq</tt> response which can be modified during this processing.
@@ -147,14 +145,6 @@ class ConferenceIqHandler(
             }
         }
 
-        // Check room reservation?
-        if (!roomExists && reservationSystem != null) {
-            val result: ReservationSystem.Result = reservationSystem.createConference(identity, room)
-            logger.info("Create room result: $result for $room")
-            if (result.code != ReservationSystem.RESULT_OK) {
-                return ErrorFactory.createReservationError(query, result)
-            }
-        }
         return null
     }
 
