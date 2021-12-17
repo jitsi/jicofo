@@ -47,12 +47,12 @@ import java.util.UUID
 internal class Colibri2Session(
     private val xmppConnection: AbstractXMPPConnection,
     private val conferenceName: String,
-    private val meetingId: String?,
+    private val meetingId: String,
     val bridge: Bridge,
     parentLogger: Logger
 ) {
     private val logger = createChildLogger(parentLogger).apply {
-        addContext("bridge", bridge.jid.resourceOrNull?.toString())
+        bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
 
     /**

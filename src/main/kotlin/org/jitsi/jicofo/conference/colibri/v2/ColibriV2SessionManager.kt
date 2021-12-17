@@ -37,6 +37,7 @@ import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
+import java.util.UUID
 
 class ColibriV2SessionManager(
     private val jicofoServices: JicofoServices,
@@ -52,6 +53,17 @@ class ColibriV2SessionManager(
     private val sessions: MutableMap<Bridge, Colibri2Session> = mutableMapOf()
     private val participants: MutableMap<String, ParticipantInfo> = mutableMapOf()
     private val syncRoot = Any()
+
+    /**
+     * We want to delay initialization until the chat room is joined in order to use its meetingId.
+     */
+    private val meetingId: String by lazy {
+        val chatRoomMeetingId = conference.chatRoom?.meetingId
+        if (chatRoomMeetingId == null) {
+            logger.warn("No meetingId set for the MUC. Generating one locally.")
+            UUID.randomUUID().toString()
+        } else chatRoomMeetingId
+    }
 
     override fun expire() = synchronized(syncRoot) {
         // Should we add a colibri2 way to expire a whole conference?
@@ -103,8 +115,7 @@ class ColibriV2SessionManager(
         session = Colibri2Session(
             jicofoServices.xmppServices.serviceConnection.xmppConnection,
             conference.roomName.toString(),
-            // TODO: generate a meeting ID if missing.
-            conference.chatRoom.meetingId,
+            meetingId,
             bridge,
             logger
         )
