@@ -130,9 +130,10 @@ class ConferenceIqHandler(
                 // authentication for the main room so users can go back to it.
                 var breakoutRoomExists: Boolean = false
                 for (conference in focusManager.getConferences()) {
-                    if (conference.chatRoom.isBreakoutRoom && room.toString() == conference.chatRoom.mainRoom) {
-                        breakoutRoomExists = true
-                        break
+                    conference.chatRoom?.let {
+                        if (it.isBreakoutRoom && room.toString() == it.mainRoom) {
+                            breakoutRoomExists = true
+                        }
                     }
                 }
                 if (!breakoutRoomExists) {
