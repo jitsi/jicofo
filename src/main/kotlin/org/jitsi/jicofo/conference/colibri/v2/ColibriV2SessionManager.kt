@@ -98,7 +98,7 @@ class ColibriV2SessionManager(
         updateParticipant(participant, sources = participant.sources)
 
     override fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
-        TODO("Not yet implemented")
+        return true
     }
 
     override val bridgeCount: Int
@@ -193,7 +193,7 @@ class ColibriV2SessionManager(
             "Updating $participant with transport=$transport, sources=$sources, rtpDescriptions=$rtpDescriptions"
         )
 
-        val session = getSession(participant) ?: throw IllegalStateException("No session for participant")
+        val session = getSession(participant) ?: throw IllegalStateException("No session for $participant")
         session.updateParticipant(participant, transport, sources, rtpDescriptions)
     }
 

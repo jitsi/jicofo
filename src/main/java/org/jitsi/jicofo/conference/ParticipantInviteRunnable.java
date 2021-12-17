@@ -362,6 +362,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             colibriSessionManager.updateParticipant(participant, null, null, null);
         }
 
+        // TODO: include force-mute in the initial allocation, instead of sending 2 additional colibri messages.
         if (chatRoom != null && !participant.hasModeratorRights())
         {
             // if participant is not muted, but needs to be
