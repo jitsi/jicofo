@@ -29,9 +29,9 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
-import org.jitsi.xmpp.extensions.colibri2.Endpoint
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
@@ -71,7 +71,7 @@ internal class Colibri2Session(
         create: Boolean
     ): StanzaCollector {
         val request = createRequest().apply { setCreate(create) }
-        val endpoint = Endpoint.getBuilder()
+        val endpoint = Colibri2Endpoint.getBuilder()
             .setId(participant.endpointId)
             .setStatsId(participant.statId)
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
@@ -120,7 +120,7 @@ internal class Colibri2Session(
         }
 
         val request = createRequest()
-        val endpoint = Endpoint.getBuilder()
+        val endpoint = Colibri2Endpoint.getBuilder()
             .setId(participant.endpointId)
             .setStatsId(participant.statId)
 
@@ -162,7 +162,7 @@ internal class Colibri2Session(
 }
 
 private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoint(
-    Endpoint.getBuilder().apply {
+    Colibri2Endpoint.getBuilder().apply {
         setId(endpointId)
         setExpire(true)
     }.build()
