@@ -71,9 +71,11 @@ internal class Colibri2Session(
         create: Boolean
     ): StanzaCollector {
         val request = createRequest().apply { setCreate(create) }
-        val endpoint = Colibri2Endpoint.getBuilder()
-            .setId(participant.endpointId)
-            .setStatsId(participant.statId)
+        val endpoint = Colibri2Endpoint.getBuilder().apply {
+            setId(participant.endpointId)
+            setCreate(true)
+            setStatsId(participant.statId)
+        }
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
         request.addEndpoint(endpoint.build())
 
@@ -145,7 +147,7 @@ internal class Colibri2Session(
     internal fun mute(endpointId: String, audio: Boolean, video: Boolean): StanzaCollector {
         val request = createRequest()
         request.addEndpoint(
-            Endpoint.getBuilder()
+            Colibri2Endpoint.getBuilder()
                 .setId(endpointId)
                 .setForceMute(audio, video).build()
         )
