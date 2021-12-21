@@ -68,7 +68,7 @@ public interface JitsiMeetConference
      * Returns <tt>ChatRoom2</tt> instance for the MUC this instance is
      * currently in or <tt>null</tt> if it isn't in any.
      */
-    ChatRoom getChatRoom();
+    @Nullable ChatRoom getChatRoom();
 
     default JibriRecorder getJibriRecorder()
     {

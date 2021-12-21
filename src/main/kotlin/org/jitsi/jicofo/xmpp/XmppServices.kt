@@ -24,7 +24,6 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
-import org.jitsi.jicofo.reservation.ReservationSystem
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
@@ -32,8 +31,7 @@ class XmppServices(
     xmppProviderFactory: XmppProviderFactory,
     conferenceStore: ConferenceStore,
     authenticationAuthority: AbstractAuthAuthority?,
-    focusManager: FocusManager,
-    reservationSystem: ReservationSystem?
+    focusManager: FocusManager
 ) {
     private val logger = createLogger()
 
@@ -91,7 +89,6 @@ class XmppServices(
         focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
         isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
         authAuthority = authenticationAuthority,
-        reservationSystem = reservationSystem,
         jigasiEnabled = jigasiDetector != null
     ).apply {
         clientConnection.xmppConnection.registerIQRequestHandler(this)

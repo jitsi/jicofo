@@ -23,7 +23,6 @@ import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
-import org.jitsi.impl.reservation.rest.RESTReservations
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
@@ -53,7 +52,6 @@ import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.management.ManagementFactory
-import org.jitsi.impl.reservation.rest.ReservationConfig.Companion.config as reservationConfig
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
 /**
@@ -82,23 +80,12 @@ open class JicofoServices {
         start()
         focusManager.addListener(this)
     }
-    private val reservationSystem: RESTReservations? = if (reservationConfig.enabled) {
-        logger.info("Starting reservation system with base URL=${reservationConfig.baseUrl}.")
-        logger.warn("WARNING: The reservation system in Jicofo has been deprecated, use the prosody module instead.")
-        RESTReservations(reservationConfig.baseUrl) { name, reason ->
-            focusManager.destroyConference(name, reason)
-        }.apply {
-            focusManager.addListener(this)
-            start()
-        }
-    } else null
 
     val xmppServices = XmppServices(
         xmppProviderFactory = xmppProviderFactory,
         conferenceStore = focusManager,
         focusManager = focusManager, // TODO do not use FocusManager directly
-        authenticationAuthority = authenticationAuthority,
-        reservationSystem = reservationSystem
+        authenticationAuthority = authenticationAuthority
     )
 
     val bridgeSelector = BridgeSelector()
@@ -159,10 +146,6 @@ open class JicofoServices {
     }
 
     fun shutdown() {
-        reservationSystem?.let {
-            focusManager.removeListener(it)
-            it.shutdown()
-        }
         authenticationAuthority?.let {
             focusManager.removeListener(it)
             it.shutdown()
