@@ -142,6 +142,18 @@ internal class Colibri2Session(
         }
     }
 
+    internal fun mute(endpointId: String, audio: Boolean, video: Boolean): StanzaCollector {
+        val request = createRequest()
+        request.addEndpoint(
+            Endpoint.getBuilder()
+                .setId(endpointId)
+                .setForceMute(audio, video).build()
+        )
+
+        logger.debug { "Sending mute request for ${endpointId}: ${request.build().toXML()}" }
+        return xmppConnection.createStanzaCollectorAndSend(request.build())
+    }
+
     internal fun expire(endpointId: String) = expire(singletonList(endpointId))
     internal fun expire(endpointIds: List<String>) {
         val request = createRequest()

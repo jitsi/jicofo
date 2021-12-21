@@ -31,6 +31,7 @@ import org.jitsi.utils.MediaType
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -98,7 +99,42 @@ class ColibriV2SessionManager(
         updateParticipant(participant, sources = participant.sources)
 
     override fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
-        return true
+        val stanzaCollector: StanzaCollector
+        val participantInfo: ParticipantInfo
+        synchronized(syncRoot) {
+            participantInfo = participants[participant.endpointId]
+                ?: throw IllegalStateException("No participantInfo for $participant")
+
+            if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute
+                || mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
+            ) {
+                return true
+            }
+
+            val audioMute = if (mediaType == MediaType.AUDIO) doMute else participantInfo.audioMuted
+            val videoMute = if (mediaType == MediaType.VIDEO) doMute else participantInfo.videoMuted
+            val session = participantInfo.session ?: throw IllegalStateException("No session for $participant")
+            stanzaCollector = session.mute(participant.endpointId, audioMute, videoMute)
+        }
+
+        val response: IQ?
+        try {
+            response = stanzaCollector.nextResult()
+        } finally {
+            stanzaCollector.cancel()
+        }
+
+        return if (response is ConferenceModifiedIQ) {
+            // Success, update our local state
+            if (mediaType == MediaType.AUDIO)
+                participantInfo.audioMuted = doMute
+            if (mediaType == MediaType.VIDEO)
+                participantInfo.videoMuted = doMute
+            true
+        } else {
+            logger.error("Failed to mute ${participant.endpointId}: ${response?.toXML() ?: "timeout"}")
+            false
+        }
     }
 
     override val bridgeCount: Int
