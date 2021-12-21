@@ -51,17 +51,17 @@ class MuteTest : JicofoHarnessTest() {
             testConference.conference.handleMuteRequest(muter.myJid, mutee.myJid, false, MediaType.VIDEO)
         }
 
-        xcontext("When the muter is an owner") {
+        context("When the muter is an owner") {
             muter.chatMember.role = MemberRole.OWNER
             mute() shouldBe SUCCESS
             unmute() shouldBe NOT_ALLOWED
         }
-        xcontext("When the muter is a moderator") {
+        context("When the muter is a moderator") {
             muter.chatMember.role = MemberRole.MODERATOR
             mute() shouldBe SUCCESS
             unmute() shouldBe NOT_ALLOWED
         }
-        xcontext("When the muter is a guest") {
+        context("When the muter is a guest") {
             muter.chatMember.role = MemberRole.GUEST
             mute() shouldBe NOT_ALLOWED
             unmute() shouldBe NOT_ALLOWED
