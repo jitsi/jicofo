@@ -212,7 +212,7 @@ class ColibriV2SessionManager(
         return try {
             session.processAllocationResponse(response, participant.endpointId, created)
         } catch (e: ColibriAllocationFailedException) {
-            logger.warn("Failed to allocated a colibri endpoint for ${participant.endpointId}", e)
+            logger.warn("Failed to allocate a colibri endpoint for ${participant.endpointId}", e)
             participantInfo.session = null
             participants.remove(participant.endpointId)
             throw e
