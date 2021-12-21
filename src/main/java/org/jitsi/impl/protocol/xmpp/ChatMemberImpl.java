@@ -279,8 +279,8 @@ public class ChatMemberImpl
             isJibri = false;
         }
 
-        RegionPacketExtension regionPE
-            = presence.getExtension(RegionPacketExtension.class);
+        JitsiParticipantRegionPacketExtension regionPE
+            = presence.getExtension(JitsiParticipantRegionPacketExtension.class);
         if (regionPE != null)
         {
             region = regionPE.getRegionId();
