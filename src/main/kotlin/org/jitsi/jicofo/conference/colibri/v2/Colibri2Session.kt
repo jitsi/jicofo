@@ -75,7 +75,7 @@ internal class Colibri2Session(
             setId(participant.endpointId)
             setCreate(true)
             setStatsId(participant.statId)
-            setTransport(Transport.getBuilder().setInitiator(false).build())
+            setTransport(Transport.getBuilder().build())
         }
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
         request.addEndpoint(endpoint.build())
