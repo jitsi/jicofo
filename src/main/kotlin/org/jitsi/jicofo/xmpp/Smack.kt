@@ -38,12 +38,12 @@ import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.LogoutIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.MuteIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIqProvider
-import org.jitsi.xmpp.extensions.jitsimeet.RegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionRequestExtension
@@ -101,9 +101,9 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(UserInfoPacketExt::class.java)
     )
     ProviderManager.addExtensionProvider(
-        RegionPacketExtension.ELEMENT,
-        RegionPacketExtension.NAMESPACE,
-        DefaultPacketExtensionProvider(RegionPacketExtension::class.java)
+        JitsiParticipantRegionPacketExtension.ELEMENT,
+        JitsiParticipantRegionPacketExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(JitsiParticipantRegionPacketExtension::class.java)
     )
     ProviderManager.addExtensionProvider(
         StatsId.ELEMENT,
