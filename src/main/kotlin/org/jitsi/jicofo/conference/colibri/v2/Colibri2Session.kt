@@ -70,7 +70,7 @@ internal class Colibri2Session(
         contents: List<ContentPacketExtension>,
         create: Boolean
     ): StanzaCollector {
-        val request = createRequest().apply { setCreate(create) }
+        val request = createRequest(create).apply { setCreate(create) }
         val endpoint = Colibri2Endpoint.getBuilder().apply {
             setId(participant.endpointId)
             setCreate(true)
@@ -123,9 +123,10 @@ internal class Colibri2Session(
         }
 
         val request = createRequest()
-        val endpoint = Colibri2Endpoint.getBuilder()
-            .setId(participant.endpointId)
-            .setStatsId(participant.statId)
+        val endpoint = Colibri2Endpoint.getBuilder().apply {
+            setId(participant.endpointId)
+            setStatsId(participant.statId)
+        }
 
         if (transport != null) {
             endpoint.setTransport(Transport.getBuilder().setIceUdpExtension(transport).build())
@@ -148,9 +149,10 @@ internal class Colibri2Session(
     internal fun mute(endpointId: String, audio: Boolean, video: Boolean): StanzaCollector {
         val request = createRequest()
         request.addEndpoint(
-            Colibri2Endpoint.getBuilder()
-                .setId(endpointId)
-                .setForceMute(audio, video).build()
+            Colibri2Endpoint.getBuilder().apply {
+                setForceMute(audio, video)
+                setId(endpointId)
+            }.build()
         )
 
         logger.debug { "Sending mute request for ${endpointId}: ${request.build().toXML()}" }
@@ -169,10 +171,10 @@ internal class Colibri2Session(
         }
     }
 
-    private fun createRequest(): ConferenceModifyIQ.Builder = ConferenceModifyIQ.builder(xmppConnection).apply {
+    private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
         to(bridge.jid)
         setMeetingId(meetingId)
-        setConferenceName(conferenceName)
+        if (create) setConferenceName(conferenceName)
     }
 }
 
