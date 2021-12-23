@@ -33,7 +33,6 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             val bridge2 = Bridge(JidCreate.from("bridge2")).apply { setStats(region = region2) }
             val bridge3 = Bridge(JidCreate.from("bridge3")).apply { setStats(region = region3) }
 
-
             val allBridges = listOf(bridge1, bridge2, bridge3)
             val conferenceBridges: MutableMap<Bridge, Int> = HashMap()
 
@@ -114,8 +113,8 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
 
             // Initial selection should select a bridge in the participant's region.
             strategy.select(allBridges, conferenceBridges, highStressRegion, true) shouldBe highStressBridge
-            strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true) shouldBe  mediumStressBridge2
-            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe  mediumStressBridge1
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true) shouldBe mediumStressBridge2
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe mediumStressBridge1
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe mediumStressBridge1
 
             conferenceBridges[mediumStressBridge2] = 1
@@ -133,7 +132,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             // A participant in a region with no bridges should also be allocated
             // on the least loaded (according to the order of 'allBridges') existing
             // conference bridge.
-            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe  mediumStressBridge2
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe mediumStressBridge2
         }
         context("Mixing octo versions") {
             val highStressBridge = createBridge("region", 0.9).apply { setStats(octoVersion = 13) }
