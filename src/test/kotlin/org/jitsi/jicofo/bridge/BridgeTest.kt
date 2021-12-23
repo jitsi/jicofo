@@ -22,6 +22,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.test.time.FakeClock
 import org.jitsi.utils.times
+import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.impl.JidCreate
 
 class BridgeTest : ShouldSpec({
@@ -98,4 +99,38 @@ class BridgeTest : ShouldSpec({
         clock.elapse(failureResetThreshold)
         bridge.isOperational shouldBe true
     }
+    context("Setting stats") {
+        // This mostly makes sure the test framework works as expected.
+        val bridge = Bridge(JidCreate.from("bridge"))
+
+        bridge.stress shouldBe 0
+        bridge.region shouldBe null
+
+        bridge.setStats(stress = 0.1)
+        bridge.stress shouldBe 0.1
+        bridge.region shouldBe null
+
+        // The different stats should be updated independently.
+        bridge.setStats(region = "region")
+        bridge.stress shouldBe 0.1
+        bridge.region shouldBe "region"
+
+        // The different stats should be updated independently.
+        bridge.setStats(stress = 0.2)
+        bridge.stress shouldBe 0.2
+        bridge.region shouldBe "region"
+    }
 })
+
+fun Bridge.setStats(
+    stress: Double? = null,
+    region: String? = null
+) = setStats(
+    ColibriStatsExtension().apply {
+        stress?.let { addStat(ColibriStatsExtension.Stat("stress_level", it)) }
+        region?.let {
+            addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.REGION, it))
+            addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.RELAY_ID, it))
+        }
+    }
+)

@@ -43,12 +43,6 @@ public class Bridge
     implements Comparable<Bridge>
 {
     /**
-     * A {@link ColibriStatsExtension} instance with no stats.
-     */
-    private static final ColibriStatsExtension EMPTY_STATS
-        = new ColibriStatsExtension();
-
-    /**
      * This is static for the purposes of tests.
      * TODO: just use the config and port the tests.
      */
@@ -119,10 +113,8 @@ public class Bridge
      */
     private Instant failureInstant = Instant.MIN;
 
-    /**
-     * The last known {@link ColibriStatsExtension} reported by this bridge.
-     */
-    private ColibriStatsExtension stats = EMPTY_STATS;
+    private String region = null;
+    private String relayId = null;
 
     @NonNull
     private final Clock clock;
@@ -148,13 +140,8 @@ public class Bridge
     {
         if (stats == null)
         {
-            this.stats = EMPTY_STATS;
+            return;
         }
-        else
-        {
-            this.stats = ColibriStatsExtension.clone(stats);
-        }
-        stats = this.stats;
 
         Double stressLevel = UtilKt.getDouble(stats, "stress_level");
         if (stressLevel != null)
@@ -200,6 +187,18 @@ public class Bridge
         {
             this.octoVersion = octoVersion;
         }
+
+        String region = stats.getValueAsString(REGION);
+        if (region != null)
+        {
+            this.region = region;
+        }
+
+        String relayId = stats.getValueAsString(RELAY_ID);
+        if (relayId != null)
+        {
+            this.relayId = relayId;
+        }
     }
 
     /**
@@ -208,7 +207,7 @@ public class Bridge
      */
     public String getRelayId()
     {
-        return stats.getValueAsString(RELAY_ID);
+        return relayId;
     }
 
     public void setIsOperational(boolean isOperational)
@@ -311,7 +310,7 @@ public class Bridge
      */
     public String getRegion()
     {
-        return stats.getValueAsString(REGION);
+        return region;
     }
 
     /**

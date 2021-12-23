@@ -22,7 +22,6 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 import org.jitsi.test.time.FakeClock
-import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.impl.JidCreate
 
 class BridgeSelectorTest : ShouldSpec() {
@@ -94,13 +93,3 @@ class BridgeSelectorTest : ShouldSpec() {
         }
     }
 }
-
-fun Bridge.setStats(stress: Double = 0.0, region: String? = null) = setStats(
-    ColibriStatsExtension().apply {
-        addStat(ColibriStatsExtension.Stat("stress_level", stress))
-        region?.let {
-            addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.REGION, it))
-            addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.RELAY_ID, it))
-        }
-    }
-)
