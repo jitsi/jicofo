@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.bridge;
 
-import org.jitsi.jicofo.*;
-import org.jitsi.jicofo.conference.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.junit.jupiter.api.*;
@@ -38,8 +36,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class BridgeSelectorTest
 {
-    private final JicofoHarness harness = new JicofoHarness();
-
     private Jid jvb1Jid;
     private Jid jvb2Jid;
     private Jid jvb3Jid;
@@ -57,17 +53,10 @@ public class BridgeSelectorTest
         jvb2Jid = JidCreate.from("jvb@example.com");
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
 
-        bridgeSelector = harness.jicofoServices.getBridgeSelector();
+        bridgeSelector = new BridgeSelector();
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
         jvb2 = bridgeSelector.addJvbAddress(jvb2Jid);
         jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
-    }
-
-    @AfterEach
-    public void tearDown()
-        throws Exception
-    {
-        harness.shutdown();
     }
 
     @Test
