@@ -24,7 +24,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
-import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
@@ -53,12 +52,7 @@ public class Bridge
      * This is static for the purposes of tests.
      * TODO: just use the config and port the tests.
      */
-    private static Duration failureResetThreshold = config.failureResetThreshold();
-
-    public static void setFailureResetThreshold(Duration newValue)
-    {
-        failureResetThreshold = newValue;
-    }
+    private static final Duration failureResetThreshold = config.failureResetThreshold();
 
     /**
      * The XMPP address of the bridge.

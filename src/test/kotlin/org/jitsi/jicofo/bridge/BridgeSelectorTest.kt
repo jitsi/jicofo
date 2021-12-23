@@ -24,9 +24,8 @@ import io.kotest.matchers.shouldBe
 import org.jitsi.test.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.impl.JidCreate
-import java.time.Duration
 
-class BridgeSelector2Test : ShouldSpec() {
+class BridgeSelectorTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
@@ -38,9 +37,6 @@ class BridgeSelector2Test : ShouldSpec() {
         val jvb3 = bridgeSelector.addJvbAddress(JidCreate.from("jvb@example.com/goldengate"))
 
         context("Selection based on operational status") {
-            // This part of the test doesn't care about reset threshold
-            Bridge.setFailureResetThreshold(Duration.ZERO)
-
             bridgeSelector.selectBridge() shouldBeIn setOf(jvb1, jvb2, jvb3)
 
             // Bridge 1 is down
@@ -54,6 +50,8 @@ class BridgeSelector2Test : ShouldSpec() {
             // Bridge 1 is up again, but 3 is down instead
             jvb1.setIsOperational(true)
             jvb3.setIsOperational(false)
+            // We need to elapse time after setting isOperational=true because isOperational=false is sticky
+            clock.elapse(BridgeConfig.config.failureResetThreshold)
             bridgeSelector.selectBridge() shouldBe jvb1
         }
         context("Selection based on stress level") {
@@ -80,6 +78,8 @@ class BridgeSelector2Test : ShouldSpec() {
             jvb1.setIsOperational(true)
             jvb2.setIsOperational(true)
             jvb3.setIsOperational(true)
+            // We need to elapse time after setting isOperational=true because isOperational=false is sticky
+            clock.elapse(BridgeConfig.config.failureResetThreshold)
 
             jvb1.setStats(stress = .01)
             jvb2.setStats(stress = 0.0)

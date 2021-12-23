@@ -17,8 +17,12 @@ package org.jitsi.jicofo.bridge
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.ints.shouldBeLessThan
+import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.times
+import org.jxmpp.jid.impl.JidCreate
 
 class BridgeTest : ShouldSpec({
     context("when comparing two bridges") {
@@ -66,5 +70,32 @@ class BridgeTest : ShouldSpec({
             }
             Bridge.compare(bridge2, bridge1) shouldBeLessThan 0
         }
+    }
+    context("notOperationalThresholdTest") {
+        val clock = FakeClock()
+        val bridge = Bridge(JidCreate.from("bridge"), clock)
+        val failureResetThreshold = BridgeConfig.config.failureResetThreshold
+        bridge.isOperational shouldBe true
+
+        bridge.setIsOperational(false)
+        bridge.isOperational shouldBe false
+
+        clock.elapse(failureResetThreshold.times(100))
+        bridge.isOperational shouldBe false
+
+        bridge.setIsOperational(true)
+        bridge.isOperational shouldBe true
+
+        bridge.setIsOperational(false)
+        bridge.isOperational shouldBe false
+
+        clock.elapse(failureResetThreshold.dividedBy(2))
+        bridge.isOperational shouldBe false
+
+        bridge.setIsOperational(true)
+        bridge.isOperational shouldBe false
+
+        clock.elapse(failureResetThreshold)
+        bridge.isOperational shouldBe true
     }
 })
