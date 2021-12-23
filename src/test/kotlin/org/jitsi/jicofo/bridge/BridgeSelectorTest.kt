@@ -26,7 +26,7 @@ import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
-class BridgeSelectorTest : ShouldSpec() {
+class BridgeSelector2Test : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
@@ -95,7 +95,7 @@ class BridgeSelectorTest : ShouldSpec() {
     }
 }
 
-private fun Bridge.setStats(stress: Double = 0.0, region: String? = null) = setStats(
+fun Bridge.setStats(stress: Double = 0.0, region: String? = null) = setStats(
     ColibriStatsExtension().apply {
         addStat(ColibriStatsExtension.Stat("stress_level", stress))
         region?.let {

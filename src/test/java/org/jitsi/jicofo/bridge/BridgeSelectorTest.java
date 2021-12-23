@@ -26,7 +26,6 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
 import java.time.*;
-import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -132,80 +131,6 @@ public class BridgeSelectorTest
         }
 
         return statsExtension;
-    }
-
-    @Test
-    public void testRegionBasedSelection()
-            throws Exception
-    {
-        String region1 = "region1";
-        Bridge bridge1 = bridgeSelector.addJvbAddress(JidCreate.from("bridge1"));
-        bridge1.setStats(createJvbStats(0, region1));
-
-        String region2 = "region2";
-        Bridge bridge2 = bridgeSelector.addJvbAddress(JidCreate.from("bridge2"));
-        bridge2.setStats(createJvbStats(0, region2));
-
-        String region3 = "region3";
-        Bridge bridge3 = bridgeSelector.addJvbAddress(JidCreate.from("bridge3"));
-        bridge3.setStats(createJvbStats(0, region3));
-
-        Bridge localBridge = bridge1;
-        BridgeSelectionStrategy strategy = new RegionBasedBridgeSelectionStrategy();
-
-
-        List<Bridge> allBridges = Arrays.asList(bridge1, bridge2, bridge3);
-        Map<Bridge, Integer> conferenceBridges = new HashMap<>();
-
-        // Initial selection should select a bridge in the participant's region
-        // if possible
-        assertEquals(
-            bridge1,
-            strategy.select(allBridges, conferenceBridges, region1, true));
-        assertEquals(
-            bridge2,
-            strategy.select(allBridges, conferenceBridges, region2, true));
-        // Or a bridge in the local region otherwise
-        assertEquals(
-            localBridge,
-            strategy.select(allBridges, conferenceBridges, "invalid region", true)
-        );
-        assertEquals(
-            localBridge,
-            strategy.select(allBridges, conferenceBridges, null, true)
-        );
-
-        conferenceBridges.put(bridge3, 1);
-        assertEquals(
-            bridge3,
-            strategy.select(allBridges, conferenceBridges, region3, true)
-        );
-        assertEquals(
-            bridge2,
-            strategy.select(allBridges, conferenceBridges, region2, true)
-        );
-        // A participant in an unknown region should be allocated on the existing
-        // conference bridge.
-        assertEquals(
-            bridge3,
-            strategy.select(allBridges, conferenceBridges, null, true)
-        );
-
-        conferenceBridges.put(bridge2, 1);
-        // A participant in an unknown region should be allocated on the least
-        // loaded (according to the order of 'allBridges') existing conference
-        // bridge.
-        assertEquals(
-            bridge2,
-            strategy.select(allBridges, conferenceBridges, null, true)
-        );
-        // A participant in a region with no bridges should also be allocated
-        // on the least loaded (according to the order of 'allBridges') existing
-        // conference bridge.
-        assertEquals(
-            bridge2,
-            strategy.select(allBridges, conferenceBridges, "invalid region", true)
-        );
     }
 }
 
