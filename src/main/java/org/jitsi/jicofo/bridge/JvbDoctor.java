@@ -80,33 +80,11 @@ public class JvbDoctor
         return xmppProvider.getXmppConnection();
     }
 
-    synchronized public void start(Collection<Bridge> initialBridges)
+    synchronized public void start()
     {
         if (!config.getHealthChecksEnabled())
         {
             logger.warn("JVB health-checks disabled");
-            return;
-        }
-
-        initializeHealthChecks(initialBridges);
-    }
-
-    /**
-     * Initializes bridge health checks.
-     *
-     * @param bridges - the list of bridges connected at the time when
-     * the {@link JvbDoctor} bundle starts.
-     */
-    private void initializeHealthChecks(Collection<Bridge> bridges)
-    {
-        for (Bridge b : bridges)
-        {
-            Jid bridgeJid = b.getJid();
-
-            if (!tasks.containsKey(bridgeJid))
-            {
-                addBridge(bridgeJid);
-            }
         }
     }
 

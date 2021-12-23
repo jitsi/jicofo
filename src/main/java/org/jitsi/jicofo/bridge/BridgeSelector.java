@@ -84,7 +84,7 @@ public class BridgeSelector
     public BridgeSelector()
     {
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
-        jvbDoctor.start(getBridges());
+        jvbDoctor.start();
     }
 
     /**
