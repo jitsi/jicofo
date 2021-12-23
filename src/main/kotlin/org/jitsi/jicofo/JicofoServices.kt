@@ -31,6 +31,7 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeMucDetector
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.bridge.JvbDoctor
 import org.jitsi.jicofo.conference.colibri.v1.ColibriConferenceImpl
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
@@ -89,6 +90,15 @@ open class JicofoServices {
     )
 
     val bridgeSelector = BridgeSelector()
+    private val jvbDoctor = if (BridgeConfig.config.healthChecksEnabled) {
+        JvbDoctor(bridgeSelector).apply {
+            bridgeSelector.addHandler(this)
+        }
+    } else {
+        logger.warn("JVB health-checks disabled");
+        null
+    }
+
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(
             xmppServices.getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
@@ -152,7 +162,10 @@ open class JicofoServices {
         }
         healthChecker?.shutdown()
         jettyServer?.stop()
-        bridgeSelector.shutdown()
+        jvbDoctor?.let {
+            bridgeSelector.removeHandler(it)
+            it.shutdown()
+        }
         bridgeDetector?.shutdown()
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()

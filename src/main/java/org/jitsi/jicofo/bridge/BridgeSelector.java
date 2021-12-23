@@ -45,7 +45,7 @@ import static org.glassfish.jersey.internal.guava.Predicates.not;
  * @author Boris Grozev
  */
 public class BridgeSelector
-    implements JvbDoctor.HealthCheckListener
+    implements HealthCheckListener
 {
     /**
      * The logger.
@@ -70,8 +70,6 @@ public class BridgeSelector
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy = BridgeConfig.config.getSelectionStrategy();
 
-    private final JvbDoctor jvbDoctor = new JvbDoctor(this);
-
     /**
      * The number of bridges which disconnected without going into graceful shutdown first.
      */
@@ -84,7 +82,6 @@ public class BridgeSelector
     public BridgeSelector()
     {
         logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
-        jvbDoctor.start();
     }
 
     /**
@@ -130,7 +127,6 @@ public class BridgeSelector
         }
 
         notifyBridgeUp(newBridge);
-        jvbDoctor.addBridge(newBridge.getJid());
 
         return newBridge;
     }
@@ -159,7 +155,6 @@ public class BridgeSelector
                 lostBridges.incrementAndGet();
             }
             notifyBridgeDown(bridge);
-            jvbDoctor.removeBridge(bridgeJid);
         }
     }
 
@@ -302,11 +297,6 @@ public class BridgeSelector
             handler.bridgeRemoved(bridge);
             return Unit.INSTANCE;
         });
-    }
-
-    public void shutdown()
-    {
-        jvbDoctor.shutdown();
     }
 
     public int getBridgeCount()
