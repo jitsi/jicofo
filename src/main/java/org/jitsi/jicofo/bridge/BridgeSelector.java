@@ -280,15 +280,6 @@ public class BridgeSelector
         return selectBridge(new HashMap<>(), null);
     }
 
-    /**
-     * Returns the number of JVBs known to this bridge selector. Not all of them
-     * have to be operational.
-     */
-    synchronized int getKnownBridgesCount()
-    {
-        return bridges.size();
-    }
-
     private void notifyBridgeUp(Bridge bridge)
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());

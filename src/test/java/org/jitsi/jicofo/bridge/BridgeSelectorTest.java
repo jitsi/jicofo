@@ -38,9 +38,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class BridgeSelectorTest
 {
-    private Jid jvb1Jid;
-    private Jid jvb2Jid;
-    private Jid jvb3Jid;
     private Bridge jvb1;
     private Bridge jvb2;
     private Bridge jvb3;
@@ -52,114 +49,15 @@ public class BridgeSelectorTest
         throws Exception
     {
         // Everything should work regardless of the type of jid.
-        jvb1Jid = JidCreate.from("jvb.example.com");
-        jvb2Jid = JidCreate.from("jvb@example.com");
-        jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
+        Jid jvb1Jid = JidCreate.from("jvb.example.com");
+        Jid jvb2Jid = JidCreate.from("jvb@example.com");
+        Jid jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
 
         clock = new FakeClock();
         bridgeSelector = new BridgeSelector(clock);
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
         jvb2 = bridgeSelector.addJvbAddress(jvb2Jid);
         jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
-    }
-
-    @Test
-    public void selectorTest()
-    {
-        // Test bridge operational status
-        List<Jid> workingBridges = new ArrayList<>();
-        workingBridges.add(jvb1Jid);
-        workingBridges.add(jvb2Jid);
-        workingBridges.add(jvb3Jid);
-
-        // This part of the test doesn't care about reset threshold
-        Bridge.setFailureResetThreshold(Duration.ZERO);
-        Bridge bridgeState = bridgeSelector.selectBridge();
-        assertTrue(workingBridges.contains(bridgeState.getJid()));
-
-        // Bridge 1 is down !!!
-        workingBridges.remove(jvb1Jid);
-        jvb1.setIsOperational(false);
-
-        assertTrue(workingBridges.contains(bridgeSelector.selectBridge().getJid()));
-
-        // Bridge 2 is down !!!
-        workingBridges.remove(jvb2Jid);
-        jvb2.setIsOperational(false);
-
-        assertEquals(jvb3Jid, bridgeSelector.selectBridge().getJid());
-
-        // Bridge 1 is up again, but 3 is down instead
-        workingBridges.add(jvb1Jid);
-        jvb1.setIsOperational(true);
-
-        workingBridges.remove(jvb3Jid);
-        jvb3.setIsOperational(false);
-
-        assertEquals(jvb1Jid, bridgeSelector.selectBridge().getJid());
-
-        // Reset all bridges - now we'll select based on conference count
-        workingBridges.clear();
-        workingBridges.add(jvb1Jid);
-        workingBridges.add(jvb2Jid);
-        workingBridges.add(jvb3Jid);
-        jvb1.setIsOperational(true);
-        jvb2.setIsOperational(true);
-        jvb3.setIsOperational(true);
-
-        // Jvb 1 and 2 are occupied by some conferences, 3 is free
-        jvb1.setStats(createJvbStats(.1));
-        jvb2.setStats(createJvbStats(.23));
-        jvb3.setStats(createJvbStats(0));
-
-        assertEquals(jvb3Jid, bridgeSelector.selectBridge().getJid());
-
-        // Now Jvb 3 gets occupied the most
-        jvb3.setStats(createJvbStats(.3));
-
-        assertEquals(jvb1Jid, bridgeSelector.selectBridge().getJid());
-
-        // Jvb 1 is gone
-        jvb1.setIsOperational(false);
-
-        assertEquals(jvb2Jid, bridgeSelector.selectBridge().getJid());
-
-        // TEST all bridges down
-        jvb2.setIsOperational(false);
-        jvb3.setIsOperational(false);
-        assertNull(bridgeSelector.selectBridge());
-
-        // Now bridges are up and select based on conference count
-        // with pre-configured bridge
-        jvb1.setIsOperational(true);
-        jvb2.setIsOperational(true);
-        jvb3.setIsOperational(true);
-
-        jvb1.setStats(createJvbStats(.01));
-        jvb2.setStats(createJvbStats(0));
-        jvb3.setStats(createJvbStats(0));
-
-        // JVB 1 should not be in front
-        assertNotEquals(jvb1Jid, bridgeSelector.selectBridge().getJid());
-
-        // JVB 2 least occupied
-        jvb1.setStats(createJvbStats(.01));
-        jvb2.setStats(createJvbStats(0));
-        jvb3.setStats(createJvbStats(.01));
-
-        assertEquals(jvb2Jid, bridgeSelector.selectBridge().getJid());
-
-        // Test drain bridges queue
-        int maxCount = bridgeSelector.getKnownBridgesCount();
-        while (bridgeSelector.selectBridge() != null)
-        {
-            Bridge bridge = bridgeSelector.selectBridge();
-            bridge.setIsOperational(false);
-            if (--maxCount < 0)
-            {
-                fail("Max count exceeded");
-            }
-        }
     }
 
     @Test

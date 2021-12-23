@@ -55,7 +55,7 @@ public class Bridge
      */
     private static Duration failureResetThreshold = config.failureResetThreshold();
 
-    static void setFailureResetThreshold(Duration newValue)
+    public static void setFailureResetThreshold(Duration newValue)
     {
         failureResetThreshold = newValue;
     }
@@ -150,7 +150,7 @@ public class Bridge
      * @param stats the {@link ColibriStatsExtension} instance which was
      * received.
      */
-    void setStats(ColibriStatsExtension stats)
+    public void setStats(ColibriStatsExtension stats)
     {
         if (stats == null)
         {

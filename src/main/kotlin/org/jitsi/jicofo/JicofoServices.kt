@@ -95,7 +95,7 @@ open class JicofoServices {
             bridgeSelector.addHandler(this)
         }
     } else {
-        logger.warn("JVB health-checks disabled");
+        logger.warn("JVB health-checks disabled")
         null
     }
 
