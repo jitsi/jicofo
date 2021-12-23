@@ -30,6 +30,7 @@ import org.jitsi.utils.logging2.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -75,13 +76,24 @@ public class BridgeSelector
      */
     private final AtomicInteger lostBridges = new AtomicInteger();
 
+    @NotNull
+    private final Clock clock;
+
     /**
-     * Creates new instance of {@link BridgeSelector}.
-     *
+     * Initalizes a new instance of {@link BridgeSelector}.
+     */
+    public BridgeSelector(@NotNull Clock clock)
+    {
+        logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+        this.clock = clock;
+    }
+
+    /**
+     * Initalizes a new instance of {@link BridgeSelector}.
      */
     public BridgeSelector()
     {
-        logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+        this(Clock.systemUTC());
     }
 
     /**
@@ -117,7 +129,7 @@ public class BridgeSelector
                 return bridge;
             }
 
-            newBridge = new Bridge(bridgeJid);
+            newBridge = new Bridge(bridgeJid, clock);
             if (stats != null)
             {
                 newBridge.setStats(stats);

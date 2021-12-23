@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.test.time.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 
 import org.junit.jupiter.api.*;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 
+import java.time.*;
 import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
@@ -43,6 +45,7 @@ public class BridgeSelectorTest
     private Bridge jvb2;
     private Bridge jvb3;
     private BridgeSelector bridgeSelector;
+    private FakeClock clock;
 
     @BeforeEach
     public void setUp()
@@ -53,7 +56,8 @@ public class BridgeSelectorTest
         jvb2Jid = JidCreate.from("jvb@example.com");
         jvb3Jid = JidCreate.from("jvb@example.com/goldengate");
 
-        bridgeSelector = new BridgeSelector();
+        clock = new FakeClock();
+        bridgeSelector = new BridgeSelector(clock);
         jvb1 = bridgeSelector.addJvbAddress(jvb1Jid);
         jvb2 = bridgeSelector.addJvbAddress(jvb2Jid);
         jvb3 = bridgeSelector.addJvbAddress(jvb3Jid);
@@ -69,7 +73,7 @@ public class BridgeSelectorTest
         workingBridges.add(jvb3Jid);
 
         // This part of the test doesn't care about reset threshold
-        Bridge.setFailureResetThreshold(0);
+        Bridge.setFailureResetThreshold(Duration.ZERO);
         Bridge bridgeState = bridgeSelector.selectBridge();
         assertTrue(workingBridges.contains(bridgeState.getJid()));
 
@@ -165,7 +169,7 @@ public class BridgeSelectorTest
         Bridge[] bridges = new Bridge[] {jvb1, jvb2, jvb3};
 
         // Will restore failure status after 100 ms
-        Bridge.setFailureResetThreshold(100);
+        Bridge.setFailureResetThreshold(Duration.ofMillis(100));
 
         for (int testedIdx = 0; testedIdx < bridges.length; testedIdx++)
         {
@@ -179,6 +183,7 @@ public class BridgeSelectorTest
                 // ... and is not operational
                 bridges[idx].setIsOperational(!isTestNode);
             }
+            bridgeSelector.selectBridge();
             // Should not be selected now
             assertNotEquals(
                     bridges[testedIdx].getJid(),
@@ -196,7 +201,7 @@ public class BridgeSelectorTest
                     bridgeSelector.selectBridge().getJid());
 
             // Wait for faulty status reset
-            Thread.sleep(150);
+            clock.elapse(Duration.ofMillis(150));
             // Test node should recover
             assertEquals(
                 bridges[testedIdx].getJid(),
@@ -204,7 +209,7 @@ public class BridgeSelectorTest
             );
         }
 
-        Bridge.setFailureResetThreshold(BridgeConfig.config.failureResetThreshold().toMillis());
+        Bridge.setFailureResetThreshold(BridgeConfig.config.failureResetThreshold());
     }
 
     private ColibriStatsExtension createJvbStats(double stress)

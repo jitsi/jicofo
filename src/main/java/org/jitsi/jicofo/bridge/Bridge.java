@@ -53,9 +53,9 @@ public class Bridge
      * This is static for the purposes of tests.
      * TODO: just use the config and port the tests.
      */
-    private static long failureResetThreshold = config.failureResetThreshold().toMillis();
+    private static Duration failureResetThreshold = config.failureResetThreshold();
 
-    static void setFailureResetThreshold(long newValue)
+    static void setFailureResetThreshold(Duration newValue)
     {
         failureResetThreshold = newValue;
     }
@@ -123,16 +123,25 @@ public class Bridge
     /**
      * The time when this instance has failed.
      */
-    private volatile long failureTimestamp;
+    private Instant failureInstant = Instant.MIN;
 
     /**
      * The last known {@link ColibriStatsExtension} reported by this bridge.
      */
     private ColibriStatsExtension stats = EMPTY_STATS;
 
-    Bridge(Jid jid)
+    @NonNull
+    private final Clock clock;
+
+    Bridge(@NonNull Jid jid, @NonNull Clock clock)
     {
-        this.jid = Objects.requireNonNull(jid, "jid");
+        this.jid = jid;
+        this.clock = clock;
+    }
+
+    Bridge(@NonNull Jid jid)
+    {
+        this(jid, Clock.systemUTC());
     }
 
     /**
@@ -215,7 +224,7 @@ public class Bridge
         if (!isOperational)
         {
             // Remember when the bridge has last failed
-            failureTimestamp = System.currentTimeMillis();
+            failureInstant = clock.instant();
         }
     }
 
@@ -223,8 +232,7 @@ public class Bridge
     {
         // To filter out intermittent failures, do not return operational
         // until past the reset threshold since the last failure.
-        if (System.currentTimeMillis() - failureTimestamp
-                < failureResetThreshold)
+        if (Duration.between(failureInstant, clock.instant()).compareTo(failureResetThreshold) < 0)
         {
             return false;
         }
