@@ -21,8 +21,10 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jxmpp.jid.impl.JidCreate
 
-class BridgeSelectionStrategy2Test : ShouldSpec() {
+class BridgeSelectionStrategyTest : ShouldSpec() {
     init {
+        val strategy: BridgeSelectionStrategy = RegionBasedBridgeSelectionStrategy()
+
         context("testRegionBasedSelection") {
             val region1 = "region1"
             val region2 = "region2"
@@ -31,7 +33,6 @@ class BridgeSelectionStrategy2Test : ShouldSpec() {
             val bridge2 = Bridge(JidCreate.from("bridge2")).apply { setStats(region = region2) }
             val bridge3 = Bridge(JidCreate.from("bridge3")).apply { setStats(region = region3) }
 
-            val strategy: BridgeSelectionStrategy = RegionBasedBridgeSelectionStrategy()
 
             val allBridges = listOf(bridge1, bridge2, bridge3)
             val conferenceBridges: MutableMap<Bridge, Int> = HashMap()
@@ -61,5 +62,94 @@ class BridgeSelectionStrategy2Test : ShouldSpec() {
             // order of 'allBridges') existing conference bridge.
             strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe bridge2
         }
+        context("Port of BridgeSelectionStrategyTest.java#preferLowestStress") {
+            val lowStressRegion = "lowStressRegion"
+            val mediumStressRegion = "mediumStressRegion"
+            val highStressRegion = "highStressRegion"
+
+            val lowStressBridge = createBridge(lowStressRegion, 0.1)
+            val mediumStressBridge = createBridge(mediumStressRegion, 0.3)
+            val highStressBridge = createBridge(highStressRegion, 0.8)
+            val allBridges = listOf(lowStressBridge, mediumStressBridge, highStressBridge)
+
+            val conferenceBridges = mutableMapOf<Bridge, Int>()
+            // Initial selection should select a bridge in the participant's region.
+            strategy.select(allBridges, conferenceBridges, highStressRegion, true) shouldBe highStressBridge
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion, true) shouldBe mediumStressBridge
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe lowStressBridge
+
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe lowStressBridge
+
+            // Now assume that the low-stressed bridge is in the conference.
+            conferenceBridges[lowStressBridge] = 1
+            strategy.select(allBridges, conferenceBridges, lowStressRegion, true) shouldBe lowStressBridge
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion, true) shouldBe mediumStressBridge
+            // A participant in an unknown region should be allocated on the
+            // existing conference bridge.
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe lowStressBridge
+
+            // Now assume that a medium-stressed bridge is also in the conference.
+            conferenceBridges[mediumStressBridge] = 1
+            // A participant in an unknown region should be allocated on the least
+            // loaded (according to the order of 'allBridges') existing conference
+            // bridge.
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe lowStressBridge
+            // A participant in a region with no bridges should also be allocated
+            // on the least loaded (according to the order of 'allBridges') existing
+            // conference bridge.
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe lowStressBridge
+        }
+        context("Port of BridgeSelectionStrategyTest.java#preferRegionWhenStressIsEqual") {
+            // Here we specify 3 bridges in 3 different regions: one high-stressed and two medium-stressed.
+            val mediumStressRegion1 = "mediumStressRegion1"
+            val mediumStressRegion2 = "mediumStressRegion2"
+            val highStressRegion = "highStressRegion"
+
+            val mediumStressBridge1 = createBridge(mediumStressRegion1, 0.25)
+            val mediumStressBridge2 = createBridge(mediumStressRegion2, 0.3)
+            val highStressBridge = createBridge(highStressRegion, 0.8)
+            val allBridges = listOf(mediumStressBridge1, mediumStressBridge2, highStressBridge)
+
+            val conferenceBridges = mutableMapOf<Bridge, Int>()
+
+            // Initial selection should select a bridge in the participant's region.
+            strategy.select(allBridges, conferenceBridges, highStressRegion, true) shouldBe highStressBridge
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true) shouldBe  mediumStressBridge2
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe  mediumStressBridge1
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe mediumStressBridge1
+
+            conferenceBridges[mediumStressBridge2] = 1
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion1, true) shouldBe mediumStressBridge1
+            strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true) shouldBe mediumStressBridge2
+            // A participant in an unknown region should be allocated on the existing conference bridge.
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe mediumStressBridge2
+
+            // Now assume that a high-stressed bridge is in the conference.
+            conferenceBridges[highStressBridge] = 1
+            // A participant in an unknown region should be allocated on the least
+            // loaded (according to the order of 'allBridges') existing conference
+            // bridge.
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe mediumStressBridge2
+            // A participant in a region with no bridges should also be allocated
+            // on the least loaded (according to the order of 'allBridges') existing
+            // conference bridge.
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe  mediumStressBridge2
+        }
+        context("Mixing octo versions") {
+            val highStressBridge = createBridge("region", 0.9).apply { setStats(octoVersion = 13) }
+            val lowStressBridge = createBridge("region", 0.1).apply { setStats(octoVersion = 12) }
+            val allBridges = listOf(lowStressBridge, highStressBridge)
+
+            val conferenceBridges = mutableMapOf<Bridge, Int>()
+            conferenceBridges[highStressBridge] = 1
+
+            // lowStressBridge must not be selected, because the conference already
+            // has a bridge and its octo_version does not match.
+            strategy.select(allBridges, conferenceBridges, "region", true) shouldBe highStressBridge
+        }
     }
+}
+
+private fun createBridge(region: String, stress: Double) = Bridge(JidCreate.from(region)).apply {
+    setStats(stress = stress, region = region)
 }
