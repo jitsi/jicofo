@@ -46,7 +46,7 @@ import java.util.*;
  * conference bridges are overloaded: use the least loaded bridge.
  *
  */
-class RegionBasedBridgeSelectionStrategy
+public class RegionBasedBridgeSelectionStrategy
     extends BridgeSelectionStrategy
 {
     /**
