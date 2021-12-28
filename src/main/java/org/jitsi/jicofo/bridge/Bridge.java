@@ -43,8 +43,9 @@ public class Bridge
     implements Comparable<Bridge>
 {
     /**
-     * This is static for the purposes of tests.
-     * TODO: just use the config and port the tests.
+     * How long the "failed" state should be sticky for. Once a {@link Bridge} goes in a non-operational state (via
+     * {@link #setIsOperational(boolean)}) it will be considered non-operational for at least this amount of time.
+     * See the tests for example behavior.
      */
     private static final Duration failureResetThreshold = config.failureResetThreshold();
 
