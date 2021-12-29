@@ -92,9 +92,17 @@ class ColibriV2SessionManager(
         participants.forEach { removeParticipant(it) }
     }
 
+    /**
+     * We don't keep track of source-add/source-removes manually and simply take the updated sources from the
+     * participant object.
+     */
     override fun addSources(participant: Participant, sources: ConferenceSourceMap) =
         updateParticipant(participant, sources = participant.sources)
 
+    /**
+     * We don't keep track of source-add/source-removes manually and simply take the updated sources from the
+     * participant object.
+     */
     override fun removeSources(participant: Participant, sources: ConferenceSourceMap) =
         updateParticipant(participant, sources = participant.sources)
 
@@ -198,7 +206,7 @@ class ColibriV2SessionManager(
             logger.warn("Selected ${bridge.jid.resourceOrNull} for $participant, session exists: ${!created}")
             stanzaCollector = session.sendAllocationRequest(participant, contents, created)
 
-            participantInfo = ParticipantInfo(session = session)
+            participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
             participants[participant.endpointId] = participantInfo
         }
 
@@ -225,11 +233,18 @@ class ColibriV2SessionManager(
         sources: ConferenceSourceMap?,
         // This param is not used for colibri2
         rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
-    ) {
+    ) = synchronized(syncRoot) {
         logger.info("Updating $participant with transport=$transport, sources=$sources")
 
-        val session = getSession(participant) ?: throw IllegalStateException("No session for $participant")
-        session.updateParticipant(participant, transport, sources)
+        val participantInfo = participants[participant.endpointId]
+            ?: throw IllegalStateException("No participantInfo for $participant")
+        participantInfo.session?.updateParticipant(participant, transport, sources)
+            ?: throw IllegalStateException("No session for $participant")
+        if (sources != null) {
+            // We don't need to make a copy, because we're already passed an unmodifiable copy.
+            // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
+            participantInfo.sources = sources
+        }
     }
 
     override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {

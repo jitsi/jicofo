@@ -1311,7 +1311,7 @@ public class JitsiMeetConferenceImpl
         ConferenceSourceMap sourcesAccepted;
         try
         {
-            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
+            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised).unmodifiable();
         }
         catch (ValidationFailedException e)
         {
