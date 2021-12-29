@@ -114,10 +114,9 @@ internal class Colibri2Session(
     internal fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
-        sources: ConferenceSourceMap?,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
+        sources: ConferenceSourceMap?
     ) {
-        if (transport == null && sources == null && rtpDescriptions == null) {
+        if (transport == null && sources == null) {
             logger.info("Nothing to update.")
             return
         }

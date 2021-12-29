@@ -223,14 +223,13 @@ class ColibriV2SessionManager(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?,
+        // This param is not used for colibri2
         rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
     ) {
-        logger.warn(
-            "Updating $participant with transport=$transport, sources=$sources, rtpDescriptions=$rtpDescriptions"
-        )
+        logger.info("Updating $participant with transport=$transport, sources=$sources")
 
         val session = getSession(participant) ?: throw IllegalStateException("No session for $participant")
-        session.updateParticipant(participant, transport, sources, rtpDescriptions)
+        session.updateParticipant(participant, transport, sources)
     }
 
     override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
