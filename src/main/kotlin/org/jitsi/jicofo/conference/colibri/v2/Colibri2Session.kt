@@ -17,7 +17,10 @@
  */
 package org.jitsi.jicofo.conference.colibri.v2
 
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.codec.JingleOfferFactory
+import org.jitsi.jicofo.codec.OctoOptions
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
@@ -27,17 +30,20 @@ import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
 import org.jitsi.jicofo.conference.colibri.GenericColibriAllocationFailedException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
+import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
+import org.jitsi.xmpp.extensions.colibri2.Endpoints
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
-import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -45,9 +51,7 @@ import java.util.Collections.singletonList
 import java.util.UUID
 
 internal class Colibri2Session(
-    private val xmppConnection: AbstractXMPPConnection,
-    private val conferenceName: String,
-    private val meetingId: String,
+    val colibriSessionManager: ColibriV2SessionManager,
     val bridge: Bridge,
     parentLogger: Logger
 ) {
@@ -58,9 +62,11 @@ internal class Colibri2Session(
     /**
      * The sources advertised by the bridge, read from the response of the initial request to create a conference.
      */
-    var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
-
+    private var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
+    private val xmppConnection = colibriSessionManager.xmppConnection
     val id = UUID.randomUUID().toString()
+
+    private val relays = mutableMapOf<String, Relay>()
 
     /**
      * Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response.
@@ -104,8 +110,7 @@ internal class Colibri2Session(
 
         return ColibriAllocation(
             bridgeSources,
-            response.parseTransport(participantId)
-                ?: throw ColibriParsingException("failed to parse transport"),
+            response.parseTransport(participantId) ?: throw ColibriParsingException("failed to parse transport"),
             bridge.region,
             id
         )
@@ -137,12 +142,7 @@ internal class Colibri2Session(
 
         request.addEndpoint(endpoint.build())
 
-        val response = xmppConnection.sendIqAndGetResponse(request.build())
-
-        // TODO improve error handling. Do we need to clean up? *Can* we clean up?
-        if (response !is ConferenceModifiedIQ) {
-            logger.error("Failed to update participant: ${response?.javaClass?.name}: ${response?.toXML()}")
-        }
+        xmppConnection.tryToSendStanza(request.build())
     }
 
     internal fun mute(endpointId: String, audio: Boolean, video: Boolean): StanzaCollector {
@@ -154,7 +154,7 @@ internal class Colibri2Session(
             }.build()
         )
 
-        logger.debug { "Sending mute request for ${endpointId}: ${request.build().toXML()}" }
+        logger.debug { "Sending mute request for $endpointId: ${request.build().toXML()}" }
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
 
@@ -172,8 +172,139 @@ internal class Colibri2Session(
 
     private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
         to(bridge.jid)
-        setMeetingId(meetingId)
-        if (create) setConferenceName(conferenceName)
+        setMeetingId(colibriSessionManager.meetingId)
+        if (create) setConferenceName(colibriSessionManager.conferenceName)
+    }
+
+    internal fun createRelay(relayId: String, initialParticipants: List<ParticipantInfo>, initiator: Boolean) {
+        if (relays.containsKey(relayId)) {
+            throw IllegalStateException("Relay $relayId already exists")
+        }
+
+        val relay = Relay(relayId, initiator)
+        relays[relayId] = relay
+        relay.start(initialParticipants)
+    }
+
+    internal fun updateRemoteParticipant(participantInfo: ParticipantInfo, relayId: String, create: Boolean) {
+        relays[relayId]?.updateParticipant(participantInfo, create)
+            ?: throw IllegalStateException("Relay $relayId doesn't exist.")
+    }
+
+    internal fun setRelayTransport(transport: IceUdpTransportPacketExtension, relayId: String) {
+        relays[relayId]?.setTransport(transport)
+            ?: throw IllegalStateException("Relay $relayId doesn't exist.")
+    }
+
+    private inner class Relay(
+        val id: String,
+        initiator: Boolean
+    ) {
+        private val useUniquePort = initiator
+        private val iceControlling = initiator
+        private val dtlsSetup = if (initiator) "active" else "passive"
+        private val websocketActive = initiator
+
+        fun start(initialParticipants: List<ParticipantInfo>) {
+            val request = buildCreateRelayRequest(initialParticipants)
+            val stanzaCollector = xmppConnection.createStanzaCollectorAndSend(request)
+            TaskPools.ioPool.submit { waitForResponse(stanzaCollector) }
+        }
+
+        private fun waitForResponse(stanzaCollector: StanzaCollector) {
+            val response: IQ?
+            try {
+                response = stanzaCollector.nextResult()
+            } finally {
+                logger.info("Cancel.")
+                stanzaCollector.cancel()
+            }
+            if (response !is ConferenceModifiedIQ) {
+                logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                return
+            }
+
+            val transport = response.relays.firstOrNull()?.transport
+                ?: run {
+                    logger.error("No transport in response: ${response.toXML()}")
+                    return
+                }
+            val iceUdpTransport = transport.iceUdpTransport
+            if (iceUdpTransport == null) {
+                logger.error("Response has no iceUdpTransport")
+                return
+            }
+            // TODO indicate that the octo connection failed somehow.
+
+            // Forward the response to the corresponding [Colibri2Session]
+            colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, id)
+        }
+
+        fun setTransport(transport: IceUdpTransportPacketExtension) {
+            transport.getChildExtensionsOfType(DtlsFingerprintPacketExtension::class.java).forEach {
+                if (it.setup != "actpass") {
+                    logger.error("Response has an unexpected dtls setup field: ${it.setup}")
+                    return
+                }
+                logger.info("Setting setup=$dtlsSetup for $id")
+                it.setup = dtlsSetup
+            }
+            if (!websocketActive) {
+                transport.getChildExtensionsOfType(WebSocketPacketExtension::class.java).forEach {
+                    transport.removeChildExtension(it)
+                }
+            }
+
+            val request = createRequest()
+            val relay = Colibri2Relay.getBuilder().apply {
+                setId(id)
+                setCreate(false)
+            }
+            relay.setTransport(Transport.getBuilder().apply { setIceUdpExtension(transport) }.build())
+            request.addRelay(relay.build())
+
+            logger.warn("Updating transport: ${request.build().toXML()}")
+            xmppConnection.trySendStanza(request.build())
+        }
+
+        fun updateParticipant(participant: ParticipantInfo, create: Boolean) {
+            val request = createRequest()
+            val relay = Colibri2Relay.getBuilder().apply {
+                setId(id)
+            }
+            val endpoints = Endpoints.getBuilder()
+            endpoints.addEndpoint(participant.toEndpoint(create))
+            relay.setEndpoints(endpoints.build())
+            request.addRelay(relay.build())
+            logger.warn("Creating new octo endpoiont: ${request.build().toXML()}")
+            xmppConnection.trySendStanza(request.build())
+        }
+
+        private fun buildCreateRelayRequest(participants: Collection<ParticipantInfo>): ConferenceModifyIQ {
+            val request = createRequest()
+            val relay = Colibri2Relay.getBuilder().apply {
+                setId(id)
+                setCreate(true)
+            }
+
+            val contents = JingleOfferFactory.INSTANCE.createOffer(OctoOptions)
+            contents.forEach { it.toMedia()?.let<Media, Unit> { media -> relay.addMedia(media) } }
+
+            val endpoints = Endpoints.getBuilder()
+            participants.forEach { endpoints.addEndpoint(it.toEndpoint(true)) }
+            relay.setEndpoints(endpoints.build())
+
+            relay.setTransport(
+                Transport.getBuilder().apply {
+                    setUseUniquePort(useUniquePort)
+                    setIceControlling(iceControlling)
+                }.build()
+            )
+
+            request.addRelay(relay.build())
+
+            return request.build()
+        }
     }
 }
 

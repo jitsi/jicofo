@@ -23,6 +23,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.utils.MediaType
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.MediaSource
@@ -90,3 +91,13 @@ fun ContentPacketExtension.toMedia(): Media? {
     }
     return media.build()
 }
+
+internal fun ParticipantInfo.toEndpoint(create: Boolean): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
+    setId(id)
+    if (create) {
+        setCreate(true)
+        setStatsId(statsId)
+    }
+    // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
+    setSources(sources.toColibriMediaSources())
+}.build()

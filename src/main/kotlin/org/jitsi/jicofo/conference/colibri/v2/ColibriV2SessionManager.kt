@@ -18,8 +18,8 @@
 
 package org.jitsi.jicofo.conference.colibri.v2
 
-import org.jitsi.jicofo.JicofoServices
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
@@ -35,14 +35,16 @@ import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 import java.util.UUID
 
 class ColibriV2SessionManager(
-    private val jicofoServices: JicofoServices,
-    private val conference: JitsiMeetConferenceImpl,
+    internal val xmppConnection: AbstractXMPPConnection,
+    private val bridgeSelector: BridgeSelector,
+    conference: JitsiMeetConferenceImpl,
     parentLogger: Logger
 ) : ColibriSessionManager {
     private val logger = createChildLogger(parentLogger)
@@ -58,13 +60,15 @@ class ColibriV2SessionManager(
     /**
      * We want to delay initialization until the chat room is joined in order to use its meetingId.
      */
-    private val meetingId: String by lazy {
+    internal val meetingId: String by lazy {
         val chatRoomMeetingId = conference.chatRoom?.meetingId
         if (chatRoomMeetingId == null) {
             logger.warn("No meetingId set for the MUC. Generating one locally.")
             UUID.randomUUID().toString()
         } else chatRoomMeetingId
     }
+
+    internal val conferenceName = conference.roomName.toString()
 
     override fun expire() = synchronized(syncRoot) {
         // Should we add a colibri2 way to expire a whole conference?
@@ -113,8 +117,8 @@ class ColibriV2SessionManager(
             participantInfo = participants[participant.endpointId]
                 ?: throw IllegalStateException("No participantInfo for $participant")
 
-            if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute
-                || mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
+            if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute ||
+                mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
             ) {
                 return true
             }
@@ -156,13 +160,7 @@ class ColibriV2SessionManager(
             return Pair(session, false)
         }
 
-        session = Colibri2Session(
-            jicofoServices.xmppServices.serviceConnection.xmppConnection,
-            conference.roomName.toString(),
-            meetingId,
-            bridge,
-            logger
-        )
+        session = Colibri2Session(this, bridge, logger)
         sessions[bridge] = session
         return Pair(session, true)
     }
@@ -197,7 +195,7 @@ class ColibriV2SessionManager(
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
-            val bridge = jicofoServices.bridgeSelector.selectBridge(getBridges(), participant.chatMember.region)
+            val bridge = bridgeSelector.selectBridge(getBridges(), participant.chatMember.region)
                 ?: throw BridgeSelectionFailedException()
             getOrCreateSession(bridge).let {
                 session = it.first
@@ -208,6 +206,16 @@ class ColibriV2SessionManager(
 
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
             participants[participant.endpointId] = participantInfo
+            if (created) {
+                sessions.values.filter { it != session }.forEach {
+                    it.createRelay(session.bridge.relayId, participantsWithSession(session), initiator = true)
+                    session.createRelay(it.bridge.relayId, participantsWithSession(it), initiator = false)
+                }
+            } else {
+                sessions.values.filter { it != session }.forEach {
+                    it.updateRemoteParticipant(participantInfo, session.bridge.relayId, create = true)
+                }
+            }
         }
 
         val response: IQ?
@@ -227,6 +235,8 @@ class ColibriV2SessionManager(
         }
     }
 
+    private fun participantsWithSession(s: Colibri2Session) = participants.values.filter { it.session == s }
+
     override fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
@@ -238,12 +248,16 @@ class ColibriV2SessionManager(
 
         val participantInfo = participants[participant.endpointId]
             ?: throw IllegalStateException("No participantInfo for $participant")
-        participantInfo.session?.updateParticipant(participant, transport, sources)
+        val session = participantInfo.session
             ?: throw IllegalStateException("No session for $participant")
+        session.updateParticipant(participant, transport, sources)
         if (sources != null) {
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
+            sessions.values.filter { it != session }.forEach {
+                it.updateRemoteParticipant(participantInfo, session.bridge.relayId, false)
+            }
         }
     }
 
@@ -257,5 +271,20 @@ class ColibriV2SessionManager(
 
     private fun getSession(participant: Participant): Colibri2Session? = synchronized(syncRoot) {
         return participants[participant.endpointId]?.session
+    }
+
+    internal fun setRelayTransport(
+        session: Colibri2Session,
+        transport: IceUdpTransportPacketExtension,
+        relayId: String
+    ) {
+        synchronized(syncRoot) {
+            // It's possible a new session was started for the same bridge.
+            if (!sessions.containsKey(session.bridge) || sessions[session.bridge] != session) {
+                logger.info("Received a response for a session that is no longer active. Ignoring.")
+            }
+            sessions.values.find { it.bridge.relayId == relayId }?.setRelayTransport(transport, session.bridge.relayId)
+                ?: { logger.error("Response for a relay that is no longer active. Ignoring.") }
+        }
     }
 }
